@@ -528,7 +528,6 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     bool doneInit = false;
     std::atomic_bool progressActive;
     ProcessInfo processStartInfo;
-    offset_t peakTempSize = 0;
 
 public:
 

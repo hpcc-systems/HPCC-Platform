@@ -46,6 +46,17 @@ typedef unsigned short UChar;
 #endif
 #include "rtlconst.hpp"
 
+
+#if !defined(ECLRTL_LOCAL)
+#ifdef ECLRTL_EXPORTS
+#define ECLRTL_API DECL_EXPORT
+#else
+#define ECLRTL_API DECL_IMPORT
+#endif
+#else
+#define ECLRTL_API
+#endif
+
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
 #define ACTIVITY_INTERFACE_VERSION      654
@@ -484,7 +495,7 @@ inline byte getVirtualInitializer(const void * initializer) { return (byte)(mems
 typedef IThorDiskCallback IVirtualFieldCallback;
 
 //Core struct used for representing meta for a field.  Effectively used as an interface.
-struct RtlFieldInfo
+struct ECLRTL_API RtlFieldInfo
 {
     constexpr inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags = 0, const char *_initializer = NULL)
     : name(_name), xpath(_xpath), type(_type), initializer(_initializer), flags(_type->fieldType | _flags) {}

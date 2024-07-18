@@ -17,10 +17,21 @@
 
 #include "daliKVStore.hpp"
 
+void getEncodedLowerCaseUserName(StringBuffer & out, ISecUser * username)
+{
+    StringBuffer userlowercased;
+    userlowercased.set(username->getName()).toLowerCase();
+
+    encodePTreeName(out, userlowercased.str());
+}
+
 bool CDALIKVStore::createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner, unsigned int maxvalsize=DALI_KVSTORE_MAXVALSIZE_DEFAULT)
 {
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore createStore(): Store name not provided");
+
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
 
     ensureAttachedToDali(); //throws if in offline mode
 
@@ -28,7 +39,7 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
     if (!conn)
         throw MakeStringException(-1, "Unable to connect to DALI KeyValue store root: '%s'", DALI_KVSTORE_PATH);
 
-    VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     {
         Owned<IPropertyTree> root = conn->getRoot();
         if (root->hasProp(xpath.str()))
@@ -53,7 +64,7 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
     }
 
     Owned<IPropertyTree> apptree = createPTree();
-    apptree->setProp(DALI_KVSTORE_NAME_ATT, storename);
+    apptree->setProp(DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     CDateTime dt;
     dt.setNow();
     StringBuffer str;
@@ -89,15 +100,21 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
     if (isEmptyString(storename))
         throw MakeStringException(-1, "DALI Keystore set(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!global && (!owner || isEmptyString(owner->getName())))
         throw MakeStringException(-1, "DALI Keystore set(): Attempting to set non-global entry but owner name not provided");
 
     if (isEmptyString(thenamespace))
         throw MakeStringException(-1, "DALI Keystore set(): namespace not provided");
 
+    StringBuffer encodedNameSpace;
+    encodePTreeName(encodedNameSpace, thenamespace);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s'][1]", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s'][1]", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore set(): Unable to connect to DALI KeyValue store path '%s'", xpath.str()); //rodrigo, not sure if this is too much info
@@ -111,7 +128,7 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(owner->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), owner);
 
     Owned<IPropertyTree> ownertree = storetree->getPropTree(xpath.str());
     if (!ownertree)
@@ -121,18 +138,20 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
     dt.setNow();
     StringBuffer str;
 
-    Owned<IPropertyTree> nstree = ownertree->getPropTree(thenamespace);
+    Owned<IPropertyTree> nstree = ownertree->getPropTree(encodedNameSpace.str());
     if (!nstree)
     {
-        nstree.setown(createPTree(thenamespace));
+        nstree.setown(createPTree(encodedNameSpace.str()));
         nstree->setProp(DALI_KVSTORE_CREATEDTIME_ATT,dt.getString(str).str());
     }
 
-    Owned<IPropertyTree> valuetree = nstree->getPropTree(key);
+    StringBuffer encodedKey;
+    encodePTreeName(encodedKey, key);
+    Owned<IPropertyTree> valuetree = nstree->getPropTree(encodedKey.str());
     if (!valuetree)
     {
-        nstree->setProp(key, value);
-        valuetree.setown(nstree->getPropTree(key));
+        nstree->setProp(encodedKey.str(), value);
+        valuetree.setown(nstree->getPropTree(encodedKey.str()));
         valuetree->setProp(DALI_KVSTORE_CREATEDTIME_ATT,dt.getString(str).str());
         valuetree->setProp(DALI_KVSTORE_CREATEDBY_ATT, owner ? owner->getName(): "");
     }
@@ -143,7 +162,7 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
         valuetree->setProp(".", value);
     }
 
-    ownertree->setPropTree(thenamespace, LINK(nstree));
+    ownertree->setPropTree(encodedNameSpace.str(), LINK(nstree));
     storetree->setPropTree(xpath.str(), LINK(ownertree));
 
     conn->commit();
@@ -156,26 +175,31 @@ IPropertyTree * CDALIKVStore::getAllKeyProperties(const char * storename, const 
     if (isEmptyString(storename))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperties(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!global && (!username || isEmptyString(username->getName())))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperties(): Attempting to set non-global entry but owner name not provided");
 
     if (isEmptyString(ns))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperties(): namespace not provided");
 
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, ns);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s'][1]/", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s'][1]/", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
 
     if (global)
         xpath.append(DALI_KVSTORE_GLOBAL);
     else
-    {
-        StringBuffer userlowercased;
-        userlowercased.set(username->getName()).toLowerCase();
-        xpath.append(userlowercased);
-    }
+        getEncodedLowerCaseUserName(xpath, username);
 
-    xpath.appendf("/%s/%s", ns, key);
+    StringBuffer encodedKey;
+    encodePTreeName(encodedKey, key);
+
+    xpath.appendf("/%s/%s", encodedNS.str(), encodedKey.str());
 
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
@@ -189,26 +213,31 @@ bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storen
     if (isEmptyString(storename))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperty(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!global && (!username || isEmptyString(username->getName())))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperty(): Attempting to set non-global entry but owner name not provided");
 
     if (isEmptyString(ns))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperty(): namespace not provided");
 
+    StringBuffer encodedNamespace;
+    encodePTreeName(encodedNamespace, ns);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s'][1]/", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s'][1]/", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
 
     if (global)
         xpath.append(DALI_KVSTORE_GLOBAL);
     else
-    {
-        StringBuffer userlowercased;
-        userlowercased.set(username->getName()).toLowerCase();
-        xpath.append(userlowercased);
-    }
+        getEncodedLowerCaseUserName(xpath, username);
 
-    xpath.appendf("/%s/%s", ns, key);
+    StringBuffer encodedKey;
+    encodePTreeName(encodedKey, key);
+
+    xpath.appendf("/%s/%s", encodedNamespace.str(), encodedKey.str());
 
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
@@ -216,7 +245,10 @@ bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storen
 
     Owned<IPropertyTree> keytree = conn->getRoot();
 
-    keytree->getProp(property,propval.clear());
+    StringBuffer encodedPropName;
+    encodePTreeName(encodedPropName, property);
+
+    keytree->getProp(encodedPropName.str(),propval.clear());
     return true;
 }
 
@@ -225,18 +257,27 @@ bool CDALIKVStore::deletekey(const char * storename, const char * thenamespace, 
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore deletekey(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!thenamespace || !*thenamespace)
         throw MakeStringException(-1, "DALI KV Store deletekey(): target namespace not provided!");
 
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, thenamespace);
+
     if (!key || !*key)
         throw MakeStringException(-1, "DALI KV Store deletekey(): target key not provided!");
+
+    StringBuffer encodedKey;
+    encodePTreeName(encodedKey, key);
 
     if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore set(): Attempting to set non-global entry but user not provided");
 
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s'][1]", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s'][1]", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore deletekey(): Unable to connect to DALI KeyValue store root path '%s'", DALI_KVSTORE_PATH);
@@ -246,9 +287,9 @@ bool CDALIKVStore::deletekey(const char * storename, const char * thenamespace, 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(user->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), user);
 
-    xpath.appendf("/%s/%s", thenamespace,key);
+    xpath.appendf("/%s/%s", encodedNS.str(), encodedKey.str());
     if(!storetree->hasProp(xpath.str()))
         throw MakeStringException(-1, "DALI KV Store deletekey(): Could not find '%s/%s/%s' for user '%s'", storename, thenamespace, key, global ? "GLOBAL USER" : user->getName());
 
@@ -264,15 +305,21 @@ bool CDALIKVStore::deleteNamespace(const char * storename, const char * thenames
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore deletekey(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore deleteNamespace(): Attempting to fetch non-global keys but user not provided");
 
     if (isEmptyString(thenamespace))
        throw MakeStringException(-1, "DALI KV Store deleteNamespace(): target namespace not provided!");
 
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, thenamespace);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore deleteNamespace(): Unable to connect to DALI KeyValue store path '%s'", xpath.str());
@@ -282,9 +329,9 @@ bool CDALIKVStore::deleteNamespace(const char * storename, const char * thenames
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(user->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), user);
 
-    xpath.appendf("/%s", thenamespace); //we're interested in the children of the namespace
+    xpath.appendf("/%s", encodedNS.str()); //we're interested in the children of the namespace
     if(!storetree->hasProp(xpath.str()))
         throw MakeStringException(-1, "DALI KV Store deleteNamespace(): invalid namespace detected '%s/%s' for user '%s'", storename, thenamespace, global ? "GLOBAL USER" : user->getName());
 
@@ -300,12 +347,15 @@ bool CDALIKVStore::fetchAllNamespaces(StringArray & namespaces, const char * sto
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore fetchAllNamespaces(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
      if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore fetchAllNamespaces(): Attempting to fetch non-global keys but requester name not provided");
 
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchAllNamespaces: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
@@ -313,16 +363,21 @@ bool CDALIKVStore::fetchAllNamespaces(StringArray & namespaces, const char * sto
     Owned<IPropertyTree> storetree = conn->getRoot();
 
     if (global)
-        xpath.setf("%s/*", DALI_KVSTORE_GLOBAL); //we're interested in the children of the namespace
+        xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.setf("%s/*", user->getName()).toLowerCase(); //we're interested in the children of the namespace
+        getEncodedLowerCaseUserName(xpath.clear(), user);
+
+    xpath.append("/*"); //we're interested in the children of the namespace
 
     StringBuffer name;
     Owned<IPropertyTreeIterator> iter = storetree->getElements(xpath.str());
     ForEach(*iter)
     {
         iter->query().getName(name.clear());
-        namespaces.append(name.str());
+        StringBuffer decodedName;
+        decodePtreeName(decodedName, name.str());
+
+        namespaces.append(decodedName.str());
     }
 
     return true;
@@ -333,15 +388,21 @@ bool CDALIKVStore::fetchKeySet(StringArray & keyset, const char * storename, con
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore fetchKeySet(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
      if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore fetchKeySet(): Attempting to fetch non-global keys but requester name not provided");
 
     if (isEmptyString(ns))
         throw MakeStringException(-1, "DALI Keystore fetchKeySet: Namespace not provided!");
 
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, ns);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchKeySet: Unable to connect to DALI KeyValue store path '%s'", DALI_KVSTORE_PATH);
@@ -351,9 +412,10 @@ bool CDALIKVStore::fetchKeySet(StringArray & keyset, const char * storename, con
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(user->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), user);
 
-    xpath.appendf("/%s/*", ns); //we're interested in the children of the namespace
+    xpath.appendf("/%s/*", encodedNS.str()); //we're interested in the children of the namespace
+
     if(!storetree->hasProp(xpath.str()))
         throw MakeStringException(-1, "DALI Keystore fetchKeySet: invalid namespace '%s' detected!", ns);
 
@@ -362,7 +424,9 @@ bool CDALIKVStore::fetchKeySet(StringArray & keyset, const char * storename, con
     ForEach(*iter)
     {
         iter->query().getName(name.clear());
-        keyset.append(name.str());
+        StringBuffer decodedName;
+        decodePtreeName(decodedName, name.str());
+        keyset.append(decodedName.str());
     }
 
     return true;
@@ -373,15 +437,21 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore fetch(): Store name not provided");
 
-     if (!global && (!user || isEmptyString(user->getName())))
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
+    if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore fetch(): Attempting to fetch non-global entry but requester name not provided");
 
-     if (isEmptyString(ns))
-         throw MakeStringException(-1, "DALI Keystore fetch: key not provided!");
+    if (isEmptyString(ns))
+        throw MakeStringException(-1, "DALI Keystore fetch: key not provided!");
+
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, ns);
 
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetch: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
@@ -391,25 +461,23 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(user->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), user);
 
-    xpath.appendf("/%s", ns);
+    xpath.appendf("/%s", encodedNS.str());
     if(!storetree->hasProp(xpath.str()))
         throw MakeStringException(-1, "DALI Keystore fetch: invalid namespace '%s' detected!", ns);
 
     if (key && *key)
     {
-        xpath.appendf("/%s", key);
+        StringBuffer encodedKey;
+        encodePTreeName(encodedKey, key);
+        xpath.appendf("/%s", encodedKey.str());
         if(!storetree->hasProp(xpath.str()))
-        {
-            throw makeStringExceptionV(ECLWATCH_INVALID_QUERY_KEY, "DALI Keystore fetch: invalid key '%s' detected!", key);
-        }
+            return false;
         else
-        {
             value.set(storetree->queryProp(xpath.str()));
-        }
 
-        return value.str();
+        return true;
     }
     else
         throw makeStringException(-1, "DALI Keystore fetch: Key not provided!");
@@ -422,15 +490,21 @@ IPropertyTree * CDALIKVStore::getAllPairs(const char * storename, const char * n
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore fetchAll(): Store name not provided");
 
+    StringBuffer encodedStoreName;
+    encodePTreeName(encodedStoreName, storename);
+
     if (!global && (!user || isEmptyString(user->getName())))
         throw MakeStringException(-1, "DALI Keystore fetchAll(): Attempting to fetch non-global entries but requester name not provided");
 
     if (isEmptyString(ns))
         throw MakeStringException(-1, "DALI Keystore fetchAll: Namespace not provided!");
 
+    StringBuffer encodedNS;
+    encodePTreeName(encodedNS, ns);
+
     ensureAttachedToDali(); //throws if in offline mode
 
-    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
+    VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, encodedStoreName.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchAll: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
@@ -440,9 +514,9 @@ IPropertyTree * CDALIKVStore::getAllPairs(const char * storename, const char * n
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
-        xpath.set(user->getName()).toLowerCase();
+        getEncodedLowerCaseUserName(xpath.clear(), user);
 
-    xpath.appendf("/%s", ns);
+    xpath.appendf("/%s", encodedNS.str());
     if(!storetree->hasProp(xpath.str()))
         throw MakeStringException(-1, "DALI Keystore fetchAll: invalid namespace '%s' detected!", ns);
 

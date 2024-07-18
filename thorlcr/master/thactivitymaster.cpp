@@ -210,7 +210,7 @@ public:
                 ret = new CMasterActivity(this);
                 break;
             case TAKsplit:
-                ret = new CMasterActivity(this, nsplitterActivityStatistics);
+                ret = new CMasterActivity(this, spillingActivityStatistics);
                 break;
             case TAKsoap_rowdataset:
             case TAKsoap_rowaction:

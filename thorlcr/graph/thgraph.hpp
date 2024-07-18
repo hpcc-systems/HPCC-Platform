@@ -630,7 +630,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     CChildGraphTable childGraphsTable;
     CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
-
+    Owned<CFileSizeTracker> tempFileSizeTracker;
     void clean();
 
 protected:
@@ -805,7 +805,24 @@ public:
     virtual void end();
     virtual void abort(IException *e) override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
-
+    CFileSizeTracker * queryTempFileSizeTracker()
+    {
+        if (!tempFileSizeTracker)
+            tempFileSizeTracker.setown(new CFileSizeTracker);
+        return tempFileSizeTracker;
+    }
+    offset_t queryPeakTempSize()
+    {
+        if (tempFileSizeTracker)
+            return tempFileSizeTracker->queryPeakSize();
+        return 0;
+    }
+    offset_t queryActiveTempSize()
+    {
+        if (tempFileSizeTracker)
+            return tempFileSizeTracker->queryActiveSize();
+        return 0;
+    }
 // IExceptionHandler
     virtual bool fireException(IException *e);
 
@@ -1175,7 +1192,7 @@ public:
     CFileSizeTracker * queryTempFileSizeTracker()
     {
         if (!tempFileSizeTracker)
-            tempFileSizeTracker.setown(new CFileSizeTracker);
+            tempFileSizeTracker.setown(new CFileSizeTracker(queryGraph().queryParent()->queryTempFileSizeTracker()));
         return tempFileSizeTracker;
     }
     offset_t queryActiveTempSize() const

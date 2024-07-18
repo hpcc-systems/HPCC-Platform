@@ -85,27 +85,87 @@ The logAccess feature allows HPCC to query and package relevant logs for various
 
 ### Provide target Grafana/Loki access information 
 
-HPCC logAccess requires access to the Grafana username/password. Those values must be provided via a secure secret object.
+HPCC logAccess requires access to the Grafana username/password credentials. Those values must be provided via a secure secret object.
 
 The secret is expected to be in the 'esp' category, and be named 'grafana-logaccess'. The following key-value pairs are required (key names must be spelled exactly as shown here)
 
     username - This should contain the Grafana username
     password - This should contain the Grafana password
 
+#### Create secret using script
 The included 'create-grafana-logaccess-secret.sh' helper can be used to create the necessary secret.
 
-Example scripted secret creation command (assuming ./secrets-templates contains a file named exactly as the above keys):
+Example scripted secret creation command:
 
 ```
-  create-grafana-logaccess-secret.sh -d HPCC-Platform/helm/managed/logging/loki-stack/secrets-templates/ -n hpcc
+  create-grafana-logaccess-secret.sh -u admin -p somepass -n hpcc
 ```
 
+#### Create secret manually from file
 Otherwise, users can create the secret manually.
 
-Example manual secret creation command (assuming ./secrets-templates contains a file named exactly as the above keys):
+Example manual secret creation command (assuming ./secrets-templates contains files named exactly as the above keys):
 
 ```
-  kubectl create secret generic grafana-logaccess --from-file=HPCC-Platform/helm/managed//logging/loki-stack/secrets-templates/ -n hpcc
+  kubectl create secret generic grafana-logaccess --from-file=HPCC-Platform/helm/managed/logging/loki-stack/secrets-templates/ -n hpcc
+```
+
+#### Create secret manually from manifest
+Otherwise, users can create the secret through a manifest file.
+
+First, base64 encode the credentials:
+
+```
+echo -n 'admin' | base64
+echo -n 'whatevergrafanapassword' | base64
+```
+
+Add the encoded values to the provided manifest file 'grafana-logaccess-secret.yaml'
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-logaccess
+type: Opaque
+data:
+  #Base64 encoded username and password for Grafana
+  #can be encoded using the following command:
+  # echo -n 'admin' | base64
+  username: YWRtaW4=
+  # echo -n 'whatevergrafanapassword' | base64
+  password: d2hhdGV2ZXJncmFmYW5hcGFzc3dvcmQ=
+```
+
+Then apply the manifest values:
+
+```
+kubectl apply -f ./grafana-logaccess-secret.yaml --namespace hpcc --server-side
+```
+
+#### Verify secret
+
+At this point, confirm the secret has been created with the expected key values:
+
+```
+kubectl describe secret grafana-logaccess -n hpcc
+```
+
+The output should be something like this:
+
+```
+kubectl describe secret grafana-logaccess -n hpcc
+Name:         grafana-logaccess
+Namespace:    hpcc
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+password:  40 bytes
+username:  5 bytes
 ```
 
 ### Configure HPCC logAccess
