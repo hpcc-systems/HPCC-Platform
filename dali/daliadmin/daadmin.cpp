@@ -265,34 +265,24 @@ bool importFromFile(const char *path,const char *filename,bool add,StringBuffer 
 //=============================================================================
 
 
-bool erase(const char *path,bool backup,StringBuffer &out)
+bool erase(const char *path, bool backup, StringBuffer &out)
 {
-    StringBuffer head;
-    StringBuffer tmp;
-    const char *tail=splitpath(path,head,tmp);
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
-    if (!conn) {
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE, daliConnectTimeoutMs);
+    if (!conn)
+    {
         out.appendf("Could not connect to %s",path);
         return false;
     }
-    Owned<IPropertyTree> root = conn->getRoot();
-    Owned<IPropertyTree> child = root->getPropTree(tail);
-    if (!child) {
-        out.appendf("Couldn't find %s/%s",head.str(),tail);
-        return false;
-    }
-    if (backup) {
+    IPropertyTree *root = conn->queryRoot();
+    if (backup)
+    {
         StringBuffer bakname;
-        Owned<IFileIO> io = createUniqueFile(NULL,"daliadmin", "bak", bakname);
-        out.appendf("Saving backup of %s/%s to %s",head.str(),tail,bakname.str());
+        Owned<IFileIO> io = createUniqueFile(NULL, "daliadmin", "bak", bakname);
+        out.appendf("Saving backup of %s to %s", path, bakname.str());
         Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-        toXML(child, *fstream);         // formatted (default)
+        toXML(root, *fstream);         // formatted (default)
     }
-    root->removeTree(child);
-    child.clear();
-    root.clear();
-    conn->commit();
-    conn->close();
+    conn->close(true);
     return true;
 }
 

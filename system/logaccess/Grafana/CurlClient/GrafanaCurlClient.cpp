@@ -547,6 +547,9 @@ const char * sortByDirection(SortByDirection direction)
 */
 bool GrafanaLogAccessCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
+    if (m_dataSourcesAPIURI.isEmpty())
+        throw makeStringExceptionV(-1, "%s: Cannot query because Grafana datasource was not established, check logaccess configuration!", COMPONENT_NAME);
+
     try
     {
         resultDetails.totalReceived = 0;
@@ -651,7 +654,7 @@ bool GrafanaLogAccessCurlClient::fetchLog(LogQueryResultDetails & resultDetails,
         encodeURL(fullQuery, logLineParser.str());
 
         fullQuery.appendf("&start=%s000000000", std::to_string(trange.getStartt().getSimple()).c_str());
-        if (trange.getEndt().isNull() != -1) //aka 'to' has been initialized
+        if (!trange.getEndt().isNull()) //aka 'to' has been initialized
         {
             fullQuery.appendf("&end=%s000000000", std::to_string(trange.getEndt().getSimple()).c_str());
         }
@@ -729,12 +732,30 @@ GrafanaLogAccessCurlClient::GrafanaLogAccessCurlClient(IPropertyTree & logAccess
             m_grafanaPassword.set(logAccessPluginConfig.queryProp("connection/@password"));
     }
 
-    //this is very important, without this, we can't target the correct datasource
-    fetchDatasourceByName(m_targetDataSource.name.get());
+    try
+    {
+        //this is very important, without this, we can't target the correct datasource
+        fetchDatasourceByName(m_targetDataSource.name.get());
+    }
+    catch(IException * e)
+    {
+        StringBuffer description;
+        OERRLOG("%s: Exception fetching Loki/Grafana datasource!!: (%d) - %s", COMPONENT_NAME, e->errorCode(), e->errorMessage(description).str());
+        e->Release();
+    }
 
-    std::string availableLabels;
-    fetchLabels(availableLabels);
-    DBGLOG("%s: Available labels on target loki/grafana: %s", COMPONENT_NAME, availableLabels.c_str());
+    try
+    {
+        std::string availableLabels;
+        fetchLabels(availableLabels);
+        DBGLOG("%s: Available labels on target loki/grafana: %s", COMPONENT_NAME, availableLabels.c_str());
+    }
+    catch(IException * e)
+    {
+        StringBuffer description;
+        OERRLOG("%s: Exception fetching available labels: (%d) - %s", COMPONENT_NAME, e->errorCode(), e->errorMessage(description).str());
+        e->Release();
+    }
 
     m_expectedLogFormat = defaultExpectedLogFormat;
     if (logAccessPluginConfig.hasProp("logFormat/@type"))

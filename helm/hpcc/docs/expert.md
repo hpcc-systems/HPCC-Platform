@@ -13,6 +13,8 @@ global:
       time: 200
       interval: 75
       probes: 9
+    regex:
+      cacheSize: 500
 ```
 
 NB: Some components (e.g. DfuServer and Thor) also have an 'expert' settings area (see values schema) that can be used for relavent settings
@@ -72,6 +74,13 @@ Foreign file reads (~foreign::) are forbidden by default since the official sant
 service via remote file reads with the ~remote:: syntax.
 Setting expert.allowForeign to true, enables foreign access for compatibility with legacy bare-metal environments
 that have their Dali and Dafilesrv's open.
+
+## regex (cacheSize: unsigned)
+
+See the regex example above.  If set, this should be added at the global level.
+The default value is 500.  Set to zero to disable the cache.
+This value is applied at the process level:  Each Thor worker, Roxie process, and hthor worker receives
+its own cache.  Threads/channels within a process share that process's cache.
 
 
 # Plane Expert Settings

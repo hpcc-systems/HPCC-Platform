@@ -311,6 +311,7 @@ enum StatisticKind
     StNumMatchRightRowsMax,
     StNumMatchCandidates,
     StNumMatchCandidatesMax,
+    StNumParallelExecute,
     StMax,
 
     //For any quantity there is potentially the following variants.

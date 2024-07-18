@@ -1647,7 +1647,10 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
 {
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
+    {
+        flags &= ~rw_buffered; // if compressed, do not want buffered stream as well
         iFileIO.setown(createCompressedFileWriter(iFile, rowIf, flags, compressor, compressorBlkSz));
+    }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
     if (!iFileIO)

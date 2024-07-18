@@ -152,7 +152,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         }
     }
 public:
-    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, nsplitterActivityStatistics), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, spillingActivityStatistics), writer(*this)
     {
         numOutputs = container.getOutputs();
         connectedOutputSet.setown(createBitSet());
