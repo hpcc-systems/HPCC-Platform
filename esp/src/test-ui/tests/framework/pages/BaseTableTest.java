@@ -345,7 +345,12 @@ public abstract class BaseTableTest<T> {
 
         try {
 
-            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            //WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@role='columnheader' and @*[.='" + columnKey + "']]"));
+
+            // Scroll into view
+            //((JavascriptExecutor) Common.driver).executeScript("arguments[0].scrollIntoView(true);", columnHeader);
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
