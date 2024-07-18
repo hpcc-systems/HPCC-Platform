@@ -2,10 +2,13 @@ import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { WsWorkunits, WorkunitsService, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
+import { singletonHook } from "react-singleton-hook";
 import { userKeyValStore } from "src/KeyValStore";
+import { DockPanelLayout } from "../layouts/DockPanel";
 import { useWorkunit } from "./workunit";
 import { useQuery } from "./query";
 import { useCounter } from "./util";
+import { useUserStore } from "./store";
 
 const logger = scopedLogger("src-react/hooks/metrics.ts");
 
@@ -18,6 +21,15 @@ export function resetMetricsViews() {
 }
 
 export interface MetricsOptions {
+const MetricOptionsVersion = 3;
+const MetricOptionsKey = `MetricOptions-${MetricOptionsVersion}`;
+
+export function resetMetricsViews() {
+    const store = userKeyValStore();
+    return store?.delete(MetricOptionsKey);
+}
+
+export interface MetricsView {
     scopeTypes: string[];
     properties: string[];
     ignoreGlobalStoreOutEdges: boolean;
@@ -25,72 +37,179 @@ export interface MetricsOptions {
     activityTpl;
     edgeTpl;
     sql: string;
-    layout?: object;
+    layout?: DockPanelLayout;
     showTimeline: boolean;
 }
+export type StringMetricsViewMap = { [id: string]: MetricsView };
 
-const defaults: MetricsOptions = {
-    scopeTypes: ["graph", "subgraph", "activity", "operation", "workflow"],
-    properties: ["TimeElapsed"],
-    ignoreGlobalStoreOutEdges: true,
-    subgraphTpl: "%id% - %TimeElapsed%",
-    activityTpl: "%Label%",
-    edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
-    sql: "SELECT type, name, TimeElapsed, id\n    FROM metrics\n    WHERE TimeElapsed IS NOT NULL",
-    layout: undefined,
-    showTimeline: true
+interface UserMetricsView {
+    viewId: string;
+    views: StringMetricsViewMap;
+}
+
+const DefaultMetricsViews: StringMetricsViewMap = {
+    Default: {
+        scopeTypes: ["graph", "subgraph", "activity", "operation", "workflow"],
+        properties: ["CostExecute", "TimeElapsed"],
+        ignoreGlobalStoreOutEdges: true,
+        subgraphTpl: "%id% - %TimeElapsed%",
+        activityTpl: "%Label%",
+        edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
+        sql: `\
+SELECT type, name, CostExecute, TimeElapsed, id
+    FROM metrics`,
+        layout: undefined,
+        showTimeline: true
+    },
+    Graphs: {
+        scopeTypes: ["graph", "subgraph"],
+        properties: ["CostExecute", "TimeElapsed"],
+        ignoreGlobalStoreOutEdges: true,
+        subgraphTpl: "%id% - %TimeElapsed%",
+        activityTpl: "%Label%",
+        edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
+        sql: `\
+SELECT type, name, CostExecute, TimeElapsed, id
+    FROM metrics
+    WHERE type = 'graph' OR type = 'subgraph'`,
+        layout: undefined,
+        showTimeline: true
+    },
+    Activities: {
+        scopeTypes: ["activity"],
+        properties: ["TimeMaxLocalExecute", "TimeMaxTotalExecute"],
+        ignoreGlobalStoreOutEdges: true,
+        subgraphTpl: "%id% - %TimeElapsed%",
+        activityTpl: "%Label%",
+        edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
+        sql: `\
+SELECT type, name, TimeLocalExecute, TimeTotalExecute, id
+    FROM metrics
+    WHERE type = 'activity'`,
+        layout: undefined,
+        showTimeline: true
+    },
+    Peaks: {
+        scopeTypes: ["subgraph"],
+        properties: ["NodeMaxPeakMemory", "NodeMaxPeakRowMemory", "NodeMinPeakMemory", "NodeMinPeakRowMemory", "SizeAvgPeakMemory", "SizeAvgPeakRowMemory", "SizeDeltaPeakMemory", "SizeDeltaPeakRowMemory", "SizeMaxPeakMemory", "SizeMaxPeakRowMemory", "SizeMinPeakMemory", "SizeMinPeakRowMemory", "SizePeakMemory", "SizeStdDevPeakMemory", "SizeStdDevPeakRowMemory", "SkewMaxPeakMemory", "SkewMaxPeakRowMemory", "SkewMinPeakMemory", "SkewMinPeakRowMemory"],
+        ignoreGlobalStoreOutEdges: true,
+        subgraphTpl: "%id% - %TimeElapsed%",
+        activityTpl: "%Label%",
+        edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
+        sql: `\
+SELECT type, name, NodeMaxPeakMemory, NodeMaxPeakRowMemory, NodeMinPeakMemory, NodeMinPeakRowMemory, SizeAvgPeakMemory, SizeAvgPeakRowMemory, SizeDeltaPeakMemory, SizeDeltaPeakRowMemory, SizeMaxPeakMemory, SizeMaxPeakRowMemory, SizeMinPeakMemory, SizeMinPeakRowMemory, SizePeakMemory, SizeStdDevPeakMemory, SizeStdDevPeakRowMemory, SkewMaxPeakMemory, SkewMaxPeakRowMemory, SkewMinPeakMemory, SkewMinPeakRowMemory, id
+    FROM metrics
+    WHERE type = 'subgraph'`,
+        layout: undefined,
+        showTimeline: true
+    }
 };
 
-const options: MetricsOptions = { ...defaults };
+// const _defaultUserViews = JSON.stringify({ viewId: _viewId.value, views: _views.value });
 
-function checkLayout(options: MetricsOptions): boolean {
-    if (options?.layout && !options?.layout?.["main"]) {
-        delete options.layout;
-    }
-    return !!options?.layout;
+export function clone<T>(_: T): T {
+    return JSON.parse(JSON.stringify(_));
 }
 
-export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => void, () => void, (toDefaults?: boolean) => void] {
+// function checkLayout(options: MetricsView): boolean {
+//     if (options?.layout && !options?.layout?.["main"]) {
+//         delete options.layout;
+//     }
+//     return !!options?.layout;
+// }
 
-    const store = useConst(() => userKeyValStore());
+export interface useMetricsViewsResult {
+    viewIds: string[];
+    viewId: string;
+    setViewId: (id: string) => void;
+    view: MetricsView;
+    updateView: (view: Partial<MetricsView>, forceRefresh?: boolean) => void;
+    resetView: (forceRefresh?: boolean) => void;
+    save: () => void;
+}
+
+const defaultUserMetricViews = JSON.stringify({ viewId: "Default", views: DefaultMetricsViews });
+
+const defaultState: useMetricsViewsResult = {
+    viewIds: Object.keys(DefaultMetricsViews),
+    viewId: "Default",
+    setViewId: (id: string) => { throw new Error("You must useMetricsView before usage."); },
+    view: DefaultMetricsViews.Default,
+    updateView: (view: Partial<MetricsView>, forceRefresh?: boolean) => { throw new Error("You must useMetricsView before usage."); },
+    resetView: (forceRefresh?: boolean) => { throw new Error("You must useMetricsView before usage."); },
+    save: () => { throw new Error("You must useMetricsView before usage."); },
+};
+
+function useMetricsViewsImpl(): useMetricsViewsResult {
+
+    const [loaded, setLoaded] = React.useState(false);
+    const [origViews, setOrigViews] = React.useState<StringMetricsViewMap>(clone(DefaultMetricsViews));
+    const [views, setViews] = React.useState<StringMetricsViewMap>(clone(DefaultMetricsViews));
+    const [viewIds, setViewIds] = React.useState<string[]>(Object.keys(views));
+    const [viewId, setViewId] = React.useState<string>(viewIds[0]);
+    const [view, setView] = React.useState<MetricsView>(views[viewId]);
     const refresh = useForceUpdate();
 
-    const setOptions = React.useCallback((opts: MetricsOptions) => {
-        for (const key in opts) {
-            options[key] = opts[key];
+    const [metricViewStr, setMericViewStr, _resetMetricsViewStr] = useUserStore<string>(MetricOptionsKey, defaultUserMetricViews);
+    React.useEffect(() => {
+        if (metricViewStr && !loaded) {
+            try {
+                const userView: UserMetricsView = JSON.parse(metricViewStr);
+                setOrigViews(clone(userView.views));
+                setViews(userView.views);
+                setViewIds(Object.keys(userView.views));
+                setViewId(userView.viewId);
+                setLoaded(true);
+            } catch (e) {
+                logger.error(e);
+                const def = clone(DefaultMetricsViews);
+                const keys = Object.keys(def);
+                setViews(def);
+                setViewIds(keys);
+                setViewId(keys[0]);
+            }
         }
-        refresh();
-    }, [refresh]);
-
-    const save = React.useCallback(() => {
-        if (checkLayout(options)) {
-            store?.set(METRIC_OPTIONS_KEY, JSON.stringify(options), true);
-        }
-    }, [store]);
-
-    const reset = React.useCallback((toDefaults: boolean = false) => {
-        if (toDefaults) {
-            setOptions({ ...defaults });
-        } else {
-            store?.get(METRIC_OPTIONS_KEY).then(opts => {
-                const options = JSON.parse(opts);
-                checkLayout(options);
-                setOptions({ ...defaults, ...options });
-            });
-        }
-    }, [setOptions, store]);
+    }, [loaded, metricViewStr]);
 
     React.useEffect(() => {
-        reset();
-        const handle = store?.monitor(() => {
-            reset();
-        });
+        setView(views[viewId]);
+    }, [viewId, views]);
 
-        return () => handle?.release();
-    }, [reset, store]);
+    const updateView = React.useCallback((_: Partial<MetricsView>, forceRefresh = false) => {
+        for (const key in _) {
+            view[key] = _[key];
+        }
+        if (forceRefresh) {
+            refresh();
+        }
+    }, [refresh, view]);
 
-    return [options, setOptions, save, reset];
+    const resetView = React.useCallback((forceRefresh = false) => {
+        const def = DefaultMetricsViews[viewId] ?? DefaultMetricsViews["Default"];
+        for (const key in def) {
+            view[key] = def[key];
+        }
+        if (forceRefresh) {
+            refresh();
+        }
+    }, [refresh, view, viewId]);
+
+    const save = React.useCallback(() => {
+        return setMericViewStr(JSON.stringify({ viewId, views }));
+    }, [viewId, views, setMericViewStr]);
+
+    return {
+        viewIds,
+        viewId,
+        setViewId,
+        view,
+        updateView,
+        resetView,
+        save
+    };
 }
+
+export const useMetricsViews = singletonHook(defaultState, useMetricsViewsImpl);
 
 export function useMetricMeta(): [string[], string[]] {
 

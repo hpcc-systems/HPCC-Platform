@@ -27,6 +27,8 @@ export function resetCookieConsent() {
     return store.delete(USER_COOKIE_CONSENT);
 }
 
+const USER_COOKIE_CONSENT = "user_cookie_consent";
+
 interface FrameProps {
 }
 
@@ -123,5 +125,3 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
         </ThemeProvider >
     </FluentProvider >;
 };
-
-

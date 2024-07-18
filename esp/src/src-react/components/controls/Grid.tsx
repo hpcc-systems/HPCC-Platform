@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -168,9 +168,13 @@ export interface FluentStoreStateProps {
     page?: number
 }
 
+function isISelection(selection: any): selection is ISelection {
+    return typeof selection === "object" && "setAllSelected" in selection;
+}
+
 export interface FluentStoreStateResponse {
     selection: any[];
-    setSelection: (selection: any[]) => void;
+    setSelection: (selection: any[]) => void,
     pageNum: number;
     setPageNum: (pageNum: number) => void;
     pageSize: number;
@@ -200,7 +204,7 @@ interface FluentStoreGridProps {
     height: string,
     refresh: RefreshTable,
     selectionMode?: SelectionMode,
-    setSelection: (selection: any[]) => void,
+    setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
     onRenderRow?: IRenderFunction<IDetailsRowProps>
 }
@@ -224,11 +228,13 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const [items, setItems] = React.useState<any[]>([]);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
-    const selectionHandler = useConst(() => new Selection({
-        onSelectionChanged: () => {
-            setSelection(selectionHandler.getSelection());
-        }
-    }));
+    const selectionHandler = useConst(() => {
+        return isISelection(setSelection) ? setSelection : new Selection({
+            onSelectionChanged: () => {
+                setSelection(selectionHandler.getSelection());
+            }
+        });
+    });
 
     const refreshTable = useDeepCallback((clearSelection = false) => {
         if (isNaN(start) || isNaN(count)) return;
@@ -241,7 +247,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         });
         storeQuery.then(items => {
             setItems(items);
-            setSelection(selectionHandler.getSelection());
+            if (!isISelection(setSelection)) {
+                setSelection(selectionHandler.getSelection());
+            }
         });
     }, [count, selectionHandler, start, store], [query, sorted]);
 
@@ -298,7 +306,32 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         columnWidths.set(column.key, newWidth);
     }, [columnWidths]);
 
-    return <div data-is-scrollable="true" style={{ overflow: "auto", height: "100%" }}>
+    /*  Monitor Scroll Events (hack)
+
+        Essentially we are setting the scrollElement of the DetailsList to the div that contains the DetailsList (rather than a scrollable pane host).
+        See:  https://github.com/microsoft/fluentui/blob/55d3a31042e8972ea373841bef616c68e6ab69f9/packages/react/src/components/List/List.tsx#L355-L369
+
+        Note: Not sure if `_onScroll` call is needed, but excluding for now as it seems to work without it and is more performant.
+    */
+    // const id = useId("fluent-store-grid-");
+    // const detailListScrollComponent = React.useRef<HTMLDivElement | null>(null);
+    // const detailListComponent = React.useRef<IDetailsListEx | null>(null);
+    // const [detailListElement, setDetailListElement] = React.useState<HTMLDivElement | null>(null);
+    // useMount(() => {
+    //     const detailListElement = document.querySelector<HTMLDivElement>(`#${id} .ms-DetailsList`);
+    //     setDetailListElement(detailListElement);
+    //     if (detailListComponent.current?._list?.current) {
+    //         detailListComponent.current._list.current._scrollElement = detailListElement;
+    //     }
+    // });
+    // useOnEvent(detailListScrollComponent, "scroll", () => {
+    //     detailListComponent.current?._list?.current?._onScroll();
+    // });
+    // useOnEvent(detailListScrollComponent, "scroll", () => {
+    //     detailListComponent.current?._list?.current?._onAsyncScrollDebounced();
+    // });
+
+    return <div data-is-scrollable={"true"} style={{ overflow: "auto" }}>
         <DetailsList
             compact={true}
             items={items}
@@ -326,7 +359,8 @@ interface FluentGridProps {
     columns: FluentColumns,
     height?: string,
     selectionMode?: SelectionMode,
-    setSelection: (selection: any[]) => void,
+    defaultSelection?: any[],
+    setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
     refresh: RefreshTable,
     onRenderRow?: IRenderFunction<IDetailsRowProps>
@@ -340,6 +374,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
     columns,
     height,
     selectionMode = SelectionMode.multiple,
+    defaultSelection,
     setSelection,
     setTotal,
     refresh,
@@ -368,7 +403,7 @@ interface FluentPagedGridProps {
     columns: FluentColumns,
     height?: string,
     selectionMode?: SelectionMode,
-    setSelection: (selection: any[]) => void,
+    setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
     refresh: RefreshTable,
     onRenderRow?: IRenderFunction<IDetailsRowProps>
