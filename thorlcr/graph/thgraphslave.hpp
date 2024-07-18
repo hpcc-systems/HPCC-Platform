@@ -471,6 +471,7 @@ public:
 
 class graphslave_decl CThorStrandedActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
 protected:
     CThorStrandOptions strandOptions;
     IArrayOf<CThorStrandProcessor> strands;
@@ -496,7 +497,12 @@ public:
     virtual CThorStrandProcessor *createStrandSourceProcessor(bool inputOrdered) = 0;
 
     inline unsigned numStrands() const { return strands.ordinality(); }
-
+// CSlaveActivity
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const override
+    {
+        PARENT::gatherActiveStats(activeStats);
+        activeStats.addStatistic(StNumParallelExecute, numStrands());
+    }
 // IThorDataLink
     virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override;
