@@ -187,7 +187,7 @@ public abstract class BaseTableTest<T> {
                     String href = Common.driver.getCurrentUrl();
 
                     String dropdownValueBefore = getSelectedDropdownValue();
-
+                    ((JavascriptExecutor) Common.driver).executeScript("arguments[0].scrollIntoView(true);", element);
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
