@@ -5,7 +5,7 @@ created for writing test cases for specific web pages of the ECL Watch UI and th
 sequentially.
 
 The names of the Java classes that the TestRunner class needs to load should be listed in the config/TestClasses.java
-file.
+file. ActivitiesTest class should always be the first class to load in TestClasses.java, as it gets URLs for all other web pages.
 
 Each Java class created to write tests for specific web pages should have at least one method annotated with @Test. The
 code for each class starts to run from this method.
@@ -34,6 +34,17 @@ So an example of complete CLI arguments would look like this:
 
 -l debug -p C:/Users/nisha/Documents/Internship/Work/files/
 
+#### Implementation Steps for URL Management
+
+- A HashMap (urlMap) is created to store URL mappings in config/URLConfig.java file. This map will use the page name as the key and a URLMapping object as the value. The URLMapping object contains the page name, its URL, and another HashMap for nested pages and tabs.
+- A static block is used to initialize the urlMap with the initial URL mapping for the Activities navigation. The URL is retrieved using a method from the Common utility class, which handles the dynamic retrieval of the IP address based on the environment whether it is local or GitHub Actions.
+- For each main navigation section, a URLMapping object is created. This object includes the page name and its corresponding URL. Additionally, it contains another HashMap to store URLs for nested tabs and pages.
+- Each URLMapping object is stored in the urlMap with the main navigation name as the key. This initial setup in the Activities.java class ensures that each navigation section has its base URL stored and accessible.
+- For instance, for any navigation page, each page has multiple tabs, and within those tabs, there are multiple pages and tabs. This structure facilitates easy access to the URL of a particular page.
+- Starting from the Activities page, for each main navigation section, the code iterates over its associated tabs. For each tab, a new URLMapping object is created and added to the HashMap within the corresponding URLMapping object of the main navigation section. This creates a tree-like structure, allowing easy access to URLs for both navigation sections and their nested tabs.
+- By following these implementation steps, the URLConfig class ensures that all URLs within the application are well-organized and easily accessible through a hierarchical structure. This setup simplifies navigation and URL management within the application, making it easier to handle complex page structures and dynamic URL retrievals.
+
+
 Below are the dependencies used in the project:
 
 - https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
@@ -48,4 +59,5 @@ Below are the dependencies used in the project:
 Notes: 
 1. Users need to run these tests with regression test suite only.
 2. Code should be updated accordingly if selenium server jar updates.
-3. For future testing developers, custom class names or attributes defined by UI developers can change frequently during updates or redesigns. However, standard attributes that are part of the HTML specifications (such as id, type, value, href, aria-sort, aria-disabled, etc.) are much more stable. Therefore, it is advisable to use only standard HTML attributes to access web elements. This approach ensures that test cases remain consistent and are less likely to break due to UI changes.
+3. ActivitiesTest class should always be the first class to load in TestClasses.java, as it gets URLs for all other pages.
+4. For future testing developers, custom class names or attributes defined by UI developers can change frequently during updates or redesigns. However, standard attributes that are part of the HTML specifications (such as id, type, value, href, aria-sort, aria-disabled, etc.) are much more stable. Therefore, it is advisable to use only standard HTML attributes to access web elements. This approach ensures that test cases remain consistent and are less likely to break due to UI changes.

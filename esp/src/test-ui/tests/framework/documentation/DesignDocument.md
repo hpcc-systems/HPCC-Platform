@@ -551,7 +551,9 @@ This method tests the functionality and navigation of links present in a table o
 
 1. **Logging**: Logs the start of the link tests with `Common.logDebug`.
 
-2. **Iterate Through Columns with Links**: For each column key with links retrieved from `getColumnKeysWithLinks()`:
+2. **Page refresh**: refreshing page as page has scrolled to right for testing the sorting functionality of column headers, so bringing it back to normal view by refreshing it
+
+3. **Iterate Through Columns with Links**: For each column key with links retrieved from `getColumnKeysWithLinks()`:
     - It retrieves the data values from the UI using `getDataFromUIUsingColumnKey(columnKey)`.
     - For each value, it tries to find and click the corresponding link element.
     - After clicking, it checks if the page source contains the name to confirm successful navigation.
@@ -627,11 +629,13 @@ This method retrieves the current sorting order of a column.
 
 1. **Find Column Header**: Locates the column header element for the specified column key.
 
-2. **Retrieve Sort Order**: Retrieves the current sorting order from the column header's attribute `aria-sort`.
+2. **Scrolls To Find Header**: Uses JavascriptExecutor to scroll and bring the column header into view.
 
-3. **Click to Change Sort Order**: Clicks the column header to change the sort order and waits for the sorting order to change using `waitToLoadChangedSortOrder`.
+3. **Retrieve Sort Order**: Retrieves the current sorting order from the column header's attribute `aria-sort`.
 
-4. **Return New Sort Order**: Returns the new sorting order.
+4. **Click to Change Sort Order**: Clicks the column header to change the sort order and waits for the sorting order to change using `waitToLoadChangedSortOrder`.
+
+5. **Return New Sort Order**: Returns the new sorting order.
 
 ####  Method: `waitToLoadChangedSortOrder(String oldSortOrder, String columnKey)`
 
@@ -667,7 +671,7 @@ This method retrieves data from the UI based on a specified column key.
 This method waits until all UI elements corresponding to a column key are loaded.
 
 1. **Initialize Wait Time**: Starts with an initial wait time.
-2. **Find Elements**: Uses a loop to repeatedly find web elements matching the column key's XPath.
+2. **Find Elements**: Uses a loop to repeatedly find web elements in a grid cell matching the column key's XPath.
 3. **Check Element Count**: Checks if the number of elements (excluding the header) matches the number of JSON objects.
 4. **Wait and Retry**: If the elements are not fully loaded, it sleeps for the current wait time, increments the wait time, and retries.
 5. **Return Elements**: Once the elements are fully loaded, returns the list of web elements.
@@ -986,10 +990,12 @@ This method returns the JSON map containing the work unit data.
 2. **Retrieve Column Data**:
     - Retrieves data for work unit IDs and protected statuses from the UI.
 3. **Comparison and Logging**:
-    - Iterates through the protected status data.
-    - Compares the retrieved work unit ID with `wuName`.
-    - Logs success if the protected status matches the expected value.
-    - Logs an error if the protected status does not match the expected value.
+    - Iterates through the protected status data and work unit IDs data.
+    - Compares the work unit ID with the given `wuName`.
+    - If it matches
+      - Logs success if the protected status matches the expected value.
+      - Logs an error if the protected status does not match the expected value.
+    - Breaks the for loop as the protected testing is done for that workunit.
 
 #####  Method: `parseJson`
 

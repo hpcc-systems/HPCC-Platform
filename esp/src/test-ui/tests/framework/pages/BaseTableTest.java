@@ -174,7 +174,7 @@ public abstract class BaseTableTest<T> {
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
 
-        Common.driver.navigate().refresh();
+        Common.driver.navigate().refresh(); // refreshing page as page has scrolled to right for testing the sorting functionality of column headers, so bringing it back to normal view by refreshing it
 
         for (String columnKey : getColumnKeysWithLinks()) {
 
@@ -346,11 +346,9 @@ public abstract class BaseTableTest<T> {
 
         try {
 
-            //WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
-
             WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@role='columnheader' and @*[.='" + columnKey + "']]"));
 
-            // Scroll into view
+            // Scroll to bring the column header into view
             ((JavascriptExecutor) Common.driver).executeScript("arguments[0].scrollIntoView(true);", columnHeader);
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
@@ -374,7 +372,7 @@ public abstract class BaseTableTest<T> {
         do {
             Common.sleepWithTime(waitTimeInSecs);
 
-            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@role='columnheader' and @*[.='" + columnKey + "']]"));
 
             newSortOrder = columnHeaderNew.getAttribute("aria-sort");
 
@@ -404,8 +402,8 @@ public abstract class BaseTableTest<T> {
         try {
 
             List<WebElement> elements = waitToLoadListOfAllUIObjects(columnKey);
-            for (int i = 1; i < elements.size(); i++) { // first element fetched is of column header, so we fetch values from 2nd element.
-                columnData.add(elements.get(i).getText().trim());
+            for (WebElement element : elements) {
+                columnData.add(element.getText().trim());
             }
 
         } catch (Exception ex) {
@@ -421,9 +419,10 @@ public abstract class BaseTableTest<T> {
         List<WebElement> elements;
 
         do {
-            elements = Common.driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            if (elements.size() - 1 >= jsonObjects.size()) { // first element fetched is of column header, so we do -1 from total elements
+            elements = Common.driver.findElements(By.xpath("//*[@role='gridcell' and @*[.='" + columnKey + "']]"));
+
+            if (elements.size() >= jsonObjects.size()) {
                 break;
             }
 

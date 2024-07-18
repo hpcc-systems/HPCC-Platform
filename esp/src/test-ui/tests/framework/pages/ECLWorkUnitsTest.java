@@ -301,9 +301,9 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         List<Object> columnDataWUID = getDataFromUIUsingColumnKey(getUniqueKey());
         List<Object> columnDataProtected = getDataFromUIUsingColumnKey("Protected");
 
-        for (int i = 1; i < columnDataProtected.size(); i++) { // two web elements are getting fetched for Protected column header
+        for (int i = 0; i < columnDataProtected.size(); i++) {
 
-            if (wuName.equals(columnDataWUID.get(i - 1))) {
+            if (wuName.equals(columnDataWUID.get(i))) {
 
                 String lockStatus = !columnDataProtected.get(i).toString().isEmpty() ? "Locked" : "Unlocked";
 
@@ -314,6 +314,8 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
                 } else {
                     Common.logError("Failure: " + getPageName() + " Details Page: Testing Protected checkbox for value: " + newCheckboxValue + ": Showing: " + lockStatus + " on ECL Workunits page");
                 }
+
+                break;
             }
         }
     }
