@@ -174,6 +174,8 @@ public abstract class BaseTableTest<T> {
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
 
+        Common.driver.navigate().refresh();
+
         for (String columnKey : getColumnKeysWithLinks()) {
 
             List<Object> values = getDataFromUIUsingColumnKey(columnKey);
@@ -187,7 +189,6 @@ public abstract class BaseTableTest<T> {
                     String href = Common.driver.getCurrentUrl();
 
                     String dropdownValueBefore = getSelectedDropdownValue();
-                    ((JavascriptExecutor) Common.driver).executeScript("arguments[0].scrollIntoView(true);", element);
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
