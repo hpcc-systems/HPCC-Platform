@@ -2900,20 +2900,26 @@ public:
 protected:
     virtual void doflush()
     {
-        if (!reading && numInBuffer)
+        if (!reading)
         {
-            try {
-                io->write(curOffset, numInBuffer, buffer);
-            }
-            catch (IException *) {
-                // if we get exception, clear buffer so doen't reoccur on destructor as well
+            if (numInBuffer)
+            {
+                try
+                {
+                    io->write(curOffset, numInBuffer, buffer);
+                }
+                catch (IException *)
+                {
+                    // if we get exception, clear buffer so doen't reoccur on destructor as well
+                    numInBuffer = 0;
+                    curBufferOffset = 0;
+                    throw;
+                }
+                curOffset += curBufferOffset;
                 numInBuffer = 0;
                 curBufferOffset = 0;
-                throw;
             }
-            curOffset += curBufferOffset;
-            numInBuffer = 0;
-            curBufferOffset = 0;
+            io->flush();
         }
     }
     virtual bool fillBuffer()

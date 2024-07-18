@@ -933,13 +933,17 @@ public:
     }
     virtual void doflush()
     {
-        if (!reading && numInBuffer)
+        if (!reading)
         {
-            //Copy numInBuffer out before flush so that destructor doesn't attempt to flush again.
-            size32_t numToWrite = numInBuffer;
-            numInBuffer = 0;
-            io->write(numToWrite, buffer);
-            curBufferOffset = 0;
+            if (numInBuffer)
+            {
+                //Copy numInBuffer out before flush so that destructor doesn't attempt to flush again.
+                size32_t numToWrite = numInBuffer;
+                numInBuffer = 0;
+                io->write(numToWrite, buffer);
+                curBufferOffset = 0;
+            }
+            io->flush();
         }
     }
 
