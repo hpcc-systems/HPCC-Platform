@@ -154,7 +154,7 @@ jobs:
           LATEST_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
           wget -O chromedriver-linux64.zip https://chromedriver.storage.googleapis.com/${LATEST_VERSION}/chromedriver_linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
-          sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
+          sudo mv chromedriver/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
           wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
