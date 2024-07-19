@@ -76,7 +76,7 @@ public abstract class BaseTableTest<T> {
         }
 
         try {
-            Common.logDebug("Tests started for: " + getPageName() + " page.");
+            Common.logDebug("\nTests started for: " + getPageName() + " page.");
 
             testForAllText();
 
@@ -91,7 +91,7 @@ public abstract class BaseTableTest<T> {
 
             testLinksInTable();
 
-            Common.logDebug("Tests finished for: " + getPageName() + " page.");
+            Common.logDebug("\nTests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
             Common.logException("Error: " + getPageName() + ": Exception: " + ex.getMessage(), ex);
@@ -110,15 +110,15 @@ public abstract class BaseTableTest<T> {
         testDetailSpecificFunctionality(name, i);
 
         if (!Config.TEST_DETAIL_PAGE_TAB_CLICK_ALL && i == 0) { // TEST_DETAIL_PAGE_TAB_CLICK_ALL = true means the test will run for all items and false means it will only run for the first item
-            testTabClickOnDetailsPage();
+            testTabClickOnDetailsPage(name);
         } else if (Config.TEST_DETAIL_PAGE_TAB_CLICK_ALL) {
-            testTabClickOnDetailsPage();
+            testTabClickOnDetailsPage(name);
         }
     }
 
-    private void testTabClickOnDetailsPage() {
+    private void testTabClickOnDetailsPage(String name) {
 
-        Common.logDebug("Test started for: Tab Click on " + getPageName() + " Details Page.");
+        Common.logDebug("\nTest started for: Tab Click on " + getPageName() + " Details Page. For: " + name);
 
         waitToLoadDetailsPage();
 
@@ -192,9 +192,9 @@ public abstract class BaseTableTest<T> {
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
-                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
+                        String msg = "\nSuccess: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
-                        // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
+                        // after the link test has passed, the code tests the details page(including, the text, content, checkbox, description and tabs)
                         testDetailsPage(name, i);
 
                     } else {
@@ -250,7 +250,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testDetailsContentPage(String name) {
-        Common.logDebug("Tests started for : " + getPageName() + " Details page content: " + getUniqueKeyName() + " : " + name);
+        Common.logDebug("\nTests started for : " + getPageName() + " Details page: Testing Content: " + getUniqueKeyName() + " : " + name);
         try {
             waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
         } catch (Exception ex) {
@@ -289,12 +289,12 @@ public abstract class BaseTableTest<T> {
         }
 
         if (pass) {
-            Common.logDetail("Success: " + getPageName() + " Details page: All values test passed for: " + getUniqueKeyName() + " : " + name);
+            Common.logDetail("Success: " + getPageName() + " Details page: All content test passed for: " + getUniqueKeyName() + " : " + name);
         }
     }
 
     private void testForAllTextInDetailsPage(String name) {
-        Common.logDebug("Tests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + " Testing Text");
+        Common.logDebug("\nTests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + ": Testing Text");
         for (String text : getDetailNames()) {
             Common.checkTextPresent(text, getPageName() + " Details page: " + getUniqueKeyName() + ": " + name);
         }
@@ -302,11 +302,11 @@ public abstract class BaseTableTest<T> {
 
     private void testContentAndSortingOrder() {
 
-        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
+        Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Content");
 
         if (testTableContent()) {
 
-            Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
+            Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Sorting Order\n");
 
             for (int i = 0; i < getColumnKeys().length; i++) {
                 try {
@@ -340,6 +340,8 @@ public abstract class BaseTableTest<T> {
                 Common.logError("Failure: " + getPageName() + " Unable to get sort order for column: " + columnKey);
             }
         }
+
+        Common.logDebug("");
     }
 
     private String getCurrentSortingOrder(String columnKey) {
@@ -452,11 +454,11 @@ public abstract class BaseTableTest<T> {
     }
 
     private boolean testTableContent() {
-        Common.logDebug("Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
+        Common.logDebug("\nPage: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
 
         List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
 
-        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size()+"\n");
 
         if (jsonObjects.size() != columnDataIDFromUI.size()) {
             String errMsg = "Failure: " + getPageName() + ": Number of items on UI are not equal to the number of items in JSON" +
@@ -557,7 +559,7 @@ public abstract class BaseTableTest<T> {
 
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("pageSize-list")));
 
-            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
+            Common.logDebug("\nPage: " + getPageName() + ": Dropdown selected: " + selectedValue);
 
             Common.driver.navigate().refresh();
             Common.sleep();
@@ -582,7 +584,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testForAllText() {
-        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Text");
+        Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Text");
         for (String text : getColumnNames()) {
             Common.checkTextPresent(text, getPageName());
         }

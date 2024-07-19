@@ -32,13 +32,13 @@ public class ActivitiesTest {
 
         testForNavigationLinks(navWebElements);
 
-        Common.logDebug("Tests finished for: Activities page.");
-        Common.logDebug("URL Map Generated: " + urlMap);
+        Common.logDebug("\nTests finished for: Activities page.");
+        Common.logDebug("\nURL Map Generated: " + urlMap);
     }
 
     private void testForNavigationLinks(List<NavigationWebElement> navWebElements) {
 
-        Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
+        Common.logDebug("\nTests started for: Activities page: Testing Navigation Links");
 
         for (NavigationWebElement element : navWebElements) {
 
@@ -115,7 +115,7 @@ public class ActivitiesTest {
     }
 
     private void testForAllText() {
-        Common.logDebug("Tests started for: Activities page: Testing Text");
+        Common.logDebug("\nTests started for: Activities page: Testing Text");
         for (String text : textArray) {
             Common.checkTextPresent(text, "Activities Page");
         }

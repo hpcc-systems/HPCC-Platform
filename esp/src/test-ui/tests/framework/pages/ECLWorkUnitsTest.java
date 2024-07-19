@@ -158,7 +158,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     private void testDescriptionUpdateFunctionality(String wuName) {
 
-        Common.logDebug("Test started for: Description checkbox " + getPageName() + " Details Page.");
+        Common.logDebug("\nTest started for: Description checkbox " + getPageName() + " Details Page. For: " + wuName);
 
         try {
             String newDescription = Config.TEST_DESCRIPTION_TEXT;
@@ -216,7 +216,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     private void testProtectedButtonFunctionality(String wuName) {
 
-        Common.logDebug("Test started for: Protected checkbox " + getPageName() + " Details Page.");
+        Common.logDebug("\nTest started for: Protected checkbox " + getPageName() + " Details Page. For: " + wuName);
 
         try {
 
