@@ -5,11 +5,11 @@
 flowchart LR
 
   BUILD_ASSETS["Build Assets[build-assets.yml]"] ---> preamble(preamble)
-  preamble(preamble) --needs--> build-docker(build-docker)
-  preamble(preamble) --needs--> build-bare-metal(build-bare-metal)
-  preamble(preamble) --needs--> build-bare-metal-eclide(build-bare-metal-eclide)
-  build-docker(build-docker) --needs--> build-bare-metal-eclide(build-bare-metal-eclide)
-  build-bare-metal(build-bare-metal) --needs--> build-bare-metal-eclide(build-bare-metal-eclide)
+  preamble(preamble) ---> build-docker(build-docker)
+  preamble(preamble) ---> build-bare-metal(build-bare-metal)
+  preamble(preamble) ---> build-bare-metal-eclide(build-bare-metal-eclide)
+  build-docker(build-docker) ---> build-bare-metal-eclide(build-bare-metal-eclide)
+  build-bare-metal(build-bare-metal) ---> build-bare-metal-eclide(build-bare-metal-eclide)
 
 ```
 
@@ -34,7 +34,7 @@ flowchart LR
 flowchart LR
 
   BUILD_TEST_ECL_WATCH["Build Test ECL Watch[build-test-eclwatch.yml]"] ---> pre_job(pre_job)
-  pre_job(pre_job) --needs--> build(build)
+  pre_job(pre_job) ---> build(build)
 
 ```
 
@@ -43,7 +43,7 @@ flowchart LR
 flowchart LR
 
   BUILD_AND_PUBLISH["Build and publish[build-and-publish.yml]"] ---> build(build)
-  build(build) --needs--> ml-builds(ml-builds)
+  build(build) ---> ml-builds(ml-builds)
 
 ```
 
@@ -84,7 +84,7 @@ flowchart LR
 flowchart LR
 
   CODEQL_ECL_WATCH["CodeQL ECL Watch[codeql-eclwatch.yml]"] ---> pre_job(pre_job)
-  pre_job(pre_job) --needs--> analyze(analyze)
+  pre_job(pre_job) ---> analyze(analyze)
 
 ```
 
@@ -118,9 +118,9 @@ flowchart LR
 
   REGRESSION_SUITE_ON_K8S["Regression Suite on K8s[test-regression-suite-k8s.yml]"] ---> build-docker(build-docker)
   build-docker("build-docker
-inputs:[os: ${{ inputs.os }},upload-package: true,containerized: true,asset-name: ${{ inputs.asset-n...]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
-  build-docker(build-docker) --needs--> main(main)
-  main(main) --needs--> succeeded(succeeded)
+inputs:[os: ${{ inputs.os }},upload-package: true,containerized: true,asset-name: ${{ inputs.asset-n...]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+  build-docker(build-docker) ---> main(main)
+  main(main) ---> succeeded(succeeded)
 
 ```
 
@@ -129,7 +129,7 @@ inputs:[os: ${{ inputs.os }},upload-package: true,containerized: true,asset-name
 flowchart LR
 
   RUN_HELM_CHART_TESTS["Run helm chart tests[test-helm.yml]"] ---> pre_job(pre_job)
-  pre_job(pre_job) --needs--> build(build)
+  pre_job(pre_job) ---> build(build)
 
 ```
 
@@ -138,7 +138,7 @@ flowchart LR
 flowchart LR
 
   SMOKETEST_PACKAGE__GH-RUNNER_["Smoketest Package (gh-runner)[test-smoke-gh_runner.yml]"] ---> main(main)
-  main(main) --needs--> succeeded(succeeded)
+  main(main) ---> succeeded(succeeded)
 
 ```
 
@@ -148,55 +148,55 @@ flowchart LR
 
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-workflow-dispatch(build-workflow-dispatch)
   build-workflow-dispatch("build-workflow-dispatch
-inputs:[os: ${{ inputs.os }},ln: ${{ inputs.ln }},upload-package: true,asset-name: docker-package]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
-  build-workflow-dispatch(build-workflow-dispatch) --needs--> test-workflow-dispatch(test-workflow-dispatch)
+inputs:[os: ${{ inputs.os }},ln: ${{ inputs.ln }},upload-package: true,asset-name: docker-package]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+  build-workflow-dispatch(build-workflow-dispatch) ---> test-workflow-dispatch(test-workflow-dispatch)
   test-workflow-dispatch("test-workflow-dispatch
-inputs:[os: ${{ inputs.os }},asset-name: docker-package]") --uses--> test-smoke-gh_runner.yml("Smoketest Package (gh-runner)[test-smoke-gh_runner.yml]")
+inputs:[os: ${{ inputs.os }},asset-name: docker-package]") ---> test-smoke-gh_runner.yml("Smoketest Package (gh-runner)[test-smoke-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-docker-ubuntu-24_04(build-docker-ubuntu-24_04)
   build-docker-ubuntu-24_04("build-docker-ubuntu-24_04
-inputs:[os: ubuntu-24.04]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+inputs:[os: ubuntu-24.04]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-docker-ubuntu-22_04(build-docker-ubuntu-22_04)
   build-docker-ubuntu-22_04("build-docker-ubuntu-22_04
-inputs:[os: ubuntu-22.04,upload-package: true,asset-name: docker-ubuntu-22_...]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
-  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) --needs--> test-smoke-docker-ubuntu-22_04(test-smoke-docker-ubuntu-22_04)
+inputs:[os: ubuntu-22.04,upload-package: true,asset-name: docker-ubuntu-22_...]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) ---> test-smoke-docker-ubuntu-22_04(test-smoke-docker-ubuntu-22_04)
   test-smoke-docker-ubuntu-22_04("test-smoke-docker-ubuntu-22_04
-inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") --uses--> test-smoke-gh_runner.yml("Smoketest Package (gh-runner)[test-smoke-gh_runner.yml]")
+inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") ---> test-smoke-gh_runner.yml("Smoketest Package (gh-runner)[test-smoke-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> test-regression-suite-k8s-ubuntu-22_04(test-regression-suite-k8s-ubuntu-22_04)
   test-regression-suite-k8s-ubuntu-22_04("test-regression-suite-k8s-ubuntu-22_04
-inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") --uses--> test-regression-suite-k8s.yml("Regression Suite on K8s[test-regression-suite-k8s.yml]")
-  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) --needs--> test-unit-docker-ubuntu-22_04(test-unit-docker-ubuntu-22_04)
+inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") ---> test-regression-suite-k8s.yml("Regression Suite on K8s[test-regression-suite-k8s.yml]")
+  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) ---> test-unit-docker-ubuntu-22_04(test-unit-docker-ubuntu-22_04)
   test-unit-docker-ubuntu-22_04("test-unit-docker-ubuntu-22_04
-inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") --uses--> test-unit-gh_runner.yml("Unittest Package (gh-runner)[test-unit-gh_runner.yml]")
-  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) --needs--> test-ui-docker-ubuntu-22_04(test-ui-docker-ubuntu-22_04)
+inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") ---> test-unit-gh_runner.yml("Unittest Package (gh-runner)[test-unit-gh_runner.yml]")
+  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) ---> test-ui-docker-ubuntu-22_04(test-ui-docker-ubuntu-22_04)
   test-ui-docker-ubuntu-22_04("test-ui-docker-ubuntu-22_04
-inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") --uses--> test-ui-gh_runner.yml("UI test Package (gh-runner)[test-ui-gh_runner.yml]")
-  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) --needs--> test-bundles-on-thor-ubuntu-22_04(test-bundles-on-thor-ubuntu-22_04)
+inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...]") ---> test-ui-gh_runner.yml("UI test Package (gh-runner)[test-ui-gh_runner.yml]")
+  build-docker-ubuntu-22_04(build-docker-ubuntu-22_04) ---> test-bundles-on-thor-ubuntu-22_04(test-bundles-on-thor-ubuntu-22_04)
   test-bundles-on-thor-ubuntu-22_04("test-bundles-on-thor-ubuntu-22_04
-inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...,generate-zap: ]") --uses--> bundleTest-thor.yml("BundleTest on Thor[bundleTest-thor.yml]")
+inputs:[os: ubuntu-22.04,asset-name: docker-ubuntu-22_...,generate-zap: ]") ---> bundleTest-thor.yml("BundleTest on Thor[bundleTest-thor.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-docker-ubuntu-20_04(build-docker-ubuntu-20_04)
   build-docker-ubuntu-20_04("build-docker-ubuntu-20_04
-inputs:[os: ubuntu-20.04]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+inputs:[os: ubuntu-20.04]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-docker-rockylinux-8(build-docker-rockylinux-8)
   build-docker-rockylinux-8("build-docker-rockylinux-8
-inputs:[os: rockylinux-8]") --uses--> build-docker.yml("Build Package (Docker)[build-docker.yml]")
+inputs:[os: rockylinux-8]") ---> build-docker.yml("Build Package (Docker)[build-docker.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-ubuntu-22_04(build-gh_runner-ubuntu-22_04)
   build-gh_runner-ubuntu-22_04("build-gh_runner-ubuntu-22_04
-inputs:[os: ubuntu-22.04]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: ubuntu-22.04]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-ubuntu-20_04(build-gh_runner-ubuntu-20_04)
   build-gh_runner-ubuntu-20_04("build-gh_runner-ubuntu-20_04
-inputs:[os: ubuntu-20.04]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: ubuntu-20.04]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-windows-2022(build-gh_runner-windows-2022)
   build-gh_runner-windows-2022("build-gh_runner-windows-2022
-inputs:[os: windows-2022,cmake-configuration-ex: -T ho...]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: windows-2022,cmake-configuration-ex: -T ho...]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-windows-2019(build-gh_runner-windows-2019)
   build-gh_runner-windows-2019("build-gh_runner-windows-2019
-inputs:[os: windows-2019,cmake-configuration-ex: -T ho...]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: windows-2019,cmake-configuration-ex: -T ho...]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-macos-13(build-gh_runner-macos-13)
   build-gh_runner-macos-13("build-gh_runner-macos-13
-inputs:[os: macos-13,build-type: Release,cmake-configuration-ex: -DUSE...]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: macos-13,build-type: Release,cmake-configuration-ex: -DUSE...]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
   TEST_BUILD["Test Build[build-vcpkg.yml]"] ---> build-gh_runner-macos-12(build-gh_runner-macos-12)
   build-gh_runner-macos-12("build-gh_runner-macos-12
-inputs:[os: macos-12,build-type: Release,cmake-configuration-ex: -DUSE...]") --uses--> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
+inputs:[os: macos-12,build-type: Release,cmake-configuration-ex: -DUSE...]") ---> build-gh_runner.yml("Build Package (gh-runner)[build-gh_runner.yml]")
 
 ```
 
