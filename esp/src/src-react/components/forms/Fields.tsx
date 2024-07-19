@@ -828,7 +828,7 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
                 text: row
             };
         }) || [];
-        setOptions(options);
+        setOptions([{ key: "", text: "" }, ...options]);
     }, [cloudContainerNames]);
 
     return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
@@ -1340,6 +1340,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <CloudContainerNameField
                         key={fieldID}
+                        selectedKey={field.value}
                         onChange={(ev, row) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);
