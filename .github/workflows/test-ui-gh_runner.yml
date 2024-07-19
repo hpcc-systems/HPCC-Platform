@@ -181,7 +181,7 @@ jobs:
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
           [[ $lines -ne 0 ]] && exit 1
-          if [[ -f debug_ecl_test.log || -f detail_ecl_test.log || -f exception_ecl_test.log]]
+          if [[ -f debug_ecl_test.log || -f detail_ecl_test.log || -f exception_ecl_test.log ]]
           then 
               echo "uploadArtifact=true" >> $GITHUB_ENV
           fi
