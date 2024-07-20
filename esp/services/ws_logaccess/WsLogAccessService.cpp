@@ -71,6 +71,10 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
                                 WARNLOG("Invalid col type found in logaccess logmap config");
                             }
                         }
+                        else
+                        {
+                            espLogColumn->setColumnType("string");
+                        }
                         logColumns.append(*espLogColumn.getClear());
                     }
                     else

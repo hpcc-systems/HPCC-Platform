@@ -79,7 +79,8 @@ ESPenum LogColumnValueType : string
     str("string"),
     numeric("numeric"),
     datetime("datetime"),
-    enum("enum")
+    enum("enum"),
+    epoch("epoch")
 };
 
 ESPStruct [nil_remove] LogColumn
