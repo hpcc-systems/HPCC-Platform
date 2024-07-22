@@ -119,7 +119,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         const keys = selectedKey !== "" ? selectedKey.split(valueSeparator) : [];
         let items = [...selectedItems];
         if (keys.length === items.length) return;
-        if (selectedKeys !== "" && selOptions.length && selectedKey === "") {
+        if (selectedKeys !== "" && selOptions.length && selectedKey === "" && selectedKeys === items.map(i => i.key).join("|")) {
             setSelectedItems([]);
             return;
         }
