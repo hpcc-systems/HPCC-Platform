@@ -69,16 +69,7 @@
         "timeout": {
           "type": "integer"
         },
-        "storage": {
-          "$ref": "#/definitions/secrets"
-        },
         "authn": {
-          "$ref": "#/definitions/secrets"
-        },
-        "ecl": {
-          "$ref": "#/definitions/secrets"
-        },
-        "eclUser": {
           "$ref": "#/definitions/secrets"
         },
         "codeSign": {
@@ -87,14 +78,25 @@
         "codeVerify": {
           "$ref": "#/definitions/secrets"
         },
+        "ecl": {
+          "$ref": "#/definitions/secrets"
+        },
+        "eclUser": {
+          "$ref": "#/definitions/secrets"
+        },
+        "esp": {
+          "$ref": "#/definitions/secrets"
+        },
         "git": {
           "$ref": "#/definitions/secrets"
         },
-        "system": {
+        "jfrog": {
           "$ref": "#/definitions/secrets"
-        }
-        ,
-        "esp": {
+        },
+        "storage": {
+          "$ref": "#/definitions/secrets"
+        },
+        "system": {
           "$ref": "#/definitions/secrets"
         }
       },
@@ -107,19 +109,7 @@
         "timeout": {
           "type": "integer"
         },
-        "storage": {
-          "$ref": "#/definitions/vaultCategory"
-        },
         "authn": {
-          "$ref": "#/definitions/vaultCategory"
-        },
-        "esp": {
-          "$ref": "#/definitions/vaultCategory"
-        },
-        "ecl": {
-          "$ref": "#/definitions/vaultCategory"
-        },
-        "eclUser": {
           "$ref": "#/definitions/vaultCategory"
         },
         "codeSign": {
@@ -128,10 +118,26 @@
         "codeVerify": {
           "$ref": "#/definitions/vaultCategory"
         },
+        "ecl": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "eclUser": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "esp": {
+          "$ref": "#/definitions/vaultCategory"
+        },
         "git": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "jfrog": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "storage": {
           "$ref": "#/definitions/vaultCategory"
         }
       },
+      "$comment": "The system secrets are used for vault configuration so cannot themselves be defined in a vault",
       "additionalProperties": false
     },
     "bundles": {
