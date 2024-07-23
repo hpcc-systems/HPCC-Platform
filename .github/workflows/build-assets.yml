@@ -76,17 +76,6 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
 
-      - name: Release LN
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          owner: ${{ secrets.LNB_ACTOR }}
-          repo: LN
-          token: ${{ secrets.LNB_TOKEN }}
-          tag: ${{ steps.vars.outputs.internal_tag }}
-
   build-docker:
     name: Build Docker
     needs: preamble
@@ -95,48 +84,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-          - os: ubuntu-22.04
-            name: k8s
-            container: true
-          - os: ubuntu-22.04
-            name: docs
-            documentation: true
-          - os: ubuntu-20.04
-          - os: centos-8
-          - os: centos-7
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-          - os: amazonlinux
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
-          - os: rockylinux-8
-          - os: ubuntu-22.04
-            name: LN k8s
-            ln: true
-            container: true
-          - os: ubuntu-22.04
-            name: LN
-            ln: true
-          - os: ubuntu-22.04
-            name: Enterprise
-            ee: true
-          - os: ubuntu-20.04
-            name: LN
-            ln: true
-          - os: centos-8
-            name: LN
-            cmake_options_extra: ""
-            ln: true
-          - os: centos-7
-            name: LN
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-            ln: true
-          - os: rockylinux-8
-            name: LN
-            cmake_options_extra: ""
-            ln: true
-          - os: centos-7-rh-python38
-            name: LN Python 3.8
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic -DCUSTOM_LABEL=_rh_python38"
-            ln: true
+
       fail-fast: false
 
     steps:
@@ -224,7 +172,7 @@ jobs:
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "WASMEMBED" "PLATFORM" "CLIENTTOOLS_ONLY")
+          plugins=("CLIENTTOOLS_ONLY")
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
             sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
