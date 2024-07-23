@@ -1925,28 +1925,33 @@ public:
             StringBuffer hostbuf;
             int rc = LDAP_SERVER_DOWN;
             char *ldap_errstring=NULL;
-            for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
+            for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
             {
-                m_ldapconfig->getLdapHost(hostbuf);//get next available AD, as it may have changed
-                DBGLOG("LdapBind for user %s (retries=%d) on host %s.", username, retries, hostbuf.str());
+                for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
                 {
-                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
-                    rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
-                    if(rc != LDAP_SUCCESS)
-                        ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-                    LDAP_UNBIND(user_ld);
-                }
-                DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
+                    m_ldapconfig->getLdapHost(hostbuf);//get next available AD, as it may have changed
+                    DBGLOG("LdapBind for user %s (retries=%d) on host %s.", username, retries, hostbuf.str());
+                    {
+                        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
+                        rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+                        if(rc != LDAP_SUCCESS)
+                            ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
+                        LDAP_UNBIND(user_ld);
+                    }
+                    DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
 
-                if(rc==LDAP_SERVER_DOWN || rc==LDAP_UNAVAILABLE)
-                {
-                    m_ldapconfig->rejectHost(hostbuf);
-                    continue;//try again with next configured LDAP host
+                    if(rc==LDAP_TIMEOUT && retries < LDAPSEC_MAX_RETRIES)
+                    {
+                        sleep(LDAPSEC_RETRY_WAIT);
+                        DBGLOG("Server %s temporarily unreachable, retrying ...", hostbuf.str());
+                    }
+                    else
+                        break;
                 }
-                else if(rc==LDAP_TIMEOUT && retries < LDAPSEC_MAX_RETRIES)
+
+                if(LdapServerDown(rc))
                 {
-                    sleep(LDAPSEC_RETRY_WAIT);
-                    DBGLOG("Server %s temporarily unreachable, retrying ...", hostbuf.str());
+                    m_ldapconfig->rejectHost(hostbuf); // move to next host
                 }
                 else
                     break;
