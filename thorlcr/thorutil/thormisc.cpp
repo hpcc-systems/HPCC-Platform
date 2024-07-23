@@ -99,6 +99,11 @@ const StatisticsMapping spillingActivityStatistics({}, spillStatistics, basicAct
 const StatisticsMapping spillingWriteAheadStatistics({}, spillStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, spillingActivityStatistics);
 
+const StatKindMap diskToTempStatsMap
+={ {StSizeDiskWrite, StSizeSpillFile},
+   {StTimeDiskWriteIO, StTimeSpillElapsed}
+ };
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     ClusterMPAllocator.setown(createMPtagRangeAllocator(MPTAG_THORGLOBAL_BASE,MPTAG_THORGLOBAL_COUNT));

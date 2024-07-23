@@ -405,7 +405,7 @@ public:
     {
         PARENT::gatherActiveStats(activeStats);
         if (sharedRowStream)
-            ::mergeStats(activeStats, sharedRowStream);
+            mergeRemappedStats(activeStats, sharedRowStream, diskToTempStatsMap);
     }
 // ISharedSmartBufferCallback impl.
     virtual void paged() { pagedOut = true; }

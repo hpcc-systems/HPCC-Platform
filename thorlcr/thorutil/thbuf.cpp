@@ -424,6 +424,13 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        if (tempFileIO)
+            return tempFileIO->getStatistic(kind);
+        else
+            return 0;
+    }
 };
 
 
@@ -607,6 +614,10 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        return 0;
+    }
 };
 
 
@@ -734,6 +745,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     RowEntry readFromStreamMarker = { nullptr, 0, 0 };
 
     // misc
+    CRuntimeStatisticCollection inactiveStats;
     bool grouped = false; // ctor input parameter
     CriticalSection readerWriterCS;
 #ifdef STRESSTEST_SPILLING_ROWSTREAM
@@ -756,6 +768,9 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     }
     void createNextOutputStream()
     {
+        if (currentOutputIFileIO)
+            mergeRemappedStats(inactiveStats, currentOutputIFileIO, diskToSpillStatsMap);
+
         VStringBuffer tmpFilename("%s.%u", baseTmpFilename.get(), writeTempFileNum++);
         trace("WRITE: writing to %s", tmpFilename.str());
         Owned<IFile> iFile = createIFile(tmpFilename);
@@ -1007,7 +1022,8 @@ public:
 
     explicit CCompressedSpillingRowStream(CActivityBase *_activity, const char *_baseTmpFilename, bool _grouped, IThorRowInterfaces *rowIf, const LookAheadOptions &_options, ICompressHandler *_compressHandler)
         : activity(*_activity), baseTmpFilename(_baseTmpFilename), grouped(_grouped), options(_options), compressHandler(_compressHandler),
-          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer())
+          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
+          inactiveStats(spillingWriteAheadStatistics)
     {
         size32_t minSize = meta->getMinRecordSize();
 
@@ -1054,6 +1070,13 @@ public:
     virtual IRowWriter *queryWriter() override
     {
         return this;
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        unsigned __int64 v = inactiveStats.queryStatistic(kind).get();
+        if (currentOutputIFileIO)
+            v += currentOutputIFileIO->getStatistic(kind);
+        return v;
     }
 // IRowStream
     virtual const void *nextRow() override
@@ -2150,21 +2173,9 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                return tempFileIO->getStatistic(StSizeDiskWrite);
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                return tempFileIO->getStatistic(StCycleDiskWriteIOCycles);
-            default:
-                return tempFileIO->getStatistic(kind);
-        }
+        if (kind==StNumSpills)
+            return 1;
+        return tempFileIO->getStatistic(kind);
     }
 };
 
@@ -2493,11 +2504,11 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     {
         if (outputStream)
         {
+            outputStream.clear();
             iFileIO->flush();
             tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
             ::mergeStats(inactiveStats, iFileIO);
             iFileIO.clear();
-            outputStream.clear();
         }
     }
     void createOutputStream()
@@ -2508,6 +2519,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream.setown(std::get<0>(res));
         iFileIO.setown(std::get<1>(res));
         totalInputRowsRead = inMemTotalRows;
+        inactiveStats.addStatistic(StNumSpills, 1);
     }
     void writeRowsFromInput()
     {
@@ -2549,6 +2561,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream->flush();
         totalInputRowsRead.fetch_add(newRowsWritten);
         tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
+        ::mergeStats(inactiveStats, iFileIO);
         // JCSMORE - could track size written, and start new file at this point (e.g. every 100MB),
         // and track their starting points (by row #) in a vector
         // We could then tell if/when the readers catch up, and remove consumed files as they do.
@@ -2726,29 +2739,7 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        StatisticKind useKind;
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                useKind = StSizeDiskWrite;
-                break;
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                useKind = StCycleDiskWriteIOCycles;
-                break;
-            default:
-                useKind = kind;
-        }
-        unsigned __int64 v = 0;
-        if (likely(iFileIO))
-            v = iFileIO->getStatistic(useKind);
-        v += inactiveStats.getStatisticValue(useKind);
-        return v;
+        return inactiveStats.getStatisticValue(kind);
     }
 };
 
