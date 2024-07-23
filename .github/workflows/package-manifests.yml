@@ -1,0 +1,117 @@
+name: Generate Package Manifest
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'The tag to use'
+        required: true
+        type: string
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      LNB_TOKEN:
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to use'
+        required: true
+        type: string
+
+jobs:
+  run-package-manifest:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull Docker Image
+        run: docker pull ebelfarsi/package-manifest:latest
+
+      - name: Run Docker Container
+        run: docker run --name package-container -e REPO_OWNER=${{ github.repository_owner }} -e REPO_NAME=HPCC-Platform -e TAG=${{ inputs.tag }} -e GIT_TKN=${{ secrets.LNB_TOKEN }} ebelfarsi/package-manifest:latest
+
+
+      - name: Fetch Output from Container and Upload to S3
+        run: |
+          docker cp package-container:/app/output.json ${{ github.workspace }}/output.json
+          aws s3 cp ${{ github.workspace }}/output.json s3://ebelfarsi-bucket/releases/output.json
+
+
+      - name: Fetch Output from Container and Upload to S3
+        run: |
+          docker cp package-container:/app/output.json ${{ github.workspace }}/output.json
+          aws s3 cp ${{ github.workspace }}/output.json s3://ebelfarsi-bucket/releases/output.json
+
+      - name: Prepare Directory Structure and Download Files
+        shell: bash
+        run: |
+          output_json_path="${{ github.workspace }}/output.json"
+
+          # Extract version number from the first entry
+          version=$(jq -r '.[0].Version' "$output_json_path")
+          base_dir="${{ github.workspace }}/releases/CE-Candidate-${version}"
+
+          # Create base directory if it doesn't exist
+          mkdir -p "$base_dir"
+
+          # Parse JSON, create directories as needed, and download files
+          jq -c '.[]' "$output_json_path" | while read -r item; do
+            edge_cast_path=$(echo "$item" | jq -r '.Edge_Cast_Path')
+            full_path="${base_dir}/${edge_cast_path}"
+
+            # Create the directory where the file will be stored
+            mkdir -p "$(dirname "$full_path")"
+
+            # Extract the filename from the path
+            file_name=$(basename "$edge_cast_path")
+
+            # Construct the download URL and download the file
+            download_url="https://github.com/hpcc-systems/HPCC-Platform/releases/download/community_9.8.4-1/$file_name"
+            wget "$download_url" -O "$full_path"
+            echo "Downloaded $file_name to $full_path"
+
+            # Check if the downloaded file is a zip file
+            if [[ "$file_name" == *.zip ]]; then
+              unzip "$full_path" -d "$(dirname "$full_path")"
+              echo "Unzipped $file_name in $(dirname "$full_path")"
+              rm "$full_path"
+              echo "Removed the zip file $file_name"
+            fi
+          done
+
+
+
+      - name: Sync Directory to S3 Bucket
+        shell: bash
+        run: |
+          output_json_path="${{ github.workspace }}/output.json"
+          version=$(jq -r '.[0].Version' "$output_json_path")
+          base_dir="${{ github.workspace }}/releases/CE-Candidate-${version}"
+          aws s3 sync "$base_dir" s3://ebelfarsi-bucket/
+
+      - name: Upload output.json to GitHub Release
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          artifacts: ${{ github.workspace }}/bin/output.json
+          token: ${{ secrets.LNB_TOKEN }}
