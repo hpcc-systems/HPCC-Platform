@@ -114,7 +114,7 @@ Note:
       for LINE in $( cat links.tmp )
       do 
         LINK=$( echo $LINE | cut -d ':' -f3- ) 
-        if [[ ${LINK:0:3} == '```' ]]; then 
+        if [[ ${LINK:0:3} == "\`\`\`" ]]; then 
           FLAG=$(( 1 - FLAG ))
           continue
         fi
