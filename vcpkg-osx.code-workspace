@@ -7,8 +7,9 @@
 	"settings": {
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
+            "-DCMAKE_OSX_ARCHITECTURES=arm64",
 			"-DUSE_OPTIONAL=OFF",
-			"-DINCLUDE_PLUGINS=ON",
+			"-DINCLUDE_PLUGINS=OFF",
 			"-DSUPPRESS_V8EMBED=ON",
 			"-DSUPPRESS_REMBED=ON",
 			"-DSUPPRESS_MEMCACHED=ON",
@@ -18,6 +19,9 @@
 			"-DUSE_CPPUNIT=ON",
 			"-DUSE_JAVA=OFF"
 		],
+		"files.associations": {
+			"*.ipp": "cpp"
+		},
 	},
 	"extensions": {
 		"recommendations": [
