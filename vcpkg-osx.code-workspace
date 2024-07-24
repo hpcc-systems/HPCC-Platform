@@ -7,9 +7,9 @@
 	"settings": {
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
-            "-DCMAKE_OSX_ARCHITECTURES=arm64",
+            		"-DCMAKE_OSX_ARCHITECTURES=arm64",			
 			"-DUSE_OPTIONAL=OFF",
-			"-DINCLUDE_PLUGINS=OFF",
+			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
 			"-DSUPPRESS_REMBED=ON",
 			"-DSUPPRESS_MEMCACHED=ON",
