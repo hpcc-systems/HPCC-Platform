@@ -19,6 +19,18 @@
 EXPORT exampleplugin := SERVICE : plugin('exampleplugin'), namespace('ExamplePlugin')
   UNSIGNED4 func1(CONST VARSTRING param1, CONST VARSTRING param2, UNSIGNED4 param3) : cpp,action,context,time,entrypoint='func1';
   STRING func2(CONST VARSTRING param1, CONST VARSTRING param2, CONST STRING param3) : cpp,action,context,fold,entrypoint='func2';
+  // These are used for testing compile-time constant-folding, as well as illustrating how different parameters are passed
+  // Passing multiple integer parameters of different sizes
+  STRING test1(UNSIGNED1 p1, UNSIGNED2 p2, UNSIGNED4 p3, UNSIGNED8 p4, INTEGER1 p5, INTEGER2 p6, INTEGER4 p7, INTEGER8 p8, UNSIGNED p9, UNSIGNED p10) : cpp,fold,entrypoint='test1';
+  // Passing multiple floating point parameters of different sizes
+  // Note that more than 8 FP parameters cannot be folded
+  STRING test2(REAL4 p1, REAL4 p2, REAL4 p3, REAL4 p4, REAL8 p5, REAL8 p6, REAL8 p7, REAL8 p8) : cpp,fold,entrypoint='test2';
+  // Passing a mix of real and integer
+  STRING test3(
+     UNSIGNED1 p1, UNSIGNED2 p2, UNSIGNED4 p3, UNSIGNED8 p4, INTEGER1 p5, INTEGER2 p6, INTEGER4 p7, INTEGER8 p8, UNSIGNED p9, UNSIGNED p10,
+     REAL4 r1, REAL4 r2, REAL4 r3, REAL4 r4, REAL8 r5, REAL8 r6, REAL8 r7, REAL8 r8) : cpp,fold,entrypoint='test3';
+  // Passing strings -  variable, fixed, zero terminated
+  STRING test4(STRING s, STRING10 s10, VARSTRING v, VARSTRING10 v10) : cpp,fold,entrypoint='test4';
 END;
 
 EXPORT Wrapper(VARSTRING param1, VARSTRING  param2 = '') := MODULE

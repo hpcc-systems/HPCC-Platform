@@ -362,8 +362,9 @@ public:
     }
 };
 #else
-struct ActivityTimer
+class ActivityTimer
 {
+public:
     inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
 };
 struct SimpleActivityTimer
