@@ -8730,6 +8730,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySplit(BuildCtx & ctx, IHqlExpr
         instance->addConstructorParameter(numWays);
         instance->addConstructorParameter(queryBoolExpr(balanced));
     }
+    if (balanced)
+        instance->addAttributeBool(WaIsBalanced, true);
 
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);

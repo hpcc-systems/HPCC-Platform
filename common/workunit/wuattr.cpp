@@ -151,6 +151,7 @@ const static WuAttrInfo attrInfo[] = {
     CHILD(RecordFormat, SMeasureText, "recordFormat"),
     CHILD(ServiceName, SMeasureText, "serviceName"),
     CHILD(SizeComplexHelper, SMeasureSize, "complexHelperSize"),
+    CHILD(IsBalanced, SMeasureBool, "balanced"),
     { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone }
 };
 
