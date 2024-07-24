@@ -334,4 +334,107 @@ extern jlib_decl char **getSystemEnv();
 
 extern jlib_decl char *getHPCCEnvVal(const char *name, const char *defaultValue);
 
+// class TimeDivisionTracker is useful for working out what a thread spends its time doing. See udptrrr.cpp for an example
+// of its usage
+
+template<unsigned NUMSTATES, bool reportOther> class TimeDivisionTracker
+{
+protected:
+    unsigned __int64 totals[NUMSTATES] = {0};
+    unsigned counts[NUMSTATES] = {0};
+    const char *stateNames[NUMSTATES];
+    unsigned __int64 lastTick = get_cycles_now();
+    unsigned currentState = 0;
+    StringAttr name;
+    unsigned __int64 reportIntervalCycles = 0;
+    unsigned __int64 lastReport = 0;
+
+    unsigned enterState(unsigned newState)
+    {
+        unsigned prevState = currentState;
+        unsigned __int64 now = get_cycles_now();
+        if (reportIntervalCycles && now - lastReport >= reportIntervalCycles)
+        {
+            report(true);
+            now = get_cycles_now();
+        }
+        if (newState != prevState)
+        {
+            totals[currentState] += now - lastTick;
+            currentState = newState;
+            counts[newState]++;
+            lastTick = now;
+        }
+        return prevState;
+    }
+
+    void leaveState(unsigned backToState)
+    {
+        unsigned __int64 now = get_cycles_now();
+        if (reportIntervalCycles && now - lastReport >= reportIntervalCycles)
+            report(true);
+        if (backToState != currentState)
+        {
+            totals[currentState] += now - lastTick;
+            lastTick = now;
+            currentState = backToState;
+        }
+    }
+
+public:
+    TimeDivisionTracker(const char *_name, unsigned reportIntervalSeconds) : name(_name)
+    {
+        if (reportIntervalSeconds)
+            reportIntervalCycles = millisec_to_cycle(reportIntervalSeconds * 1000);
+    }
+
+    void report(bool reset)
+    {
+        VStringBuffer str("%s spent ", name.str());
+        auto now = get_cycles_now();
+        totals[currentState] += now - lastTick;
+        lastTick = now;
+        lastReport = now;
+        bool doneOne = false;
+        for (unsigned i = reportOther ? 0 : 1; i < NUMSTATES; i++)
+        {
+            if (counts[i])
+            {
+                if (doneOne)
+                    str.append(", ");
+                formatTime(str, cycle_to_nanosec(totals[i]));
+                str.appendf(" %s (%u times)", stateNames[i], counts[i]);
+                doneOne = true;
+            }
+            if (reset)
+            {
+                totals[i] = 0;
+                counts[i] = 0;
+            }
+        }
+        if (doneOne)
+            DBGLOG("%s", str.str());
+    }
+
+    class TimeDivision
+    {
+        unsigned prevState = 0;
+        TimeDivisionTracker &t;
+    public:
+        TimeDivision(TimeDivisionTracker &_t, unsigned newState) : t(_t)
+        {
+            prevState = t.enterState(newState);
+        }
+        ~TimeDivision()
+        {
+            t.leaveState(prevState);
+        }
+        void switchState(unsigned newState)
+        {
+            t.enterState(newState);
+        }
+    };
+};
+
+
 #endif
