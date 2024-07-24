@@ -79,7 +79,7 @@ spec:
                 {{ include "hpcc.daliArg" (dict "root" $ "component" "DFU Server" "optional" false) }}
           ]
         env:
-{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
