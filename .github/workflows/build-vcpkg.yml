@@ -27,17 +27,17 @@ on:
   # Do not include "push" in final version (uncomment for testing on users own repo)
   # push:
 
-  pull_request:
-    branches:
-      - "master"
-      - "candidate-*"
-      - "!candidate-7.10.*"
-      - "!candidate-7.8.*"
-      - "!candidate-7.6.*"
-      - "!candidate-7.4.*"
-      - "!candidate-7.2.*"
-      - "!candidate-7.0.*"
-      - "!candidate-6.*"
+  # pull_request:
+  #   branches:
+  #     - "master"
+  #     - "candidate-*"
+  #     - "!candidate-7.10.*"
+  #     - "!candidate-7.8.*"
+  #     - "!candidate-7.6.*"
+  #     - "!candidate-7.4.*"
+  #     - "!candidate-7.2.*"
+  #     - "!candidate-7.0.*"
+  #     - "!candidate-6.*"
 
   schedule:
     - cron: "0 0 * * *"
