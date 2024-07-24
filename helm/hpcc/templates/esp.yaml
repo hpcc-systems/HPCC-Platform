@@ -153,7 +153,7 @@ spec:
                 {{ include "hpcc.daliArg" (dict "root" $ "component" $application "optional" (has $application (list "esdl" "ldapenvironment" "loggingservice")) )}}
               ]
         env:
-{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 4) | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
