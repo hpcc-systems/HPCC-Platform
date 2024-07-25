@@ -668,7 +668,7 @@ static std::tuple<IBufferedSerialOutputStream *, IFileIO *> createSerialOutputSt
  - Writer:
  - The writer to an in-memory queue, and when the queue is full, or a certain number of rows have been queued, it writes to starts writing to temp files.
  - The writer will always write to the queue if it can, even after it has started spilling.
- - The writer commits to disk at LookAheadOptions::writeAheadSize granularity
+ - The writer commits to disk at LookAheadOptions::writeAheadSize granularity. NB: size is uncompressed, measured before data is written to disk.
  - The writer creates a new temp file when the current one reaches LookAheadOptions::tempFileGranularity
  - The writer pushes the current nextOutputRow to a queue when it creates the next output file (used by the reader to know when to move to next)
  - NB: writer implements ISmartRowBuffer::flush() which has slightly weird semantics (blocks until everything is read or stopped)
@@ -706,7 +706,6 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     Owned<IBufferedSerialOutputStream> outputStream;
     std::unique_ptr<COutputStreamSerializer> outputStreamSerializer;
     memsize_t pendingFlushToDiskSz = 0;
-    offset_t currentTempFileSize = 0;
     CFileOwner *currentOwnedOutputFile = nullptr;
     Owned<IFileIO> currentOutputIFileIO; // keep for stats
     CriticalSection outputFilesQCS;
@@ -876,15 +875,14 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     {
         if (pendingFlushToDiskSz <= threshold)
             return false;
+        pendingFlushToDiskSz = 0;
         rowcount_t currentNextOutputRow = nextOutputRow.load();
         trace("WRITE: Flushed to disk. nextOutputRow = %" RCPF "u", currentNextOutputRow);
         outputStream->flush();
-        currentTempFileSize += pendingFlushToDiskSz;
+        offset_t currentTempFileSize = currentOutputIFileIO->getStatistic(StSizeDiskWrite);
         currentOwnedOutputFile->noteSize(currentTempFileSize);
-        pendingFlushToDiskSz = 0;
         if (currentTempFileSize > options.tempFileGranularity)
         {
-            currentTempFileSize = 0;
             {
                 CriticalBlock b(outputStreamCS);
                 // set if reader isn't bounded yet, or queue next boundary
@@ -899,7 +897,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
                     trace("WRITE: adding to tempFileEndRowMarker(size=%u): %" RCPF "u", (unsigned)outputFileEndRowMarkers.size(), currentNextOutputRow);
                 }
             }
-            createNextOutputStream();
+            createNextOutputStream(); // NB: creates new currentOwnedOutputFile/currentOutputIFileIO
         }
         committedRows = currentNextOutputRow;
         return true;
