@@ -64,7 +64,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
 
     React.useEffect(() => {
         setDescription(file?.Description || "");
-        setProtected(file?.ProtectList?.DFUFileProtect?.length > 0 || false);
+        setProtected(isProtected);
         setRestricted(file?.IsRestricted || false);
 
         if ((file?.filePartsOnCluster() ?? []).length > 0) {
@@ -78,7 +78,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
             setReplicateFlag(_replicate);
         }
 
-    }, [file]);
+    }, [file, isProtected]);
 
     const canSave = React.useMemo(() => {
         return file && (
@@ -91,15 +91,11 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => {
-                refresh();
-            }
+            onClick: () => refresh()
         },
         {
             key: "copyFilename", text: nlsHPCC.CopyLogicalFilename, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                navigator?.clipboard?.writeText(logicalFile);
-            }
+            onClick: () => navigator?.clipboard?.writeText(logicalFile)
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -194,9 +190,15 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                         break;
                     case "isProtected":
                         setProtected(value);
+                        file?.update({
+                            Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                        }).catch(err => logger.error(err));
                         break;
                     case "isRestricted":
                         setRestricted(value);
+                        file?.update({
+                            Restrict: value ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
+                        }).catch(err => logger.error(err));
                         break;
                 }
             }} />
