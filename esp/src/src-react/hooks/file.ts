@@ -19,13 +19,13 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
         let handle;
         const fetchInfo = singletonDebounce(file, "fetchInfo");
         fetchInfo()
-            .then(() => {
+            .then((response) => {
                 if (active) {
                     setFile(file);
-                    setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
+                    setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
                     setLastUpdate(Date.now());
                     handle = file.watch(() => {
-                        setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
+                        setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
                         setLastUpdate(Date.now());
                     });
                 }
