@@ -1946,6 +1946,8 @@ void HqlCppTranslator::cacheOptions()
         }
     }
 
+    updateTraceFlags(loadTraceFlags(wu(), eclccTraceOptions, queryTraceFlags()));
+
     //Configure the divide by zero action
     options.divideByZeroAction = DBZzero;
     const char * dbz = wu()->getDebugValue("divideByZero",val).str();

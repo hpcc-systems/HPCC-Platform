@@ -24,6 +24,23 @@
     look at loopback
 */
 
+
+/* ISocket implementation/semantic details:
+ *
+ * 1. All sockets are created in non-blocking state. All implementations should cope with non-blocking, i.e. wait/retry.
+ * 2. read/readtms will block until min_size bytes are read or timeout expires (see readtms for more detail).
+ * read/readtms can be called with min_size=0, in which case it will return as soon as no more data is available.
+ * 3. Historically, SSL calls + non-SSL write/writetms, used to flip blocking state during the call, this was prone to error,
+ * because socket could [legitimately] be written to whilst being read from, e.g. a server could be writing to a client, and
+ * at the same time, be notified of traffic and start reading it. Flipping the blocking state of a socket is inherently unsafe
+ * in many usage patterns.
+ *
+ * The non-blocking semantics are designed so that the select handlers can read as much data as possible without blocking.
+ * e.g. dafilesrv and MP avoid blocking in their select handlers, thus avoiding up other client traffic.
+ */
+
+
+
 #include <string>
 #include <unordered_set>
 #include <functional>
@@ -170,6 +187,7 @@ public:
         case JSOCKERR_handle_too_large:          return str.append("handle too large");
         case JSOCKERR_bad_netaddr:               return str.append("bad net addr");
         case JSOCKERR_ipv6_not_implemented:      return str.append("IPv6 not implemented");
+        case JSOCKERR_small_udp_packet:          return str.append("small UDP packet");
         // OS errors
 #ifdef _WIN32
         case WSAEINTR:              return str.append("WSAEINTR(10004) - Interrupted system call.");
@@ -381,35 +399,40 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 # endif
 #endif
 
-static CriticalSection queryKACS;
+enum UseUDE { UNINIT, INITED };
+static std::atomic<UseUDE> expertTCPSettings { UNINIT };
+static CriticalSection queryTCPCS;
 
-enum UseKA { UNINIT, DISABLED, ENABLED };
-static std::atomic<UseKA> doKeepAlive { UNINIT };
+static bool hasKeepAlive = false;
 static int keepAliveTime = -1;
 static int keepAliveInterval = -1;
 static int keepAliveProbes = -1;
+static bool disableDNSTimeout = false;
+static int maxDNSThreads = 50;
 
 /*
 <Software>
-  <Globals>
+  <Globals disableDNSTimeout="false" maxDNSThreads="100">
     <keepalive time="200" interval="75" probes="9"/>
   </Globals>
 
 global:
   expert:
+    disableDNSTimeout: false
+    maxDNSThreads: 100
     keepalive:
       time: 200
       interval: 75
       probes: 9
 */
 
-extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
+static void queryTCPSettings()
 {
-    UseKA state = doKeepAlive.load();
+    UseUDE state = expertTCPSettings.load();
     if (state == UNINIT)
     {
-        CriticalBlock block(queryKACS);
-        state = doKeepAlive.load();
+        CriticalBlock block(queryTCPCS);
+        state = expertTCPSettings.load();
         if (state == UNINIT)
         {
 #ifdef _CONTAINERIZED
@@ -436,7 +459,6 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
             catch (...)
             {
             }
-            state = DISABLED;
             if (expert)
             {
                 IPropertyTree *keepalive = expert->queryPropTree("keepalive");
@@ -445,22 +467,122 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
                     keepAliveTime = keepalive->getPropInt("@time", keepAliveTime);
                     keepAliveInterval = keepalive->getPropInt("@interval", keepAliveInterval);
                     keepAliveProbes = keepalive->getPropInt("@probes", keepAliveProbes);
-                    state = ENABLED;
+                    hasKeepAlive = true;
                 }
+                disableDNSTimeout = expert->getPropBool("@disableDNSTimeout", false);
+                maxDNSThreads = expert->getPropInt("@maxDNSThreads", maxDNSThreads);
+                // could also consider maxDNSThreads==0 as a way to disable DNS timeout ...
+                if (maxDNSThreads < 1)
+                    maxDNSThreads = 1;
             }
-            doKeepAlive = state;
+            expertTCPSettings = INITED;
         }
     }
+}
 
-    if (state == ENABLED)
+extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
+{
+    queryTCPSettings();
+    if (hasKeepAlive)
     {
         time = keepAliveTime;
         intvl = keepAliveInterval;
         probes = keepAliveProbes;
+    }
+    return hasKeepAlive;
+}
+
+static int getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr);
+
+static CriticalSection queryDNSCS;
+
+class CAddrInfoThreadArgs : public CInterface
+{
+public:
+    StringAttr name;
+    unsigned netaddr[4] = { 0, 0, 0, 0 };
+    std::atomic<int> retCode { EAI_SYSTEM };
+
+    CAddrInfoThreadArgs(const char *_name) : name(_name) { }
+};
+
+class CAddrPoolThread : public CInterface, implements IPooledThread
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    Linked<CAddrInfoThreadArgs> localAddrThreadInfo;
+
+    virtual void init(void *param) override
+    {
+        localAddrThreadInfo.setown((CAddrInfoThreadArgs *)param);
+    }
+
+    virtual void threadmain() override
+    {
+        localAddrThreadInfo->retCode = getAddressInfo(localAddrThreadInfo->name.get(), localAddrThreadInfo->netaddr, false);
+    }
+
+    virtual bool stop() override
+    {
         return true;
     }
-    else
-        return false;
+
+    virtual bool canReuse() const override
+    {
+        return true;
+    }
+};
+
+class CAddrInfoFactory : public CInterface, public IThreadFactory
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    IPooledThread *createNew()
+    {
+        return new CAddrPoolThread();
+    }
+};
+
+static Owned<CAddrInfoFactory> addrInfoFactory;
+static Owned<IThreadPool> addrInfoPool;
+static std::atomic<bool> addrInfoPoolCreated { false };
+
+static bool useDNSTimeout()
+{
+    queryTCPSettings();
+    if (!disableDNSTimeout)
+    {
+        if (!addrInfoPoolCreated.load())
+        {
+            CriticalBlock block(queryDNSCS);
+            if (!addrInfoPoolCreated.load())
+            {
+                addrInfoFactory.setown(new CAddrInfoFactory);
+                addrInfoPool.setown(createThreadPool("AddrInfoPool", addrInfoFactory, true, nullptr, maxDNSThreads, 100000000));
+                addrInfoPoolCreated = true;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    // NB: this (and other MODULE_EXITs) are not called for Thor and Roxie because they are
+    //     stopped via SIGTERM signal and thus exit() and the atexit handlers are not called
+    if (addrInfoPoolCreated.load())
+    {
+        addrInfoPool->joinAll(true);
+        addrInfoPool.clear();
+        addrInfoPoolCreated = false;
+    }
 }
 
 struct SocketStats
@@ -516,8 +638,8 @@ public:
     void        connect_wait( unsigned timems);
     void        udpconnect();
 
-    void        read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
-    void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
+    void        read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize=true);
+    void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs, bool suppresGCIfMinSize=true);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
     size32_t    writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER);
@@ -599,6 +721,7 @@ private:
         if (sock!=INVALID_SOCKET) {
             T_SOCKET s = sock;
             sock = INVALID_SOCKET;
+            nonblocking = false;
             STATS.activesockets--;
     #ifdef SOCKTRACE
             PROGLOG("SOCKTRACE: Closing socket %x %d (%p)", s, s, this);
@@ -665,6 +788,7 @@ static win_socket_library ws32_lib;
 #define JSE_NOTSOCK WSAENOTSOCK
 #define JSE_TIMEDOUT WSAETIMEDOUT
 #define JSE_CONNREFUSED WSAECONNREFUSED
+#define JSE_EAGAIN WSAEWOULDBLOCK
 #define JSE_BADF WSAEBADF
 
 #define JSE_INTR WSAEINTR
@@ -784,6 +908,7 @@ int inet_aton (const char *name, struct in_addr *addr)
 #define JSE_NOTSOCK ENOTSOCK
 #define JSE_TIMEDOUT ETIMEDOUT
 #define JSE_CONNREFUSED ECONNREFUSED
+#define JSE_EAGAIN EAGAIN
 #define JSE_BADF EBADF
 
 
@@ -886,6 +1011,9 @@ inline void getSockAddrEndpoint(const J_SOCKADDR &u, socklen_t ul, SocketEndpoin
 
 bool CSocket::set_nonblock(bool on)
 {
+    if (nonblocking==on)
+        return nonblocking;
+
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags == -1)
         return nonblocking;
@@ -963,7 +1091,7 @@ size32_t CSocket::avail_read()
 
 #define PRE_CONN_UNREACH_ELIM  100
 
-int CSocket::pre_connect (bool block)
+int CSocket::pre_connect(bool block)
 {
     if (targetip.isNull())
     {
@@ -1012,9 +1140,9 @@ int CSocket::pre_connect (bool block)
     return err;
 }
 
-int CSocket::post_connect ()
+int CSocket::post_connect()
 {
-    set_nonblock(false);
+    set_nonblock(true); // normally a NOP, but connect_wait's use of pre_connect could leave it in blocking state
     int err = 0;
     socklen_t  errlen = sizeof(err);
     int rc = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen); // check for error
@@ -1049,6 +1177,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     }
 
     checkCfgKeepAlive();
+    set_nonblock(true);
 
     STATS.activesockets++;
 
@@ -1140,38 +1269,62 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
     socklen_t peerSockAddrLen = sizeof(peerSockAddr);
 
     T_SOCKET newsock;
-    for (;;) {
+    for (;;)
+    {
         in_accept = true;
         newsock = (sock!=INVALID_SOCKET)?::accept(sock, &peerSockAddr.sa, &peerSockAddrLen):INVALID_SOCKET;
         in_accept = false;
-    #ifdef SOCKTRACE
+#ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: accept created socket %x %d (%p)", newsock,newsock,this);
-    #endif
+#endif
 
-        if (newsock!=INVALID_SOCKET) {
+        if (newsock!=INVALID_SOCKET)
+        {
             if ((sock==INVALID_SOCKET)||(accept_cancel_state==accept_cancel_pending)) {
                 ::close(newsock);
                 newsock=INVALID_SOCKET;
             }
-            else {
+            else
+            {
                 accept_cancel_state = accept_not_cancelled;
                 break;
             }
         }
         int saverr;
         saverr = SOCKETERRNO();
-        if ((sock==INVALID_SOCKET)||(accept_cancel_state==accept_cancel_pending)) {
+
+        if ((sock==INVALID_SOCKET)||(accept_cancel_state==accept_cancel_pending))
+        {
             accept_cancel_state = accept_cancelled;
             if (allowcancel)
                 return NULL;
             THROWJSOCKTARGETEXCEPTION(JSOCKERR_cancel_accept);
         }
-        if (saverr != JSE_INTR) {
+        else if (saverr == EAGAIN || saverr == EWOULDBLOCK)
+        {
+            int rc = wait_read(WAIT_FOREVER); // JCSMORE accept should support a timeout really
+            if ((sock==INVALID_SOCKET)||(accept_cancel_state==accept_cancel_pending))
+            {
+                accept_cancel_state = accept_cancelled;
+                if (allowcancel)
+                    return NULL;
+                THROWJSOCKTARGETEXCEPTION(JSOCKERR_cancel_accept);
+            }
+            if (rc < 0)
+                THROWJSOCKTARGETEXCEPTION(SOCKETERRNO());
+            else if (rc == 0)
+                THROWJSOCKTARGETEXCEPTION(JSOCKERR_timeout_expired);
+            continue;
+        }
+
+        if (saverr != JSE_INTR)
+        {
             accept_cancel_state = accept_not_cancelled;
             THROWJSOCKTARGETEXCEPTION(saverr);
         }
     }
-    if (state != ss_open) {
+    if (state != ss_open)
+    {
         accept_cancel_state = accept_cancelled;
         if (allowcancel)
             return NULL;
@@ -1184,8 +1337,8 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
     ret->checkCfgKeepAlive();
     ret->set_inherit(false);
+    ret->set_nonblock(true);
     return ret;
-
 }
 
 
@@ -1431,7 +1584,18 @@ inline void refused_sleep(CTimeMon &tm, unsigned &refuseddelay)
     }
 }
 
-bool CSocket::connect_timeout( unsigned timeout, bool noexception)
+// JCSMORE - there's a lot of duplicated nuanced code here and in connect_wait
+// that could do with clearing up. Some of it is very similar to wait_write
+
+// As they current stand:
+// connect_timeout if successful, will always leave the socket in a non-blocking state
+//
+// connect_wait has weird semantic of trying one final attempt if it has timedout, where it will switch to blocking mode
+// NB: that will happen on 1st attempt if connect_wait is passed 0 as a timeout.
+//
+// pre_connect() is what actually customizes the socket [conditionally] sets it to non-blocking mode
+// post_connect() errors checks and ensures it is in non-blocking mode (only relevant if connect_wait left it in blocking mode)
+bool CSocket::connect_timeout(unsigned timeout, bool noexception)
 {
     // simple connect with timeout (no fancy stuff!)
     unsigned startt = usTick();
@@ -1441,7 +1605,7 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
     int err;
     while (!tm.timedout(&remaining))
     {
-        err = pre_connect(false);
+        err = pre_connect(false); // NB: sets and leaves socket into non-blocking mode
         if ((err == JSE_INPROGRESS)||(err == JSE_WOULDBLOCK))
         {
 #ifdef _USE_SELECT
@@ -1545,7 +1709,7 @@ void CSocket::connect_wait(unsigned timems)
             if (++connectingcount>4)
                 blockselect = true;
         }
-        err = pre_connect(blockselect);             
+        err = pre_connect(blockselect);
         if (blockselect)
         {
             if (err&&!exit)
@@ -1717,6 +1881,7 @@ void CSocket::udpconnect()
         closesock();
         THROWJSOCKTARGETEXCEPTION(JSOCKERR_connection_failed);
     }
+    set_nonblock(true);
     nagling = false; // means nothing for UDP
     state = ss_open;
 #ifdef _TRACE
@@ -1906,29 +2071,32 @@ int CSocket::wait_write(unsigned timeout)
     return ret;
 }
 
-void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs)
+void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs, bool suppresGCIfMinSize)
 {
+    /*
+     * Read at least min_size bytes, up to max_size bytes.
+     * Reads as much as possible off socket until block detected.
+     * NB: If min_size==0 then will return asap if no data is avail.
+     * NB: If min_size==0, but notified of graceful close, throw graceful close exception.
+     * NB: timeout is meaningless if min_size is 0
+     *
+     * NB: for UDP, it will never try to read more. It will call recvfrom once, if it gets less than min_size, it will throw an exception.
+     * if blocks and received nothing (and min_size>0), poll and retry.
+     *
+     * NB: the underlying socket should be in non-blocking mode, if it is not it will not honour the timeout correctly.
+     */
+
     sizeRead = 0;
     if (0 == max_size)
-    {
         return;
-    }
     if (state != ss_open)
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
 
-    // NB: The semantics here, effectively mean min_size is always >0, because it first waits on wait_read
-    // i.e. something has to be on socket to continue (or error/graceful close).
     CCycleTimer timer;
     while (true)
     {
-        unsigned remainingMs = timer.remainingMs(timeoutMs);
-        int rc = wait_read(remainingMs);
-        if (rc < 0)
-            THROWJSOCKTARGETEXCEPTION(SOCKETERRNO());
-        else if (rc == 0)
-            THROWJSOCKTARGETEXCEPTION(JSOCKERR_timeout_expired);
-
         unsigned retrycount=100;
+        int rc;
 EintrRetry:
         if (sockmode==sm_udp_server) // udp server
         {
@@ -1939,12 +2107,18 @@ EintrRetry:
         }
         else
             rc = recv(sock, (char*)buf + sizeRead, max_size - sizeRead, 0);
-
         if (rc > 0)
         {
             sizeRead += rc;
-            if (sizeRead >= min_size)
+            if (sockmode==sm_udp_server)
+            {
+                if (sizeRead >= min_size)
+                    break;
+                throwJSockException(JSOCKERR_small_udp_packet, "readtms: UDP packet smaller than min_size", __FILE__, __LINE__); // else, it is an error in UDP if receive anything less than min_size
+            }
+            else if (sizeRead == max_size)
                 break;
+            // NB: will exit when blocked if sizeRead >= min_size
         }
         else
         {
@@ -1969,11 +2143,13 @@ EintrRetry:
                 }
                 else
                 {
-                    if (nonblocking && (err == JSE_WOULDBLOCK || err == EAGAIN)) // if EGAIN or EWOULDBLOCK - no more data to read
+                    if (err == JSE_WOULDBLOCK || err == JSE_EAGAIN) // if EAGAIN or EWOULDBLOCK - no more data to read
                     {
-                        if (0 == min_size) // if here, implies nothing read, since it would have exited already in (rc > 0) block.
+                        //NB: in UDP can only reach here if have not read anything so far.
+
+                        if (sizeRead >= min_size)
                             break;
-                        // fall through/loop around. NB: rc != 0
+                        // otherwise, continue waiting for min_size
                     }
                     else
                     {
@@ -1986,16 +2162,40 @@ EintrRetry:
                         }
                         THROWJSOCKTARGETEXCEPTION(err);
                     }
+                    // fall through to timeout/wait_read handling below.
                 }
             }
             if (rc == 0)
             {
                 state = ss_shutdown;
-                if (sizeRead >= min_size)
-                    break; // suppress graceful close exception if have already read minimum
+                if (suppresGCIfMinSize && (sizeRead >= min_size))
+                    break;
                 THROWJSOCKTARGETEXCEPTION(JSOCKERR_graceful_close);
             }
         }
+
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        if (rc > 0)
+        {
+            if (0 == remainingMs)
+            {
+                if (sizeRead >= min_size)
+                    break;
+                THROWJSOCKTARGETEXCEPTION(JSOCKERR_timeout_expired);
+            }
+
+            // loop around to read more, or detect blocked.
+        }
+        else // NB rc < 0, (if rc == 0 handled already above)
+        {
+            // here because blocked (and sizeRead < min_size)
+            rc = wait_read(remainingMs);
+            if (rc < 0)
+                THROWJSOCKTARGETEXCEPTION(SOCKETERRNO());
+            else if (rc == 0)
+                THROWJSOCKTARGETEXCEPTION(JSOCKERR_timeout_expired);
+        }
+        //else // read something, loop around to see if can read more, or detect blocked.
     }
 
     cycle_t elapsedCycles = timer.elapsedCycles();
@@ -2007,10 +2207,26 @@ EintrRetry:
     stats.ioReadCycles += elapsedCycles;
 }
 
-void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs)
+void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
 {
     unsigned timeoutMs = (timeoutsecs==WAIT_FOREVER) ? WAIT_FOREVER : (timeoutsecs * 1000);
-    readtms(buf, min_size, max_size, size_read, timeoutMs);
+    readtms(buf, min_size, max_size, size_read, timeoutMs, suppresGCIfMinSize);
+}
+
+bool readtmsAllowClose(ISocket *sock, void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs)
+{
+    try
+    {
+        sock->readtms(buf, min_size, max_size, sizeRead, timeoutMs, false);
+    }
+    catch(IJSOCK_Exception *e)
+    {
+        if (JSOCKERR_graceful_close != e->errorCode())
+            throw;
+        e->Release();
+        return true;
+    }
+    return false;
 }
 
 void CSocket::read(void* buf, size32_t size)
@@ -2028,17 +2244,6 @@ size32_t CSocket::writetms(void const* buf, size32_t minSize, size32_t size, uns
     if (state != ss_open)
         THROWJSOCKTARGETEXCEPTION(JSOCKERR_not_opened);
 
-    // If timeoutMs != WAIT_FOREVER, set non-blocking mode for the duration of this function
-    struct ScopedNonBlockingMode
-    {
-        CSocket *socket = nullptr;
-        bool prevMode = false;
-        void init(CSocket *_socket) { socket = _socket; prevMode = socket->set_nonblock(true); }
-        ~ScopedNonBlockingMode() { if (socket) socket->set_nonblock(prevMode); }
-    } scopedNonBlockingMode;
-
-    if (WAIT_FOREVER != timeoutMs)
-        scopedNonBlockingMode.init(this);
     while (true)
     {
         unsigned retrycount=100;
@@ -2064,8 +2269,9 @@ EintrRetry:
         if (rc > 0)
         {
             sizeWritten += rc;
-            if (sizeWritten >= minSize)
+            if (sizeWritten == size)
                 break;
+            // NB: will exit when blocked if sizeWritten >= minSize
         }
         else if (rc < 0)
         {
@@ -2094,8 +2300,10 @@ EintrRetry:
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
-                if ((err == JSE_WOULDBLOCK) && nonblocking)
+                if (err == JSE_WOULDBLOCK || err == JSE_EAGAIN)
                 {
+                    if (sizeWritten >= minSize)
+                        break;
                     unsigned remainingMs = timer.remainingMs(timeoutMs);
                     rc = wait_write(remainingMs);
                     if (rc < 0)
@@ -2219,7 +2427,6 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
 size32_t CSocket::write_multiple(unsigned num,const void **buf, size32_t *size)
 {
     assertex(sockmode!=sm_udp_server);
-    assertex(!nonblocking);
     if (num==1)
         return write(buf[0],size[0]);
     size32_t total = 0;
@@ -2559,7 +2766,6 @@ void CSocket::shutdown(unsigned mode)
 void CSocket::shutdownNoThrow(unsigned mode)
 {
     if (state == ss_open) {
-        state = ss_shutdown;
 #ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%p)", mode, sock, sock, this);
 #endif
@@ -2937,6 +3143,7 @@ ISocket* ISocket::multicast_connect(const SocketEndpoint &ep, unsigned _ttl)
 ISocket* ISocket::attach(int s, bool tcpip)
 {
     CSocket* sock = new CSocket((SOCKET)s, tcpip?sm_tcp:sm_udp, false);
+    sock->set_nonblock(true);
     return sock;
 }
 
@@ -3313,11 +3520,113 @@ static bool decodeNumericIP(const char *text,unsigned *netaddr)
     return false;
 }
 
-static bool lookupHostAddress(const char *name,unsigned *netaddr)
+static void RecursionSafeLogErr(int ret, int ref, const char *msg, unsigned lineno, const char *name)
+{
+    static __thread bool recursioncheck = false; // needed to stop error message recursing
+    if (!recursioncheck)
+    {
+        recursioncheck = true;
+        LogErr(ret, ref, msg, lineno, name);
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        recursioncheck = false;
+    }
+}
+
+int getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr)
+{
+    struct addrinfo hints;
+    struct addrinfo *addrInfo = NULL;
+    int retry=10;
+    int retCode;
+
+    // each retry could take up to several seconds, depending on how DNS resolver is configured
+    // should a few specific non-zero return codes break out early from retry loop (EAI_NONAME) ?
+    while (true)
+    {
+        memset(&hints, 0, sizeof(hints));
+        // dont wait for both A and AAAA records ...
+        if (IP4only || (!IP6preferred))
+            hints.ai_family = AF_INET;
+        // hints.ai_flags = AI_CANONNAME | AI_ADDRCONFIG | AI_V4MAPPED
+        retCode = getaddrinfo(name, NULL, &hints, &addrInfo);
+        if (0 == retCode)
+            break;
+        if (--retry > 0)
+            Sleep((10-retry)*100);
+        else
+        {
+            // use gai_strerror(ret) to get meaningful error text ?
+            if (okToLogErr)
+                RecursionSafeLogErr(retCode, 1, "getaddrinfo failed", __LINE__, name);
+            return retCode;
+        }
+        if (EAI_NONAME == retCode)
+        {
+            // try one more time, but why ?
+            // MCK TODO: probably should only retry on EAI_AGAIN and possibly EAI_SYSTEM ...
+            retry = 1;
+        }
+    }
+
+    struct addrinfo *best = NULL;
+    bool snm = !PreferredSubnet.isNull();
+    for (;;) {
+        struct addrinfo  *ai;
+        for (ai = addrInfo; ai; ai = ai->ai_next) {
+//          printf("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s\n",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
+            switch (ai->ai_family) {
+            case AF_INET: {
+                    if (snm) {
+                        IpAddress ip;
+                        ip.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
+                        if (!PreferredSubnet.test(ip))
+                            continue;
+                    }
+                    if ((best==NULL)||((best->ai_family==AF_INET6)&&!IP6preferred))
+                        best = ai;
+                    break;
+                }
+            case AF_INET6: {
+                    if (snm) {
+                        IpAddress ip;
+                        ip.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
+                        if (!PreferredSubnet.test(ip))
+                            continue;
+                    }
+                    if ((best==NULL)||((best->ai_family==AF_INET)&&IP6preferred))
+                        best = ai;
+                    break;
+                }
+            }
+        }
+        if (best||!snm)
+            break;
+        snm = false;
+    }
+    if (best) {
+        if (best->ai_family==AF_INET6)
+            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
+        else {
+            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
+            netaddr[2] = 0xffff0000;
+            netaddr[1] = 0;
+            netaddr[0] = 0;
+        }
+    }
+    freeaddrinfo(addrInfo);
+    if (best!=NULL)
+        return 0;
+    else
+        return EAI_NONAME; // or EAI_NODATA ?
+}
+
+static bool lookupHostAddress(const char *name, unsigned *netaddr, unsigned timeoutms=INFINITE)
 {
     // if IP4only or using MS V6 can only resolve IPv4 using 
-    static bool recursioncheck = false; // needed to stop error message recursing
-    unsigned retry=10;
+    int retry=10;
+
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     if (IP4only) {
 #else
@@ -3327,11 +3636,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         hostent * entry = gethostbyname(name);
         while (entry==NULL) {
             if (retry--==0) {
-                if (!recursioncheck) {
-                    recursioncheck = true;
-                    LogErr(h_errno,1,"gethostbyname failed",__LINE__,name);
-                    recursioncheck = false;
-                }
+                RecursionSafeLogErr(h_errno, 1, "gethostbyname failed", __LINE__, name);
                 return false;
             }
             {
@@ -3363,86 +3668,79 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         }
         return false;
     }
+
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    struct addrinfo  *addrInfo = NULL;
-    for (;;) {
-        memset(&hints,0,sizeof(hints));
-        // dont wait for both A and AAAA records ...
-        if (IP4only || (!IP6preferred))
-            hints.ai_family = AF_INET;
-        int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
-        if (!ret) 
-            break;
-        if (retry--==0) {
-            if (!recursioncheck) {
-                recursioncheck = true;
-                LogErr(ret,1,"getaddrinfo failed",__LINE__,name);
-#ifdef _DEBUG
-                PrintStackReport();
-#endif
-                recursioncheck = false;
-            }
+    int retCode = 0;
+    if ( (timeoutms != INFINITE) && (useDNSTimeout()) ) // could addrInfoPool be NULL ?
+    {
+        // getaddrinfo_a() offers an async getaddrinfo method, but has some limitations and a possible mem leak
+        // could implement timeout getaddrinfo functionality without threads by connecting with DNS servers and parsing response ...
+        // lookup performance may be significantly improved if system uses a DNS resolver cache
+
+        PooledThreadHandle thrdHandle;
+        Owned<CAddrInfoThreadArgs> addrThreadInfo = new CAddrInfoThreadArgs(name);
+        CTimeMon dnstimeout(timeoutms);
+
+        try
+        {
+            // wait up to timeoutms for an available thread from pool ...
+            thrdHandle = addrInfoPool->start((void *)addrThreadInfo.getLink(), "getaddrinfo-thread", timeoutms);
+            // MCK TODO: if have to create a new thread and at os/system/shell thread limit, create/start can take up to several seconds, can we control this ?
+        }
+        catch (IException *e)
+        {
+            addrThreadInfo->Release();
+            StringBuffer excMsg;
+            StringBuffer emsg;
+            emsg.appendf("getaddrinfo failed (thread) (%d) (exc:%d) %s", timeoutms, e->errorCode(), e->errorMessage(excMsg).str());
+            RecursionSafeLogErr(100, 1, emsg.str(), __LINE__, name);
+            e->Release();
             return false;
         }
-        Sleep((10-retry)*100);
-    }
-    struct addrinfo  *best = NULL;
-    bool snm = !PreferredSubnet.isNull();
-    for (;;) {
-        struct addrinfo  *ai;
-        for (ai = addrInfo; ai; ai = ai->ai_next) {
-//          printf("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s\n",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
-            switch (ai->ai_family) {
-            case AF_INET: {
-                    if (snm) {
-                        IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
-                        if (!PreferredSubnet.test(ip))
-                            continue;
-                    }
-                    if ((best==NULL)||((best->ai_family==AF_INET6)&&!IP6preferred))
-                        best = ai;
-                    break;
-                }
-            case AF_INET6: {
-                    if (snm) {
-                        IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
-                        if (!PreferredSubnet.test(ip))
-                            continue;
-                    }
-                    if ((best==NULL)||((best->ai_family==AF_INET)&&IP6preferred))
-                        best = ai;
-                    break;
-                }                   
+        catch (...)
+        {
+            addrThreadInfo->Release();
+            RecursionSafeLogErr(101, 1, "getaddrinfo failed (thread) (other exc)", __LINE__, name);
+            return false;
+        }
+
+        // take into account time already passed creating/starting thread above ...
+        unsigned remaining;
+        dnstimeout.timedout(&remaining);
+        if (addrInfoPool->join(thrdHandle, remaining))
+        {
+            if (0 == addrThreadInfo->retCode)
+            {
+                memcpy(netaddr, addrThreadInfo->netaddr, sizeof(addrThreadInfo->netaddr));
+                return true;
+            }
+            else
+            {
+                // use gai_strerror(ret) to get meaningful error text ?
+                StringBuffer emsg;
+                emsg.appendf("getaddrinfo failed (thread)");
+                RecursionSafeLogErr(addrThreadInfo->retCode.load(), 1, emsg.str(), __LINE__, name);
+                return false;
             }
         }
-        if (best||!snm)
-            break;
-        snm = false;
+        // if join() returns false thread still running, but its detached,
+        // will terminate, release thread args and return to pool on its own ...
+
+        StringBuffer emsg;
+        emsg.appendf("getaddrinfo timed out (thread) (%d)", timeoutms);
+        RecursionSafeLogErr(EAI_AGAIN, 1, emsg.str(), __LINE__, name);
+        return false;
     }
-    if (best) {
-        if (best->ai_family==AF_INET6)
-            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
-        else {
-            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
-            netaddr[2] = 0xffff0000;
-            netaddr[1] = 0;
-            netaddr[0] = 0;
-        }
-    }
-    freeaddrinfo(addrInfo);
-    return best!=NULL;
+
+    retCode = getAddressInfo(name, netaddr, true);
+    if (0 == retCode)
+        return true;
+    else
+        return false;
 #endif
-    return false;
-            
 }
 
-
-
-bool IpAddress::ipset(const char *text)
+bool IpAddress::ipset(const char *text, unsigned timeoutms)
 {
     if (text&&*text)
     {
@@ -3462,7 +3760,7 @@ bool IpAddress::ipset(const char *text)
                 break;
         if (!*s)
             return ipset(NULL);
-        if (lookupHostAddress(text,netaddr))
+        if (lookupHostAddress(text, netaddr, timeoutms))
         {
             hostname.set(text);
             return true;
@@ -3669,7 +3967,7 @@ void SocketEndpoint::serialize(MemoryBuffer & out) const
 }
 
 
-bool SocketEndpoint::set(const char *name,unsigned short _port)
+bool SocketEndpoint::set(const char *name,unsigned short _port, unsigned timeoutms)
 { 
     if (name) {
         if (*name=='[') { 
@@ -3699,7 +3997,7 @@ bool SocketEndpoint::set(const char *name,unsigned short _port)
             name = ips;
             _port = atoi(colon+1);
         }
-        if (ipset(name)) {
+        if (ipset(name, timeoutms)) {
             port = _port; 
             return true;
         }
@@ -6432,44 +6730,15 @@ bool SocketEndpointArray::fromName(const char *name, unsigned defport)
         return ordinality()>0;
     }
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    struct addrinfo  *addrInfo = NULL;
-    memset(&hints,0,sizeof(hints));
-    int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
-    if (ret == 0)
+    unsigned netaddr[4];
+    int retCode = getAddressInfo(name, netaddr, true);
+    if (0 == retCode)
     {
-        struct addrinfo  *ai;
-        for (ai = addrInfo; ai; ai = ai->ai_next)
-        {
-            // DBGLOG("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
-            if (ai->ai_protocol == IPPROTO_IP)
-            {
-                switch (ai->ai_family)
-                {
-                    case AF_INET:
-                    {
-                        SocketEndpoint ep;
-                        ep.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
-                        ep.port = defport;
-                        append(ep);
-                        // StringBuffer s;
-                        // DBGLOG("Lookup %s found %s", name, ep.getEndpointHostText(s).str());
-                        break;
-                    }
-                case AF_INET6:
-                    {
-                        SocketEndpoint ep;
-                        ep.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
-                        ep.port = defport;
-                        append(ep);
-                        break;
-                    }
-                }
-            }
-        }
+        SocketEndpoint ep;
+        ep.setNetAddress(sizeof(netaddr),netaddr);
+        ep.port = defport;
+        append(ep);
     }
-    freeaddrinfo(addrInfo);
 #endif
     return ordinality()>0;
 }

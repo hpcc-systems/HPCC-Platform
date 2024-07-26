@@ -1087,14 +1087,13 @@ class CSimpleSocket : public CInterface, implements IInterface
     ISecureSocketContext* m_ssctx;
     bool m_isSSL;
     FILE* m_logfile;
-    int m_sockfd;
-    Owned<ISecureSocket> m_securesocket;
+    Owned<ISocket> m_socket;
     bool m_connected;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSimpleSocket(ISecureSocketContext* ssctx, FILE* logfile) : m_connected (false)
+    CSimpleSocket(ISecureSocketContext* ssctx, FILE* logfile) : m_connected(false)
     {
         m_ssctx = ssctx;
         if(ssctx)
@@ -1102,13 +1101,6 @@ public:
         else
             m_isSSL = false;
         m_logfile = logfile;
-        m_sockfd = -1;
-    }
-
-    virtual ~CSimpleSocket()
-    {
-        if(m_sockfd > 0)
-            ::closesocket(m_sockfd);
     }
 
     int connect(CAddress* address)
@@ -1116,120 +1108,63 @@ public:
         if(!address)
             return -1;
 
-        m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_sockfd == INVALID_SOCKET)
+        SocketEndpoint ep(address->m_fqdn, address->m_port);
+        try
         {
-            fprintf(m_logfile, "Error: invalid socket");
-            return -1;
+            m_socket.setown(ISocket::connect(ep));
         }
-        int ret = ::connect(m_sockfd, (struct sockaddr *)(address->m_addr), sizeof(*(address->m_addr)));
-        if(ret < 0)
+        catch (IJSOCK_Exception *e)
         {
-            char errbuf[512];
-            GetLastErrorAndMessage(errbuf);
-            fprintf(m_logfile, "Error: failed to connect to %s:%d - %s", address->m_ip.str(), address->m_port, errbuf);
+            EXCLOG(e);
+            e->Release();
             return -1;
         }
         
         if(m_ssctx != NULL)
         {
-            m_securesocket.setown(m_ssctx->createSecureSocket(m_sockfd, SSLogNormal, address->m_fqdn.str()));
+            Owned<ISecureSocket> m_securesocket = m_ssctx->createSecureSocket(m_socket.getClear(), SSLogNormal, address->m_fqdn.str());
             int res = m_securesocket->secure_connect();
             if(res < 0)
             {
                 fprintf(m_logfile, "Error: failed to establish ssl connection\n");
                 return -1;
             }
+            m_socket.setown(m_securesocket.getClear());
         }
         m_connected = true;
 
         return 0;
     }
 
-    ssize_t readn(int fd, void *vptr, size_t min, size_t n)
+    ssize_t writen(const void *vptr, size_t n)
     {
-        if (min > n)
-            return 0;
-
-        size_t  nleft;
-        ssize_t nread;
-        char   *ptr;
-
-        ptr = (char *)vptr;
-        nleft = n;
-        while (nleft > 0)
+        try
         {
-            if ((nread = ::recv(fd, ptr, nleft, 0)) < 0)
-            {
-                if (errno == EINTR)
-                {
-                    nread = 0;      /* and call read() again */
-                    continue;
-                }
-                else
-                {
-                    close();
-                    return (-1);
-                }
-            }
-            else if (nread == 0)
-            {
-                close();
-                break;              /* EOF */
-            }
-
-            nleft -= nread;
-            ptr += nread;
-            if (n - nleft >= min)
-                break;
+            return m_socket->write(vptr, n);
         }
-        return (n - nleft);         /* return >= 0 */
-    }
-
-    ssize_t readn(int fd, void *vptr, size_t n)
-    {
-        return readn(fd, vptr, n, n);
-    }
-
-    ssize_t writen(int fd, const void *vptr, size_t n)
-    {
-        size_t nleft;
-        ssize_t nwritten;
-        const char *ptr;
-
-        ptr = (char *)vptr;
-        nleft = n;
-        while (nleft > 0)
+        catch (IJSOCK_Exception *e)
         {
-            if ( (nwritten = ::send(fd, ptr, nleft, 0)) <= 0)
-            {
-                if (nwritten < 0 && errno == EINTR)
-                    nwritten = 0;   /* and call write() again */
-                else
-                {
-                    close();
-                    return (-1);    /* error */
-                }
-            }
-
-            nleft -= nwritten;
-            ptr += nwritten;
+            EXCLOG(e);
+            e->Release();
+            return -1;
         }
-        return (n);
     }
 
     int send(StringBuffer& data)
     {
-        int sent = 0;
-        if(!m_isSSL)
-        {
-            // sent = ::send(m_sockfd, data.str(), data.length(), 0);
-            sent = writen(m_sockfd, data.str(), data.length());
-        }
-        else
-            sent = m_securesocket->write(data.str(), data.length());
-        
-        return sent;
+        return writen(data.str(), data.length());
+    }
+
+    int receive(char* buf, int min, int buflen)
+    {
+        if ((min > buflen) || !m_socket)
+            return 0;
+
+        unsigned int len = 0;
+        if (readtmsAllowClose(m_socket, buf, min, buflen, len, WAIT_FOREVER) || (len <= 0))
+            close();
+
+        return len;
     }
 
     int receive(char* buf, int buflen)
@@ -1237,33 +1172,12 @@ public:
         return receive(buf, buflen, buflen);
     }
 
-    int receive(char* buf, int min, int buflen)
-    {
-        if (min > buflen)
-            return 0;
-
-        unsigned int len = 0;
-        if (!m_isSSL)
-        {
-            //len = ::recv(m_sockfd, buf, buflen, 0);
-            len = readn(m_sockfd, buf, min, buflen);
-        }
-        else
-        {
-            m_securesocket->read(buf, min, buflen, len, WAIT_FOREVER);
-            if(len <= 0)
-                close();
-        }
-
-        return len;
-    }
-
     void close()
     {
-        if(m_sockfd > 0)
+        if (m_socket)
         {
-            ::closesocket(m_sockfd);
-            m_sockfd = -1;
+            m_socket->close();
+            m_socket.clear();
         }
         m_connected = false;
     }
@@ -1316,100 +1230,71 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<C
     {
         int len = 0;
         char recvbuf[2048];
-        if (!isPersistent)
+        StringBuffer headersbuf;
+        unsigned int searchStart = 0;
+        while (1)
         {
-            while (1)
+            len = sock->receive(recvbuf, 1, 2047);
+            if (len > 0)
             {
-                len = sock->receive(recvbuf, 0, 2047);
-                if (len > 0)
+                total_len += len;
+                recvbuf[len] = 0;
+                if (http_tracelevel >= 10)
+                    fprintf(m_logfile, "%s", recvbuf);
+                headersbuf.append(recvbuf);
+                char* endofheaders = strstr((char*)(headersbuf.str()+searchStart), "\r\n\r\n");
+                searchStart += len>3?(len-3):0;
+                if (endofheaders != nullptr)
                 {
-                    total_len += len;
-                    recvbuf[len] = 0;
-                    if (m_doValidation)
-                        xml.append(len, recvbuf);
-                    if (http_tracelevel >= 10)
-                        fprintf(m_logfile, "%s", recvbuf);
-                }
-                else
-                {
-                    if (total_len == 0)
+                    int conlen = 0;
+                    const char* conlenstr = strstr((char*)headersbuf.str(), "Content-Length:");
+                    if (conlenstr != nullptr)
+                        conlen = atoi(conlenstr+15);
+                    else
+                        shouldClose = true;
+                    if (conlen > 0)
                     {
-                        if (stat)
-                            stat->numfails++;
-                        return -1;
+                        int content_read = headersbuf.length() - (endofheaders+4 - headersbuf.str());
+                        if (m_doValidation && content_read > 0)
+                            xml.append(content_read, endofheaders+4);
+                        while (content_read < conlen)
+                        {
+                            int remaining = conlen - content_read;
+                            len = sock->receive(recvbuf, 2047>remaining?remaining:2047);
+                            if (len > 0)
+                            {
+                                content_read += len;
+                                total_len += len;
+                                recvbuf[len] = 0;
+                                if (m_doValidation)
+                                    xml.append(len, recvbuf);
+                                if (http_tracelevel >= 10)
+                                    fprintf(m_logfile, "%s", recvbuf);
+                            }
+                            else
+                            {
+                                sock->close();
+                                if (stat)
+                                    stat->numfails++;
+                                return -1;
+                            }
+                        }
                     }
                     break;
                 }
+                else if (total_len >= 1000000) // Still haven't reached end of headers
+                {
+                    fprintf(m_logfile, "HTTP headers too long.\n");
+                    shouldClose = true;
+                    break;
+                }
             }
-        }
-        else
-        {
-            StringBuffer headersbuf;
-            unsigned int searchStart = 0;
-            while (1)
+            else
             {
-                len = sock->receive(recvbuf, 0, 2047);
-                if (len > 0)
-                {
-                    total_len += len;
-                    recvbuf[len] = 0;
-                    if (http_tracelevel >= 10)
-                        fprintf(m_logfile, "%s", recvbuf);
-                    headersbuf.append(recvbuf);
-                    char* endofheaders = strstr((char*)(headersbuf.str()+searchStart), "\r\n\r\n");
-                    searchStart += len>3?(len-3):0;
-                    if (endofheaders != nullptr)
-                    {
-                        int conlen = 0;
-                        const char* conlenstr = strstr((char*)headersbuf.str(), "Content-Length:");
-                        if (conlenstr != nullptr)
-                            conlen = atoi(conlenstr+15);
-                        else
-                            shouldClose = true;
-                        if (conlen > 0)
-                        {
-                            int content_read = headersbuf.length() - (endofheaders+4 - headersbuf.str());
-                            if (m_doValidation && content_read > 0)
-                                xml.append(content_read, endofheaders+4);
-                            while (content_read < conlen)
-                            {
-                                int remaining = conlen - content_read;
-                                len = sock->receive(recvbuf, 2047>remaining?remaining:2047);
-                                if (len > 0)
-                                {
-                                    content_read += len;
-                                    total_len += len;
-                                    recvbuf[len] = 0;
-                                    if (m_doValidation)
-                                        xml.append(len, recvbuf);
-                                    if (http_tracelevel >= 10)
-                                        fprintf(m_logfile, "%s", recvbuf);
-                                }
-                                else
-                                {
-                                    sock->close();
-                                    if (stat)
-                                        stat->numfails++;
-                                    return -1;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    else if (total_len >= 1000000) // Still haven't reached end of headers
-                    {
-                        fprintf(m_logfile, "HTTP headers too long.\n");
-                        shouldClose = true;
-                        break;
-                    }
-                }
-                else
-                {
-                    sock->close();
-                    if (stat && len < 0)
-                        stat->numfails++;
-                    return -1;
-                }
+                sock->close();
+                if (stat && len < 0)
+                    stat->numfails++;
+                return -1;
             }
         }
         if (m_doValidation && xml.length() > 0)

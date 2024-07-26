@@ -334,7 +334,7 @@ protected:
     Owned<IThorRowInterfaces> inputRowIf;
 
 public:
-    CLocalResultActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info, spillingActivityStatistics)
+    CLocalResultActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
     }
     virtual void init() override

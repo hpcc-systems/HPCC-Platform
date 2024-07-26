@@ -23,6 +23,7 @@
 #include "jmutex.hpp"
 #include <vector>
 #include <initializer_list>
+#include <map>
 
 #include "jstatcodes.h"
 
@@ -44,6 +45,8 @@ inline constexpr stat_type statPercentageOf(stat_type value, stat_type per) { re
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
 inline cost_type money2cost_type(double money) { return money * 1E6; }
 inline double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
+
+extern jlib_decl void formatTime(StringBuffer & out, unsigned __int64 value);
 //---------------------------------------------------------------------------------------------------------------------
 
 //Represents a single level of a scope
@@ -838,6 +841,21 @@ void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, Statisti
 template <class INTERFACE>
 void mergeStat(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { mergeStat(stats, source.get(), kind); }
 
+// helper templates that add delta of previous vs current (from source) to tgtStats (and update prevStats)
+template <class INTERFACE>
+void updateStatsDelta(CRuntimeStatisticCollection & tgtStats, CRuntimeStatisticCollection & prevStats, INTERFACE * source)
+{
+    CRuntimeStatisticCollection curStats(tgtStats.queryMapping());
+    mergeStats(curStats, source);
+    prevStats.updateDelta(tgtStats, curStats); // NB: adds delta to tgtStats, and updates prevStats
+}
+
+template <class INTERFACE>
+void updateStatsDelta(CRuntimeStatisticCollection & tgtStats, CRuntimeStatisticCollection & prevStats, const Shared<INTERFACE> & source)
+{
+    updateStatsDelta(tgtStats, prevStats, source.get());
+}
+
 
 //Some template helper classes for overwriting/setting statistics from external sources.
 
@@ -873,6 +891,55 @@ void setStat(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticK
 
 template <class INTERFACE>
 void setStat(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { setStat(stats, source.get(), kind); }
+
+
+typedef std::map<StatisticKind, StatisticKind> StatKindMap;
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatisticsMapping & mapping, const StatKindMap & remaps)
+{
+    if (!source)
+        return;
+    unsigned max = mapping.numStatistics();
+    for (unsigned i=0; i < max; i++)
+    {
+        StatisticKind kind = mapping.getKind(i);
+        if (remaps.find(kind) == remaps.end())
+            stats.mergeStatistic(kind, source->getStatistic(kind));
+    }
+    for (auto remap: remaps)
+    {
+        if (mapping.hasKind(remap.second))
+            stats.mergeStatistic(remap.second, source->getStatistic(remap.first));
+    }
+}
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatKindMap & remaps)
+{
+    mergeRemappedStats(stats, source, stats.queryMapping(), remaps);
+}
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, const StatKindMap & remaps)
+{
+    mergeRemappedStats(stats, source.get(), stats.queryMapping(), remaps);
+}
+
+template <class INTERFACE>
+void updateRemappedStatsDelta(CRuntimeStatisticCollection & tgtStats, CRuntimeStatisticCollection & prevStats, INTERFACE * source, const StatKindMap & remap)
+{
+    CRuntimeStatisticCollection curStats(tgtStats.queryMapping());
+    ::mergeRemappedStats(curStats, source, remap);
+    prevStats.updateDelta(tgtStats, curStats); // NB: adds delta to tgtStats, and updates prevStats
+}
+
+template <class INTERFACE>
+void updateRemappedStatsDelta(CRuntimeStatisticCollection & tgtStats, CRuntimeStatisticCollection & prevStats, const Shared<INTERFACE> & source, const StatKindMap & remap)
+{
+    updateRemappedStatsDelta(tgtStats, prevStats, source.get(), remap);
+}
+
 
 //---------------------------------------------------------------------------------------------------------------------
 

@@ -325,6 +325,7 @@ constexpr TraceFlags traceNone = TraceFlags::None;
 constexpr TraceFlags traceStandard = TraceFlags::Standard;
 constexpr TraceFlags traceDetailed = TraceFlags::Detailed;
 constexpr TraceFlags traceMax = TraceFlags::Max;
+constexpr TraceFlags traceAll = (TraceFlags)(~TraceFlags::LevelMask);   // i.e. all feature flags except for the detail level
 
 // Common to several engines
 constexpr TraceFlags traceHttp = TraceFlags::flag1;
@@ -335,6 +336,7 @@ constexpr TraceFlags traceCouchbase = TraceFlags::flag5;
 constexpr TraceFlags traceFilters = TraceFlags::flag6;
 constexpr TraceFlags traceKafka = TraceFlags::flag7;
 constexpr TraceFlags traceJava = TraceFlags::flag8;
+constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -353,7 +355,8 @@ constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
-
+//Specific to the code generator
+// see traceOptimizations above.
 
 //========================================================================================= 
 
@@ -392,6 +395,16 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
     TRACEOPT(traceAcknowledge),
+};
+
+constexpr std::initializer_list<TraceOption> eclccTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceOptimizations),
 };
 
 interface IPropertyTree;

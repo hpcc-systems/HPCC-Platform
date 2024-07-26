@@ -197,7 +197,7 @@ const static unsigned __int64 oneMinute = I64C(60000000000);
 const static unsigned __int64 oneHour = I64C(3600000000000);
 const static unsigned __int64 oneDay = 24 * I64C(3600000000000);
 
-static void formatTime(StringBuffer & out, unsigned __int64 value)
+void formatTime(StringBuffer & out, unsigned __int64 value)
 {
     //Aim to display at least 3 significant digits in the result string
     if (value < oneMicroSecond)

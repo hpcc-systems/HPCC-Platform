@@ -123,7 +123,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable.call()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -163,7 +163,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDescheduleConfirm, store, total]);
+    ], [currentUser.username, filter, hasFilter, refreshData, selection, setShowDescheduleConfirm, store, total]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

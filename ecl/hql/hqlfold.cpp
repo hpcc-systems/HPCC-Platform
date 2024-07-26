@@ -4610,7 +4610,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     {
                         if (isConstantTransform(transform))
                         {
-                            DBGLOG("Folder: Replace %s with ROW", getOpString(op));
+                            if (doTrace(traceOptimizations))
+                                DBGLOG("Folder: Replace %s with ROW", getOpString(op));
                             return createDataset(no_datasetfromrow, createRow(no_createrow, LINK(transform)));
                         }
                     }
@@ -4691,7 +4692,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 args.append(*newTransform.getClear());
                 args.append(*LINK(selSeq));
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
-                DBGLOG("Folder: Replace %s%s with PROJECT", getOpString(op), reason);
+                if (doTrace(traceOptimizations))
+                    DBGLOG("Folder: Replace %s%s with PROJECT", getOpString(op), reason);
                 return ret.getClear();
             }
 
@@ -4720,7 +4722,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 args.append(*newTransform.getClear());
                 args.append(*LINK(newSelSeq));
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
-                DBGLOG("Folder: Replace JOIN(<empty>, ds) with PROJECT");
+                if (doTrace(traceOptimizations))
+                    DBGLOG("Folder: Replace JOIN(<empty>, ds) with PROJECT");
                 return ret.getClear();
             }
             break;
@@ -4761,7 +4764,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 case 1:
                     if (op == no_cogroup)
                     {
-                        DBGLOG("Folder: Replace %s with group", getOpString(op));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Folder: Replace %s with group", getOpString(op));
                         IHqlExpression * grouping = queryAttributeChild(expr, groupAtom, 0);
                         IHqlExpression * mappedGrouping = replaceSelector(grouping, queryActiveTableSelector(), lastInput);
                         OwnedHqlExpr group = createDataset(no_group, LINK(lastInput), mappedGrouping);
@@ -4769,11 +4773,13 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     }
                     else
                     {
-                        DBGLOG("Folder: Replace %s with child", getOpString(op));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Folder: Replace %s with child", getOpString(op));
                         return LINK(lastInput);
                     }
                 default:
-                    DBGLOG("Folder: Remove %d inputs from %s", expr->numChildren()-args.ordinality(), getOpString(op));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Folder: Remove %d inputs from %s", expr->numChildren()-args.ordinality(), getOpString(op));
                     return expr->clone(args);
                 }
             }
@@ -5632,9 +5638,12 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                             if (expandedFilter->isConstant())
                             {
                                 //Following would be sensible, but can't call transform at this point, so replace arg, and wait for it to re-iterate
-                                IIdAtom * nameF = expr->queryId();
-                                IIdAtom * nameP = child->queryId();
-                                DBGLOG("Folder: Combining FILTER %s with %s %s produces constant filter", nameF ? str(nameF) : "", getOpString(child->getOperator()), nameP ? str(nameP) : "");
+                                if (doTrace(traceOptimizations))
+                                {
+                                    IIdAtom * nameF = expr->queryId();
+                                    IIdAtom * nameP = child->queryId();
+                                    DBGLOG("Folder: Combining FILTER %s with %s %s produces constant filter", nameF ? str(nameF) : "", getOpString(child->getOperator()), nameP ? str(nameP) : "");
+                                }
                                 expandedFilter.setown(transformExpanded(expandedFilter));
                                 IValue * value = expandedFilter->queryValue();
                                 if (value)
@@ -5685,8 +5694,11 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                             return replaceWithNull(expr);
                         if (filtered.ordinality() == values->numChildren())
                             return removeParentNode(expr);
-                        StringBuffer s1, s2;
-                        DBGLOG("Folder: Node %s reduce values in child: %s from %d to %d", queryChildNodeTraceText(s1, expr), queryChildNodeTraceText(s2, child), values->numChildren(), filtered.ordinality());
+                        if (doTrace(traceOptimizations))
+                        {
+                            StringBuffer s1, s2;
+                            DBGLOG("Folder: Node %s reduce values in child: %s from %d to %d", queryChildNodeTraceText(s1, expr), queryChildNodeTraceText(s2, child), values->numChildren(), filtered.ordinality());
+                        }
                         HqlExprArray args;
                         args.append(*values->clone(filtered));
                         unwindChildren(args, child, 1);
@@ -6587,7 +6599,10 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
 
 #ifdef LOG_ALL_FOLDING
     if ((op != transformed->getOperator()) || (expr->numChildren() != transformed->numChildren()))
-        DBGLOG("Folding %s to %s", getOpString(updated->getOperator()), getOpString(transformed->getOperator()));
+    {
+        if (doTrace(traceOptimizations))
+            DBGLOG("Folding %s to %s", getOpString(updated->getOperator()), getOpString(transformed->getOperator()));
+    }
 #endif
 
 #ifdef _DEBUG
@@ -7183,21 +7198,24 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
 IHqlExpression * CExprFolderTransformer::removeParentNode(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    DBGLOG("Folder: Node %s remove self (now %s)", queryNode0Text(expr), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Folder: Node %s remove self (now %s)", queryNode0Text(expr), queryNode1Text(child));
     return LINK(child);
 }
 
 IHqlExpression * CExprFolderTransformer::replaceWithNull(IHqlExpression * expr)
 {
     IHqlExpression * ret = createNullExpr(expr);
-    DBGLOG("Folder: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Folder: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     return ret;
 }
 
 IHqlExpression * CExprFolderTransformer::replaceWithNullRow(IHqlExpression * expr)
 {
     IHqlExpression * ret = createRow(no_null, LINK(expr->queryRecord()));
-    DBGLOG("Folder: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Folder: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     return ret;
 }
 

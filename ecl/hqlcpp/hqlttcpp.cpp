@@ -6493,7 +6493,9 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
         if (expr->queryName())
             s.append("[").append(expr->queryName()).append("] ");
         s.append(" to common up code between workflow items");
-        DBGLOG("%s", s.str());
+        if (doTrace(traceOptimizations))
+            DBGLOG("%s", s.str());
+
         translator.addWorkunitException(SeverityInformation, HQLWRN_TryAddingIndependent, s.str(), location);
         if (!translator.queryOptions().performWorkflowCse)
             return LINK(transformed);
@@ -6503,11 +6505,12 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     // e.g., ensure it really is worth commoning up, the expressions aren't to be evaluated on different clusters etc. etc.
     unsigned wfid = ++wfidCount;
 
-    s.appendf("AutoWorkflow: Spotted %s ", getOpString(expr->getOperator()));
+    s.clear().appendf("AutoWorkflow: Spotted %s ", getOpString(expr->getOperator()));
     if (expr->queryId())
         s.append("[").append(expr->queryId()->queryStr()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
-    DBGLOG("%s", s.str());
+    if (doTrace(traceOptimizations))
+        DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
 
     GlobalAttributeInfo info("jobtemp::wfa", "wfa", transformed);
@@ -8832,12 +8835,15 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
     AutoScopeMigrateInfo * extra = queryBodyExtra(expr);
     if (extra->doAutoHoist(transformed, translator.queryOptions().minimizeWorkunitTemporaries))
     {
-        StringBuffer s;
-        s.appendf("AutoGlobal: Spotted %s ", getOpString(expr->getOperator()));
-        if (expr->queryName())
-            s.append("[").append(expr->queryName()).append("] ");
-        s.append("as an item to hoist");
-        DBGLOG("%s", s.str());
+        if (doTrace(traceOptimizations))
+        {
+            StringBuffer s;
+            s.appendf("AutoGlobal: Spotted %s ", getOpString(expr->getOperator()));
+            if (expr->queryName())
+                s.append("[").append(expr->queryName()).append("] ");
+            s.append("as an item to hoist");
+            DBGLOG("%s", s.str());
+        }
         if (extra->globalInsideChild)
         {
             StringBuffer nameText;
@@ -9394,7 +9400,8 @@ IHqlExpression * KeyedProjectTransformer::createTransformed(IHqlExpression * exp
                 expandedTransform.setown(mapper.expandFields(transformed->queryChild(3), oldRight, newRight));
             if (translatedFilter && (expandedTransform || op == no_keyeddistribute))
             {
-                DBGLOG("KeyedProjectTransformer: Merge KEYED PROJECT into JOIN");
+                if (doTrace(traceOptimizations))
+                    DBGLOG("KeyedProjectTransformer: Merge KEYED PROJECT into JOIN");
                 HqlExprArray args;
                 args.append(*LINK(transformed->queryChild(0)));
                 args.append(*LINK(rhs->queryChild(0)));

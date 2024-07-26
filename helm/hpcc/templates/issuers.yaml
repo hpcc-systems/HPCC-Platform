@@ -136,7 +136,7 @@ spec:
    {{- range $k, $v := .Values.certificates.issuers }}
 {{- include "hpcc.addIssuer" (dict "root" $ "issuerKeyName" $k "me" $v ) }}
    {{- end }}
-   {{- $categories := list "system" "storage" "esp" "codeSign" "codeVerify" "authn" "eclUser" "ecl" "git" "jfrog" -}}
+   {{- $categories := list "authn" "codeSign" "codeVerify" "ecl" "eclUser" "esp" "git" "jfrog" "storage" "system" -}}
    {{- range $category := $categories }}
     {{ include "hpcc.addVaultClientCertificate" (dict "root" $ "category" $category) }}
    {{- end }}
