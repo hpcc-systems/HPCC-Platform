@@ -3595,3 +3595,16 @@ extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTre
             throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest", filename.str());
     }
 }
+
+void hold(const char *msg)
+{
+    WARNLOG("Holding: %s", msg);
+    bool held = true;
+    while (held)
+    {
+        MilliSleep(5000);
+    }
+    WARNLOG("Released: %s", msg);
+}
+
+

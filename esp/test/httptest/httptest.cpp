@@ -565,7 +565,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
         unsigned int sizeread;
         do
         {
-            socket->read(tmpbuf, 0, 256, sizeread);
+            socket->read(tmpbuf, 1, 256, sizeread);
         }
         while(sizeread > 0);
 
