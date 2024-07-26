@@ -207,10 +207,8 @@ public:
             case TAKdistributed:
             case TAKtrace:
             case TAKemptyaction:
-                ret = new CMasterActivity(this);
-                break;
             case TAKsplit:
-                ret = new CMasterActivity(this, spillingActivityStatistics);
+                ret = new CMasterActivity(this);
                 break;
             case TAKsoap_rowdataset:
             case TAKsoap_rowaction:
