@@ -70,7 +70,8 @@ The hyperlinks pattern used for different files:
 The `-H` and `-n` flags to the `grep` command outputs the file Name and line number of the link respectively.  
 Note:  
 1. The `<ulink` and `</ulink>` tags are also listed in XML files. Only the hyperlinks enclosed between these tags are listed, while others are ignored.
-2. The \`\`\` (triple backticks represents code snippets in Markdown files ) are also listed along with the hyperlinks. So that what ever comes inside the backticks are ignored.
+2. Triple backticks ("\`\`\`") in Markdown files are used to represent code snippets. These backticks are also extracted along with hyperlinks, allowing us to distinguish between code snippets and documentation. Code snippets are ignored in processing because their syntax should not interfere with Markdown syntax. This is crucial since the logic for testing hyperlinks depends on correctly interpreting the Markdown file’s syntax.  
+Note: Using triple backticks for purposes other than representing code snippets is not recommended in Markdown files. If using triple backticks is unavoidable, ensure they are escaped with a backslash ("\\") to prevent misinterpretation by the hyperlink-testing logic.
 ```yaml     
 - name: List links from Documentation files
   run: |
@@ -109,12 +110,12 @@ Note:
         echo $FILE >> missingFiles.txt
         continue
       fi 
-      grep -onHE -e "\]\([^\)]+" -e "\`\`\`[^\`]*" -e "http://[^\ \;\"\'\<\>\,\`\)]+" -e "https://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
+      grep -onHE -e "\]\([^\)]+" -e "\`\`\`" -e "http://[^\ \;\"\'\<\>\,\`\)]+" -e "https://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
       FLAG=0
       for LINE in $( cat links.tmp )
       do 
         LINK=$( echo $LINE | cut -d ':' -f3- ) 
-        if [[ ${LINK:0:3} == '```' ]]; then 
+        if [[ ${LINK:0:3} == "\`\`\`" ]]; then 
           FLAG=$(( 1 - FLAG ))
           continue
         fi
