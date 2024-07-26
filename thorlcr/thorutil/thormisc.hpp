@@ -170,6 +170,9 @@ extern graph_decl const StatisticsMapping hashDistribActivityStatistics;
 extern graph_decl const StatisticsMapping spillingActivityStatistics;
 extern graph_decl const StatisticsMapping spillingWriteAheadStatistics;
 
+// Maps disk related stats to spill stats
+extern graph_decl const std::map<StatisticKind, StatisticKind> diskToTempStatsMap;
+
 class BooleanOnOff
 {
     bool &tf;
