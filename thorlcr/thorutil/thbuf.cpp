@@ -668,7 +668,7 @@ static std::tuple<IBufferedSerialOutputStream *, IFileIO *> createSerialOutputSt
  - Writer:
  - The writer to an in-memory queue, and when the queue is full, or a certain number of rows have been queued, it writes to starts writing to temp files.
  - The writer will always write to the queue if it can, even after it has started spilling.
- - The writer commits to disk at LookAheadOptions::writeAheadSize granularity
+ - The writer commits to disk at LookAheadOptions::writeAheadSize granularity. NB: size is uncompressed, measured before data is written to disk.
  - The writer creates a new temp file when the current one reaches LookAheadOptions::tempFileGranularity
  - The writer pushes the current nextOutputRow to a queue when it creates the next output file (used by the reader to know when to move to next)
  - NB: writer implements ISmartRowBuffer::flush() which has slightly weird semantics (blocks until everything is read or stopped)
@@ -706,7 +706,6 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     Owned<IBufferedSerialOutputStream> outputStream;
     std::unique_ptr<COutputStreamSerializer> outputStreamSerializer;
     memsize_t pendingFlushToDiskSz = 0;
-    offset_t currentTempFileSize = 0;
     CFileOwner *currentOwnedOutputFile = nullptr;
     Owned<IFileIO> currentOutputIFileIO; // keep for stats
     CriticalSection outputFilesQCS;
@@ -876,15 +875,14 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     {
         if (pendingFlushToDiskSz <= threshold)
             return false;
+        pendingFlushToDiskSz = 0;
         rowcount_t currentNextOutputRow = nextOutputRow.load();
         trace("WRITE: Flushed to disk. nextOutputRow = %" RCPF "u", currentNextOutputRow);
         outputStream->flush();
-        currentTempFileSize += pendingFlushToDiskSz;
+        offset_t currentTempFileSize = currentOutputIFileIO->getStatistic(StSizeDiskWrite);
         currentOwnedOutputFile->noteSize(currentTempFileSize);
-        pendingFlushToDiskSz = 0;
         if (currentTempFileSize > options.tempFileGranularity)
         {
-            currentTempFileSize = 0;
             {
                 CriticalBlock b(outputStreamCS);
                 // set if reader isn't bounded yet, or queue next boundary
@@ -899,7 +897,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
                     trace("WRITE: adding to tempFileEndRowMarker(size=%u): %" RCPF "u", (unsigned)outputFileEndRowMarkers.size(), currentNextOutputRow);
                 }
             }
-            createNextOutputStream();
+            createNextOutputStream(); // NB: creates new currentOwnedOutputFile/currentOutputIFileIO
         }
         committedRows = currentNextOutputRow;
         return true;
@@ -2150,21 +2148,9 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                return tempFileIO->getStatistic(StSizeDiskWrite);
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                return tempFileIO->getStatistic(StCycleDiskWriteIOCycles);
-            default:
-                return tempFileIO->getStatistic(kind);
-        }
+        if (kind==StNumSpills)
+            return 1;
+        return tempFileIO->getStatistic(kind);
     }
 };
 
@@ -2464,6 +2450,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     SharedRowStreamReaderOptions options;
     size32_t inMemReadAheadGranularity = 0;
     CRuntimeStatisticCollection inactiveStats;
+    CRuntimeStatisticCollection previousFileStats;
     StringAttr baseTmpFilename;
 
 
@@ -2493,21 +2480,24 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     {
         if (outputStream)
         {
+            outputStream.clear();
             iFileIO->flush();
             tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
-            ::mergeStats(inactiveStats, iFileIO);
+            updateRemappedStatsDelta(inactiveStats, previousFileStats, iFileIO, diskToTempStatsMap); // NB: also updates prev to current
+            previousFileStats.reset();
             iFileIO.clear();
-            outputStream.clear();
         }
     }
     void createOutputStream()
     {
+        closeWriter(); // Ensure stats from closing files are preserved in inactiveStats
         // NB: Called once, when spilling starts.
         tempFileOwner.setown(activity.createOwnedTempFile(baseTmpFilename));
         auto res = createSerialOutputStream(&(tempFileOwner->queryIFile()), compressHandler, options, numOutputs + 1);
         outputStream.setown(std::get<0>(res));
         iFileIO.setown(std::get<1>(res));
         totalInputRowsRead = inMemTotalRows;
+        inactiveStats.addStatistic(StNumSpills, 1);
     }
     void writeRowsFromInput()
     {
@@ -2549,6 +2539,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream->flush();
         totalInputRowsRead.fetch_add(newRowsWritten);
         tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
+        updateRemappedStatsDelta(inactiveStats, previousFileStats, iFileIO, diskToTempStatsMap); // NB: also updates prev to current
         // JCSMORE - could track size written, and start new file at this point (e.g. every 100MB),
         // and track their starting points (by row #) in a vector
         // We could then tell if/when the readers catch up, and remove consumed files as they do.
@@ -2562,7 +2553,7 @@ public:
     explicit CSharedFullSpillingWriteAhead(CActivityBase *_activity, unsigned _numOutputs, IRowStream *_input, bool _inputGrouped, const SharedRowStreamReaderOptions &_options, IThorRowInterfaces *rowIf, const char *_baseTmpFilename, ICompressHandler *_compressHandler)
         : activity(*_activity), numOutputs(_numOutputs), input(_input), inputGrouped(_inputGrouped), options(_options), compressHandler(_compressHandler), baseTmpFilename(_baseTmpFilename),
         meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
-        inactiveStats(spillingWriteAheadStatistics)
+        inactiveStats(spillStatistics), previousFileStats(spillStatistics)
     {
         assertex(input);
 
@@ -2726,29 +2717,7 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        StatisticKind useKind;
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                useKind = StSizeDiskWrite;
-                break;
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                useKind = StCycleDiskWriteIOCycles;
-                break;
-            default:
-                useKind = kind;
-        }
-        unsigned __int64 v = 0;
-        if (likely(iFileIO))
-            v = iFileIO->getStatistic(useKind);
-        v += inactiveStats.getStatisticValue(useKind);
-        return v;
+        return inactiveStats.getStatisticValue(kind);
     }
 };
 

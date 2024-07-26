@@ -468,7 +468,7 @@ public:
             {
                 if (e->errorCode() == ROXIE_ABORT_EVENT)
                     throw;
-                // MCK - do we checkTimeLimitExceeded(&remainingMS) and possibly error out if timelimit exceeded ?
+                // TODO: do we checkTimeLimitExceeded(&remainingMS) and possibly error out if timelimit exceeded ?
                 if (numAttemptsRemaining > 0)
                 {
                     e->Release();
@@ -2457,7 +2457,10 @@ public:
                 {
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
-                    ep.set(connUrl.host.get(), connUrl.port);
+
+                    // TODO: for DNS, do we use timeoutMS or remainingMS or remainingMS / maxRetries+1 or ?
+                    ep.set(connUrl.host.get(), connUrl.port, master->timeoutMS);
+
                     if (ep.isNull())
                         throw MakeStringException(-1, "Failed to resolve host '%s'", nullText(connUrl.host.get()));
 
@@ -2477,7 +2480,10 @@ public:
                     {
                         isReused = false;
                         keepAlive = true;
+
+                        // TODO: for each connect attempt, do we use timeoutMS or remainingMS or remainingMS / maxRetries or ?
                         socket.setown(blacklist->connect(ep, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor, master->rowProvider));
+
                         if (proto == PersistentProtocol::ProtoTLS)
                         {
 #ifdef _USE_OPENSSL
@@ -2503,7 +2509,6 @@ public:
                             err.append(": OpenSSL disabled in build");
                             throw makeStringException(0, err.str());
 #endif
-
                         }
                     }
                     break;

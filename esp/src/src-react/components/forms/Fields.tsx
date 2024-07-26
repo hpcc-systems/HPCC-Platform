@@ -119,7 +119,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         const keys = selectedKey !== "" ? selectedKey.split(valueSeparator) : [];
         let items = [...selectedItems];
         if (keys.length === items.length) return;
-        if (selectedKeys !== "" && selOptions.length && selectedKey === "") {
+        if (selectedKeys !== "" && selOptions.length && selectedKey === "" && selectedKeys === items.map(i => i.key).join("|")) {
             setSelectedItems([]);
             return;
         }
@@ -833,7 +833,7 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
                 text: row
             };
         }) || [];
-        setOptions(options);
+        setOptions([{ key: "", text: "" }, ...options]);
     }, [cloudContainerNames]);
 
     return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
@@ -1367,6 +1367,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <CloudContainerNameField
                         key={fieldID}
+                        selectedKey={field.value}
                         onChange={(ev, row) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);

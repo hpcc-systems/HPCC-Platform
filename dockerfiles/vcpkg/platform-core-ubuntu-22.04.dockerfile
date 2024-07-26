@@ -33,7 +33,6 @@ RUN apt-get clean -y && \
     expect \
     g++ \
     git \
-    git-lfs \
     locales \
     jq \
     openssh-client \
@@ -59,9 +58,13 @@ RUN apt-get install -y \
     gdb \
     nano 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.28.10/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
+
+RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.5.1_amd64.deb/download && \
+    dpkg -i download && \
+    rm download
 
 # Set the locale
 RUN locale-gen en_US.UTF-8

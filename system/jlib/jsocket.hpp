@@ -95,7 +95,7 @@ public:
     IpAddress() = default;
     explicit IpAddress(const char *text)                { ipset(text); }
     
-    bool ipset(const char *text);                       // sets to NULL if fails or text=NULL   
+    bool ipset(const char *text, unsigned timeoutms=INFINITE); // sets to NULL if fails or text=NULL
     void ipset(const IpAddress& other) { *this = other; }
     bool ipequals(const IpAddress & other) const;       
     int  ipcompare(const IpAddress & other) const;      // depreciated 
@@ -154,7 +154,7 @@ class jlib_decl SocketEndpoint : extends IpAddress
 {
 public:
     SocketEndpoint() = default;
-    SocketEndpoint(const char *name,unsigned short _port=0)     { set(name,_port); };
+    SocketEndpoint(const char *name,unsigned short _port=0, unsigned timeoutms=INFINITE)     { set(name,_port,timeoutms); };
     SocketEndpoint(unsigned short _port)                        { setLocalHost(_port); };
     SocketEndpoint(unsigned short _port, const IpAddress & _ip) { set(_port,_ip); };          
     SocketEndpoint(const SocketEndpoint &other) = default;
@@ -162,7 +162,7 @@ public:
     void deserialize(MemoryBuffer & in);
     void serialize(MemoryBuffer & out) const;
 
-    bool set(const char *name,unsigned short _port=0);
+    bool set(const char *name,unsigned short _port=0, unsigned timeoutms=INFINITE);
     inline void set(const SocketEndpoint & value)               { ipset(value); port = value.port; }
     inline void setLocalHost(unsigned short _port)              { port = _port; GetHostIp(*this); } // NB *not* localhost(127.0.0.1)
     inline void set(unsigned short _port, const IpAddress & _ip) { ipset(_ip); port = _port; };
