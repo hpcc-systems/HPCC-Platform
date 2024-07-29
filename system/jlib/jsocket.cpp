@@ -2765,7 +2765,9 @@ void CSocket::shutdown(unsigned mode)
 
 void CSocket::shutdownNoThrow(unsigned mode)
 {
-    if (state == ss_open) {
+    if (state == ss_open)
+    {
+        state = ss_shutdown;
 #ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%p)", mode, sock, sock, this);
 #endif
