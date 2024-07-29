@@ -88,15 +88,22 @@ void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalS
         unsigned secsLeft = (unsigned)(timeLeft * cycleToNanoScale /1000000000);
         char temp[20];
         formatTime(temp, secsLeft);
-        displayProgress((unsigned)(sizeDone*100/totalSize), secsLeft, temp, 
-                        sizeDone/scale,totalSize/scale,scaleUnit, 
-                        (unsigned)(msGone ? (sizeDone-startSize)/msGone : 0),
+
+        unsigned percentDone = (unsigned)(totalSize ? (sizeDone*100/totalSize) : 100);
+
+        unsigned __int64 kbPerSecond = (sizeDone-startSize) / 1024;
+        if (msGone) // if took no time, leave as max total kb.
+            kbPerSecond = (kbPerSecond * 1000) / msGone;
+
+        displayProgress(percentDone, secsLeft, temp,
+                        sizeDone/scale, totalSize/scale, scaleUnit,
+                        (unsigned)kbPerSecond,
                         (unsigned)(recentTimeDelta ? recentSizeDelta / recentTimeDelta : 0), numNodes, numReads, numWrites);
 
         if (sizeDone == totalSize)
         {
             formatTime(temp, (unsigned)(msGone/1000));
-            displaySummary(temp, (unsigned)((totalSize - startSize)/msGone));
+            displaySummary(temp, (unsigned)kbPerSecond);
         }
     }
 }
