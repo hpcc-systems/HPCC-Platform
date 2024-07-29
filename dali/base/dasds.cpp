@@ -1881,7 +1881,7 @@ public:
             return;
         MemoryAttr ma;
         ma.set(sz, data);
-        CTransactionItem *item = new CTransactionItem(strdup(name), sz, ma.detach(), false);
+        Owned<CTransactionItem> item = new CTransactionItem(strdup(name), sz, ma.detach(), false);
         doAdd(item);
     }
     void add(CTransactionItem *item)
