@@ -158,19 +158,19 @@ define([
         },
 
         _onSetToFailed: function (event) {
-            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "SetToFailed");
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "SetToFailed").then(() => this.refreshGrid());
         },
 
         _onAbort: function (event) {
-            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Abort");
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Abort").then(() => this.refreshGrid());
         },
 
         _onProtect: function (event) {
-            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Protect");
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Protect").then(() => this.refreshGrid());
         },
 
         _onUnprotect: function (event) {
-            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Unprotect");
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Unprotect").then(() => this.refreshGrid());
         },
 
         _onReschedule: function (event) {
