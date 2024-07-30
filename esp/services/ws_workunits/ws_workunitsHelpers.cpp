@@ -3731,81 +3731,93 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     if(!wu.get())
         throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update workunit %s.", wuid.str());
 
-    wu->clearExceptions();
-    if(notEmpty(cluster))
-        wu->setClusterName(cluster);
-    if(notEmpty(snapshot))
-        wu->setSnapshot(snapshot);
-    wu->setState(WUStateSubmitted);
-    if (maxruntime)
-        wu->setDebugValueInt("maxRunTime",maxruntime,true);
-    if (maxcost)
-        wu->setDebugValueInt("maxCost", maxcost, true);
-    if (debugs && debugs->length())
+    try
     {
-        ForEachItemIn(i, *debugs)
+        wu->clearExceptions();
+        if(notEmpty(cluster))
+            wu->setClusterName(cluster);
+        if(notEmpty(snapshot))
+            wu->setSnapshot(snapshot);
+        wu->setState(WUStateSubmitted);
+        if (maxruntime)
+            wu->setDebugValueInt("maxRunTime",maxruntime,true);
+        if (maxcost)
+            wu->setDebugValueInt("maxCost", maxcost, true);
+        if (debugs && debugs->length())
         {
-            IConstNamedValue &item = debugs->item(i);
-            const char *name = item.getName();
-            const char *value = item.getValue();
-            if (!name || !*name)
-                continue;
-            StringBuffer expanded;
-            if (*name=='-')
-                name=expanded.append("eclcc").append(name).str();
-            if (!value)
+            ForEachItemIn(i, *debugs)
             {
-                size_t len = strlen(name);
-                char last = name[len-1];
-                if (last == '-' || last == '+')
+                IConstNamedValue &item = debugs->item(i);
+                const char *name = item.getName();
+                const char *value = item.getValue();
+                if (!name || !*name)
+                    continue;
+                StringBuffer expanded;
+                if (*name=='-')
+                    name=expanded.append("eclcc").append(name).str();
+                if (!value)
                 {
-                    StringAttr s(name, len-1);
-                    wu->setDebugValueInt(s.get(), last == '+' ? 1 : 0, true);
+                    size_t len = strlen(name);
+                    char last = name[len-1];
+                    if (last == '-' || last == '+')
+                    {
+                        StringAttr s(name, len-1);
+                        wu->setDebugValueInt(s.get(), last == '+' ? 1 : 0, true);
+                    }
+                    else
+                        wu->setDebugValueInt(name, 1, true);
+                    continue;
                 }
-                else
-                    wu->setDebugValueInt(name, 1, true);
-                continue;
+                wu->setDebugValue(name, value, true);
             }
-            wu->setDebugValue(name, value, true);
         }
-    }
 
-    if (applications)
-    {
-        ForEachItemIn(ii, *applications)
+        if (applications)
         {
-            IConstApplicationValue& item = applications->item(ii);
-            if(notEmpty(item.getApplication()) && notEmpty(item.getName()))
-                wu->setApplicationValue(item.getApplication(), item.getName(), item.getValue(), true);
+            ForEachItemIn(ii, *applications)
+            {
+                IConstApplicationValue& item = applications->item(ii);
+                if(notEmpty(item.getApplication()) && notEmpty(item.getName()))
+                    wu->setApplicationValue(item.getApplication(), item.getName(), item.getValue(), true);
+            }
         }
-    }
 
-    ISpan * activeSpan = context.queryActiveSpan();
-    OwnedSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
-    Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
-    recordTraceDebugOptions(wu, httpHeaders);
+        ISpan * activeSpan = context.queryActiveSpan();
+        OwnedSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
+        Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
+        recordTraceDebugOptions(wu, httpHeaders);
 
-    if (resetWorkflow)
-        wu->resetWorkflow();
-    if (!compile)
-        wu->schedule();
+        if (resetWorkflow)
+            wu->resetWorkflow();
+        if (!compile)
+            wu->schedule();
 
-    if (resetVariables)
-    {
-        SCMStringBuffer varname;
-        Owned<IConstWUResultIterator> vars = &wu->getVariables();
-        ForEach (*vars)
+        if (resetVariables)
         {
-            vars->query().getResultName(varname);
-            Owned<IWUResult> v = wu->updateVariableByName(varname.str());
-            if (v)
-                v->setResultStatus(ResultStatusUndefined);
+            SCMStringBuffer varname;
+            Owned<IConstWUResultIterator> vars = &wu->getVariables();
+            ForEach (*vars)
+            {
+                vars->query().getResultName(varname);
+                Owned<IWUResult> v = wu->updateVariableByName(varname.str());
+                if (v)
+                    v->setResultStatus(ResultStatusUndefined);
+            }
         }
+
+        setXmlParameters(wu, paramXml, variables, (wu->getAction()==WUActionExecuteExisting));
+        wu->commit();
+    }
+    catch (IException * e)
+    {
+        //An exception occurred when setting up the workunit e.g. an invalid debug value name.
+        wu->setState(WUStateFailed);
+        StringBuffer msg;
+        addExceptionToWorkunit(wu, SeverityError, "esp", e->errorCode(), e->errorMessage(msg).str(), nullptr, 0, 0, 0);
+        wu->commit();
+        throw;
     }
 
-    setXmlParameters(wu, paramXml, variables, (wu->getAction()==WUActionExecuteExisting));
-
-    wu->commit();
     wu.clear();
 
     if (!compile)
