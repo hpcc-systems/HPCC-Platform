@@ -79,7 +79,7 @@ class CLoggingManager : implements ILoggingManager, public CInterface
 {
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;
     LOGGING_AGENTTHREADS  loggingAgentThreads;
-    bool oneTankFile = false, decoupledLogging = false, initialized = false;
+    bool oneTankFile = false, decoupledLogging = false, initialized = false, safeAgents = false;
     Owned<ILogFailSafe> logFailSafe;
     CLogContentFilter logContentFilter;
     unsigned serviceMask = 0;
@@ -108,6 +108,7 @@ public:
 
     virtual IEspLogEntry* createLogEntry() override;
     virtual bool hasService(LOGServiceType service) const override;
+    virtual bool usesSafeLogging() const override;
     virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) override;;
     virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status) override;
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) override { return getFilteredTransactionSeed(transactionSeed, status, defaultIdFilter); }
