@@ -386,6 +386,7 @@ arrow::Status ParquetReader::processReadFile()
     else
     {
         __int64 totalTables = 0;
+        fileTableCounts.reserve(parquetFileReaders.size());
 
         for (int i = 0; i < parquetFileReaders.size(); i++)
         {
@@ -1459,9 +1460,8 @@ void ParquetRowBuilder::processBeginSet(const RtlFieldInfo *field, bool &isAll)
 
     if (arrayVisitor->type == ListType)
     {
-        ParquetColumnTracker newPathNode(field, arrayVisitor->listArr, CPNTSet);
-        newPathNode.childCount = arrayVisitor->listArr->value_slice(currentRow)->length();
-        pathStack.push_back(newPathNode);
+        pathStack.emplace_back(field, arrayVisitor->listArr, CPNTSet);
+        pathStack.back().childCount = arrayVisitor->listArr->value_slice(currentRow)->length();
     }
     else
     {
@@ -1503,7 +1503,7 @@ void ParquetRowBuilder::processBeginRow(const RtlFieldInfo *field)
         nextField(field);
         if (arrayVisitor->type == StructType)
         {
-            pathStack.push_back(ParquetColumnTracker(field, arrayVisitor->structArr, CPNTScalar));
+            pathStack.emplace_back(field, arrayVisitor->structArr, CPNTScalar);
         }
         else
         {
