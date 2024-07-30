@@ -496,6 +496,9 @@ static int getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr);
 
 static CriticalSection queryDNSCS;
 
+#ifndef EAI_SYSTEM
+#   define EAI_SYSTEM -11
+#endif
 class CAddrInfoThreadArgs : public CInterface
 {
 public:
