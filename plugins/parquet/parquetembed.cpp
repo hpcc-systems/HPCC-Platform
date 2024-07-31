@@ -714,7 +714,7 @@ std::shared_ptr<arrow::NestedType> ParquetWriter::makeChildRecord(const RtlField
         const RtlFieldInfo childFieldInfo = RtlFieldInfo("", "", child);
         std::vector<std::shared_ptr<arrow::Field>> childField;
         reportIfFailure(fieldToNode(&childFieldInfo, childField));
-        return std::make_shared<arrow::ListType>(childField[0]);
+        return std::make_shared<arrow::LargeListType>(childField[0]);
     }
 }
 
@@ -845,8 +845,8 @@ void ParquetWriter::beginSet(const RtlFieldInfo *field)
     arrow::FieldPath match = getNestedFieldBuilder(field, childBuilder);
     fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(field, childBuilder, CPNTSet, std::move(match)));
 
-    arrow::ListBuilder *listBuilder = static_cast<arrow::ListBuilder *>(childBuilder);
-    reportIfFailure(listBuilder->Append());
+    arrow::LargeListBuilder *largeListBuilder = static_cast<arrow::LargeListBuilder *>(childBuilder);
+    reportIfFailure(largeListBuilder->Append());
 }
 
 /**
@@ -946,7 +946,7 @@ arrow::ArrayBuilder *ParquetWriter::getFieldBuilder(const RtlFieldInfo *field)
         return recordBatchBuilder->GetField(schema->GetFieldIndex(fieldName.str()));
     }
     else if (fieldBuilderStack.back()->nodeType == CPNTSet)
-        return static_cast<arrow::ListBuilder *>(fieldBuilderStack.back()->structPtr)->value_builder();
+        return static_cast<arrow::LargeListBuilder *>(fieldBuilderStack.back()->structPtr)->value_builder();
     else
         return fieldBuilderStack.back()->structPtr->child(fieldBuilderStack.back()->childrenProcessed++);
 }
@@ -1463,6 +1463,12 @@ void ParquetRowBuilder::processBeginSet(const RtlFieldInfo *field, bool &isAll)
         newPathNode.childCount = arrayVisitor->listArr->value_slice(currentRow)->length();
         pathStack.push_back(newPathNode);
     }
+    else if (arrayVisitor->type == LargeListType)
+    {
+        ParquetColumnTracker newPathNode(field, arrayVisitor->largeListArr, CPNTSet);
+        newPathNode.childCount = arrayVisitor->largeListArr->value_slice(currentRow)->length();
+        pathStack.push_back(newPathNode);
+    }
     else
     {
         failx("Error reading nested set with name %s.", field->name);
@@ -1585,8 +1591,20 @@ void ParquetRowBuilder::nextFromStruct(const RtlFieldInfo *field)
     }
     else if (pathStack.back().nodeType == CPNTSet)
     {
-        auto child = arrayVisitor->listArr->value_slice(currentRow);
-        reportIfFailure(child->Accept(arrayVisitor.get()));
+        if (arrayVisitor->type == ListType)
+        {
+            auto child = arrayVisitor->listArr->value_slice(currentRow);
+            reportIfFailure(child->Accept(arrayVisitor.get()));
+        }
+        else if (arrayVisitor->type == LargeListType)
+        {
+            auto child = arrayVisitor->largeListArr->value_slice(currentRow);
+            reportIfFailure(child->Accept(arrayVisitor.get()));
+        }
+        else
+        {
+            failx("Unexpected type in CPNTSet: neither ListType nor LargeListType");
+        }
     }
 }
 
