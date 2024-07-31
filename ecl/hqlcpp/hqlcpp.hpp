@@ -140,7 +140,7 @@ public:
     virtual bool buildCpp(IHqlCppInstance & _code, HqlQueryContext & query) = 0;
 };
 
-extern HQLCPP_API IHqlCppInstance * createCppInstance(IWorkUnit * wu, const char * wupathname);
+extern HQLCPP_API IHqlCppInstance * createCppInstance(IWorkUnit * wu, const char * wupathname, CompilerType compilerType);
 extern HQLCPP_API IHqlExpression * ensureIndexable(IHqlExpression * expr);
 
 extern HQLCPP_API bool isChildOf(IHqlExpression * parent, IHqlExpression * child);

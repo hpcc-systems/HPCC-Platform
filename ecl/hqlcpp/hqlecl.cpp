@@ -163,15 +163,15 @@ protected:
 class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface
 {
 public:
-    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort) :
-        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
+    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort, CompilerType _compilerType) :
+        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort), compilerType(_compilerType)
     {
         if (!ctxCallback)
             ctxCallback.setown(new NullContextCallback(_wu));
         noOutput = true;
         defaultMaxCompileThreads = 1;
         generateTarget = EclGenerateNone;
-        code.setown(createCppInstance(wu, wuname));
+        code.setown(createCppInstance(wu, wuname, compilerType));
         totalGeneratedSize = 0;
     }
     IMPLEMENT_IINTERFACE
@@ -229,6 +229,7 @@ protected:
     bool deleteGenerated = false;
     bool publishGenerated = false;
     bool okToAbort;
+    CompilerType compilerType;
 };
 
 
@@ -419,7 +420,7 @@ IPropertyTree * HqlDllGenerator::generateSingleFieldUsageStatistics(IHqlExpressi
 //    Owned<IWorkUnit> localWu = createLocalWorkUnit();
     IWorkUnit * localWu = wu;
     //Generate the code into a new instance each time so it doesn't hang around eating memory
-    Owned<IHqlCppInstance> localCode = createCppInstance(localWu, wuname);
+    Owned<IHqlCppInstance> localCode = createCppInstance(localWu, wuname, compilerType);
 
 
     HqlQueryContext query;
@@ -781,7 +782,7 @@ void HqlDllGenerator::setWuState(bool ok)
 
 double HqlDllGenerator::getECLcomplexity(IHqlExpression * exprs)
 {
-    Owned<IHqlCppInstance> code = createCppInstance(wu, NULL);
+    Owned<IHqlCppInstance> code = createCppInstance(wu, NULL, compilerType);
 
     HqlCppTranslator translator(errs, "temp", code, targetClusterType, NULL);
 
@@ -799,14 +800,14 @@ offset_t HqlDllGenerator::getGeneratedSize() const
 
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType)
 {
-    HqlDllGenerator generator(errs, "unknown", NULL, wu, targetClusterType, NULL, false, false);
+    HqlDllGenerator generator(errs, "unknown", NULL, wu, targetClusterType, NULL, false, false, DEFAULT_COMPILER);
     return generator.getECLcomplexity(exprs);
 }
 
 
-extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads, bool okToAbort)
+extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads, bool okToAbort, CompilerType compilerType)
 {
-    return new HqlDllGenerator(errs, wuname, targetdir, wu, targetClusterType, ctxCallback, checkForLocalFileUploads, okToAbort);
+    return new HqlDllGenerator(errs, wuname, targetdir, wu, targetClusterType, ctxCallback, checkForLocalFileUploads, okToAbort, compilerType);
 }
 
 /*

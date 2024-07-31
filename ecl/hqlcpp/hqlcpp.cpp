@@ -1143,7 +1143,7 @@ void insertUniqueString(StringAttrArray & array, const char * text)
     array.append(* new StringAttrItem(text));
 }
 
-HqlCppInstance::HqlCppInstance(IWorkUnit *_wu, const char * _wupathname) : resources(*this)
+HqlCppInstance::HqlCppInstance(IWorkUnit *_wu, const char * _wupathname, CompilerType _compilerType) : resources(*this), compilerType(_compilerType)
 {
     workunit.set(_wu);
     wupathname.set(_wupathname);
@@ -1437,7 +1437,7 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
         bool target64bit = workunit->getDebugValueBool("target64bit", false);
 #endif
         StringBuffer resname;
-        bool isObjectFile = resources.flush(resname, filename, flushText, target64bit);
+        bool isObjectFile = resources.flush(resname, filename, flushText, target64bit, compilerType);
 
         StringBuffer resTextName;
         if (flushText && resources.queryWriteText(resTextName, resname))
@@ -1452,9 +1452,9 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
     }
 }
 
-IHqlCppInstance * createCppInstance(IWorkUnit *wu, const char * wupathname)
+IHqlCppInstance * createCppInstance(IWorkUnit *wu, const char * wupathname, CompilerType compiler)
 {
-    return new HqlCppInstance(wu, wupathname);
+    return new HqlCppInstance(wu, wupathname, compiler);
 }
 
 //===========================================================================
