@@ -49,7 +49,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
                 csvFormatter: level => Level[level].toUpperCase()
             },
             id: { label: nlsHPCC.Source, width: 212, sortable: false },
-            message: { label: nlsHPCC.Message, sortable: false }
+            message: { label: nlsHPCC.Message, width: 720, sortable: false }
         };
     }, []);
 

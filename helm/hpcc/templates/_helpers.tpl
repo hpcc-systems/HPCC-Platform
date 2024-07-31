@@ -1476,6 +1476,10 @@ Pass in dict with .root, .visibility defined
 {{- end -}}
 {{- end -}}
 
+{{- define "hpcc.generateHelmVersion" -}}
+helmVersion: 9.6.35-closedown0
+{{- end -}}
+
 {{/*
 A template to generate a service
 Pass in dict with .root, .name, .service, .defaultPort, .selector defined
@@ -1523,7 +1527,7 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
-    helmVersion: 9.6.35-closedown0
+    {{- include "hpcc.generateHelmVersion" . | nindent 4 }}
     {{- include "hpcc.addStandardLabels" (dict "root" $.root "instance" $lvars.serviceName ) | indent 4 }}
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}

@@ -2498,7 +2498,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
 #endif
         checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
         Owned<CMPChannel> channel = parent->lookup(_remoteep);
-        if (!channel->attachSocket(sock.getClear(),_remoteep,hostep,false,&rd,addrval))
+        if (!channel->attachSocket(sock,_remoteep,hostep,false,&rd,addrval))
         {
 #ifdef _FULLTRACE       
             PROGLOG("MP Connect Thread: lookup failed");
