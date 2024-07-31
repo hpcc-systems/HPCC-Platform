@@ -133,7 +133,7 @@ Generate network policies for spray services to allow ingress from dfuservers
  {{- if hasKey $networkPolicyCtx.dfuServerMap .name -}}
   {{- $_ := set $commonCtx "allowedDfuServers" (concat $commonCtx.allowedDfuServers (get $networkPolicyCtx.dfuServerMap .name)) -}}
  {{- end -}}
- {{- if $commonCtx.allowedDfuServers -}}
+ {{- if $commonCtx.allowedDfuServers }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

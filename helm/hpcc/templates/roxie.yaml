@@ -222,7 +222,7 @@ kind: ConfigMap
 
 {{- $_ := set $commonCtx "instanceNames" list -}}
 {{ if $roxie.serverReplicas -}}
-{{ $_ := set $commonCtx "instanceNames" (list $servername) -}}
+{{ $_ := set $commonCtx "instanceNames" (list $servername) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

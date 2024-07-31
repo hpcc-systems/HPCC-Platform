@@ -1,0 +1,31 @@
+# This values file is here to exrcise all of the different paths in the helm chart.
+# It is a copy of values.yaml, all changes are marked with #CHANGE.
+#
+# - roxie: Enabling server replicas in roxie
+# - thor: eclAgentUseChildProcesses=false
+
+roxie:
+- name: roxie
+  disabled: false
+  prefix: roxie
+  services:
+  - name: roxie
+    servicePort: 9876
+    listenQueue: 200
+    numThreads: 30
+    visibility: local
+  replicas: 2
+  numChannels: 2
+  singleNode: false
+  traceLevel: 1
+  serverReplicas: 4       #CHANGE
+  topoServer:
+    replicas: 1
+
+thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  eclAgentUseChildProcesses: false        #CHANGE
