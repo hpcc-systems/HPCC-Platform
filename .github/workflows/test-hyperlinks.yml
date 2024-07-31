@@ -11,13 +11,46 @@ on:
       - "!candidate-8.*"
       - "!candidate-7.*"
       - "!candidate-6.*"
-  workflow_dispatch: 
+
+  workflow_call:
     inputs: 
-      Debug-Mode:
+      event-type:
+        type: string
+        default: "workflow_call"
+        required: false
+      file-path:
+        type: string
+        description: Specify the path for the directory or file. To specify multiple directories or files, separate them by Commas(,). Eg. docs/EN_US,docs/PT_BR
+        default: "docs/"
+        required: false
+      file-type:
+        type: string
+        description: Specify the files which need to be scanned (md/xml/rst). To specify multiple file types separate them by Commas(,). Eg. xml,md
+        default: 'xml'
+        required: false  
+      debug-mode:
         type: boolean
         description:  Run in Debug mode to upload all created files
         default: false
         required: false
+
+  workflow_dispatch: 
+    inputs: 
+      file-path:
+        type: string
+        description: Specify the path for the directory or file. To specify multiple directories or files, separate them by Commas(,). Eg. docs/EN_US,devdoc/
+        default: "/"
+        required: false
+      file-type:
+        type: string
+        description: Specify the files which need to be scanned (md/xml/rst). To specify multiple file types separate them by Commas(,). Eg. xml,md
+        default: 'xml,md,rst'
+        required: false  
+      debug-mode:
+        type: boolean
+        description:  Run in Debug mode to upload all created files
+        default: false
+        required: false 
         
 jobs:
   main:
@@ -26,21 +59,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          repository: hpcc-systems/HPCC-Platform
           fetch-depth: 2
-      
+
       - name: List Documentation files
         run: |
-          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
-            find $PWD -name '*.xml' -type f > xmlFilesList.txt
-            find $PWD -name '*.md' -type f > mdFilesList.txt
-            find $PWD -name '*.rst' -type f > rstFilesList.txt
-          else 
+          # Determine the event type that triggered this workflow
+          # When a workflow is triggered by `workflow_call`, it doesn't explicitly provide
+          # the event type of the call. Instead, it shares the event context of the calling workflow.
+          # To identify if the workflow was triggered by `workflow_call`, we use an input parameter
+          # called `event-type`. If this input is provided, it helps us identify that the workflow was 
+          # triggered by `workflow_call`. If the input is not present, we use the github.event_name to determine the event.
+          if [ -n "${{ inputs.event-type }}" ]; then
+            EVENT_TYPE="${{ inputs.event-type }}"
+          else
+            EVENT_TYPE="${{ github.event_name }}"
+          fi
+          touch xmlFilesList.txt mdFilesList.txt rstFilesList.txt
+          if [[ "${EVENT_TYPE}" == "workflow_dispatch" || "${EVENT_TYPE}" == "workflow_call"  ]]; then
+            IFS=',' read -a DIR_LIST <<< "${{ inputs.file-path }}"
+            IFS=',' read -a FILE_TYPE_LIST <<< "${{ inputs.file-type }}"
+            for DIR in ${DIR_LIST[@]}
+            do
+              DIR=${PWD}/${DIR}             #gets the complete path
+              DIR=$( realpath ${DIR} )      #gets the actual path ex: HPCC-Platform//docs --> HPCC-Platform/docs
+              if [[ -f ${DIR} ]]; then        #if the specified path points to a file append it to respective list
+                FILE_TYPE=${DIR##*.}          #extract the file extension
+                echo ${DIR} | tee -a ${FILE_TYPE}FilesList.txt
+                continue
+              fi
+              for FILE_TYPE in ${FILE_TYPE_LIST[@]}
+              do
+                FILE_TYPE=${FILE_TYPE#.}        #remove leading dot(.) if present
+                FILE_TYPE=${FILE_TYPE,,}        #convert the FILE_TYPE to lowercase
+                find ${DIR} -name "*.${FILE_TYPE}" -type f | tee -a ${FILE_TYPE}FilesList.txt
+                # remove if any duplicate files are present
+                sort -u ${FILE_TYPE}FilesList.txt -o ${FILE_TYPE}FilesList.txt
+              done
+            done
+          elif [[ "${EVENT_TYPE}" == "pull_request" ]]; then
             git diff --name-only HEAD^1 HEAD > updatedFiles.txt
-            cat updatedFiles.txt | grep -E "*.xml" | tee xmlFilesList.txt 1>&/dev/null
-            cat updatedFiles.txt | grep -E "*.md"  | tee mdFilesList.txt 1>&/dev/null
-            cat updatedFiles.txt | grep -E "*.rst" | tee rstFilesList.txt 1>&/dev/null
+            cat updatedFiles.txt | grep -E "*.xml" | tee xmlFilesList.txt
+            cat updatedFiles.txt | grep -E "*.md"  | tee mdFilesList.txt
+            cat updatedFiles.txt | grep -E "*.rst" | tee rstFilesList.txt
           fi  
-        continue-on-error: true   
 
       - name: List links from Documentation files
         run: |
@@ -106,8 +168,10 @@ jobs:
           done
 
           if [[ -f linksList.txt ]]; then
-            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -E 'https://|http://' | tee externalLinks.txt 1>&/dev/null
-            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -vE 'https://|http://' | tee internalLinks.txt 1>&/dev/null
+            echo "External links: "
+            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -E 'https://|http://' | tee externalLinks.txt
+            echo -e "\nInternal links: "
+            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -vE 'https://|http://' | tee internalLinks.txt
           fi
     
       - name: Test External links
@@ -125,9 +189,9 @@ jobs:
               if [[ $CHECK_CACHE -eq 0  ]]; then
                 while [[ $TRY -ne 0 ]]
                 do
-                  STATUS_CODE=$(curl -LI -m 60 -s $LINK | grep "HTTP/" | tail -1 | cut -d' ' -f2 ) 
-                  if [[ -n $STATUS_CODE ]]; then
-                    echo "$LINK~$STATUS_CODE" >> checkedLinksCache.txt
+                  HTTP_RESPONSE_CODE=$( curl -o /dev/null -m 60 -sL -w "%{response_code}" $LINK ) || true
+                  if [[ $HTTP_RESPONSE_CODE -ne 0 ]]; then
+                    echo "$LINK~$HTTP_RESPONSE_CODE" >> checkedLinksCache.txt
                     break
                   else  
                     echo $LINE
@@ -136,16 +200,18 @@ jobs:
                   fi
                 done
               else
-                  STATUS_CODE=$( cat checkedLinksCache.txt | grep "$LINK~" | cut -d '~' -f2 )
+                  HTTP_RESPONSE_CODE=$( cat checkedLinksCache.txt | grep "$LINK~" | cut -d '~' -f2 )
               fi
-              if [[ $STATUS_CODE -eq 404 ]]; then 
+              if [[ $HTTP_RESPONSE_CODE -eq 404 ]]; then
                 echo -e "${LINK} - \e[31m404 Error\e[0m"
                 echo "${LINE}" >> error-report.log
-              elif [[ ! -n $STATUS_CODE ]]; then
-                echo -e "${LINK} - \e[31mNo Response\e[0m"
-                echo "${LINE}(No-Response)" >> error-report.log
+              elif [[ $HTTP_RESPONSE_CODE -eq 0 ]]; then
+                HTTP_ERROR_MESSAGE=$( curl -o /dev/null -m 60 -sSL $LINK 2>&1) || true
+                echo -e "${LINK} - \e[31m${HTTP_ERROR_MESSAGE}\e[0m"
+                HTTP_ERROR_MESSAGE=$( echo $HTTP_ERROR_MESSAGE | sed 's/ /-/g' )
+                echo "${LINE}(${HTTP_ERROR_MESSAGE})" >> error-report.log
               else
-                echo "${LINK} - ${STATUS_CODE}" 
+                echo "${LINK} - ${HTTP_RESPONSE_CODE}"
               fi
             done
           fi
@@ -163,6 +229,8 @@ jobs:
                 if [[ $IS_PRESENT -eq 0 ]]; then 
                   echo -e "${LINE} -\e[31m invalid reference\e[0m" 
                   echo "${LINE}" >> error-report.log
+                else
+                  echo -e "${LINE} -\e[32m valid reference\e[0m"
                 fi
               else 
                 if [[ ${REFERENCE:0:1} == '/' ]]; then
@@ -170,11 +238,14 @@ jobs:
                 else
                   BASE_DIR=${FILE/$( basename $FILE )}
                 fi
-                SEARCH_FILE="$BASE_DIR/${REFERENCE}"
-                SEARCH_FILE=$( realpath $SEARCH_FILE )
-                if [[ ! -f $SEARCH_FILE ]]; then 
+                SEARCH_PATH="$BASE_DIR/${REFERENCE}"
+                SEARCH_PATH=$( realpath $SEARCH_PATH )
+                # if it is neither a valid file nor valid a directory, then it is an invalid reference
+                if [[ ! -f $SEARCH_PATH && ! -d $SEARCH_PATH ]]; then 
                   echo -e "${LINE} -\e[31m invalid reference\e[0m" 
-                  echo ${LINE/$REFERENCE/$SEARCH_FILE} >> error-report.log
+                  echo ${LINE/$REFERENCE/$SEARCH_PATH} >> error-report.log
+                else
+                  echo -e "${LINE} -\e[32m valid reference\e[0m"
                 fi
               fi
             done
@@ -189,6 +260,9 @@ jobs:
           if [[ $NUMBER_OF_404_LINKS -ne 0 ]]; then
             echo -e "\e[31mNo. of unique broken links : $( cat error-report.log | cut -d: -f3- | sort | uniq | wc -l )\e[0m"
             echo -e "\e[31mTotal No. of reference to broken links : $( cat error-report.log | cut -d: -f3- | sort | wc -l )\e[0m"
+            echo  "Checkout the log artifact in the summary page for more details about the broken links."
+            echo  "Note: If any of the reported broken links are just example links or placeholders and are not valid links, please enclose them in triple backticks to ignore them."
+            echo  "For example: \`\`\`https://This/is/not/a/valid/link.com\`\`\`"
             exit -1  
           else
             echo -e "\e[32mNo Broken-links found\e[0m"
@@ -197,9 +271,9 @@ jobs:
       - name: Modify log file
         if: ${{ failure() || cancelled() }}
         run: | 
-          BASE_DIR=${PWD%$(basename $PWD)}
+          BASE_DIR=${PWD}
           BASE_DIR=$(echo $BASE_DIR | sed 's/\//\\\//g') 
-          sed -i "s/${BASE_DIR}//g" error-report.log
+          sed -i "s/${BASE_DIR}/HPCC-Platform/g" error-report.log
           FILE_NAMES_LIST=$(cat error-report.log  | cut -d ':' -f1 | sort | uniq )
           FILE_COUNT=1
           for LINE in $FILE_NAMES_LIST
@@ -226,10 +300,10 @@ jobs:
             echo -e "\nBroken links: \n" >> error-report.log
             cat error-reportTmp.log >> error-report.log
           fi 
-          if [ -z ${{ inputs.Debug-Mode }} ]; then
+          if [ -z ${{ inputs.debug-mode }} ]; then
             DEBUG_MODE=false
           else
-            DEBUG_MODE=${{ inputs.Debug-Mode }}
+            DEBUG_MODE=${{ inputs.debug-mode }}
           fi
           if [[ ${{ github.event_name }} == "pull_request" || $DEBUG_MODE == false ]]; then 
             rm -rf *FilesList.txt \
@@ -240,13 +314,13 @@ jobs:
           
       - name: Upload logs
         uses: actions/upload-artifact@v4
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || inputs.debug-mode == 'true'}}
         with:
           name: Hyperlinks-testing-log
           path: |
-            /home/runner/work/HPCC-Platform/HPCC-Platform/error-report.log
-            /home/runner/work/HPCC-Platform/HPCC-Platform/*FilesList.txt
-            /home/runner/work/HPCC-Platform/HPCC-Platform/checkedLinksCache.txt
-            /home/runner/work/HPCC-Platform/HPCC-Platform/*Links.txt
-            /home/runner/work/HPCC-Platform/HPCC-Platform/linksList.txt
+            ./error-report.log
+            ./*FilesList.txt
+            ./checkedLinksCache.txt
+            ./*Links.txt
+            ./linksList.txt
           if-no-files-found: ignore
