@@ -275,6 +275,11 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 {
 // kludge for backward compatibility of pre 8.0 clients that send a LogMsgJobId: (_uint64), not a string
 // NB: jobID pre 8.0 was redundant as always equal to UnknownJob
+    if (isDeserialized)
+    {
+        free((void *) jobIDStr);
+        jobIDStr = nullptr;
+    }
     dbgassertex(in.remaining() >= sizeof(LogMsgJobId)); // should always be at least this amount, because userID follows the jobID
     if (0 == memcmp(in.toByteArray()+in.getPos(), &UnknownJob, sizeof(LogMsgJobId))) // pre 8.0 client
     {
