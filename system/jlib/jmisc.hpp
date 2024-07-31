@@ -342,7 +342,7 @@ template<unsigned NUMSTATES, bool reportOther> class TimeDivisionTracker
 protected:
     unsigned __int64 totals[NUMSTATES] = {0};
     unsigned counts[NUMSTATES] = {0};
-    const char *stateNames[NUMSTATES];
+    const char *stateNames[NUMSTATES] = {};
     unsigned __int64 lastTick = get_cycles_now();
     unsigned currentState = 0;
     StringAttr name;
