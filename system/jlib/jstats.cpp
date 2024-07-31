@@ -1302,6 +1302,13 @@ class CComponentStatistics
 
 //--------------------------------------------------------------------------------------------------------------------
 
+//This object is accessed by all StatisticsMapping constructors.  It is important that it is initialised before any of
+//them are called.  Coverity routinely complains about possible GLOBAL_INIT_ORDER problems.  These are false positives
+//as long as
+//   * this definition of allStatsMappings comes first in this file before any StatisticsMappings
+//   * there must be no other files in jlib that declare a StatisticMapping.
+// StatisticsMappings in other dlls are ok because it is guaranteed that the dependent dll/so is initialised first
+
 static std::unordered_map<unsigned, const StatisticsMapping *> allStatsMappings;
 
 static int compareUnsigned(unsigned const * left, unsigned const * right)

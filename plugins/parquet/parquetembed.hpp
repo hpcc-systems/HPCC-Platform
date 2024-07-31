@@ -131,6 +131,7 @@ enum ParquetArrayType
     LargeBinaryType,
     DecimalType,
     ListType,
+    LargeListType,
     StructType,
     RealType
 };
@@ -314,6 +315,12 @@ public:
         type = ListType;
         return arrow::Status::OK();
     }
+    arrow::Status Visit(const arrow::LargeListArray &array)
+    {
+        largeListArr = &array;
+        type = LargeListType;
+        return arrow::Status::OK();
+    }
     arrow::Status Visit(const arrow::StructArray &array)
     {
         structArr = &array;
@@ -348,6 +355,7 @@ public:
     const arrow::Decimal128Array *decArr = nullptr;
     const arrow::Decimal256Array *largeDecArr = nullptr;
     const arrow::ListArray *listArr = nullptr;
+    const arrow::LargeListArray *largeListArr = nullptr;
     const arrow::StructArray *structArr = nullptr;
 };
 

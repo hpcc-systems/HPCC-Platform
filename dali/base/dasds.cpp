@@ -5507,13 +5507,15 @@ public:
             return true;
         offset_t fSize = iFileIO->size();
         PROGLOG("Loading delta: %s (size=%.2f MB)", filename, ((double)fSize) / 0x100000);
+        size32_t lenDeltaHeader = strlen(deltaHeader);
         MemoryBuffer tmp;
-        char *ptr = (char *) tmp.reserveTruncate(strlen(deltaHeader));
+        char *ptr = (char *) tmp.reserveTruncate(lenDeltaHeader+1);
         unsigned embeddedCrc = 0;
         offset_t pos = 0;
         bool hasCrcHeader = false; // check really only needed for deltas proceeding CRC header
-        if (strlen(deltaHeader) == iFileIO->read(0, strlen(deltaHeader), ptr))
+        if (lenDeltaHeader == iFileIO->read(0, lenDeltaHeader, ptr))
         {
+            ptr[lenDeltaHeader] = '\0';
             if (0 == memicmp(deltaHeader, ptr, 5))
             {
                 pos = deltaHeaderSizeStart;
