@@ -1846,6 +1846,7 @@ public:
     {
         if (!parent)
             return false;
+        bool gc = false; // if a gc is hit, then will fall through to close socket
         try
         {
             while (true) // NB: breaks out if blocked (if (remaining) ..)
@@ -1870,11 +1871,11 @@ public:
                 if (!gotPacketHdr)
                 {
                     CCycleTimer timer;
-                    sock->readtms(activeptr, 0, remaining, szRead, timer.remainingMs(60000));
+                    gc = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, timer.remainingMs(60000));
                     remaining -= szRead;
                     activeptr += szRead;
                     if (remaining) // only possible if blocked.
-                        return false; // wait for next notification
+                        break; // wait for next notification
 
                     PacketHeader &hdr = *(PacketHeader *)activemsg->bufferBase();
                     if (hdr.version/0x100 != MP_PROTOCOL_VERSION/0x100)
@@ -1896,14 +1897,14 @@ public:
                     gotPacketHdr = true;
                 }
 
-                if (remaining)
+                if (!gc && remaining)
                 {
-                    sock->readtms(activeptr, 0, remaining, szRead, WAIT_FOREVER);
+                    gc = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, WAIT_FOREVER);
                     remaining -= szRead;
                     activeptr += szRead;
                 }
                 if (remaining) // only possible if blocked.
-                    return false; // wait for next notification
+                    break; // wait for next notification
 
 #ifdef _FULLTRACE
                 LOG(MCdebugInfo, "MP: ReadPacket(timetaken = %d,select iterations=%d)",msTick()-parent->startxfer,parent->numiter);
@@ -1937,6 +1938,8 @@ public:
                     }
                 }
                 while (activemsg);
+                if (gc)
+                    break;
             }
         }
         catch (IException *e)
@@ -1947,24 +1950,27 @@ public:
             gotPacketHdr = false;
         }
 
-        // here due to error or graceful close, so close socket (ignore error as may be closed already)
-        try
+        if (gc)
         {
-            Linked<CMPChannel> pc;
+            // here due to error or graceful close, so close socket (ignore error as may be closed already)
+            try
             {
-                CriticalBlock block(sect);
-                if (parent)
+                Linked<CMPChannel> pc;
                 {
-                    pc.set(parent);     // don't want channel to disappear during call
-                    parent = NULL;
+                    CriticalBlock block(sect);
+                    if (parent)
+                    {
+                        pc.set(parent);     // don't want channel to disappear during call
+                        parent = NULL;
+                    }
                 }
+                if (pc)
+                    pc->closeSocket(false, true);
             }
-            if (pc)
-                pc->closeSocket(false, true);
-        }
-        catch (IException *e)
-        {
-            e->Release();
+            catch (IException *e)
+            {
+                e->Release();
+            }
         }
         return false;
     }
