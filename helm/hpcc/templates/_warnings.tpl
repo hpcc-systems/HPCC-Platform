@@ -217,4 +217,10 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" "privileged access should only be enabled for development systems" -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Warn if logaccess not provided */ -}}
+ {{- if not (hasKey .root.Values.global "logAccess") -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "Global LogAccess not configured! Contact admin to enable logs in Zap reports and log viewers" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
 {{- end -}}
