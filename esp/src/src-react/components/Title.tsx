@@ -15,7 +15,7 @@ import { replaceUrl } from "../util/history";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useBuildInfo, useModernMode, useCheckFeatures } from "../hooks/platform";
 import { useGlobalStore } from "../hooks/store";
-import { useMyAccount, useUserSession } from "../hooks/user";
+import { PasswordStatus, useMyAccount, useUserSession } from "../hooks/user";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
@@ -246,10 +246,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             // cookie expires option expects whole number of days, use a decimal < 1 for hours
             cookie("PasswordExpiredCheck", "true", { expires: 0.5, path: "/" });
             switch (currentUser.passwordDaysRemaining) {
-                case -1: // password has expired
+                case PasswordStatus.Expired:
                     setPasswordExpiredConfirm(true);
                     break;
-                case -2: // password never expires
+                case PasswordStatus.NeverExpires:
                 case null:
                     break;
                 default:
