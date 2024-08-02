@@ -12,6 +12,12 @@ const defaults = {
 
 const userSession = { ...defaults };
 
+export enum PasswordStatus {
+    NeverExpires = -2,
+    Expired = -1,
+    Unexpired = 0,
+}
+
 export interface UserSession {
     ESPSessionTimeout: number;
     ESPAuthenticated: boolean;
