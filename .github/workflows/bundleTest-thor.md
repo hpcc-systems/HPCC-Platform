@@ -90,12 +90,16 @@ env:
   ML_SUPPRESS_WARNING_FILES: "RegressionTestModified.ecl ClassificationTestModified.ecl"
   ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
   BUNDLES_TO_TEST: "ML_Core PBblas GLM GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
-  uploadArtifact: false 
+  UPLOAD_ARTIFACT: false 
+  LIST_BUNDLES_DYNAMICALLY: true
+  SET_FAILURE_STATUS: false
 ```
 - `ML_SUPPRESS_WARNING_FILES:`Specifies the files that require a warning suppression parameter injection into the ECL code before they are executed.
 - `ML_EXCLUDE_FILES:` The files specified here are excluded during the run.
 - `BUNDLES_TO_TEST:` Lists the bundles to test.
-- `uploadArtifact:` Determines whether the logs Artifact should be uploaded or not.
+- `UPLOAD_ARTIFACT:` Determines whether the logs Artifact should be uploaded or not.
+- `LIST_BUNDLES_DYNAMICALLY:` This enables us to turn on or off the dynamic listing of ECL Bundles feature. If in future, the README.rst file in `hpcc-systems/ecl-bundles` repository undergoes a complete modification, we could turn off dynamic listing of ECL Bundles feature, till we align with the new modifications.
+- `SET_FAILURE_STATUS:` It will be updated to true, if any bundle installation fails, if any bundles' test case fails or if core files are generated. This helps in deciding the status of the workflow run. If it is updated to true then the workflow will be marked as failed.
 ## Steps Involved:
 The steps in the workflow run on the specified operating system, with Ubuntu-22.04 as the default.
 - **Download Package**  
@@ -140,6 +144,7 @@ Install the HPCC Platform from the downloaded artifact, set permissions and conf
 To update the `BUNDLES_TO_TEST:` list dynamically. We scrap the latest list directly from the `hpcc-systems/ecl-bundles` repository's README.rst file. This step clones `hpcc-systems/ecl-bundles` repository to the working directory.
   ```yaml
   - name: Checkout ecl-bundles repository
+    if: ${{ env.LIST_BUNDLES_DYNAMICALLY == 'true' }}
     uses: actions/checkout@v4
     with:
       repository: hpcc-systems/ecl-bundles
@@ -148,6 +153,7 @@ To update the `BUNDLES_TO_TEST:` list dynamically. We scrap the latest list dire
 From the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file in `hpcc-systems/ecl-bundles` repository. We update the `BUNDLES_TO_TEST:` list dynamically. In the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file, the ecl-bundles data is present in table format. And in reStructuredText(.rst) files, tables are represented by `'|'` pipe character. So to extract the tables data, we `grep` all the lines that start with a `'|'`(pipe character). Along with tables data we also extract `===========`(a continuos string of `=` represents headings in reStructredText(.rst) files.) this helps in differentiating different sections/tables in the file. The extracted data is stored in `TABLES_DATA`. In the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file the ecl-bundles data is present in the second section of the file, so we set `HEADER_NUM_OF_ECL_BUNDLES=2`. Using this information, we extract the ecl-bundles' names and the repository address from `TABLES_DATA`.
   ```yaml
   - name: Scrap Bundles List
+    if: ${{ env.LIST_BUNDLES_DYNAMICALLY == 'true' }}
     shell: "bash"
     run: | 
       if [[ -f README.rst ]] 
@@ -161,7 +167,7 @@ From the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/RE
           HEADER_COUNT=0
           for LINE in $TABLES_DATA
           do
-            LINE=${LINE# }   #removing space from begining of the line
+            LINE=${LINE# }   #removing space from beginning of the line
             LINE=${LINE%% [^A-Za-z0-9]*} #remove trailing spaces.
             if [[ ${LINE:0:1} == "=" ]]; then 
               HEADER_COUNT=$(( HEADER_COUNT + 1 ))
@@ -243,7 +249,7 @@ Install the ECL bundles specified in ` BUNDLES_TO_TEST` from GitHub.
             BUNDLE_NAME=${BUNDLES_TO_TEST[i]}
             BUNDLE_REPO="https://github.com/hpcc-systems/${BUNDLES_TO_TEST[i]}.git"
             INSTALL_CMD="ecl bundle install --update --force ${BUNDLE_REPO}"
-            echo "Bundle Name : ${BUNDLE_NAME}"
+            echo -e "\nBundle Name : ${BUNDLE_NAME}"
             echo "Bundle Repo : ${BUNDLE_REPO}"
             tryCountMax=5
             tryCount=$tryCountMax
@@ -251,9 +257,13 @@ Install the ECL bundles specified in ` BUNDLES_TO_TEST` from GitHub.
 
             while true
             do
-                cRes=$( ${INSTALL_CMD} 2>&1 )
-                retCode=$?
-                if [[ $retCode -ne 0 ]]
+                # Initialize a flag to indicate if bundle install failed, by default set it to false.
+                bundleInstallFailed=false
+                # Attempt to execute the INSTALL_CMD command and capture its output.
+                cRes=$( ${INSTALL_CMD} 2>&1 ) ||  bundleInstallFailed=true
+                # If the command fails (i.e., INSTALL_CMD returns a non-zero exit status), the bundleInstallFailed flag is set to true.
+                # This flag indicates that there was an error during the bundle installation process.
+                if [[ $bundleInstallFailed == true ]]
                 then
                     tryCount=$(( $tryCount-1 ))
 
@@ -262,16 +272,19 @@ Install the ECL bundles specified in ` BUNDLES_TO_TEST` from GitHub.
                         sleep ${tryDelay}
                         continue
                     else
-                        echo "Install $BUNDLE_NAME bundle was failed after ${tryCountMax} attempts. Result is: '${cRes}'" >> /home/runner/HPCCSystems-regression/log/Failed_bundle_install.summary
-                        echo "uploadArtifact=true" >> $GITHUB_ENV
+                        mkdir -p /home/runner/HPCCSystems-regression/log/ 
+                        touch Failed_bundle_install.summary
+                        echo "Install $BUNDLE_NAME bundle was failed after ${tryCountMax} attempts. Result is: ${cRes}" | tee /home/runner/HPCCSystems-regression/log/Failed_bundle_install.summary
+                        echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
+                        echo "SET_FAILURE_STATUS=true" >> $GITHUB_ENV
                         break;
                     fi
                 else
                     echo "Install $BUNDLE_NAME bundle was success." 
-                    BUNDLE_VERSION=$( echo "${cRes}" | egrep "^$BUNDLE_NAME" | awk '{ print $2 }' )
+                    BUNDLE_VERSION=$( echo "${cRes}" | egrep "^$BUNDLE_NAME" | tail -1 | awk '{ print $2 }' )
                     echo "Version: $BUNDLE_VERSION" 
                     break
-                fi
+                  fi
             done
         done
   ```
@@ -294,7 +307,8 @@ The bundle testing process is initiated and the logs are processed through the `
             then 
                 echo "Bundle : ${BUNDLE}" >> /home/runner/HPCCSystems-regression/log/Failed_test.summary
                 cat ${logfilename} >> /home/runner/HPCCSystems-regression/log/Failed_test.summary
-                echo "uploadArtifact=true" >> $GITHUB_ENV
+                echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
+                echo "SET_FAILURE_STATUS=true" >> $GITHUB_ENV
             fi
             # Rename result log file to name of the bundle
             logname=$(basename $logfilename)
@@ -338,6 +352,7 @@ The bundle testing process is initiated and the logs are processed through the `
             fi
             popd
         done< <(find . -iname 'ecl' -type d | sort )
+    continue-on-error: true
   ```
 - **Generate ZAP files**  
 ZAP report files are generated for specified files if mentioned in the input. If none are mentioned, this step is skipped.
@@ -346,7 +361,7 @@ ZAP report files are generated for specified files if mentioned in the input. If
   - name: Generate ZAP files
     if: ${{ ! inputs.generate-zap == '' }} 
     run: |  
-        IFS=' ' read -a ML_GENERATE_ZAP_FOR <<< ${{ inputs.generate-zap }}
+        IFS=' ' read -a ML_GENERATE_ZAP_FOR <<< "${{ inputs.generate-zap }}"
         if [  ${#ML_GENERATE_ZAP_FOR[@]} -ne 0 ]
         then
             for test in ${ML_GENERATE_ZAP_FOR[*]}
@@ -358,7 +373,7 @@ ZAP report files are generated for specified files if mentioned in the input. If
                     ecl zapgen $wuid  --path /home/runner/HPCCSystems-regression/zap --inc-thor-slave-logs
                     echo "testName : ${test}  wuid : ${wuid}" >> zap.summary
                     cp zap.summary /home/runner/HPCCSystems-regression/zap 
-                    echo "uploadArtifact=true" >> $GITHUB_ENV
+                    echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
                 fi
             done 
         fi
@@ -368,11 +383,11 @@ If core files are generated, create a stack trace using the gdb command. The gen
   ```yaml
   - name: Check for Core files
     run: |
-        NUM_OF_ML_CORES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; ) )
-
-        if [ ${#NUM_OF_ML_CORES[@]} -ne 0 ]
+        CORE_FILES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; ) )
+        echo "NUM_OF_ML_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
+        if [ ${#CORE_FILES[@]} -ne 0 ]
         then      
-            for  core in ${NUM_OF_ML_CORES[@]}
+            for  core in ${CORE_FILES[@]}
             do
                 base=$( dirname $core )
                 lastSubdir=${base##*/}
@@ -380,7 +395,9 @@ If core files are generated, create a stack trace using the gdb command. The gen
                 sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${comp}" $core | sudo tee "$core.trace" 2>&1
                 cp "$core.trace" /home/runner/HPCCSystems-regression/log/ 
             done
-            echo "uploadArtifact=true" >> $GITHUB_ENV
+            echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
+            echo "SET_FAILURE_STATUS=true" >> $GITHUB_ENV
+
         fi
   ```
 - **Get test stat**  
@@ -393,15 +410,47 @@ This step generates test statistics, allowing comparison and analysis of test pe
           NUM_OF_STAT_FILES=$( find /home/runner/HPCCSystems-regression/log/ -type f -iname "*.csv" -o -iname "*.cfg" | wc -l )
           if [[ $NUM_OF_STAT_FILES -ne 0 ]]
           then 
-              echo "uploadArtifact=true" >> $GITHUB_ENV
+              echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
           fi
   ```
+- **Check failure status**  
+This step runs only when `SET_FAILURE_STATUS` is set to true. The workflow is made to fail in the following cases:  
+  1. Bundle installation fails
+  2. Test cases fail during bundle test run
+  3. Core files are generated during the run
+  ```yaml
+    - name: Check failure status
+    if: ${{ env.SET_FAILURE_STATUS == 'true' }}
+    run: |
+      BUNDLE_INSTALL_SUMMARY_FILE="/home/runner/HPCCSystems-regression/log/Failed_bundle_install.summary"
+      FAILED_TEST_SUMMARY_FILE=/home/runner/HPCCSystems-regression/log/Failed_test.summary
+      NUM_OF_ML_CORES=${{ env.NUM_OF_ML_CORES }}
+      if [[ -f $BUNDLE_INSTALL_SUMMARY_FILE ]]
+      then 
+          echo "Error! in Installing ECL Bundles"
+          echo "Check the bundle installation summary for details: $BUNDLE_INSTALL_SUMMARY_FILE"
+          cat $BUNDLE_INSTALL_SUMMARY_FILE
+      fi
+      if [[ -f $FAILED_TEST_SUMMARY_FILE ]]
+      then 
+          echo "Error: Some ECL Bundle Tests Failed"
+          echo "Check the test summary for failed test cases: $FAILED_TEST_SUMMARY_FILE"
+          cat $FAILED_TEST_SUMMARY_FILE
+      fi
+      if [[ ${#NUM_OF_ML_CORES[@]} -ne 0 ]]
+      then 
+          echo "Error: Core files are generated"
+          echo "Check the uploaded artifact for trace files"
+      fi
+      exit -1
+  ```
+
 - **ml-thor-test-logs-artifact**  
 If any logs, ZAP reports, or .trace files are generated, they are uploaded as artifacts for further analysis.
   ```yaml
     - name: ml-thor-test-logs-artifact
-      if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
-      uses: actions/upload-artifact@v3
+      if: ${{ failure() || cancelled() || env.UPLOAD_ARTIFACT == 'true' }}
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.asset-name }}-bundle-test-logs
         path: |
