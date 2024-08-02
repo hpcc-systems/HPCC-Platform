@@ -18,7 +18,7 @@ on the build behavior remains exactly the same.
 Default of signing_secret is empty. Populate this variable within your Github
 Secrets for the repository with an exported armored secret key.  It is hidden by
 Github Actions from view and is hidden from the docker image layers by using 
-BuildKit and [secret mounting](https://docs.docker.com.xy2401.com/develop/develop-images/build_enhancements/#new-docker-build-secret-information).
+BuildKit and [secret mounting](https://docs.docker.com/build/building/secrets/).
 This ensures that the secret key does not leak into the final docker image layers.
 
 > signing_keyid: ${{ secrets.SIGNING_KEYID }}
