@@ -669,6 +669,7 @@ export = {
         PasswordExpired: "Your password has expired.  Please change now.",
         PasswordExpirePrefix: "Your password will expire in ",
         PasswordExpirePostfix: " day(s). Do you want to change it now?",
+        PasswordNeverExpires: "Password never expires",
         Path: "Path",
         PathAndNameOnly: "Path and name only?",
         PathMask: "Path Mask",

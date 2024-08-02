@@ -1,0 +1,12 @@
+<Dataset name='remove_some_chars'>
+ <Row><buffer_s>Dani      </buffer_s><alloc_s>Dan</alloc_s><buffer_u>Dani      </buffer_u><alloc_u>Dan</alloc_u></Row>
+</Dataset>
+<Dataset name='remove_zero_chars'>
+ <Row><buffer_s>Daniel    </buffer_s><alloc_s>Dan</alloc_s><buffer_u>Daniel    </buffer_u><alloc_u>Dan</alloc_u></Row>
+</Dataset>
+<Dataset name='remove_all_chars'>
+ <Row><buffer_s>          </buffer_s><alloc_s>   </alloc_s><buffer_u>          </buffer_u><alloc_u>   </alloc_u></Row>
+</Dataset>
+<Dataset name='double_all_chars'>
+ <Row><buffer_s>DDaanniiee</buffer_s><alloc_s>DDa</alloc_s><buffer_u>DDaanniiee</buffer_u><alloc_u>DDa</alloc_u></Row>
+</Dataset>

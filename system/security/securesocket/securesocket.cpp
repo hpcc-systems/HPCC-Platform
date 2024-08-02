@@ -774,6 +774,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
     {
         case SSL_ERROR_ZERO_RETURN:
         {
+            m_socket->shutdownNoThrow();
             THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
         }
         case SSL_ERROR_WANT_READ: // NB: SSL_write can provoke SSL_ERROR_WANT_READ
@@ -928,6 +929,7 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
         }
         else if (0 == rc)
         {
+            m_socket->shutdownNoThrow();
             if (suppresGCIfMinSize && (sizeRead >= min_size))
                 break;
             THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);

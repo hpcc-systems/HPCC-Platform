@@ -138,6 +138,50 @@ static void failWithPCRE2Error(int errCode, const std::string & msgPrefix, const
 
 //---------------------------------------------------------------------------
 
+// RAII class for PCRE2 8-bit match data
+class PCRE2MatchData8
+{
+private:
+    pcre2_match_data_8 * matchData = nullptr;
+
+public:
+    PCRE2MatchData8() = default;
+    PCRE2MatchData8(pcre2_match_data_8 * newData) : matchData(newData) {}
+    PCRE2MatchData8(const PCRE2MatchData8 & other) = delete;
+    ~PCRE2MatchData8() { pcre2_match_data_free_8(matchData); }
+    operator pcre2_match_data_8 * () const { return matchData; }
+    pcre2_match_data_8 * operator = (pcre2_match_data_8 * newData)
+    {
+        pcre2_match_data_free_8(matchData); // safe for nullptr
+        matchData = newData;
+        return matchData;
+    }
+};
+
+//---------------------------------------------------------------------------
+
+// RAII class for PCRE2 16-bit match data
+class PCRE2MatchData16
+{
+private:
+    pcre2_match_data_16 * matchData = nullptr;
+
+public:
+    PCRE2MatchData16() = default;
+    PCRE2MatchData16(pcre2_match_data_16 * newData) : matchData(newData) {}
+    PCRE2MatchData16(const PCRE2MatchData16 & other) = delete;
+    ~PCRE2MatchData16() { pcre2_match_data_free_16(matchData); }
+    operator pcre2_match_data_16 * () const { return matchData; }
+    pcre2_match_data_16 * operator = (pcre2_match_data_16 * newData)
+    {
+        pcre2_match_data_free_16(matchData); // safe for nullptr
+        matchData = newData;
+        return matchData;
+    }
+};
+
+//---------------------------------------------------------------------------
+
 /**
  * @brief Parent class of all compiled regular expression pattern classes; used for caching.
  */
@@ -193,7 +237,7 @@ static bool compiledCacheEnabled = true;
 /**
  * @brief Provide an optional override to the maximum cache size for regex patterns.
  *
- * Functions searches with the containerized "expert" section or the bare-metal
+ * Function searches with the containerized "expert" section or the bare-metal
  * <Software/Globals> section for an optional "regex" subsection with a "cacheSize" attribute
  * By default, the maximum cache size is set to 500 patterns.  Override with 0 to disable caching.
  */
@@ -248,7 +292,7 @@ class CStrRegExprFindInstance : implements IStrRegExprFindInstance
 private:
     bool matched = false;
     std::shared_ptr<pcre2_code_8> compiledRegex = nullptr;
-    pcre2_match_data_8 * matchData = nullptr;
+    PCRE2MatchData8 matchData;
     const char * subject = nullptr; // points to current subject of regex; do not free
     char * sample = nullptr; //only required if findstr/findvstr will be called
 
@@ -267,7 +311,7 @@ public:
         if (_keep)
         {
             sample = (char *)rtlMalloc(subjectSize + 1);  //required for findstr
-            memcpy(sample, _subject + subjectOffset, subjectSize);
+            memcpy_iflen(sample, _subject + subjectOffset, subjectSize);
             sample[subjectSize] = '\0';
             subject = sample;
         }
@@ -295,7 +339,6 @@ public:
     {
         if (sample)
             rtlFree(sample);
-        pcre2_match_data_free_8(matchData);
     }
 
     //IStrRegExprFindInstance
@@ -310,7 +353,7 @@ public:
             const char * matchStart = subject + ovector[2 * n];
             outlen = ovector[2 * n + 1] - ovector[2 * n];
             out = (char *)rtlMalloc(outlen);
-            memcpy(out, matchStart, outlen);
+            memcpy_iflen(out, matchStart, outlen);
         }
         else
         {
@@ -328,7 +371,7 @@ public:
             unsigned substrLen = ovector[2 * n + 1] - ovector[2 * n];
             if (substrLen >= outlen)
                 substrLen = outlen - 1;
-            memcpy(out, matchStart, substrLen);
+            memcpy_iflen(out, matchStart, substrLen);
             out[substrLen] = 0;
         }
         else
@@ -376,12 +419,11 @@ public:
 
     void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const
     {
-        PCRE2_SIZE pcreLen = 0;
         outlen = 0;
-        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
+        PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
         // This method is often called through an ECL interface and the provided lengths
-        // (slen and rlen) are in characters, not bytes; we need to convert these to a
+        // (slen and rlen) are in code points (characters), not bytes; we need to convert these to a
         // byte count for PCRE2
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
         size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
@@ -393,47 +435,50 @@ public:
         if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
             // Treat everything other than PCRE2_ERROR_NOMATCH as an error
-            pcre2_match_data_free_8(matchData);
             failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
         if (numMatches > 0)
         {
             uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            PCRE2_SIZE pcreSize = 0;
 
-            // Call substitute once to get the size of the output, then allocate memory for it;
-            // Note that pcreLen will include space for a terminating null character;
-            // we have to allocate memory for that byte to avoid a buffer overrun,
-            // but we won't count that terminating byte
-            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
+            // Call substitute once to get the size of the output (pushed into pcreSize);
+            // note that pcreSize will include space for a terminating null character even though we don't want it
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreSize);
 
             if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
-                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
-                pcre2_match_data_free_8(matchData);
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output;
+                // everything else is an error
                 failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
 
-            if (pcreLen > 0)
+            if (pcreSize > 1)
             {
-                out = (char *)rtlMalloc(pcreLen);
+                out = (char *)rtlMalloc(pcreSize);
 
-                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreSize);
 
-                // Note that, weirdly, pcreLen will now contain the number of code points
-                // in the result *excluding* the null terminator, so pcreLen will
+                // Note that, weirdly, pcreSize will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreSize will
                 // become our final result length
 
                 if (replaceResult < 0)
                 {
-                    pcre2_match_data_free_8(matchData);
                     failWithPCRE2Error(replaceResult, "Error in regex replace: ");
                 }
             }
+            else
+            {
+                // The replacement results in an empty string
+                outlen = 0;
+                out = nullptr;
+                return;
+            }
 
-            pcre2_match_data_free_8(matchData);
             // We need to return the number of characters here, not the byte count
-            outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
+            outlen = (isUTF8Enabled ? rtlUtf8Length(pcreSize, out) : pcreSize);
         }
         else
         {
@@ -441,7 +486,137 @@ public:
             out = (char *)rtlMalloc(sourceSize);
             memcpy_iflen(out, str, sourceSize);
             outlen = slen;
-            pcre2_match_data_free_8(matchData);
+        }
+    }
+
+    // This method supports "fixed length UTF-8" even though that isn't really a thing;
+    // it's here more for completeness, in case we ever implement some version of it
+    void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * replace) const
+    {
+        if (tlen == 0)
+            return;
+
+        PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
+
+        // This method is often called through an ECL interface and the provided lengths
+        // (slen and rlen) are in code points (characters), not bytes; we need to convert these to a
+        // byte count for PCRE2
+        size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
+        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
+
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, 0, matchData, pcre2MatchContext8);
+
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
+        {
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
+        }
+
+        if (numMatches > 0)
+        {
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            PCRE2_SIZE pcreSize = 0;
+
+            // Call substitute once to get the size of the output and see if it will fit within fixedOutLen;
+            // if it does then we can substitute within the given buffer and then pad with spaces, if not then
+            // we have to allocate memory, substitute into that memory, then copy into the given buffer;
+            // note that pcreSize will include space for a terminating null character even though we don't want it
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreSize);
+
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+            {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output;
+                // everything else is an error
+                failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+            }
+
+            if (pcreSize > 1)
+            {
+                std::string tempBuffer;
+                bool useFixedBuffer = (pcreSize <= tlen);
+                char * replaceBuffer = nullptr;
+
+                if (useFixedBuffer)
+                {
+                    replaceBuffer = tgt;
+                }
+                else
+                {
+                    tempBuffer.reserve(pcreSize);
+                    replaceBuffer = (char *)tempBuffer.data();
+                }
+
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)replaceBuffer, &pcreSize);
+
+                if (replaceResult < 0)
+                {
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+
+                // Note that after a successful replace, pcreSize will contain the number of code points in
+                // the result *excluding* the null terminator
+
+                if (useFixedBuffer)
+                {
+                    // We used the fixed buffer so we only need to pad the result with spaces
+                    if (isUTF8Enabled)
+                    {
+                        memset_iflen(tgt + pcreSize, ' ', tlen - rtlUtf8Length(pcreSize, tgt));
+                    }
+                    else
+                    {
+                        memset_iflen(tgt + pcreSize, ' ', tlen - pcreSize);
+                    }
+                }
+                else
+                {
+                    // We used a separate buffer, so we need to copy the result into the fixed buffer;
+                    // temp buffer was larger so we don't have to worry about padding
+                    if (isUTF8Enabled)
+                    {
+                        rtlUtf8ToUtf8(tlen, tgt, pcreSize, replaceBuffer);
+                    }
+                    else
+                    {
+                        memcpy_iflen(tgt, replaceBuffer, tlen);
+                    }
+                    
+                }
+            }
+            else
+            {
+                // The replacement results in an empty string
+                memset_iflen(tgt, ' ', tlen);
+            }
+        }
+        else
+        {
+            // No match found; return the original string
+            if (isUTF8Enabled)
+            {
+                if (tlen == slen)
+                {
+                    memcpy_iflen(tgt, str, sourceSize);
+                }
+                else
+                {
+                    rtlUtf8ToUtf8(tlen, tgt, slen, str);
+                }
+            }
+            else
+            {
+                if (slen <= tlen)
+                {
+                    memcpy_iflen(tgt, str, sourceSize);
+                    memset_iflen(tgt + sourceSize, ' ', tlen - sourceSize);
+                }
+                else
+                {
+                    memcpy_iflen(tgt, str, tlen);
+                }
+            }
         }
     }
 
@@ -458,7 +633,7 @@ public:
         PCRE2_SIZE offset = 0;
         uint32_t matchOptions = 0;
         PCRE2_SIZE subjectSize = (isUTF8Enabled ? rtlUtf8Size(_subjectLen, _subject) : _subjectLen);
-        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
+        PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
         // Capture groups are ignored when gathering match results into a set,
         // so we will focus on only the first match (the entire matched string);
@@ -479,7 +654,6 @@ public:
                 else
                 {
                     // Treat everything else as an error
-                    pcre2_match_data_free_8(matchData);
                     failWithPCRE2Error(numMatches, "Error in regex getMatchSet: ");
                 }
             }
@@ -495,7 +669,7 @@ public:
                 // Append the number of characters in the match
                 * (size32_t *) outData = (isUTF8Enabled ? rtlUtf8Length(matchSize, matchStart) : matchSize);
                 // Copy the bytes
-                memcpy(outData + sizeof(size32_t), matchStart, matchSize);
+                memcpy_iflen(outData + sizeof(size32_t), matchStart, matchSize);
                 outBytes += matchSize + sizeof(size32_t);
 
                 // Update search offset (which is in code units)
@@ -510,8 +684,6 @@ public:
                 break;
             }
         }
-
-        pcre2_match_data_free_8(matchData);
 
         __isAllResult = false;
         __resultBytes = outBytes;
@@ -680,7 +852,7 @@ class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
 private:
     bool matched = false;
     std::shared_ptr<pcre2_code_16> compiledRegex = nullptr;
-    pcre2_match_data_16 * matchData = nullptr;
+    PCRE2MatchData16 matchData;
     const UChar * subject = nullptr; // points to current subject of regex; do not free
 
 public:
@@ -702,10 +874,7 @@ public:
 
     }
 
-    ~CUStrRegExprFindInstance() //CAVEAT non-virtual destructor !
-    {
-        pcre2_match_data_free_16(matchData);
-    }
+    ~CUStrRegExprFindInstance() = default;
 
     //IUStrRegExprFindInstance
 
@@ -720,7 +889,7 @@ public:
             outlen = ovector[2 * n + 1] - ovector[2 * n];
             PCRE2_SIZE outSize = outlen * sizeof(UChar);
             out = (UChar *)rtlMalloc(outSize);
-            memcpy(out, matchStart, outSize);
+            memcpy_iflen(out, matchStart, outSize);
         }
         else
         {
@@ -738,7 +907,7 @@ public:
             unsigned substrLen = ovector[2 * n + 1] - ovector[2 * n];
             if (substrLen >= outlen)
                 substrLen = outlen - 1;
-            memcpy(out, matchStart, substrLen * sizeof(UChar));
+            memcpy_iflen(out, matchStart, substrLen * sizeof(UChar));
             out[substrLen] = 0;
         }
         else
@@ -781,9 +950,8 @@ public:
 
     void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * replace) const
     {
-        PCRE2_SIZE pcreLen = 0;
         outlen = 0;
-        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
+        PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
         // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
         // with data that can be used by pcre2_substitute to bypass some work
@@ -792,47 +960,50 @@ public:
         if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
             // Treat everything other than PCRE2_ERROR_NOMATCH as an error
-            pcre2_match_data_free_16(matchData);
             failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
         if (numMatches > 0)
         {
             uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            PCRE2_SIZE pcreSize = 0;
 
             // Call substitute once to get the size of the output, then allocate memory for it;
-            // Note that pcreLen will include space for a terminating null character;
+            // Note that pcreSize will include space for a terminating null character;
             // we have to allocate memory for that byte to avoid a buffer overrun,
             // but we won't count that terminating byte
-            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
+            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreSize);
 
             if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
                 // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
-                pcre2_match_data_free_16(matchData);
                 failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
 
-            if (pcreLen > 0)
+            if (pcreSize > 1)
             {
-                out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+                out = (UChar *)rtlMalloc(pcreSize * sizeof(UChar));
 
-                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreSize);
 
-                // Note that, weirdly, pcreLen will now contain the number of code points
-                // in the result *excluding* the null terminator, so pcreLen will
+                // Note that, weirdly, pcreSize will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreSize will
                 // become our final result length
 
                 if (replaceResult < 0)
                 {
-                    pcre2_match_data_free_16(matchData);
                     failWithPCRE2Error(replaceResult, "Error in regex replace: ");
                 }
             }
+            else
+            {
+                // The replacement results in an empty string
+                outlen = 0;
+                out = nullptr;
+                return;
+            }
 
-            pcre2_match_data_free_16(matchData);
-            // We need to return the number of characters here, not the byte count
-            outlen = pcreLen;
+            outlen = pcreSize;
         }
         else
         {
@@ -840,7 +1011,104 @@ public:
             out = (UChar *)rtlMalloc(slen * sizeof(UChar));
             memcpy_iflen(out, str, slen * sizeof(UChar));
             outlen = slen;
-            pcre2_match_data_free_16(matchData);
+        }
+    }
+
+    void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const
+    {
+        if (tlen == 0)
+            return;
+
+        PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
+
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, 0, matchData, pcre2MatchContext16);
+
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
+        {
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
+        }
+
+        if (numMatches > 0)
+        {
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            PCRE2_SIZE pcreSize = 0;
+
+            // Call substitute once to get the size of the output and see if it will fit within fixedOutLen;
+            // if it does then we can substitute within the given buffer and then pad with spaces, if not then
+            // we have to allocate memory, substitute into that memory, then copy into the given buffer;
+            // note that pcreSize will include space for a terminating null character even though we don't want it
+            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreSize);
+
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+            {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output;
+                // everything else is an error
+                failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+            }
+
+            if (pcreSize > 1)
+            {
+                std::string tempBuffer;
+                bool useFixedBuffer = (pcreSize <= tlen);
+                UChar * replaceBuffer = nullptr;
+
+                if (useFixedBuffer)
+                {
+                    replaceBuffer = tgt;
+                }
+                else
+                {
+                    tempBuffer.reserve(pcreSize * sizeof(UChar));
+                    replaceBuffer = (UChar *)tempBuffer.data();
+                }
+
+                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)replaceBuffer, &pcreSize);
+
+                if (replaceResult < 0)
+                {
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+
+                // Note that after a successful replace, pcreSize will contain the number of code points in
+                // the result *excluding* the null terminator
+
+                if (useFixedBuffer)
+                {
+                    // We used the fixed buffer so we only need to pad the result with spaces
+                    while (pcreSize < tlen)
+                        tgt[pcreSize++] = ' ';
+                }
+                else
+                {
+                    // We used a separate buffer, so we need to copy the result into the fixed buffer;
+                    // temp buffer was larger so we don't have to worry about padding
+                    memcpy_iflen(tgt, replaceBuffer, (tlen * sizeof(UChar)));
+                }
+            }
+            else
+            {
+                // The replacement results in an empty string
+                size32_t pos = 0;
+                while (pos < tlen)
+                    tgt[pos++] = ' ';
+            }
+        }
+        else
+        {
+            // No match found; return the original string
+            if (slen <= tlen)
+            {
+                memcpy_iflen(tgt, str, (slen * sizeof(UChar)));
+                while (slen < tlen)
+                    tgt[slen++] = ' ';
+            }
+            else
+            {
+                memcpy_iflen(tgt, str, (tlen * sizeof(UChar)));
+            }
         }
     }
 
@@ -856,7 +1124,7 @@ public:
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
         uint32_t matchOptions = 0;
-        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
+        PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
         // Capture groups are ignored when gathering match results into a set,
         // so we will focus on only the first match (the entire matched string);
@@ -877,7 +1145,6 @@ public:
                 else
                 {
                     // Treat everything else as an error
-                    pcre2_match_data_free_16(matchData);
                     failWithPCRE2Error(numMatches, "Error in regex getMatchSet: ");
                 }
             }
@@ -893,7 +1160,7 @@ public:
                 out.ensureAvailable(outBytes + matchSize + sizeof(size32_t));
                 byte * outData = out.getbytes() + outBytes;
                 * (size32_t *) outData = matchLen;
-                memcpy(outData + sizeof(size32_t), matchStart, matchSize);
+                memcpy_iflen(outData + sizeof(size32_t), matchStart, matchSize);
                 outBytes += matchSize + sizeof(size32_t);
 
                 // Update offset
@@ -908,8 +1175,6 @@ public:
                 break;
             }
         }
-
-        pcre2_match_data_free_16(matchData);
 
         __isAllResult = false;
         __resultBytes = outBytes;
