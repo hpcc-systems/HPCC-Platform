@@ -1096,7 +1096,7 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunitsNS.WUQuery, typeof Wo
                 }
                 let timePartsSection = 0;
                 const end = new Date(start);
-                const timeParts = wu.TotalClusterTime.split(":");
+                const timeParts = wu.TotalClusterTime?.split(":") ?? [];
                 while (timeParts.length) {
                     const timePart = timeParts.pop();
                     switch (timePartsSection) {

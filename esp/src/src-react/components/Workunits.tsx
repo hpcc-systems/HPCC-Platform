@@ -213,7 +213,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "setFailed", text: nlsHPCC.SetToFailed, disabled: !uiState.hasNotProtected,
-            onClick: () => { WsWorkunits.WUAction(selection, "SetToFailed"); }
+            onClick: () => { WsWorkunits.WUAction(selection, "SetToFailed").then(() => refreshTable.call()); }
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: !uiState.hasNotCompleted,

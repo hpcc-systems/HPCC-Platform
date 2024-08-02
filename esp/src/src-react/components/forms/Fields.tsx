@@ -890,6 +890,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                         borderless={field.readonly && !field.multiline}
                         readOnly={field.readonly}
+                        disabled={field.disabled(field) ? true : false}
                         required={field.required}
                         multiline={field.multiline}
                         errorMessage={field.errorMessage ?? ""}

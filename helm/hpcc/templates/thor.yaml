@@ -87,7 +87,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
             {{- include "hpcc.generateHelmVersion" . | nindent 12 }}
-            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName "instanceOf" (printf "%s-job" .eclAgentName)) | indent 8 }}
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName "instanceOf" (printf "%s-job" .eclAgentName)) | indent 12 }}
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
