@@ -1,10 +1,11 @@
 import * as React from "react";
 import { DefaultButton, Dialog, DialogFooter, DialogType, MessageBar, MessageBarType, PrimaryButton } from "@fluentui/react";
+import { useConst } from "@fluentui/react-hooks";
 import { AccountService, WsAccount } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
+import { PasswordStatus } from "../hooks/user";
 import nlsHPCC from "src/nlsHPCC";
 import { TableGroup } from "./forms/Groups";
-import { useConst } from "@fluentui/react-hooks";
 
 const logger = scopedLogger("src-react/components/MyAccount.tsx");
 
@@ -36,8 +37,14 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
         };
     }, [currentUser]);
 
+    const resetForm = React.useCallback(() => {
+        setOldPassword("");
+        setNewPassword1("");
+        setNewPassword2("");
+    }, []);
+
     const saveUser = React.useCallback(() => {
-        if (oldPassword !== "" && newPassword1 !== "") {
+        if (currentUser?.CanUpdatePassword && oldPassword !== "" && newPassword1 !== "") {
             service.UpdateUser({
                 username: currentUser.username,
                 oldpass: oldPassword,
@@ -51,13 +58,14 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
                     } else {
                         setShowError(false);
                         setErrorMessage("");
+                        resetForm();
                         onClose();
                     }
                 })
                 .catch(err => logger.error(err))
                 ;
         }
-    }, [currentUser, newPassword1, newPassword2, oldPassword, onClose, service]);
+    }, [currentUser, newPassword1, newPassword2, oldPassword, onClose, resetForm, service]);
 
     return <Dialog hidden={!show} onDismiss={onClose} dialogContentProps={dialogContentProps} minWidth="640px">
         {showError &&
@@ -70,10 +78,10 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
             "employeeID": { label: nlsHPCC.EmployeeID, type: "string", value: currentUser?.employeeID, readonly: true },
             "firstname": { label: nlsHPCC.FirstName, type: "string", value: currentUser?.firstName, readonly: true },
             "lastname": { label: nlsHPCC.LastName, type: "string", value: currentUser?.lastName, readonly: true },
-            "oldPassword": { label: nlsHPCC.OldPassword, type: "password", value: oldPassword },
-            "newPassword1": { label: nlsHPCC.NewPassword, type: "password", value: newPassword1 },
-            "newPassword2": { label: nlsHPCC.ConfirmPassword, type: "password", value: newPassword2, errorMessage: passwordMismatch },
-            "PasswordExpiration": { label: nlsHPCC.PasswordExpiration, type: "string", value: currentUser?.passwordExpiration, readonly: true },
+            "oldPassword": { label: nlsHPCC.OldPassword, type: "password", value: oldPassword, disabled: () => !currentUser?.CanUpdatePassword },
+            "newPassword1": { label: nlsHPCC.NewPassword, type: "password", value: newPassword1, disabled: () => !currentUser?.CanUpdatePassword },
+            "newPassword2": { label: nlsHPCC.ConfirmPassword, type: "password", value: newPassword2, errorMessage: passwordMismatch, disabled: () => !currentUser?.CanUpdatePassword },
+            "PasswordExpiration": { label: nlsHPCC.PasswordExpiration, type: "string", value: currentUser?.passwordDaysRemaining === PasswordStatus.NeverExpires ? nlsHPCC.PasswordNeverExpires : currentUser?.passwordExpiration, readonly: true },
         }} onChange={(id, value) => {
             switch (id) {
                 case "oldPassword":
@@ -96,7 +104,7 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
         }} />
         <DialogFooter>
             <PrimaryButton onClick={saveUser} text={nlsHPCC.Save} />
-            <DefaultButton onClick={onClose} text={nlsHPCC.Cancel} />
+            <DefaultButton onClick={() => { resetForm(); onClose(); }} text={nlsHPCC.Cancel} />
         </DialogFooter>
     </Dialog>;
 };

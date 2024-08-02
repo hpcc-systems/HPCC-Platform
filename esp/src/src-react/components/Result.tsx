@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, PrimaryButton, SpinButton, Stack } from "@fluentui/react";
+import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -247,6 +247,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     const [wu] = useWorkunit(wuid);
     const [result, setResult] = React.useState<CommsResult>(resultTable.calcResult());
     const [FilterFields, setFilterFields] = React.useState<Fields>({});
+    const [loading, setLoading] = React.useState(true);
     const [showFilter, setShowFilter] = React.useState(false);
 
     React.useEffect(() => {
@@ -276,6 +277,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                 };
             });
             setFilterFields(filterFields);
+            setLoading(false);
         }).catch(err => {
             logger.error(err);
             if (err.message.indexOf("Cannot open the workunit result") > -1) {
@@ -370,7 +372,10 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         header={<CommandBar items={buttons} farItems={rightButtons} />}
         main={
             <>
-                <AutosizeHpccJSComponent widget={resultTable} />
+                {loading ?
+                    <Spinner label={nlsHPCC.Loading} /> :
+                    <AutosizeHpccJSComponent widget={resultTable} />
+                }
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <ViewHTMLConfirm />
             </>
