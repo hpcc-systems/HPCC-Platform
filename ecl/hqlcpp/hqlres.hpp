@@ -42,7 +42,7 @@ public:
     void finalize();
 
     unsigned count();
-    bool flush(StringBuffer &filename, const char *basename, bool flushText, bool target64bit);
+    bool flush(StringBuffer &filename, const char *basename, bool flushText, bool target64bit, CompilerType compilerType);
     void flushAsText(const char *filename);
     bool queryWriteText(StringBuffer & resTextName, const char * filename);
 private:

@@ -545,7 +545,7 @@ void ResourceManager::flushAsText(const char *filename)
     fclose(f);
 }
 
-bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool flushText, bool target64bit)
+bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool flushText, bool target64bit, CompilerType compilerType)
 {
     finalize();
 
@@ -606,11 +606,6 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         throwError1(HQLERR_ResourceCreateFailed, filename.str());
 
     //MORE: This should really use targetCompiler instead
-#if defined(__APPLE__)
-    const bool generateClang = true;
-#else
-    const bool generateClang = false;
-#endif
     ForEachItemIn(idx, resources)
     {
         ResourceItem &s = (ResourceItem &) resources.item(idx);
@@ -618,7 +613,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         unsigned id = s.id;
         VStringBuffer binfile("%s_%s_%u.bin", filename.str(), type, id);
         VStringBuffer label("%s_%u_txt_start", type, id);
-        if (generateClang)
+        if (compilerType == ClangCppCompiler)
         {
 #ifdef __APPLE__
             if (id <= 1200)  // There is a limit of 255 sections before linker complains - and some are used elsewhere
@@ -648,7 +643,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         }
         fwrite(s.data.get(), 1, s.data.length(), bin);
         fclose(bin);
-        if (!generateClang)
+        if (compilerType != ClangCppCompiler)
             fprintf(f, " .size %s,%u\n", label.str(), (unsigned)s.data.length());
     }
     fclose(f);
