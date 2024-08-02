@@ -7,6 +7,11 @@ import { hashHistory } from "../util/history";
 const STORE_FAVORITES_ID = "favorites";
 const STORE_CACHE_TIMEOUT = 10000;
 
+export function resetFavorites() {
+    const store = userKeyValStore();
+    return store?.delete(STORE_FAVORITES_ID);
+}
+
 interface Payload {
     //  TODO:  Will be used for labels and extra info...
 }

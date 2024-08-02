@@ -20,6 +20,13 @@ import { useUserSession } from "../hooks/user";
 const logger = scopedLogger("../components/Frame.tsx");
 const envLogger = scopedLogger("environment");
 
+const USER_COOKIE_CONSENT = "user_cookie_consent";
+
+export function resetCookieConsent() {
+    const store = userKeyValStore();
+    return store.delete(USER_COOKIE_CONSENT);
+}
+
 interface FrameProps {
 }
 
@@ -111,7 +118,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
                 />}
             />
             <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
-                userKeyValStore().set("user_cookie_consent", n ? "1" : "0");
+                userKeyValStore().set(USER_COOKIE_CONSENT, n ? "1" : "0");
             }} />
         </ThemeProvider >
     </FluentProvider >;

@@ -92,6 +92,11 @@ const globalHistory = globalThis.history;
 
 const STORE_HISTORY_ID = "history";
 
+export function resetHistory() {
+    const store = userKeyValStore();
+    return store?.delete(STORE_HISTORY_ID);
+}
+
 class History<S extends object = object> {
 
     location: HistoryLocation = {
