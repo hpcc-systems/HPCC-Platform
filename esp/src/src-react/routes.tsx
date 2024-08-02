@@ -45,12 +45,17 @@ export const routes: RoutesEx = [
         path: "/login",
         action: (ctx) => import("./components/forms/Login").then(_ => <_.Login />)
     },
+    {
+        mainNav: [],
+        name: "reset",
+        path: "/reset",
+        action: (ctx) => import("./components/Reset").then(_ => <_.ResetDialog />)
+    },
     //  Main  ---
     {
         mainNav: ["activities"],
         path: "",
         action: (context) => pushUrl("/activities")
-
     },
     {
         mainNav: ["activities"],

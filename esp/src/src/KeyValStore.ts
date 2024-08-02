@@ -250,6 +250,13 @@ class CookieStorage implements IKeyValStore {
         });
     }
 
+    async deleteAll(broadcast?: boolean): Promise<void> {
+        const cookies = Utility.parseCookies();
+        for (const cookie in cookies) {
+            await this.delete(cookie, broadcast);
+        }
+    }
+
     monitor(callback: (messages: ValueChangedMessage[]) => void): IObserverHandle {
         return this._dispatch.attach(callback);
     }
