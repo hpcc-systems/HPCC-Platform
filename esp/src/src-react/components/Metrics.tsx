@@ -11,7 +11,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
-import { FetchStatus, useMetricsOptions, useWUQueryMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
+import { FetchStatus, useMetricsViews, useWUQueryMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -89,10 +89,10 @@ class TableEx extends Table {
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: any[], options: MetricsOptionsT, scopeFilter: string, matchCase: boolean): this {
+    metrics(metrics: any[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
-            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...options.properties, "__StdDevs"])
+            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
             .columnFormats([
                 new ColumnFormatEx()
                     .column("StdDevs")
@@ -106,18 +106,18 @@ class TableEx extends Table {
             .data(metrics
                 .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
                 .filter(row => {
-                    return options.scopeTypes.indexOf(row.type) >= 0;
+                    return scopeTypes.indexOf(row.type) >= 0;
                 }).map((row, idx) => {
                     if (idx === 0) {
                         this._rawDataMap = {
                             0: "##", 1: "type", 2: "__StdDevs", 3: "name"
                         };
-                        options.properties.forEach((p, idx2) => {
+                        properties.forEach((p, idx2) => {
                             this._rawDataMap[4 + idx2] = p;
                         });
                     }
                     row.__hpcc_id = row.name;
-                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...options.properties.map(p => {
+                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
                         return row.__groupedProps[p]?.Value ??
                             row.__groupedProps[p]?.Max ??
                             row.__groupedProps[p]?.Avg ??
@@ -157,6 +157,7 @@ class TableEx extends Table {
 }
 
 type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
+const TIMELINE_FIXEDHEIGHT = 152;
 
 interface MetricsProps {
     wuid: string;
@@ -178,10 +179,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
     const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWUQueryMetrics(wuid, querySet, queryId);
+    const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews();
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
-    const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
-    const [showTimeline, setShowTimeline] = React.useState<boolean>(true);
     const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [hotspots, setHotspots] = React.useState<string>("");
@@ -240,11 +240,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [parentUrl, timeline]);
 
     React.useEffect(() => {
-        timeline
-            .scopes(metrics)
-            .lazyRender()
-            ;
-    }, [metrics, timeline]);
+        if (view.showTimeline) {
+            timeline
+                .scopes(metrics)
+                .height(TIMELINE_FIXEDHEIGHT)
+                .lazyRender()
+                ;
+        }
+    }, [metrics, timeline, view.showTimeline]);
 
     //  Scopes Table  ---
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -258,7 +261,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
-        .metrics([], options, scopeFilter, matchCase)
+        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase)
         .sortable(true)
     );
 
@@ -274,13 +277,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     React.useEffect(() => {
         scopesTable
-            .metrics(metrics, options, scopeFilter, matchCase)
+            .metrics(metrics, view.scopeTypes, view.properties, scopeFilter, matchCase)
             .lazyRender()
             ;
-    }, [matchCase, metrics, options, scopeFilter, scopesTable]);
+    }, [matchCase, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
-        if (scopesTable?.renderCount() > 0) {
+        if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
             scopesTable.selection([]);
             if (selection.length) {
                 const selRows = scopesTable.data().filter(row => {
@@ -291,7 +294,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 });
             }
         }
-    }, [scopesTable]);
+    }, [scopesTable, selectedMetricsSource]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
@@ -490,9 +493,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [crossTabTable]);
 
     React.useEffect(() => {
-        const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], options);
+        const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], view);
         setDot(dot);
-    }, [metricGraph, options, selectedLineage]);
+    }, [metricGraph, view, selectedLineage]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -530,13 +533,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
 
         //  Update layout prior to unmount  ---
-        if (dockpanel && options && saveOptions && setOptions) {
+        if (dockpanel && updateView) {
             return () => {
-                setOptions({ ...options, layout: dockpanel.getLayout() });
-                saveOptions();
+                if (dockpanel && updateView) {
+                    updateView({ layout: dockpanel.getLayout() });
+                }
             };
         }
-    }, [dockpanel, options, saveOptions, setOptions]);
+    }, [dockpanel, updateView]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -556,19 +560,30 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
+            key: "views", text: viewId, iconProps: { iconName: "View" },
+            subMenuProps: {
+                items: viewIds.map(v => ({
+                    key: v, text: v, onClick: () => {
+                        updateView({ layout: dockpanel.getLayout() });
+                        setViewId(v);
+                    }
+                }))
+            },
+        },
+        {
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: view.showTimeline, iconProps: { iconName: "TimelineProgress" },
             onClick: () => {
-                setShowTimeline(!showTimeline);
+                updateView({ showTimeline: !view.showTimeline }, true);
             }
         },
         {
             key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
             onClick: () => {
-                setOptions({ ...options, layout: dockpanel.layout() });
+                updateView({ layout: dockpanel.getLayout() });
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline, timeline]);
+    ], [dockpanel, hotspots, onHotspot, refresh, setViewId, timeline, updateView, view.showTimeline, viewId, viewIds]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
@@ -610,7 +625,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     }
                 }]
             }
-        }, {
+        },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
             key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
             onClick: () => setFullscreen(!fullscreen)
         }
@@ -618,23 +635,18 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);
-        scopesTable
-            .metrics(metrics, options, scopeFilter, matchCase)
-            .render(() => {
-                updateScopesTable(selectedMetrics);
-            })
-            ;
+    }, []);
 
-    }, [matchCase, metrics, options, scopeFilter, scopesTable, selectedMetrics, updateScopesTable]);
+    console.log("View ID", viewId, view.scopeTypes);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
-            <AutosizeHpccJSComponent widget={timeline} fixedHeight={"160px"} padding={4} hidden={!showTimeline} />
+            <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={!view.showTimeline} />
         </>}
         main={
             <ErrorBoundary>
-                <DockPanel layout={options?.layout} onCreate={setDockpanel}>
+                <DockPanel layout={view?.layout} onCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
                             header={<Stack horizontal>
@@ -647,7 +659,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
-                        <MetricsSQL defaultSql={options.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", selection)}></MetricsSQL>
+                        <MetricsSQL defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <HolyGrail
