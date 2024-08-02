@@ -172,12 +172,14 @@ export const XMLSourceEditor: React.FunctionComponent<XMLSourceEditorProps> = ({
 
 interface JSONSourceEditorProps {
     json?: object;
+    toolbar?: boolean;
     readonly?: boolean;
     onChange?: (obj: object) => void;
 }
 
 export const JSONSourceEditor: React.FunctionComponent<JSONSourceEditorProps> = ({
     json,
+    toolbar,
     readonly = false,
     onChange = (obj: object) => { }
 }) => {
@@ -197,7 +199,7 @@ export const JSONSourceEditor: React.FunctionComponent<JSONSourceEditorProps> = 
         }
     }, [onChange]);
 
-    return <SourceEditor text={text} readonly={readonly} mode="json" onTextChange={textChanged}></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode="json" onTextChange={textChanged}></SourceEditor>;
 };
 
 export interface WUXMLSourceEditorProps {
