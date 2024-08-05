@@ -193,27 +193,6 @@ private:
     Mutex *sync;
 };
 
-
-extern "C" {
-
-interface HRPCI_Clarion_Module
-{
-    virtual void _stdcall Link() const=0;
-    virtual int _stdcall Release() const=0;
-    virtual void _stdcall FreeMem(void *ref)=0;
-};
-
-interface HRPCI_Clarion_Transport
-{
-    virtual void _stdcall Link() const =0;
-    virtual int _stdcall Release() const =0;
-    virtual IHRPCtransport * _stdcall GetTransport()=0;
-};
-
-}
-
-
-
 // ----------------------------------------------
 
 enum HRPC_ERROR_CODES {
