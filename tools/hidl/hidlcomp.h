@@ -431,7 +431,6 @@ public:
     char *bytesize(int deref=0);
     bool simpleneedsswap();
     void cat_type(char *s,int deref=0,int var=0);
-    void out_clarion_parameter();
     void out_parameter(const char *pfx);
     void out_type(int deref=0,int var=0);
     void typesizeacc(char *accstr,size_t &acc);
