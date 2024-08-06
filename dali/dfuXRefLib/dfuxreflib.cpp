@@ -959,10 +959,49 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         name = nonrepdir.str();
     num = 0;
     max = 0;
+    unsigned dirPerPart = 0;
     for (;;) {
         char c=*name;
         if (!c)
             break;
+        if ((c=='d')&&(isdigit(name[1])))
+        {
+            // Checks that the prefix matches and numDevices > 1 to see if d[0-9]+ is a stripe number
+            mname.append(c);
+            name++;
+
+            Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
+            ForEach(*planesIter)
+            {
+                const IPropertyTree &plane = planesIter->query();
+                if (startsWithIgnoreCase(mname.str(), plane.queryProp("@prefix")))
+                {
+                    if (plane.getPropInt("@numDevices") > 1)
+                    {
+                        while (*name&&isdigit(*name))
+                            name++;
+                        mname.append("$P$");
+                    }
+                    break;
+                }
+            }
+            c = *name;
+        }
+        if ((c=='/')&&(isdigit(name[1])))
+        {
+            mname.append(c);
+            name++;
+
+            // Get dir-per-part #
+            while (*name&&isdigit(*name))
+            {
+                dirPerPart = dirPerPart*10+(*name-'0');
+                name++;
+            }
+
+            c=*name;
+            mname.append("$P$");
+        }
         if ((c=='.')&&(name[1]=='_')) {
             unsigned pn = 0;
             const char *s = name+2;
@@ -970,6 +1009,10 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                 pn = pn*10+(*s-'0');
                 s++;
             }
+
+            if (dirPerPart&&dirPerPart!=pn)
+                throw MakeStringException(-1, "dir-per-part # does not match part # of file");
+
             if (pn&&(memicmp(s,"_of_",4)==0)) {
                 unsigned mn = 0;
                 s += 4;
@@ -978,17 +1021,6 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                     s++;
                 }
                 if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn)) {          // NB allow trailing extension
-#ifdef _CONTAINERIZED
-                    if (mn>1)
-                    {
-                        StringBuffer stripeDir;
-                        stripeDir.append(getPathSepChar(mname)).append(pn).append(getPathSepChar(mname));
-                        StringBuffer stripeMask;
-                        stripeMask.append(getPathSepChar(mname)).append("$P$").append(getPathSepChar(mname));
-                        // Replace part number in stripe directory with mask
-                        mname.replaceString(stripeDir, stripeMask);
-                    }
-#endif
                     mname.append("._$P$_of_").append(mn);
                     if (*s)
                         mname.append(s);
