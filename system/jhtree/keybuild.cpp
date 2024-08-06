@@ -278,7 +278,7 @@ protected:
 
     offset_t nextLevel()
     {
-        offset_t ret = endLevel(false);
+        endLevel(false);
         levels++;
         return 0;
     }

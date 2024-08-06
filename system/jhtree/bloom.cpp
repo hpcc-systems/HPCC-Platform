@@ -259,8 +259,8 @@ protected:
 
 UnsortedBloomBuilder::UnsortedBloomBuilder(const IBloomBuilderInfo &helper)
 : maxHashes(helper.getBloomLimit()),
-  probability(helper.getBloomProbability()),
-  tableSize(((helper.getBloomLimit()*4)/3)+1)
+  tableSize(((helper.getBloomLimit()*4)/3)+1),
+  probability(helper.getBloomProbability())
 {
     if (tableSize && helper.getBloomEnabled())
     {
@@ -271,8 +271,8 @@ UnsortedBloomBuilder::UnsortedBloomBuilder(const IBloomBuilderInfo &helper)
 
 UnsortedBloomBuilder::UnsortedBloomBuilder(unsigned _maxHashes, double _probability)
 : maxHashes(_maxHashes),
-  probability(_probability),
-  tableSize(((_maxHashes*4)/3)+1)
+  tableSize(((_maxHashes*4)/3)+1),
+  probability(_probability)
 {
     if (tableSize)
         hashes = (hash64_t *) calloc(sizeof(hash64_t), tableSize);

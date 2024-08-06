@@ -1923,7 +1923,7 @@ static SRes LzmaEnc_CodeOneBlock(CLzmaEnc *p, Bool useLimits, UInt32 maxPackSize
 static SRes LzmaEnc_Alloc(CLzmaEnc *p, UInt32 keepWindowSize, ISzAlloc *alloc, ISzAlloc *allocBig)
 {
   UInt32 beforeSize = kNumOpts;
-  Bool btMode;
+  Bool btMode [[maybe_unused]];
   if (!RangeEnc_Alloc(&p->rc, alloc))
     return SZ_ERROR_MEM;
   btMode = (p->matchFinderBase.btMode != 0);
