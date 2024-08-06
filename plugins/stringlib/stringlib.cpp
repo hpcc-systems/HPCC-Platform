@@ -1238,7 +1238,6 @@ STRINGLIB_API void STRINGLIB_CALL slSplitWords(bool & __isAllResult, size32_t & 
         return;
     }
 
-    unsigned sizeWords=0;
     char * target = result;
     const char * end = src + lenSrc;
     const char * max = end - (lenSeparator - 1);

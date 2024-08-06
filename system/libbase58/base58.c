@@ -87,11 +87,14 @@ bool b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz)
     switch (bytesleft) {
         case 3:
             *(binu++) = (outi[0] &   0xff0000) >> 16;
+            [[fallthrough]];
         case 2:
             *(binu++) = (outi[0] &     0xff00) >>  8;
+            [[fallthrough]];
         case 1:
             *(binu++) = (outi[0] &       0xff);
             ++j;
+            [[fallthrough]];
         default:
             break;
     }
@@ -160,14 +163,14 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
     ssize_t i, j, high, zcount = 0;
     size_t size;
 
-    while (zcount < binsz && !bin[zcount])
+    while (zcount < (ssize_t)binsz && !bin[zcount])
         ++zcount;
 
     size = (binsz - zcount) * 138 / 100 + 1;
     uint8_t *buf = (uint8_t*)alloca(size);
     memset(buf, 0, size);
 
-    for (i = zcount, high = size - 1; i < binsz; ++i, high = j)
+    for (i = zcount, high = size - 1; i < (ssize_t)binsz; ++i, high = j)
     {
         for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
         {
@@ -177,7 +180,7 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
         }
     }
 
-    for (j = 0; j < size && !buf[j]; ++j);
+    for (j = 0; j < (ssize_t)size && !buf[j]; ++j);
 
     if (*b58sz <= zcount + size - j)
     {
@@ -187,7 +190,7 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
 
     if (zcount)
         memset(b58, '1', zcount);
-    for (i = zcount; j < size; ++i, ++j)
+    for (i = zcount; j < (ssize_t)size; ++i, ++j)
         b58[i] = b58digits_ordered[buf[j]];
     b58[i] = '\0';
     *b58sz = i + 1;

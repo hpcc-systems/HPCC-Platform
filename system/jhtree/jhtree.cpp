@@ -71,7 +71,7 @@ static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
 static CNodeCache *nodeCache = NULL;
 static CriticalSection *initCrit = NULL;
-static __uint64 fetchThresholdCycles = 0;
+static cycle_t fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
 bool linuxYield = false;
@@ -329,8 +329,6 @@ void SegMonitorList::append(IKeySegmentMonitor *segment)
 {
     modified = true;
     unsigned fieldIdx = segment->queryFieldIndex();
-    unsigned offset = segment->getOffset();
-    unsigned size = segment->getSize();
     while (segMonitors.length() < fieldIdx)
     {
         unsigned idx = segMonitors.length();
@@ -2871,7 +2869,7 @@ class CKeyMerger : public CKeyLevelManager
                 break;
             }
         }
-        if (sortFromSeg == -1)
+        if (sortFromSeg == (unsigned)-1)
             assertex(!"Attempting to sort from offset that is not on a segment boundary");
         assertex(resetPending == true);
     }
@@ -3475,7 +3473,6 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
 
             tlk1->reset();
 
-            offset_t fpos;
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003010", 10)==0);
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005010", 10)==0);
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006010", 10)==0);
@@ -3764,7 +3761,6 @@ protected:
                 unsigned i;
             for (pass = 0; pass < 2; pass++)
             {
-                offset_t fpos;
                 tlk1->reset();
                 ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000001", 10)==0);
                 ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000002", 10)==0);

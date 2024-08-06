@@ -121,7 +121,7 @@ extern bool isCompressedIndex(const char *filename)
                         return false;
                     SwapBigEndian(hdr);
                 }
-                if (hdr.root && hdr.root % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+                if (hdr.root && hdr.root % hdr.nodeSize == 0 && (__uint64)hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
                 {
                     NodeHdr root;
                     if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
@@ -164,7 +164,7 @@ extern jhtree_decl bool isIndexFile(IFile *file)
                 SwapBigEndian(hdr);
 
             }
-            if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize ||  hdr.phyrec != size-1 || hdr.root % hdr.nodeSize || hdr.root >= size)
+            if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || (__uint64)hdr.phyrec != size-1 || hdr.root % hdr.nodeSize || (__uint64)hdr.root >= size)
                 return false;
             return true;    // Reasonable heuristic...
         }
@@ -330,7 +330,7 @@ bool CPOCWriteNode::add(offset_t pos, const void *data, size32_t size, unsigned 
     zlib_deflate(thisRowBuffer, tmp.toByteArray(), tmp.length(), GZ_DEFAULT_COMPRESSION, ZlibCompressionType::ZLIB_DEFLATE);
     size32_t deflateLen = thisRowBuffer.length();
     // This row will require keyedLen bytes for the key, deflateLen for the payload, and a short for the offset
-    if (hdr.keyBytes + keyedLen + deflateLen + sizeof(unsigned short) > maxBytes)
+    if (hdr.keyBytes + keyedLen + deflateLen + sizeof(unsigned short) > (size32_t)maxBytes)
         return false;
     payloadBuffer.append(deflateLen, thisRowBuffer.toByteArray());
     offsets.append(prevLength);
@@ -355,7 +355,7 @@ void CPOCWriteNode::write(IFileIOStream *out, CRC32 *crc)
     }
     memcpy(keyPtr, payloadBuffer.toByteArray(), payloadBuffer.length());
     keyPtr += payloadBuffer.length();
-    assert(keyPtr - nodeBuf == hdr.keyBytes + sizeof(NodeHdr));
+    assert((size_t)(keyPtr - nodeBuf) == hdr.keyBytes + sizeof(NodeHdr));
     SplitNodeHdr *splitHdr = (SplitNodeHdr *) (nodeBuf + sizeof(NodeHdr));
     splitHdr->firstSequence = firstSequence; 
     CWriteNode::write(out, crc);
@@ -411,7 +411,6 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     {
         if (0xffff == hdr.numKeys)
             return false;
-        bool lastnode = false;
         assertex (indata);
         //assertex(insize==keyLen);
         const void *data;
@@ -558,7 +557,7 @@ void CBloomFilterWriteNode::put4(unsigned val)
     unsigned short written;
     _WINCPYREV2(&written, keyPtr);
 
-    assertex(written + sizeof(val) + sizeof(unsigned short) <= maxBytes);
+    assertex(written + sizeof(val) + sizeof(unsigned short) <= (size32_t)maxBytes);
     _WINCPYREV4(keyPtr+sizeof(unsigned short)+written, &val);
     written += sizeof(val);
     _WINCPYREV2(keyPtr, &written);
@@ -570,7 +569,7 @@ void CBloomFilterWriteNode::put8(__int64 val)
     unsigned short written;
     _WINCPYREV2(&written, keyPtr);
 
-    assertex(written + sizeof(val) + sizeof(unsigned short) <= maxBytes);
+    assertex(written + sizeof(val) + sizeof(unsigned short) <= (size32_t)maxBytes);
     _WINCPYREV8(keyPtr+sizeof(unsigned short)+written, &val);
     written += sizeof(val);
     _WINCPYREV2(keyPtr, &written);
@@ -1260,7 +1259,6 @@ void CJHTreeBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos
 {
     CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
     const byte *data = ((const byte *) rawData) + sizeof(hdr);
-    char keyType = keyHdr->getKeyType();
     expandedSize = keyHdr->getNodeSize();
     keyBuf = expandData(data, expandedSize);
 }

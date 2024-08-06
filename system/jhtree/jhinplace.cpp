@@ -267,81 +267,6 @@ inline void skipPacked(const byte * & cur)
     } while (next >= 0x80);
 }
 
-//----- special packed format - code is untested
-
-inline unsigned getLeadingMask(byte extraBytes) { return (0x100U - (1U << (8-extraBytes))); }
-inline unsigned getLeadingValueMask(byte extraBytes) { return (~getLeadingMask(extraBytes)) >> 1; }
-
-static void serializePacked2(MemoryBuffer & out, size32_t value)
-{
-    //Efficiency of serialization is not the key consideration
-    byte mask = 0;
-    unsigned size = sizePacked(value);
-    constexpr unsigned maxBytes = 9;
-    byte result[maxBytes];
-
-    for (unsigned i=1; i < size; i++)
-    {
-        result[maxBytes - i] = value;
-        value >>= 8;
-        mask = 0x80 | (mask >> 1);
-    }
-    unsigned start = maxBytes - size;
-    result[start] |= mask;
-    out.append(size, result + start);
-}
-
-inline unsigned numExtraBytesFromFirst1(byte first)
-{
-    if (first >= 0xF0)
-        if (first >= 0xFC)
-            if (first >= 0xFE)
-                if (first >= 0xFF)
-                    return 8;
-                else
-                    return 7;
-            else
-                return 6;
-        else
-            if (first >= 0xF8)
-                return 5;
-            else
-                return 4;
-    else
-        if (first >= 0xC0)
-            if (first >= 0xE0)
-                return 3;
-            else
-                return 2;
-        else
-            return (first >> 7);    // (first >= 0x80) ? 1 : 0
-}
-
-inline unsigned numExtraBytesFromFirst2(byte first)
-{
-    //Surely should be faster, but seems slower on AMD. Retest in its actual context
-    unsigned value = first;
-    return countLeadingUnsetBits(~(value << 24));
-}
-
-inline unsigned numExtraBytesFromFirst(byte first)
-{
-    return numExtraBytesFromFirst1(first);
-}
-
-inline unsigned readPacked2(const byte * & cur)
-{
-    byte first = *cur++;
-    unsigned extraBytes = numExtraBytesFromFirst(first);
-    unsigned value = first & getLeadingValueMask(extraBytes);
-    while (extraBytes--)
-    {
-        value <<= 8;
-        value |= *cur++;
-    }
-    return value;
-}
-
 //-------------------
 
 static unsigned bytesRequired(unsigned __int64 value)
@@ -828,7 +753,6 @@ bool PartialMatch::squash()
 
         //Always squash if you have some text - avoids length calculation elsewhere
         size32_t startOffset = isRoot ? 0 : 1;
-        size32_t keyLen = builder->queryKeyLen();
         if (data.length() > startOffset)
         {
             const byte * source = data.bytes();
@@ -837,7 +761,6 @@ bool PartialMatch::squash()
             unsigned copyOffset = startOffset;
             unsigned repeatCount = 0;
             byte prevByte = 0;
-            const byte * nullRow = queryNullRow();
             for (unsigned offset = startOffset; offset < maxOffset; offset++)
             {
                 byte nextByte = source[offset];
@@ -1550,7 +1473,6 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
         return 0;
 
     unsigned resultPrev = 0;
-    unsigned resultNext = count;
     const byte * finger = nodeData;
     unsigned offset = 0;
 
@@ -1643,7 +1565,6 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             const byte nextFinger = getOptionValue(sizeInfo, finger, option);
             key[offset++] = nextFinger;
 
-            resultNext = resultPrev + countNext;
             resultPrev = resultPrev + countPrev;
 
             const byte * offsets = counts + numOptions * bytesPerCount;
@@ -2100,7 +2021,7 @@ bool CInplaceBranchWriteNode::add(offset_t pos, const void * _data, size32_t siz
     if (scaleFposByNodeSize && ((pos % nodeSize) != 0))
         scaleFposByNodeSize = false;
 
-    if (getDataSize() > maxBytes)
+    if (getDataSize() > (size32_t)maxBytes)
     {
         builder.removeLast();
         positions.pop();
@@ -2279,7 +2200,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         payloadLengths.append(extraSize);
 
     size32_t required = getDataSize(true);
-    bool hasSpace = (required <= maxBytes);
+    bool hasSpace = (required <= (size32_t)maxBytes);
     if ((keyLen != keyCompareLen) && ctx.compressionHandler)
     {
         // The following approach is used for compressing payloads:
@@ -2696,29 +2617,8 @@ static int normalizeCompare(int x)
 class InplaceIndexTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( InplaceIndexTest  );
-        //CPPUNIT_TEST(testBytesFromFirstTiming);
         CPPUNIT_TEST(testSearching);
     CPPUNIT_TEST_SUITE_END();
-
-    void testBytesFromFirstTiming()
-    {
-        for (unsigned i=0; i <= 0xff; i++)
-            assertex(numExtraBytesFromFirst1(i) == numExtraBytesFromFirst2(i));
-        unsigned total = 0;
-        {
-            CCycleTimer timer;
-            for (unsigned i=0; i < 0xffffff; i++)
-                total += numExtraBytesFromFirst1(i);
-            printf("%llu\n", timer.elapsedNs());
-        }
-        {
-            CCycleTimer timer;
-            for (unsigned i2=0; i2 < 0xffffff; i2++)
-                total += numExtraBytesFromFirst2(i2);
-            printf("%llu\n", timer.elapsedNs());
-        }
-        printf("%u\n", total);
-    }
 
     void testSearching()
     {

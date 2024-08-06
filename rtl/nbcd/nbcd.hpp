@@ -132,13 +132,12 @@ private:
     Decimal & incLSD();
 
 protected:
-    enum { 
-        maxDigits=MAX_DECIMAL_DIGITS,             // Total buffer size (integer+decimal)
-        maxPrecision=MAX_DECIMAL_PRECISION,       // Size of decimal part
-        maxIntegerDigits=MAX_DECIMAL_LEADING,     // Size of integer part
-        lastDigit = maxDigits-1,                  // Last decimal digit
-        zeroDigit = (maxDigits-maxIntegerDigits), // Unity digit (decimal point)
-    };
+    constexpr static int maxDigits=MAX_DECIMAL_DIGITS;             // Total buffer size (integer+decimal)
+    constexpr static int maxPrecision=MAX_DECIMAL_PRECISION;       // Size of decimal part
+    constexpr static int maxIntegerDigits=MAX_DECIMAL_LEADING;     // Size of integer part
+    constexpr static int lastDigit = maxDigits-1;                  // Last decimal digit
+    constexpr static int zeroDigit = (maxDigits-maxIntegerDigits); // Unity digit (decimal point)
+
     byte digits[maxDigits] = { 0 } ;              // stored little endian.
     byte msb = zeroDigit;                         // Most significant integer digit
     byte lsb = zeroDigit;                         // Least significant decimal digit
