@@ -245,8 +245,8 @@ extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_ty
     return writeCost;
 }
 
-// JCSMORE - I suspect this function should be removed/deprecated. It does not deal with dirPerPart or striping.
-// makePhysicalPartName supports both, but does not deal with groups/endpoints)
+
+// Deprecated and should be removed and new feature tested
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
 {
     partno--;
@@ -261,10 +261,6 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     StringBuffer fullname;
     if (findPathSepChar(name)==NULL)
         addPathSepChar(fullname.append(partdir));
-#ifdef _CONTAINERIZED
-    if (partmax>1)
-        addPathSepChar(fullname.append(partno+1)); // If there are multiple files they will be striped by part number
-#endif
     fullname.append(name);
     unsigned n;
     unsigned d;
