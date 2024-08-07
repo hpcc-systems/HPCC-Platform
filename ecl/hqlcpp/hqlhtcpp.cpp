@@ -18789,7 +18789,7 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name)
+void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name)
 {
     BuildCtx * initCtx = &ctx;
     BuildCtx * declareCtx = &ctx;
@@ -18813,6 +18813,16 @@ void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTime
         declareCtx->associateExpr(call, boundTimer);
         initCtx->addAssign(boundTimer.expr, call);
     }
+}
+
+void HqlCppTranslator::buildHelperTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name)
+{
+    buildTimerBase(ctx, boundTimer, name);
+}
+
+void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name)
+{
+    buildTimerBase(ctx, boundTimer, name);
 
     HqlExprArray nowArgs;
     nowArgs.append(*boundTimer.getTranslatedExpr());

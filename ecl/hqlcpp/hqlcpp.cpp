@@ -2232,19 +2232,40 @@ void HqlCppTranslator::callProcedure(BuildCtx & ctx, IIdAtom * name, HqlExprArra
 
     CHqlBoundExpr boundTimer, boundStart;
     IHqlExpression * external = funcdef->queryChild(0);
-    bool isTimed = external->hasAttribute(timeAtom);
-    if (isTimed)
+    bool needsStartStopTimer = external->hasAttribute(timeAtom);
+    if (needsStartStopTimer)
     {
         StringBuffer nameTemp;
-        const char * name = str(external->queryId());
+        const char * timerName = str(external->queryId());
         if (getStringValue(nameTemp, queryAttributeChild(external, timeAtom, 0)).length())
-            name = nameTemp;
-        buildStartTimer(ctx, boundTimer, boundStart, name);
+            timerName = nameTemp;
+        buildStartTimer(ctx, boundTimer, boundStart, timerName);
+    }
+    else if (external->hasAttribute(timerAtom))
+    {
+        // Timing performed by helper, but we need to build the timer that will be passed to the helper
+        StringBuffer nameTemp;
+        const char * timerName = str(external->queryId());
+        if (getStringValue(nameTemp, queryAttributeChild(external, timerAtom, 0)).length())
+            timerName = nameTemp;
+        buildHelperTimer(ctx, boundTimer, timerName);
+        // We need to patch the args to include the timer; helper timers will always be the first argument
+        // passed to the helper function, which means that it is either the first argument in the
+        // array (for a bare function call) or the second argument (for a method call)
+        bool isMethod = external->hasAttribute(methodAtom) || external->hasAttribute(omethodAtom);
+        unsigned int timerPos = (isMethod ? 1 : 0);
+        HqlExprArray newArgs;
+        unwindChildren(newArgs, call);
+        if (timerPos < newArgs.length())
+            newArgs.add(*LINK(boundTimer.expr), timerPos);
+        else
+            newArgs.append(*LINK(boundTimer.expr));
+        call.setown(bindTranslatedFunctionCall(name, newArgs));
     }
 
     ctx.addExpr(call);
 
-    if (isTimed)
+    if (needsStartStopTimer)
     {
         buildStopTimer(ctx, boundTimer, boundStart);
     }
@@ -6097,6 +6118,17 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         CHqlBoundExpr bound;
         buildExpr(ctx, expr->queryChild(firstParam++), bound);
         args.append(*bound.expr.getClear());
+    }
+    if (external->hasAttribute(timerAtom))
+    {
+        // helper timers will always be the first argument passed to the helper function
+        CHqlBoundExpr boundTimer;
+        StringBuffer nameTemp;
+        const char * name = str(external->queryId());
+        if (getStringValue(nameTemp, queryAttributeChild(external, timerAtom, 0)).length())
+            name = nameTemp;
+        buildHelperTimer(ctx, boundTimer, name);
+        args.append(*LINK(boundTimer.expr));
     }
     if (external->hasAttribute(userMatchFunctionAtom))
     {

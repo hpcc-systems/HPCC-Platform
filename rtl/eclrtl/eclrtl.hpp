@@ -70,6 +70,7 @@ interface IOutputRowDeserializer;
 interface IAtom;
 interface IRecordSize;
 interface IException;
+interface ISectionTimer;
 class StringBuffer;
 class MemoryBuffer;
 
@@ -86,10 +87,14 @@ interface IStrRegExprFindInstance
 
 interface ICompiledStrRegExpr
 {
-    virtual void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const = 0;
-    virtual void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * replace) const = 0;
+    virtual void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
+    virtual void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
     virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
+    virtual void replaceTimed(ISectionTimer * timer, size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
+    virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
+    virtual IStrRegExprFindInstance * findTimed(ISectionTimer * timer, const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
+    virtual void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
 };
 
 // RegEx Compiler for unicode strings
@@ -101,10 +106,14 @@ interface IUStrRegExprFindInstance
 
 interface ICompiledUStrRegExpr
 {
-    virtual void replace(size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const = 0;
-    virtual void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const = 0;
+    virtual void replace(size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
+    virtual void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const = 0;
     virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
+    virtual void replaceTimed(ISectionTimer * timer, size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
+    virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
+    virtual IUStrRegExprFindInstance * findTimed(ISectionTimer * timer, const UChar * str, size32_t from, size32_t len) const = 0;
+    virtual void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -707,17 +716,23 @@ ECLRTL_API void rtlUtf8SpaceFill(unsigned tlne, char * tgt, unsigned idx);
 
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, int regExprLength, const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * compiled);
 

@@ -26,6 +26,7 @@
 #include "pcre2.h"
 
 #include "platform.h"
+#include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "jhash.hpp"
@@ -287,7 +288,7 @@ static void initMaxCacheSize()
 
 //---------------------------------------------------------------------------
 
-class CStrRegExprFindInstance : implements IStrRegExprFindInstance
+class CStrRegExprFindInstance final : implements IStrRegExprFindInstance
 {
 private:
     bool matched = false;
@@ -362,7 +363,7 @@ public:
         }
     }
 
-    char const * findvstr(unsigned outlen, char * out, unsigned n = 0)
+    char const * findvstr(unsigned outlen, char * out, unsigned n)
     {
         if (matched && (n < pcre2_get_ovector_count_8(matchData)))
         {
@@ -384,7 +385,7 @@ public:
 
 //---------------------------------------------------------------------------
 
-class CCompiledStrRegExpr : implements ICompiledStrRegExpr
+class CCompiledStrRegExpr final : implements ICompiledStrRegExpr
 {
 private:
     std::shared_ptr<pcre2_code_8> compiledRegex = nullptr;
@@ -417,7 +418,7 @@ public:
 
     //ICompiledStrRegExpr
 
-    void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const
+    void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
     {
         outlen = 0;
         PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
@@ -426,7 +427,7 @@ public:
         // (slen and rlen) are in code points (characters), not bytes; we need to convert these to a
         // byte count for PCRE2
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
-        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
+        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, rstr) : rlen);
 
         // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
         // with data that can be used by pcre2_substitute to bypass some work
@@ -445,7 +446,7 @@ public:
 
             // Call substitute once to get the size of the output (pushed into pcreSize);
             // note that pcreSize will include space for a terminating null character even though we don't want it
-            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreSize);
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)rstr, replaceSize, nullptr, &pcreSize);
 
             if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
@@ -458,7 +459,7 @@ public:
             {
                 out = (char *)rtlMalloc(pcreSize);
 
-                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreSize);
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)rstr, replaceSize, (PCRE2_UCHAR8 *)out, &pcreSize);
 
                 // Note that, weirdly, pcreSize will now contain the number of code points
                 // in the result *excluding* the null terminator, so pcreSize will
@@ -489,9 +490,15 @@ public:
         }
     }
 
+    void replaceTimed(ISectionTimer * timer, size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        replace(outlen, out, slen, str, rlen, rstr);
+    }
+
     // This method supports "fixed length UTF-8" even though that isn't really a thing;
     // it's here more for completeness, in case we ever implement some version of it
-    void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * replace) const
+    void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
     {
         if (tlen == 0)
             return;
@@ -502,7 +509,7 @@ public:
         // (slen and rlen) are in code points (characters), not bytes; we need to convert these to a
         // byte count for PCRE2
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
-        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
+        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, rstr) : rlen);
 
         // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
         // with data that can be used by pcre2_substitute to bypass some work
@@ -523,7 +530,7 @@ public:
             // if it does then we can substitute within the given buffer and then pad with spaces, if not then
             // we have to allocate memory, substitute into that memory, then copy into the given buffer;
             // note that pcreSize will include space for a terminating null character even though we don't want it
-            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreSize);
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)rstr, replaceSize, nullptr, &pcreSize);
 
             if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
@@ -548,7 +555,7 @@ public:
                     replaceBuffer = (char *)tempBuffer.data();
                 }
 
-                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)replaceBuffer, &pcreSize);
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)rstr, replaceSize, (PCRE2_UCHAR8 *)replaceBuffer, &pcreSize);
 
                 if (replaceResult < 0)
                 {
@@ -620,10 +627,22 @@ public:
         }
     }
 
+    void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        replaceFixed(tlen, tgt, slen, str, rlen, rstr);
+    }
+
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
     {
         CStrRegExprFindInstance * findInst = new CStrRegExprFindInstance(compiledRegex, str, from, len, needToKeepSearchString);
         return findInst;
+    }
+
+    IStrRegExprFindInstance * findTimed(ISectionTimer * timer, const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        return find(str, from, len, needToKeepSearchString);
     }
 
     void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const char * _subject)
@@ -690,6 +709,12 @@ public:
         __result = out.detachdata();
     };
 
+    void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const char * _subject)
+    {
+        SectionTimerBlock sectionTimer(timer);
+        getMatchSet(__isAllResult, __resultBytes, __result, _subjectLen, _subject);
+    }
+
 };
 
 //---------------------------------------------------------------------------
@@ -749,9 +774,21 @@ ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExp
     return fetchOrCreateCompiledStrRegExpr(strlen(regExpr), regExpr, isCaseSensitive);
 }
 
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledStrRegExpr(regExpr, isCaseSensitive);
+}
+
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
     return fetchOrCreateCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+}
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -824,9 +861,21 @@ ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regE
     return fetchOrCreateCompiledU8StrRegExpr(rtlUtf8Length(regExpr), regExpr, isCaseSensitive);
 }
 
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledU8StrRegExpr(regExpr, isCaseSensitive);
+}
+
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
     return fetchOrCreateCompiledU8StrRegExpr(regExprLength, regExpr, isCaseSensitive);
+}
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledU8StrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -847,7 +896,7 @@ ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * fin
 
 #ifdef _USE_ICU
 
-class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
+class CUStrRegExprFindInstance final : implements IUStrRegExprFindInstance
 {
 private:
     bool matched = false;
@@ -898,7 +947,7 @@ public:
         }
     }
 
-    UChar const * findvstr(unsigned outlen, UChar * out, unsigned n = 0)
+    UChar const * findvstr(unsigned outlen, UChar * out, unsigned n)
     {
         if (matched && (n < pcre2_get_ovector_count_16(matchData)))
         {
@@ -920,7 +969,7 @@ public:
 
 //---------------------------------------------------------------------------
 
-class CCompiledUStrRegExpr : implements ICompiledUStrRegExpr
+class CCompiledUStrRegExpr final : implements ICompiledUStrRegExpr
 {
 private:
     std::shared_ptr<pcre2_code_16> compiledRegex = nullptr;
@@ -948,7 +997,7 @@ public:
 
     std::shared_ptr<pcre2_code_16> getCompiledRegex() const { return compiledRegex; }
 
-    void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * replace) const
+    void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * rstr) const
     {
         outlen = 0;
         PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
@@ -972,7 +1021,7 @@ public:
             // Note that pcreSize will include space for a terminating null character;
             // we have to allocate memory for that byte to avoid a buffer overrun,
             // but we won't count that terminating byte
-            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreSize);
+            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)rstr, rlen, nullptr, &pcreSize);
 
             if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
@@ -984,7 +1033,7 @@ public:
             {
                 out = (UChar *)rtlMalloc(pcreSize * sizeof(UChar));
 
-                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreSize);
+                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)rstr, rlen, (PCRE2_UCHAR16 *)out, &pcreSize);
 
                 // Note that, weirdly, pcreSize will now contain the number of code points
                 // in the result *excluding* the null terminator, so pcreSize will
@@ -1012,6 +1061,12 @@ public:
             memcpy_iflen(out, str, slen * sizeof(UChar));
             outlen = slen;
         }
+    }
+
+    void replaceTimed(ISectionTimer * timer, size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * rstr) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        replace(outlen, out, slen, str, rlen, rstr);
     }
 
     void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const
@@ -1112,10 +1167,22 @@ public:
         }
     }
 
+    void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        replaceFixed(tlen, tgt, slen, str, rlen, replace);
+    }
+
     IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const
     {
         CUStrRegExprFindInstance * findInst = new CUStrRegExprFindInstance(compiledRegex, str, from, len);
         return findInst;
+    }
+
+    IUStrRegExprFindInstance * findTimed(ISectionTimer * timer, const UChar * str, size32_t from, size32_t len) const
+    {
+        SectionTimerBlock sectionTimer(timer);
+        return find(str, from, len);
     }
 
     void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const UChar * _subject)
@@ -1180,6 +1247,12 @@ public:
         __resultBytes = outBytes;
         __result = out.detachdata();
     }
+
+    void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const UChar * _subject)
+    {
+        SectionTimerBlock sectionTimer(timer);
+        getMatchSet(__isAllResult, __resultBytes, __result, _subjectLen, _subject);
+    }
 };
 
 //---------------------------------------------------------------------------
@@ -1240,9 +1313,21 @@ ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * reg
     return fetchOrCreateCompiledUStrRegExpr(rtlUnicodeStrlen(regExpr), regExpr, isCaseSensitive);
 }
 
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, const UChar * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledUStrRegExpr(regExpr, isCaseSensitive);
+}
+
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive)
 {
     return fetchOrCreateCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+}
+
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, int regExprLength, const UChar * regExpr, bool isCaseSensitive)
+{
+    SectionTimerBlock sectionTimer(timer);
+    return rtlCreateCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
