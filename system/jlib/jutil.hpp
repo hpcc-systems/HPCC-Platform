@@ -495,6 +495,7 @@ extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char
 extern jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 extern jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret);
 extern jlib_decl IFile *createUniqueTempDirectory();
+extern jlib_decl StringBuffer &getSystemTempDir(StringBuffer &ret);
 
 interface jlib_thrown_decl ICorruptDllException: extends IException
 {
