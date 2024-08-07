@@ -38,7 +38,7 @@ function fromString<T>(value: string, defaultValue: T): T {
     }
 }
 
-function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor: boolean = false): [value: T, setValue: (value: T) => void, reset: () => void] {
+function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor: boolean = false): [value: T, setValue: (value: T) => Promise<void>, reset: () => Promise<void>] {
 
     const [value, setValue] = React.useState<T>();
 
@@ -66,13 +66,13 @@ function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor:
     }, [defaultValue, key, monitor, store]);
 
     const extSetValue = React.useCallback((value: T) => {
-        store.set(key, toString<T>(value, defaultValue), monitor).then(() => {
+        return store.set(key, toString<T>(value, defaultValue), monitor).then(() => {
             setValue(value);
         });
     }, [defaultValue, key, monitor, store]);
 
     const reset = React.useCallback(() => {
-        store.delete(key, monitor).then(() => {
+        return store.delete(key, monitor).then(() => {
             setValue(defaultValue);
         });
     }, [defaultValue, key, monitor, store]);

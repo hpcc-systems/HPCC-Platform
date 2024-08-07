@@ -9,7 +9,13 @@ import { useCounter } from "./util";
 
 const logger = scopedLogger("src-react/hooks/metrics.ts");
 
-const MetricOptionsVersion = 2;
+const METRIC_OPTIONS_VERSION = 2;
+const METRIC_OPTIONS_KEY = `MetricOptions-${METRIC_OPTIONS_VERSION}`;
+
+export function resetMetricsViews() {
+    const store = userKeyValStore();
+    return store?.delete(METRIC_OPTIONS_KEY);
+}
 
 export interface MetricsOptions {
     scopeTypes: string[];
@@ -58,7 +64,7 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
 
     const save = React.useCallback(() => {
         if (checkLayout(options)) {
-            store?.set(`MetricOptions-${MetricOptionsVersion}`, JSON.stringify(options), true);
+            store?.set(METRIC_OPTIONS_KEY, JSON.stringify(options), true);
         }
     }, [store]);
 
@@ -66,7 +72,7 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
         if (toDefaults) {
             setOptions({ ...defaults });
         } else {
-            store?.get(`MetricOptions-${MetricOptionsVersion}`).then(opts => {
+            store?.get(METRIC_OPTIONS_KEY).then(opts => {
                 const options = JSON.parse(opts);
                 checkLayout(options);
                 setOptions({ ...defaults, ...options });
