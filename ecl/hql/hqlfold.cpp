@@ -1187,7 +1187,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
            );
         }
   #endif
-        assertex((len & 7) == 4);  // We need to make sure we add an ODD number of words to stack, so that it gets #8-byte aligned once pc is pushed by the call
+        assertex((len & 7) == 4);  // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
         register unsigned _intresult asm("r0");                       // Specific register for result
         register unsigned _intresulthigh asm("r1");                   // Specific register for result
         register unsigned _poplen asm("r4") = len-REGPARAMS*REGSIZE;  // Needs to survive the call
@@ -1350,7 +1350,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
             "ldp x2, x3, [sp, #16] \n\t"
             "ldp x4, x5, [sp, #32] \n\t"
             "ldp x6, x7, [sp, #48] \n\t"
-            "add sp, sp, #64 \n\t"            // first #8 parameters go in registers
+            "add sp, sp, #64 \n\t"            // first 8 parameters go in registers
             "blr %[fh] \n\t"                  // make the call
             "add sp, sp, %[_poplen] \n\t"     // Restore stack pointer (note, have already popped 8 registers, so poplen is len - 64)
             : "=r"(_int64result)

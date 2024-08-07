@@ -65,8 +65,8 @@ ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL func2 (ICodeContext * _ctx, 
 }
 
 ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test1(size32_t & returnLength, char * & returnValue,
-    uint8_t p1, uint16_t p2, uint32_t p3, uint64_t p4, 
-    char p5, int16_t p6, int32_t p7, int64_t p8, uint64_t p9, uint64_t p10)
+    uint8_t p1, uint16_t p2, uint32_t p3, __uint64 p4, 
+    char p5, int16_t p6, int32_t p7, __int64 p8, __uint64 p9, __uint64 p10)
 {
     VStringBuffer buffer("%u %u %u %llu %d %d %d %lld %llu %llu", p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
     returnLength = buffer.length();
@@ -85,8 +85,8 @@ ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test2(size32_t & returnLengt
 }
 
 ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test3(size32_t & returnLength, char * & returnValue,
-    uint8_t p1, uint16_t p2, uint32_t p3, uint64_t p4, 
-    char p5, int16_t p6, int32_t p7, int64_t p8, uint64_t p9, uint64_t p10,
+    uint8_t p1, uint16_t p2, uint32_t p3, __uint64 p4, 
+    char p5, int16_t p6, int32_t p7, __int64 p8, __uint64 p9, __uint64 p10,
     float r1, float r2, float r3, float r4, 
     double r5, double r6, double r7, double r8)
 {
