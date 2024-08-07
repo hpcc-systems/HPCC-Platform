@@ -269,6 +269,7 @@ inline void skipPacked(const byte * & cur)
 
 //----- special packed format - code is untested
 
+#ifdef ALTERNATIVE_PACKING_FORMAT
 inline unsigned getLeadingMask(byte extraBytes) { return (0x100U - (1U << (8-extraBytes))); }
 inline unsigned getLeadingValueMask(byte extraBytes) { return (~getLeadingMask(extraBytes)) >> 1; }
 
@@ -341,6 +342,7 @@ inline unsigned readPacked2(const byte * & cur)
     }
     return value;
 }
+#endif
 
 //-------------------
 
@@ -828,7 +830,6 @@ bool PartialMatch::squash()
 
         //Always squash if you have some text - avoids length calculation elsewhere
         size32_t startOffset = isRoot ? 0 : 1;
-        size32_t keyLen = builder->queryKeyLen();
         if (data.length() > startOffset)
         {
             const byte * source = data.bytes();
@@ -837,7 +838,6 @@ bool PartialMatch::squash()
             unsigned copyOffset = startOffset;
             unsigned repeatCount = 0;
             byte prevByte = 0;
-            const byte * nullRow = queryNullRow();
             for (unsigned offset = startOffset; offset < maxOffset; offset++)
             {
                 byte nextByte = source[offset];
@@ -1550,7 +1550,6 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
         return 0;
 
     unsigned resultPrev = 0;
-    unsigned resultNext = count;
     const byte * finger = nodeData;
     unsigned offset = 0;
 
@@ -1643,7 +1642,6 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             const byte nextFinger = getOptionValue(sizeInfo, finger, option);
             key[offset++] = nextFinger;
 
-            resultNext = resultPrev + countNext;
             resultPrev = resultPrev + countPrev;
 
             const byte * offsets = counts + numOptions * bytesPerCount;
@@ -2100,7 +2098,7 @@ bool CInplaceBranchWriteNode::add(offset_t pos, const void * _data, size32_t siz
     if (scaleFposByNodeSize && ((pos % nodeSize) != 0))
         scaleFposByNodeSize = false;
 
-    if (getDataSize() > maxBytes)
+    if (getDataSize() > (size32_t)maxBytes)
     {
         builder.removeLast();
         positions.pop();
@@ -2279,7 +2277,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         payloadLengths.append(extraSize);
 
     size32_t required = getDataSize(true);
-    bool hasSpace = (required <= maxBytes);
+    bool hasSpace = (required <= (size32_t)maxBytes);
     if ((keyLen != keyCompareLen) && ctx.compressionHandler)
     {
         // The following approach is used for compressing payloads:
@@ -2700,6 +2698,7 @@ class InplaceIndexTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testSearching);
     CPPUNIT_TEST_SUITE_END();
 
+#ifdef ALTERNATIVE_PACKING_FORMAT
     void testBytesFromFirstTiming()
     {
         for (unsigned i=0; i <= 0xff; i++)
@@ -2719,6 +2718,7 @@ class InplaceIndexTest : public CppUnit::TestFixture
         }
         printf("%u\n", total);
     }
+#endif
 
     void testSearching()
     {
