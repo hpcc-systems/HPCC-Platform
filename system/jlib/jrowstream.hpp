@@ -48,7 +48,7 @@ class MemoryBuffer;
 class MemoryBufferBuilder;
 
 //An interface for reading rows - which can request the row in the most efficient way for the caller.
-interface IDiskRowStream : extends IRowStream
+interface ILogicalRowStream : extends IRowStream
 {
 // Defined in IRowStream, here for documentation:
 // Request a row which is owned by the caller, and must be freed once it is finished with.
@@ -73,6 +73,19 @@ interface IDiskRowStream : extends IRowStream
 
     virtual const void *nextRow(MemoryBufferBuilder & builder)=0;
     // rows returned are created in the target buffer.  This should be generalized to an ARowBuilder
+};
+using IDiskRowStream = ILogicalRowStream;  // MORE: Replace these in the code, but alias for now to avoid compile problems
+
+
+//An interface for writing rows - with separate functions whether or not ownership of the row is being passed
+interface ILogicalRowSink : extends IRowWriterEx
+{
+// Defined in IRowWriterEx, here for documentation:
+    virtual void putRow(const void *row) override = 0;  // takes ownership of row.  rename to putOwnedRow?
+    virtual void flush() override = 0;
+    virtual void noteStopped() override = 0;
+
+    virtual void writeRow(const void *row) = 0;         // does not take ownership of row
 };
 
 
