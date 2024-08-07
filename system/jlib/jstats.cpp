@@ -1328,6 +1328,8 @@ void StatisticsMapping::createMappings()
     ForEachItemIn(i2, indexToKind)
     {
         unsigned kind = indexToKind.item(i2);
+        unsigned existing = kindToIndex.item(kind);
+        assertex(existing == numStatistics());  // Throw an error if there are duplicate statistics in the mapping
         kindToIndex.replace(i2, kind);
     }
 
