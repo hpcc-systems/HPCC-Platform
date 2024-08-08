@@ -48,6 +48,7 @@ interface MessageBoxProps {
     show: boolean;
     modeless?: boolean;
     blocking?: boolean;
+    onDismiss?: () => void;
     setShow: (_: boolean) => void;
     footer?: React.ReactNode;
     children?: React.ReactNode;
@@ -59,6 +60,7 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     show,
     modeless = true,
     blocking = true,
+    onDismiss,
     setShow,
     footer,
     children
@@ -71,7 +73,12 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
         body: { padding: "12px 24px 12px 24px", overflowY: "hidden" },
     }), [theme.palette.themePrimary, minWidth]);
 
-    const close = React.useCallback(() => setShow(false), [setShow]);
+    const close = React.useCallback(() => {
+        if (onDismiss) {
+            onDismiss();
+        }
+        setShow(false);
+    }, [onDismiss, setShow]);
 
     return <Modal isOpen={show} onDismiss={close} isModeless={modeless} dragOptions={dragOptions}
         isBlocking={blocking} containerClassName={contentStyles.container} styles={modalStyles}>
