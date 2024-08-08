@@ -35,6 +35,15 @@ export async function fetchModernMode(): Promise<string> {
     });
 }
 
+export async function resetModernMode() {
+    await sessionStore.delete(ModernMode);
+    await userStore.delete(ModernMode);
+}
+
+export async function resetCookies() {
+    await cookieStore.deleteAll(true);
+}
+
 const isV5DirectURL = () => !!parseSearch(window.location.search)?.["Widget"];
 const isV9DirectURL = () => window.location.hash && window.location.hash.indexOf("#/stub/") !== 0;
 
