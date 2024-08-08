@@ -49,7 +49,23 @@ public:
     virtual void stop() = 0;
 };
 
-IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped);
+class CSeqPartHandler : public CInterface
+{
+    IArrayOf<IPartDescriptor> &partDescs;
+    Linked<CPartHandler> partHandler;
+    unsigned part;
+    bool eof, grouped, someInGroup;
+
+public:
+    CSeqPartHandler(CPartHandler *_partHandler, IArrayOf<IPartDescriptor> &_partDescs, bool _grouped);
+
+    void stop();
+    const void *nextRow();
+
+    inline unsigned numParts() const { return partDescs.ordinality(); }
+};
+
+CSeqPartHandler * createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped);
 
 #define CATCH_NEXTROWX_CATCH \
         catch (IException *_e) \

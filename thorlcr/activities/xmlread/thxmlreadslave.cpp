@@ -37,7 +37,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
     typedef CDiskReadSlaveActivityBase PARENT;
 
     IHThorXmlReadArg *helper;
-    IRowStream *out;
+    Owned<CSeqPartHandler> partSequencer;
     rowcount_t limit;
     rowcount_t stopAfter;
 
@@ -214,7 +214,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
 public:
     CXmlReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container, nullptr)
     {
-        out = NULL;
         helper = (IHThorXmlReadArg *)queryHelper();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
         if (helper->getFlags() & TDRlimitskips)
@@ -225,7 +224,6 @@ public:
     }
     ~CXmlReadSlaveActivity()
     {
-        ::Release(out);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -234,11 +232,7 @@ public:
     }
     virtual void kill()
     {
-        if (out)
-        {
-            out->Release();
-            out = NULL;
-        }
+        partSequencer.clear();
         CDiskReadSlaveActivityBase::kill();
     }
     
@@ -247,14 +241,14 @@ public:
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityBase::start();
-        out = createSequentialPartHandler(partHandler, partDescs, false);
+        partSequencer.setown(createSequentialPartHandler(partHandler, partDescs, false));
     }
     virtual void stop() override
     {
-        if (out)
+        if (partSequencer)
         {
-            out->Release();
-            out = NULL;
+            partSequencer->stop();
+            partSequencer.clear();
         }
         PARENT::stop();
     }
@@ -262,8 +256,8 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        OwnedConstThorRow row = out->nextRow();
-        if (!row)
+        OwnedConstThorRow row = partSequencer->nextRow();
+        if (unlikely(!row))
             return NULL;
         rowcount_t c = getDataLinkCount();
         if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity 
