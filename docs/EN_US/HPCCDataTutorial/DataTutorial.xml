@@ -955,13 +955,7 @@ DATASET('~tutorial::YN::TutorialPerson',
           </listitem>
 
           <listitem>
-            <para>Check the syntax, if no errors press the <emphasis
-            role="bold">Submit</emphasis> button.</para>
-          </listitem>
-
-          <listitem>
-            <para>When it completes, it displays a green checkmark
-            <inlinegraphic fileref="images/DT173-15.jpg" />.</para>
+            <para>Check the syntax, if no errors you can continue.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -985,7 +979,7 @@ INDEX(TutorialYourName.File_TutorialPerson,{zip,fpos},'~tutorial::YN::PeopleByZi
           </listitem>
 
           <listitem>
-            <para>Check the syntax.</para>
+            <para>Check the syntax, if no errors you can continue.</para>
 
             <para>Next, we will build the index file.</para>
           </listitem>
