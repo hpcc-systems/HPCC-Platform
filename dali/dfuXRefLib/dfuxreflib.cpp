@@ -771,11 +771,11 @@ struct CLogicalNameEntry: public CInterface
         }
         expandMask(partName, pmask, partNo, max);
 
-        StringBuffer fullname;
         Owned<IStoragePlane> plane = getDataStoragePlane(grpname, true);
         const char * prefix = plane->queryPrefix();
         unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
         bool dirPerPart = max>1?plane->queryDirPerPart():false;
+        StringBuffer fullname;
         makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
         ClusterPartDiskMapSpec mspec;
