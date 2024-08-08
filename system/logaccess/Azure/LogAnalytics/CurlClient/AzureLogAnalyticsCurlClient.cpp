@@ -344,6 +344,8 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
     m_workunitSearchColName.set(defaultHPCCLogJobIDCol);
     m_componentsSearchColName.set(defaultHPCCLogComponentCol);
     m_audienceSearchColName.set(defaultHPCCLogAudCol);
+    m_traceSearchColName.set(defaultHPCCLogTraceIDCol);
+    m_spanSearchColName.set(defaultHPCCLogSpanIDCol);
 
     Owned<IPropertyTreeIterator> logMapIter = m_pluginCfg->getElements("logMaps");
     ForEach(*logMapIter)
@@ -443,19 +445,21 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
             if (logMap.hasProp(logMapSearchColAtt))
                 m_podSearchColName = logMap.queryProp(logMapSearchColAtt);
         }
-        else if (streq(logMapType, "trace"))
+        else if (streq(logMapType, "traceid"))
         {
             if (logMap.hasProp(logMapIndexPatternAtt))
                 m_traceIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
 
-            m_traceSearchColName = logMap.hasProp(logMapSearchColAtt) ? logMap.queryProp(logMapSearchColAtt) : defaultHPCCLogTraceIDCol; 
+            if (logMap.hasProp(logMapSearchColAtt))
+                m_traceSearchColName.set(logMap.queryProp(logMapSearchColAtt));
         }
-        else if (streq(logMapType, "span"))
+        else if (streq(logMapType, "spanid"))
         {
             if (logMap.hasProp(logMapIndexPatternAtt))
                 m_spanIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
 
-            m_spanSearchColName = logMap.hasProp(logMapSearchColAtt) ? logMap.queryProp(logMapSearchColAtt) : defaultHPCCLogSpanIDCol;
+            if (logMap.hasProp(logMapSearchColAtt))
+                m_spanSearchColName.set(logMap.queryProp(logMapSearchColAtt));
         }
         else
         {

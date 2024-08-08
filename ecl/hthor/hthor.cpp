@@ -6719,13 +6719,13 @@ CHThorWhenActionActivity::CHThorWhenActionActivity(IAgentContext &_agent, unsign
 void CHThorWhenActionActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    graphElement->executeDependentActions(agent, NULL, WhenBeforeId);
-    graphElement->executeDependentActions(agent, NULL, WhenParallelId);
+    graphElement->executeDependentActions(agent, graphElement->savedParentExtract, WhenBeforeId);
+    graphElement->executeDependentActions(agent, graphElement->savedParentExtract, WhenParallelId);
 }
 
 void CHThorWhenActionActivity::execute()
 {
-    graphElement->executeDependentActions(agent, NULL, 1);
+    graphElement->executeDependentActions(agent, graphElement->savedParentExtract, 1);
 }
 
 const void * CHThorWhenActionActivity::nextRow()
@@ -6735,7 +6735,7 @@ const void * CHThorWhenActionActivity::nextRow()
 
 void CHThorWhenActionActivity::stop()
 {
-    graphElement->executeDependentActions(agent, NULL, WhenSuccessId);
+    graphElement->executeDependentActions(agent, graphElement->savedParentExtract, WhenSuccessId);
     CHThorSimpleActivityBase::stop();
 }
 

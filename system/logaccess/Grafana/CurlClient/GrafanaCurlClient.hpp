@@ -73,13 +73,14 @@ private:
     LogField m_instanceColumn = LogField("instance", true);
     LogField m_podColumn = LogField("pod", true);
     LogField m_containerColumn = LogField("container", true);
-    LogField m_messageColumn = LogField("MSG");
+    LogField m_messageColumn = LogField("log");
     LogField m_nodeColumn = LogField("node_name", true);
-    LogField m_logTimestampColumn = LogField("TIME");
-    LogField m_logDatestampColumn = LogField("DATE");
-    LogField m_logSequesnceColumn = LogField("MID");
-    LogField m_logProcIDColumn = LogField("PID");
-    LogField m_logThreadIDColumn = LogField("TID");
+    LogField m_logDateTimstampColumn = LogField("tsNs");
+    //LogField m_logTimestampColumn = LogField("TIME");
+    //LogField m_logDatestampColumn = LogField("DATE");
+    //LogField m_logSequesnceColumn = LogField("MID");
+    //LogField m_logProcIDColumn = LogField("PID");
+    //LogField m_logThreadIDColumn = LogField("TID");
     //LogField m_logTraceIDColumn = LogField("TRC");
     //LogField m_logSpanIDColumn = LogField("SPN");
 
@@ -87,8 +88,9 @@ private:
 
 public:
     GrafanaLogAccessCurlClient(IPropertyTree & logAccessPluginConfig);
-    void processQueryJsonResp(LogQueryResultDetails & resultDetails, const std::string & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader);
+    void processQueryJsonResp(LogQueryResultDetails & resultDetails, const std::string & retrievedDocument, StringBuffer & returnbuf, const LogAccessLogFormat format, const LogAccessReturnColsMode retcolmode, bool reportHeader); 
     void processDatasourceJsonResp(const std::string & retrievedDocument);
+    void processValues(StringBuffer & returnbuf, IPropertyTreeIterator * valuesIter, IPropertyTree * stream, LogAccessLogFormat format, const LogAccessReturnColsMode retcolmode, bool & isFirstLine);
     void fetchDatasourceByName(const char * targetDataSourceName);
     void fetchDatasources(std::string & readBuffer);
     void fetchLabels(std::string & readBuffer);

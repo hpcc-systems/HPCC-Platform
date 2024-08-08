@@ -94,6 +94,8 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
     m_componentsSearchColName.set(DEFAULT_HPCC_LOG_COMPONENT_COL);
     m_audienceSearchColName.set(DEFAULT_HPCC_LOG_AUD_COL);
     m_podSearchColName.set(DEFAULT_HPCC_LOG_POD_COL);
+    m_traceSearchColName.set(DEFAULT_HPCC_LOG_TRACE_COL);
+    m_spanSearchColName.set(DEFAULT_HPCC_LOG_SPAN_COL);
 
     Owned<IPropertyTreeIterator> logMapIter = m_pluginCfg->getElements("logMaps");
     ForEach(*logMapIter)
@@ -171,19 +173,21 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
             else
                 OERRLOG("%s: Possible LogMap collision detected, 'host' and 'node' refer to same log column!", COMPONENT_NAME); 
         }
-        else if (streq(logMapType, "trace"))
+        else if (streq(logMapType, "traceid"))
         {
             if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
                 m_traceIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
 
-            m_traceSearchColName = logMap.hasProp(LOGMAP_SEARCHCOL_ATT) ? logMap.queryProp(LOGMAP_SEARCHCOL_ATT) : DEFAULT_HPCC_LOG_TRACE_COL; 
+            if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                m_traceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
         }
-        else if (streq(logMapType, "span"))
+        else if (streq(logMapType, "spanid"))
         {
             if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
                 m_spanIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
 
-            m_spanSearchColName = logMap.hasProp(LOGMAP_SEARCHCOL_ATT) ? logMap.queryProp(LOGMAP_SEARCHCOL_ATT) : DEFAULT_HPCC_LOG_SPAN_COL;
+            if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                m_spanSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
         }
         else
         {
