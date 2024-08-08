@@ -879,15 +879,14 @@ StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFil
     return filePath;
 }
 
-
 IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped)
 {
     class CSeqPartHandler : implements IRowStream, public CSimpleInterface
     {
         IArrayOf<IPartDescriptor> &partDescs;
-        int part, parts;
-        bool eof, grouped, someInGroup;
         Linked<CPartHandler> partHandler;
+        unsigned part;
+        bool eof, grouped, someInGroup;
 
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     public:
@@ -895,9 +894,8 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
             : partDescs(_partDescs), partHandler(_partHandler), grouped(_grouped)
         {
             part = 0;
-            parts = partDescs.ordinality();
             someInGroup = false;
-            if (0==parts)
+            if (0==numParts())
             {
                 eof = true;
             }
@@ -917,14 +915,14 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
         }
         const void *nextRow()
         {
-            if (eof)
+            if (unlikely(eof))
             {
                 return NULL;
             }
             for (;;)
             {
                 OwnedConstThorRow row = partHandler->nextRow();
-                if (row)
+                if (likely(row))
                 {
                     someInGroup = true;
                     return row.getClear();
@@ -935,7 +933,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
                     return NULL;
                 }
                 ++part;
-                if (part >= parts)
+                if (part >= numParts())
                 {
                     partHandler->stop();
                     partHandler.clear();
@@ -945,7 +943,9 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
                 partHandler->setPart(&partDescs.item(part));
             }
         }
+        inline unsigned numParts() const { return partDescs.ordinality(); }
     };
+
     return new CSeqPartHandler(partHandler, partDescs, grouped);
 }
 
