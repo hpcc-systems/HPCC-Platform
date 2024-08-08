@@ -182,6 +182,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     isChecked: true,
                     onClick: onTechPreviewClick
                 },
+                { key: "divider_4", itemType: ContextualMenuItemType.Divider },
+                {
+                    key: "reset",
+                    href: "/esp/files/index.html#/reset",
+                    text: nlsHPCC.ResetUserSettings
+                },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
             ],
             directionalHintFixed: true

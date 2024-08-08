@@ -240,8 +240,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             setTotal(total);
         });
         storeQuery.then(items => {
+            const selectedIndices = selectionHandler.getSelectedIndices();
             setItems(items);
-            setSelection(selectionHandler.getSelection());
+            selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
         });
     }, [count, selectionHandler, start, store], [query, sorted]);
 

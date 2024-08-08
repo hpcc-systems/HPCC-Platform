@@ -7,7 +7,7 @@ import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, Folder
 import { Database } from "@hpcc-js/common";
 import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
 import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
-import { compare, scopedLogger } from "@hpcc-js/util";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
@@ -89,7 +89,7 @@ class TableEx extends Table {
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string, matchCase: boolean): this {
+    metrics(metrics: any[], options: MetricsOptionsT, scopeFilter: string, matchCase: boolean): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
             .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...options.properties, "__StdDevs"])
@@ -106,8 +106,7 @@ class TableEx extends Table {
             .data(metrics
                 .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
                 .filter(row => {
-                    return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
-                        (options.scopeTypes.indexOf(row.type) >= 0);
+                    return options.scopeTypes.indexOf(row.type) >= 0;
                 }).map((row, idx) => {
                     if (idx === 0) {
                         this._rawDataMap = {
@@ -175,7 +174,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     selection
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
-    const [timelineFilter, setTimelineFilter] = React.useState("");
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
@@ -227,13 +225,15 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .maxZoom(Number.MAX_SAFE_INTEGER)
     );
 
+    const [scopeFilter, setScopeFilter] = React.useState("");
     React.useEffect(() => {
         timeline
             .on("click", (row, col, sel) => {
-                setTimelineFilter(sel ? row[7].__hpcc_id : "");
                 if (sel) {
+                    timeline.selection([]);
                     setSelectedMetricsSource("scopesTable");
-                    pushUrl(`${parentUrl}/${row[7].Id}`);
+                    setScopeFilter(`name:${row[7].__hpcc_id}`);
+                    pushUrl(`${parentUrl}/${row[7].id}`);
                 }
             }, true)
             ;
@@ -247,7 +247,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [metrics, timeline]);
 
     //  Scopes Table  ---
-    const [scopeFilter, setScopeFilter] = React.useState("");
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
         setScopeFilter(newValue || "");
     }, []);
@@ -259,7 +258,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
-        .metrics([], options, timelineFilter, scopeFilter, matchCase)
+        .metrics([], options, scopeFilter, matchCase)
         .sortable(true)
     );
 
@@ -274,24 +273,22 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [scopesSelectionChanged, scopesTable]);
 
     React.useEffect(() => {
-        if (!scopeFilter || scopeFilter.indexOf("name:") === 0) {
-            setScopeFilter(timelineFilter ? `name:${timelineFilter}` : "");
-        }
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
+            .metrics(metrics, options, scopeFilter, matchCase)
             .lazyRender()
             ;
-    }, [matchCase, metrics, options, scopeFilter, scopesTable, timelineFilter]);
+    }, [matchCase, metrics, options, scopeFilter, scopesTable]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
         if (scopesTable?.renderCount() > 0) {
-            const prevSelection = scopesTable.selection().map(row => row.__lparam.id);
-            const newSelection = selection.map(row => row.id);
-            const diffs = compare(prevSelection, newSelection);
-            if (diffs.enter.length || diffs.exit.length) {
-                scopesTable.selection(scopesTable.data().filter(row => {
+            scopesTable.selection([]);
+            if (selection.length) {
+                const selRows = scopesTable.data().filter(row => {
                     return selection.indexOf(row[row.length - 1]) >= 0;
-                }));
+                });
+                scopesTable.render(() => {
+                    scopesTable.selection(selRows);
+                });
             }
         }
     }, [scopesTable]);
@@ -508,7 +505,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     }
                 }
                 setIsLayoutComplete(true);
-            });
+            }).catch(err => logger.error(err));
         }
         return () => {
             cancelled = true;
@@ -622,13 +619,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
+            .metrics(metrics, options, scopeFilter, matchCase)
             .render(() => {
                 updateScopesTable(selectedMetrics);
             })
             ;
 
-    }, [matchCase, metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
+    }, [matchCase, metrics, options, scopeFilter, scopesTable, selectedMetrics, updateScopesTable]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>
