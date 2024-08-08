@@ -1,0 +1,229 @@
+name: Generate Graphs for GitHub Action workflows
+
+on: 
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/*.yml
+      - .github/workflows/*.yaml
+
+  # pull_request:   #trigger on pull_request is just for testing purpose
+
+  workflow_dispatch:
+
+jobs:
+  main:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.8"
+            
+      - name: generate Graph
+        shell: python
+        run: | 
+          import glob
+
+          class YamlFileObject():
+            def __init__(self, filename):
+              self.filename = filename
+              self.data = None
+              self.read()
+        
+            def read(self):
+              with open(self.filename, 'r') as file:
+                  self.data = file.readlines()
+        
+            def getFileContent(self):
+              return iter(self.data)
+
+          def getNextLine(file):
+            try:
+              line = next(file)
+              while not line.strip("\n ") or line.strip("\n ").startswith('#'):
+                line = next(file)
+            except StopIteration :
+              return "EOF"
+            
+            return line.strip('\n')
+
+          def getColumnNum(line):    #gets the Column number of first word
+            i = 0
+            while line[i] == ' ':  
+                i += 1
+            columnNum = i
+            return columnNum
+
+          def getWorkflowName(baseDir,file): 
+            workflowDetails[file] = {'name':file.split('.')[0]}  
+            # name: is not mandatory, so by default assign the name of the yaml file as the workflow name by removing the .yml/.yaml extension
+            yamlFile = YamlFileObject(baseDir+file)   
+            fileContent = yamlFile.getFileContent()
+            line = getNextLine(fileContent)
+            while line != "EOF":
+              if line.startswith("name:"):        # if 'name:' is present in the yaml file then update it
+                nameLine = line.split(":")[1]
+                name = nameLine.strip(" ")
+                workflowDetails[file] = {'name':name}   
+                getWorkflowTriggers(yamlFile,file)
+                getWorkflowJobs(yamlFile,file)
+                break
+              line = getNextLine(fileContent)
+          
+          def getWorkflowJobs(yamlFile,file):
+            fileContent = yamlFile.getFileContent()
+            ColumnNumOfJob = -1
+            workflowDetails[file]['jobs'] = {}
+            line = getNextLine(fileContent)
+
+            while line != "EOF" :  
+              if line.startswith("jobs:"):  
+                line = getNextLine(fileContent)
+                ColumnNumOfJob = getColumnNum(line)
+                break
+              line = getNextLine(fileContent)
+
+            while ColumnNumOfJob != -1 and  line != "EOF" :
+              if line[ColumnNumOfJob] != ' ' :
+                jobName = line.strip(" ") #remove trailing spaces
+                jobName = jobName[:-1]    #remove ':' at the end
+                workflowDetails[file]['jobs'][jobName] = {'name':jobName}
+                getJobDetails(yamlFile,file,jobName,ColumnNumOfJob)              
+              line = getNextLine(fileContent)
+          
+          def getJobDetails(yamlFile,file,jobName,columnNum):
+            fileContent = yamlFile.getFileContent()
+            for line in fileContent:
+              if line.strip("\n ") == jobName+':' :
+                line = getNextLine(fileContent)
+                subColumnNum = getColumnNum(line) 
+                workflowDetails[file]['jobs'][jobName] = {'name':jobName,'uses':"",'needs':"",'inputs':[] }
+                job = workflowDetails[file]['jobs'][jobName]
+                while len(line) > columnNum and line[columnNum] == ' ':
+                  if line.find('name:') != -1  and line[subColumnNum:subColumnNum+4]=='name':
+                    name = line.split(':')[1] 
+                    name = name.strip() 
+                    job['name'] = name
+
+                  elif line.find('uses:') != -1 :
+                    uses = line.split(':')[1]  
+                    uses = uses.strip(' ') 
+                    job['uses'] = uses
+
+                  elif line.find('needs:') != -1 :
+                    needs = line.split(':')[1]
+                    needs = needs.strip(" ")
+                    job['needs'] = needs
+
+                  elif line.find('with:') != -1 :
+                    columnNumOfWith = line.find('with:')
+                    line = getNextLine(fileContent)
+                    while len(line) > columnNumOfWith and line[columnNumOfWith] == " " :
+                      input = line.strip(" ")
+                      if len(input) > 30:
+                        input = input[:30]+'...'
+                      job['inputs'].append(input)
+                      line = getNextLine(fileContent)
+
+                  if(line.find('steps:') != -1 or line == "EOF" or line[columnNum] != " "):
+                    break
+                  line = getNextLine(fileContent)
+          
+          def getWorkflowTriggers(yamlFile,file):
+            workflowDetails[file]['trigger'] = []
+            fileContent = yamlFile.getFileContent()
+            for line in fileContent:
+              if line.strip("\n ").startswith("on:"):
+                line = line.split(':')[1]
+                line = line.strip("\n ")
+                if line and not line.startswith('#'):       # This case handles triggers which are declared on the same line of "on:" key example: on: [push, pull_request] 
+                  line = line.replace("[","")
+                  line = line.replace("]","")
+                  line = line.replace(" ","")
+                  line = line.replace('#',',#')
+                  for trigger in line.split(','):
+                    if not trigger.startswith('#'):
+                      workflowDetails[file]['trigger'].append(trigger)
+                else :                                     # Here it handles triggers that are declared on the next line of "on:" key 
+                  columnNumOfOn = 0       
+                  line = getNextLine(fileContent)
+                  subColumnNum = getColumnNum(line)
+                  while line[columnNumOfOn] == " ":
+                    if line[subColumnNum] != " ":
+                      trigger = line.strip(" ")
+                      trigger = trigger.split(':')[0]
+                      workflowDetails[file]['trigger'].append(trigger)
+                    line = getNextLine(fileContent)
+        
+          workflowsDir = '.github/workflows/'
+          yaml_files = glob.glob(workflowsDir+'*.y*ml')
+          workflowDetails = {}  #This is the main dictionary where all the workflow details are stored
+          
+          for file in sorted(yaml_files):
+            file = file.split('/')[-1]
+            getWorkflowName(workflowsDir,file)
+          
+          markdown = workflowsDir+'ActionFlow.md'
+
+          with open( markdown ,'w') as markdownFile:
+            markdownFile.write('# GitHub Actions Workflow Overview\n\n')
+            sortedDictionary = dict(sorted(workflowDetails.items(),key = lambda item:item[1]['name']))
+            for file in sortedDictionary:
+              uniqFileName = workflowDetails[file]['name']
+              uniqFileName = uniqFileName.replace(' ','_')      #replace spaces with underscore
+              uniqFileName = uniqFileName.replace('(','_')      #replace parenthesis with underscore
+              uniqFileName = uniqFileName.replace(')','_')
+              uniqFileName = uniqFileName.upper()
+              fileBlock = f"{uniqFileName}[\"{workflowDetails[file]['name']}[{file}]\"]"
+              jobs = workflowDetails[file]['jobs']
+              markdownFile.write('```mermaid\n')
+              markdownFile.write('\nflowchart LR\n')
+              for job in jobs:
+                needs = jobs[job]['needs']
+                needs = needs.replace('[','')
+                needs = needs.replace(']','')
+                needs = needs.replace(' ','')
+                if len(needs) == 0:
+                  markdownFile.write(f"\n  {fileBlock} ---> {job}(\"{jobs[job]['name']}\")")
+                else:
+                  needs = list(needs.split(','))
+                  for need in needs:
+                    markdownFile.write(f"\n  {need}(\"{jobs[need]['name']}\") ---> {job}(\"{jobs[job]['name']}\")")
+                uses = jobs[job]['uses']  
+                if uses != "":
+                  uses = uses.split('/')[-1]
+                  str = ","
+                  inputs = str.join(jobs[job]['inputs'])
+                  inputs = inputs.replace('\"','')    #remove " (double quotes)
+                  inputs = inputs.replace("\'",'')    #remove ' (single quotes)
+                  if len(inputs) != 0:
+                    markdownFile.write(f"\n  {job}(\"{jobs[job]['name']}\ninputs:[{inputs}]\") ---> {uses}(\"{workflowDetails[uses]['name']}[{uses}]\")")
+                  else:
+                    markdownFile.write(f"\n  {job}(\"{jobs[job]['name']}\") ---> {uses}")
+              markdownFile.write('\n\n```\n\n')
+        
+            markdownFile.write('## GitHub Actions Trigger Overview\n')
+            triggersList = set()
+            for file in workflowDetails:
+              for trigger in workflowDetails[file]['trigger']:
+                triggersList.add(trigger)  #triggersList contains unique list of all types of triggers used in the workflow file
+                    
+            for trigger in sorted(triggersList):
+              markdownFile.write('\n```mermaid\n')
+              markdownFile.write('\nflowchart TB\n')
+              markdownFile.write(f'\n  subgraph {trigger.upper()}')
+              for file in sortedDictionary:
+                if trigger in workflowDetails[file]['trigger']:
+                  markdownFile.write(f'\n    {trigger} ---> {file}[\"{workflowDetails[file]["name"]}[{file}]\"]')
+              markdownFile.write('\n  end\n')
+              markdownFile.write('\n```\n')
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Actions-workflow-MarkdownFile
+          path: .github/workflows/ActionFlow.md
