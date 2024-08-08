@@ -38,33 +38,61 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHUB_JIRA_USER_MAP: ${{ vars.GHUB_JIRA_USER_MAP }}
           JIRA_ISSUE_PROPERTY_MAP: ${{ vars.JIRA_ISSUE_PROPERTY_MAP }}
-          JIRA_ISSUE_TRANSITION_MAP: ${{ vars.JIRA_ISSUE_TRANSITION_MAP }}
         run: |
             import os
             import re
             import time
             import sys
             import json
+            import subprocess
+            from email.utils import parseaddr
             from atlassian.jira import Jira
 
-            def updateIssue(jira, issue, prAuthor : str, transitionMap: dict, propertyMap: dict, pull_url: str) -> str:
+            def sanitizeInput(input: str, inputType: str) -> str:
+                if inputType.lower() == 'email':
+                    # Return the email address only, returns '' if not valid or found
+                    return parseaddr(input)[1]
+                else:
+                    return ''
+
+            def updateIssue(jira, issue, prAuthor : str, propertyMap: dict, pull_url: str) -> str:
                 result = ''
 
                 issueName = issue['key']
                 issueFields = issue['fields']
 
-                statusName = str(issueFields['status']['name'])
-                transition = transitionMap.get(statusName, None)
+                # Need to update user first in case we are starting from Unresourced
+                if prAuthor:
+                    assignee = issueFields['assignee']
+                    if assignee is None:
+                        assigneeId = ''
+                        assigneeEmail = ''
+                    else:
+                        assigneeId = assignee['accountId']
+                        assigneeEmail = assignee["emailAddress"]
 
-                if transition == None:
-                    print('Error: Unable to find transition for status: ' + statusName)
-                elif transition != '':
+                    assigneeEmail = sanitizeInput(assigneeEmail, 'email')
+
+                    prAuthorId = prAuthor["accountId"]
+                    prAuthorEmail = prAuthor["emailAddress"]
+                    prAuthorEmail = sanitizeInput(prAuthorEmail, 'email')
+
+                    if assigneeId is None or assigneeId == '':
+                        jira.assign_issue(issueName, prAuthorId)
+                        result += 'Assigning user: ' + prAuthorEmail + '\n'
+                    elif assigneeId != prAuthorId:
+                        result += 'Changing assignee from: ' + assigneeEmail + ' to: ' + prAuthorEmail + '\n'
+                        jira.assign_issue(issueName, prAuthorId)
+
+                transitionFlow = ['Merge Pending']
+                for desiredStatus in transitionFlow:
                     try:
-                        jira.issue_transition(issueName, transition)
-                        result += 'Workflow Transition: ' + transition + '\n'
+                        transitionId = jira.get_transition_id_to_status_name(issueName, desiredStatus)
+                        jira.set_issue_status_by_transition_id(issueName, transitionId)
+                        result += 'Workflow Transition To: ' + desiredStatus + '\n'
                     except Exception as error:
                         transitions = jira.get_issue_transitions(issueName)
-                        result += 'Error: Transition: "' + transition + '" failed with: "' + str(error) + '" Valid transitions=' + str(transitions) + '\n'
+                        result += 'Error: Transitioning to: "' + desiredStatus + '" failed with: "' + str(error) + '" Valid transitions=' + str(transitions) + '\n'
 
                 prFieldName = propertyMap.get('pullRequestFieldName', 'customfield_10010')
 
@@ -80,24 +108,6 @@ jobs:
                 elif currentPR is not None and currentPR != pull_url:
                     result += 'Additional PR: ' + pull_url + '\n'
 
-                if prAuthor:
-                    assignee = issueFields['assignee']
-                    if assignee is None:
-                        assigneeId = ''
-                        assigneeEmail = ''
-                    else:
-                        assigneeId = assignee['accountId']
-                        assigneeEmail = assignee["emailAddress"]
-
-                    prAuthorId = prAuthor["accountId"]
-                    prAuthorEmail = prAuthor["emailAddress"]
-                    if assigneeId is None or assigneeId == '':
-                        jira.assign_issue(issueName, prAuthorId)
-                        result += 'Assigning user: ' + prAuthorEmail + '\n'
-                    elif assigneeId != prAuthorId:
-                        result += 'Changing assignee from: ' + assigneeEmail + ' to: ' + prAuthorEmail + '\n'
-                        jira.assign_issue(issueName, prAuthorId)
-
                 return result
 
             jirabot_user = os.environ['JIRABOT_USERNAME']
@@ -110,7 +120,6 @@ jobs:
             github_token = os.environ['GITHUB_TOKEN']
             comments_url = os.environ['COMMENTS_URL']
 
-            print("%s %s %s" % (title, prAuthor, comments_url))
             result = ''
             issuem = re.search("(HPCC|HH|IDE|EPE|ML|HPCC4J|JAPI)-[0-9]+", title)
             if issuem:
@@ -131,7 +140,7 @@ jobs:
                 if userSearchResults and len(userSearchResults) > 0:
                     jiraUser = userSearchResults[0]
                 else:
-                    print('Error: Unable to find Jira user: ' + prAuthor + ' continuing without assigning')
+                    print('Error: Unable to map GitHub user to Jira user, continuing without assigning')
 
                 if not jira.issue_exists(issue_name):
                     sys.exit('Error: Unable to find Jira issue: ' + issue_name)
@@ -140,17 +149,12 @@ jobs:
 
                 result = 'Jirabot Action Result:\n'
 
-                transitionMap = json.loads(os.environ['JIRA_ISSUE_TRANSITION_MAP'])
-                if not isinstance(transitionMap, dict):
-                    print('Error: JIRA_ISSUE_TRANSITION_MAP is not a valid JSON object, ignoring.')
-                    transitionMap = {}
-
                 jiraIssuePropertyMap = json.loads(os.environ['JIRA_ISSUE_PROPERTY_MAP'])
                 if not isinstance(jiraIssuePropertyMap, dict):
                     print('Error: JIRA_ISSUE_PROPERTY_MAP is not a valid JSON object, ignoring.')
                     jiraIssuePropertyMap = {}
 
-                result += updateIssue(jira, issue, jiraUser, transitionMap, jiraIssuePropertyMap, pull_url)
+                result += updateIssue(jira, issue, jiraUser, jiraIssuePropertyMap, pull_url)
                 jira.issue_add_comment(issue_name, result)
 
                 result = 'Jira Issue: ' + jira_url + '/browse/' + issue_name + '\n\n' + result
@@ -158,9 +162,7 @@ jobs:
                 # Escape the result for JSON
                 result = json.dumps(result)
 
-                curlCommand = 'curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": %s }\'' % ( comments_url, github_token, result )
-                print(curlCommand)
-                os.system(curlCommand)
+                subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {github_token}', '--data', f'{{ "body": {result} }}'], check=True)
             else:
                 print('Unable to find Jira issue name in title')
 
