@@ -557,7 +557,7 @@ public:
         return spanID.get();
     }
 
-    ISpan * createClientSpan(const char * name) override;
+    ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
     ISpan * createInternalSpan(const char * name) override;
 
     virtual void endSpan() final override
@@ -918,7 +918,7 @@ public:
     virtual const char* queryCallerId() const override { return nullptr; }
     virtual const char* queryLocalId() const override { return nullptr; }
 
-    virtual ISpan * createClientSpan(const char * name) override { return getNullSpan(); }
+    virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name) override { return getNullSpan(); }
 
 private:
@@ -1001,9 +1001,14 @@ public:
 class CClientSpan : public CChildSpan
 {
 public:
-    CClientSpan(const char * spanName, CSpan * parent)
+    CClientSpan(const char * spanName, CSpan * parent, const SpanTimeStamp * spanStartTimeStamp = nullptr)
     : CChildSpan(spanName, parent)
     {
+        if (spanStartTimeStamp && spanStartTimeStamp->isInitialized())
+        {
+            opts.start_system_time = opentelemetry::common::SystemTimestamp(spanStartTimeStamp->systemClockTime);
+            opts.start_steady_time = opentelemetry::common::SteadyTimestamp(spanStartTimeStamp->steadyClockTime);
+        }
         opts.kind = opentelemetry::trace::SpanKind::kClient;
         init(SpanFlags::None);
     }
@@ -1015,9 +1020,9 @@ public:
     }
 };
 
-ISpan * CSpan::createClientSpan(const char * name)
+ISpan * CSpan::createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
-    return new CClientSpan(name, this);
+    return new CClientSpan(name, this, spanStartTimeStamp);
 }
 
 ISpan * CSpan::createInternalSpan(const char * name)
