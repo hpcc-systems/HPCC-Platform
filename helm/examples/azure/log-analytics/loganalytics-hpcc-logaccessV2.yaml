@@ -82,6 +82,14 @@ global:
       searchColumn: "PodName"
       columnMode: "DEFAULT"
       columnType: "string"
+    - type: "spanid"
+      searchColumn: "hpcc_log_spanid"
+      columnMode: "DEFAULT"
+      columnType: "string"
+    - type: "traceid"
+      searchColumn: "hpcc_log_traceid"
+      columnMode: "DEFAULT"
+      columnType: "string"
 secrets:
   esp:
     azure-logaccess: "azure-logaccess"

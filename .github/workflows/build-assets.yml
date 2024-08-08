@@ -245,7 +245,6 @@ jobs:
         with:
           name: html-help-documents
           path: |
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip
             ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip
             ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip
           compression-level: 0
@@ -263,7 +262,7 @@ jobs:
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,
+
             ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/*.md5sum

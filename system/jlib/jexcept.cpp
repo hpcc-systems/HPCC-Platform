@@ -36,6 +36,8 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stddef.h>
+#include <time.h>
+#include <signal.h>
 #include <errno.h>
 #ifdef __linux__
 #include <execinfo.h> // comment out if not present
@@ -1663,6 +1665,30 @@ void  jlib_decl disableSEHtoExceptionMapping()
 #endif
 }
 
+void jlib_decl raiseSignalInFuture(int signo, unsigned timeoutSec)
+{
+#if defined(__linux__)
+    int ret;
+    timer_t timerId;
+    struct sigevent sigev;
+    struct itimerspec itSpec;
+
+    sigev.sigev_notify = SIGEV_SIGNAL;
+    sigev.sigev_signo = signo;
+    sigev.sigev_value.sival_ptr = &timerId;
+    sigev.sigev_notify_function = nullptr;
+    sigev.sigev_notify_attributes = NULL;
+
+    itSpec.it_value.tv_sec = timeoutSec;
+    itSpec.it_value.tv_nsec = 0;
+    itSpec.it_interval.tv_sec = 0;
+    itSpec.it_interval.tv_nsec = 0;
+
+    ret = timer_create(CLOCK_MONOTONIC, &sigev, &timerId);
+    if (!ret)
+        timer_settime(timerId, 0, &itSpec, 0);
+#endif
+}
 
 StringBuffer & formatSystemError(StringBuffer & out, unsigned errcode)
 {

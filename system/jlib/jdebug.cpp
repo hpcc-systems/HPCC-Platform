@@ -354,9 +354,16 @@ void calibrate_timing()
         useRDTSC = false;
     }
 #endif
+#if defined (__APPLE__)
+    verifyex(mach_timebase_info(&timebase_info) == KERN_SUCCESS);
+    cycleToNanoScale = static_cast<double>(timebase_info.numer)/timebase_info.denom;
+    cycleToMicroScale = cycleToNanoScale/1000.0;
+    cycleToMilliScale = cycleToNanoScale/1000000.0;
+#else
     cycleToNanoScale = 1.0;
-    cycleToMicroScale = 1.0;
-    cycleToMilliScale = 1.0;
+    cycleToMicroScale = cycleToNanoScale/1000.0;
+    cycleToMilliScale = cycleToNanoScale/1000000.0;
+#endif
 }
 
 
@@ -405,7 +412,11 @@ __int64 jlib_decl cycle_to_microsec(cycle_t cycles)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMicroScale);
 #endif
+#ifdef __APPLE__
+    return cycles * (uint64_t) timebase_info.numer / ((uint64_t)timebase_info.denom*1000);
+#else
     return cycles / 1000;
+#endif
 }
 
 __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
@@ -414,7 +425,11 @@ __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMilliScale);
 #endif
+#ifdef __APPLE__
+    return cycles * (uint64_t) timebase_info.numer / ((uint64_t)timebase_info.denom*1000000);
+#else
     return cycles / 1000000;
+#endif
 }
 
 cycle_t nanosec_to_cycle(__int64 ns)
@@ -423,7 +438,11 @@ cycle_t nanosec_to_cycle(__int64 ns)
     if (useRDTSC)
         return (__int64)((double)ns / cycleToNanoScale);
 #endif
+#ifdef __APPLE__
+    return ns * (uint64_t) timebase_info.denom / ((uint64_t)timebase_info.numer);
+#else
     return ns;
+#endif
 }
 
 double getCycleToNanoScale()
