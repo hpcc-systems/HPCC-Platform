@@ -760,7 +760,7 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
-    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn)
+    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn, IPropertyTree &file)
     {
         partNo--;
         StringBuffer partName;
@@ -771,10 +771,15 @@ struct CLogicalNameEntry: public CInterface
         }
         expandMask(partName, pmask, partNo, max);
 
+        // Get stripeNum from storage plane
         Owned<IStoragePlane> plane = getDataStoragePlane(grpname, true);
         const char * prefix = plane->queryPrefix();
         unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
-        bool dirPerPart = max>1?plane->queryDirPerPart():false;
+
+        // Get dir-per-part # from file metadata or storage plan info
+        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(file.getPropInt("Attr/@flags"));
+        bool dirPerPart = FileDescriptorFlags::none != (flags & FileDescriptorFlags::dirperpart) ? true : max>1?plane->queryDirPerPart():false;
+
         StringBuffer fullname;
         makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
@@ -1603,7 +1608,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    lnentry->constructPartFilename(partno, replicate, rfn);
+                    lnentry->constructPartFilename(partno, replicate, rfn, file);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
