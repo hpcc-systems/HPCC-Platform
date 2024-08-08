@@ -17,7 +17,10 @@ on:
         type: string
         description: 'Dependencies'
         required: false
-        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
+
+env:
+  uploadArtifact: false
 
 jobs:
 
@@ -33,17 +36,17 @@ jobs:
       - name: Download UI Test Files
         uses: actions/download-artifact@v3
         with:
-          name: ${{ inputs.asset-name }}-ui_test-files
-          path: ${{ inputs.asset-name }}-ui_test-files
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          path: ${{ inputs.asset-name }}-ecl_watch_ui_tests
 
       - name: Check ECLWatch UI Test Directory
         id: check
         run: |
-          if [[ ! -d ${{ inputs.asset-name }}-ui_test-files ]]
+          if [[ ! -d ${{ inputs.asset-name }}-ecl_watch_ui_tests ]]
           then
-              echo "ECLWatch UI ${{ inputs.asset-name }}-ui_test-files directory missing."
+              echo "ECLWatch UI ${{ inputs.asset-name }}-ecl_watch_ui_tests directory missing."
           else
-              javaFilesCount=$(find ${{ inputs.asset-name }}-ui_test-files/ -iname '*.java' -type f -print | wc -l )
+              javaFilesCount=$(find ${{ inputs.asset-name }}-ecl_watch_ui_tests/ -iname '*.java' -type f -print | wc -l )
               echo "Number of test java files is $javaFilesCount"
               if [[ ${javaFilesCount} -eq 0 ]]
               then
@@ -66,7 +69,6 @@ jobs:
             unzip \
             xvfb \
             libxi6 \
-            default-jdk \
             gdb \
             ${{ inputs.dependencies }}
 
@@ -95,7 +97,7 @@ jobs:
           chmod +x ./${{ inputs.asset-name }}-support-files/*
           sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
 
-          chmod +x ./${{ inputs.asset-name }}-ui_test-files/*
+          chmod +x ./${{ inputs.asset-name }}-ecl_watch_ui_tests/*
 
       - name: Start HPCC-Platform
         shell: "bash"
@@ -134,36 +136,57 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
+          sudo apt remove -y openjdk-11-jdk
+          sudo apt autoremove -y
+          sudo apt update
+          sudo apt install -y openjdk-21-jdk
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1
+          sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-21-openjdk-amd64/bin/javac 1
+          sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-21-openjdk-amd64/bin/javac
+          export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+          export PATH=$PATH:$JAVA_HOME/bin
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/bin/chromedriver
+          wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip -d chromedriver
+          sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
-          wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
-          wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
-          unzip testng-6.8.7.jar.zip
+          wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.17.0/jackson-annotations-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.17.0/jackson-core-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.17.0/jackson-databind-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
+          wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.22.0/selenium-java-4.22.0.zip
+          wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar
+          wget https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar
+          unzip selenium-java-4.22.0.zip -d selenium-libs
 
-      - name: Run Tests
-        timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
+      - name: Run ECL Watch UI Tests
+        timeout-minutes: 80 # generous, current runtime is ~38 minutes, this should be increased if new tests are added
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
-          export CLASSPATH=".:${{ github.workspace }}/selenium-server-standalone-3.141.59.jar:${{ github.workspace }}/testng-6.8.7.jar"
-          pushd ${{ inputs.asset-name }}-ui_test-files
-          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
-          retCode=$?
-          echo "UI test done"
-          [[ $retCode -ne 0 ]] && exit 1
+          export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar"
+          pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          find . -iname '*.java' -type f -print -exec javac -Xlint:none {} \;
+          java framework.TestRunner -l detail -p /home/runner/HPCCSystems-regression/log/
+          echo "ECL Watch UI test done"
+          lines=$(wc -l < error_ecl_test.log)
+          [[ $lines -ne 0 ]] && exit 1
+          if [[ -f debug_ecl_test.log || -f detail_ecl_test.log || -f exception_ecl_test.log ]]
+          then 
+              echo "uploadArtifact=true" >> $GITHUB_ENV
+          fi
           popd
 
-      - name: eclwatch-ui-test-logs-artifact
-        if: ${{ failure() || cancelled() }}
+      - name: Upload ECL Watch UI Test Logs To Artifact
+        if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.asset-name }}-ui_test-logs
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
           path: |
-            ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
+            ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
             /home/runner/HPCCSystems-regression/log/*.json
           if-no-files-found: error
