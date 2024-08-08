@@ -219,7 +219,7 @@ struct WUComponentLogOptions
         populateTimeRange(start, end, bufferSecs);
 
         //int  0 ==MIN, 1==DEFAULT, 2==ALL, 3==CUSTOM
-        int colMode = zapHttpRequest->getParameterInt("LogFilter_ColumnMode", -1);
+        int colMode = zapHttpRequest->getParameterInt("LogFilter_SelectColumnMode", -1);
         if (colMode != -1)
         {
             StringArray customFields; //comma delimited list of available columns, only if ColumnMode==3
