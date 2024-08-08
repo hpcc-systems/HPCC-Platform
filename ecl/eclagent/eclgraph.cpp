@@ -747,6 +747,24 @@ void EclGraphElement::ready()
         activity->ready();
 }
 
+void EclGraphElement::onStart(const byte * parentExtract, CHThorDebugContext * debugContext)
+{
+    savedParentExtract = parentExtract;
+    if (arg)
+    {
+        try
+        {
+            arg->onStart(parentExtract, NULL);
+        }
+        catch(IException * e)
+        {
+            if (debugContext)
+                debugContext->checkBreakpoint(DebugStateException, NULL, e);
+            throw makeWrappedException(e);
+        }
+    }
+}
+
 IHThorException * EclGraphElement::makeWrappedException(IException * e)
 {
     throw makeHThorException(kind, id, subgraph->id, e);
@@ -962,19 +980,7 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
     ForEachItemIn(idx, elements)
     {
         EclGraphElement & cur = elements.item(idx);
-        if (cur.arg)
-        {
-            try
-            {
-                cur.arg->onStart(parentExtract, NULL);
-            }
-            catch(IException * e)
-            {
-                if (debugContext)
-                    debugContext->checkBreakpoint(DebugStateException, NULL, e);
-                throw cur.makeWrappedException(e);
-            }
-        }
+        cur.onStart(parentExtract, debugContext);
     }
 
     ForEachItemIn(ir, sinks)

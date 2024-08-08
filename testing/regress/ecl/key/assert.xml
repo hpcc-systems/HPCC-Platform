@@ -16,6 +16,7 @@
 <Exception><Code>100000</Code><Filename>assert.ecl</Filename><Line>47</Line><Source>user</Source><Message>Abc7</Message></Exception>
 <Exception><Code>100000</Code><Filename>assert.ecl</Filename><Line>67</Line><Source>user</Source><Message>Assert (2 = 9) failed [COUNT(ds) = 9]</Message></Exception>
 <Exception><Code>100000</Code><Filename>assert.ecl</Filename><Line>71</Line><Source>user</Source><Message>Assert (&#226;&#130;&#172; = &#226;&#130;&#172;&#226;&#130;&#172;) failed [euro = U'&#226;&#130;&#172;&#226;&#130;&#172;']</Message></Exception>
+<Exception><Code>100000</Code><Filename>assert.ecl</Filename><Line>36</Line><Source>user</Source><Message>Assert (2 = 1) failed [val1 = 1]</Message></Exception>
 <Dataset name='Result 1'>
  <Row><val1>1</val1></Row>
  <Row><val1>2</val1></Row>
@@ -27,4 +28,6 @@
 <Dataset name='Result 3'>
  <Row><val1>1</val1><text>One  </text></Row>
  <Row><val1>2</val1><text>Two  </text></Row>
+</Dataset>
+<Dataset name='Result 4'>
 </Dataset>
