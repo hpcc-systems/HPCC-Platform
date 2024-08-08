@@ -866,73 +866,64 @@ StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFil
     return filePath;
 }
 
-
-IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped)
+CSeqPartHandler::CSeqPartHandler(CPartHandler *_partHandler, IArrayOf<IPartDescriptor> &_partDescs, bool _grouped)
+    : partDescs(_partDescs), partHandler(_partHandler), grouped(_grouped)
 {
-    class CSeqPartHandler : implements IRowStream, public CSimpleInterface
+    part = 0;
+    someInGroup = false;
+    if (0==numParts())
     {
-        IArrayOf<IPartDescriptor> &partDescs;
-        int part, parts;
-        bool eof, grouped, someInGroup;
-        Linked<CPartHandler> partHandler;
+        eof = true;
+    }
+    else
+    {
+        eof = false;
+        partHandler->setPart(&partDescs.item(0));
+    }
+}
 
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    public:
-        CSeqPartHandler(CPartHandler *_partHandler, IArrayOf<IPartDescriptor> &_partDescs, bool _grouped) 
-            : partDescs(_partDescs), partHandler(_partHandler), grouped(_grouped)
+void CSeqPartHandler::stop()
+{
+    if (partHandler)
+    {
+        partHandler->stop();
+        partHandler.clear();
+    }
+}
+
+const void * CSeqPartHandler::nextRow()
+{
+    if (unlikely(eof))
+    {
+        return NULL;
+    }
+    for (;;)
+    {
+        OwnedConstThorRow row = partHandler->nextRow();
+        if (likely(row))
         {
-            part = 0;
-            parts = partDescs.ordinality();
+            someInGroup = true;
+            return row.getClear();
+        }
+        if (grouped && someInGroup)
+        {
             someInGroup = false;
-            if (0==parts)
-            {
-                eof = true;
-            }
-            else
-            {
-                eof = false;
-                partHandler->setPart(&partDescs.item(0));
-            }
+            return NULL;
         }
-        virtual void stop()
+        ++part;
+        if (part >= numParts())
         {
-            if (partHandler)
-            {
-                partHandler->stop();
-                partHandler.clear();
-            }
+            partHandler->stop();
+            partHandler.clear();
+            eof = true;
+            return NULL;
         }
-        const void *nextRow()
-        {
-            if (eof)
-            {
-                return NULL;
-            }
-            for (;;)
-            {
-                OwnedConstThorRow row = partHandler->nextRow();
-                if (row)
-                {
-                    someInGroup = true;
-                    return row.getClear();
-                }
-                if (grouped && someInGroup)
-                {
-                    someInGroup = false;
-                    return NULL;
-                }
-                ++part;
-                if (part >= parts)
-                {
-                    partHandler->stop();
-                    partHandler.clear();
-                    eof = true;
-                    return NULL;
-                }
-                partHandler->setPart(&partDescs.item(part));
-            }
-        }
-    };
+        partHandler->setPart(&partDescs.item(part));
+    }
+}
+
+CSeqPartHandler *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped)
+{
     return new CSeqPartHandler(partHandler, partDescs, grouped);
 }
 
