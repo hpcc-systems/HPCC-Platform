@@ -605,7 +605,6 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
     {
         context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
-        DBGLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
         Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
 
         BoolHash uniquePlanes;
