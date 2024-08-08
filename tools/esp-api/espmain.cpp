@@ -27,17 +27,17 @@ int main(int argc, const char* argv[])
         queryStderrLogMsgHandler()->setMessageFields(0);
         queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
         EspShell myshell(argc,argv);
-        if(!myshell.parseCmdOptions())
+        if(myshell.parseCmdOptions())
         {
-            return 1;
+            return myshell.callService();
         }
-        int code = myshell.callService();
-        return code;
     }
     catch(IException *e)
     {
         StringBuffer msg;
         e->errorMessage(msg);
         cerr << msg.str();
+        e->Release();
     }
+    return 1;
 }

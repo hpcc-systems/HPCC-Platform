@@ -20,23 +20,19 @@
 class EspService{
     public:
 
-    const char* serviceName = nullptr;
-    const char* methodName = nullptr;
-    const char* formArgs = nullptr;
+    const char* reqString = nullptr;
     const char* resType = nullptr;
     const char* reqType = nullptr;
-    const char* target = nullptr;
     const char* username = nullptr;
     const char* password = nullptr;
     const char* url = nullptr;
 
     int sendRequest();
-    void createUrl(const char* target, const char* serviceName, const char* methodName);
 
-    EspService(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType, const char* target,
+    EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* target,
     const char* username, const char* password);
 
-    EspService(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType, const char* target);
+    EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* target);
 
 };
 

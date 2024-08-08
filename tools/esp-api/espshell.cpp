@@ -31,11 +31,11 @@ void EspShell::usage()
     "    esp-api describe [<ServiceName> [<MethodName>]]\n"
     "    esp-api test <ServiceName> <MethodName> [options] --reqStr <request>\n\n"
     "Commands:\n"
-    "    describe                                        Describes all services, methods and request/response structure of a method.\n"
+    "    describe                                        Describes ESP APIs, no arguments describes available services.\n"
     "        <ServiceName>                               Optional: Specify to describe all methods in the service.\n"
     "        <MethodName>                                Optional: Specify to describe the request and response structure for the method.\n"
     "\n"
-    "    test                                            Sends a test request to the specified method.\n"
+    "    test                                            Sends a test request to the specified method in a remote or local ESP.\n"
     "        <ServiceName>                               Required: Specify the service name.\n"
     "        <MethodName>                                Required: Specify the method name.\n"
     "        --reqStr <request>                          Required: Specify the request string in XML, JSON, or form format.\n"
@@ -43,7 +43,7 @@ void EspShell::usage()
     "        --port, -p                                  Optional: ESP port\n"
     "        --username, -u                              Optional: Username for a secure ESP\n"
     "        --password, -pw                             Optional: Password for a secure ESP\n"
-    "        --Query, -q                                 Optional: Query parameters to be appended to the url\n"
+    "        --query, -q                                 Optional: Query parameters to be appended to the url\n"
     "        --resTypeForm                               Optional: Set the response type for the form method of the request to xml or json"
     "\n"
     "Examples:\n"
@@ -52,33 +52,32 @@ void EspShell::usage()
     "    esp-api describe WsWorkunits WUDelete           Describes the request and response structure of the 'WUDelete' method.\n"
     "\n"
     "    esp-api test WsWorkunits WUDelete --username <username> --password <password> "
-    "--server http://127.0.0.1 --port 8010 --reqStr '{\"WUDeleteRequest\":{\"Wuids\":{\"Item\":[\"test\"]},\"BlockTillFinishTimer\":0}}'\n"
+    "--server http://127.0.0.1 --port 8010 --query ver_=1.2 --reqStr '{\"WUDeleteRequest\":{\"Wuids\":{\"Item\":[\"test\"]},\"BlockTillFinishTimer\":0}}'\n"
     "Note:\n"
-    "    To autocomplete the service and method names, use the 'Tab' key after typing part of the command.\n\n"
+    "    To autocomplete the service and method names, use the 'Tab' key after typing the command.\n\n"
 );
 }
 
 string EspShell::buildUrl(const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName)
 {
     std::ostringstream url;
-    url << server << ":" << port << "/" << serviceName << "/" << methodName << resType;
-    return url.str();
-}
-
-int EspShell::sendRequest(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType, const char* server
-                            ,const char* port, const char* query)
-{
-    string url = buildUrl(server, port, query, resType, serviceName, methodName);
-    if(hasUsername && hasPassword)
+    if(isEmptyString(query))
     {
-        EspService myServ(serviceName, methodName, formArgs, resType, reqType, url.c_str(), username.str(), password.str());
-        return myServ.sendRequest();
+        url << server << ":" << port << "/" << serviceName << "/" << methodName << resType;
     }
     else
     {
-        EspService myServ(serviceName, methodName, formArgs, resType, reqType, url.c_str());
-        return myServ.sendRequest();
+        url << server << ":" << port << "/" << serviceName << "/" << methodName << resType << "?" << query;
     }
+    return url.str();
+}
+
+int EspShell::sendRequest(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* server
+,const char* port, const char* query)
+{
+    string url = buildUrl(server, port, query, resType, serviceName, methodName);
+    EspService myServ(serviceName, methodName, reqString, resType, reqType, url.c_str(), username.str(), password.str());
+    return myServ.sendRequest();
 }
 
 int EspShell::callService()
@@ -137,7 +136,7 @@ int EspShell::callService()
                 cerr << "request string not provided" << endl;
                 return 1;
             }
-            const char* formArgs = reqStr.str();
+            const char* reqString = reqStr.str();
             const char* reqType;
             const char* resType;
 
@@ -157,13 +156,13 @@ int EspShell::callService()
                 resType = ".json";
                 if(hasResponseType)
                 {
-                    resType = (strcmp(responseType, "xml")==0) ? ".xml" : ".json";
+                    resType = (streq(responseType, "xml")) ? ".xml" : ".json";
                 }
             }
             if(!hasServer) server = "http://127.0.0.1";
             if(!hasPort) port = "8010";
 
-            int resCode = sendRequest(serviceName, methodName, formArgs, resType, reqType, server.str(), port.str(), query.str());
+            int resCode = sendRequest(serviceName, methodName, reqString, resType, reqType, server.str(), port.str(), query.str());
             return resCode;
         }
     }
@@ -266,9 +265,9 @@ bool EspShell::parseCmdOptions()
 
 EspShell::EspShell(int argc, const char* argv[]) : args(argc, argv), esdlDefObj(), argc(argc), argv(argv)
 {
-    std::vector<Owned<IFile>> IFiles;
+    std::vector<Owned<IFile>> files;
     std::vector<const char*> allServicesList;
-    esdlDefObj.getFiles(IFiles);
-    esdlDefObj.addFilesToDefinition(IFiles);
+    esdlDefObj.getFiles(files);
+    esdlDefObj.addFilesToDefinition(files);
     esdlDefObj.loadAllServices();
 }

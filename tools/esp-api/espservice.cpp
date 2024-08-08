@@ -25,45 +25,51 @@ using namespace std;
 
 int EspService::sendRequest()
 {
-
     int responseCode = -1;
     StringBuffer req,res,status;
-    req.append(formArgs);
+    req.append(reqString);
 
     Owned<IHttpClientContext> httpctx = getHttpClientContext();
     Owned <IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
 
-    if(!streq(username, "") && !streq(password, ""))
+    if(!isEmptyString(username))
     {
         httpclient->setUserID(username);
+    }
+    if(!isEmptyString(password))
+    {
         httpclient->setPassword(password);
     }
 
     if(streq(reqType, "json"))
     {
-       responseCode = httpclient->sendRequest("POST","application/json",req,res, status ,true);
+       responseCode = httpclient->sendRequest("POST", "application/json", req, res, status, true);
     }
     else if(streq(reqType, "form"))
     {
-       responseCode = httpclient->sendRequest("POST","application/x-www-form-urlencoded",req,res, status ,true);
+       responseCode = httpclient->sendRequest("POST", "application/x-www-form-urlencoded", req, res, status, true);
     }
     else if(streq(reqType, "xml"))
     {
-       responseCode = httpclient->sendRequest("POST","text/xml",req,res, status ,true);
+       responseCode = httpclient->sendRequest("POST", "text/xml", req, res, status, true);
     }
 
     if(responseCode != 0 )
     {
-        cerr << "Enter a valid esp target" << endl;
+        cerr << "Response code:" << responseCode << " , Enter a valid esp target" << endl;
         return 1;
     }
 
     if(streq("401 Unauthorized", status))
     {
-        cerr << "Unauthorized Request, Enter a valid username and password" << endl;
+        cerr << status << " : Ensure Valid Credentials" << endl;
         return 1;
     }
-
+    if(*status.str() != '2')
+    {
+        cerr << status << endl;
+        return 1;
+    }
 
     if(streq(resType, ".json"))
     {
@@ -86,11 +92,11 @@ int EspService::sendRequest()
 
 
 }
-EspService::EspService(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType,
-const char* target, const char* username, const char* password):formArgs(formArgs), url(target), resType(resType),reqType(reqType), username(username), password(password)
+EspService::EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType,
+const char* target, const char* username, const char* password):reqString(reqString), url(target), resType(resType),reqType(reqType), username(username), password(password)
 {
 }
-EspService::EspService(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType, const char* target)
-: EspService(serviceName, methodName, formArgs, resType, reqType, target, "", "")
+EspService::EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* target)
+: EspService(serviceName, methodName, reqString, resType, reqType, target, "", "")
 {
 }

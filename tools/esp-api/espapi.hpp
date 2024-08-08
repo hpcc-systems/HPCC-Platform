@@ -20,7 +20,6 @@
 #include <vector>
 #include <cstring>
 #include "esdl_def.hpp"
-#include "esdl_def.hpp"
 #include "jfile.hpp"
 
 
@@ -31,18 +30,19 @@ private:
     inline bool isStructInTrack(const std::string& reqRes);
     void getAllMethods(const char* serviceName, const char* methodName, bool &flagSuccess);
     void printHelper(const char* props);
+    Owned<IEsdlDefinition> esdlDef;
 
 protected:
     std::vector<const char*> allServicesList;
     std::vector<const char*> allMethodsList;
 public:
     EspDef();
-    Owned<IEsdlDefinition> esdlDef;
+
     int  loadAllServices();
-    void  loadAllMethods(const char* serviceName);
-    void addFilesToDefinition(std::vector<Owned<IFile>> IFiles);
-    void getFiles(std::vector<Owned<IFile>> &IFiles);
-    void getFiles(std::vector<Owned<IFile>> &IFiles, const char* path);
+    void loadAllMethods(const char* serviceName);
+    void addFilesToDefinition(std::vector<Owned<IFile>> files);
+    void getFiles(std::vector<Owned<IFile>> &files);
+    void getFiles(std::vector<Owned<IFile>> &files, const char* path);
     void describe(const char* serviceName, const char* methodName);
     void describe(const char* serviceName, const char* methodName, std::ostream& out);
     void printAllServices();

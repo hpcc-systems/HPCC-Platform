@@ -197,9 +197,7 @@ interface IEsdlDefServiceIterator : extends IInterface
     virtual bool        first(void)=0;
     virtual bool        next(void)=0;
     virtual bool        isValid(void)=0;
-    virtual unsigned    getFlags(void)=0;
     virtual IEsdlDefService& query()=0;
-    //virtual IEsdlDefObjectIterator* queryBaseTypesIterator()=0;
 };
 
 interface IEsdlDefinition : extends IInterface

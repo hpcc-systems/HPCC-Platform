@@ -1278,8 +1278,8 @@ public:
 class EsdlDefServiceArrayIterator : public CInterface, implements IEsdlDefServiceIterator
 {
 private:
-      ESDLServiceArray & array;
-      aindex_t             cur;
+    ESDLServiceArray & array;
+    aindex_t             cur;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1288,22 +1288,10 @@ public:
     {
     }
 
-    bool        first(void)             { cur = 0; return isValid(); }
-    bool        isValid(void)           { return array.isItem(cur); }
-    IEsdlDefService &query()                { assertex(isValid()); return array.item(cur); }
-    bool        hasNext(void)           { return array.isItem(cur+1); }
-    bool        hasPrev(void)           { return array.isItem(cur-1); }
-    bool        last(void)              { cur = array.ordinality()-1; return isValid(); }
-    bool        next(void)              { ++cur; return isValid(); }
-    bool        prev(void)              { --cur; return isValid(); }
-    bool        select(aindex_t seek)   { cur = seek; return isValid(); }
-
-
-    unsigned getFlags() { return 0; }
-    IEsdlDefObjectIterator* queryBaseTypesIterator()
-    {
-        return NULL;
-    }
+    virtual bool        first(void)             override { cur = 0; return isValid(); }
+    virtual bool        isValid(void)           override { return array.isItem(cur); }
+    virtual IEsdlDefService &query()                override { assertex(isValid()); return array.item(cur); }
+    virtual bool        next(void)              override { ++cur; return isValid(); }
 };
 
 typedef MapStringTo<bool> AddedHash;

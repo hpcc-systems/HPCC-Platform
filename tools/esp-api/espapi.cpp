@@ -17,10 +17,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include "esdl_def.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
-#include "esdl_def.hpp"
 #include "jscm.hpp"
 #include "jstring.hpp"
 #include <ostream>
@@ -44,9 +42,9 @@ IEsdlDefReporter* createConcreteEsdlDefReporter()
     return new ConcreteEsdlDefReporter();
 }
 
-void EspDef::addFilesToDefinition(vector<Owned<IFile>> IFiles)
+void EspDef::addFilesToDefinition(vector<Owned<IFile>> files)
 {
-    for(Owned<IFile>& file: IFiles)
+    for(Owned<IFile>& file: files)
     {
         if(file->exists() )
         {
@@ -79,15 +77,15 @@ EspDef::EspDef()
     esdlDef.setown(createEsdlDefinition(nullptr, createConcreteEsdlDefReporter));
 }
 
-void EspDef::getFiles(vector<Owned<IFile>> &IFiles)
+void EspDef::getFiles(vector<Owned<IFile>> &files)
 {
     const IProperties &temp =  queryEnvironmentConf();
     string path = temp.queryProp("path");
     path += "/componentfiles/esdl_files/";
-    getFiles(IFiles, path.c_str());
+    getFiles(files, path.c_str());
 }
 
-void EspDef::getFiles(std::vector<Owned<IFile>> &IFiles, const char* path)
+void EspDef::getFiles(std::vector<Owned<IFile>> &files, const char* path)
 {
     const char * mask = "*" ".xml";
     Owned<IFile> esdlDir = createIFile(path);
@@ -96,7 +94,7 @@ void EspDef::getFiles(std::vector<Owned<IFile>> &IFiles, const char* path)
     ForEach(*esdlFiles)
     {
         IFile &thisPlugin = esdlFiles->query();
-        IFiles.push_back(LINK(&thisPlugin));
+        files.push_back(LINK(&thisPlugin));
     }
 }
 
@@ -105,7 +103,7 @@ inline bool EspDef::isStructInTrack(const std::string& reqRes)
     return std::find(structTrack.begin(), structTrack.end(), reqRes) != structTrack.end();
 }
 
-void EspDef::describeType(const char* reqRes, int indent, std::ostream& out, bool Recursive)
+void EspDef::describeType(const char* reqRes, int indent, std::ostream& out, bool recursive)
 {
     IEsdlDefStruct* myStruct = esdlDef->queryStruct(reqRes);
     if(!myStruct)
@@ -117,10 +115,9 @@ void EspDef::describeType(const char* reqRes, int indent, std::ostream& out, boo
     {
         return;
     }
-    // structTrack.push_back(reqRes);
 
     string indentChars(indent * 4, ' ');
-    if(!Recursive)
+    if(!recursive)
     {
         out << indentChars << myStruct->queryName() << endl;
     }
@@ -264,7 +261,6 @@ void EspDef::describeAllServices(ostream &out)
         const char* serviceName = currentService.queryName();
         out << serviceName << " ";
         Owned<IPropertyIterator> propIter = currentService.getProps();
-        out << "[";
         bool first = true;
         ForEach(*propIter)
         {
@@ -272,14 +268,21 @@ void EspDef::describeAllServices(ostream &out)
             {
                 continue;
             }
-            if(!first)
+            if(first)
+            {
+                out << "[";
+                first = false;
+            }
+            else
             {
                 out << ", ";
             }
             out << propIter->getPropKey() << " (" << propIter->queryPropValue() << ")";
-            first = false;
         }
-        out << "]" << endl;
+        if(!first)
+        {
+            out << "]" << endl;
+        }
     }
     return;
 }
@@ -307,24 +310,35 @@ void EspDef::describeAllMethods(const char* serviceName, ostream &out)
 {
     IEsdlDefService *esdlServ = esdlDef->queryService(serviceName);
 
-    if (!esdlServ)
+    if(!esdlServ)
     {
         cerr << "No Service " << serviceName << endl;
         return;
     }
-    out <<esdlServ->queryName() << " [";
+    out << esdlServ->queryName() << " ";
     Owned<IPropertyIterator> propIter = esdlServ->getProps();
     bool first = true;
     ForEach(*propIter)
     {
-        if(!first)
+        if(streq(propIter->getPropKey(), "name"))
+        {
+            continue;
+        }
+        if(first)
+        {
+            out << "[";
+            first = false;
+        }
+        else
         {
             out << ", ";
         }
         out << propIter->getPropKey() << " (" << propIter->queryPropValue() << ")";
-        first = false;
     }
-    out << "]" << endl;
+    if(!first)
+    {
+        out << "]" << endl;
+    }
 
     Owned<IEsdlDefMethodIterator> methodIter = esdlServ->getMethods();
     ForEach(*methodIter)

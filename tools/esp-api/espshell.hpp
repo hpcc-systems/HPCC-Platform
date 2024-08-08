@@ -21,17 +21,20 @@
 class EspShell {
     public:
         EspShell(int argc, const char* argv[]);
+        int callService();
+        bool parseCmdOptions();
+    private:
         ArgvIterator args;
         EspDef esdlDefObj;
         int argc;
         const char** argv;
 
-        bool parseCmdOptions();
+
         void usage();
-        int callService();
+
         std::string buildUrl(const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName);
 
-        int sendRequest(const char* serviceName, const char* methodName, const char* formArgs, const char* resType, const char* reqType, const char* targeturl
+        int sendRequest(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* targeturl
         ,const char* port, const char* query);
 
         bool hasValidService=false, hasValidMethod=false, hasDescribe=false;
