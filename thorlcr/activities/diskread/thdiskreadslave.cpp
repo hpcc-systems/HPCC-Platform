@@ -185,14 +185,6 @@ public:
         if (in)
             merged.mergeStatistic(StNumDiskRowsRead, in->queryProgress());
     }
-    virtual unsigned __int64 queryProgress() override
-    {
-        CriticalBlock block(inputCs);
-        if (in)
-            return in->queryProgress();
-        else
-            return 0;
-    }
 };
 
 /////////////////////////////////////////////////
@@ -514,31 +506,6 @@ public:
             else
                 info.fastThrough = true;
         }
-    };
-
-    class PgRecordSize : implements IRecordSize, public CSimpleInterface
-    {
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        PgRecordSize(IRecordSize *_rcSz)
-        {
-            rcSz = LINK(_rcSz);
-        }
-        ~PgRecordSize()
-        {
-            rcSz->Release();
-        }
-        virtual size32_t getRecordSize(const void *rec)
-        {
-            return rcSz->getRecordSize(rec) + 1;
-        }
-        virtual size32_t getFixedSize() const 
-        {
-            return rcSz->getFixedSize()?(rcSz->getFixedSize()+1):0;
-        }
-    private:
-        IRecordSize *rcSz;
     };
 
 public:
