@@ -147,38 +147,44 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
 interface TextSourceEditorProps {
     text: string;
     readonly?: boolean;
+    toolbar?: boolean;
 }
 
 export const TextSourceEditor: React.FunctionComponent<TextSourceEditorProps> = ({
     text = "",
-    readonly = false
+    readonly,
+    toolbar
 }) => {
 
-    return <SourceEditor text={text} readonly={readonly} mode="text"></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode="text"></SourceEditor>;
 };
 
 interface XMLSourceEditorProps {
     text: string;
     readonly?: boolean;
+    toolbar?: boolean;
 }
 
 export const XMLSourceEditor: React.FunctionComponent<XMLSourceEditorProps> = ({
     text = "",
-    readonly = false
+    readonly,
+    toolbar
 }) => {
 
-    return <SourceEditor text={text} readonly={readonly} mode="xml"></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode="xml"></SourceEditor>;
 };
 
 interface JSONSourceEditorProps {
     json?: object;
     readonly?: boolean;
+    toolbar?: boolean;
     onChange?: (obj: object) => void;
 }
 
 export const JSONSourceEditor: React.FunctionComponent<JSONSourceEditorProps> = ({
     json,
-    readonly = false,
+    readonly,
+    toolbar,
     onChange = (obj: object) => { }
 }) => {
 
@@ -197,7 +203,7 @@ export const JSONSourceEditor: React.FunctionComponent<JSONSourceEditorProps> = 
         }
     }, [onChange]);
 
-    return <SourceEditor text={text} readonly={readonly} mode="json" onTextChange={textChanged}></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode="json" onTextChange={textChanged}></SourceEditor>;
 };
 
 export interface WUXMLSourceEditorProps {
@@ -215,10 +221,12 @@ export const WUXMLSourceEditor: React.FunctionComponent<WUXMLSourceEditorProps> 
 
 export interface WUResourceEditorProps {
     src: string;
+    toolbar?: boolean;
 }
 
 export const WUResourceEditor: React.FunctionComponent<WUResourceEditorProps> = ({
-    src
+    src,
+    toolbar
 }) => {
 
     const [text, setText] = React.useState("");
@@ -231,7 +239,7 @@ export const WUResourceEditor: React.FunctionComponent<WUResourceEditorProps> = 
         });
     }, [src]);
 
-    return <SourceEditor text={text} readonly={true} mode="text"></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={true} mode="text"></SourceEditor>;
 };
 
 interface ECLSourceEditorProps {
@@ -266,6 +274,7 @@ interface FetchEditor {
     url: string;
     wuid?: string;
     readonly?: boolean;
+    toolbar?: boolean;
     mode?: "ecl" | "xml" | "text";
 }
 
@@ -273,6 +282,7 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
     url,
     wuid,
     readonly = true,
+    toolbar,
     mode = "text"
 }) => {
 
@@ -293,11 +303,12 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
         }
     }, [url, wuid]);
 
-    return <SourceEditor text={text} readonly={readonly} mode={mode}></SourceEditor>;
+    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode={mode}></SourceEditor>;
 };
 
 interface SQLSourceEditorProps {
     sql: string;
+    readonly?: boolean;
     toolbar?: boolean;
     onSqlChange?: (sql: string) => void;
     onFetchHints?: (cm: any, option: any) => Promise<ICompletion>;
@@ -306,11 +317,12 @@ interface SQLSourceEditorProps {
 
 export const SQLSourceEditor: React.FunctionComponent<SQLSourceEditorProps> = ({
     sql,
+    readonly,
     toolbar,
     onSqlChange,
     onFetchHints,
     onSubmit
 }) => {
-    return <SourceEditor text={sql} toolbar={toolbar} onTextChange={onSqlChange} onFetchHints={onFetchHints} onSubmit={onSubmit} mode={"sql"}></SourceEditor>;
+    return <SourceEditor text={sql} toolbar={toolbar} readonly={readonly} onTextChange={onSqlChange} onFetchHints={onFetchHints} onSubmit={onSubmit} mode={"sql"}></SourceEditor>;
 };
 
