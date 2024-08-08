@@ -1941,6 +1941,8 @@ class CXRefManager: public CXRefManagerBase
                     {
                         CriticalUnblock unblock(manager.logsect);
                         unsigned short port = 0;
+                        // localhost signifies that this is a locally hosted or mounted storage
+                        // which is standard in the cloud and otherwise needs to be reached via dafilesrv
                         if (!strieq(msg, "localhost"))
                             port = getDafsPort(node.endpoint(),numfails,&crit);
                         results.setown(getDirectory(dirlist,&node,port));
