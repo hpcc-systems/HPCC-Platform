@@ -63,9 +63,21 @@ rec t(ds l) := transform
     end;
 
 o3 := output(project(ds, t(LEFT)));
-sequential(o1, o2, o3);
-ASSERT(COUNT(ds) = 9); // should be 2
+
+o4 := ASSERT(COUNT(ds) = 9); // should be 2
 
 // Test unicode formatting
 utf8 euro := u'€' : stored('euro'); 
-ASSERT(euro=u'€€');  // fail!
+o5 := ASSERT(euro=u'€€');  // fail!
+
+
+childds(integer id) := Function
+
+   base := DATASET(3, TRANSFORM({unsigned x}, SELF.x := id + COUNTER));
+   check := ASSERT(id != 0, 'Oh no');
+   RETURN WHEN(base, check, BEFORE);
+END;
+
+o6 := output(ds1(SUM(childds(val1), x) != 3 * val1 + 6));
+
+sequential(o1, o2, o3, o4, o5, o6);

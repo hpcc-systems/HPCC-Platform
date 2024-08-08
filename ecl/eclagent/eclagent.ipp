@@ -795,6 +795,7 @@ public:
 
     void ready();
     void execute() { if (!alreadyUpdated) activity->execute(); }
+    void onStart(const byte * parentExtract, CHThorDebugContext * debugContext);
     void stop() { if (!alreadyUpdated) activity->stop(); }
 
     IHThorException * makeWrappedException(IException * e);
@@ -829,6 +830,7 @@ public:
     CICopyArrayOf<EclGraphElement> dependentOnActivity;
     IntArray dependentControlId;
     IProbeManager * probeManager;
+    const byte * savedParentExtract = nullptr;
 
     Owned<EclBoundLoopGraph> loopGraph;
 };
