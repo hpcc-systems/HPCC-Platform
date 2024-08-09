@@ -17,8 +17,9 @@ const defaultValues: AddFileFormValues = {
 interface AddFileFormProps {
     formMinWidth?: number;
     showForm: boolean;
-    refreshGrid: (() => void),
-    store: any;
+    refreshGrid: (() => void);
+    addUserFile: ((file) => void);
+    dropzone: any;
     setShowForm: (_: boolean) => void;
 }
 
@@ -26,7 +27,8 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
     formMinWidth = 300,
     showForm,
     refreshGrid,
-    store,
+    addUserFile,
+    dropzone,
     setShowForm
 }) => {
 
@@ -39,24 +41,19 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
-                const dropZone = {
-                    ...store.get(data.NetAddress),
-                    NetAddress: data.NetAddress
-                };
                 let fullPathParts = data.fullPath.split("/");
                 if (fullPathParts.length === 1) {
                     fullPathParts = data.fullPath.split("\\");
                 }
                 const file = {
-                    ...store.get(data.NetAddress + data.fullPath),
                     name: fullPathParts[fullPathParts.length - 1],
                     displayName: fullPathParts[fullPathParts.length - 1],
                     fullPath: data.fullPath,
                     isDir: false,
-                    DropZone: dropZone
+                    DropZone: dropzone,
+                    _isUserFile: true
                 };
-                store.addUserFile(file);
-                refreshGrid();
+                addUserFile(file);
                 closeForm();
                 reset(defaultValues);
             },
@@ -64,7 +61,7 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, refreshGrid, reset, store]);
+    }, [addUserFile, closeForm, dropzone, handleSubmit, reset]);
 
     return <MessageBox title={nlsHPCC.AddFile} show={showForm} setShow={closeForm}
         footer={<>
