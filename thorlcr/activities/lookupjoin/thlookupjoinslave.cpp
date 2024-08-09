@@ -1092,7 +1092,10 @@ protected:
         {
             CThorSpillableRowArray *rows = rhsSlaveRows.item(a);
             if (rows)
+            {
+                mergeStats(inactiveStats, rows);
                 rows->kill();
+            }
         }
         rhs.kill();
     }
@@ -1808,6 +1811,7 @@ protected:
     // NB: Only used by channel 0
     Owned<CFileOwner> overflowWriteFile;
     Owned<IExtRowWriter> overflowWriteStream;
+    OwnedIFileIO overflowWriteFileIO;
     rowcount_t overflowWriteCount;
     OwnedMalloc<IChannelDistributor *> channelDistributors;
     unsigned nextRhsToSpill = 0;
@@ -2096,8 +2100,14 @@ protected:
             if (isSmart())
             {
                 overflowWriteCount = 0;
-                overflowWriteFile.clear();
                 overflowWriteStream.clear();
+                if (overflowWriteFileIO)
+                {
+                    mergeRemappedStats(PARENT::inactiveStats, overflowWriteFileIO, diskToTempStatsMap);
+                    overflowWriteFile->noteSize(overflowWriteFileIO->getStatistic(StSizeDiskWrite));
+                    overflowWriteFileIO.clear();
+                }
+                overflowWriteFile.clear();
                 rightRowManager->addRowBuffer(this);
             }
             doBroadcastRHS(stopping);
@@ -2156,6 +2166,7 @@ protected:
                     {
                         CThorSpillableRowArray &rows = *rhsSlaveRows.item(a);
                         rhs.appendRows(rows, true); // NB: This should not cause spilling, rhs is already sized and we are only copying ptrs in
+                        mergeStats(PARENT::inactiveStats, &rows);
                         rows.kill(); // free up ptr table asap
                     }
                     // Have to keep broadcastSpillingLock locked until sort and calculate are done
@@ -2504,6 +2515,7 @@ protected:
                 throwUnexpected();
         }
         joinHelper->init(left, right, leftAllocator, rightAllocator, ::queryRowMetaData(leftITDL));
+        mergeStats(PARENT::inactiveStats, rowLoader);
     }
     void getRHS(bool stopping)
     {
@@ -2678,8 +2690,12 @@ protected:
             IOutputMetaData *inputOutputMeta = rightITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
             // rows may either be in separate slave row arrays or in single rhs array, or split.
             rowcount_t total = rightCollector ? rightCollector->numRows() : (getGlobalRHSTotal() + rhs.ordinality());
+            if (rightCollector && rightCollector->hasSpilt())
+                mergeStats(PARENT::inactiveStats, rightCollector);
             throw checkAndCreateOOMContextException(this, e, "gathering RHS rows for lookup join", total, inputOutputMeta, NULL);
         }
+        if (rightCollector && rightCollector->hasSpilt())
+            mergeStats(PARENT::inactiveStats, rightCollector);
     }
 public:
     static bool needDedup(IHThorHashJoinArg *helper)
@@ -2943,7 +2959,7 @@ public:
                 return true;
         }
         CriticalBlock b(rhsRowLock);
-        if (overflowWriteFile)
+        if (overflowWriteFileIO)
         {
             /* Tried to do outside crit above, but if empty, and now overflow, need to inside
              * Will be one off if at all
@@ -2956,7 +2972,7 @@ public:
             overflowWriteCount += rhsInRowsTemp.ordinality();
             ForEachItemIn(r, rhsInRowsTemp)
                 overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
-            overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
+            overflowWriteFile->noteSize(overflowWriteFileIO->getStatistic(StSizeDiskWrite));
             return true;
         }
         if (hasFailedOverToLocal())
@@ -3001,12 +3017,13 @@ public:
         GetTempFilePath(tempFilename, "lookup_local");
         ActPrintLog("Overflowing RHS broadcast rows to spill file: %s", tempFilename.str());
         overflowWriteFile.setown(container.queryActivity()->createOwnedTempFile(tempFilename.str()));
-        overflowWriteStream.setown(createRowWriter(&(overflowWriteFile->queryIFile()), queryRowInterfaces(rightITDL), rwFlags));
+        overflowWriteFileIO.setown(overflowWriteFile->queryIFile().open(IFOcreate));
+        overflowWriteStream.setown(createRowWriter(overflowWriteFileIO, queryRowInterfaces(rightITDL), rwFlags));
 
         overflowWriteCount += rhsInRowsTemp.ordinality();
         ForEachItemIn(r, rhsInRowsTemp)
             overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
-        overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
+        overflowWriteFile->noteSize(overflowWriteFileIO->getStatistic(StSizeDiskWrite));
         return true;
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
@@ -3017,6 +3034,13 @@ public:
             if (isGlobal())
                 activeStats.setStatistic(StNumSmartJoinDegradedToLocal, aggregateFailoversToLocal); // NB: is going to be same for all slaves.
             activeStats.setStatistic(StNumSmartJoinSlavesDegradedToStd, aggregateFailoversToStandard);
+        }
+        if (overflowWriteFileIO)
+            mergeRemappedStats(activeStats, overflowWriteFileIO, diskToTempStatsMap);
+        ForEachItemIn(a, rhsSlaveRows)
+        {
+           CThorSpillableRowArray &rows = *rhsSlaveRows.item(a);
+           mergeStats(activeStats, &rows);
         }
     }
 };
@@ -3360,6 +3384,7 @@ protected:
                     ForEachItemIn(a, rhsSlaveRows)
                     {
                         CThorSpillableRowArray &rows = *rhsSlaveRows.item(a);
+                        mergeStats(PARENT::inactiveStats, &rows);
                         rhs.appendRows(rows, true);
                         rows.kill(); // free up ptr table asap
                     }
