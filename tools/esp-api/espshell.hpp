@@ -29,10 +29,9 @@ class EspShell {
         int argc;
         const char** argv;
 
-
         void usage();
 
-        std::string buildUrl(const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName);
+        std::string buildUrl(std::string &url, const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName);
 
         int sendRequest(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* targeturl
         ,const char* port, const char* query);

@@ -1278,7 +1278,7 @@ public:
 class EsdlDefServiceArrayIterator : public CInterface, implements IEsdlDefServiceIterator
 {
 private:
-    ESDLServiceArray & array;
+    ESDLServiceArray &   array;
     aindex_t             cur;
 
 public:
@@ -1288,10 +1288,10 @@ public:
     {
     }
 
-    virtual bool        first(void)             override { cur = 0; return isValid(); }
-    virtual bool        isValid(void)           override { return array.isItem(cur); }
-    virtual IEsdlDefService &query()                override { assertex(isValid()); return array.item(cur); }
-    virtual bool        next(void)              override { ++cur; return isValid(); }
+    virtual bool        first(void)   override { cur = 0; return isValid(); }
+    virtual bool        isValid(void) override { return array.isItem(cur); }
+    virtual IEsdlDefService &query()  override { assertex(isValid()); return array.item(cur); }
+    virtual bool        next(void)    override { ++cur; return isValid(); }
 };
 
 typedef MapStringTo<bool> AddedHash;

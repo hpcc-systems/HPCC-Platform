@@ -259,7 +259,7 @@ void EspDef::describeAllServices(ostream &out)
     {
         IEsdlDefService &currentService = serviceIter->query();
         const char* serviceName = currentService.queryName();
-        out << serviceName << " ";
+        out << serviceName;
         Owned<IPropertyIterator> propIter = currentService.getProps();
         bool first = true;
         ForEach(*propIter)
@@ -270,7 +270,7 @@ void EspDef::describeAllServices(ostream &out)
             }
             if(first)
             {
-                out << "[";
+                out << " [";
                 first = false;
             }
             else
@@ -315,7 +315,7 @@ void EspDef::describeAllMethods(const char* serviceName, ostream &out)
         cerr << "No Service " << serviceName << endl;
         return;
     }
-    out << esdlServ->queryName() << " ";
+    out << esdlServ->queryName();
     Owned<IPropertyIterator> propIter = esdlServ->getProps();
     bool first = true;
     ForEach(*propIter)
@@ -326,7 +326,7 @@ void EspDef::describeAllMethods(const char* serviceName, ostream &out)
         }
         if(first)
         {
-            out << "[";
+            out << " [";
             first = false;
         }
         else

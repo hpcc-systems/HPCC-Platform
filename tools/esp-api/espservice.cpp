@@ -35,10 +35,10 @@ int EspService::sendRequest()
     if(!isEmptyString(username))
     {
         httpclient->setUserID(username);
-    }
-    if(!isEmptyString(password))
-    {
-        httpclient->setPassword(password);
+        if(!isEmptyString(password))
+        {
+            httpclient->setPassword(password);
+        }
     }
 
     if(streq(reqType, "json"))
@@ -56,7 +56,7 @@ int EspService::sendRequest()
 
     if(responseCode != 0 )
     {
-        cerr << "Response code:" << responseCode << " , Enter a valid esp target" << endl;
+        cerr << "Response code " << responseCode << ": Enter a valid esp target" << endl;
         return 1;
     }
 
@@ -94,9 +94,5 @@ int EspService::sendRequest()
 }
 EspService::EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType,
 const char* target, const char* username, const char* password):reqString(reqString), url(target), resType(resType),reqType(reqType), username(username), password(password)
-{
-}
-EspService::EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* target)
-: EspService(serviceName, methodName, reqString, resType, reqType, target, "", "")
 {
 }

@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include "espservice.hpp"
 
 using namespace std;
@@ -31,11 +32,11 @@ void EspShell::usage()
     "    esp-api describe [<ServiceName> [<MethodName>]]\n"
     "    esp-api test <ServiceName> <MethodName> [options] --reqStr <request>\n\n"
     "Commands:\n"
-    "    describe                                        Describes ESP APIs, no arguments describes available services.\n"
+    "    describe                                        Describes ESP APIs; no arguments describes available services.\n"
     "        <ServiceName>                               Optional: Specify to describe all methods in the service.\n"
     "        <MethodName>                                Optional: Specify to describe the request and response structure for the method.\n"
     "\n"
-    "    test                                            Sends a test request to the specified method in a remote or local ESP.\n"
+    "    test                                            Sends a request to the specified method of a remote or local ESP.\n"
     "        <ServiceName>                               Required: Specify the service name.\n"
     "        <MethodName>                                Required: Specify the method name.\n"
     "        --reqStr <request>                          Required: Specify the request string in XML, JSON, or form format.\n"
@@ -58,24 +59,29 @@ void EspShell::usage()
 );
 }
 
-string EspShell::buildUrl(const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName)
+string EspShell::buildUrl(string &url, const char* server, const char* port, const char* query, const char* resType, const char* serviceName, const char* methodName)
 {
-    std::ostringstream url;
-    if(isEmptyString(query))
+    url += server;
+    url += ":";
+    url += port;
+    url += "/";
+    url += serviceName;
+    url += "/";
+    url += methodName;
+    url += resType;
+    if (!isEmptyString(query))
     {
-        url << server << ":" << port << "/" << serviceName << "/" << methodName << resType;
+        url += "?";
+        url += query;
     }
-    else
-    {
-        url << server << ":" << port << "/" << serviceName << "/" << methodName << resType << "?" << query;
-    }
-    return url.str();
+    return url;
 }
 
 int EspShell::sendRequest(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* server
 ,const char* port, const char* query)
 {
-    string url = buildUrl(server, port, query, resType, serviceName, methodName);
+    string url;
+    buildUrl(url, server, port, query, resType, serviceName, methodName);
     EspService myServ(serviceName, methodName, reqString, resType, reqType, url.c_str(), username.str(), password.str());
     return myServ.sendRequest();
 }
