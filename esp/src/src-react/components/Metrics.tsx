@@ -634,7 +634,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         </>}
         main={
             <ErrorBoundary>
-                <DockPanel layout={options?.layout} onDockPanelCreate={setDockpanel}>
+                <DockPanel layout={options?.layout} onCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
                             header={<Stack horizontal>

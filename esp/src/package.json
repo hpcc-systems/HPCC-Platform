@@ -57,7 +57,7 @@
     "@hpcc-js/timeline": "2.53.0",
     "@hpcc-js/tree": "2.41.0",
     "@hpcc-js/util": "2.52.0",
-    "@hpcc-js/wasm": "2.18.1",
+    "@hpcc-js/wasm": "2.18.2",
     "@kubernetes/client-node": "0.20.0",
     "clipboard": "2.0.11",
     "d3-dsv": "3.0.1",

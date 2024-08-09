@@ -2,6 +2,9 @@
 module.exports = {
     rules: {
         "no-src-react": {
+            meta: {
+                fixable: "code"
+            },
             create: function (context) {
                 return {
                     ImportDeclaration(node) {
