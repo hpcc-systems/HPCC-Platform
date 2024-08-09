@@ -1,95 +1,87 @@
 import * as React from "react";
-import { Dropdown, TextField, PrimaryButton } from "@fluentui/react";
+import { Dropdown, IDropdownOption, TextField, PrimaryButton } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
 
 interface SashaProps {}
 
-export const Sasha: React.FunctionComponent<SashaProps> = ({ }) => {
-  const [selectedOption, setSelectedOption] = React.useState("");
-  const [wuid, setWuid] = React.useState("");
-  const [result, setResult] = React.useState("");
+const mySashaService = new SashaService({ baseUrl: "" });
 
-  const handleOptionChange = (event: React.FormEvent<HTMLDivElement>, option: any) => {
-    setSelectedOption(option.key);
+export const Sasha: React.FunctionComponent<SashaProps> = () => {
+  const [selectedOption, setSelectedOption] = React.useState<string>("");
+  const [wuid, setWuid] = React.useState<string>("");
+  const [result, setResult] = React.useState<string>("");
+
+  const handleOptionChange = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption) => {
+    setSelectedOption(option?.key as string);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Perform action based on selected option
     switch (selectedOption) {
-      case "getVersion": 
-        // Implement getVersion function call
-        break;
-      case "getLastServerMessage":
-        // Implement getLastServerMessage function call
-        break;
-      case "restoreECLWorkUnit":
-        // Implement restoreECLWorkUnit function call
-        break;
-      case "restoreDFUWorkUnit":
-        // Implement restoreDFUWorkUnit function call
-        break;
       case "archiveECLWorkUnit":
-        // Implement archiveECLWorkUnit function call
+        await handleArchiveWorkUnit("ECL");
         break;
       case "archiveDFUWorkUnit":
-        // Implement archiveDFUWorkUnit function call
-        break;
-      case "backupECLWorkUnit":
-        // Implement backupECLWorkUnit function call
-        break;
-      case "backupDFUWorkUnit":
-        // Implement backupDFUWorkUnit function call
+        await handleArchiveWorkUnit("DFU");
         break;
       default:
         console.log("Invalid option selected");
     }
-    // Reset form
     setSelectedOption("");
     setWuid("");
-    setResult("");
   };
 
-  // Conditional rendering for default value
-  const defaultValue = result ? null : <div>{nlsHPCC.noDataMessage}</div>;
+  const handleArchiveWorkUnit = async (wuType: string) => {
+    try {
+      const response = await mySashaService.ArchiveWU({ Wuid: wuid, WUType: wuType as WsSasha.WUTypes });
+      setResult(response.Result);
+    } catch (error) {
+      console.error('Error:', error);
+      setResult(nlsHPCC.noDataMessage);
+    }
+  };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <Dropdown
-          placeholder={nlsHPCC.SelectAnOption}
-          selectedKey={selectedOption}
-          onChange={handleOptionChange}
-          options={[
-            { key: "", text: nlsHPCC.SelectAnOption },
-            { key: "getVersion", text: nlsHPCC.GetVersion },
-            { key: "getLastServerMessage", text: nlsHPCC.GetLastServerMessage },
-            { key: "restoreECLWorkUnit", text: nlsHPCC.RestoreECLWorkunit },
-            { key: "restoreDFUWorkUnit", text: nlsHPCC.RestoreDFUWorkunit },
-            { key: "archiveECLWorkUnit", text: nlsHPCC.ArchiveECLWorkunit },
-            { key: "archiveDFUWorkUnit", text: nlsHPCC.ArchiveDFUWorkunit },
-            { key: "backupECLWorkUnit", text: nlsHPCC.BackupECLWorkunit },
-            { key: "backupDFUWorkUnit", text: nlsHPCC.BackupDFUWorkunit }
-          ]}
-          styles={{ dropdown: { width: 400 } }}
-        />
-        {["restoreECLWorkUnit", "restoreDFUWorkUnit", "archiveECLWorkUnit", "archiveDFUWorkUnit", "backupECLWorkUnit", "backupDFUWorkUnit"].includes(selectedOption) && (
-          <div>
-            <TextField
-              label= {nlsHPCC.WUID}
-              value={wuid}
-              onChange={(event: React.FormEvent<HTMLInputElement>, newValue?: string) => setWuid(newValue || "")}
-              styles={{ fieldGroup: { width: 400 } }}
+    <HolyGrail
+      main={
+        <div>
+          <form onSubmit={handleSubmit}>
+            <Dropdown
+              placeholder={nlsHPCC.SelectAnOption}
+              selectedKey={selectedOption}
+              onChange={handleOptionChange}
+              options={[
+                { key: "", text: nlsHPCC.SelectAnOption },
+                { key: "getVersion", text: nlsHPCC.GetVersion },
+                { key: "getLastServerMessage", text: nlsHPCC.GetLastServerMessage },
+                { key: "restoreECLWorkUnit", text: nlsHPCC.RestoreECLWorkunit },
+                { key: "restoreDFUWorkUnit", text: nlsHPCC.RestoreDFUWorkunit },
+                { key: "archiveECLWorkUnit", text: nlsHPCC.ArchiveECLWorkunit },
+                { key: "archiveDFUWorkUnit", text: nlsHPCC.ArchiveDFUWorkunit },
+                { key: "backupECLWorkUnit", text: nlsHPCC.BackupECLWorkunit },
+                { key: "backupDFUWorkUnit", text: nlsHPCC.BackupDFUWorkunit }
+              ]}
+              styles={{ dropdown: { width: 400 } }}
             />
-          </div>
-        )}
-        <PrimaryButton type="submit" >{nlsHPCC.Submit}</PrimaryButton>
-        {/* Render defaultValue when result is empty */}
-        {defaultValue}
-        {/* Render result when available */}
-        {result && <div>{nlsHPCC.Results}: {result}</div>}
-      </form>
-    </div>
+            {(selectedOption === "archiveECLWorkUnit" || selectedOption === "archiveDFUWorkUnit") && (
+              <div>
+                <TextField
+                  label={nlsHPCC.WUID}
+                  value={wuid}
+                  onChange={(event, newValue) => setWuid(newValue || "")}
+                  styles={{ fieldGroup: { width: 400 } }}
+                />
+              </div>
+            )}
+            <PrimaryButton type="submit">{nlsHPCC.Submit}</PrimaryButton>
+            {/* Render result when available */}
+            {result && <div>{nlsHPCC.Results}: {result}</div>}
+          </form>
+        </div>
+      }
+    />
   );
 };
 
