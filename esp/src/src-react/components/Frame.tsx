@@ -88,7 +88,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
 
         router.resolve(hashHistory.location).then(setBody);
 
-        userKeyValStore().get("user_cookie_consent")
+        userKeyValStore().get(USER_COOKIE_CONSENT)
             .then((resp) => {
                 setShowCookieConsent(resp === "1");
             })
