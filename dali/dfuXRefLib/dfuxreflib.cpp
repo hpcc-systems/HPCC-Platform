@@ -2720,12 +2720,15 @@ public:
             const char *storageDir[1];
             for (int i = 0; i < nclusters; i++)
             {
-                const char *storagePlane = clusters[i]; // clusters holds a list of storage plane names
-                storageDir[0] = dirbaselist[i]; // dirbaselist holds the storage plane directories
-                Owned<IGroup> g = queryNamedGroupStore().lookup(clusters[i]);
+                DBGLOG("CONTAINERIZED(CXRefManager::process)");
 
-                loadFromDFS(*this, g, 1, storageDir, storagePlane);
-                xrefRemoteDirectories(g, numdirs, storageDir, numthreads);
+                const char *storagePlaneName = clusters[i]; // clusters holds a list of storage plane names
+                Owned<IPropertyTree> storagePlane = getStoragePlane(storagePlaneName);
+                storageDir[0] = storagePlane->queryProp("@prefix");
+                Owned<IGroup> g = queryNamedGroupStore().lookup(storagePlaneName);
+
+                loadFromDFS(*this, g, 1, storageDir, storagePlaneName);
+                xrefRemoteDirectories(g, 1, storageDir, numthreads);
             }
         }
 
@@ -2768,30 +2771,24 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
     if (nclusters==0)
         return NULL;
     CXRefManager xrefmanager;
+    const char *dirs[2];
+    unsigned numdirs;
 #ifdef _WIN32
     bool islinux = false;
 #else
     bool islinux = true;
 #endif
-    const char *dirs[2];
-    unsigned numdirs = 2;
-    if (isContainerized())
-    {
-        DBGLOG("CONTAINERIZED(runXRef)");
-        numdirs = 1;
-        Owned<IPropertyTree> storagePlane = getStoragePlane(clusters[0]);
-        dirs[0] = storagePlane->queryProp("@prefix");
-    }
-    else
-    {
-
-        // assume all nodes same OS
-        Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-        if (group)
-            islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-        dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
-        dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
-    }
+    // assume all nodes same OS
+    Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
+#ifdef _CONTAINERIZED
+    WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
+#else
+    if (group)
+        islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
+#endif
+    dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
+    dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
+    numdirs = 2;
     IPropertyTree *ret=NULL;
     try {
         ret = xrefmanager.process(nclusters,clusters,numdirs,dirs,PMtreeoutput,callback,numthreads);
