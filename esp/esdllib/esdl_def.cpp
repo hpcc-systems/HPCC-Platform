@@ -1275,6 +1275,25 @@ public:
 
 };
 
+class EsdlDefServiceArrayIterator : public CInterface, implements IEsdlDefServiceIterator
+{
+private:
+    ESDLServiceArray &   array;
+    aindex_t             cur;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    EsdlDefServiceArrayIterator(ESDLServiceArray &a) : array(a)
+    {
+    }
+
+    virtual bool        first(void)   override { cur = 0; return isValid(); }
+    virtual bool        isValid(void) override { return array.isItem(cur); }
+    virtual IEsdlDefService &query()  override { assertex(isValid()); return array.item(cur); }
+    virtual bool        next(void)    override { ++cur; return isValid(); }
+};
+
 typedef MapStringTo<bool> AddedHash;
 
 class EsdlDefinition : public CInterface, implements IEsdlDefinition
@@ -1325,6 +1344,12 @@ public:
                     edo->Release(); //ForceRelease();
             }
         }
+    }
+
+    EsdlDefServiceArrayIterator* getServiceIterator()
+    {
+        return new EsdlDefServiceArrayIterator(services);
+
     }
 
     void setReporter(IEsdlDefReporter* _reporter) override
