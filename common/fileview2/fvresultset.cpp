@@ -489,13 +489,6 @@ bool CResultSetMetaData::isBigEndian(int column) const
 }
 
 
-unsigned CResultSetMetaData::getColumnRawType(int column) const
-{
-    assertex(columns.isItem(column));
-    return getClarionResultType(columns.item(column).type);
-}
-
-
 unsigned CResultSetMetaData::getColumnRawSize(int column) const
 {
     assertex(columns.isItem(column));

@@ -88,7 +88,6 @@ public:
     virtual bool isSigned(int column) const;
     virtual bool isEBCDIC(int column) const;
     virtual bool isBigEndian(int column) const;
-    virtual unsigned getColumnRawType(int column) const;
     virtual unsigned getColumnRawSize(int column) const;
     virtual IStringVal & getXmlSchema(IStringVal & s, bool addHeader) const;
     virtual IStringVal & getXmlXPathSchema(IStringVal & str, bool addHeader) const;

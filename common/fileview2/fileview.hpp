@@ -69,7 +69,6 @@ interface IResultSetMetaData : extends IInterface
     virtual bool isSigned(int column) const = 0;
     virtual bool isEBCDIC(int column) const = 0;
     virtual bool isBigEndian(int column) const = 0;
-    virtual unsigned getColumnRawType(int column) const = 0;
     virtual unsigned getColumnRawSize(int column) const = 0;
     virtual IStringVal & getXmlSchema(IStringVal & s, bool addHeader) const = 0;
     virtual unsigned getNumKeyedColumns() const = 0;

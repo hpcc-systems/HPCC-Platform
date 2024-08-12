@@ -14211,7 +14211,6 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
         }
         f->setProp("Expression", ecl.str());
     }
-    f->setPropInt("@rawtype", getClarionResultType(type));
     StringBuffer typeName;
     if (!queryOriginalName(type, typeName))
         type->getECLType(typeName);
