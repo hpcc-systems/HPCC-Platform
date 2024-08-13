@@ -46,11 +46,10 @@ public:
   // Compiles the regular expression ready for Find
   // if nocase = 1 the matching is case insensitive (where possible)
 
-  const char * find(const char *str,size32_t from=0,size32_t len=RE_ALL,size32_t maxlen=0);
+  const char * find(const char *str,size32_t from=0,size32_t len=RE_ALL);
   // finds the first occurrence of the RE in string
   //  (positioned after or at 'from' within 'len'
   //  (len = RE_ALL) means to end of the string))
-  //  maxlen is only used for clarion strings (should be 0 otherwise)
   //  returns position of first match in string if found
   //  or NULL if not found
 
