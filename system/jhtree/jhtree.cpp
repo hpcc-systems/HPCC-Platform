@@ -1244,7 +1244,11 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
         case NodeBloom:
             return new CJHTreeBloomTableNode();
         default:
-            throwUnexpected();
+            IException *E = MakeStringException(9999, "Internal Error in _createNode()");
+            StringBuffer m;
+            m.appendf(" Legacy compression, Invalid Node type %u In key %s", nodeHdr.nodeType, name.get());
+            EXCLOG(E, m.str());
+            throw E;
         }
     }
     else
@@ -1261,7 +1265,11 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
                 return new CJHInplaceBranchNode();
             UNIMPLEMENTED;
         default:
-            throwUnexpected();
+            IException *E = MakeStringException(9999, "Internal Error in _createNode()");
+            StringBuffer m;
+            m.appendf(" Invalid compression type %u In key %s", nodeHdr.compressionType, name.get());
+            EXCLOG(E, m.str());
+            throw E;
         }
     }
 }
