@@ -177,7 +177,9 @@ class CBroadcaster : public CSimpleInterface
 
             // in theory each worker could be sending log(n) packets, with the broadcaster on each blocking waiting for acks
             unsigned limit = nodes * std::ceil(std::log2(nodes));
-            broadcastQueue.setLimit(limit);
+            limit = broadcaster.activity.getOptInt("lookupJoinBroadcastQLimit", limit);
+            if (0 != limit)
+                broadcastQueue.setLimit(limit);
         }
         ~CSend()
         {
@@ -203,8 +205,13 @@ class CBroadcaster : public CSimpleInterface
                     return;
                 }
             }
-            while (!broadcastQueue.enqueue(sendItem, 5000)) // will block if queue full
+            while (!broadcastQueue.enqueue(sendItem, 20000)) // will timeout if queue full
             {
+                if (broadcastQueue.queryStopped())
+                {
+                    DBGLOG("broadcastQueue stopped");
+                    break;
+                }
                 DBGLOG("CSend::addBlock() - broadcastQueue full, waiting for space");
             }
         }

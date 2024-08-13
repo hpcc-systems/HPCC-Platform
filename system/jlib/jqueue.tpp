@@ -358,6 +358,8 @@ public:
         stopped = false;
     }
 
+    bool queryStopped() const { return stopped; }
+
     bool enqueue(BASE *e,unsigned timeout=INFINITE) 
     { 
         unsigned numToSignal = 0;
