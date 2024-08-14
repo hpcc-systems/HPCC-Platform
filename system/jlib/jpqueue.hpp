@@ -33,7 +33,7 @@
 template<typename T> class WaitQueue: public CInterface
 {
 public:
-    WaitQueue(): counter(), stopped(false), waiting(0)
+    WaitQueue(): counter(), waiting(0), stopped(false)
     {
     }
 

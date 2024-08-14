@@ -685,7 +685,7 @@ class ParallelMergeSorter
 
 public:
     ParallelMergeSorter(void * * _rows, const ICompare & _compare)
-    : scheduler(queryTaskScheduler()), compare(_compare), baseRows(_rows)
+    : compare(_compare), scheduler(queryTaskScheduler()), baseRows(_rows)
     {
         //The following constants control the number of iterations to be performed in parallel.
         //The sort is split into more parts than there are cpus so that the effect of delays from one task tend to be evened out.

@@ -559,7 +559,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CServerConnection(ISDSConnectionManager &manager, ConnectionId connectionId, const char *xpath, SessionId id, unsigned mode, unsigned timeout, IPropertyTree *_parent, ConnInfoFlags _connInfoFlags)
-        : CConnectionBase(manager, connectionId, xpath, id, mode, timeout), parent(_parent), connInfoFlags(_connInfoFlags)
+        : CConnectionBase(manager, connectionId, xpath, id, mode, timeout), connInfoFlags(_connInfoFlags), parent(_parent)
     {
         INIT_NAMEDCOUNT;
         subsid = 0;
@@ -1454,7 +1454,7 @@ protected:
     CCovenSDSManager &manager;
     StringAttr ext, dataPath;
 public:
-    CExternalFile(const char *_ext, const char *_dataPath, CCovenSDSManager &_manager) : ext(_ext), dataPath(_dataPath), manager(_manager) { }
+    CExternalFile(const char *_ext, const char *_dataPath, CCovenSDSManager &_manager) : manager(_manager), ext(_ext), dataPath(_dataPath) { }
     const char *queryExt() { return ext; }
     StringBuffer &getName(StringBuffer &fName, const char *base)
     {
@@ -1692,7 +1692,7 @@ class CSubscriberNotifier : public CInterface
     };
 public:
     CSubscriberNotifier(CSubscriberNotifierTable &_table, CSubscriberContainerBase &_subscriber, MemoryBuffer &notifyData)
-        : table(_table), subscriber(_subscriber) //NB: takes ownership of subscriber
+        : subscriber(_subscriber), table(_table) //NB: takes ownership of subscriber
     {
         INIT_NAMEDCOUNT;
         change.setown(new CChange(notifyData));
@@ -2822,7 +2822,7 @@ class CNodeSubscriberContainer : public CSubscriberContainerBase
     ICopyArrayOf<CServerRemoteTree> nodes; // never linked, node must signal the unsubscription and removal of subscriber and these references
 public:
     CNodeSubscriberContainer(ISubscription *subscriber, SubscriptionId id, bool _sendValue, const char *_xpath)
-        : CSubscriberContainerBase(subscriber, id), sendValue(_sendValue), xpath(_xpath)
+        : CSubscriberContainerBase(subscriber, id), xpath(_xpath), sendValue(_sendValue)
     {
     }
     bool querySendValue() const { return sendValue; }
@@ -3643,7 +3643,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CLock(CLockTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
-        : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), holdLocks(0), waiting(0), pending(0)
+        : table(_table), sub(0), readLocks(0), holdLocks(0), pending(0), waiting(0), xpath(_xpath), treeId(_treeId), exclusive(false)
     {
         INIT_NAMEDCOUNT;
         verifyex(tryLock(mode, id, sessId)==LockSucceeded);
@@ -3853,7 +3853,7 @@ template <> void CLockTable::onRemove(void *et)
 ///////////////
 
 CSDSTransactionServer::CSDSTransactionServer(CCovenSDSManager &_manager)
- : Thread("SDS Manager, CSDSTransactionServer"), manager(_manager), CTransactionLogTracker(DAMP_SDSCMD_MAX)
+ : Thread("SDS Manager, CSDSTransactionServer"), CTransactionLogTracker(DAMP_SDSCMD_MAX), manager(_manager)
 {
     stopped = true;
 }
@@ -5434,7 +5434,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), keepStores(_keepStores), delay(_delay), abort(_abort)
+    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores)
     {
         mySessId = daliClientActive()?myProcessSession():0;
         if (!keepStores) keepStores = DEFAULT_KEEP_LASTN_STORES;
@@ -5917,7 +5917,7 @@ static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnviron
 #endif
 
 CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath, const char *_daliName)
-    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), daliName(_daliName)
+    : dataPath(_dataPath), daliName(_daliName), server(*this), coven(_coven), config(_config)
 {
     config.Link();
     restartOnError = config.getPropBool("@restartOnUnhandled");
@@ -8363,7 +8363,7 @@ public:
         ~PushPop() { stack.pop(); }
         CPTStack &stack;
     };
-    CSubscriberNotifyScanner(IPropertyTree &_changeTree, CPTStack &_stack, CBranchChange &_rootChanges) : changeTree(&_changeTree), rootChanges(&_rootChanges), stack(_stack)
+    CSubscriberNotifyScanner(IPropertyTree &_changeTree, CPTStack &_stack, CBranchChange &_rootChanges) : stack(_stack), changeTree(&_changeTree), rootChanges(&_rootChanges)
     {
         INIT_NAMEDCOUNT;
         SDSManager->querySubscriberTable().getSubscribers(subs);
@@ -9117,7 +9117,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
 
         bool hadError;
 
-        CDeltaProcessor(IPropertyTree &_store, bool _stopOnError) : store(_store), stopOnError(_stopOnError), level(0)
+        CDeltaProcessor(IPropertyTree &_store, bool _stopOnError) : level(0), store(_store), stopOnError(_stopOnError)
         {
             sectionEndOffset = 0;
             hadError = false;

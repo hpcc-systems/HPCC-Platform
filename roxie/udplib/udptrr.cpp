@@ -1522,9 +1522,9 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int queue_size, bool _encrypted)
-        : collatorThread(*this), encrypted(_encrypted),
-        sendersTable([client_flow_port](const ServerIdentifier ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);}),
-        input_queue_size(queue_size), receive_flow_port(server_flow_port), data_port(d_port)
+        : sendersTable([client_flow_port](const ServerIdentifier ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);}),
+          collatorThread(*this),
+          input_queue_size(queue_size), receive_flow_port(server_flow_port), data_port(d_port), encrypted(_encrypted)
     {
 #ifndef _WIN32
         if (udpAdjustThreadPriorities)

@@ -377,7 +377,7 @@ class DALIFT_API JsonSplitter : implements IPTreeNotifyEvent, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart((offset_t)-1), rowEnd(0), footerLength((offset_t)-1), newRowSet(true), hasRootArray(false)
+    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : rowStart((offset_t)-1), rowEnd(0), headerLength(0), footerLength((offset_t)-1), pathPos(0), tangent(0), rowDepth(0), newRowSet(true), hasRootArray(false)
     {
         LOG(MCdebugProgressDetail, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
 

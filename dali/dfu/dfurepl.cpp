@@ -215,7 +215,7 @@ struct ReplicateFileItem: extends CInterface
     } thread;
 
     ReplicateFileItem(CReplicateServer &_parent,CDfsLogicalFileName _dlfn,IUserDescriptor *_userdesc,CDateTime _filedt)
-        : thread(*this), parent(_parent), dlfn(_dlfn), userdesc(_userdesc), filedt(_filedt)
+        : dlfn(_dlfn), userdesc(_userdesc), parent(_parent), filedt(_filedt), thread(*this)
     {
         stopping = true; // set false once started
     }
@@ -382,7 +382,7 @@ ReplicatePartItem::ReplicatePartItem(ReplicateFileItem &_parent,IDistributedFile
 }
 
 ReplicatePartCopyItem::ReplicatePartCopyItem(ReplicatePartItem &_parent,IFile *_file,unsigned pn)
-    : parent(_parent),file(_file)
+    : file(_file),parent(_parent)
 {
     from = NULL;
     try {

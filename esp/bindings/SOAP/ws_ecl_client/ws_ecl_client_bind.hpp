@@ -60,7 +60,7 @@ public:
     IMPLEMENT_IINTERFACE;
     
     CClientWsEclResponse(unsigned long cv=0, unsigned long reqId=0) : 
-    m_client_value(cv), m_request_id(reqId), m_ResultsXML(nilIgnore)
+    m_ResultsXML(nilIgnore), m_client_value(cv), m_request_id(reqId)
     {
     }
     
@@ -410,9 +410,9 @@ public:
     
     CClientWsEclRequest(const char *method) : 
             m_method(method), 
+            m_nsvar("m"),
             m_noSecurityHeader(false), 
             m_disableKeepAlive(false), 
-            m_nsvar("m"),
             m_itemTag("Item")
     { }
     

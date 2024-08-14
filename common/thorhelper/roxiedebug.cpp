@@ -265,7 +265,7 @@ protected:
 
 public:
     SimpleFieldSearcher(const char *_searchFieldName, const char *_expression, BreakpointConditionMode _mode, bool _caseSensitive) 
-        : searchFieldName(_searchFieldName), expression(_expression), mode(_mode), caseSensitive(_caseSensitive)
+        : expression(_expression), searchFieldName(_searchFieldName), mode(_mode), caseSensitive(_caseSensitive)
     {
         searchString = expression.get();
         searchStringLength = expression.length();
@@ -656,8 +656,8 @@ extern IRowMatcher *createRowMatcher(MemoryBuffer &serialized)
 CBreakpointInfo::CBreakpointInfo(BreakpointMode _mode, const char *_id, BreakpointActionMode _action,
                                            const char *_fieldName, BreakpointConditionMode _condition, const char *_value, bool _caseSensitive,
                                            unsigned _rowCount, BreakpointCountMode _rowCountMode)
-                                           : mode(_mode), id(_id), action(_action), condition(_condition),
-                                           rowCount(_rowCount), rowCountMode(_rowCountMode)
+                                           : mode(_mode), action(_action), condition(_condition),
+                                           rowCountMode(_rowCountMode), id(_id), rowCount(_rowCount)
 {
     uid = nextUID();
     rowMatcher.setown(createRowMatcher(_fieldName, _condition, _value, _caseSensitive));
@@ -2085,7 +2085,7 @@ bool CBaseDebugGraphManager::Release() const
     return CInterface::Release();
 }
 
-CBaseDebugGraphManager::CBaseDebugGraphManager(IDebuggableContext *_debugContext, unsigned _id, const char *_graphName) : debugContext(_debugContext), id(_id), graphName(_graphName)
+CBaseDebugGraphManager::CBaseDebugGraphManager(IDebuggableContext *_debugContext, unsigned _id, const char *_graphName) : debugContext(_debugContext), graphName(_graphName), id(_id)
 {
     if (_graphName)
         debugContext->noteManager(this);

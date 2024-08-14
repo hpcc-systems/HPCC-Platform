@@ -3149,7 +3149,7 @@ public:
     public:
         IMPLEMENT_IINTERFACE;
         cDFSredirect(CDFSredirection &_parent,const char *_infn)
-            : parent(_parent), infn(_infn)
+            : infn(_infn), parent(_parent)
         {
             // in crit sect
             idx = 0;

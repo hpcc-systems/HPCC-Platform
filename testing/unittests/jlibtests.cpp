@@ -1108,7 +1108,7 @@ protected:
         CppUnit::Exception *cppunitException;
     public:
         CBitThread(IBitSet &_bitSet, unsigned _startBit, unsigned _numBits, bool _initial)
-            : threaded("CBitThread", this), bitSet(_bitSet), startBit(_startBit), numBits(_numBits), initial(_initial)
+            : bitSet(_bitSet), startBit(_startBit), numBits(_numBits), initial(_initial), threaded("CBitThread", this)
         {
             cppunitException = NULL;
             setValue = !initial;
@@ -1744,7 +1744,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
     {
     public:
         Reader(IRowQueue & _source, Semaphore & _doneSem, unsigned _workScale)
-            : Thread("Reader"), source(_source), doneSem(_doneSem), workScale(_workScale), work(0)
+            : Thread("Reader"), source(_source), doneSem(_doneSem), work(0), workScale(_workScale)
         {
         }
 
@@ -1777,7 +1777,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
     {
     public:
         WriterBase(IRowQueue & _target, size_t _len, byte * _buffer, Semaphore & _startSem, Semaphore & _doneSem, unsigned _workScale)
-            : Thread("Writer"), target(_target), len(_len), buffer(_buffer), startSem(_startSem), doneSem(_doneSem), workScale(_workScale), work(0)
+            : Thread("Writer"), len(_len), buffer(_buffer), target(_target), startSem(_startSem), doneSem(_doneSem), work(0), workScale(_workScale)
         {
         }
 
@@ -3241,8 +3241,8 @@ public:
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
                 : startSem(_startSem), endSem(_endSem),
-                  lock1(_lock1), value1(_value1),
-                  lock2(_lock2), extraValues(_extraValues),
+                  lock1(_lock1), lock2(_lock2), 
+                  value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
             {
             }
@@ -3535,9 +3535,9 @@ public:
     {
     public:
         RWLockWriteTestThread(bool &_finished, ReadWriteLock & _lock, unsigned __int64 &_value)
-                : finished (_finished),
-                  lock(_lock),
-                  value(_value)
+                : lock(_lock),
+                  value(_value),
+                  finished (_finished)
         {
         }
 

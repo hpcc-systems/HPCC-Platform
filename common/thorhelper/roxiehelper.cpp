@@ -551,7 +551,7 @@ protected:
     const ICompare *compare;
 public:
     SortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_compare, ISortAlgorithm *_sorter)
-      : SortedInputReader(_input, _sorter), compare(_compare), eof(false), endGroupPending(false)
+      : SortedInputReader(_input, _sorter), eof(false), endGroupPending(false), compare(_compare)
     {
     }
 
@@ -1057,7 +1057,7 @@ class CSpillingSortAlgorithm : public CSortAlgorithm, implements roxiemem::IBuff
 public:
     CSpillingSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
         : rowsToSort(&_rowManager, InitialSortElements, CommitStep, _activityId),
-          rowManager(_rowManager), compare(_compare), rowMeta(_rowMeta), ctx(_ctx), tempDirectory(_tempDirectory), activityId(_activityId), stable(_stable)
+          compare(_compare), rowManager(_rowManager), rowMeta(_rowMeta), tempDirectory(_tempDirectory), ctx(_ctx), activityId(_activityId), stable(_stable)
     {
         rowManager.addRowBuffer(this);
     }
@@ -1804,7 +1804,7 @@ private:
     unsigned int sent = 0;
 public:
 
-    HttpResponseHandler(ISocket *s, CriticalSection &crit, bool keepAlive) : sock(s), c(crit), httpKeepAlive(keepAlive)
+    HttpResponseHandler(ISocket *s, CriticalSection &crit, bool keepAlive) : c(crit), sock(s), httpKeepAlive(keepAlive)
     {
     }
     inline bool compressing()
@@ -2000,7 +2000,7 @@ void FlushingStringBuffer::startBlock()
 }
 
 FlushingStringBuffer::FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, TextMarkupFormat _mlFmt, bool _isRaw, bool _isHttp, const IContextLogger &_logctx)
-  : sock(_sock), isBlocked(_isBlocked), mlFmt(_mlFmt), isRaw(_isRaw), isHttp(_isHttp), logctx(_logctx)
+  : sock(_sock), logctx(_logctx), mlFmt(_mlFmt), isRaw(_isRaw), isBlocked(_isBlocked), isHttp(_isHttp)
 {
     sequenceNumber = 0;
     rowCount = 0;

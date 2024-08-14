@@ -653,7 +653,7 @@ protected:
             Owned<IRemoteFileServer> server;
             Linked<ISocket> socket;
         public:
-            CServerThread(IRemoteFileServer *_server, ISocket *_socket) : server(_server), socket(_socket), threaded("CServerThread")
+            CServerThread(IRemoteFileServer *_server, ISocket *_socket) : threaded("CServerThread"), server(_server), socket(_socket)
             {
                 threaded.init(this, false);
             }

@@ -222,7 +222,7 @@ class SqLite3RowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
     SqLite3RowBuilder(sqlite3_stmt *_stmt)
-    : stmt(_stmt), val(NULL), colIdx(0)
+    : val(NULL), stmt(_stmt), colIdx(0)
     {
     }
     virtual bool getBooleanResult(const RtlFieldInfo *field)
@@ -319,7 +319,7 @@ class SqLite3RowStream : public CInterfaceOf<IRowStream>
 {
 public:
     SqLite3RowStream(sqlite3_stmt *_stmt, IEngineRowAllocator *_resultAllocator)
-    : stmt(_stmt), resultAllocator(_resultAllocator)
+    : resultAllocator(_resultAllocator), stmt(_stmt)
     {
         assertex(stmt);
     }
@@ -358,7 +358,7 @@ class SqLite3EmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     SqLite3EmbedFunctionContext(const IThorActivityContext *_activityCtx, unsigned _flags, const char *options)
-    : activityCtx(_activityCtx), flags(_flags), db(NULL)
+    : db(NULL), activityCtx(_activityCtx), flags(_flags)
     {
         const char *dbname = NULL;
         StringArray opts;

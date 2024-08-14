@@ -376,7 +376,7 @@ private:
 
 public:
     UPCList(BreakIterator* cbi, const UnicodeString & source, uint32_t capacity=0)
-        : length_(0), capacity_(capacity),ustring_(source), invalid_(false)
+        : ustring_(source), length_(0), capacity_(capacity), invalid_(false)
     {
         !cbi?doCreateUPCList():doCreateUPCList(*cbi);
     }
@@ -447,7 +447,7 @@ private:
 
 public:
     CEList(RuleBasedCollator& rbc, const UnicodeString & source, uint32_t capacity=0)
-        : length_(0), capacity_(capacity), ustring_(source), invalid(false)
+        : ustring_(source), length_(0), capacity_(capacity), invalid(false)
     {
         doCreateCEList(rbc);
     }

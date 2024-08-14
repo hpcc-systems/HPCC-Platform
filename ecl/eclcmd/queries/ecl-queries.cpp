@@ -435,8 +435,8 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false),
-        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
+    EclCmdQueriesCopy() : optMsToWait(10000), optActivate(false), optNoReload(false), optOverwrite(false), optUpdateSuperfiles(false), 
+                          optUpdateCloneFrom(false), optDontAppendCluster(false), optDontCopyFiles(false), optAllowForeign(false)
     {
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
@@ -705,8 +705,8 @@ private:
 class EclCmdQueriesCopyQueryset : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopyQueryset() : optCloneActiveState(false), optAllQueries(false), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false),
-        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
+    EclCmdQueriesCopyQueryset() : optCloneActiveState(false), optOverwrite(false), optUpdateSuperfiles(false), 
+                                  optUpdateCloneFrom(false), optDontAppendCluster(false), optDontCopyFiles(false), optAllowForeign(false), optAllQueries(false)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
@@ -895,7 +895,7 @@ private:
 class EclCmdQueriesConfig : public EclCmdCommon
 {
 public:
-    EclCmdQueriesConfig() : optNoReload(false), optMsToWait(10000)
+    EclCmdQueriesConfig() : optMsToWait(10000), optNoReload(false)
     {
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;

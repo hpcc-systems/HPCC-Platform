@@ -470,7 +470,7 @@ PUID GETPUID(DataBuffer *dataBuff)
     return (((PUID) ip4) << 32) | (PUID) pktHdr->msgSeq;
 }
 
-CMessageCollator::CMessageCollator(IRowManager *_rowMgr, unsigned _ruid, bool _encrypted) : rowMgr(_rowMgr), ruid(_ruid), encrypted(_encrypted)
+CMessageCollator::CMessageCollator(IRowManager *_rowMgr, unsigned _ruid, bool _encrypted) : rowMgr(_rowMgr), encrypted(_encrypted), ruid(_ruid)
 {
     memLimitExceeded = false;
     activity = false;

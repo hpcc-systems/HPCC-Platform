@@ -933,7 +933,7 @@ class CWsWuEmailHelper
     bool termOnJobFail;
 public:
     CWsWuEmailHelper(const char *_sender, const char *_to, const char *_mailServer, unsigned _port, bool _termOnJobFail)
-        : sender(_sender), to(_to), mailServer(_mailServer), port(_port), termOnJobFail(_termOnJobFail) {};
+        : mailServer(_mailServer), sender(_sender), to(_to), port(_port), termOnJobFail(_termOnJobFail) {};
 
     void setSubject(const char *_subject) { subject.set(_subject); };
     void setMimeType(const char *_mimeType) { mimeType.set(_mimeType); };
@@ -955,8 +955,8 @@ public:
 
     CGetThorSlaveLogToFileThreadParam(WsWuInfo* _wuInfo, IGroup* _nodeGroup,
         const char*_processName, const char*_logDir, unsigned _slaveNum, const char* _fileName)
-        : wuInfo(_wuInfo), nodeGroup(_nodeGroup), processName(_processName), logDir(_logDir),
-          slaveNum(_slaveNum), fileName(_fileName) { };
+        : wuInfo(_wuInfo), nodeGroup(_nodeGroup), slaveNum(_slaveNum), processName(_processName), logDir(_logDir),
+          fileName(_fileName) { };
 
     virtual void doWork()
     {

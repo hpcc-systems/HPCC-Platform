@@ -185,7 +185,7 @@ void doDescheduleWorkkunit(char const * wuid)
  */
 
 CWuGraphStats::CWuGraphStats(StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id, bool _merge)
-    : creatorType(_creatorType), creator(_creator), id(_id), merge(_merge)
+    : creator(_creator), creatorType(_creatorType), id(_id), merge(_merge)
 {
     StatsScopeId graphScopeId;
     verifyex(graphScopeId.setScopeText(_rootScope));
@@ -247,7 +247,7 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress) : wuid(_wuid), graphName(_graphName), progress(_progress)
+    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress) : progress(_progress), wuid(_wuid), graphName(_graphName)
     {
         if (!progress)
             progress.setown(createPTree());
@@ -560,7 +560,7 @@ static int compareEdgeNode(IInterface * const *ll, IInterface * const *rr)
 class CConstGraphProgressScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
 public:
-    CConstGraphProgressScopeIterator(const char * wuid, const ScopeFilter & _filter, __uint64 _minVersion) : filter(_filter), minVersion(_minVersion)
+    CConstGraphProgressScopeIterator(const char * wuid, const ScopeFilter & _filter, __uint64 _minVersion) : minVersion(_minVersion), filter(_filter)
     {
         //Examine the filter, and determine if we only need to look at a single graph/subgraph
         StringAttr singleGraph;
@@ -1425,7 +1425,7 @@ private:
     State state = SDone;
 
 public:
-    GraphScopeIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter) : graphIter(&wu->getGraphs(GraphTypeAny)), filter(_filter)
+    GraphScopeIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter) : filter(_filter), graphIter(&wu->getGraphs(GraphTypeAny))
     {
     }
 
@@ -3933,7 +3933,7 @@ class CDaliWorkUnit : public CPersistedWorkUnit
     friend class CDaliWuGraphStats;
 public:
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
-        : connection(_conn), CPersistedWorkUnit(secmgr, secuser)
+        : CPersistedWorkUnit(secmgr, secuser), connection(_conn)
     {
         loadPTree(connection->getRoot());
     }
@@ -6229,7 +6229,7 @@ public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CWorkUnitsPager(const char* _xPath, CQueryOrFilter* _orFilter, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
-                : xPath(_xPath), orFilter(_orFilter), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), orFilter(_orFilter)
             {
                 ForEachItemIn(x, _unknownAttributes)
                     unknownAttributes.append(_unknownAttributes.item(x));
@@ -10136,7 +10136,7 @@ WUGraphType getGraphTypeFromString(const char* type)
     return (WUGraphType) getEnum(type, graphTypes);
 }
 
-CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : p(props), owner(_owner)
+CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : owner(_owner), p(props)
 {
     wuidVersion = owner.getWuidVersion();
 }
@@ -10337,7 +10337,7 @@ template <class T, class U> class CFilteredGraphIteratorOf : public CInterfaceOf
     }
 public:
     CFilteredGraphIteratorOf<T,U>(T *_base, WUGraphType _type)
-        : base(_base), type(_type)
+        : type(_type), base(_base)
     {
     }
     bool first()

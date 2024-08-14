@@ -239,8 +239,8 @@ struct EclCompileInstance : public CInterfaceOf<ICodegenContextCallback>
 {
 public:
     EclCompileInstance(EclCC & _eclcc, IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures, bool _optIgnoreUnknownImport, bool _optXml) :
-      eclcc(_eclcc), inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename),
-      legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures), ignoreUnknownImport(_optIgnoreUnknownImport), optXml(_optXml)
+      eclcc(_eclcc), inputFile(_inputFile), outputFilename(_outputFilename), errout(_errout),
+      legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreUnknownImport(_optIgnoreUnknownImport), ignoreSignatures(_ignoreSignatures), optXml(_optXml), errorProcessor(&_errorProcessor)
 {
         stats.parseTime = 0;
         stats.generateTime = 0;
@@ -299,7 +299,7 @@ class EclCC final : implements CUnsharedInterfaceOf<ICodegenContextCallback>
 {
 public:
     EclCC(int _argc, const char **_argv)
-        : programName(_argv[0]), repositoryManager(this)
+        : repositoryManager(this), programName(_argv[0])
     {
         argc = _argc;
         argv = _argv;

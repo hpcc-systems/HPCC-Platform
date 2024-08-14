@@ -59,7 +59,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         // input tests
         struct templateInfo {
             templateInfo(const std::string &_json, bool _wantException, const std::string &_msg, bool _expectBadTemplate = false) :
-                    json(_json), expectFail(_wantException), testMsg(_msg), expectBadTemplate(_expectBadTemplate) {}
+                    json(_json), expectFail(_wantException), expectBadTemplate(_expectBadTemplate), testMsg(_msg) {}
             std::string json;
             bool expectFail;
             bool expectBadTemplate;

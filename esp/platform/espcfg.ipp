@@ -99,7 +99,7 @@ struct esp_option
     StringAttr frameTitle;
     unsigned slowProcessingTime; //default 30 seconds
 
-    esp_option() : logReq(LogRequestsNever), logResp(false), logLevel(LogMin), txSummaryLevel(LogMin), txSummaryStyle(TXSUMMARY_OUT_TEXT), txSummaryGroup(TXSUMMARY_GRP_CORE), txSummaryResourceReq(false), slowProcessingTime(30000)
+    esp_option() : logLevel(LogMin), logReq(LogRequestsNever), logResp(false), txSummaryLevel(LogMin), txSummaryStyle(TXSUMMARY_OUT_TEXT), txSummaryGroup(TXSUMMARY_GRP_CORE), txSummaryResourceReq(false), slowProcessingTime(30000)
     { }
 };
 

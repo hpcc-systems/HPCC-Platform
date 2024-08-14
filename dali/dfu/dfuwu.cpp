@@ -3057,7 +3057,7 @@ class CConstDFUWorkUnitIterator: implements IConstDFUWorkUnitIterator, public CI
 public:
     IMPLEMENT_IINTERFACE;
     CConstDFUWorkUnitIterator(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn,IPropertyTreeIterator *_iter)   // takes ownership of conn and iter
-        : parent(_parent), conn(_conn),iter(_iter)
+        : conn(_conn), iter(_iter), parent(_parent)
     {
     }
     ~CConstDFUWorkUnitIterator()

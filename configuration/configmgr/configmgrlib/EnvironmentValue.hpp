@@ -31,7 +31,7 @@ class CFGMGRLIB_API EnvironmentValue
     public:
 
         EnvironmentValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<SchemaValue> &pCfgValue, const std::string &name="") :
-            m_pMyEnvNode(pMyNode), m_pSchemaValue(pCfgValue), m_name(name), m_forcedSet(false) { }
+            m_forcedSet(false), m_name(name), m_pSchemaValue(pCfgValue), m_pMyEnvNode(pMyNode) { }
         EnvironmentValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<SchemaValue> &pCfgValue, const std::string &name, const std::string initValue) :
             EnvironmentValue(pMyNode, pCfgValue, name) { m_value = initValue; }
 

@@ -26,7 +26,7 @@
 
 
 struct modAttribute {
-    modAttribute() : duplicateSaveValueOk(false), doNotSet(false),
+    modAttribute() : doNotSet(false), duplicateSaveValueOk(false),
             errorIfNotFound(false), errorIfEmpty(false) {}
     ~modAttribute() = default;
     void addName(const std::string &_name) { names.emplace_back(_name); }

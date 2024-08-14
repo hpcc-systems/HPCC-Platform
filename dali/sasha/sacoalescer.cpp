@@ -175,7 +175,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaSDSCoalescingServer(IPropertyTree *_config)
-        : coalesceProps(_config), Thread("CSashaSDSCoalescingServer")
+        : Thread("CSashaSDSCoalescingServer"), coalesceProps(_config)
     {
         stopped = false;
     }

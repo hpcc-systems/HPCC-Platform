@@ -292,7 +292,8 @@ unsigned WaThread::queryDepth() const
 //-----------------------------------------------------------------------------------------------------------
 
 WuHotspotResult::WuHotspotResult(WuScope * _activity, const char * _sink, bool _isRoot, double _totalPercent, double _startPercent, double _myStartPercent, double _runPercent, bool _startSignificant, bool _runSignificant)
-: activity(_activity), sink(_sink), isRoot(_isRoot), totalPercent(_totalPercent), startPercent(_startPercent), myStartPercent(_myStartPercent), runPercent(_runPercent), startSignificant(_startSignificant), runSignificant(_runSignificant)
+: activity(_activity), sink(_sink), isRoot(_isRoot), 
+  startSignificant(_startSignificant), runSignificant(_runSignificant), totalPercent(_totalPercent), startPercent(_startPercent), myStartPercent(_myStartPercent), runPercent(_runPercent)
 {
 }
 

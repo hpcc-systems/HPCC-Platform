@@ -559,7 +559,7 @@ void ParquetReader::setCursor(MemoryBuffer & cursor)
  * @param _activityCtx Additional context about the thor workers running.
  */
 ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _maxRowCountInBatch, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx)
-    : partOption(option), destination(_destination), maxRowCountInBatch(_maxRowCountInBatch), overwrite(_overwrite), compressionOption(_compressionOption), activityCtx(_activityCtx)
+    : maxRowCountInBatch(_maxRowCountInBatch), partOption(option), destination(_destination), overwrite(_overwrite), activityCtx(_activityCtx), compressionOption(_compressionOption)
 {
     pool = arrow::default_memory_pool();
     if (activityCtx->querySlave() == 0 && startsWithIgnoreCase(partOption.c_str(), "write"))

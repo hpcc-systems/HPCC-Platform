@@ -1081,7 +1081,7 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
 
 public:
     CRemoteRequest(int _cursorHandle, OutputFormat _format, ICompressor *_compressor, IExpander *_expander, IRemoteActivity *_activity)
-        : cursorHandle(_cursorHandle), format(_format), compressor(_compressor), expander(_expander), activity(_activity)
+        : cursorHandle(_cursorHandle), format(_format), activity(_activity), compressor(_compressor), expander(_expander)
     {
         if (outFmt_Binary != format)
         {
@@ -1135,9 +1135,9 @@ enum OpenFileFlag { of_null=0x0, of_key=0x01 };
 struct OpenFileInfo
 {
     OpenFileInfo() { }
-    OpenFileInfo(int _handle, IFileIO *_fileIO, StringAttrItem *_filename) : handle(_handle), fileIO(_fileIO), filename(_filename) { }
+    OpenFileInfo(int _handle, IFileIO *_fileIO, StringAttrItem *_filename) : fileIO(_fileIO), filename(_filename), handle(_handle) { }
     OpenFileInfo(int _handle, CRemoteRequest *_remoteRequest, StringAttrItem *_filename)
-        : handle(_handle), remoteRequest(_remoteRequest), filename(_filename) { }
+        : remoteRequest(_remoteRequest), filename(_filename), handle(_handle) { }
     Linked<IFileIO> fileIO;
     Linked<CRemoteRequest> remoteRequest;
     Linked<StringAttrItem> filename; // for debug
@@ -1850,7 +1850,7 @@ class CRemoteMarkupReadActivity : public CRemoteExternalFormatReadActivity, impl
                 Linked<IColumnProvider> parentMatch;
                 const RtlRecord &nestedRecInfo;
             public:
-                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *xpath) : nestedRecInfo(_nestedRecInfo), parentMatch(_parentMatch)
+                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *xpath) : parentMatch(_parentMatch), nestedRecInfo(_nestedRecInfo)
                 {
                     xmlIter.initOwn(parentMatch->getChildIterator(xpath));
                 }
@@ -2866,7 +2866,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         IMPLEMENT_IINTERFACE;
 
         CRemoteClientHandler(CRemoteFileServer *_parent,ISocket *_socket,std::atomic<unsigned> &_globallasttick, bool _calledByRowService)
-            : socket(_socket), globallasttick(_globallasttick), calledByRowService(_calledByRowService)
+            : calledByRowService(_calledByRowService), socket(_socket), globallasttick(_globallasttick)
         {
             previdx = (unsigned)-1;
             StringBuffer peerBuf;
@@ -5946,7 +5946,7 @@ protected:
             Owned<CRemoteFileServer> server;
             Linked<ISocket> socket;
         public:
-            CServerThread(CRemoteFileServer *_server, ISocket *_socket) : server(_server), socket(_socket), threaded("CServerThread")
+            CServerThread(CRemoteFileServer *_server, ISocket *_socket) : threaded("CServerThread"), server(_server), socket(_socket)
             {
                 threaded.init(this, false);
             }
@@ -6143,7 +6143,7 @@ protected:
             StringAttr filePath;
             Semaphore doneSem;
         public:
-            CDelayedFileCreate(const char *_filePath) : filePath(_filePath), threaded("CDelayedFileCreate")
+            CDelayedFileCreate(const char *_filePath) : threaded("CDelayedFileCreate"), filePath(_filePath)
             {
                 threaded.init(this, false);
             }

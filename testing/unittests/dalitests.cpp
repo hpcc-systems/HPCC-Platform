@@ -828,7 +828,7 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
         public:
             IMPLEMENT_IINTERFACE;
 
-            CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : threaded("CNodeSubCommitThread"), xpath(_xpath), finalDelete(_finalDelete)
+            CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : xpath(_xpath), finalDelete(_finalDelete), threaded("CNodeSubCommitThread")
             {
             }
             virtual void threadmain() override
@@ -1172,7 +1172,7 @@ public:
                 bool sub;
                 CResult &result;
             public:
-                CSubscriber(CResult &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
+                CSubscriber(CResult &_result, const char *_xpath, bool _sub) : xpath(_xpath), sub(_sub), result(_result)
                 {
                 }
                 virtual void notify(SubscriptionId id, const char *_xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)

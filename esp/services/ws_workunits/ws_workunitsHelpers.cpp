@@ -1978,7 +1978,7 @@ class FilteredStatisticsVisitor : public WuScopeVisitorBase
 {
 public:
     FilteredStatisticsVisitor(WsWuInfo & _wuInfo, bool _createDescriptions, IArrayOf<IEspWUStatisticItem>& _statistics, const StatisticsFilter& _statsFilter)
-        : wuInfo(_wuInfo), statistics(_statistics), statsFilter(_statsFilter), createDescriptions(_createDescriptions) {}
+        : wuInfo(_wuInfo), statsFilter(_statsFilter), statistics(_statistics), createDescriptions(_createDescriptions) {}
 
     virtual void noteStatistic(StatisticKind curKind, unsigned __int64 value, IConstWUStatistic & cur) override
     {

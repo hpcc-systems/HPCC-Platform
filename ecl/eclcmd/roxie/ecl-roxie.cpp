@@ -681,7 +681,7 @@ enum class RoxieMemLockAction { lock=0, unlock=1, get=2 };
 class EclCmdRoxieMemLock : public EclCmdCommon
 {
 public:
-    EclCmdRoxieMemLock(RoxieMemLockAction _action) : action(_action), optMsToWait(30000)
+    EclCmdRoxieMemLock(RoxieMemLockAction _action) : optMsToWait(30000), action(_action)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)

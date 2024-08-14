@@ -143,7 +143,7 @@ class CDFUFile : public CSimpleInterfaceOf<IDFUFileAccess>, implements IDFUFileA
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CDFUFile(const char *_metaInfoBlobB64, const char *_fileId) : metaInfoBlobB64(_metaInfoBlobB64), fileId(_fileId)
+    CDFUFile(const char *_metaInfoBlobB64, const char *_fileId) : fileId(_fileId), metaInfoBlobB64(_metaInfoBlobB64)
     {
         MemoryBuffer compressedMetaInfoMb;
         JBASE64_Decode(metaInfoBlobB64, compressedMetaInfoMb);
@@ -941,7 +941,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
     CDFUPartReader(CDFUFile *file, unsigned part, unsigned copy, IOutputMetaData *_outMeta, bool _preserveGrouping)
-        : CDaFileSrvClientBase(file, part, copy), outMeta(_outMeta), prefetchBuffer(nullptr), preserveGrouping(_preserveGrouping)
+        : CDaFileSrvClientBase(file, part, copy), prefetchBuffer(nullptr), outMeta(_outMeta), preserveGrouping(_preserveGrouping)
     {
         checkAccess(SecAccess_Read);
         grouped = file->queryIsGrouped(); // inputGrouped. Will be sent to dafilesrv in request.

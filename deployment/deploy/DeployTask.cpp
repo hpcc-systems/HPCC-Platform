@@ -76,16 +76,19 @@ public:
                const char* sshUser, const char* sshKeyFile, const char* sshKeyPassphrase,
                bool useSsh, EnvMachineOS os, const char* processName=NULL)
     : m_caption(caption), m_compName(comp), 
-      m_instanceName(instance), m_processed(false), m_errorCode(0), 
-      m_abort(false), m_dummy(false), m_machineOS(os), m_flags(0),
-      m_processType(processType),
-      m_processName(processName),
-      m_targetFileWithWrongCase(false),
-      m_sshUser(sshUser),
+      m_instanceName(instance),
+      m_sshUser(sshUser), 
       m_sshKeyFile(sshKeyFile),
       m_sshKeyPassphrase(sshKeyPassphrase),
+      m_processed(false),
+      m_errorCode(0),
+      m_targetFileWithWrongCase(false),
+      m_abort(false),
+      m_dummy(false),
+      m_updateProgress(true),
       m_useSsh(useSsh),
-      m_updateProgress(true)
+      m_machineOS(os),
+      m_flags(0)
    {
       m_pCallback.set(&callback);
       m_fileSpec[DT_SOURCE].set(source ? source : "");

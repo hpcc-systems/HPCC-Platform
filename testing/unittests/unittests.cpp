@@ -960,7 +960,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         class T : public CThreaded
         {
         public:
-            T(unsigned _count, RelaxedAtomic<int> &_ra, CriticalSection &_lock, unsigned _mode) : CThreaded(""), count(_count), ra(_ra), lock(_lock), mode(_mode) 
+            T(unsigned _count, RelaxedAtomic<int> &_ra, CriticalSection &_lock, unsigned _mode) : CThreaded(""), mode(_mode), count(_count), ra(_ra), lock(_lock)
             {}
             virtual int run() override
             {

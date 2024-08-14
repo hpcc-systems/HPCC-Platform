@@ -1514,7 +1514,7 @@ public:
         createNewContext(config);
     }
 
-    CSecureSocketContext(const ISyncedPropertyTree* _syncedConfig, SecureSocketType _sockettype) : syncedConfig(_syncedConfig), sockettype(_sockettype)
+    CSecureSocketContext(const ISyncedPropertyTree* _syncedConfig, SecureSocketType _sockettype) : sockettype(_sockettype), syncedConfig(_syncedConfig)
     {
         Owned<const IPropertyTree> config;
         if (syncedConfig)

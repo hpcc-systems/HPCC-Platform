@@ -471,14 +471,14 @@ class CGenerateJSFromXSD
 {
 public:
   CGenerateJSFromXSD(const IPropertyTree* pEnv, const char* xsdName, const char* jsName):
-      m_xsdName(xsdName), m_jsName(jsName), m_pCompTree(NULL), m_pSchemaRoot(NULL),m_pDefTree(NULL),m_numAttrs(0),m_allSubTypes(true),m_genOptional(true)
+      m_pSchemaRoot(NULL), m_pCompTree(NULL), m_pDefTree(NULL), m_xsdName(xsdName), m_jsName(jsName), m_numAttrs(0), m_allSubTypes(true), m_genOptional(true)
       {
         m_pEnv.set(pEnv);
         m_colIndex.append("var colIndex = new Array();");
         m_columns.append("var tabCols = new Array();");
       }
       CGenerateJSFromXSD(const IPropertyTree* pEnv, IPropertyTree* pSchemaRoot, const char* jsName, const char* compName):
-      m_pSchemaRoot(pSchemaRoot), m_jsName(jsName), m_compName(compName),m_pCompTree(NULL), m_pDefTree(NULL),m_numAttrs(0),m_allSubTypes(true),m_wizFlag(false),m_wizard(NULL),m_genOptional(true)
+      m_pSchemaRoot(pSchemaRoot), m_pCompTree(NULL), m_pDefTree(NULL), m_jsName(jsName), m_compName(compName), m_numAttrs(0), m_allSubTypes(true), m_wizFlag(false), m_genOptional(true), m_wizard(NULL)
       {
         m_pEnv.set(pEnv);
         m_colIndex.append("var colIndex = new Array();");

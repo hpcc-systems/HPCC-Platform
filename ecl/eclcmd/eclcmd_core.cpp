@@ -313,8 +313,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(300000), optAllowForeign(false), optUpdateDfs(false),
+    EclCmdPublish() : optMsToWait(300000), optNoActivate(false), activateSet(false), optNoReload(false), optDontCopyFiles(false), optSuspendPrevious(false), optDeletePrevious(false), optAllowForeign(false), optUpdateDfs(false),
         optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
@@ -611,7 +610,7 @@ inline unsigned nextWait(unsigned wait, unsigned waited)
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false), optExceptionSeverity("info")
+    EclCmdRun() : optExceptionSeverity("info"), optWaitTime((unsigned)-1), optNoRoot(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }

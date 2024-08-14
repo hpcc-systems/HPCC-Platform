@@ -532,14 +532,14 @@ IPropertyTreeIterator *CRemoteConnection::getElements(const char *xpath, IPTIter
 /////////////////
 
 CClientRemoteTree::CClientRemoteTree(CRemoteConnection &conn, CPState _state)
-    : CRemoteTreeBase(NULL, NULL, NULL), connection(conn), serverTreeInfo(0), state(_state)
+    : CRemoteTreeBase(NULL, NULL, NULL), state(_state), serverTreeInfo(0), connection(conn)
 {
     INIT_NAMEDCOUNT;
     assertex(!isnocase());
 }
 
 CClientRemoteTree::CClientRemoteTree(const char *name, IPTArrayValue *value, ChildMap *children, CRemoteConnection &conn, CPState _state)
-    : CRemoteTreeBase(name, value, children), connection(conn), serverTreeInfo(0), state(_state)
+    : CRemoteTreeBase(name, value, children), state(_state), serverTreeInfo(0), connection(conn)
 {
     INIT_NAMEDCOUNT;
     assertex(!isnocase());

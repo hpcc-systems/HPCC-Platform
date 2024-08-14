@@ -35,7 +35,7 @@
 // Good online resource for validation of modification templates is https://www.jsonschemavalidator.net/
 // Load the schecma (ModTemplateSchema.json) in the left window and the modification template in the right.
 
-EnvModTemplate::EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &schemaFile) : m_pEnvMgr(pEnvMgr), m_pTemplate(nullptr), m_pSchema(nullptr)
+EnvModTemplate::EnvModTemplate(EnvironmentMgr *pEnvMgr, const std::string &schemaFile) : m_pSchema(nullptr), m_pTemplate(nullptr), m_pEnvMgr(pEnvMgr)
 {
     if (m_pEnvMgr == nullptr)
     {

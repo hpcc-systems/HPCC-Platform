@@ -25,7 +25,7 @@ class SchemaTypeIntegerLimits : public SchemaTypeLimits
 {
     public:
 
-        SchemaTypeIntegerLimits() : m_min(INT_MIN), m_max(INT_MAX), m_minSet(false), m_maxSet(false), m_minExclusiveTest(false), m_maxExclusiveTest(false) { }
+        SchemaTypeIntegerLimits() : m_maxExclusiveTest(false), m_minExclusiveTest(false), m_minSet(false), m_maxSet(false), m_min(INT_MIN), m_max(INT_MAX)  { }
         virtual ~SchemaTypeIntegerLimits() { };
         void setMinInclusive(int v) { m_minSet = true; m_min = v; }
         void setMinExclusive(int v) { m_minSet = true; m_min = v;  m_minExclusiveTest = true; }

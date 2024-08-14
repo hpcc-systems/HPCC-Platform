@@ -27,7 +27,7 @@
 #include "eclrtl_imp.hpp"
 #include "nbcd.hpp"
 
-CommonFieldProcessor::CommonFieldProcessor(StringBuffer &_result, bool _trim) : result(_result), trim(_trim)
+CommonFieldProcessor::CommonFieldProcessor(StringBuffer &_result, bool _trim) : trim(_trim), result(_result)
 {
 }
 void CommonFieldProcessor::processString(unsigned len, const char *value, const RtlFieldInfo * field)

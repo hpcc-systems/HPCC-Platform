@@ -4835,7 +4835,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
 
     public:
         CDFUFileMetaDataReader(IEspContext& _context, const IResultSetMetaData& _meta)
-            : context(_context), metaRoot(_meta), readRootLevelColumns(true)
+            : metaRoot(_meta), readRootLevelColumns(true), context(_context)
         {
             readColumns(&metaRoot, dataColumns);
         };

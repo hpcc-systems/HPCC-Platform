@@ -139,7 +139,7 @@ class AbortWaiter : public Thread
 {
 public:
     AbortWaiter(IConstWorkUnit *_wu, unsigned _timeLimit)
-        : Thread("EclccCompileThread::AbortWaiter"), wu(_wu), timeLimit(_timeLimit)
+        : Thread("EclccCompileThread::AbortWaiter"), timeLimit(_timeLimit), wu(_wu)
     {
     }
 
@@ -1228,7 +1228,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
 public:
     IMPLEMENT_IINTERFACE;
     EclccServer(const char *_queueName, unsigned _poolSize)
-        : updatedQueueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
+        : poolSize(_poolSize), serverstatus("ECLCCserver"), updatedQueueNames(_queueName)
     {
         threadsActive = 0;
         running = false;

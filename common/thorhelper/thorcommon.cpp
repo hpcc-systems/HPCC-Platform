@@ -1129,7 +1129,7 @@ protected:
     }
 public:
     CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), emptyRowSemantics(_emptyRowSemantics), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback)
+        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
@@ -1700,7 +1700,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CDiskMerger(IRowInterfaces *_rowInterfaces, IRowLinkCounter *_linker, const char *_tempnamebase)
-        : rowInterfaces(_rowInterfaces), linker(_linker), tempnamebase(_tempnamebase)
+        : tempnamebase(_tempnamebase), linker(_linker), rowInterfaces(_rowInterfaces)
     {
         strms = NULL;
     }

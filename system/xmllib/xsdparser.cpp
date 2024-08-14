@@ -73,7 +73,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CSimpleType(const char* name, size_t nAttrs=0, CXmlAttribute** attrs=NULL) 
-        : m_name(name), m_nAttrs(nAttrs), m_attrs(attrs) { }
+        : m_name(name), m_attrs(attrs), m_nAttrs(nAttrs) { }
 
     virtual ~CSimpleType() 
     { 
@@ -465,8 +465,8 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs, bool *repeats)
-        : m_name(name), m_subType(subType), m_fldCount(count), m_fldNames(names), 
-        m_fldTypes(els), m_nAttrs(nAttrs), m_attrs(attrs), m_fldRepeats(repeats) { }
+        : m_name(name), m_fldCount(count), m_fldNames(names), m_fldTypes(els), 
+          m_fldRepeats(repeats), m_nAttrs(nAttrs), m_attrs(attrs), m_subType(subType)  { }
     
     virtual ~CComplexType() 
     { 

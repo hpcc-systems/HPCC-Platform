@@ -60,7 +60,7 @@ public:
     struct Scope
     {
         Scope(CumulativeTimer* t)
-            : mTimer(t), mStart(0)
+            : mStart(0), mTimer(t)
         {
             if (mTimer)
                 mTimer->incNesting();

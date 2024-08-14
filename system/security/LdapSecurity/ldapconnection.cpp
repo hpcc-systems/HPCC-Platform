@@ -3683,8 +3683,8 @@ public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CElementsPager(ILdapClient* _ldapClient, SecResourceType _rtype, const char * _basedn, const char* _resourceName,
-                unsigned _extraNameFilter, const char*_sortOrder) : ldapClient(_ldapClient), rtype(_rtype), basedn(_basedn),
-                resourceName(_resourceName), extraNameFilter(_extraNameFilter), sortOrder(_sortOrder) { };
+                unsigned _extraNameFilter, const char*_sortOrder) : ldapClient(_ldapClient), sortOrder(_sortOrder), basedn(_basedn),
+                resourceName(_resourceName), rtype(_rtype), extraNameFilter(_extraNameFilter) { };
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
             {
                 StringArray unknownAttributes;
@@ -3803,8 +3803,9 @@ public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CElementsPager(ILdapClient* _ldapClient, const char* _name, enum ACCOUNT_TYPE_REQ _accountType, const char* _baseDN,
-                const char* _rtype, const char* _prefix, const char*_sortOrder) : ldapClient(_ldapClient), name(_name),
-                accountType(_accountType), baseDN(_baseDN), rtype(_rtype), prefix(_prefix), sortOrder(_sortOrder) { };
+                const char* _rtype, const char* _prefix, const char*_sortOrder) 
+                : ldapClient(_ldapClient), sortOrder(_sortOrder), name(_name), baseDN(_baseDN), rtype(_rtype), prefix(_prefix), accountType(_accountType)
+            { }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
             {
                 StringArray unknownAttributes;
@@ -4522,7 +4523,7 @@ public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CElementsPager(ILdapClient* _ldapClient, const char*_groupName, const char*_sortOrder)
-                : ldapClient(_ldapClient), groupName(_groupName), sortOrder(_sortOrder) { };
+                : ldapClient(_ldapClient), sortOrder(_sortOrder), groupName(_groupName) { };
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
             {
                 StringArray unknownAttributes;

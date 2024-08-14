@@ -36,7 +36,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     WuExpandedResultBuffer(const char *queryname, unsigned _flags=0) :
-        name(queryname), resultlevel(0), finalized(false), flags(_flags), hasXmlns(false)
+        name(queryname), hasXmlns(false), finalized(false), flags(_flags), resultlevel(0)
     {
         if (flags & (WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES))
         {
@@ -295,14 +295,14 @@ public:
     IMPLEMENT_IINTERFACE
 
     WuWebView(IConstWorkUnit &wu, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay, IPropertyTree *xsltcfg) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target), xsltConfig(xsltcfg)
+        xsltConfig(xsltcfg), target(_target), dir(wdir), mapEspDirectories(mapEspDir), manifestIncludePathsSet(false), delayedDll(delay)
     {
         name.set(queryname);
         setWorkunit(wu);
     }
 
     WuWebView(const char *wuid, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay, IPropertyTree *xsltcfg) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target), xsltConfig(xsltcfg)
+        xsltConfig(xsltcfg), target(_target), dir(wdir), mapEspDirectories(mapEspDir), manifestIncludePathsSet(false), delayedDll(delay)
     {
         name.set(queryname);
         setWorkunit(wuid);

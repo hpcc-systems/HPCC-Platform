@@ -45,9 +45,9 @@ public:
         IPropertyTree* pSelectedComponents)
         : m_environment(environment), 
         m_transform(NULL), 
-        m_abort(false),
         m_espModuleCount(0), 
         m_tempFileCount(0),
+        m_abort(false),
         m_bLinuxDeployment(false),
         m_bInteractiveMode(true)
     {

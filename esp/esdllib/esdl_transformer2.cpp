@@ -176,7 +176,7 @@ void Esdl2LocalContext::handleDataFor(IXmlWriterExt & writer)
 // class Esdl2Base
 
 Esdl2Base::Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, EsdlBasicElementType t, bool might_skip_root_)
-: m_def(def), might_skip_root(might_skip_root_), data_for(NULL), type_id(t)
+: m_def(def), type_id(t), data_for(NULL), might_skip_root(might_skip_root_)
 {
     if (def->queryProp("optional"))
         param_group.set(def->queryProp("optional"));

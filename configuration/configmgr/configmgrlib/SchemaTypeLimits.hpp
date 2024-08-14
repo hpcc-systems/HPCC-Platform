@@ -31,7 +31,7 @@ class EnvironmentValue;
 struct CFGMGRLIB_API AllowedValue
 {
     AllowedValue() {}
-    AllowedValue(const std::string &value, const std::string &desc="") : m_value(value), m_displayName(value), m_description(desc) { }
+    AllowedValue(const std::string &value, const std::string &desc="") : m_displayName(value), m_value(value), m_description(desc) { }
     void addDependentValue(const std::string &attribute, const std::string &value);
     const std::vector<NameValue> &getDependencies() const { return m_dependencies;  }
     bool hasDependencies() const { return m_dependencies.size() > 0; }

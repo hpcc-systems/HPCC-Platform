@@ -490,7 +490,7 @@ public:
         m_computerUpTime.clear();
     }
     CMachineData(const char* networkAddress, const char* networkAddressInEnvSetting, EnvMachineOS os, char pathSep)
-        : m_os(os), m_pathSep(pathSep)
+        : m_pathSep(pathSep), m_os(os)
     {
         m_networkAddress = networkAddress;
         m_networkAddressInEnvSetting = networkAddressInEnvSetting;
@@ -1004,7 +1004,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CUsageCacheReader(Cws_machineEx *_service, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : servicePtr(_service), CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
+        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds), servicePtr(_service) {}
 
     virtual CInfoCache *read() override;
 };

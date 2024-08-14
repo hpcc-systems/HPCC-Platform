@@ -468,7 +468,7 @@ class ArchiveDirectoryIterator : implements IDirectoryIterator, public CInterfac
 public:
     IMPLEMENT_IINTERFACE;
     ArchiveDirectoryIterator(const char *_containedFileName, const char *_mask, bool _sub, bool _includeDirs)
-    : mask(_mask), sub(_sub), includeDirs(_includeDirs)
+    : mask(_mask), includeDirs(_includeDirs), sub(_sub)
     {
         splitArchivedFileName(_containedFileName, container, option, relDir);
         curIndex = 0;

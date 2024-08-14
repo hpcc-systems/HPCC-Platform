@@ -57,7 +57,7 @@ class FILEVIEW_API ViewFile : public CInterface, implements IViewRelatedFile
 {
     friend class ViewFileWeb;
 public:
-    ViewFile(unsigned _uid, ViewProcessOptions & _options, IDistributedFile * _definition) : uid(_uid), options(_options), definition(_definition) {}
+    ViewFile(unsigned _uid, ViewProcessOptions & _options, IDistributedFile * _definition) : options(_options), definition(_definition), uid(_uid) {}
     IMPLEMENT_IINTERFACE
 
     virtual IDistributedFile * queryDistributedFile() const { return definition; }
@@ -170,7 +170,7 @@ struct BrowseCreateInfo
 {
 public:
     inline BrowseCreateInfo(CFileTreeBrowser * _browser, bool _isEfficient, unsigned _maxRecursion) 
-        : browser(_browser), isEfficient(_isEfficient), maxRecursion(_maxRecursion) {}
+        : browser(_browser), maxRecursion(_maxRecursion), isEfficient(_isEfficient) {}
 
     unsigned getNestingCount(const ViewFile * search);
     

@@ -50,7 +50,7 @@ class DiskReadMapping : public CInterfaceOf<IDiskReadMapping>
 {
 public:
     DiskReadMapping(RecordTranslationMode _mode, const char * _format, unsigned _actualCrc, IOutputMetaData & _actual, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, IOutputMetaData & _output, const IPropertyTree * _fileOptions)
-    : mode(_mode), format(_format), actualCrc(_actualCrc), actualMeta(&_actual), expectedCrc(_expectedCrc), expectedMeta(&_expected), projectedCrc(_projectedCrc), projectedMeta(&_output), fileOptions(_fileOptions)
+    : mode(_mode), format(_format), actualCrc(_actualCrc), expectedCrc(_expectedCrc), projectedCrc(_projectedCrc), actualMeta(&_actual), expectedMeta(&_expected), projectedMeta(&_output), fileOptions(_fileOptions)
     {}
 
     virtual const char * queryFormat() const override { return format; }
@@ -268,7 +268,7 @@ protected:
 
 
 DiskRowReader::DiskRowReader(IDiskReadMapping * _mapping)
-: mapping(_mapping), actualDiskMeta(_mapping->queryActualMeta()), allocatedBuilder(nullptr)
+: allocatedBuilder(nullptr), mapping(_mapping), actualDiskMeta(_mapping->queryActualMeta())
 {
     //Options contain information that is the same for each file that is being read, and potentially expensive to reconfigure.
     translator = mapping->queryTranslator();
@@ -1183,7 +1183,7 @@ private:
                 Linked<IColumnProvider> parentMatch;
                 const RtlRecord &nestedRecInfo;
             public:
-                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *xpath) : nestedRecInfo(_nestedRecInfo), parentMatch(_parentMatch)
+                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *xpath) : parentMatch(_parentMatch), nestedRecInfo(_nestedRecInfo)
                 {
                     xmlIter.initOwn(parentMatch->getChildIterator(xpath));
                 }
@@ -1433,7 +1433,7 @@ class CompoundProjectRowReader : extends CInterfaceOf<IDiskRowStream>, implement
     IDiskRowStream * rawInputStream = nullptr;
 public:
     CompoundProjectRowReader(IDiskRowReader * _input, IDiskReadMapping * _mapping)
-    : inputReader(_input), mapping(_mapping), bufferBuilder(tempOutputBuffer, 0), allocatedBuilder(nullptr)
+    : mapping(_mapping), inputReader(_input), bufferBuilder(tempOutputBuffer, 0), allocatedBuilder(nullptr)
     {
         const RtlRecord &inRecord = mapping->queryExpectedMeta()->queryRecordAccessor(true);
         const RtlRecord &outRecord = mapping->queryProjectedMeta()->queryRecordAccessor(true);
@@ -1622,7 +1622,7 @@ class CParquetActivityContext : public IThorActivityContext
 {
 public:
     CParquetActivityContext(bool _local, unsigned _numWorkers, unsigned _curWorker)
-    : local(_local), workers(_local ? 1 : _numWorkers), curWorker(_local ? 0 : _curWorker)
+    : workers(_local ? 1 : _numWorkers), curWorker(_local ? 0 : _curWorker), local(_local)
     {
         assertex(curWorker < workers);
     }
