@@ -2094,7 +2094,7 @@ SRes LzmaEnc_MemPrepare(CLzmaEncHandle pp, const Byte *src, SizeT srcLen,
   return LzmaEnc_AllocAndInit(p, keepWindowSize, alloc, allocBig);
 }
 
-void LzmaEnc_Finish(CLzmaEncHandle pp)
+void LzmaEnc_Finish([[ maybe_unused]] CLzmaEncHandle pp)
 {
 #ifdef COMPRESS_MF_MT
   CLzmaEnc *p = (CLzmaEnc *)pp;
