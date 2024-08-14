@@ -1311,9 +1311,9 @@ public:
         return packagename;
     }
 
-    const void setExtendedAttributes(bool mode);
+    void setExtendedAttributes(bool mode);
 
-    const bool getExtendedAttributes();
+    bool getExtendedAttributes();
 
     char* filename;
     StringBuffer name;
