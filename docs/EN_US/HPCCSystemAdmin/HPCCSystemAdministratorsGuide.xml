@@ -431,36 +431,8 @@
   <chapter id="SysAdm_HW_and_SW-Req">
     <title>Hardware and Software Requirements</title>
 
-    <para>This chapter describes some of the hardware and software
-    requirements in order to run the HPCC Systems platform. HPCC Systems is
-    designed to run on commodity hardware, which makes building and
-    maintaining large scale (petabytes) clusters economically feasible. When
-    planning your cluster hardware, you will need to balance a number of
-    considerations specific to your needs.</para>
-
-    <para>This section provides some insight into the hardware and
-    infrastructure that HPCC Systems works well on. This is not an exclusive
-    comprehensive set of instructions, nor a mandate on what hardware you must
-    have. Consider this as a guide to use when looking to implement or scale
-    your HPCC Systems platform. These suggestions should be taken into
-    consideration for your specific enterprise needs.</para>
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-Switch'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-LoadBalancer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="xpointer(//*[@id='System_sizings'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='Nodes-Software'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-  </chapter>
+    <para>This chapter provides an overview of the hardware and software requirements for running HPCC Systems optimally. While these requirements were significant when HPCC Systems was first deployed many years ago, there have been substantial improvements in hardware since then. The platform now supports virtual containers and cloud deployments, making the requirements less significant even for large-scale (petabytes) bare-metal deployments. In fact, HPCC Systems should perform satisfactorily on most modern hardware configurations.</para>
+   </chapter>
 
   <chapter id="SysAdm_HWSizing">
     <title>Hardware and Components</title>
