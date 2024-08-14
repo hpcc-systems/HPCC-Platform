@@ -1117,7 +1117,6 @@ class CDeltaWriter : implements IThreaded
     unsigned transactionQueueLimit = defaultDeltaTransactionQueueLimit; // absolute limit, will block if this far behind
     memsize_t transactionMaxMem = defaultDeltaMemMaxMB * 0x100000; // 10MB
     unsigned totalQueueLimitHits = 0;
-    unsigned addQueueWaiting = 0;
     unsigned saveThresholdSecs = 0;
     cycle_t lastSaveTime = 0;
     cycle_t thresholdDuration = 0;

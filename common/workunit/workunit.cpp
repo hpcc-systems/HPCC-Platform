@@ -1423,7 +1423,6 @@ private:
         SDone
     };
     State state = SDone;
-    State nextState = SDone;
 
 public:
     GraphScopeIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter) : graphIter(&wu->getGraphs(GraphTypeAny)), filter(_filter)
