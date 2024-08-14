@@ -952,7 +952,6 @@ void CHttpProxyThread::start()
 int CHttpProxyThread::run()
 {
     Thread::Link();
-
     int ret = 0;
     try
     {
@@ -1102,7 +1101,7 @@ int CHttpProxyThread::run()
 
     Thread::Release();
 
-    return 0;
+    return ret;
 }
 
 int CHttpProxyThread::readline(ISocket* socket, char* buf, int bufsize, bool& socketclosed)
