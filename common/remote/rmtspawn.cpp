@@ -465,7 +465,7 @@ void CRemoteSlave::run(int argc, const char * * argv)
                         msg.read(numPasswds);
                         if (numPasswds <= 10)
                         {
-                            for (int i=0; i<numPasswds; i++)
+                            for (unsigned i=0; i<numPasswds; i++)
                             {
                                 IpAddress tip;
                                 tip.ipdeserialize(msg);
