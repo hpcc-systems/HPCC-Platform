@@ -131,6 +131,8 @@ protected:
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
     bool isMalformedUserName(const char *userName);
 
+    void traceRequest(IEspContext* ctx, const char* normalizedMethod);
+
 public:
     IMPLEMENT_IINTERFACE;
 
