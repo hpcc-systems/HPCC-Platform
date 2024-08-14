@@ -22,6 +22,7 @@
 #####################################################
 
 project( roxiemem ) 
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 if(USE_TBB)
     find_package(TBB CONFIG REQUIRED)

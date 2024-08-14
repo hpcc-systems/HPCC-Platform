@@ -156,7 +156,7 @@ public:
         allReceived = 0;
     }
 
-    virtual void start()
+    void startReceiver()
     {
         Thread::start(false);
         started.wait();
@@ -297,7 +297,7 @@ void testNxN()
     DBGLOG("Ready to start");
     if (receiving)
     {
-        receiver.start();
+        receiver.startReceiver();
         if (numNodes > 1)
             Sleep(5000);
     }
@@ -563,7 +563,7 @@ public:
     }
     void sendTo(unsigned datasize, unsigned slaveIdx)
     {
-        assert(slaveIdx != myIdx);
+        assert(slaveIdx != (unsigned) myIdx);
         DBGLOG("Node %d sending %d bytes to node %d", myIdx, datasize, slaveIdx);
         master->noteTransferStart(myIdx, slaveIdx);
         Sleep(datasize);

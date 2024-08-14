@@ -16,6 +16,7 @@
 
 
 project( ccdcache ) 
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (   SRCS 
         ccdcache.cpp

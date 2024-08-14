@@ -953,8 +953,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         void noteDone(UdpSenderEntry *requester, const UdpRequestToSendMsg &msg)
         {
             const unsigned flowSeq = msg.flowSeq;
-            SendPermit * permit = requester->queryPermit(flowSeq);
-
             //A completed message, on the data flow, may often be received after the next request to send.
             //If so it should not update the state, but it should clear all grants with a flowid <= the new flowid
             //since all the data will have been sent. (If it has not been received it is either lost or OOO (unlikely).)
@@ -1538,7 +1536,7 @@ public:
         //any other sender for the udpPermitTimeout period
         unsigned maxSlotsPerClient = (udpMaxPendingPermits == 1) ? queue_size : (udpMaxClientPercent * queue_size) / (udpMaxPendingPermits * 100);
         assertex(maxSlotsPerClient != 0);
-        if (maxSlotsPerClient > queue_size)
+        if ((int) maxSlotsPerClient > queue_size)
             maxSlotsPerClient = queue_size;
         if (udpResendLostPackets && maxSlotsPerClient > TRACKER_BITS)
             maxSlotsPerClient = TRACKER_BITS;
