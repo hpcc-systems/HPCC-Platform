@@ -217,14 +217,12 @@ public:
             }
             if (r2==0)
                 return GRdisjoint;
-            bool somematch=false;
             if (r1==r2) { // check for identical
                 r=r1;
                 for (;;) {
                     r--;
                     if (!nodes[r]->equals(&grp->queryNode(r)))
                         break;
-                    somematch = true;
                     if (r==0)
                         return GRidentical;
                 }
