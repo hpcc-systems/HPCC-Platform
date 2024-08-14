@@ -86,7 +86,7 @@ void KeyCompressor::openBlob(void *blk,int blksize)
     method = comp->getCompressionMethod();
 }
 
-int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned __int64 sequence)
+int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
 {
     assert(!isBlob);
     comp->startblock(); // start transaction

@@ -400,7 +400,7 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     {
         if (0 == hdr.numKeys)
             lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, keyHdr->isVariable(), (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY);
-        if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize, sequence))
+        if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize))
         {
             lzwcomp.close();
             return false;
