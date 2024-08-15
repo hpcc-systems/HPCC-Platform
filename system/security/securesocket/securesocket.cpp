@@ -1243,9 +1243,6 @@ static bool useCertificateChainPEMBuffer(SSL_CTX *ctx, const char *certBuf, int 
                 if (!SSL_CTX_use_certificate(ctx, infoVal->x509))
                     return false;
 
-                if (ERR_peek_last_error() != 0)
-                    return false;
-
                 // Get ready to store intermediate certs, if any.
                 SSL_CTX_clear_chain_certs(ctx);
             }
