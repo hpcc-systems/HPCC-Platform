@@ -442,7 +442,7 @@
     for implementar ou dimensionar seu HPCC System. As sugestões devem ser
     levadas em conta de acordo com as suas necessidades empresariais
     específicas.</para>
-
+<!-- COMMENTING FOR TEST - THIS WHOLE SECTION SHOULD BE REMOVED. 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
                 xpointer="xpointer(//*[@id='HW-Switch'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -457,7 +457,7 @@
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
                 xpointer="xpointer(//*[@id='Nodes-Software'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>  -->
   </chapter>
 
   <chapter id="SysAdm_HWSizing">
