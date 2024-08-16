@@ -282,6 +282,87 @@ protected:
 };
 
 
+//A very large row (because of a large embedded dataset)
+//100 bytes of data then 500K rows of 100 bytes
+class LargeRowDataProvider : public CDataProvider
+{
+public:
+    LargeRowDataProvider(bool _useCount, unsigned _numChildren) : useCount(_useCount), numChildren(_numChildren)
+    {
+        name.append("Large_").append(useCount ? 'C' : 'S').append(numChildren);
+    }
+
+    virtual size32_t create(IBufferedSerialOutputStream * target, unsigned row)
+    {
+        //Output (row, (string)row, (row % 7)items of (row, row*2, row*3))
+        byte mainRow[100];
+        unsigned childRow[25];
+
+        for (size32_t i=0; i < sizeof(mainRow); i++)
+            mainRow[i] = (byte)(i * row);
+        target->put(sizeof(mainRow), mainRow);
+
+        size32_t childCount = numChildren + row;
+        size32_t childSize = sizeof(childRow) * childCount;
+        if (useCount)
+            target->put(4, &childCount);
+        else
+            target->suspend(sizeof(size32_t));
+
+        unsigned next = 1234 + row * 31419264U;
+        for (unsigned i=0; i < childCount; i++)
+        {
+            for (size32_t i=0; i < sizeof(mainRow)/sizeof(next); i++)
+            {
+                childRow[i] = next;
+                next *= 0x13894225;
+                next += row;
+            }
+            target->put(sizeof(childRow), &childRow);
+        }
+        if (!useCount)
+            target->resume(sizeof(childSize), &childSize);
+
+        return sizeof(mainRow) + 4 + childSize;
+    }
+
+    virtual size32_t check(IBufferedSerialInputStream * source, unsigned row)
+    {
+        byte mainRow[100];
+        unsigned childRow[25];
+
+        source->read(sizeof(mainRow), &mainRow);
+        for (size32_t i=0; i < sizeof(mainRow); i++)
+            assertex(mainRow[i] == (byte)(i * row));
+
+        size32_t childCount = numChildren + row;
+        size32_t childSize = sizeof(childRow) * childCount;
+        size32_t size;
+        source->read(sizeof(size), &size);
+        if (useCount)
+            assertex(size == childCount);
+        else
+            assertex(size == childSize);
+
+        unsigned next = 1234 + row * 31419264U;
+        for (unsigned i=0; i < childCount; i++)
+        {
+            source->read(sizeof(childRow), &childRow);
+            for (size32_t i=0; i < sizeof(mainRow)/sizeof(next); i++)
+            {
+                assertex(childRow[i] == next);
+                next *= 0x13894225;
+                next += row;
+            }
+        }
+        return sizeof(mainRow) + 4 + childSize;
+    }
+
+protected:
+    bool useCount;
+    unsigned numChildren = 10'000'000;
+};
+
 class NullOuputStream : public CInterfaceOf<IBufferedSerialOutputStream>
 {
     virtual size32_t write(size32_t len, const void * ptr) { return len; }
@@ -305,6 +386,7 @@ public:
         CPPUNIT_TEST(testEvenSequentialStream); // write a file and read results after each flush
         CPPUNIT_TEST(testParallelStream);   // write a file and read in parallel from a separate thread
         CPPUNIT_TEST(testThreadedWriteStream);   // write a file using a threaded writer
+        CPPUNIT_TEST(testPathologicalRows); // 1M child rows, total row size 100MB
         //MORE:
         //Threaded writer
         //Threaded reader
@@ -735,6 +817,20 @@ public:
         }
     }
 
+    void testPathologicalRows()
+    {
+        LargeRowDataProvider largeCount50K(true, 50'000);
+        LargeRowDataProvider largeCount10M(true, 10'000'000);
+        LargeRowDataProvider largeSize50K(false, 50'000);
+        LargeRowDataProvider largeSize10M(false, 10'000'000);
+
+        ICompressHandler * lz4 = queryCompressHandler(COMPRESS_METHOD_LZ4);
+
+        runSimpleStream(nullptr, largeCount50K, 0x100000, 0x100000, 2000);
+        runSimpleStream(nullptr, largeCount10M, 0x100000, 0x100000, 10);
+        runSimpleStream(nullptr, largeSize50K, 0x100000, 0x100000, 2000);
+        runSimpleStream(nullptr, largeSize10M, 0x100000, 0x100000, 10);
+    }
 
     void testIncSequentialStream()
     {
