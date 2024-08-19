@@ -119,8 +119,8 @@ spec:
 ---
    {{- end }}
   {{- end }}
-  {{ include "hpcc.addWildIssuerCertificate" (dict "root" .root "issuerKeyName" .issuerKeyName "me" .me ) }}
  {{- end }}
+ {{ include "hpcc.addWildIssuerCertificate" (dict "root" .root "issuerKeyName" .issuerKeyName "me" .me ) }}
 {{- end }}
 
 {{- template "hpcc.ensureNoResourceValidationFlag" ( dict "root" $ ) }}
