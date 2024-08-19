@@ -3434,9 +3434,9 @@ public:
 };
 
 
-class IKeyManagerTest : public CppUnit::TestFixture  
+class IKeyManagerSlowTest : public CppUnit::TestFixture  
 {
-    CPPUNIT_TEST_SUITE( IKeyManagerTest  );
+    CPPUNIT_TEST_SUITE( IKeyManagerSlowTest  );
         CPPUNIT_TEST(testStepping);
         CPPUNIT_TEST(testKeys);
     CPPUNIT_TEST_SUITE_END();
@@ -3842,7 +3842,7 @@ protected:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( IKeyManagerTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( IKeyManagerTest, "IKeyManagerTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( IKeyManagerSlowTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( IKeyManagerSlowTest, "IKeyManagerSlowTest" );
 
 #endif
