@@ -70,10 +70,6 @@ class PackageSequencer : public CInterface, implements IInterface
     unsigned maxSeqSeen = 0;
     unsigned numPackets = 0;
     bool outOfBand = false;
-#ifdef _DEBUG
-    unsigned scans = 0;
-    unsigned overscans = 0;
-#endif
 
     MemoryBuffer metadata;
     InterruptableSemaphore dataAvailable; // MORE - need to work out when to interrupt it!

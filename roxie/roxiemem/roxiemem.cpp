@@ -4552,7 +4552,6 @@ private:
     unsigned dataBuffs;
     unsigned dataBuffPages;
     unsigned reportWalkFreeThreshold = 256;
-    unsigned attachSeq = 0;
     std::atomic_uint possibleGoers = {0};
     std::atomic_uint totalHeapPages = {0};
     Owned<IActivityMemoryUsageMap> peakUsageMap;
