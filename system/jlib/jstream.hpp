@@ -128,7 +128,7 @@ inline IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStr
         return createBufferedOutputStream(output, blockWriteSize);
 }
 
-inline IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize, bool threaded)
+inline IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize, [[maybe_unused]] bool threaded)
 {
     //If a threaded version is implemented it should use async io, rather than a thread to perform the look ahead
     return createBufferedInputStream(input, blockReadSize);
