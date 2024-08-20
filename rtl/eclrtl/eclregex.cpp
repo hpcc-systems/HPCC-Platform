@@ -440,7 +440,7 @@ public:
 
         if (numMatches > 0)
         {
-            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED|PCRE2_SUBSTITUTE_UNKNOWN_UNSET|PCRE2_SUBSTITUTE_UNSET_EMPTY;
             PCRE2_SIZE pcreSize = 0;
 
             // Call substitute once to get the size of the output (pushed into pcreSize);
@@ -516,7 +516,7 @@ public:
 
         if (numMatches > 0)
         {
-            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED|PCRE2_SUBSTITUTE_UNKNOWN_UNSET|PCRE2_SUBSTITUTE_UNSET_EMPTY;
             PCRE2_SIZE pcreSize = 0;
 
             // Call substitute once to get the size of the output and see if it will fit within fixedOutLen;
@@ -965,7 +965,7 @@ public:
 
         if (numMatches > 0)
         {
-            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED|PCRE2_SUBSTITUTE_UNKNOWN_UNSET|PCRE2_SUBSTITUTE_UNSET_EMPTY;
             PCRE2_SIZE pcreSize = 0;
 
             // Call substitute once to get the size of the output, then allocate memory for it;
@@ -1033,7 +1033,7 @@ public:
 
         if (numMatches > 0)
         {
-            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED|PCRE2_SUBSTITUTE_UNKNOWN_UNSET|PCRE2_SUBSTITUTE_UNSET_EMPTY;
             PCRE2_SIZE pcreSize = 0;
 
             // Call substitute once to get the size of the output and see if it will fit within fixedOutLen;

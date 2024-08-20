@@ -66,3 +66,7 @@ REGEXREPLACE('\'', 'Dan\'s', '\\\'') = 'Dan\'s';
 REGEXREPLACE(NOFOLD('\''), 'Dan\'s', '\\\'') = 'Dan\'s';
 REGEXREPLACE(u'\'', u'Dan\'s', u'\\\'') = u'Dan\'s';
 REGEXREPLACE(NOFOLD(u'\''), u'Dan\'s', u'\\\'') = u'Dan\'s';
+
+// HPCC-32461
+REGEXREPLACE('\\b(N)EW (M)EXICO\\b|\\b(U)NITED (S)TATES\\b','NEW MEXICO','$1$2$3');
+REGEXREPLACE('(\\w+)', 'JustOneWord', '$2 $1');
