@@ -120,16 +120,28 @@ extern jlib_decl void _rev(size32_t len, void * ptr);
 #endif
 
 inline  void _cpyrev2(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[1]=src[0]; tgt[0] = src[1];
+    //Technically undefined behaviour because the _src is likely to be a byte stream
+    //but this will work on all known architectures
+    unsigned value = *(const unsigned short *)_src;
+    //NOTE: Optimized by the compiler
+    value = ((value & 0xFF00) >> 8) |
+            ((value & 0x00FF) << 8);
+    *(unsigned short *)_tgt = value;
 }
 inline  void _cpyrev3(void * _tgt, const void * _src) { 
     char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
     tgt[2] = src[0]; tgt[1]=src[1]; tgt[0] = src[2];
 }
-inline  void _cpyrev4(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[3]=src[0]; tgt[2] = src[1]; tgt[1]=src[2]; tgt[0] = src[3];
+inline  void _cpyrev4(void * _tgt, const void * _src) {
+    //Technically undefined behaviour because the _src is likely to be a byte stream
+    //but this will work on all known architectures
+    unsigned value = *(const unsigned *)_src;
+    //NOTE: The compiler spots this pattern an optimizes it into a byte-swap operation
+    value = ((value & 0xFF000000) >> 24) |
+            ((value & 0x00FF0000) >> 8) |
+            ((value & 0x0000FF00) << 8) |
+            ((value & 0x000000FF) << 24);
+    *(unsigned *)_tgt = value;
 }
 inline  void _cpyrev5(void * _tgt, const void * _src) { 
     char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
@@ -147,15 +159,44 @@ inline  void _cpyrev7(void * _tgt, const void * _src) {
     tgt[3] = src[3]; tgt[2]=src[4]; tgt[1]=src[5]; tgt[0]=src[6];
 }
 inline  void _cpyrev8(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[7]=src[0]; tgt[6] = src[1]; tgt[5]=src[2]; tgt[4] = src[3];
-    tgt[3]=src[4]; tgt[2] = src[5]; tgt[1]=src[6]; tgt[0] = src[7];
+    //Technically undefined behaviour because the _src is likely to be a byte stream
+    //but this will work on all known architectures
+    unsigned __int64 value = *(const unsigned __int64 *)_src;
+    //NOTE: The compiler spots this pattern an optimizes it into a byte-swap operation
+    value = ((value & 0xFF00000000000000ULL) >> 56) |
+            ((value & 0x00FF000000000000ULL) >> 40) |
+            ((value & 0x0000FF0000000000ULL) >> 24) |
+            ((value & 0x000000FF00000000ULL) >> 8) |
+            ((value & 0x00000000FF000000ULL) << 8) |
+            ((value & 0x0000000000FF0000ULL) << 24) |
+            ((value & 0x000000000000FF00ULL) << 40) |
+            ((value & 0x00000000000000FFULL) << 56);
+    *(unsigned __int64 *)_tgt = value;
 }
 inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) { 
     char * tgt = (char *)_tgt; const char * src = (const char *)_src+len; 
     for (;len;len--) {
         *tgt++ = *--src;
     }
+}
+
+//Define a template class to allow the common byte reversal operations to be optimized
+template <unsigned LEN>
+inline void doCopyRev(void * tgt, const void * src) {
+    _cpyrevn(tgt, src, LEN);
+}
+
+template <>
+inline void doCopyRev<2>(void * tgt, const void * src) {
+    _cpyrev2(tgt, src);
+}
+template <>
+inline void doCopyRev<4>(void * tgt, const void * src) {
+    _cpyrev4(tgt, src);
+}
+template <>
+inline void doCopyRev<8>(void * tgt, const void * src) {
+    _cpyrev8(tgt, src);
 }
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
