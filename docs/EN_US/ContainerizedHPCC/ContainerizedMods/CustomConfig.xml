@@ -865,14 +865,17 @@ thor: []
     using cloud native HPCC Systems platform instances in a cloud setting
     where some planning and configuration can help reduce expenses.</para>
 
-    <para>Two new columns have been added to the workunits page in ECL Watch.
-    The columns may be sorted by either cost column, just like the other
-    columns in ECL Watch, by clicking at the top of the column.</para>
-
+    <para>New columns have been added to the workunits and the logical files pages in ECL Watch.
+    These columns may be sorted by any cost columns, just like the other
+    columns in ECL Watch, by clicking at the top of the column.
+    In addition, file operation costs executed by workunits are provided in the workunit’s metrics. </para>
+<para> 
+As the cost tracking matures, the cost calculations also improve significantly providing more accurate cost tracking.  
+For example, data that was accessed from page cache doesn’t incur any file access cost.  HPCC Systems cost tracking now detects data that has been returned from the page cache and adjust cost calculations appropriately resulting in more accurate cost calculations.  </para>
     <sect2 id="TypesOfCosts">
       <title>Types of Costs</title>
 
-      <para>There are three types of costs that are tracked.</para>
+      <para>There are several types of costs that are tracked.</para>
 
       <para><itemizedlist>
           <listitem>
@@ -882,9 +885,16 @@ thor: []
           <listitem>
             <para>Storage Cost</para>
           </listitem>
+         <listitem>
+            <para>Compile Cost</para>
+          </listitem>
 
           <listitem>
             <para>File Access Cost</para>
+          </listitem>
+          
+          <listitem>
+            <para>File Cost at Rest</para>
           </listitem>
         </itemizedlist></para>
 
@@ -893,7 +903,8 @@ thor: []
           <term>NOTE:</term>
 
           <listitem>
-            <para>All cost values calculated and displayed are approximate.
+            <para>While reporting accuracy has significantly improved, 
+            all cost values calculated and displayed remain approximate.
             There are many variables that can result in inaccuracies. These
             cost values are only intended to be used as a guide.</para>
           </listitem>
@@ -961,7 +972,15 @@ thor: []
           <graphic fileref="../../images/SCOST_img3_1.jpg"><!--ADD-IMAGE--></graphic>
         </sect4>
       </sect3>
+<sect3 id="Compile_Costs">
+        <title>Compile Cost</title>
 
+        <para>Compile costs are the costs of compiling the ECL code. The cost
+        of compiling the ECL code is included as a column in the workunit list. In the workunit summary page 
+        there is compile cost field.</para>
+
+       
+  </sect3>
       <sect3 id="StorageCOsts">
         <title>Storage Cost</title>
 
@@ -988,11 +1007,17 @@ thor: []
       </sect3>
 
       <sect3 id="FileAccessCosts">
-        <title>File Access Cost</title>
-
+        <title>File Access Costs</title>
+<para> For logical files, the costs calculated are based on two types of file access.  </para>
+<itemizedlist>
+<listitem>File Access Cost
+</listitem>     
+<listitem>File Cost at Rest
+</listitem>
+</itemizedlist>
         <para>File access costs are the costs of reading and writing to the
         files. Many storage planes do have a separate charge for data
-        operations. The cost of reading and writing to the file will be
+        operations. The cost of reading and writing to the file are
         included in the file access cost value. Any other cost associated with
         file operations (such as delete or copy) will not be tracked or
         included as part of file access cost at this time.</para>
@@ -1003,16 +1028,18 @@ thor: []
         <para>The costs incurred by a workunit for accessing logical files is
         also recorded in the workunit’s statistics and attributes. The
         read/write cost is recorded at the activity record and cumulated at
-        the graph, the subgraph and the workflow scope level. The total file
-        access cost for a workunit is recorded with the workunit and displayed
-        in the summary page.</para>
+        the graph, the subgraph and the workflow scope level.
+        Notable improvement to the File Access Cost is files that are accessed from the page cache doesn’t incur file access cost.  
+        The HPCC System now detects data that has been returned from the page cache and adjusts cost calculations appropriately to produce more accurate cost calculations. 
+        These file access costs for a workunit is recorded with the workunit and displayed
+        in the summary page and the workunit’s metrics.</para>
 
-        <para>The new cost field is shown in the Logical File summary page. It
-        is the combined cost of storing and accessing the data.</para>
+      <sect4 id="FileCostAtRest"> <title>File Cost at Rest</title>
 
-        <para>The cost information is currently only generated for Thor and
-        hThor jobs.</para>
-      </sect3>
+        <para>The file cost at rest field is shown in the Logical File summary page. It
+        is the cost of storing the file without accessing the data. Only the storage costs associated with housing the file in the cloud. This value has been added to better differentiate between file storage costs. </para>
+</sect4>
+        </sect3>
     </sect2>
 
     <sect2 id="CostsConfigurations">
