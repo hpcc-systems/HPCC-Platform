@@ -1409,12 +1409,12 @@ void ESDLcompiler::write_esxdl()
     }
 }
 
-const void ESDLcompiler::setExtendedAttributes(bool mode)
+void ESDLcompiler::setExtendedAttributes(bool mode)
 {
     extendedAttributes = mode;
 }
 
-const bool ESDLcompiler::getExtendedAttributes()
+bool ESDLcompiler::getExtendedAttributes()
 {
     return extendedAttributes;
 }
