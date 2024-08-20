@@ -25,7 +25,7 @@ interface SourceFilesProps {
 }
 
 const emptyFilter: { [id: string]: any } = {};
-const defaultSort = { attribute: "Name", descending: false };
+const defaultSort = { attribute: undefined, descending: false };
 
 export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     wuid,
@@ -52,7 +52,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                 selectorType: "checkbox"
             },
             Name: {
-                label: "Name", sortable: true,
+                label: "Name", width: 400, sortable: true,
                 formatter: (Name, row) => {
                     let fileUrl = `#/files/${Name}`;
                     if (row?.FileCluster) {
@@ -65,11 +65,8 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                     </>;
                 }
             },
-            FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
-            Count: {
-                label: nlsHPCC.Usage, width: 72, sortable: true,
-                justify: "right"
-            }
+            FileCluster: { label: nlsHPCC.FileCluster, width: 200, sortable: false },
+            Count: { label: nlsHPCC.Usage, width: 72, sortable: true, justify: "right" }
         };
     }, []);
 
