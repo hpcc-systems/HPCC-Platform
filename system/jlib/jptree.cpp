@@ -8782,14 +8782,22 @@ public:
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
         };
-        fileWatcher.setown(createFileEventWatcher(updateFunc));
+        try
+        {
+            fileWatcher.setown(createFileEventWatcher(updateFunc));
 
-        // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
-        StringBuffer path, filename;
-        splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
-        configFilename.set(filename);
-        fileWatcher->add(path, FileWatchEvents::anyChange);
-        fileWatcher->start();
+            // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
+            StringBuffer path, filename;
+            splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
+            configFilename.set(filename);
+            fileWatcher->add(path, FileWatchEvents::anyChange);
+            fileWatcher->start();
+        }
+        catch (IException * e)
+        {
+            OERRLOG(e, "Failed to start file watcher");
+            e->Release();
+        }
         return true;
     }
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
