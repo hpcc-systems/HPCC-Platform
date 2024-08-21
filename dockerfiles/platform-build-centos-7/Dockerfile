@@ -89,7 +89,7 @@ RUN git clone --no-checkout https://github.com/${GITHUB_ACTOR}/HPCC-Platform.git
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
-ARG GITHUB_TOKEN=none
+ARG GITHUB_TOKEN=none       # This layer should never be cached (see FROM below)
 RUN mono `. ~/.vcpkg/vcpkg-init fetch nuget | tail -n 1` \
     sources add \
     -name "GitHub" \
