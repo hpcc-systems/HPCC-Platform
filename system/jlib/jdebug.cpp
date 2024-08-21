@@ -1454,10 +1454,40 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
     }
     inuse = total-free-cached;
 
-    // not sure if a bug in kernel or container or ...
-    // but sometimes we see swapfree > 0 when swaptotal == 0
-    if ((swapfree + swapcached) >= swaptotal)
-        swapinuse = 0;
+    // swapinuse = swaptotal-swapfree-swapcached;
+
+    // sometimes in containers [under mem pressure ?] we see from /proc/meminfo -
+
+    // SwapCached:            0 kB
+    // SwapTotal:             0 kB
+    // SwapFree:       18446744073709551496 kB
+    // or -
+    // SwapCached:            0 kB
+    // SwapTotal:             0 kB
+    // SwapFree:            120 kB
+
+    // and from free cmd -
+
+    // free -m
+    //               total        used        free      shared  buff/cache   available
+    // Mem:          43008       17616        5375           0       20015       25391
+    // Swap:             0 18014398509481984           0
+
+    // if swapfree > 0 when swaptotal == 0 -
+    // *might* indicate kernel is pushing exe/mmapped pages out of memory to make room
+    // for other things and this can affect performance
+
+    // not sure why SwapFree value is not always valid/accurate
+    // vmstat shows more reasonable swpd value, but walks all /proc/<pid>/stat files
+
+    // SwapCached: Memory that is present within main memory, but also in the swapfile
+
+    if ((swapfree + swapcached) > swaptotal)
+    {
+        swapinuse = swapfree + swapcached;
+        if (swapinuse > total)
+            swapinuse = active; // something more reasonable ...
+    }
     else
         swapinuse = swaptotal-swapfree-swapcached;
 #endif
