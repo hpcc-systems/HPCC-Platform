@@ -112,7 +112,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                         return <Icon iconName="Pause" />;
                     }
                     return "";
-                }
+                },
+                field: nlsHPCC.Suspended,
             },
             ErrorCount: {
                 headerIcon: "Warning",
@@ -124,7 +125,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                         return <Icon iconName="Warning" />;
                     }
                     return "";
-                }
+                },
+                field: nlsHPCC.ErrorWarnings,
             },
             MixedNodeStates: {
                 headerIcon: "Error",
@@ -136,7 +138,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                         return <Icon iconName="Error" />;
                     }
                     return "";
-                }
+                },
             },
             Activated: {
                 headerIcon: "SkypeCircleCheck",
@@ -147,7 +149,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                         return <Icon iconName="SkypeCircleCheck" />;
                     }
                     return "";
-                }
+                },
+                field: nlsHPCC.Active,
             },
             Id: {
                 label: nlsHPCC.ID,
