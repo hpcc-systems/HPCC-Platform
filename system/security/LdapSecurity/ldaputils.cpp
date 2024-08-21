@@ -296,11 +296,6 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     if (nullptr == ld)
     {
         ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, cipherSuite, timeout, &err);
-        if(nullptr == ld  && strieq(ldapprotocol,"ldaps"))
-        {
-            //if that failed, and was for ldaps, see if we can do anonymous bind using ldap/389
-            ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, "ldap", 389, cipherSuite, timeout, &err);
-        }
 
         // for new versions of openldap, version 2.2.*
         if(nullptr == ld   &&  err == LDAP_PROTOCOL_ERROR  &&  stype != ACTIVE_DIRECTORY)
