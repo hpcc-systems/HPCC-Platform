@@ -1426,7 +1426,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
-{{ include "hpcc.mergeEnvironments" $env | indent 2 -}}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 2) | indent 2 -}}
   - name: "SENTINEL"
     value: "/tmp/{{ $serviceName }}.sentinel"
 {{- with (dict "name" $serviceName) }}
@@ -2511,8 +2511,9 @@ global.noResourceValidation flag.  This behavior can be overridden by the caller
 A template to output a merged environment. Pass in a list with global then local environments. Only the last specified value for each named environment variable will be output
 */}}
 {{- define "hpcc.mergeEnvironments" -}}
-{{- $result := dict "MALLOC_ARENA_MAX" 8 -}}{{- /* HPCC arena default, can be overriden by component config */ -}}
-{{- range . -}}
+{{- $defaultArenas := .defaultArenas | default 1 -}}
+{{- $result := dict "MALLOC_ARENA_MAX" $defaultArenas -}}{{- /* HPCC arena default, can be overridden by component config */ -}}
+{{- range .env -}}
  {{- $_ := set $result .name .value -}}
 {{- end -}}
 {{- range $key,$value := $result -}}
