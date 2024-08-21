@@ -224,21 +224,7 @@ public:
             allowspill = true;
         }
 
-        // for "newlookahead" only
-        if (isContainerized())
-        {
-            // JCSMORE - add CJobBase::getTempBlockSize() to calc. once.
-            StringBuffer planeName;
-            if (!getDefaultPlane(planeName, "@tempPlane", "temp"))
-                getDefaultPlane(planeName, "@spillPlane", "spill");
-            size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
-            if ((size32_t)-1 != blockedSequentialIOSize)
-                options.storageBlockSize = blockedSequentialIOSize;
-        }
-        options.totalCompressionBufferSize = activity.getOptInt(THOROPT_LOOKAHEAD_COMPRESSIONTOTALK, options.totalCompressionBufferSize / 1024) * 1024;
-        options.inMemMaxMem = activity.getOptInt(THOROPT_LOOKAHEAD_MAXROWMEMK, options.inMemMaxMem / 1024) * 1024;
-        options.writeAheadSize = activity.getOptInt64(THOROPT_LOOKAHEAD_WRITEAHEADK, options.writeAheadSize / 1024) * 1024;
-        options.tempFileGranularity = activity.getOptInt64(THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY, options.tempFileGranularity / 0x100000) * 0x100000;
+        populateLookAheadOptions(activity, options);
     }
     ~CRowStreamLookAhead()
     {
