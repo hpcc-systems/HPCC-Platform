@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#include <queue>
+
 #include "platform.h"
 #include "limits.h"
 #include <math.h>
@@ -287,7 +289,6 @@ protected:
         }
         virtual void stop() { }
     };
-    typedef SimpleInterThreadQueueOf<CSendBucket, false> CSendBucketQueue;
 
     class CSender;
 
@@ -299,18 +300,27 @@ protected:
         CSender &owner;
         unsigned destination = 0; // NB: not used in ALL case
         std::atomic<unsigned> activeWriters{0};
-        CSendBucketQueue pendingBuckets;
+        std::queue<CSendBucket *> pendingBuckets;
+        mutable CriticalSection pendingBucketCrit;
         mutable CriticalSection crit;
         Owned<CSendBucket> bucket;
         StringAttr info;
         bool self = false;
+        void init()
+        {
+            // theoretical max bucket, if sender sent all to this target (sender caps out at inputBufferSize)
+            unsigned maxBuckets = (owner.owner.inputBufferSize + owner.owner.bucketSendSize) / owner.owner.bucketSendSize;
+            pendingBuckets.setCapacity(maxBuckets);
+        }
     public:
         CTarget(CSender &_owner, bool _self, const char *_info) : owner(_owner), self(_self), info(_info)
         {
+            init();
         }
         CTarget(CSender &_owner, unsigned _destination, bool _self, const char *_info) : CTarget(_owner, _self, _info)
         {
             destination = _destination;
+            init();
         }
         ~CTarget()
         {
@@ -318,12 +328,12 @@ protected:
         }
         void reset()
         {
-            for (;;)
+            CSendBucket *sendBucket;
+            while (!pendingBuckets.empty())
             {
-                CSendBucket *sendBucket = pendingBuckets.dequeueNow();
-                if (!sendBucket)
-                    break;
+                sendBucket = pendingBuckets.front();
                 ::Release(sendBucket);
+                pendingBuckets.pop();
             }
             bucket.clear();
             activeWriters = 0;
@@ -332,15 +342,22 @@ protected:
         unsigned sendToOthers(CMessageBuffer &mb); // Only used by ALL
         inline unsigned getNumPendingBuckets() const
         {
-            return pendingBuckets.ordinality();
+            CriticalBlock b(pendingBucketCrit);
+            return pendingBuckets.size();
         }
         inline CSendBucket *dequeuePendingBucket()
         {
-            return pendingBuckets.dequeueNow();
+            CriticalBlock b(pendingBucketCrit);
+            if (pendingBuckets.empty())
+                return nullptr;
+            CSendBucket *ret = pendingBuckets.front();
+            pendingBuckets.pop();
+            return ret;
         }
         inline void enqueuePendingBucket(CSendBucket *bucket)
         {
-            pendingBuckets.enqueue(bucket);
+            CriticalBlock b(pendingBucketCrit);
+            pendingBuckets.push(bucket);
         }
         void incActiveWriters();
         void decActiveWriters();
