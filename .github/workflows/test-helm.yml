@@ -1,16 +1,6 @@
 name: Run helm chart tests
 
 on:
-  push:
-    branches:
-      - "master"
-      - "candidate-*"
-      - "!candidate-7.8.*"
-      - "!candidate-7.6.*"
-      - "!candidate-7.4.*"
-      - "!candidate-7.2.*"
-      - "!candidate-7.0.*"
-      - "!candidate-6.*"
   pull_request:
     branches:
       - "master"
@@ -57,8 +47,45 @@ jobs:
       - name: Check for changes in helm output for default values
         working-directory: .
         run: |
-          helm template helm/hpcc > ${{ runner.temp }}/newoutput.txt
-          git fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin ${{ github.base_ref }}
+          resultcode=0
+          mkdir ${{ runner.temp }}/new
+          mkdir ${{ runner.temp }}/old
+
+          #Generate the output for the default values file, and each of the specialised test files.
+          #Check to see if anything has changed between old and new, and report the differences
+          helm template helm/hpcc > ${{ runner.temp }}/new/output.txt
+          for file in testing/helm/tests/*.yaml
+          do
+            tail=$(basename $file)
+            helm template helm/hpcc --values $file > ${{ runner.temp }}/new/$tail.txt
+          done
+
+          git fetch --no-tags --prune --progress --no-recurse-submodules --quiet --depth=1 origin ${{ github.base_ref }}
+          echo git checkout ${{ github.base_ref }}
           git checkout ${{ github.base_ref }}
-          helm template helm/hpcc > ${{ runner.temp }}/oldoutput.txt
-          diff ${{ runner.temp }}/oldoutput.txt ${{ runner.temp }}/newoutput.txt
+
+          helm template helm/hpcc > ${{ runner.temp }}/old/output.txt
+          for file in testing/helm/tests/*.yaml
+          do
+            tail=$(basename $file)
+            helm template helm/hpcc --values $file > ${{ runner.temp }}/old/$tail.txt
+          done
+
+          diff ${{ runner.temp }}/old/output.txt ${{ runner.temp }}/new/output.txt
+          if [ $? -ne 0 ]
+          then
+            resultcode=1
+          else
+            #Only check for differences in the specialised test files if the default values file is the same
+            for file in testing/helm/tests/*.yaml
+            do
+              tail=$(basename $file)
+              diff ${{ runner.temp }}/old/$tail.txt ${{ runner.temp }}/new/$tail.txt
+              if [ $? -ne 0 ]
+              then
+                resultcode=1
+              fi
+            done
+          fi
+
+          exit $resultcode
