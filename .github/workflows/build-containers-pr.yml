@@ -33,6 +33,10 @@ jobs:
     if: ${{ needs.check-skip.outputs.changed }}
     runs-on: ubuntu-20.04
     steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
       - name: vars
         id: vars
         run: |
