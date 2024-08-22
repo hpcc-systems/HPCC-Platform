@@ -4,4 +4,4 @@ The ECL language is documented in the ecl language reference manual (generated a
 
 Details of the internals of eclcc are found in the `Code Generator Documentation`_.
 
-.. _Code Generator Documentation: ../eclcc/DOCUMENTATION.rst
+.. _Code Generator Documentation: https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/CodeGenerator.md
