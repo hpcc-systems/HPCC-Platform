@@ -779,28 +779,39 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayFixed(ICodeContext *ctx,
 
     req->setNoCommon(noCommon);
 
-    Owned<IClientSprayFixedResponse> result = server.SprayFixed(req);
-
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
+    clientSpan->setSpanAttribute("destinationFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientSprayFixedResponse> result = server.SprayFixed(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Spray", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Spray", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayFixed(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile)
@@ -914,28 +925,39 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
         req->setNosplit(true);
     req->setNoCommon(noCommon);
 
-    Owned<IClientSprayResponse> result = server.SprayVariable(req);
-
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Variable");
+    clientSpan->setSpanAttribute("destinationFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientSprayResponse> result = server.SprayVariable(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Spray", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Spray", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile)
@@ -1088,28 +1110,39 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, c
 
     req->setNoCommon(noCommon);
 
-    Owned<IClientSprayResponse> result = server.SprayVariable(req);
-
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Xml");
+    clientSpan->setSpanAttribute("destinationFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientSprayResponse> result = server.SprayVariable(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Spray", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Spray", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 
@@ -1233,28 +1266,39 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayJson(ICodeContext *ctx, 
             req->setSrcPassword(userPw);
     }
 
-    Owned<IClientSprayResponse> result = server.SprayVariable(req);
-
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Json");
+    clientSpan->setSpanAttribute("destinationFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientSprayResponse> result = server.SprayVariable(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Spray", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Spray", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 
@@ -1314,28 +1358,39 @@ static char * implementDespray(ICodeContext *ctx, const char * sourceLogicalName
     if (maxConnections != -1)
         req->setMaxConnections(maxConnections);
 
-    Owned<IClientDesprayResponse> result = server.Despray(req);
-
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Despray");
+    clientSpan->setSpanAttribute("sourceFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientDesprayResponse> result = server.Despray(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Despray", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Despray", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsDespray(ICodeContext *ctx, const char * sourceLogicalName, const char * destinationIP, const char * destinationPath, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite)
@@ -1402,28 +1457,40 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
         req->setWrap(true);
     req->setExpireDays(expireDays);
 
-    Owned<IClientCopyResponse> result = server.Copy(req);
-
-    StringBuffer wuid(result->getResult());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Copy");
+    clientSpan->setSpanAttribute("sourceFilename", sourceLogicalName);
+    clientSpan->setSpanAttribute("destinationFilename", destinationLogicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientCopyResponse> result = server.Copy(req);
+
+        StringBuffer wuid(result->getResult());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Copy", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Copy", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize)
@@ -1497,29 +1564,40 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
     constructLogicalName(wu, sourceLogicalName, logicalName);
 
     req->setSourceLogicalName(logicalName.str());
-    Owned<IClientReplicateResponse> result = server.Replicate(req);
 
-    StringBuffer wuid(result->getWuid());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
+    clientSpan->setSpanAttribute("destinationFilename", logicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientReplicateResponse> result = server.Replicate(req);
+
+        StringBuffer wuid(result->getWuid());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("Replicate", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("Replicate", server, ctx, wuid, timeOut);
-    return wuid.detach();
-
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 
@@ -2047,20 +2125,32 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
     constructLogicalName(ctx, _lfn, lfn);
     if (shotcount == 0)
         shotcount = -1;
-    Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
-    setContainerLocalCertificate(req->rpc());
-    req->setEventName(eventname);
-    req->setLogicalName(lfn);
-    req->setShotLimit(shotcount);
-    Owned<IClientDfuMonitorResponse> result = server.DfuMonitor(req);
-    StringBuffer res(result->getWuid());
-    StringBuffer s("MonitorLogicalFileName ('");
-    s.append(lfn).append("'): ").append(res);
-    WUmessage(ctx,SeverityInformation,NULL,s.str());
-    wu.clear();
-    if (res.length()!=0)
-        blockUntilComplete("MonitorLogicalFileName",server,ctx,res.str(),1000*60*60,NULL,true);
-    return res.detach();
+
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor Logical Filename");
+    clientSpan->setSpanAttribute("filename", lfn);
+    try
+    {
+        Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
+        setContainerLocalCertificate(req->rpc());
+        req->setEventName(eventname);
+        req->setLogicalName(lfn);
+        req->setShotLimit(shotcount);
+        Owned<IClientDfuMonitorResponse> result = server.DfuMonitor(req);
+        StringBuffer wuid(result->getWuid());
+        StringBuffer s("MonitorLogicalFileName ('");
+        s.append(lfn).append("'): ").append(wuid);
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
+        wu.clear();
+        if (wuid.length()!=0)
+        clientSpan->setSpanAttribute("wuid", wuid);
+            blockUntilComplete("MonitorLogicalFileName",server,ctx,wuid.str(),1000*60*60,NULL,true);
+        return wuid.detach();
+    }
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void  FILESERVICES_CALL fsMonitorFile(ICodeContext *ctx, const char *eventname,const char *ip, const char *filename, bool sub, int shotcount, const char * espServerIpPort)
@@ -2077,22 +2167,33 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
     if (shotcount == 0)
         shotcount = -1;
 
-    Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
-    setContainerLocalCertificate(req->rpc());
-    req->setEventName(eventname);
-    req->setIp(ip);
-    req->setFilename(filename);
-    req->setShotLimit(shotcount);
-    Owned<IClientDfuMonitorResponse> result = server.DfuMonitor(req);
-    StringBuffer res(result->getWuid());
-    StringBuffer s("MonitorFile (");
-    s.append(ip).append(", '").append(filename).append("'): '").append(res);
-    WUmessage(ctx,SeverityInformation,NULL,s.str());
-    wu.clear();
-    if (res.length()!=0)
-        blockUntilComplete("MonitorFile",server,ctx,res.str(),1000*60*60,NULL,true);
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor File");
+    clientSpan->setSpanAttribute("filename", filename);
+    try
+    {
+        Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
+        setContainerLocalCertificate(req->rpc());
+        req->setEventName(eventname);
+        req->setIp(ip);
+        req->setFilename(filename);
+        req->setShotLimit(shotcount);
+        Owned<IClientDfuMonitorResponse> result = server.DfuMonitor(req);
+        StringBuffer wuid(result->getWuid());
+        StringBuffer s("MonitorFile (");
+        s.append(ip).append(", '").append(filename).append("'): '").append(wuid);
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
+        wu.clear();
+        if (wuid.length()!=0)
+        clientSpan->setSpanAttribute("wuid", wuid);
+            blockUntilComplete("MonitorFile",server,ctx,wuid.str(),1000*60*60,NULL,true);
 
-    return res.detach();
+        return wuid.detach();
+    }
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, const char *logicalfilename, const char *value)
@@ -2402,28 +2503,40 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
            req->setSrcpassword(userPw);
     }
 
-    Owned<IClientCopyResponse> result = server.Copy(req);
-
-    StringBuffer wuid(result->getResult());
-    if (!wuid.length())
+    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Remote Pull");
+    clientSpan->setSpanAttribute("sourceFilename", sourceLogicalName);
+    clientSpan->setSpanAttribute("destinationFilename", destinationLogicalName);
+    try
     {
-        const IMultiException* excep = &result->getExceptions();
-        if ((excep != NULL) && (excep->ordinality() > 0))
+        Owned<IClientCopyResponse> result = server.Copy(req);
+
+        StringBuffer wuid(result->getResult());
+        if (!wuid.length())
         {
-            StringBuffer errmsg;
-            excep->errorMessage(errmsg);
-            throw MakeStringExceptionDirect(0, errmsg.str());
+            const IMultiException* excep = &result->getExceptions();
+            if ((excep != NULL) && (excep->ordinality() > 0))
+            {
+                StringBuffer errmsg;
+                excep->errorMessage(errmsg);
+                throw MakeStringExceptionDirect(0, errmsg.str());
+            }
+            else
+            {
+                throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
+            }
         }
-        else
-        {
-            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
-        }
+
+        wu.clear();
+
+        clientSpan->setSpanAttribute("wuid", wuid);
+        blockUntilComplete("RemotePull", server, ctx, wuid, timeOut);
+        return wuid.detach();
     }
-
-    wu.clear();
-
-    blockUntilComplete("RemotePull", server, ctx, wuid, timeOut);
-    return wuid.detach();
+    catch (IException *e)
+    {
+        clientSpan->recordException(e, true, true);
+        throw;
+    }
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
