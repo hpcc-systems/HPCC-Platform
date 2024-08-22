@@ -24,6 +24,7 @@
 #include <map>
 #include <string>
 #include "espcontext.hpp"
+#include "secmanagertracedecorator.hpp"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -135,7 +136,7 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
 
 bool SecHandler::authorizeTrial(ISecUser& user,const char* pszFeatureUrl, SecAccessFlags & required_access)
 {
-    int trial_access = m_secmgr->authorizeEx(RT_TRIAL,user,pszFeatureUrl);
+    int trial_access = CSecManagerTraceDecorator(*m_secmgr).authorizeEx(RT_TRIAL,user,pszFeatureUrl);
     if(trial_access < required_access)
         throw MakeStringException(201,"Your company has used up all of their free transaction credits");
     return true;
@@ -266,7 +267,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     bool auth_ok = false;
     try
     {
-        auth_ok = m_secmgr->authorize(*m_user.get(), plist, m_secureContext.get());
+        auth_ok = CSecManagerTraceDecorator(*m_secmgr).authorize(*m_user.get(), plist, m_secureContext.get());
     }
     catch(IException* e)
     {

@@ -10,7 +10,12 @@ Detailed description of flags used by any ESP.
 
 Flags defined in `system/jlib/jtrace.hpp` and used by multiple platform processes.
 
-Flags will be added to this list as tracing logic is updated in ESP code. For example, the shared platform flag `traceHttp` is expected to be used, as are a number of ESP-specific options.
+#### traceSecMgr
+
+Control security manager trace output. The ESP enables or suppresses timing span creation based on this flag. Security managers which generate significant amounts of trace output are encouraged to observe this setting.
+
+- true: record security manager-related trace output
+- false, *omitted*: suppress security manager-related trace output
 
 ### Shared ESP Flags
 

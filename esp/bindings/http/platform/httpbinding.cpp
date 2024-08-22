@@ -49,7 +49,7 @@
 #include <memory>
 
 #include "esdl_def_helper.hpp"
-
+#include "secmanagertracedecorator.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 #define DEFAULT_HTTP_PORT 80
@@ -972,7 +972,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         return false;
     }
 
-    bool authenticated = m_secmgr->authorize(*user, rlist, ctx->querySecureContext());
+    bool authenticated = CSecManagerTraceDecorator(*m_secmgr).authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
         VStringBuffer err("User %s : ", user->getName());
@@ -1029,7 +1029,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(securitySettings == NULL)
         return authorized;
 
-    m_secmgr->updateSettings(*user,securitySettings, ctx->querySecureContext());
+    CSecManagerTraceDecorator(*m_secmgr).updateSettings(*user,securitySettings, ctx->querySecureContext());
 
     ctx->addTraceSummaryTimeStamp(LogMin, "basicAuth", TXSUMMARY_GRP_CORE);
     return authorized;

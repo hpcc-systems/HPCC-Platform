@@ -40,7 +40,8 @@ constexpr const char* loggingserviceApplication = "loggingservice";
 constexpr TraceFlags traceLevel = TraceFlags::LevelMask;
 
 // Trace option list fragment for jtrace-defined options used by ESPs
-#define PLATFORM_OPTIONS_FRAGMENT
+#define PLATFORM_OPTIONS_FRAGMENT \
+    TRACEOPT(traceSecMgr),
 
 // Trace option list fragment for options used by most ESPs
 #define ESP_OPTIONS_FRAGMENT \
