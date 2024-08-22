@@ -8668,7 +8668,8 @@ bool CHThorDiskReadBaseActivity::openNext()
                             StringBuffer tmp;
                             remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
                             remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
-                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
+                            if (curPart)
+                                remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
 
                             try
                             {
