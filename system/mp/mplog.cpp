@@ -532,6 +532,8 @@ aindex_t LogMsgParentReceiverThread::findParent(const INode * node) const
 
 bool connectLogMsgManagerToParent(INode * parentNode)
 {
+    if (isContainerized())
+        return false;
     assertex(parentReceiver);
     MPLogId pid = parentReceiver->getNextId();
     return parentReceiver->addParentToManager(0, pid, parentNode, false);
@@ -539,6 +541,8 @@ bool connectLogMsgManagerToParent(INode * parentNode)
 
 bool connectLogMsgManagerToParentOwn(INode * parentNode)
 {
+    if (isContainerized())
+        return false;
     bool ret = connectLogMsgManagerToParent(parentNode);
     parentNode->Release();
     return ret;
@@ -546,11 +550,15 @@ bool connectLogMsgManagerToParentOwn(INode * parentNode)
 
 bool disconnectLogMsgManagerFromParent(INode * parentNode)
 {
+    if (isContainerized())
+        return false;
     return parentReceiver->removeParentFromManager(parentNode, false);
 }
 
 bool disconnectLogMsgManagerFromParentOwn(INode * parentNode)
 {
+    if (isContainerized())
+        return false;
     bool ret = disconnectLogMsgManagerFromParent(parentNode);
     parentNode->Release();
     return ret;

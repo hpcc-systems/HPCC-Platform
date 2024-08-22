@@ -270,6 +270,8 @@ void connectLogMsgManagerToDali()
 
 void disconnectLogMsgManagerFromDali()
 {
+    if (isContainerized())
+        return; // we do not redirect logging between components in containerized environments (this is used for audit->dali in BM)
     disconnectLogMsgManagerFromParentOwn(daliClientLoggingParent);
     daliClientLoggingParent = 0;
 }
