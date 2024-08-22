@@ -3306,27 +3306,46 @@ void JobNameScope::set(const char * name)
 
 TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
 {
-    for (auto &o: optNames)
+    for (const TraceOption& option: optNames)
     {
-        VStringBuffer attrName("@%s", o.name);
-        if (!ptree->hasProp(attrName))
-            attrName.clear().appendf("_%s", o.name);
-        if (ptree->hasProp(attrName))
+        VStringBuffer attrName("@%s", option.name);
+        const char* value = ptree->queryProp(attrName);
+        if (!value)
         {
-            if (o.value <= TraceFlags::LevelMask)
-            {
-                dft &= ~TraceFlags::LevelMask;
-                dft |= o.value;
-            }
+            attrName.setCharAt(0, '_');
+            value = ptree->queryProp(attrName);
+            if (!value)
+                continue;
+        }
+        if (strieq(value, "default")) // allow a configuration to explicitly request a default value
+            continue;
+        if (option.value == traceDetail) // non-Boolean traceDetail
+        {
+            dft &= ~TraceFlags::LevelMask;
+            if (strieq(value, "standard"))
+                dft |= traceStandard;
+            else if (strieq(value, "detailed"))
+                dft |= traceDetailed;
+            else if (strieq(value, "max"))
+                dft |= traceMax;
             else
             {
-                if (ptree->getPropBool(attrName, false))
-                    dft |= o.value;
-                else
-                    dft &= ~o.value;
+                char* endptr = nullptr;
+                unsigned tmp = strtoul(value, &endptr, 10);
+                if (endptr && !*endptr && TraceFlags(tmp) <= TraceFlags::LevelMask)
+                    dft |= TraceFlags(tmp);
             }
         }
-
+        else if (option.value <= TraceFlags::LevelMask) // block individual trace level names
+            continue;
+        else // Boolean trace options
+        {
+            bool flag = strToBool(value);
+            if (flag)
+                dft |= option.value;
+            else
+                dft &= ~option.value;
+        }
     }
     return dft;
 }

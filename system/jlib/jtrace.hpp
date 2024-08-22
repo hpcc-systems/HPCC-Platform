@@ -325,6 +325,7 @@ constexpr TraceFlags traceNone = TraceFlags::None;
 constexpr TraceFlags traceStandard = TraceFlags::Standard;
 constexpr TraceFlags traceDetailed = TraceFlags::Detailed;
 constexpr TraceFlags traceMax = TraceFlags::Max;
+constexpr TraceFlags traceDetail = TraceFlags(0xFFFFFFFF);   // reserved term for one of traceNone, traceStandard, traceDetailed, or traceMax values
 constexpr TraceFlags traceAll = (TraceFlags)(~TraceFlags::LevelMask);   // i.e. all feature flags except for the detail level
 
 // Common to several engines
