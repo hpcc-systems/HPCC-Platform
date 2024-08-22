@@ -49,6 +49,10 @@
 
 #include "jmetrics.hpp"
 #include "workunit.hpp"
+#include "esptrace.h"
+#include "tokenserialization.hpp"
+
+static TokenDeserializer deserializer;
 
 using namespace hpccMetrics;
 
@@ -354,6 +358,91 @@ static void usage()
 
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[]);
 
+// Modified version of jlib's loadTraceFlags. The modification adds special handling for traceLevel.
+//
+// Using loadTraceFlags, `traceStandard: true`, `traceStandard: false`, and `traceStandard: maybe`
+// are non-intuitively equivalent. The property name is the only thing that matters, with the
+// value being ignored.
+//
+// Also using loadTraceFlags, all defined trace levels may be included in one configuration. The
+// final, accepted, level is determined by the order of `optNames` list items. An order optimized
+// for elevating the level cannot be used in reverse. While a configuration with multiple properties
+// should be discouraged, using `helm install --set` to change the level will add a new property
+// rather than changing the existing one.
+//
+// With loadEspTraceFlags, `traceLevel` is the only property that sets the trace level. The value
+// is both relevant and intuitive, and can be overridden with `helm install --set`.
+static TraceFlags loadEspTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
+{
+    for (const TraceOption& option: optNames)
+    {
+        VStringBuffer attrName("@%s", option.name);
+        const char* value = nullptr;
+        if (!(value = ptree->queryProp(attrName)))
+        {
+            attrName.setCharAt(0, '_');
+            if (!(value = ptree->queryProp(attrName)))
+                continue;
+        }
+        if (streq(value, "default")) // allow a configuration to explicitly request a default value
+            continue;
+        if (streq(option.name, propTraceLevel)) // non-Boolean traceLevel
+        {
+            unsigned level = unsigned(dft & TraceFlags::LevelMask);
+            dft &= ~TraceFlags::LevelMask;
+            if (streq(value, "traceStandard"))
+                dft |= traceStandard;
+            else if (streq(value, "traceDetailed"))
+                dft |= traceDetailed;
+            else if (streq(value, "traceMax"))
+                dft |= traceMax;
+            else if (deserializer(value, level) == Deserialization_SUCCESS)
+                dft |= TraceFlags(level) & TraceFlags::LevelMask;
+            else
+                dft |= TraceFlags(level);
+        }
+        else if (option.value <= TraceFlags::LevelMask) // block individual trace level names
+            continue;
+        else // Boolean trace options
+        {
+            bool flag = false;
+            deserializer(value, flag);
+            if (flag)
+                dft |= option.value;
+            else
+                dft &= ~option.value;
+        }
+    }
+    return dft;
+}
+
+//
+// Initialize trace settings
+void initializeTraceFlags(CEspConfig* config)
+{
+    IPropertyTree* pEspTree = config->queryConfigPTree();
+    Owned<IPropertyTree> pTraceTree = pEspTree->getPropTree(propTraceFlags);
+    if (!pTraceTree)
+    {
+        pTraceTree.setown(getComponentConfigSP()->getPropTree(propTraceFlags));
+    }
+#ifdef _DEBUG
+    if (!pTraceTree)
+    {
+        static const char * defaultTraceYaml = R"!!(
+traceLevel: traceMax
+)!!";
+        pTraceTree.setown(createPTreeFromYAMLString(defaultTraceYaml));
+    }
+#endif
+
+    if (pTraceTree)
+    {
+        TraceFlags defaults = loadEspTraceFlags(pTraceTree, mapTraceOptions(pEspTree), queryDefaultTraceFlags());
+        updateTraceFlags(defaults, true);
+    }
+}
+
 //
 // Initialize metrics
 void initializeMetrics(CEspConfig* config)
@@ -577,6 +666,7 @@ int init_main(int argc, const char* argv[])
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
+            initializeTraceFlags(config);
             initializeMetrics(config);        
             initializeStorageGroups(daliClientActive());
         }
