@@ -462,6 +462,8 @@ __int64 ParquetReader::next(TableColumns *&nextTable)
         if (endsWithIgnoreCase(partOption.c_str(), "partition"))
         {
             PARQUET_ASSIGN_OR_THROW(table, queryRows()); // Sets rowsProcessed to current row in table corresponding to startRow
+            rowsCount = table->num_rows();
+            splitTable(table);
         }
         else
         {
