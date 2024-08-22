@@ -3839,6 +3839,9 @@ public:
         unsigned nc = fdesc->numClusters();
         if (nc)
         {
+            unsigned flags = 0;
+            if (FileDescriptorFlags::none != (FileDescriptorFlags::foreign & fdesc->getFlags()))
+                flags = IFDSF_FOREIGN_GROUP;
             for (unsigned i=0;i<nc;i++)
             {
                 StringBuffer cname;
@@ -3857,7 +3860,8 @@ public:
                                   nullptr,
                                   fdesc->queryClusterGroup(i),
                                   fdesc->queryPartDiskMapping(i),
-                                  &queryNamedGroupStore()
+                                  &queryNamedGroupStore(),
+                                  flags
                                );
 
                     if (!cluster->queryGroup(&queryNamedGroupStore()))
@@ -7466,8 +7470,20 @@ class CNamedGroupIterator: implements INamedGroupIterator, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     CNamedGroupIterator(IRemoteConnection *_conn,IGroup *_matchgroup=NULL,bool _exactmatch=false)
-        : conn(_conn), matchgroup(_matchgroup)
+        : conn(_conn)
     {
+        if (_matchgroup)
+        {
+            // the matchgroup may contain ports, but they are never part of published groups and are not to be used for matching
+            SocketEndpointArray epa;
+            for (unsigned i=0; i<_matchgroup->ordinality(); i++)
+            {
+                SocketEndpoint ep = _matchgroup->queryNode(i).endpoint();
+                ep.port = 0;
+                epa.append(ep);
+            }
+            matchgroup.setown(createIGroup(epa));
+        }
         exactmatch = _exactmatch;
         pe.setown(conn->queryRoot()->getElements("Group"));
     }
