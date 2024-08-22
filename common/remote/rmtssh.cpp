@@ -99,7 +99,8 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                     break;
                 case 's': { // ssh params
                         bool usepssh = !password.isEmpty();
-                        cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"ssh",strict?"yes":"no");
+                        // reset LD_LIBRARY_PATH here so ssh cmd itself doesn't use HPCC libssl/crypto as they may be different
+                        cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"LD_LIBRARY_PATH=: ssh",strict?"yes":"no");
                         if (!identityfile.isEmpty())
                             cmdbuf.appendf("-i %s ",identityfile.get());
                         if (background)
