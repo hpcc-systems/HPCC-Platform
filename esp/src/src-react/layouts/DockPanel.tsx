@@ -3,8 +3,8 @@ import * as ReactDOM from "react-dom";
 import { Theme, ThemeProvider } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { FluentProvider, Theme as ThemeV9 } from "@fluentui/react-components";
-import { HTMLWidget, Widget } from "@hpcc-js/common";
-import { DockPanel as HPCCDockPanel, IClosable } from "@hpcc-js/phosphor";
+import { HTMLWidget, Widget, Utility } from "@hpcc-js/common";
+import { DockPanel as HPCCDockPanel, IClosable, WidgetAdapter } from "@hpcc-js/phosphor";
 import { compare2 } from "@hpcc-js/util";
 import { lightTheme, lightThemeV9 } from "../themes";
 import { useUserTheme } from "../hooks/theme";
@@ -96,6 +96,7 @@ export class ResetableDockPanel extends HPCCDockPanel {
 
     protected _origLayout: DockPanelLayout | undefined;
     protected _lastLayout: DockPanelLayout | undefined;
+    protected _visibility: { [id: string]: boolean };
 
     resetLayout() {
         if (this._origLayout) {
@@ -118,8 +119,19 @@ export class ResetableDockPanel extends HPCCDockPanel {
         return formatLayout(this.layout()) ?? this._lastLayout ?? this._origLayout;
     }
 
+    getVisibility() {
+        return this._visibility;
+    }
+
     render(callback?: (w: Widget) => void) {
-        const retVal = super.render();
+        const retVal = this._visibility !== undefined ? super.render() : super.render(() => {
+            if (this._visibility === undefined) {
+                this._visibility = {};
+                this.widgetAdapters().forEach(wa => {
+                    this._visibility[wa.widget.id()] = wa.isVisible;
+                });
+            }
+        });
         if (this._origLayout === undefined) {
             this._origLayout = formatLayout(this.layout());
         }
@@ -130,8 +142,26 @@ export class ResetableDockPanel extends HPCCDockPanel {
     }
 
     //  Events  ---
+    childActivation(w: Widget, wa: WidgetAdapter) {
+    }
+
+    childVisibility(w: Widget, visible: boolean, wa: WidgetAdapter) {
+        if (this._visibility && this._visibility[w.id()] !== visible) {
+            this._visibility[w.id()] = visible;
+            this._lazyVisibilityChanged();
+        }
+    }
+
     layoutChanged() {
         this._lastLayout = this.getLayout();
+    }
+
+    //  Exposed Events  ---
+    private _lazyVisibilityChanged = Utility.debounce(async () => {
+        this.visibilityChanged(this._visibility);
+    }, 60);
+
+    visibilityChanged(visibility: { [id: string]: boolean }) {
     }
 }
 
@@ -154,14 +184,16 @@ export const DockPanelItem: React.FunctionComponent<DockPanelItemProps> = ({
 interface DockPanelProps {
     layout?: object;
     hideSingleTabs?: boolean;
-    onDockPanelCreate?: (dockpanel: ResetableDockPanel) => void;
+    onCreate?: (dockpanel: ResetableDockPanel) => void;
+    onVisibilityChanged?: (visibility: { [id: string]: boolean }) => void;
     children?: React.ReactElement<DockPanelItemProps> | React.ReactElement<DockPanelItemProps>[];
 }
 
 export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
     layout,
     hideSingleTabs,
-    onDockPanelCreate,
+    onCreate: onDockPanelCreate,
+    onVisibilityChanged: onDockPanelVisibilityChanged,
     children
 }) => {
     const items = React.useMemo(() => {
@@ -178,6 +210,9 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
             setTimeout(() => {
                 onDockPanelCreate(retVal);
             }, 0);
+        }
+        if (onDockPanelVisibilityChanged) {
+            retVal.on("visibilityChanged", visibility => onDockPanelVisibilityChanged(visibility), true);
         }
         return retVal;
     });
