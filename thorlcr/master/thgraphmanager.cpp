@@ -1114,6 +1114,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTs, 1, 0, StatsMergeAppend);
             //Could use addTimeStamp(wu, SSTgraph, graphName, StWhenStarted, wfid) if start time could be this point
             wu->setState(WUStateRunning);
+            wu->setEngineSession(myProcessSession());
             VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
             wu->setDebugValue("ThorVersion", version.str(), true);
 
@@ -1140,6 +1141,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryDeMonServer()->updateAggregates(wu);
+        // clear engine session, otherwise agent may consider a failure beyond this point for an unrelated job caused by this instance
+        wu->setEngineSession(-1);
 
         removeJob(*job);
     }

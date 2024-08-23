@@ -3873,7 +3873,7 @@ public:
             case WUStateAborting:
                 if (agentSessionStopped)
                 {
-                    reportAbnormalTermination(wuid, state, agent);
+                    reportAbnormalTermination(wuid, state, agent, "Agent");
                     return state;
                 }
                 if (queryDaliServerVersion().compare("2.1")>=0)
