@@ -1072,6 +1072,8 @@ protected:
     StringAttr id; // for tracing
     ICompressHandler *compressHandler;
     StringBuffer compressOptions;
+    LookAheadOptions options;
+    bool newLookAhead = false;
 public:
     IMPLEMENT_IINTERFACE_USING(CInterface);
 
@@ -1126,6 +1128,10 @@ public:
         ::ActPrintLog(activity, thorDetailedLogLevel, "inputBufferSize : %d, bucketSendSize = %d, pullBufferSize=%d", inputBufferSize, bucketSendSize, pullBufferSize);
         targetWriterLimit = activity->getOptUInt(THOROPT_HDIST_TARGETWRITELIMIT);
         ::ActPrintLog(activity, thorDetailedLogLevel, "targetWriterLimit : %d", targetWriterLimit);
+
+        newLookAhead = activity->getOptBool("newlookahead", false);
+        if (newLookAhead)
+            populateLookAheadOptions(*activity, options);
     }
 
     virtual void beforeDispose()
@@ -1187,7 +1193,14 @@ public:
         {
             StringBuffer temp;
             GetTempFilePath(temp,"hddrecvbuff");
-            piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
+            if (newLookAhead)
+            {
+                options.totalCompressionBufferSize = pullBufferSize; // hd option overrides defaults
+                ICompressHandler *compressHandler = pullBufferSize ? queryDefaultCompressHandler() : nullptr;
+                piperd.setown(createCompressedSpillingRowStream(activity, temp.str(), false, rowIf, options, compressHandler));
+            }
+            else
+                piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
         }
         else
             piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));

@@ -457,6 +457,7 @@ extern HQL_API IAtom * _threadlocal_Atom;
 extern HQL_API IAtom * thresholdAtom;
 extern HQL_API IAtom * throwAtom;
 extern HQL_API IAtom * timeAtom;
+extern HQL_API IAtom * timerAtom;
 extern HQL_API IAtom * timeoutAtom;
 extern HQL_API IAtom * timeLimitAtom;
 extern HQL_API IAtom * timestampAtom;

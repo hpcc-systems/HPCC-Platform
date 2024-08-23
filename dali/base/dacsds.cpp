@@ -38,8 +38,6 @@
 static unsigned clientThrottleLimit;
 static unsigned clientThrottleDelay;
 
-static ISDSManager *SDSManager=NULL;
-
 static CriticalSection SDScrit;
 
 #define CHECK_CONNECTED(XSTR)                                                                                        \
@@ -1291,6 +1289,12 @@ CClientSDSManager::CClientSDSManager()
 
 CClientSDSManager::~CClientSDSManager()
 {
+    closedown();
+    ::Release(properties);
+}
+
+void CClientSDSManager::closedown()
+{
     CriticalBlock block(connections.crit);
     SuperHashIteratorOf<CConnectionBase> iter(connections.queryBaseTable());
     ForEach(iter)
@@ -1298,7 +1302,6 @@ CClientSDSManager::~CClientSDSManager()
         CRemoteConnection &conn = (CRemoteConnection &) iter.query();
         conn.setConnected(false);
     }
-    ::Release(properties);
 }
 
 bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
@@ -2236,32 +2239,59 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
 
 //////////////
 
+static ISDSManager * activeSDSManager=NULL;
+static ISDSManager * savedSDSManager=NULL;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    delete activeSDSManager;
+    activeSDSManager = nullptr;
+    delete savedSDSManager;
+    savedSDSManager = nullptr;
+}
+
 ISDSManager &querySDS()
 {
     CriticalBlock block(SDScrit);
-    if (SDSManager)
-        return *SDSManager;
+    if (activeSDSManager)
+        return *activeSDSManager;
     else if (!queryCoven().inCoven())
     {
-        if (!SDSManager)
-            SDSManager = new CClientSDSManager();
+        if (!activeSDSManager)
+            activeSDSManager = new CClientSDSManager();
 
-        return *SDSManager;
+        return *activeSDSManager;
     }
     else
     {
-        SDSManager = &querySDSServer();
-        return *SDSManager;
+        activeSDSManager = &querySDSServer();
+        return *activeSDSManager;
     }
 }
 
 void closeSDS()
 {
     CriticalBlock block(SDScrit);
-    if (SDSManager) {
+
+    //In roxie this is called when connection to dali is lost, but other threads can still be processing
+    //CRemoteConnections (see HPCC-32410), which uses an ISDSManager member - accessing a stale manager.
+    //There can be similar issues at closedown if threads have not been cleaned up properly.
+    //Do not delete the active SDS manager immediately - save it so that it is deleted on the next call/closedown.
+    ISDSManager * toDelete = savedSDSManager;
+    savedSDSManager = activeSDSManager;
+    activeSDSManager = nullptr;
+    if (savedSDSManager || toDelete)
+    {
         assertex(!queryCoven().inCoven()); // only called by client
-        try {
-            delete SDSManager;
+        try
+        {
+            if (savedSDSManager)
+                savedSDSManager->closedown();
+            delete toDelete;
         }
         catch (IMP_Exception *e)
         {
@@ -2270,11 +2300,11 @@ void closeSDS()
             EXCLOG(e, "closeSDS");
             e->Release();
         }
-        catch (IDaliClient_Exception *e) {
+        catch (IDaliClient_Exception *e)
+        {
             if (e->errorCode()!=DCERR_server_closed)
                 throw;
             e->Release();
         }
-        SDSManager = NULL;
     }
 }

@@ -417,7 +417,7 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
                 name.clear();
             }
             StringBuffer gname;
-            if (resolver->find(group,gname,true)||(group->ordinality()>1))
+            if (resolver->find(group,gname,!foreignGroup)||(group->ordinality()>1))
                 name.set(gname);
         }
     }
@@ -451,11 +451,13 @@ public:
         checkClusterName(resolver);
     }
 
-    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver)
+    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver,unsigned flags)
         : name(_name),group(_group)
     {
         name.toLowerCase();
         mspec =_mspec;
+        if (flags & IFDSF_FOREIGN_GROUP)
+            foreignGroup = true;
         checkClusterName(resolver);
         checkStriped();
     }
@@ -617,9 +619,10 @@ public:
 IClusterInfo *createClusterInfo(const char *name,
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                INamedGroupStore *resolver)
+                                INamedGroupStore *resolver,
+                                unsigned flags)
 {
-    return new CClusterInfo(name,grp,mspec,resolver);
+    return new CClusterInfo(name,grp,mspec,resolver,flags);
 }
 IClusterInfo *deserializeClusterInfo(MemoryBuffer &mb,
                                 INamedGroupStore *resolver)
@@ -1281,33 +1284,39 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 cluster->getReplicateDir(repDir, os);
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
 
-                const char *planeName = cluster->queryGroupName();
-                if (!isEmptyString(planeName))
+                // The following code manipulates the directory for striping and aliasing if necessary.
+                // To do so, it needs the plane details.
+                // Normally, the plane name is obtained from IClusterInfo, however, if this file is foreign,
+                // then the IClusterInfo's will have no resolved names (aka groups) because the remote groups
+                // don't exist in the client environment. Instead, if the foreign file came from k8s, it will
+                // have remoteStoragePlane serialized/set.
+                Owned<IStoragePlane> plane;
+                if (remoteStoragePlane)
+                    plane.set(remoteStoragePlane);
+                else
                 {
-#ifdef _CONTAINERIZED
-                    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
-#else
-                    Owned<IStoragePlane> plane = remoteStoragePlane.getLink();
-#endif
-                    if (plane)
+                    const char *planeName = cluster->queryGroupName();
+                    if (!isEmptyString(planeName))
+                        plane.setown(getDataStoragePlane(planeName, false));
+                }
+                if (plane)
+                {
+                    StringBuffer planePrefix(plane->queryPrefix());
+                    Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(accessMode);
+                    if (alias)
                     {
-                        StringBuffer planePrefix(plane->queryPrefix());
-                        Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(accessMode);
-                        if (alias)
+                        StringBuffer tmp;
+                        StringBuffer newPlanePrefix(alias->queryPrefix());
+                        if (setReplicateDir(fullpath, tmp, false, planePrefix, newPlanePrefix))
                         {
-                            StringBuffer tmp;
-                            StringBuffer newPlanePrefix(alias->queryPrefix());
-                            if (setReplicateDir(fullpath, tmp, false, planePrefix, newPlanePrefix))
-                            {
-                                planePrefix.swapWith(newPlanePrefix);
-                                fullpath.swapWith(tmp);
-                            }
+                            planePrefix.swapWith(newPlanePrefix);
+                            fullpath.swapWith(tmp);
                         }
-                        StringBuffer stripeDir;
-                        addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
-                        if (!stripeDir.isEmpty())
-                            fullpath.swapWith(stripeDir);
                     }
+                    StringBuffer stripeDir;
+                    addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
+                    if (!stripeDir.isEmpty())
+                        fullpath.swapWith(stripeDir);
                 }
             }
 
@@ -1633,6 +1642,8 @@ public:
             attr.setown(createPTreeFromIPT(at));
         else
             attr.setown(createPTree("Attr"));
+        if (flags & IFDSF_FOREIGN_GROUP)
+            setFlags(static_cast<FileDescriptorFlags>(fileFlags | FileDescriptorFlags::foreign));
         if (attr->hasProp("@lfnHash")) // potentially missing for meta coming from a legacy Dali
             lfnHash = attr->getPropInt("@lfnHash");
         else if (tracename.length())

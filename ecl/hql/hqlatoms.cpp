@@ -452,6 +452,7 @@ IAtom * _threadlocal_Atom;
 IAtom * thresholdAtom;
 IAtom * throwAtom;
 IAtom * timeAtom;
+IAtom * timerAtom;
 IAtom * timeoutAtom;
 IAtom * timeLimitAtom;
 IAtom * timestampAtom;
@@ -933,6 +934,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(threshold);
     MAKEATOM(throw);
     MAKEATOM(time);
+    MAKEATOM(timer);
     MAKEATOM(timeout);
     MAKEATOM(timeLimit);
     MAKEATOM(timestamp);

@@ -342,13 +342,8 @@ public:
             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
             if (cw)
             {
-                // if either a) NOT a thoragent with useChildProcesses=false (default in k8s config) or b) is still in an executing state
-                if (!sharedK8sJob || (cw->getState() == WUStateRunning) || (cw->getState() == WUStateBlocked) || (cw->getState() == WUStateWait))
+                if (!sharedK8sJob && ((cw->getState() == WUStateRunning) || (cw->getState() == WUStateBlocked) || (cw->getState() == WUStateWait)))
                 {
-                    // For a shared k8s job, i.e. where this agent is thoragent launching shared (multiJobLinger) k8s jobs
-                    // the job agent should handle the job state.
-                    // In that scenario, this is a fallback that should only come into effect if the job workflow instance has failed to handle the exception
-                    // e.g. because it abruptly disappeared.
                     Owned<IWorkUnit> workunit = &cw->lock();
                     // recheck now locked
                     if ((workunit->getState() == WUStateRunning) || (workunit->getState() == WUStateBlocked) || (workunit->getState() == WUStateWait))

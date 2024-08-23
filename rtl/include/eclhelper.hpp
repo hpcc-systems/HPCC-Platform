@@ -59,7 +59,7 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      654
+#define ACTIVITY_INTERFACE_VERSION      655
 #define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
@@ -3018,6 +3018,30 @@ protected:
 
 constexpr unsigned daliResultOutputMax = 2000; // MB
 constexpr unsigned futureResultOutputMax = 100; // MB
+
+//------------------------------------------------------------------------------------------------
+
+// RAII class to start and stop a section timer
+class SectionTimerBlock
+{
+private:
+    ISectionTimer * timer;
+    unsigned long long cycles = 0;
+
+public:
+    SectionTimerBlock(ISectionTimer * _timer) : timer(_timer)
+    {
+        if (timer)
+            cycles = timer->getStartCycles();
+    }
+    ~SectionTimerBlock()
+    {
+        if (timer)
+            timer->noteSectionTime(cycles);
+    }
+};
+
+//------------------------------------------------------------------------------------------------
 
 #ifdef STARTQUERY_EXPORTS
 #define STARTQUERY_API DECL_EXPORT

@@ -2030,6 +2030,7 @@ public:
     virtual void setConfigOpt(const char *opt, const char *value);
     virtual unsigned queryCount(const char *xpath);
     virtual bool updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response);
+    virtual void closedown() override;
 
 // ISubscriptionManager impl.
     virtual void add(ISubscription *subs,SubscriptionId id);
@@ -6059,6 +6060,11 @@ CCovenSDSManager::~CCovenSDSManager()
     else
         enableMemLeakChecking(false);
     config.Release();
+}
+
+void CCovenSDSManager::closedown()
+{
+    //Should never be called - but do not assert since it is harmless and it is better not to report
 }
 
 void CCovenSDSManager::validateDeltaBackup()

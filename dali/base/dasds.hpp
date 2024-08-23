@@ -118,6 +118,7 @@ interface ISDSManager
     virtual void setConfigOpt(const char *opt, const char *value) = 0;
     virtual unsigned queryCount(const char *xpath) = 0;
     virtual bool updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response) = 0;
+    virtual void closedown() = 0;
 };
 
 extern da_decl const char *queryNotifyHandlerName(IPropertyTree *tree);

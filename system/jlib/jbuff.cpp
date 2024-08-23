@@ -62,12 +62,9 @@ constexpr unsigned BUFF_DOUBLE_LIMIT=4096;
 constexpr unsigned BUFF_FIRST_CHUNK_SIZE=8;
 constexpr unsigned BUFF_DETACH_GRANULARITY=16;
 
-
-#ifdef _DEBUG
+//Always check the length before reading - so ensure that serialization problems are caught
+//The overhead is trivial....
 #define     CHECKREADPOS(len)  assertex(readPos+(len)<=length())
-#else
-#define     CHECKREADPOS(len)  
-#endif
 
 //-----------------------------------------------------------------------
 

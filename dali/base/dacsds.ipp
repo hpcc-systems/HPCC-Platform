@@ -418,6 +418,7 @@ public:
     virtual void setConfigOpt(const char *opt, const char *value);
     virtual unsigned queryCount(const char *xpath);
     virtual bool updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response);
+    virtual void closedown() override;
 
 private:
     void noteDisconnected(CRemoteConnection &connection);

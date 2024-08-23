@@ -542,7 +542,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
         if (workunit->getCodeVersion() == 0)
             throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
         if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
-            throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+            throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor (%s) requires version %d..%d", workunit->getCodeVersion(), globals->queryProp("@name"), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
         if (workunit->getCodeVersion() == 652)
         {
             // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
@@ -554,7 +554,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
                 const char *point = version + strlen("7.12.");
                 unsigned pointVer = atoi(point);
                 if (pointVer <= 18)
-                    throw MakeStringException(0, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
+                    throw MakeStringException(0, "Workunit was compiled by eclcc version %s which is not compatible with this thor (%s)", buildVersion.str(), globals->queryProp("@name"));
             }
         }
 
@@ -1114,6 +1114,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTs, 1, 0, StatsMergeAppend);
             //Could use addTimeStamp(wu, SSTgraph, graphName, StWhenStarted, wfid) if start time could be this point
             wu->setState(WUStateRunning);
+            wu->setEngineSession(myProcessSession());
             VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
             wu->setDebugValue("ThorVersion", version.str(), true);
 
@@ -1140,6 +1141,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryDeMonServer()->updateAggregates(wu);
+        // clear engine session, otherwise agent may consider a failure beyond this point for an unrelated job caused by this instance
+        wu->setEngineSession(-1);
 
         removeJob(*job);
     }

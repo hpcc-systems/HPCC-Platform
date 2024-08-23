@@ -111,7 +111,7 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     return <HolyGrail fullscreen={fullscreen}
         header={<CommandBar items={buttons} farItems={rightButtons} />}
         main={
-            <DockPanel hideSingleTabs onDockPanelCreate={setDockpanel}>
+            <DockPanel hideSingleTabs onCreate={setDockpanel}>
                 <DockPanelItem key="scopesTable" title="Files" >
                     {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
                         archive?.modAttrs.length &&

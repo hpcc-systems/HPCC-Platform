@@ -422,6 +422,8 @@ public:
                 printf("%s\n",cmdline.str());
             else {
                 Owned<IPipeProcess> pipe = createPipeProcess();
+                // reset LD_LIBRARY_PATH here so ssh cmd itself doesn't use HPCC libssl/crypto as they may be different
+                pipe->setenv("LD_LIBRARY_PATH", ":");
                 if (pipe->run((verbose&&!usepssh)?"FRUNSSH":NULL,cmdline.str(),workdir,
                     useplink, // for some reason plink needs input handle
                     true,true)) {

@@ -115,7 +115,7 @@ data:
 {{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{ include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 1) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -182,7 +182,7 @@ data:
 {{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{ include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 2) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -251,7 +251,8 @@ data:
 {{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" (append ($configCtx.me.env | default list) (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum))) | indent 12 }}
+{{- $env := append ($configCtx.me.env | default list) (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum)) }}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" (deepCopy $configCtx.me | merge (dict "tmpSubPath" $containerNum)) | indent 12 }}
@@ -379,7 +380,7 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:
-{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.eclAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
@@ -442,7 +443,7 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:
-{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.thorAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
