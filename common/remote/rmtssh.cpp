@@ -99,8 +99,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                     break;
                 case 's': { // ssh params
                         bool usepssh = !password.isEmpty();
-                        // reset LD_LIBRARY_PATH here so ssh cmd itself doesn't use HPCC libssl/crypto as they may be different
-                        cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"LD_LIBRARY_PATH=: ssh",strict?"yes":"no");
+                        cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"ssh",strict?"yes":"no");
                         if (!identityfile.isEmpty())
                             cmdbuf.appendf("-i %s ",identityfile.get());
                         if (background)
@@ -423,6 +422,8 @@ public:
                 printf("%s\n",cmdline.str());
             else {
                 Owned<IPipeProcess> pipe = createPipeProcess();
+                // reset LD_LIBRARY_PATH here so ssh cmd itself doesn't use HPCC libssl/crypto as they may be different
+                pipe->setenv("LD_LIBRARY_PATH", ":");
                 if (pipe->run((verbose&&!usepssh)?"FRUNSSH":NULL,cmdline.str(),workdir,
                     useplink, // for some reason plink needs input handle
                     true,true)) {
