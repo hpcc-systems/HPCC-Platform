@@ -156,6 +156,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     }
                     return "";
                 },
+                field: nlsHPCC.Protected,
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
@@ -168,6 +169,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     }
                     return "";
                 },
+                field: nlsHPCC.Compressed,
             },
             Name: {
                 label: nlsHPCC.LogicalName,
@@ -194,18 +196,21 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 formatter: (value, row) => {
                     return Utility.formatNum(row.IntRecordCount);
                 },
+                csvFormatter: (value, row) => row.IntRecordCount,
             },
             FileSize: {
                 label: nlsHPCC.Size,
                 formatter: (value, row) => {
                     return Utility.convertedSize(row.IntSize);
                 },
+                csvFormatter: (value, row) => row.IntSize,
             },
             CompressedFileSizeString: {
                 label: nlsHPCC.CompressedSize,
                 formatter: (value, row) => {
                     return Utility.convertedSize(row.CompressedFileSize);
-                }
+                },
+                csvFormatter: (value, row) => row.CompressedFileSize,
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
