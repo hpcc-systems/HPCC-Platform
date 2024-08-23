@@ -687,6 +687,15 @@ MemoryBuffer &MemoryBuffer::appendFile(const char *fileName)
     return *this;
 }
 
+#define DO_READ_ENDIAN(len, value)  \
+    CHECKREADPOS(len); \
+    if (swapEndian) \
+        doCopyRev<len>(value, buffer + readPos); \
+    else \
+        memcpy_iflen(value, buffer + readPos, len); \
+    readPos += len; \
+    return *this;
+
 MemoryBuffer & MemoryBuffer::read(char & value)
 {
     CHECKREADPOS(sizeof(value));
@@ -761,44 +770,32 @@ MemoryBuffer & MemoryBuffer::read(float & value)
 
 MemoryBuffer & MemoryBuffer::read(short & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
 
 MemoryBuffer & MemoryBuffer::read(unsigned short & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
 
 MemoryBuffer & MemoryBuffer::read(int & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
 
 MemoryBuffer & MemoryBuffer::read(unsigned & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
-
-#if 0
-MemoryBuffer & MemoryBuffer::read(unsigned long & value)
-{
-    return readEndian(sizeof(value), &value);
-}
-
-MemoryBuffer & MemoryBuffer::read(long & value)
-{
-    return readEndian(sizeof(value), &value);
-}
-#endif
 
 MemoryBuffer & MemoryBuffer::read(unsigned __int64 & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
 
 MemoryBuffer & MemoryBuffer::read(__int64 & value)
 {
-    return readEndian(sizeof(value), &value);
+    DO_READ_ENDIAN(sizeof(value), &value);
 }
 
 const byte * MemoryBuffer::readDirect(size32_t len)
@@ -860,7 +857,6 @@ void MemoryBuffer::writeEndianDirect(size32_t pos,size32_t len,const void *buf)
     else
         memcpy_iflen(buffer+pos,buf,len);
 }
-
 
 MemoryBuffer & MemoryBuffer::readEndian(size32_t len, void * value)
 {

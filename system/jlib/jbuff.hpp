@@ -214,7 +214,6 @@ public:
     inline const char * toByteArray() const { return curLen ? buffer : nullptr; }
     inline const byte * bytes() const { return curLen ? (const byte *)buffer : nullptr; }
 
-
 private:
     MemoryBuffer &  read(unsigned long & value);    // unimplemented
     MemoryBuffer &  read(long & value);             // unimplemented
