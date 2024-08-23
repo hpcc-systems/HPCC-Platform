@@ -43,7 +43,7 @@ EXPORT ParquetIO := MODULE
         ENDMACRO;
 
         EXPORT Read(resultLayout, basePath, partitionFieldList) := FUNCTIONMACRO
-            LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readdirectorypartition'), location(basePath)), partitionFields(partitionFieldList)
+            LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readdirectorypartition'), location(basePath), partitionFields(partitionFieldList))
             ENDEMBED;
             RETURN _DoParquetReadPartition();
         ENDMACRO;

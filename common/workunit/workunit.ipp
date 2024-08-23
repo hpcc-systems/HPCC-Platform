@@ -257,6 +257,7 @@ public:
     virtual WUState getState() const;
     virtual IStringVal & getStateEx(IStringVal & str) const;
     virtual __int64 getAgentSession() const;
+    virtual __int64 getEngineSession() const;
     virtual unsigned getAgentPID() const;
     virtual const char *queryStateDesc() const;
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
@@ -336,6 +337,7 @@ public:
     void setState(WUState state);
     void setStateEx(const char * text);
     void setAgentSession(__int64 sessionId);
+    void setEngineSession(__int64 sessionId);
     bool setDistributedAccessToken(const char * user);
     void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
     void setTracingValue(const char * propname, const char * value);
@@ -624,7 +626,7 @@ public:
     }
 
 protected:
-    void reportAbnormalTermination(const char *wuid, WUState &state, SessionId agent);
+    void reportAbnormalTermination(const char *wuid, WUState &state, SessionId agent, const char *sessionText);
 
     // These need to be implemented by the derived classes
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;

@@ -190,7 +190,8 @@ typedef IIteratorOf<IPartDescriptor> IPartDescriptorIterator;
 enum class FileDescriptorFlags
 {
     none          = 0x00,
-    dirperpart    = 0x01
+    dirperpart    = 0x01,
+    foreign       = 0x02
 };
 BITMASK_ENUM(FileDescriptorFlags);
 
@@ -351,7 +352,8 @@ interface IStoragePlane: extends IInterface
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                INamedGroupStore *resolver=NULL
+                                INamedGroupStore *resolver=NULL,
+                                unsigned flags=0
                                 );
 IClusterInfo *createRoxieClusterInfo(const char *label,
                                 const ClusterPartDiskMapSpec &mspec

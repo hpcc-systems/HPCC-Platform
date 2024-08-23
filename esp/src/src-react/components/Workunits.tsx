@@ -116,7 +116,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }
+                },
+                field: nlsHPCC.Protected,
             },
             Wuid: {
                 label: nlsHPCC.WUID, width: 120,
@@ -143,23 +144,20 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             "Compile Cost": {
                 label: nlsHPCC.CompileCost, width: 100,
                 justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.CompileCost)}`;
-                }
+                formatter: (cost, row) => `${formatCost(row.CompileCost)}`,
+                csvFormatter: (cost, row) => row.CompileCost,
             },
             "Execution Cost": {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.ExecuteCost)}`;
-                }
+                formatter: (cost, row) => `${formatCost(row.ExecuteCost)}`,
+                csvFormatter: (cost, row) => row.ExecuteCost,
             },
             "File Access Cost": {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.FileAccessCost)}`;
-                }
+                formatter: (cost, row) => `${formatCost(row.FileAccessCost)}`,
+                csvFormatter: (cost, row) => row.FileAccessCost,
             }
         };
     }, [filter]);

@@ -896,8 +896,15 @@ protected:
     {
         if (buffer.length() < newLength)
         {
-            constexpr size32_t alignment = 32;
-            newLength = (newLength + (alignment - 1)) & ~(alignment -1);
+            //When serializing a child dataset with many rows (e.g. 500K) this could be called many times, each time
+            //causing the buffer to reallocate.  Therefore ensure the new size is rounded up to avoid excessive
+            //reallocation and copying.
+            //This could use blockWriteSize /4 but that still scales badly when number of rows > 1M
+            size32_t alignment = buffer.length() / 4;
+            if (alignment < 32)
+                alignment = 32;
+            newLength += (alignment - 1);
+            newLength -= newLength % alignment;
 
             MemoryAttr expandedBuffer(newLength);
             memcpy(expandedBuffer.mem(), data(0), bufferOffset);

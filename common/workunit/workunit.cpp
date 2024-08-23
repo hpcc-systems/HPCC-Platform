@@ -4341,6 +4341,8 @@ public:
             { return c->getStateEx(str); }
     virtual __int64 getAgentSession() const
             { return c->getAgentSession(); }
+    virtual __int64 getEngineSession() const
+            { return c->getEngineSession(); }
     virtual unsigned getAgentPID() const
             { return c->getAgentPID(); }
     virtual const char *queryStateDesc() const
@@ -4499,6 +4501,8 @@ public:
             { c->setStateEx(text); }
     virtual void setAgentSession(__int64 sessionId)
             { c->setAgentSession(sessionId); }
+    virtual void setEngineSession(__int64 sessionId)
+            { c->setEngineSession(sessionId); }
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
             { c->setStatistic(creatorType, creator, scopeType, scope, kind, optDescription, value, count, maxValue, mergeAction); }
     virtual void setTracingValue(const char * propname, const char * value)
@@ -5922,9 +5926,11 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &state, SessionId agent)
+void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &state, SessionId sessionId, const char *sessionText)
 {
-    WARNLOG("reportAbnormalTermination: session stopped unexpectedly: %" I64F "d state: %d", (__int64) agent, (int) state);
+    StringBuffer sessionMessage(sessionText);
+    sessionMessage.appendf(" session stopped unexpectedly [sessionId=%" I64F "d]", (__int64) sessionId);
+    WARNLOG("reportAbnormalTermination: %s - state: %d", sessionText, (int) state);
     bool isEcl = false;
     switch (state)
     {
@@ -5941,7 +5947,10 @@ void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &stat
     wu->setState(state);
     Owned<IWUException> e = wu->createException();
     e->setExceptionCode(isEcl ? 1001 : 1000);
-    e->setExceptionMessage(isEcl ? "EclCC terminated unexpectedly" : "Workunit terminated unexpectedly");
+    StringBuffer exceptionText;
+    exceptionText.append(isEcl ? "EclCC terminated unexpectedly" : "Workunit terminated unexpectedly");
+    exceptionText.append(" (").append(sessionMessage).append(")");
+    e->setExceptionMessage(exceptionText);
 }
 
 static CriticalSection deleteDllLock;
@@ -6426,8 +6435,11 @@ public:
         LocalIAbortHandler abortHandler(*waiter);
         if (conn)
         {
-            SessionId agent = -1;
+            SessionId agentSessionID = -1;
+            SessionId engineSessionID = -1;
             bool agentSessionStopped = false;
+            bool engineSessionStopped = false;
+            bool queryRuntimeSessionStopped = false;
             unsigned start = msTick();
             for (;;)
             {
@@ -6456,22 +6468,37 @@ public:
                 case WUStateAborting:
                     if (agentSessionStopped)
                     {
-                        reportAbnormalTermination(wuid, ret, agent);
+                        reportAbnormalTermination(wuid, ret, agentSessionID, "Agent");
+                        return ret;
+                    }
+                    if (engineSessionStopped)
+                    {
+                        reportAbnormalTermination(wuid, ret, engineSessionID, "Engine");
                         return ret;
                     }
                     if (queryDaliServerVersion().compare("2.1")>=0)
                     {
-                        agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
+                        agentSessionID = conn->queryRoot()->getPropInt64("@agentSession", -1);
+                        if((agentSessionID>0) && querySessionManager().sessionStopped(agentSessionID, 0))
                         {
                             agentSessionStopped = true;
+                            conn->reload();
+                            continue;
+                        }
+                        engineSessionID = conn->queryRoot()->getPropInt64("@engineSession", -1);
+                        if((engineSessionID>0) && querySessionManager().sessionStopped(engineSessionID, 0))
+                        {
+                            engineSessionStopped = true;
                             conn->reload();
                             continue;
                         }
                     }
                     break;
                 }
-                agentSessionStopped = false; // reset for state changes such as WUStateWait then WUStateRunning again
+                 // reset for state changes such as WUStateWait then WUStateRunning again
+                agentSessionStopped = false;
+                engineSessionStopped = false;
+
                 unsigned waited = msTick() - start;
                 if (timeout==-1 || waited + 20000 < timeout)
                 {
@@ -7698,6 +7725,12 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
     p->setPropInt64("@agentSession", sessionId);
 }
 
+void CLocalWorkUnit::setEngineSession(__int64 sessionId)
+{
+    CriticalBlock block(crit);
+    p->setPropInt64("@engineSession", sessionId);
+}
+
 bool CLocalWorkUnit::getIsQueryService() const
 {
     CriticalBlock block(crit);
@@ -7797,6 +7830,12 @@ __int64 CLocalWorkUnit::getAgentSession() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("@agentSession", -1);
+}
+
+__int64 CLocalWorkUnit::getEngineSession() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("@engineSession", -1);
 }
 
 unsigned CLocalWorkUnit::getAgentPID() const
