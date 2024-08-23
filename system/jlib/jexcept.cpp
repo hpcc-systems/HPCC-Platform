@@ -304,6 +304,11 @@ protected:
     Linked<IException> exception;
 };
 
+IException *makeWrappedException(IException *e, int code, const char *why)
+{
+    return new WrappedException(e, code, why);
+}
+
 IException *makeWrappedExceptionVA(IException *e, int code, const char *format, va_list args)
 {
     StringBuffer eStr;

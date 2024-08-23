@@ -1065,33 +1065,42 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
 {
     if (num==0)
         return 0;
-    if (coven)
-        return coven->getUniqueIds(num,_foreignnode);
-    if (!_foreignnode||_foreignnode->isNull())
-        throw MakeStringException(99,"getUniqueIds: Not connected to dali");
-    SocketEndpoint foreignnode;
-    foreignnode.set(*_foreignnode);
-    if (foreignnode.port==0)
-        foreignnode.port=DALI_SERVER_PORT;
-    CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(CCovenBase::foreginUidallocators,foreignnode);
-    DALI_UID uid;
-    CriticalBlock block(uidAllocator.crit);
-    while (!uidAllocator.allocUIDs(uid,num)) {
-        unsigned n = uidAllocator.getBankSize();
-        if (n<num) 
-            n = num*2;
-        DALI_UID next;
-        CMessageBuffer mb;
-        mb.append((int)MCR_ALLOC_UNIQUE_IDS);
-        mb.append(n);
-        Owned<ICommunicator> foreign;
-        Owned<IGroup> group = createIGroup(1,&foreignnode); 
-        foreign.setown(createCommunicator(group));
-        foreign->sendRecv(mb,RANK_RANDOM,MPTAG_DALI_COVEN_REQUEST);
-        mb.read(next);
-        if ((next==0)&&mb.remaining())  // server exception
-            throw deserializeException(mb);
-        uidAllocator.addUIDs((__uint64)next,n);
+    try
+    {
+        if (coven)
+            return coven->getUniqueIds(num,_foreignnode);
+        if (!_foreignnode||_foreignnode->isNull())
+            throw MakeStringException(99,"getUniqueIds: Not connected to dali");
+        SocketEndpoint foreignnode;
+        foreignnode.set(*_foreignnode);
+        if (foreignnode.port==0)
+            foreignnode.port=DALI_SERVER_PORT;
+        CDaliUidAllocator &uidAllocator = CDaliUidAllocator::find(CCovenBase::foreginUidallocators,foreignnode);
+        DALI_UID uid;
+        CriticalBlock block(uidAllocator.crit);
+        while (!uidAllocator.allocUIDs(uid,num)) {
+            unsigned n = uidAllocator.getBankSize();
+            if (n<num) 
+                n = num*2;
+            DALI_UID next;
+            CMessageBuffer mb;
+            mb.append((int)MCR_ALLOC_UNIQUE_IDS);
+            mb.append(n);
+            Owned<ICommunicator> foreign;
+            Owned<IGroup> group = createIGroup(1,&foreignnode); 
+            foreign.setown(createCommunicator(group));
+            foreign->sendRecv(mb,RANK_RANDOM,MPTAG_DALI_COVEN_REQUEST);
+            mb.read(next);
+            if ((next==0)&&mb.remaining())  // server exception
+                throw deserializeException(mb);
+            uidAllocator.addUIDs((__uint64)next,n);
+        }
+        return uid;
     }
-    return uid;
+    catch (IException *e)
+    {
+        IException *wrappedException = makeWrappedException(e, e->errorCode(), "getGlobalUniqueIds");
+        e->Release();
+        throw wrappedException;
+    }
 }
