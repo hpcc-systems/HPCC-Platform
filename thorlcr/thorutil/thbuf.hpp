@@ -132,5 +132,6 @@ interface IRowMultiWriterReader : extends IRowStream
 #define DEFAULT_WR_WRITE_GRANULARITY 1000 // Amount writers buffer up before committing to output
 extern graph_decl IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IThorRowInterfaces *rowif, unsigned limit, unsigned readGranularity=DEFAULT_WR_READ_GRANULARITY, unsigned writeGranularity=DEFAULT_WR_WRITE_GRANULARITY);
 
+extern graph_decl void populateLookAheadOptions(CActivityBase &activity, LookAheadOptions &options);
 
 #endif
