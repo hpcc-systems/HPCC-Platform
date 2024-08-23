@@ -1251,6 +1251,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringVal & getWorkunitDistributedAccessToken(IStringVal & datoken) const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
+    virtual __int64 getEngineSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
     virtual IConstWUResult * getTemporaryByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getTemporaries() const = 0;
@@ -1340,6 +1341,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;
+    virtual void setEngineSession(__int64 sessionId) = 0;
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;
