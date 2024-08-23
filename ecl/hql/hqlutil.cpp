@@ -3282,6 +3282,7 @@ bool isDependentOnParameter(IHqlExpression * expr)
     return checker.isDependent(expr);
 }
 
+// Returns true only when we need to build timing mechanisms around the calls
 bool isTimed(IHqlExpression * expr)
 {
     switch (expr->getOperator())

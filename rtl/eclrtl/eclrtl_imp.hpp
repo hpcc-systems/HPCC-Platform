@@ -132,9 +132,25 @@ public:
         regex = compiled;
     }
 
+    inline void setPatternTimed(ISectionTimer * timer, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExprTimed(timer, pattern, isCaseSensitive);
+        if (regex)
+            rtlDestroyCompiledStrRegExpr(regex);
+        regex = compiled;
+    }
+
     inline void setPattern(unsigned int patternLen, const char * pattern, bool isCaseSensitive)
     {
         ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExpr(patternLen, pattern, isCaseSensitive);
+        if (regex)
+            rtlDestroyCompiledStrRegExpr(regex);
+        regex = compiled;
+    }
+
+    inline void setPatternTimed(ISectionTimer * timer, unsigned int patternLen, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExprTimed(timer, patternLen, pattern, isCaseSensitive);
         if (regex)
             rtlDestroyCompiledStrRegExpr(regex);
         regex = compiled;
@@ -156,6 +172,14 @@ public:
     void find(const rtlCompiledStrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
     {
         IStrRegExprFindInstance * search = regex->find(str, 0, len, needToKeepSearchString);
+        if (instance)
+            rtlDestroyStrRegExprFindInstance(instance);
+        instance = search;
+    }
+    
+    void findTimed(ISectionTimer * timer, const rtlCompiledStrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
+    {
+        IStrRegExprFindInstance * search = regex->findTimed(timer, str, 0, len, needToKeepSearchString);
         if (instance)
             rtlDestroyStrRegExprFindInstance(instance);
         instance = search;
@@ -186,9 +210,25 @@ public:
         instance = compiled;
     }
 
+    inline void setPatternTimed(ISectionTimer * timer, const UChar * pattern, bool isCaseSensitive)
+    {
+        ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExprTimed(timer, pattern, isCaseSensitive);
+        if (instance)
+            rtlDestroyCompiledUStrRegExpr(instance);
+        instance = compiled;
+    }
+
     inline void setPattern(unsigned int patternLen, const UChar * pattern, bool isCaseSensitive)
     {
         ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(patternLen, pattern, isCaseSensitive);
+        if (instance)
+            rtlDestroyCompiledUStrRegExpr(instance);
+        instance = compiled;
+    }
+
+    inline void setPatternTimed(ISectionTimer * timer, unsigned int patternLen, const UChar * pattern, bool isCaseSensitive)
+    {
+        ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExprTimed(timer, patternLen, pattern, isCaseSensitive);
         if (instance)
             rtlDestroyCompiledUStrRegExpr(instance);
         instance = compiled;
@@ -218,10 +258,26 @@ public:
             rtlDestroyCompiledU8StrRegExpr(instance);
         instance = compiled;
     }
+
+    inline void setPatternTimed(ISectionTimer * timer, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExprTimed(timer, pattern, isCaseSensitive);
+        if (instance)
+            rtlDestroyCompiledU8StrRegExpr(instance);
+        instance = compiled;
+    }
     
     inline void setPattern(unsigned int patternLen, const char * pattern, bool isCaseSensitive)
     {
         ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(patternLen, pattern, isCaseSensitive);
+        if (instance)
+            rtlDestroyCompiledU8StrRegExpr(instance);
+        instance = compiled;
+    }
+    
+    inline void setPatternTimed(ISectionTimer * timer, unsigned int patternLen, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExprTimed(timer, patternLen, pattern, isCaseSensitive);
         if (instance)
             rtlDestroyCompiledU8StrRegExpr(instance);
         instance = compiled;
@@ -247,6 +303,14 @@ public:
             rtlDestroyUStrRegExprFindInstance(instance);
         instance = search;
     }
+    
+    void findTimed(ISectionTimer * timer, const rtlCompiledUStrRegex & regex, size32_t len, const UChar * str)
+    {
+        IUStrRegExprFindInstance * search = regex->findTimed(timer, str, 0, len);
+        if (instance)
+            rtlDestroyUStrRegExprFindInstance(instance);
+        instance = search;
+    }
 
 private:
     IUStrRegExprFindInstance * instance;
@@ -264,6 +328,14 @@ public:
     void find(const rtlCompiledU8StrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
     {
         IStrRegExprFindInstance * search = regex->find(str, 0, len, needToKeepSearchString);
+        if (instance)
+            rtlDestroyU8StrRegExprFindInstance(instance);
+        instance = search;
+    }
+    
+    void findTimed(ISectionTimer * timer, const rtlCompiledU8StrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
+    {
+        IStrRegExprFindInstance * search = regex->findTimed(timer, str, 0, len, needToKeepSearchString);
         if (instance)
             rtlDestroyU8StrRegExprFindInstance(instance);
         instance = search;
