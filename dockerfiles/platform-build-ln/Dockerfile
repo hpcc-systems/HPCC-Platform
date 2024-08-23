@@ -19,20 +19,24 @@
 
 ARG BUILD_LABEL
 ARG DOCKER_REPO
-FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL}
+FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL} AS stage
 
-USER hpcc
 WORKDIR /hpcc-dev
 
 ARG BUILD_USER=hpcc-systems
 RUN echo BUILD_USER is ${BUILD_USER}
-ARG GITHUB_TOKEN
+ARG GITHUB_TOKEN=none       # This layer should never be cached (see FROM below)
 ARG BUILD_TAG=none
 RUN git clone https://oauth2:${GITHUB_TOKEN}@github.com/${BUILD_USER}/LN.git && \
     cd LN && \
     git submodule update --init --recursive
 
+FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL}
+COPY --from=stage /hpcc-dev /hpcc-dev
+
+USER hpcc
 WORKDIR /hpcc-dev/LN
+
 RUN git fetch origin && \
     git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
