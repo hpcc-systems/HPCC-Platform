@@ -3329,22 +3329,6 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
 }
 
 //---------------------------------------------------------------------------
-
-extern unsigned getClarionResultType(ITypeInfo *type)
-{
-    if (type)
-    {
-        type_t tc = type->getTypeCode();
-        size32_t size = ((tc == type_row) || (tc == type_record)) ? 0 : type->getSize();
-        return tc | (size << 16) |
-                (type->isInteger() && !type->isSigned() ? type_unsigned : 0) |
-                (type->queryCharset() && type->queryCharset()->queryName()==ebcdicAtom ? type_ebcdic : 0);
-    }
-    else
-        return 0;
-}
-
-//---------------------------------------------------------------------------
 extern DEFTYPE_API ICharsetInfo * deserializeCharsetInfo(MemoryBuffer &src)
 {
     StringAttr name;
