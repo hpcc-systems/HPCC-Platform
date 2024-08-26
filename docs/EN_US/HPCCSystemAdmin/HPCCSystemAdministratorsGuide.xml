@@ -72,15 +72,15 @@
     <sect1 id="HPCC_SysAdminIntro" role="nobrk">
       <title>Introduction</title>
 
-      <para>HPCC (High Performance Computing Cluster) Systems is a massive
+      <para>The HPCC (High Performance Computing Cluster) Systems platform is a massive
       parallel-processing computing platform that solves Big Data
       problems.</para>
 
-      <para>HPCC Systems platform stores and processes large quantities of
+      <para>The HPCC Systems platform stores and processes large quantities of
       data, processing billions of records per second using massive parallel
       processing technology. Large amounts of data across disparate data
       sources can be accessed, analyzed, and manipulated in fractions of
-      seconds. HPCC Systems functions as both a processing and a distributed
+      seconds. The HPCC Systems platform functions as both a processing and a distributed
       data storage environment, capable of analyzing terabytes of
       information.</para>
     </sect1>
@@ -133,7 +133,7 @@
       <sect2 id="HPCC_Clusters" role="brk">
         <title>Clusters</title>
 
-        <para>HPCC Systems environment contains clusters which you define and
+        <para>An HPCC Systems environment contains clusters which you define and
         use according to your needs. The types of clusters used by HPCC
         Systems:</para>
 
@@ -431,54 +431,26 @@
   <chapter id="SysAdm_HW_and_SW-Req">
     <title>Hardware and Software Requirements</title>
 
-    <para>This chapter describes some of the hardware and software
-    requirements in order to run the HPCC Systems platform. HPCC Systems is
-    designed to run on commodity hardware, which makes building and
-    maintaining large scale (petabytes) clusters economically feasible. When
-    planning your cluster hardware, you will need to balance a number of
-    considerations specific to your needs.</para>
-
-    <para>This section provides some insight into the hardware and
-    infrastructure that HPCC Systems works well on. This is not an exclusive
-    comprehensive set of instructions, nor a mandate on what hardware you must
-    have. Consider this as a guide to use when looking to implement or scale
-    your HPCC Systems platform. These suggestions should be taken into
-    consideration for your specific enterprise needs.</para>
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-Switch'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-LoadBalancer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="xpointer(//*[@id='System_sizings'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='Nodes-Software'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-  </chapter>
+    <para>This chapter provides an overview of the hardware and software requirements for running the HPCC Systems platform optimally. While these requirements were significant when the HPCC Systems platform was first deployed many years ago, there have been substantial improvements in hardware since then. The platform now supports virtual containers and cloud deployments, making the requirements less significant even for large-scale (petabytes) bare-metal deployments. In fact, the HPCC Systems platform should perform satisfactorily on most modern hardware configurations.</para>
+   </chapter>
 
   <chapter id="SysAdm_HWSizing">
     <title>Hardware and Components</title>
 
     <para>This section provides some insight as to what sort of hardware and
-    infrastructure optimally HPCC Systems works well on. This is not an
+    infrastructure optimally the HPCC Systems platform works well on. This is not an
     exclusive comprehensive set of instructions, nor a mandate on what
     hardware you must have. Consider this as a guide to use when looking to
     implement or scale your HPCC Systems platform. These suggestions should be
     taken into consideration for your specific enterprise needs.</para>
 
-    <para>HPCC Systems is designed to run on commodity hardware, which makes
+    <para>The HPCC Systems platform is designed to run on commodity hardware, which makes
     building and maintaining large scale (petabytes) clusters economically
     feasible. When planning your cluster hardware, you will need to balance a
     number of considerations, including fail-over domains and potential
     performance issues. Hardware planning should include distributing HPCC
     Systems across multiple physical hosts, such as a cluster. Generally, one
-    type of best practice is to run HPCC Systems processes of a particular
+    type of best practice is to run the HPCC Systems platform processes of a particular
     type, for example Thor, Roxie, or Dali, on a host configured specifically
     for that type of process.</para>
 
@@ -495,7 +467,7 @@
       larger physical servers to run multiple Thor slave nodes per physical
       server.</para>
 
-      <para>It is important to note that HPCC Systems by nature is a parallel
+      <para>It is important to note that the HPCC Systems platform by nature is a parallel
       processing system and all Thor slave nodes will be exercising at
       precisely the same time. So when allocating more than one HPCC Systems
       Thor slave per physical machine assure that each slave meets the
@@ -546,12 +518,12 @@
     <sect1 id="SysAdm_Dali_Sasha">
       <title>Dali and Sasha Hardware Configurations</title>
 
-      <para>HPCC Systems Dali processes store cluster metadata in RAM. For
+      <para>The HPCC Systems platform Dali processes store cluster metadata in RAM. For
       optimal efficiency, provide at least 48GB of RAM, 6 or more CPU cores,
       1Gb/sec network interface and a high availability disk for a single HPCC
-      Systems Dali. The HPCC Systems Dali processes are one of the few native
+      Systems Dali. The HPCC Systems platform Dali processes are one of the few native
       active/passive components. Using standard "swinging disk" clustering is
-      recommended for a high availability setup. For a single HPCC Systems
+      recommended for a high availability setup. For a single HPCC Systems platform
       Dali process, any suitable High Availability (HA) RAID level is
       fine.</para>
 
@@ -683,7 +655,7 @@
       large files, you will need a tool that supports the secure copy
       protocol, something like a WinSCP.</para>
 
-      <para>For more information about HPCC Systems data handling see the
+      <para>For more information about the HPCC Systems platform data handling see the
       <emphasis>HPCC Systems<superscript>®</superscript> Data
       Handling</emphasis> and the <emphasis>HPCC
       Systems<superscript>®</superscript> Data Tutorial</emphasis>
@@ -804,7 +776,7 @@
 
           <para><emphasis role="bold">Backupnode</emphasis></para>
 
-          <para>Backupnode is a tool that is packaged with HPCC Systems
+          <para>Backupnode is a tool that is packaged with the HPCC Systems 
           platform. Backupnode allows you to backup Thor nodes on demand or in
           a script. You can also use backupnode regularly in a crontab or by
           adding a backupnode component with Configuration Manager to your
@@ -914,9 +886,9 @@
     <sect1 id="SysAdm_Log_Files">
       <title>Log Files</title>
 
-      <para>HPCC Systems provides a wealth of information which can be used to
+      <para>The HPCC Systems platform provides a wealth of information which can be used to
       debug, track transactions, application performance, and troubleshooting
-      purposes. You can review HPCC Systems messages as they are reported and
+      purposes. You can review the HPCC Systems platform messages as they are reported and
       captured in the log files. Log files can help you in understanding what
       is occurring on the system and useful in troubleshooting.</para>
 
@@ -925,7 +897,7 @@
 
         <para>HPCC Systems component files are written to <emphasis
         role="bold">/var/log/HPCCSystems</emphasis> (default location). You
-        can optionally configure your HPCC Systems to write the logs to a
+        can optionally configure your HPCC Systems platform to write the logs to a
         different directory. You should know where the log files are, and
         refer to the logs first when troubleshooting any issues.</para>
 
@@ -944,7 +916,7 @@
         <!-- # JIRA 18201 #-->
 
         <para>Understanding the log files, and what is normally reported in
-        the log files, helps in troubleshooting HPCC Systems clusters.</para>
+        the log files, helps in troubleshooting the HPCC Systems platform clusters.</para>
 
         <para>As part of routine maintenance you may want to backup, archive,
         and remove the older log files. Some log files can grow quite large
@@ -1124,7 +1096,7 @@
   <chapter id="OnDemand_Maintenance">
     <title>System Configuration and Management</title>
 
-    <para>HPCC Systems require configuration. The Configuration Manager tool
+    <para>The HPCC Systems platform require configuration. The Configuration Manager tool
     (configmgr) included with the system software is a valuable piece of
     setting up your HPCC Systems platform. The Configuration Manager is a
     graphical tool provided that can be used to configure your system.
@@ -1177,9 +1149,9 @@
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
-      <para>A component of HPCC Systems on bare-metal configuration is the
+      <para>A component of the HPCC Systems platform on bare-metal configuration is the
       environment.conf file. Environment.conf contains some global definitions
-      that the configuration manager uses to configure the HPCC Systems. In
+      that the configuration manager uses to configure the HPCC Systems platform. In
       most cases, the defaults are sufficient.</para>
 
       <para>The environment.conf file only works for bare-metal deployments.
@@ -1501,7 +1473,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         highest priority, and a value of 19 is the lowest.</para>
 
         <para>The default environment.conf file is delivered with the nice
-        value disabled. If you wish to use nice to prioritize HPCC Systems
+        value disabled. If you wish to use nice to prioritize HPCC Systems platform
         processes, you need to modify the environment.conf file to enable
         nice. You can also adjust the nice value in environment.conf.</para>
       </sect2>
@@ -1762,7 +1734,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       <para>The performance of your system can vary depending on how some
       components interact. One area which could impact performance is the
       relationship with users, groups, and Active Directory. If possible,
-      having a separate Active Directory specific to HPCC Systems could be a
+      having a separate Active Directory specific to the HPCC Systems platform could be a
       good policy. There have been a few instances where just one Active
       Directory servicing many, diverse applications has been less than
       optimal.</para>
@@ -1953,11 +1925,11 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
     <title>Best Practices</title>
 
     <para>This chapter outlines various forms of best practices established by
-    long time HPCC Systems users and administrators running HPCC Systems in a
+    long time HPCC Systems users and administrators running the HPCC Systems platform in a
     high availability, demanding production environment. While it is not
     required that you run your environment in this manner, as your specific
     requirements may vary. This section provides some best practice
-    recommendations established after several years of running HPCC Systems in
+    recommendations established after several years of running the HPCC Systems platform in
     a demanding, intense, production environment.</para>
 
     <sect1 id="BP_Cluster_Redundancy" role="nobrk">
@@ -2662,8 +2634,7 @@ heapUseTransparentHugePages</programlisting>
   <chapter id="Resources">
     <title>System Resources</title>
 
-    <para>There are additional resources available for the HPCC Systems
-    System.</para>
+    <para>There are additional resources available for the HPCC Systems platform.</para>
 
     <sect1 id="HPCC_Resources" role="nobrk">
       <title>HPCC Systems Resources</title>
@@ -2687,7 +2658,7 @@ heapUseTransparentHugePages</programlisting>
     <sect1 id="SysAdm_Addl_Resources">
       <title>Additional Resources</title>
 
-      <para>Additional help with HPCC Systems and Learning ECL is also
+      <para>Additional help with the HPCC Systems platform and Learning ECL is also
       available. There are online courses available. Go to :</para>
 
       <para><ulink
