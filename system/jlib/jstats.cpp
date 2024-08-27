@@ -991,6 +991,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(SoapcallDNS) },
     { CYCLESTAT(SoapcallConnect) },
     { NUMSTAT(SoapcallConnectFailures), "The number of SOAPCALL connect failures" },
+    { TIMESTAT(LookAhead), "The total time lookahead thread spend prefetching rows from upstream activities" },
+    { CYCLESTAT(LookAhead) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

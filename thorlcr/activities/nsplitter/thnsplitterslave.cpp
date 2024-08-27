@@ -60,6 +60,7 @@ public:
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override { return COutputTiming::queryTotalCycles(); }
     virtual unsigned __int64 queryEndCycles() const override { return COutputTiming::queryEndCycles(); }
+    virtual unsigned __int64 queryBlockedCycles() const { return COutputTiming::queryBlockedCycles(); }
     virtual void debugRequest(MemoryBuffer &mb) override;
 // Stepping methods
     virtual IInputSteppingMeta *querySteppingMeta() { return nullptr; }
