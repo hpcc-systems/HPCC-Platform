@@ -314,6 +314,8 @@ enum StatisticKind
     StNumParallelExecute,
     StNumAgentRequests,
     StSizeAgentRequests,
+    StTimeLookAhead,
+    StCycleLookAheadCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

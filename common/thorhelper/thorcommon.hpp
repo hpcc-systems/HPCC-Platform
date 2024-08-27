@@ -246,6 +246,7 @@ public:
     unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
     cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
     cycle_t blockedCycles;  // Time spent blocked
+    cycle_t lookAheadCycles;
 
     // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
@@ -265,6 +266,7 @@ public:
         firstRow = 0;
         firstExitCycles = 0;
         blockedCycles = 0;
+        lookAheadCycles = 0;
     }
 };
 
@@ -361,6 +363,30 @@ public:
         }
     }
 };
+
+class LookAheadTimer
+{
+    cycle_t startCycles;
+    ActivityTimeAccumulator &accumulator;
+protected:
+    const bool enabled;
+public:
+    inline LookAheadTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled)
+    {
+        if (likely(enabled))
+            startCycles = get_cycles_now();
+        else
+            startCycles = 0;
+    }
+
+    inline ~LookAheadTimer()
+    {
+        if (likely(enabled))
+            accumulator.lookAheadCycles += (get_cycles_now() - startCycles);
+    }
+};
+
 #else
 struct ActivityTimer
 {

@@ -986,6 +986,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(ParallelExecute), "The number of parallel execution paths for this activity" },
     { NUMSTAT(AgentRequests), "The number of agent request packets for this activity" },
     { SIZESTAT(AgentRequests), "The total size of agent request packets for this activity" },
+    { TIMESTAT(LookAhead), "The total time lookahead thread spend prefetching rows from upstream activities" },
+    { CYCLESTAT(LookAhead) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
