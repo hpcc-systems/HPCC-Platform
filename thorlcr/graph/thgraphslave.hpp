@@ -46,10 +46,11 @@ public:
     COutputTiming() { }
 
     void resetTiming() { slaveTimerStats.reset(); }
-    ActivityTimeAccumulator &getTotalCyclesRef() { return slaveTimerStats; }
+    ActivityTimeAccumulator &getActivityTimerAccumulator() { return slaveTimerStats; }
     unsigned __int64 queryTotalCycles() const { return slaveTimerStats.totalCycles; }
     unsigned __int64 queryEndCycles() const { return slaveTimerStats.endCycles; }
     unsigned __int64 queryBlockedCycles() const { return slaveTimerStats.blockedCycles; }
+    unsigned __int64 queryLookAheadCycles() const { return slaveTimerStats.lookAheadCycles; }
 };
 
 class CEdgeProgress
@@ -289,8 +290,9 @@ public:
         return consumerOrdered;
     }
     virtual unsigned __int64 queryTotalCycles() const { return COutputTiming::queryTotalCycles(); }
-    virtual unsigned __int64 queryBlockedCycles() const { return COutputTiming::queryBlockedCycles();}
+    virtual unsigned __int64 queryBlockedCycles() const { return COutputTiming::queryBlockedCycles(); }
     virtual unsigned __int64 queryEndCycles() const { return COutputTiming::queryEndCycles(); }
+    virtual unsigned __int64 queryLookAheadCycles() const { return COutputTiming::queryLookAheadCycles(); }
     virtual void debugRequest(MemoryBuffer &msg) override;
 
 // IThorDataLink
