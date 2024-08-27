@@ -297,12 +297,26 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     {
         ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, cipherSuite, timeout, &err);
 
-        // for new versions of openldap, version 2.2.*
-        if(nullptr == ld   &&  err == LDAP_PROTOCOL_ERROR  &&  stype != ACTIVE_DIRECTORY)
-            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
-
-        if(nullptr == ld)
+        if (ld == nullptr)
+        {
+            if (err == LDAP_PROTOCOL_ERROR && stype != ACTIVE_DIRECTORY)
+            {
+                WARNLOG("Unable to connect. If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
+            }
+            else
+            {
+                // If no cipher suite is specified, tell user they may need to provide one, otherwise tell them they may need to provide a different one
+                if (isEmptyString(cipherSuite))
+                {
+                    WARNLOG("Unable to connect. if you're trying to connect to an LDAPS server, you may need to specify a cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
+                }
+                else
+                {
+                    WARNLOG("Unable to connect. If you're trying to connect to an LDAPS server, you may need to specify a different cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
+                }
+            }
             return err;//unable to connect, give up
+        }
     }
 
     LDAPMessage* msg = NULL;
@@ -311,7 +325,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     err = ldap_search_ext_s(ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg);
     if(err != LDAP_SUCCESS)
     {
-        DBGLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
+        WARNLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
         if (msg)
             ldap_msgfree(msg);
         return err;
