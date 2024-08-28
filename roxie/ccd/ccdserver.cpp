@@ -479,7 +479,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                     StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries,
+                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries, StNumAgentRequests, StSizeAgentRequests,
                                                     StSizeContinuationData, StNumContinuationRequests }, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -491,10 +491,10 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                 StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries,
+                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries, StNumAgentRequests, StSizeAgentRequests,
                                                 StSizeContinuationData, StNumContinuationRequests }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries,
+                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries, StNumAgentRequests, StSizeAgentRequests,
                                                StSizeContinuationData, StNumContinuationRequests }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
@@ -526,7 +526,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
                                                       StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
                                                       StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
-                                                      StNumAckRetries, StSizeContinuationData, StNumContinuationRequests
+                                                      StNumAckRetries, StNumAgentRequests, StSizeAgentRequests, StSizeContinuationData, StNumContinuationRequests
                                                       });
 
 //=================================================================================
@@ -4255,7 +4255,10 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 byte * tgt = (byte*)(h+1);
                 owner.copyHeader(tgt, channel);
 
+                owner.activity.noteStatistic(StNumAgentRequests, 1);
+                owner.activity.noteStatistic(StSizeAgentRequests, buffer.length());
                 ret.setown(createRoxiePacket(buffer));
+
                 if (overflowSequence == OVERFLOWSEQUENCE_MAX)
                     overflowSequence = 1; // don't wrap to 0 - that is a bit special
                 else

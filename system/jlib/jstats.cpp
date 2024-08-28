@@ -984,6 +984,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(MatchCandidates), "The number of candidate combinations of left and right rows forming join groups" },
     { NUMSTAT(MatchCandidatesMax), "The largest number of candidate combinations of left and right rows in a single group" },
     { NUMSTAT(ParallelExecute), "The number of parallel execution paths for this activity" },
+    { NUMSTAT(AgentRequests), "The number of agent request packets for this activity" },
+    { SIZESTAT(AgentRequests), "The total size of agent request packets for this activity" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
