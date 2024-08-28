@@ -4285,6 +4285,22 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                     args.replace(*createConstant(true), 2);
                                 }
 
+                                //This test currently duplicates the test in the enclosing if.  This is in preparation for applying the logic
+                                //to other joins later by removing the outer test.
+                                if (transformed->hasAttribute(lookupAtom))
+                                {
+                                    //LOOKUP join implicitly dedups the right hand side by the hard-match-condition (unless MANY is specified).
+                                    //Technically this is not equivalent to KEEP(1) - since that is only applied after any soft-match condition
+                                    //However in this case the match condition is true (or row-invarient in very obscure cases),
+                                    //so they are identical and this transformation is valid.
+                                    if (!transformed->hasAttribute(manyAtom))
+                                    {
+                                        //There should never be a KEEP attribute if MANY not specified - but remove in case.
+                                        removeAttribute(args, keepAtom);
+                                        args.append(*createAttribute(keepAtom, createConstant(1)));
+                                    }
+                                    removeAttribute(args, lookupAtom);
+                                }
                                 args.append(*createAttribute(allAtom));
                             }
                             if (doTrace(traceOptimizations))
