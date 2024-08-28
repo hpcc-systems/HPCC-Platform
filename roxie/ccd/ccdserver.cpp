@@ -4182,14 +4182,14 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 {
                     if (acknowledgeAllRequests)
                     {
-                        if (!i->resendNeeded(packetAcknowledgeTimeout, now))
+                        if (!i->resendNeeded(now))
                             continue;
                         if (doTrace(traceAcknowledge) || doTrace(traceRoxiePackets))
                             activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", packetAcknowledgeTimeout);
                         activity.noteStatistic(StNumAckRetries, 1);
 
                     }
-                    if (!i->queryHeader().retry(acknowledgeAllRequests))
+                    if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
                         IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from agent(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());
@@ -5315,10 +5315,10 @@ public:
             else if (!anyActivity && !localAgent && !acknowledgeAllRequests)
             {
                 unsigned timeNow = msTick();
-                if (timeNow-lastActivity >= checkInterval)
+                if (timeNow-lastActivity >= timeout)
                 {
                     lastActivity = timeNow;
-                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", checkInterval);
+                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
                     retryPending();
                 }
             }

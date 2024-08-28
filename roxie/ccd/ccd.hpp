@@ -178,7 +178,7 @@ public:
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     StringBuffer &toString(StringBuffer &ret) const;
     bool allChannelsFailed();
-    bool retry(bool ack);
+    bool retry();
     void setException(unsigned subChannel);
     unsigned thisChannelRetries(unsigned subChannel);
 
@@ -266,7 +266,7 @@ interface IRoxieQueryPacket : extends IInterface
     virtual void noteTimeSent() = 0;
     virtual void setAcknowledged() = 0;
     virtual bool isAcknowledged() const = 0;
-    virtual bool resendNeeded(unsigned timeout, unsigned now) const = 0;
+    virtual bool resendNeeded(unsigned now) = 0;
 };
 
 interface IQueryDll;

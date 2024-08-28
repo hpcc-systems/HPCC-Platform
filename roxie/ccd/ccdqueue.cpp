@@ -204,7 +204,7 @@ bool RoxiePacketHeader::allChannelsFailed()
     return (retries & mask) == mask;
 }
 
-bool RoxiePacketHeader::retry(bool ack)
+bool RoxiePacketHeader::retry()
 {
     bool worthRetrying = false;
     unsigned mask = SUBCHANNEL_MASK;
@@ -213,8 +213,7 @@ bool RoxiePacketHeader::retry(bool ack)
     {
         unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
         if (subRetries != SUBCHANNEL_MASK)
-            if (!subRetries || !ack)
-                subRetries++;
+            subRetries++;
         if (subRetries != SUBCHANNEL_MASK)
             worthRetrying = true;
         retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
@@ -498,6 +497,7 @@ protected:
     unsigned contextLength = 0;
     std::atomic<unsigned> timeFirstSent = 0;
     std::atomic<bool> acknowledged = false;
+    unsigned resends = 0;
     
 public:
     IMPLEMENT_IINTERFACE;
@@ -651,9 +651,12 @@ public:
         return acknowledged;
     }
 
-    virtual bool resendNeeded(unsigned timeout, unsigned now) const override
+    virtual bool resendNeeded(unsigned now) override
     {
-        return timeFirstSent && !acknowledged && now-timeFirstSent > timeout;
+        bool ret = timeFirstSent && !acknowledged && now-timeFirstSent > packetAcknowledgeTimeout*(resends+1);
+        if (ret)
+            resends++;
+        return ret;
     }
 };
 
