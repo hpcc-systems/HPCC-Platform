@@ -636,7 +636,7 @@ public:
             te->setSlave(queryMyRank());
             if (!te->queryOrigin())
             {
-                VStringBuffer msg("SLAVE #%d", queryMyRank());
+                VStringBuffer msg("WORKER #%d", queryMyRank());
                 te->setOrigin(msg);
             }
             else if (0 == stricmp("user", te->queryOrigin()))

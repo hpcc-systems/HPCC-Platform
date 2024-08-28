@@ -449,8 +449,8 @@ public:
 };
 
 #define DEFAULT_THORMASTERPORT 20000
-#define DEFAULT_THORSLAVEPORT 20100
-#define DEFAULT_SLAVEPORTINC 20
+#define DEFAULT_THORWORKERPORT 20100
+#define DEFAULT_WORKERPORTINC 20
 #define DEFAULT_QUERYSO_LIMIT 10
 
 class graph_decl CFifoFileCache : public CSimpleInterface
@@ -624,7 +624,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit, IExce
 extern graph_decl void reportExceptionToWorkunitCheckIgnore(IConstWorkUnit &workunit, IException *e, ErrorSeverity severity = SeverityWarning);
 
 extern graph_decl Owned<IPropertyTree> globals;
-extern graph_decl mptag_t masterSlaveMpTag;
+extern graph_decl mptag_t managerWorkerMpTag;
 extern graph_decl mptag_t kjServiceMpTag;
 enum SlaveMsgTypes : unsigned
 {

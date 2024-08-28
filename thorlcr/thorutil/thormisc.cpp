@@ -67,7 +67,7 @@ static Owned<IGroup> localGroup;   // used as a placeholder in IFileDescriptors 
 static Owned<ICommunicator> nodeComm; // communicator based on nodeGroup (master+slave processes)
 
 
-mptag_t masterSlaveMpTag;
+mptag_t managerWorkerMpTag;
 mptag_t kjServiceMpTag;
 Owned<IPropertyTree> globals;
 static Owned<IMPtagAllocator> ClusterMPAllocator;
@@ -354,7 +354,7 @@ public:
                 }
                 else
                 {
-                    str.appendf("SLAVE #%d [", slave);
+                    str.appendf("WORKER #%d [", slave);
                     queryClusterGroup().queryNode(slave).endpoint().getEndpointHostText(str);
                     str.append("]: ");
                 }

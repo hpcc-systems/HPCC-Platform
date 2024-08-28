@@ -39,9 +39,9 @@ protected:
 public:
     CMasterWatchdog(bool startNow);
     ~CMasterWatchdog();
-    void addSlave(const SocketEndpoint &slave);
-    void removeSlave(const SocketEndpoint &slave);
-    CMachineStatus *findSlave(const SocketEndpoint &ep);
+    void addWorker(const SocketEndpoint &worker);
+    void removeWorker(const SocketEndpoint &worker);
+    CMachineStatus *findWorker(const SocketEndpoint &ep);
     void checkMachineStatus();
     unsigned readPacket(HeartBeatPacketHeader &hb, MemoryBuffer &mb);
     void start();
