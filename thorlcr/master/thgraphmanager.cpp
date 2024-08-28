@@ -1148,7 +1148,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     }
     catch (IException *e)
     {
-        exception.setown(e);
+        exception.setown(ThorWrapException(e, "CJobManager::executeGraph"));
+        e->Release();
     }
     job->endJob();
     removeJob(*job);

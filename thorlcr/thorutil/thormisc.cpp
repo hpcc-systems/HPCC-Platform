@@ -392,6 +392,12 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     e->errorMessage(eStr).append(" : ");
     eStr.limited_valist_appendf(2048, format, args);
     CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.str());
+    if (QUERYINTERFACE(e, IMP_Exception))
+    {
+        IMP_Exception *me = QUERYINTERFACE(e, IMP_Exception);
+        unsigned workerNum = queryNodeComm().queryGroup().rank(me->queryEndpoint());
+        te->setSlave(workerNum);
+    }
     return te;
 }
 
@@ -456,6 +462,12 @@ IThorException *_MakeActivityException(CGraphElementBase &container, IException 
     IThorException *e2 = new CThorException(e->errorAudience(), e->errorCode(), msg.str());
     e2->setOriginalException(e);
     setExceptionActivityInfo(container, e2);
+    if (QUERYINTERFACE(e, IMP_Exception))
+    {
+        IMP_Exception *me = QUERYINTERFACE(e, IMP_Exception);
+        unsigned workerNum = queryNodeComm().queryGroup().rank(me->queryEndpoint());
+        e2->setSlave(workerNum);
+    }
     return e2;
 }
 

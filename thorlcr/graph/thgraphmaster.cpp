@@ -367,8 +367,9 @@ void CSlaveMessageHandler::threadmain()
     }
     catch (IException *e)
     {
-        job.fireException(e);
+        Owned<IThorException> te = ThorWrapException(e, "CSlaveMessageHandler::threadmain");
         e->Release();
+        job.fireException(te);
     }
 }
 
@@ -1976,7 +1977,12 @@ bool CJobMaster::go()
             }
         }
     }
-    catch (IException *e) { fireException(e); e->Release(); }
+    catch (IException *e)
+    {
+        Owned<IThorException> te = ThorWrapException(e, "Error running sub graphs");
+        e->Release();
+        fireException(te);
+    }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
     workunit->setGraphState(queryGraphName(), getWfid(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
@@ -1987,8 +1993,9 @@ bool CJobMaster::go()
     try { jobDone(); }
     catch (IException *e)
     {
-        EXCLOG(e, NULL); 
-        jobDoneException.setown(e);
+        jobDoneException.setown(ThorWrapException(e, "Error in jobDone"));
+        e->Release();
+        EXCLOG(jobDoneException, NULL);
     }
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();

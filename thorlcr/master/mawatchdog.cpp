@@ -41,8 +41,9 @@ public:
     SocketEndpoint ep;
     bool alive;
     bool markdead;
-    CMachineStatus(const SocketEndpoint &_ep)
-        : ep(_ep)
+    unsigned workerNum;
+    CMachineStatus(const SocketEndpoint &_ep, unsigned _workerNum)
+        : ep(_ep), workerNum(_workerNum)
     {
         alive = true;
         markdead = false;
@@ -95,10 +96,10 @@ void CMasterWatchdog::start()
     }
 }
 
-void CMasterWatchdog::addWorker(const SocketEndpoint &worker)
+void CMasterWatchdog::addWorker(const SocketEndpoint &worker, unsigned workerNum)
 {
     synchronized block(mutex);
-    CMachineStatus *mstate=new CMachineStatus(worker);
+    CMachineStatus *mstate=new CMachineStatus(worker, workerNum);
     state.append(mstate);
 }
 
@@ -261,7 +262,14 @@ void CMasterWatchdog::threadmain()
                 const SocketEndpoint &ep = e->queryEndpoint();
                 StringBuffer epStr;
                 ep.getEndpointHostText(epStr);
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor worker: %s (Process terminated or node down?)", epStr.str()), TEC_Watchdog);
+                unsigned worker = NotFound;
+                {
+                    synchronized block(mutex);
+                    CMachineStatus *ms = findWorker(ep);
+                    if (ms)
+                        worker = ms->workerNum;
+                }
+                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor worker %u [%s] (Process terminated or node down?)", worker+1, epStr.str()), TEC_Watchdog);
             }
         }
         catch (IException *e)

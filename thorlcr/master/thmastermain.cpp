@@ -261,7 +261,7 @@ public:
         PROGLOG("Worker %d (%s) registered", worker+1, url.str());
         status->set(worker);
         if (watchdog)
-            watchdog->addWorker(ep);
+            watchdog->addWorker(ep, worker);
         ++workersRegistered;
     }
     void connect(unsigned workers)

@@ -39,7 +39,7 @@ protected:
 public:
     CMasterWatchdog(bool startNow);
     ~CMasterWatchdog();
-    void addWorker(const SocketEndpoint &worker);
+    void addWorker(const SocketEndpoint &worker, unsigned workerNum);
     void removeWorker(const SocketEndpoint &worker);
     CMachineStatus *findWorker(const SocketEndpoint &ep);
     void checkMachineStatus();
