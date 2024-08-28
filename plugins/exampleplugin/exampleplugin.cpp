@@ -37,7 +37,7 @@ ECL_EXAMPLE_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = EXAMPLE_PLUGIN_VERSION;
-    pb->moduleName = "lib_redis";
+    pb->moduleName = "lib_exampleplugin";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "ECL plugin library for BLAH BLAH BLAH";
@@ -63,5 +63,51 @@ ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL func2 (ICodeContext * _ctx, 
     returnValue = buffer.detach();
     return;
 }
+
+ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test1(size32_t & returnLength, char * & returnValue,
+    uint8_t p1, uint16_t p2, uint32_t p3, __uint64 p4, 
+    char p5, int16_t p6, int32_t p7, __int64 p8, __uint64 p9, __uint64 p10)
+{
+    VStringBuffer buffer("%u %u %u %llu %d %d %d %lld %llu %llu", p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+    returnLength = buffer.length();
+    returnValue = buffer.detach();
+    return;
+}
+
+ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test2(size32_t & returnLength, char * & returnValue,
+    float p1, float p2, float p3, float p4, 
+    double p5, double p6, double p7, double p8)
+{
+    VStringBuffer buffer("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f", p1, p2, p3, p4, p5, p6, p7, p8);
+    returnLength = buffer.length();
+    returnValue = buffer.detach();
+    return;
+}
+
+ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test3(size32_t & returnLength, char * & returnValue,
+    uint8_t p1, uint16_t p2, uint32_t p3, __uint64 p4, 
+    char p5, int16_t p6, int32_t p7, __int64 p8, __uint64 p9, __uint64 p10,
+    float r1, float r2, float r3, float r4, 
+    double r5, double r6, double r7, double r8)
+{
+    VStringBuffer buffer("%u %u %u %llu %d %d %d %lld %llu %llu", p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+    buffer.appendf(" %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f", r1, r2, r3, r4, r5, r6, r7, r8);
+    returnLength = buffer.length();
+    returnValue = buffer.detach();
+    return;
+}
+
+ECL_EXAMPLE_PLUGIN_API void ECL_EXAMPLE_PLUGIN_CALL test4(size32_t & returnLength, char * & returnValue,
+    size32_t slen, const char *s,
+    const char *s10,
+    const char *v,
+    const char *v10)
+{
+    VStringBuffer buffer("%.*s,%.10s,%s,%s", slen, s, s10, v, v10);
+    returnLength = buffer.length();
+    returnValue = buffer.detach();
+    return;
+}
+
 
 }//close namespace

@@ -1248,7 +1248,142 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
         }
  #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
-        UNIMPLEMENTED;
+  #ifdef MAXFPREGS
+        void * floatstack = fstack.getFloatMem();
+        if (floatstack) {
+            unsigned * floatSizes = fstack.getFloatSizes();
+           __asm__ __volatile__ (
+           ".doparm0: \n\t"
+               "ldr  w0,[%[sizes],#0] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d0,[%[vals], #0] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s0,[%[vals], #0] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#4] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d1,[%[vals], #8] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s1,[%[vals], #8] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#8] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d2,[%[vals], #16] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s2,[%[vals], #16] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#12] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d3,[%[vals], #24] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s3,[%[vals], #24] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#16] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d4,[%[vals], #32] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s4,[%[vals], #32] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#20] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d5,[%[vals], #40] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s5, [%[vals], #40] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#24] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d6,[%[vals], #48] \n\t"
+               "b 1f \n\t"
+           "0: \n\t"
+               "ldr  s6,[%[vals], #48] \n\t"
+           "1: \n\t"
+               "ldr  w0,[%[sizes],#28] \n\t"
+               "cmp  w0, #4 \n\t"
+               "blt  9f \n\t"
+               "beq  0f \n\t"
+               "ldr  d7,[%[vals], #56] \n\t"
+               "b 9f \n\t"
+           "0: \n\t"
+               "ldr  s7,[%[vals], #56] \n\t"
+           "9: \n\t"
+               "nop \n\t"
+            :
+            : [vals] "r"(floatstack), [sizes] "r"(floatSizes)
+            : "r0"
+           );
+        }
+  #endif
+        assertex((len & 15) == 0);                                              // Stack must always be 16-byte aligned
+        register unsigned __int64 _int64result asm("x0");                       // Specific register for result
+        register unsigned __int64 _len asm("x1") = len;
+        register unsigned __int64 _poplen asm("x19") = len-REGPARAMS*REGSIZE;   // Needs to survive the call
+        register void *_fh asm("x8") = fh;                                      // Needs to survive until the call
+        __asm__ __volatile__ (
+            "sub sp, sp, %[_len] \n\t"        // Make space on stack
+            "mov x2, sp \n\t"                 // r2 = destination for loop
+            ".repLoop: \n\t"
+            "ldrb w3, [%[strbuf]], #1 \n\t"   // copy a byte from src array to r3
+            "strb w3, [x2], #1 \n\t"          // and then from r3 onto stack
+            "subs %[_len], %[_len], #1 \n\t"  // decrement and repeat
+            "bne .repLoop \n\t"
+            "ldp x0, x1, [sp] \n\t"
+            "ldp x2, x3, [sp, #16] \n\t"
+            "ldp x4, x5, [sp, #32] \n\t"
+            "ldp x6, x7, [sp, #48] \n\t"
+            "add sp, sp, #64 \n\t"            // first 8 parameters go in registers
+            "blr %[fh] \n\t"                  // make the call
+            "add sp, sp, %[_poplen] \n\t"     // Restore stack pointer (note, have already popped 8 registers, so poplen is len - 64)
+            : "=r"(_int64result)
+            : [_len] "r"(_len), [_poplen] "r"(_poplen), [strbuf] "r"(strbuf), [fh] "r"(_fh)
+            : "x2","x3","x4","x5","x6","x7","lr"                  // function we call may corrupt lr
+            );
+        int64result = _int64result;
+        if (isRealvalue)
+        {
+  #ifdef MAXFPREGS
+            if(resultsize <= 4)
+            {
+                __asm__  __volatile__(
+                    "str  s0,[%[fresult]] \n\t"
+                    :"=m"(floatresult)
+                    : [fresult] "r"(&(floatresult))
+                );
+            }
+            else
+            {
+                __asm__  __volatile__(
+                    "str  d0,[%[fresult]] \n\t"
+                    :"=m"(doubleresult)
+                    : [fresult] "r"(&(doubleresult))
+                );
+            }
+  #else
+            if(resultsize <= 4)
+                floatresult = *(float*)&intresult;
+            else
+                doubleresult = *(double*)&intresult;
+  #endif
+        }
  #else
         // Unknown architecture
         UNIMPLEMENTED;
