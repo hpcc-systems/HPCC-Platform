@@ -200,3 +200,24 @@ Example use:
       logFormat:
         type: "json"
 ```
+#### Baremetal configuration
+
+LogAccess can be configured on baremetal systems as well. It is not a common scenario because baremetal logs continue to be persisted on the local filesystem. Enabling LogAccess on a baremetal system would allow users to fetch remotely stored HPCC logs (not likely related to the host HPCC Systems deployment). To enable, inject a logAccess block with all configuration values properly filled in. The logAccess block can be injected within the Software element in the active environment.xml or within the global element on the esp.xml.
+
+For example:
+
+```
+<logAccess name="MyGrafanaLogaccess" type="GrafanaCurl">
+      <!--username/pass only if secret not available!!-->
+      <connection protocol="http" port="3000" host="localhost" username="admin" password="xyz"/>
+      <datasource name="Loki" id="1"/> <!-- Find this info from Grafana: http://localhost:3000/api/datasources/ -->
+      <namespace name="hpcc"/> <!-- the namespace of the HPCC components which have forwarded logs to grafana -->
+      <logFormat type="table"/> <!--optional, only needed if HPCC log format set to XML or JSON-->
+      <logMaps type="global" searchColumn="log" columnMode="DEFAULT" columnType="string"/>
+      <logMaps type="timestamp" searchColumn="tsNs" columnMode="MIN" storeName="values" columnType="epoch"/>
+      <!-- logmaps based on streams can be found via http://localhost:3000/api/datasources/proxy/1/loki/api/v1/labels -->
+      <logMaps type="components" searchColumn="component" columnMode="ALL" storeName="stream" columnType="string"/>
+      <logMaps type="node" searchColumn="node_name" columnMode="ALL" storeName="stream" columnType="string"/>
+      <logMaps type="pod" searchColumn="pod" columnMode="DEFAULT" storeName="stream" columnType="string"/>
+   </logAccess>
+  ```
