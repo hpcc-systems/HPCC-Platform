@@ -233,7 +233,7 @@ extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterface
 
 class THORHELPER_API ActivityTimeAccumulator
 {
-    friend struct ActivityTimer;
+    friend class ActivityTimer;
 public:
     ActivityTimeAccumulator()
     {
