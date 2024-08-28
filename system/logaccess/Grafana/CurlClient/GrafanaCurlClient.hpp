@@ -55,7 +55,7 @@ static constexpr int defaultEntryStart = 0;
 class GrafanaLogAccessCurlClient : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
-    static constexpr const char * type = "grafanaloganalyticscurl";
+    static constexpr const char * type = "grafanacurl";
     Owned<IPropertyTree> m_pluginCfg;
     StringBuffer m_grafanaConnectionStr;
     GrafanaDataSource m_targetDataSource;
