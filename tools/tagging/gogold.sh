@@ -18,6 +18,11 @@ if [[ -z $gitroot ]]; then
    exit 2
 fi
 
+if [[ ! $(command -v helm) ]]; then
+   echo "helm command could not be found 'sudo snap install helm --classic'"
+   exit 1
+fi
+
 scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
