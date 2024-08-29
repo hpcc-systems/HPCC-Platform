@@ -75,7 +75,6 @@ public:
 
     const char * findstart;
     const char * findend;
-    size32_t replacemax;     // needed for replace (clarion)
     bool nocase;
     const char *rstrchr(const char *s,int c);
     bool  strnequ(const char *s1,const char *s2,size32_t n);
@@ -84,7 +83,6 @@ public:
     bool  equch(int c1,int c2) { if (nocase) return (toupper(c1)==toupper(c2)); return c1==c2; };
     void  adjustptrs(const char *e,size32_t lo,size32_t lr);
     size32_t rstrlen(const char *s) {size32_t l=0; while (s++!=findend) l++; return l; };
-    bool clarion;
     bool suboverlap(int n,int m);
 
     RECOMP() { _clear(s_start); s_save=NULL; program = NULL; };
@@ -236,7 +234,6 @@ bool RegExpr::init(const char *exp,bool nocase)
   assertex(exp!=NULL);
   delete re;
   re = new RECOMP;
-  re->clarion = false;
   re->parse = exp;
   re->npar = 1;
   re->program = (char *)malloc(MAXEXPR);
@@ -290,7 +287,7 @@ bool RegExpr::init(const char *exp,bool nocase)
 }
 
 
-const char * RegExpr::find(const char *string,size32_t from,size32_t len,size32_t maxlen)
+const char * RegExpr::find(const char *string,size32_t from,size32_t len)
 // finds the first occurrence of the RE in string
 {
   /* Be paranoid... */
@@ -310,16 +307,9 @@ const char * RegExpr::find(const char *string,size32_t from,size32_t len,size32_
   else {
     re->findstart = string;
     string+=from;
-    re->replacemax = maxlen;
-    if (maxlen) {
-      re->clarion = true;
-      re->findend = re->findstart+maxlen;
-    }
-    else {
-      const char *s=string;
-      for (size32_t l=0;*s&&(l<len);l++) s++;
-      re->findend = s;
-    }
+    const char *s=string;
+    for (size32_t l=0;*s&&(l<len);l++) s++;
+    re->findend = s;
   }
 
   free((void *)re->s_save);
@@ -431,7 +421,6 @@ void RegExpr::replace(const char *rs,unsigned maxlen,unsigned n)
   if ((n>=NSUBEXP)) return;
   const char *s=re->s_start[n];
   if (!s) return;
-  if (maxlen==0) maxlen = re->replacemax;
   if (maxlen==0) return;
   const char *e=re->s_end[n];
   if (!e) return;
@@ -447,7 +436,7 @@ void RegExpr::replace(const char *rs,unsigned maxlen,unsigned n)
       return;
     }
     r-=l;                               // r = max gap left
-    if (!re->clarion) r--;              // for null
+    r--;                                // for null
     if (r<d) {
       if (lt<d-r) {
         lr+=lt;
@@ -459,17 +448,10 @@ void RegExpr::replace(const char *rs,unsigned maxlen,unsigned n)
         lt-=(d-r);                      // losing part of tail
     }
     if (lt) memmove((void *)(e+d),e,lt);
-    if (!re->clarion) *((char *)(s+(lr+lt))) = 0; // terminate
+    *((char *)(s+(lr+lt))) = 0; // terminate
   }
   else if (lr<lo) {
-    size32_t d2 = lo-lr;                   // delta
-    // must be enough room so fairly simple
-    if (re->clarion) {
-      memmove((void *)(e-d2),e,lt);
-      memset((void *)(e+(lt-d2)),' ',d2);
-    }
-    else
-      memmove((void *)(e-lo+lr),e,lt+1);
+    memmove((void *)(e-lo+lr),e,lt+1);
   }
   memcpy((void *)s,rs,lr);
   re->adjustptrs(e,lo,lr);
@@ -912,11 +894,7 @@ bool RECOMP::match (char *prog)
         return false;
       break;
     case EOL:
-      if (clarion) {
-        if (!claeol(input))
-          return false;
-      }
-      else if (!eob(input))
+      if (!eob(input))
         return false;
       break;
     case ANY:
