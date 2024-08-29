@@ -36,6 +36,7 @@
 #include "espbinding.hpp"
 #include "http/platform/httpbinding.hpp"
 
+#include <initializer_list>
 
 class esp_http_decl CSoapComplexType : implements IRpcSerializable, public CInterface
 {
