@@ -51,6 +51,7 @@ removeSymlink "/usr/bin/eclplus"
 removeSymlink "/usr/bin/soapplus"
 removeSymlink "/usr/bin/testsocket"
 removeSymlink "/usr/bin/wuget"
+removeSymlink "/usr/bin/esp-api"
 
 if [ -d ${INSTALL_DIR}/etc/bash_completion.d ] && [ -d /etc/bash_completion.d ]; then
     for subInstall in $(ls ${INSTALL_DIR}/etc/bash_completion.d | grep -v dpkg-tmp); do
