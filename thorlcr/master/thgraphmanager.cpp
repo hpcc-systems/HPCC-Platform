@@ -62,21 +62,38 @@ static const StatisticsMapping podStatistics({StNumPods});
 
 void relayWuidException(IConstWorkUnit *workunit, const IException *exception)
 {
-    WUState state = workunit->getState();
-    if (WUStateWait != state) // if already in wait state, then an exception has already been relayed
+    switch (workunit->getState())
     {
-        Owned<IWorkUnit> wu = &workunit->lock();
-        if (WUStateWait != state)
+        case WUStateWait: // if already in wait state, then an exception has already been relayed
+        case WUStateAborting:
+        case WUStateAborted:
+        case WUStateFailed:
+            break;
+        default:
         {
-            Owned<IWUException> we = wu->createException();
-            we->setSeverity(SeverityError);
-            StringBuffer errStr;
-            exception->errorMessage(errStr);
-            we->setExceptionMessage(errStr);
-            we->setExceptionSource("thormasterexception");
-            we->setExceptionCode(exception->errorCode());
-            WUState newState = (WUStateRunning == state) ? WUStateWait : WUStateFailed;
-            wu->setState(newState);
+            Owned<IWorkUnit> wu = &workunit->lock();
+            WUState state = wu->getState();
+            switch (state)
+            {
+                case WUStateWait:
+                case WUStateAborting:
+                case WUStateAborted:
+                case WUStateFailed:
+                    break;
+                default:
+                {
+                    Owned<IWUException> we = wu->createException();
+                    we->setSeverity(SeverityError);
+                    StringBuffer errStr;
+                    exception->errorMessage(errStr);
+                    we->setExceptionMessage(errStr);
+                    we->setExceptionSource("thormasterexception");
+                    we->setExceptionCode(exception->errorCode());
+                    WUState newState = (WUStateRunning == state) ? WUStateWait : WUStateFailed;
+                    wu->setState(newState);
+                    break;
+                }
+            }
         }
     }
 }
@@ -1468,8 +1485,19 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         if (!multiJobLinger && lingerPeriod)
                             w->setDebugValue(instance, "1", true);
 
-                        WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
-                        w->setState(newState);
+                        switch (w->getState())
+                        {
+                            case WUStateRunning:
+                                w->setState(WUStateWait);
+                                break;
+                            case WUStateAborting:
+                            case WUStateAborted:
+                            case WUStateFailed:
+                                break;
+                            default:
+                                w->setState(WUStateFailed);
+                                break;
+                        }
                     }
                     currentGraphName.clear();
 
