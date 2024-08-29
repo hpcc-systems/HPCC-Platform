@@ -1833,7 +1833,8 @@ void CJobMaster::saveSpills()
 
 bool CJobMaster::go()
 {
-    class CWorkunitPauseHandler : public CInterface, implements IWorkUnitSubscriber
+    // detected abort conditions or pause state changes.
+    class CWorkunitStateChangeHandler : public CInterface, implements IWorkUnitSubscriber
     {
         CJobMaster &job;
         IConstWorkUnit &wu;
@@ -1842,12 +1843,12 @@ bool CJobMaster::go()
     public:
         IMPLEMENT_IINTERFACE;
 
-        CWorkunitPauseHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
+        CWorkunitStateChangeHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             watcher.setown(factory->getWatcher(this, (WUSubscribeOptions) (SubscribeOptionAction | SubscribeOptionAbort), wu.queryWuid()));
         }
-        ~CWorkunitPauseHandler() { stop(); }
+        ~CWorkunitStateChangeHandler() { stop(); }
         void stop()
         {
             Owned<IWorkUnitWatcher> _watcher;
@@ -1885,7 +1886,7 @@ bool CJobMaster::go()
                     job.fireException(e);
                 }
                 else
-                    PROGLOG("CWorkunitPauseHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
+                    PROGLOG("CWorkunitStateChangeHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
             }
             if (flags & SubscribeOptionAction)
             {
@@ -1912,7 +1913,7 @@ bool CJobMaster::go()
                 }
             }
         }
-    } workunitPauseHandler(*this, *workunit);
+    } workunitStateChangeHandler(*this, *workunit);
     class CQueryTimeoutHandler : public CTimeoutTrigger
     {
         CJobMaster &job;
@@ -1928,6 +1929,53 @@ bool CJobMaster::go()
             return true;
         }
     };
+    class CAgentSessionWatcher : implements IThreaded
+    {
+        CJobMaster &job;
+        SessionId agentSessionID = -1;
+        unsigned periodMs = 0;
+        CThreaded threaded;
+        std::atomic<bool> stopped{true};
+        Semaphore sem;
+    public:
+        CAgentSessionWatcher(CJobMaster &_job, unsigned _periodMs) : job(_job), periodMs(_periodMs), threaded("AgentSessionWatcher", this)
+        {
+            if (queryDaliServerVersion().compare("2.1")>=0)
+            {
+                agentSessionID = job.queryWorkUnit().getAgentSession();
+                if (agentSessionID <= 0)
+                    throw MakeThorException(0, "Unexpected: job has an invalid agent sesssion id: %" I64F "d", agentSessionID);
+                stopped = false;
+                threaded.start(true);
+            }
+        }
+        ~CAgentSessionWatcher()
+        {
+            stop();
+        }
+        void stop()
+        {
+            if (stopped)
+                return;
+            stopped = true;
+            sem.signal();
+            threaded.join();
+        }
+        virtual void threadmain() override
+        {
+            while (!stopped)
+            {
+                if (sem.wait(periodMs))
+                    break; // signaled by dtor/abort
+                if (querySessionManager().sessionStopped(agentSessionID, 0))
+                {
+                    DBGLOG("Agent session stopped");
+                    job.fireException(MakeThorException(0, "Agent session stopped"));
+                    break;
+                }
+            }
+        }
+    } agentSessionWatcher(*this, 60000); // check every minute
     Owned<CTimeoutTrigger> qtHandler;
     int guillotineTimeout = workunit->getDebugValueInt("maxRunTime", 0);
     if (guillotineTimeout > 0)
@@ -1965,7 +2013,8 @@ bool CJobMaster::go()
             if (queryPausing()) break;
         }
         queryJobChannel(0).wait();
-        workunitPauseHandler.stop();
+        workunitStateChangeHandler.stop();
+        agentSessionWatcher.stop();
         ForEachItemIn(tr, toRun)
         {
             CMasterGraph &graph = toRun.item(tr);
