@@ -1099,8 +1099,6 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
     }
     catch (IException *e)
     {
-        IException *wrappedException = makeWrappedException(e, e->errorCode(), "getGlobalUniqueIds");
-        e->Release();
-        throw wrappedException;
+        throw makeWrappedException(e, e->errorCode(), "getGlobalUniqueIds");
     }
 }

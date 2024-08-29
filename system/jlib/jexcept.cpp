@@ -301,7 +301,7 @@ public:
         return str;
     }
 protected:
-    Linked<IException> exception;
+    Owned<IException> exception;
 };
 
 IException *makeWrappedException(IException *e, int code, const char *why)
