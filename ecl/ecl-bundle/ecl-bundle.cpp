@@ -1034,25 +1034,7 @@ protected:
         if (optTmpDir)
             dir.set(optTmpDir);
         else
-        {
-    #ifdef _WIN32
-            char path[_MAX_PATH+1];
-            if(GetTempPath(sizeof(path),path))
-                dir.append(path);
-            else
-            {
-                dir.append(getenv("TEMP"));
-                if (!dir.length())
-                    dir.append(getenv("TMP"));
-                if (!dir.length())
-                    dir.append(".");
-            }
-    #else
-            dir.append(getenv("TMPDIR"));
-            if (!dir.length())
-                dir.append("/tmp");
-    #endif
-        }
+            getSystemTempDir(dir);
         if (!dir.length() || !checkDirExists(dir))
             throw makeStringExceptionV(0, "FATAL: Invalid temporary directory '%s' - try --tmpdir option", dir.str());
         return dir;
