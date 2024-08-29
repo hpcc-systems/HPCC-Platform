@@ -222,13 +222,38 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     args.append(" \"--k8sJob=true\"");
+    const char *baseImageVersion = getenv("baseImageVersion");
+    const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
     {
-        if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // job yaml substitution
+        // special handling _HPCC_JOB_VERSION_, not just a straight substitution
+        if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
+        {
+            const char *newVersion = p.second.c_str();
+            if (!isEmptyString(newVersion))
+            {
+                // locates "image: <baseImageRootName>:<baseImageVersion>" and replaces with "image: <baseImageRootName>:<p.second>"
+                const char *baseImageRootName = getenv("baseImageRootName");
+                if (!isEmptyString(baseImageRootName)) // NB: should never be empty (given baseImageVersion is not empty)
+                {
+                    VStringBuffer oriImagePatternSpec("image: %s:%s", baseImageRootName, baseImageVersion);
+                    VStringBuffer newImagePatternSpec("image: %s:%s", baseImageRootName, newVersion);
+                    jobYaml.replaceString(oriImagePatternSpec, newImagePatternSpec);
+                    DBGLOG("Job image version changed from '%s' to '%s'", baseImageVersion, newVersion);
+                    runtimeImageVersion = newVersion; // used to substitute _HPCC_JOB_VERSION_ in jobYaml (in runtimeImageVersion env variable)
+                }
+            }
+        }
+        else if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // job yaml substitution
             jobYaml.replaceString(p.first.c_str(), p.second.c_str());
         else
             args.append(" \"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
     }
+    // always substitute _HPCC_JOB_VERSION_ - (as long as runtimeImageVersion is set)
+    // It is either the original baseImageVersion or the one from _HPCC_JOB_VERSION_ from above
+    // If it is empty, it implies a helm chart/runtime image mismatch
+    if (!isEmptyString(runtimeImageVersion))
+        jobYaml.replaceString("_HPCC_JOB_VERSION_", runtimeImageVersion);
     jobYaml.replaceString("_HPCC_ARGS_", args.str());
 
     // retrySecs=0 - I am not sure want to retry this command systematically..

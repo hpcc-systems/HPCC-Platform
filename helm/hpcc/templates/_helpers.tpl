@@ -811,6 +811,28 @@ Get image name
 {{- end -}}
 
 {{/*
+Generates image information into env. variables used at runtime for runtime platform version switching
+*/}}
+{{- define "hpcc.generateImageEnv" -}}
+{{- /* Pass in a dictionary with root and me defined */ -}}
+{{- $baseImageRootName := "" -}}
+{{- $baseImageVersion := "" -}}
+{{- if .me.image -}}
+  {{- $baseImageRootName = printf "%s/%s" (.me.image.root | default .root.Values.global.image.root | default "hpccsystems") (.me.image.name | default .root.Values.global.image.name | default "platform-core") -}}
+  {{- $baseImageVersion = .me.image.version | default .root.Values.global.image.version | default .root.Chart.Version -}}
+{{- else -}}
+  {{- $baseImageRootName = printf "%s/%s" (.root.Values.global.image.root | default "hpccsystems") (.root.Values.global.image.name | default "platform-core") -}}
+  {{- $baseImageVersion = .root.Values.global.image.version | default .root.Chart.Version -}}
+{{- end }}
+- name: baseImageRootName
+  value: {{ $baseImageRootName }}
+- name: baseImageVersion
+  value: {{ $baseImageVersion }}
+- name: runtimeImageVersion
+  value: _HPCC_JOB_VERSION_
+{{- end -}}
+
+{{/*
 Add image attributes for a component 
 Pass in a dictionary with root, me and imagename defined
 */}}

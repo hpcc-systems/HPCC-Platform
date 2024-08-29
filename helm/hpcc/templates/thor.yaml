@@ -115,7 +115,8 @@ data:
 {{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 1) | indent 12 }}
+{{- include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 1) | nindent 12 }}
+{{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -182,7 +183,8 @@ data:
 {{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 2) | indent 12 }}
+{{- include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 2) | nindent 12 }}
+{{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -252,7 +254,8 @@ data:
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             env:
 {{- $env := append ($configCtx.me.env | default list) (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum)) }}
-{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 12 }}
+{{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | nindent 12 }}
+{{- include "hpcc.generateImageEnv" $configCtx | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" (deepCopy $configCtx.me | merge (dict "tmpSubPath" $containerNum)) | indent 12 }}
@@ -380,7 +383,8 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:
-{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
+{{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
+{{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.eclAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
@@ -443,7 +447,8 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:
-{{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
+{{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
+{{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.thorAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}

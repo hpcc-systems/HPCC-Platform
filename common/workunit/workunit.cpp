@@ -14537,8 +14537,17 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     }
     else
     {
+        std::list<std::pair<std::string, std::string>> params = { };
+        params.push_back({ "graphName", graphName });
+        params.push_back({ "wfid", std::to_string(wfid) });
+
+        SCMStringBuffer optPlatformVersion;
+        workunit.getDebugValue("platformVersion", optPlatformVersion);
+        if (optPlatformVersion.length())
+            params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
+
         VStringBuffer job("%s-%s", wuid.str(), graphName);
-        k8s::runJob("thormanager", wuid, job, { { "graphName", graphName} });
+        k8s::runJob("thormanager", wuid, job, params);
     }
 
     /* In k8s, Thor feeds back the terminating exception via the workunit.

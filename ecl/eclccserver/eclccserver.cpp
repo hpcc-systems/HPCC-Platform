@@ -904,14 +904,19 @@ public:
         Owned<IException> error;
         try
         {
+            SCMStringBuffer optPlatformVersion;
             {
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
+                wu->getDebugValue("platformVersion", optPlatformVersion);
                 if (noteDequeued)
                     addTimeStamp(wu, SSToperation, ">compile", StWhenDequeued, 0);
                 addTimeStamp(wu, SSToperation, ">compile", StWhenK8sLaunched, 0);
             }
-            k8s::runJob("compile", wuid, wuid);
+            std::list<std::pair<std::string, std::string>> params = { };
+            if (optPlatformVersion.length())
+                params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
+            k8s::runJob("compile", wuid, wuid, params);
         }
         catch (IException *E)
         {
