@@ -1155,8 +1155,10 @@ public:
         }
         catch (IException *e)
         {
-            startmergesem.interrupt(LINK(e));
-            throw e;
+            Owned<IThorException> e2 = MakeActivityException(activity, e, "CThorSorter::StartMiniSort");
+            e->Release();
+            startmergesem.interrupt(e2.getLink());
+            throw e2.getClear();
         }
         merger.setown(sortedStream.getClear());
         startmergesem.signal();

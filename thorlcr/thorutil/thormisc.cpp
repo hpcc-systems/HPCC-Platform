@@ -67,7 +67,7 @@ static Owned<IGroup> localGroup;   // used as a placeholder in IFileDescriptors 
 static Owned<ICommunicator> nodeComm; // communicator based on nodeGroup (master+slave processes)
 
 
-mptag_t masterSlaveMpTag;
+mptag_t managerWorkerMpTag;
 mptag_t kjServiceMpTag;
 Owned<IPropertyTree> globals;
 static Owned<IMPtagAllocator> ClusterMPAllocator;
@@ -354,7 +354,7 @@ public:
                 }
                 else
                 {
-                    str.appendf("SLAVE #%d [", slave);
+                    str.appendf("WORKER #%d [", slave);
                     queryClusterGroup().queryNode(slave).endpoint().getEndpointHostText(str);
                     str.append("]: ");
                 }
@@ -392,6 +392,12 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     e->errorMessage(eStr).append(" : ");
     eStr.limited_valist_appendf(2048, format, args);
     CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.str());
+    if (QUERYINTERFACE(e, IMP_Exception))
+    {
+        IMP_Exception *me = QUERYINTERFACE(e, IMP_Exception);
+        unsigned workerNum = queryNodeComm().queryGroup().rank(me->queryEndpoint());
+        te->setSlave(workerNum);
+    }
     return te;
 }
 
@@ -456,6 +462,12 @@ IThorException *_MakeActivityException(CGraphElementBase &container, IException 
     IThorException *e2 = new CThorException(e->errorAudience(), e->errorCode(), msg.str());
     e2->setOriginalException(e);
     setExceptionActivityInfo(container, e2);
+    if (QUERYINTERFACE(e, IMP_Exception))
+    {
+        IMP_Exception *me = QUERYINTERFACE(e, IMP_Exception);
+        unsigned workerNum = queryNodeComm().queryGroup().rank(me->queryEndpoint());
+        e2->setSlave(workerNum);
+    }
     return e2;
 }
 

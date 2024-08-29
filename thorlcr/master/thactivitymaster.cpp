@@ -723,6 +723,6 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
     }
 }
 
-void loadMasters()
+void loadManagers()
 {
 }

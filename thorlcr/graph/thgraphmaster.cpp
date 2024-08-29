@@ -367,8 +367,9 @@ void CSlaveMessageHandler::threadmain()
     }
     catch (IException *e)
     {
-        job.fireException(e);
+        Owned<IThorException> te = ThorWrapException(e, "CSlaveMessageHandler::threadmain");
         e->Release();
+        job.fireException(te);
     }
 }
 
@@ -1764,7 +1765,7 @@ void CJobMaster::sendQuery()
 
     CTimeMon queryToSlavesTimer;
     querySent = true;
-    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
+    broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendQuery");
     PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
 }
 
@@ -1774,7 +1775,7 @@ void CJobMaster::jobDone()
     CMessageBuffer msg;
     msg.append(QueryDone);
     msg.append(queryKey());
-    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "jobDone");
+    broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "jobDone");
 }
 
 void CJobMaster::saveSpills()
@@ -1976,7 +1977,12 @@ bool CJobMaster::go()
             }
         }
     }
-    catch (IException *e) { fireException(e); e->Release(); }
+    catch (IException *e)
+    {
+        Owned<IThorException> te = ThorWrapException(e, "Error running sub graphs");
+        e->Release();
+        fireException(te);
+    }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
     workunit->setGraphState(queryGraphName(), getWfid(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
@@ -1987,8 +1993,9 @@ bool CJobMaster::go()
     try { jobDone(); }
     catch (IException *e)
     {
-        EXCLOG(e, NULL); 
-        jobDoneException.setown(e);
+        jobDoneException.setown(ThorWrapException(e, "Error in jobDone"));
+        e->Release();
+        EXCLOG(jobDoneException, NULL);
     }
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();
@@ -2164,7 +2171,7 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
         msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
-        ((CJobMaster &)graph.queryJob()).broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+        ((CJobMaster &)graph.queryJob()).broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
 
         unsigned numSlaves = graph.queryJob().querySlaves();
         for (unsigned n=0; n<numSlaves; n++)
@@ -2397,7 +2404,7 @@ void CMasterGraph::abort(IException *e)
             msg.append(job.queryKey());
             msg.append(dumpInfo);
             msg.append(queryGraphId());
-            jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
+            jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "abort");
         }
         catch (IException *e)
         {
@@ -2678,7 +2685,7 @@ void CMasterGraph::sendGraph()
     // slave graph data
     try
     {
-        jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
+        jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
     }
     catch (IException *e)
     {
@@ -2748,7 +2755,7 @@ void CMasterGraph::getFinalProgress(bool aborting)
     msg.append(queryGraphId());
     // If aborted, some slaves may have disconnnected/aborted so don't wait so long
     unsigned timeOutPeriod = aborting ? SHORTTIMEOUT : LONGTIMEOUT;
-    jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, timeOutPeriod, "graphEnd", NULL, true, aborting);
+    jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, timeOutPeriod, "graphEnd", NULL, true, aborting);
 
     Owned<IBitSet> respondedBitSet = createBitSet();
     unsigned n=queryJob().queryNodes();

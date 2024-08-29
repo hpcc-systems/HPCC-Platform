@@ -70,5 +70,5 @@ public:
 CSlavePartMapping *getFileSlaveMaps(const char *logicalName, IFileDescriptor &file, IUserDescriptor *userDesc, IGroup &localGroup, bool local=false, bool index=false, IHash *hash=NULL, IDistributedSuperFile *super=NULL);
 void checkSuperFileOwnership(IDistributedFile &file);
 
-actmaster_decl void loadMasters();
+actmaster_decl void loadManagers();
 #endif

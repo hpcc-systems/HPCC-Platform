@@ -1669,7 +1669,7 @@ public:
     {
         stopped = true;
         channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
         mpServers.append(* getMPServer());
         bool reconnect = globals->getPropBool("@MPChannelReconnect");
         for (unsigned sc=1; sc<channelsPerSlave; sc++)
@@ -1699,7 +1699,7 @@ public:
     }
     void stop()
     {
-        queryNodeComm().cancel(0, masterSlaveMpTag);
+        queryNodeComm().cancel(0, managerWorkerMpTag);
     }
     void slaveMain(ILogMsgHandler *logHandler)
     {
@@ -1775,7 +1775,7 @@ public:
 
         OwnedPtr<CThorPerfTracer> perf;
         JobNameScope activeJobName;
-        while (!stopped && queryNodeComm().recv(msg, 0, masterSlaveMpTag))
+        while (!stopped && queryNodeComm().recv(msg, 0, managerWorkerMpTag))
         {
             doReply = true;
             try
@@ -2415,6 +2415,6 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
 void abortSlave()
 {
     if (clusterInitialized())
-        queryNodeComm().cancel(0, masterSlaveMpTag);
+        queryNodeComm().cancel(0, managerWorkerMpTag);
 }
 

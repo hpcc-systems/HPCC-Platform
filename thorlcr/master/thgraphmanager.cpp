@@ -241,7 +241,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 mptag_t replyTag = createReplyTag();
                 serializeMPtag(mbuf, replyTag);
                 mbuf.append(rawText);
-                if (!comm.send(mbuf, RANK_ALL_OTHER, masterSlaveMpTag, MP_ASYNC_SEND))
+                if (!comm.send(mbuf, RANK_ALL_OTHER, managerWorkerMpTag, MP_ASYNC_SEND))
                 {
                     DBGLOG("Failed to send debug info to slave");
                     throwUnexpected();
@@ -1148,7 +1148,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     }
     catch (IException *e)
     {
-        exception.setown(e);
+        exception.setown(ThorWrapException(e, "CJobManager::executeGraph"));
+        e->Release();
     }
     job->endJob();
     removeJob(*job);
