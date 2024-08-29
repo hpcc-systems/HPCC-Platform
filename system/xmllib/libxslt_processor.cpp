@@ -45,7 +45,7 @@ public:
         srcType = IO_TYPE_FILE;
     }
 
-    CLibXsltSource(IIncludeHandler *handler, const char* rootpath, const char *_cacheId) : cacheId(_cacheId), compiledXslt(NULL), filename(rootpath)
+    CLibXsltSource(IIncludeHandler *handler, const char* rootpath, const char *_cacheId) : filename(rootpath), cacheId(_cacheId), compiledXslt(NULL)
     {
         srcType = IO_TYPE_BUFFER;
         bool pathOnly=false;
@@ -288,7 +288,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CLibXslFunction(const char* _name, TextFunctionType* _fn, IXslTransform* trans)
-        : name(_name), fn(_fn), parent(trans), assigned(false) {}
+        : name(_name), fn(_fn), assigned(false), parent(trans) {}
 
     virtual ~CLibXslFunction(){}
 

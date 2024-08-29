@@ -244,9 +244,9 @@ namespace KafkaPlugin
 
     Poller::Poller(KafkaObj* _parentPtr, __int32 _pollTimeout)
         :   Thread("Kafka::Poller"),
+            shouldRun(false),
             parentPtr(_parentPtr),
-            pollTimeout(_pollTimeout),
-            shouldRun(false)
+            pollTimeout(_pollTimeout)
     {
     }
 

@@ -21,7 +21,7 @@
 
 //---------------------------------------------------------------------------
 
-MultiLexer::MultiLexer(const AsciiDfa & _tokens, const AsciiDfa & _skip, const UnsignedArray & _endTokenChars, unsigned _eofId) : tokens(_tokens), skip(_skip)
+MultiLexer::MultiLexer(const AsciiDfa & _tokens, const AsciiDfa & _skip, const UnsignedArray & _endTokenChars, unsigned _eofId) : skip(_skip), tokens(_tokens)
 {
     eofId = _eofId;
     _clear(isEndToken);

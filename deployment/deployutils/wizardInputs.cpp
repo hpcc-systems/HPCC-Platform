@@ -44,9 +44,8 @@ CWizardInputs::CWizardInputs(const char* xmlArg,const char *service,
                              IPropertyTree * cfg, 
                              MapStringTo<StringAttr, const char *>* dirMap,
                              StringArray &arrBuildSetsWithAssignedIPs,
-                             StringArray &arrAssignedIPs): m_service(service),
-                             m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true),
-                             m_supportNodes(0), m_arrBuildSetsWithAssignedIPs(arrBuildSetsWithAssignedIPs), m_arrAssignedIPs(arrAssignedIPs)
+                             StringArray &arrAssignedIPs): 
+                             m_arrBuildSetsWithAssignedIPs(arrBuildSetsWithAssignedIPs), m_arrAssignedIPs(arrAssignedIPs), m_supportNodes(0), m_roxieOnDemand(true), m_cfg(cfg), m_service(service), m_overrideDirs(dirMap)
 {
   m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }

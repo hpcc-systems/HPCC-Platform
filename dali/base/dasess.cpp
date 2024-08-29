@@ -478,7 +478,7 @@ public:
     bool doEnable;
     Linked<IUserDescriptor> udesc;
 
-    CEnableScopeScansReq(IUserDescriptor *_udesc, bool _doEnable) : udesc(_udesc), doEnable(_doEnable) {}
+    CEnableScopeScansReq(IUserDescriptor *_udesc, bool _doEnable) : doEnable(_doEnable), udesc(_udesc) {}
     CEnableScopeScansReq() {}
 
     void serializeReq(CMessageBuffer &mb)

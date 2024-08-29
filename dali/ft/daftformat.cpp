@@ -1840,7 +1840,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 //----------------------------------------------------------------------------
 
 CRemotePartitioner::CRemotePartitioner(FileSprayer &_sprayer, const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid)
-    : wuid(_wuid), sprayer(_sprayer)
+    : sprayer(_sprayer), wuid(_wuid)
 {
     LOG(MCdebugProgressDetail, "CRemotePartitioner::CRemotePartitioner(_srcFormat.type :'%s', _tgtFormat.type:'%s', _slave:'%s', _wuid:'%s')", _srcFormat.getFileFormatTypeString(), _tgtFormat.getFileFormatTypeString(), _slave, _wuid);
     ep.set(_ep);

@@ -51,7 +51,7 @@ ActiveRequests::~ActiveRequests()
     gActiveRequests--;
 }
 
-CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)
+CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navResize(false), navScroll(false), navWidth(165), protocol(prot)
 {
     build_ver = getBuildVersion();
 

@@ -225,7 +225,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliAuditServer(const char *_auditdir)
-        : auditdir(_auditdir),Thread("CDaliAuditServer")
+        : Thread("CDaliAuditServer"), auditdir(_auditdir)
     {
         stopped = true;
     }

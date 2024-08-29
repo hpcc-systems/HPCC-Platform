@@ -4577,7 +4577,7 @@ protected:
 
 public:
     CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _outputOOMReports)
-        : hugeHeap(this, _logctx, _allocatorCache), logctx(_logctx), allocatorCache(_allocatorCache)
+        : hugeHeap(this, _logctx, _allocatorCache), allocatorCache(_allocatorCache), logctx(_logctx)
     {
         logctx.Link();
         //Use roundup() to calculate the sizes of the different heaps, and double check that the heap mapping
@@ -6993,7 +6993,7 @@ namespace roxiemem {
 class SimpleRowBuffer : implements IBufferedRowCallback
 {
 public:
-    SimpleRowBuffer(IRowManager * rowManager, unsigned _cost, unsigned _id) : cost(_cost), rows(rowManager, 0, 1, UNKNOWN_ROWSET_ID), id(_id)
+    SimpleRowBuffer(IRowManager * rowManager, unsigned _cost, unsigned _id) : rows(rowManager, 0, 1, UNKNOWN_ROWSET_ID), cost(_cost), id(_id)
     {
     }
 
@@ -7084,7 +7084,7 @@ protected:
 class CallbackBlockAllocator : implements IBufferedRowCallback
 {
 public:
-    CallbackBlockAllocator(IRowManager * _rowManager, memsize_t _size, unsigned _cost, unsigned _id) : cost(_cost), id(_id), rowManager(_rowManager), size(_size)
+    CallbackBlockAllocator(IRowManager * _rowManager, memsize_t _size, unsigned _cost, unsigned _id) : rowManager(_rowManager), size(_size), cost(_cost), id(_id)
     {
         rowManager->addRowBuffer(this);
     }
@@ -9134,7 +9134,7 @@ protected:
     {
     public:
         IncrementalRowBuffer(size_t _maxRows, const void * * _rowset, unsigned _delta) :
-            maxRows(_maxRows), rowset(_rowset), delta(_delta)
+            maxRows(_maxRows), delta(_delta), rowset(_rowset)
         {
         }
 

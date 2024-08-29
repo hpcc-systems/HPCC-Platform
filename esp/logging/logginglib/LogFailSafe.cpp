@@ -62,7 +62,7 @@ CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* logType) : m_LogType(
 }
 
 CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* pszService, const char* logType)
-    : m_LogService(pszService), m_LogType(logType)
+    : m_LogType(logType), m_LogService(pszService)
 {
     readCfg(cfg);
     if (!decoupledLogging)

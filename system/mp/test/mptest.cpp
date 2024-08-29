@@ -1052,7 +1052,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
                 return hash;
             }
         public:
-            CAckThread(CSendStream &_owner, mptag_t _mpTag) : owner(_owner), mpTag(_mpTag), threaded("CAckThread", this)
+            CAckThread(CSendStream &_owner, mptag_t _mpTag) : threaded("CAckThread", this), owner(_owner), mpTag(_mpTag)
             {
                 expectedHashes.resize(owner.grpSize);
             }
@@ -1137,7 +1137,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
 
     public:
         CSendStream(ICommunicator *_comm, rank_t _myRank, unsigned _grpSize, mptag_t _mpTag, unsigned __int64 _totalSendSize, size32_t _msgSize, bool _async)
-            : threaded("CSendStream", this), comm(_comm), myRank(_myRank), grpSize(_grpSize), mpTag(_mpTag), totalSendSize(_totalSendSize), msgSize(_msgSize), ackThread(*this, _mpTag), async(_async)
+            : threaded("CSendStream", this), comm(_comm), myRank(_myRank), grpSize(_grpSize), mpTag(_mpTag), totalSendSize(_totalSendSize), msgSize(_msgSize), async(_async), ackThread(*this, _mpTag)
         {
             if (1 == grpSize) // group only contains self, so target self
                 tgtRanks.push_back(0);

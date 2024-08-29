@@ -106,7 +106,7 @@ struct ArrayBuilderTracker
     unsigned int childrenProcessed = 0;
 
     ArrayBuilderTracker(const RtlFieldInfo *_field, arrow::ArrayBuilder *_struct, PathNodeType _nodeType, arrow::FieldPath && _nodePath)
-        : field(_field), nodeType(_nodeType), structPtr(_struct), nodePath(std::move(_nodePath))
+        : field(_field), nodeType(_nodeType), nodePath(std::move(_nodePath)), structPtr(_struct)
     {
         if (nodeType == CPNTDataset)
             childCount = structPtr->num_children();
@@ -506,7 +506,7 @@ class PARQUETEMBED_PLUGIN_API ParquetRowBuilder : public CInterfaceOf<IFieldSour
 {
 public:
     ParquetRowBuilder(TableColumns *_resultRows, int64_t _currentRow)
-        : resultRows(_resultRows), currentRow(_currentRow) {}
+        : currentRow(_currentRow), resultRows(_resultRows) {}
     virtual ~ParquetRowBuilder() = default;
     virtual bool getBooleanResult(const RtlFieldInfo *field) override;
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void *&result) override;
@@ -550,7 +550,7 @@ class ParquetRecordBinder : public CInterfaceOf<IFieldProcessor>
 {
 public:
     ParquetRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, int _firstParam, std::shared_ptr<ParquetWriter> _parquetWriter)
-        : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(std::move(_parquetWriter)) {}
+        : typeInfo(_typeInfo), logctx(_logctx), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(std::move(_parquetWriter)) {}
     virtual ~ParquetRecordBinder() = default;
     int numFields();
     void processRow(const byte *row);
@@ -623,7 +623,7 @@ public:
      * @param _firstParam Index of the first param.
      */
     ParquetDatasetBinder(const IContextLogger &_logctx, IRowStream *_input, const RtlTypeInfo *_typeInfo, std::shared_ptr<ParquetWriter> _parquetWriter, int _firstParam)
-        : input(_input), parquetWriter(_parquetWriter), ParquetRecordBinder(_logctx, _typeInfo, _firstParam, _parquetWriter)
+        : ParquetRecordBinder(_logctx, _typeInfo, _firstParam, _parquetWriter), input(_input), parquetWriter(_parquetWriter)
     {
         reportIfFailure(parquetWriter->fieldsToSchema(_typeInfo));
     }

@@ -2684,7 +2684,7 @@ public:
     IMPLEMENT_IINTERFACE;
     CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_alias, IPropertyTree *agent,
         IArrayOf<IPropertyTree> &eclServers, bool _legacyEclServer, IPropertyTree *eclScheduler, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), numberOfSlaveLogs(0), roxieReplicateOffset(1), legacyEclServer(_legacyEclServer)
+        : name(_name), alias(_alias), legacyEclServer(_legacyEclServer), prefix(_prefix), roxieRedundancy(0), channelsPerNode(0), numberOfSlaveLogs(0), roxieReplicateOffset(1)
     {
         StringBuffer queue;
         if (thors.ordinality())

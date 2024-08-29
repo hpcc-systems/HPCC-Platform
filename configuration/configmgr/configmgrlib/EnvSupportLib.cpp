@@ -22,7 +22,7 @@
 #include "jutil.hpp"
 
 EnvSupportLib::EnvSupportLib(const std::string &libName, EnvironmentMgr *pEnvMgr) :
-    m_libName(libName), m_libHandle(nullptr), m_pSupportLib(nullptr)
+    m_libHandle(nullptr), m_libName(libName), m_pSupportLib(nullptr)
 {
     m_libHandle = LoadSharedObject(m_libName.c_str(), true, false);
     if (m_libHandle != nullptr)

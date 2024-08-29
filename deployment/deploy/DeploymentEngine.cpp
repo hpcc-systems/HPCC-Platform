@@ -46,12 +46,12 @@ CDeploymentEngine::CDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
                                      : m_envDepEngine(envDepEngine),
                                      m_environment(envDepEngine.getEnvironment()),
                                      m_process(process),
-                                     m_instanceType(instanceType),
-                                     m_abort(false),
+                                     m_curInstance(NULL),
                                      m_startable(unknown),
                                      m_stoppable(unknown),
+                                     m_instanceType(instanceType),
                                      m_createIni(createIni),
-                                     m_curInstance(NULL),
+                                     m_abort(false),
                                      m_instanceCheck(true)
 {
     m_pCallback.set(&callback);

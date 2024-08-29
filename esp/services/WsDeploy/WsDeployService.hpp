@@ -174,7 +174,7 @@ private:
     {
     public:
       CConfigFileMonitorThread(unsigned int uCheckInterval, unsigned int uTimeout)
-        : m_pWorkerThread(NULL), m_quitThread(false), m_uCheckInterval(uCheckInterval), m_uTimeout(uTimeout), m_configChangeNotification(this)
+        : m_pWorkerThread(NULL), m_quitThread(false), m_uTimeout(uTimeout), m_uCheckInterval(uCheckInterval), m_configChangeNotification(this)
       {
       };
 
@@ -397,7 +397,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CWsDeployFileInfo(CWsDeployExCE* pService, const char* pEnvFile, bool bCloud) : m_configChanged(false), m_pService(pService),m_bCloud(bCloud)
+    CWsDeployFileInfo(CWsDeployExCE* pService, const char* pEnvFile, bool bCloud) : m_configChanged(false), m_bCloud(bCloud), m_pService(pService)
     {
         m_envFile.clear().append(pEnvFile);
     }

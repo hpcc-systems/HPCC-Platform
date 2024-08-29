@@ -195,7 +195,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
     CPersistentHandler(IPersistentSelectNotify* notify, int maxIdleTime, int maxReqs, PersistentLogLevel loglevel, bool enableDoNotReuseList)
-                        : m_stop(false), m_notify(notify), m_maxIdleTime(maxIdleTime), m_maxReqs(maxReqs), m_loglevel(loglevel), m_enableDoNotReuseList(enableDoNotReuseList)
+                        : m_maxIdleTime(maxIdleTime), m_maxReqs(maxReqs), m_notify(notify), m_stop(false), m_loglevel(loglevel), m_enableDoNotReuseList(enableDoNotReuseList)
     {
         m_id = ++CurID;
         m_selectHandler.setown(createSocketSelectHandler());

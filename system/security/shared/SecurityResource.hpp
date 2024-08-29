@@ -35,7 +35,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE
 
-    CSecurityResource(const char *name) : m_name(name), m_access(SecAccess_Unknown), m_required_access(SecAccess_Unknown), m_resourcetype(RT_DEFAULT), m_parameters(createProperties(false))
+    CSecurityResource(const char *name) : m_name(name), m_access(SecAccess_Unknown), m_required_access(SecAccess_Unknown), m_parameters(createProperties(false)), m_resourcetype(RT_DEFAULT)
     {
     }
 

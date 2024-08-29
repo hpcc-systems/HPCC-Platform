@@ -452,7 +452,7 @@ class GitRepositoryDirectoryIterator : implements IDirectoryIterator, public CIn
 public:
     IMPLEMENT_IINTERFACE;
     GitRepositoryDirectoryIterator(const char *_gitFileName, const char *_mask, bool _sub, bool _includeDirs)
-    : mask(_mask), sub(_sub), includeDirs(_includeDirs)
+    : mask(_mask), includeDirs(_includeDirs), sub(_sub)
     {
         splitGitFileName(_gitFileName, gitDirectory, revision, relDir, gitUser);
         curIndex = 0;

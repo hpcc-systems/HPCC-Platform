@@ -1160,7 +1160,7 @@ class MySQLXmlRowBuilder : public CInterface
 {
 public:
     MySQLXmlRowBuilder(const MySQLResult *_result, const MySQLBindingArray &_boundInfo)
-    : result(_result), boundInfo(_boundInfo), colIdx(-1)
+    : boundInfo(_boundInfo), result(_result), colIdx(-1)
     {
     }
     virtual void writeXmlColumn(IXmlWriter *writer, const MYSQL_FIELD &col, const MYSQL_BIND &bound)
@@ -1420,7 +1420,7 @@ class MySQLDatasetBinder : public MySQLRecordBinder
 {
 public:
     MySQLDatasetBinder(IRowStream * _input, const RtlTypeInfo *_typeInfo, const MySQLBindingArray &_bindings, int _firstParam)
-      : input(_input), MySQLRecordBinder(_typeInfo, _bindings, _firstParam)
+      : MySQLRecordBinder(_typeInfo, _bindings, _firstParam), input(_input)
     {
     }
     bool bindNext()
@@ -1612,7 +1612,7 @@ class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     MySQLEmbedFunctionContext(const IThorActivityContext *_ctx, unsigned _flags, const char *options)
-      : flags(_flags), nextParam(0), activityCtx(_ctx)
+      : activityCtx(_ctx), flags(_flags), nextParam(0)
     {
         initializeMySqlThread();
         conn.setown(MySQLConnection::findCachedConnection(options, false));

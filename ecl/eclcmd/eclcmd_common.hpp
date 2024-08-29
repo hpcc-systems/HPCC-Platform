@@ -354,7 +354,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optCheckDirty(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false), paramCount(0)
+    EclCmdWithEclTarget() : optResultLimit((unsigned)-1), paramCount(0), optNoArchive(false), optLegacy(false), optDebug(false), optCheckDirty(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);

@@ -186,7 +186,7 @@ public:
 class Esdl2EclCmd : public EsdlConvertCmd
 {
 public:
-    Esdl2EclCmd() : optProcessIncludes(false), optOutputExpandedXML(false), optRollUpEclToSingleFile(false)
+    Esdl2EclCmd() : optRollUpEclToSingleFile(false), optProcessIncludes(false), optOutputExpandedXML(false)
     {
         StringBuffer componentsfolder;
         if (getComponentFilesRelPathFromBin(componentsfolder))

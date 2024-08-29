@@ -30,8 +30,8 @@
 class Esdl2XSDCmd : public EsdlHelperConvertCmd
 {
 public:
-    Esdl2XSDCmd() : optUnversionedNamespace(false), optInterfaceVersion(0), optAllAnnot(false), optNoAnnot(false),
-                    optEnforceOptional(true), optRawOutput(false), optXformTimes(1), optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF),
+    Esdl2XSDCmd() : optEnforceOptional(true),  optAllAnnot(false), optNoAnnot(false), optRawOutput(false),
+                    optInterfaceVersion(0), optXformTimes(1), optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF), optUnversionedNamespace(false), 
                     outfileext(".xsd")
     {}
 
@@ -1177,7 +1177,7 @@ protected:
     bool optRollup;
 
 public:
-    Esdl2XmlCmd() : optRollup(false), optProcessAllIncludes(false)
+    Esdl2XmlCmd() : optProcessAllIncludes(false), optRollup(false)
     {}
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter) override

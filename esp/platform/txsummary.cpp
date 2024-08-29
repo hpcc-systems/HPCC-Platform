@@ -47,7 +47,7 @@ inline bool validate(const char* k)
 }
 
 CTxSummary::TxEntryBase::TxEntryBase(const char* _key, const LogLevel _logLevel, const unsigned int _group, const char* _suffix, bool _jsonQuoted)
-    : logLevel(_logLevel), group(_group), suffix(_suffix), shouldJsonQuote(_jsonQuoted)
+    : suffix(_suffix), shouldJsonQuote(_jsonQuoted), logLevel(_logLevel), group(_group)
 {
     // parse dot-delimited key
     // 'name' is set to the rightmost element of _key

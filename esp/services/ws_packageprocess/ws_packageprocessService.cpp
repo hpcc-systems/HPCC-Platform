@@ -276,7 +276,7 @@ public:
     unsigned flags;
     unsigned dfuWait = 1800000; //wait for DFU Copy, default 30 minutes (only used if !req.getOnlyCopyFiles() and !req.getStopIfFilesCopied())
 
-    PackageMapUpdater() : flags(0), packageMaps(NULL), pmExisting(NULL){}
+    PackageMapUpdater() : packageMaps(NULL), pmExisting(NULL), flags(0) {}
 
     inline bool checkFlag(unsigned check)
     {

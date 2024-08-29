@@ -45,8 +45,8 @@ using std::vector;
 struct CInstallFile : public CInterface 
 {
    CInstallFile(const char* method, const char* srcPath, const char* destPath, bool bCacheable=false)
-        : m_method(method), m_srcPath(srcPath), m_destPath(destPath), m_bCacheable(bCacheable), 
-           m_szSrc(0), m_crcSrc(0), m_sizeInitialized(false), m_crcInitialized(false)
+        : m_method(method), m_srcPath(srcPath), m_destPath(destPath),
+           m_szSrc(0), m_crcSrc(0), m_sizeInitialized(false), m_crcInitialized(false), m_bCacheable(bCacheable)
     {
     }
     virtual ~CInstallFile()

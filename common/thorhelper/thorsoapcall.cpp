@@ -636,7 +636,7 @@ MODULE_EXIT()
 class ColumnProvider : public IColumnProvider, public CInterface
 {
 public:
-    ColumnProvider(unsigned _callLatencyMs) : callLatencyMs(_callLatencyMs), base(NULL) {}
+    ColumnProvider(unsigned _callLatencyMs) : base(NULL), callLatencyMs(_callLatencyMs) {}
     IMPLEMENT_IINTERFACE;
     virtual bool        getBool(const char * path) { return base->getBool(path); }
     virtual void        getData(size32_t len, void * text, const char * path) { base->getData(len, text, path); }
@@ -789,7 +789,7 @@ class CMatchCB : implements IXMLSelect, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMatchCB(IWSCAsyncFor &_parent, const Url &_url, const char *_tail, ColumnProvider * _meta, const char *_excPath, unsigned _excFlags) : parent(_parent), url(_url), tail(_tail), meta(_meta), excFlags(_excFlags), excPath(_excPath)
+    CMatchCB(IWSCAsyncFor &_parent, const Url &_url, const char *_tail, ColumnProvider * _meta, const char *_excPath, unsigned _excFlags) : parent(_parent), url(_url), tail(_tail), meta(_meta), excPath(_excPath), excFlags(_excFlags)
     {
     }
 
@@ -986,7 +986,7 @@ public:
 
     CWSCHelper(IWSCRowProvider *_rowProvider, IEngineRowAllocator * _outputAllocator, const char *_authToken, WSCMode _wscMode, ClientCertificate *_clientCert,
                const IContextLogger &_logctx, IRoxieAbortMonitor *_roxieAbortMonitor, WSCType _wscType)
-        : logctx(_logctx), outputAllocator(_outputAllocator), clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor)
+        : clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor), outputAllocator(_outputAllocator), logctx(_logctx)
     {
         activitySpanScope.setown(logctx.queryActiveSpan()->createInternalSpan(_wscType == STsoap ? "SoapCall Activity": "HTTPCall Activity"));
         activitySpanScope->setSpanAttribute("activity_id", _rowProvider->queryActivityId());
@@ -1602,7 +1602,7 @@ void CWSCHelperThread::createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointer
 class CWSUserLogCompletor
 {
 public:
-    CWSUserLogCompletor(CWSCHelper &wshelper, ConstPointerArray &rows) : helper(wshelper), inputRows(rows) {}
+    CWSUserLogCompletor(CWSCHelper &wshelper, ConstPointerArray &rows) : inputRows(rows), helper(wshelper) {}
     ~CWSUserLogCompletor()
     {
         //user log entries were output for the whole batch in the createXXXQuery routine above
@@ -2406,7 +2406,7 @@ private:
     }
 
 public:
-    CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
+    CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): inputRows(_inputRows), xmlWriter(_xmlWriter), options(_options)
     {
         master = _master;
         outputAllocator = master->queryOutputAllocator();

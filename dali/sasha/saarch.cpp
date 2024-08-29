@@ -985,7 +985,7 @@ class CWorkUnitArchiver: public CBranchArchiver
     public:
         IMPLEMENT_IINTERFACE;
         cWUBranchItem(CWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff,CDateTime &_backup,unsigned retryinterval) 
-            : wuid(e.queryName()), cutoff(_cutoff), backupcutoff(_backup)
+            : cutoff(_cutoff), backupcutoff(_backup), wuid(e.queryName())
         {
             parent = _parent;
             isprotected = e.getPropBool("@protected", false);
@@ -1158,7 +1158,7 @@ protected:
     public:
         IMPLEMENT_IINTERFACE;
         cDFUWUBranchItem(CDFUWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff) 
-            : wuid(e.queryName()), cutoff(_cutoff)
+            : cutoff(_cutoff), wuid(e.queryName())
         {
             parent = _parent;
             isprotected = e.getPropBool("@protected", false);
@@ -1411,7 +1411,7 @@ protected:
     Semaphore stopsem;
     Linked<IPropertyTree> archprops;
 public:
-    CSashaArchiverServerBase(IPropertyTree *_config) : archprops(_config), threaded("CSashaArchiverServerBase", this)
+    CSashaArchiverServerBase(IPropertyTree *_config) : threaded("CSashaArchiverServerBase", this), archprops(_config)
     {
     }
     virtual void start() override

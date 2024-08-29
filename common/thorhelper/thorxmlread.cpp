@@ -946,7 +946,7 @@ typedef CIArrayOf<CProspectiveMatch> CProcespectiveMatchArray;
 class CParseStackInfo : public CInterface
 {
 public:
-    CParseStackInfo() : keep(false), nodeMade(false), keptForQualifier(false), iPTMade(NULL), startOffset(0), prospectiveMatches(NULL) { }
+    CParseStackInfo() : keep(false), nodeMade(false), keptForQualifier(false), startOffset(0), iPTMade(NULL), prospectiveMatches(NULL) { }
     ~CParseStackInfo()
     {
         if (prospectiveMatches)
@@ -1188,7 +1188,9 @@ class thorhelper_decl CColumnIterator : implements IColumnProviderIterator, publ
     StringAttr xpath;
 
 public:
-    CColumnIterator(IColumnProvider *_parent, void *_utf8Translator, IPropertyTree *_root, IPropertyTree *_matchNode, IPropertyTreeIterator * _iter, MemoryBuffer *_contentMb, offset_t _contentStartOffset, const char *_xpath) : parent(_parent), root(_root), matchNode(_matchNode), iter(_iter), utf8Translator(_utf8Translator), xpath(_xpath), contentStartOffset(_contentStartOffset) { contentMb = _contentMb; }
+    CColumnIterator(IColumnProvider *_parent, void *_utf8Translator, IPropertyTree *_root, IPropertyTree *_matchNode, IPropertyTreeIterator * _iter, MemoryBuffer *_contentMb, offset_t _contentStartOffset, const char *_xpath) 
+    : parent(_parent), root(_root), matchNode(_matchNode), 
+      contentStartOffset(_contentStartOffset), utf8Translator(_utf8Translator), iter(_iter), xpath(_xpath) { contentMb = _contentMb; }
     IMPLEMENT_IINTERFACE;
 
     IColumnProvider * first()
@@ -1251,7 +1253,8 @@ class CColumnProvider : implements IColumnProvider, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CColumnProvider(void *_utf8Translator, IPropertyTree *_root, IPropertyTree *_node, MemoryBuffer *_contentMb, bool ownContent, offset_t _contentStartOffset, const char *_xpath) : root(_root), node(_node), utf8Translator(_utf8Translator), contentStartOffset(_contentStartOffset), xpath(_xpath)
+    CColumnProvider(void *_utf8Translator, IPropertyTree *_root, IPropertyTree *_node, MemoryBuffer *_contentMb, bool ownContent, offset_t _contentStartOffset, const char *_xpath)
+    : root(_root), node(_node), contentStartOffset(_contentStartOffset), utf8Translator(_utf8Translator), xpath(_xpath)
     {
         if (_contentMb)
         {
@@ -2037,12 +2040,12 @@ class CXMLParse : implements IXMLParse, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(fName); }
-    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(ifile); }
-    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(fileio); }
-    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(stream); }
-    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(buffer, bufLen); }
-    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson), keepRootArray(_keepRootArray) { init(); }
+    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(fName); }
+    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(ifile); }
+    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(fileio); }
+    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(stream); }
+    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); go(buffer, bufLen); }
+    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false, bool _keepRootArray=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), step(_step), contentRequired(_contentRequired), isJson(_isJson), keepRootArray(_keepRootArray) { init(); }
     ~CXMLParse()
     {
         ::Release(iXMLMaker);

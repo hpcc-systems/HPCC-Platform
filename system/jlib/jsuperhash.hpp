@@ -461,7 +461,7 @@ template <class ET>
 class StringHTMapping : public CInterface
 {
 public:
-    StringHTMapping(const char *_fp, ET &_et) : fp(_fp), et(_et) { }
+    StringHTMapping(const char *_fp, ET &_et) : et(_et), fp(_fp) { }
     const char *queryFindString() const { return fp; }
 
 protected:

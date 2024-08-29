@@ -67,7 +67,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : threaded("QueryFilesInUse"), aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY)
+    QueryFilesInUse() : threaded("QueryFilesInUse"), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY), aborting(false)
     {
         tree.setown(createPTree("QueryFilesInUse"));
         updateUsers();
@@ -187,8 +187,8 @@ struct WUShowScheduledFilters
 
     WUShowScheduledFilters(const char *_cluster, const char *_state, const char *_owner,
         const char *_jobName, const char *_eventName, const char *_eventText)
-        : cluster(_cluster), state(_state), owner(_owner),
-        jobName(_jobName), eventName(_eventName), eventText(_eventText) {};
+        : cluster(_cluster), state(_state),
+        eventName(_eventName), jobName(_jobName), owner(_owner), eventText(_eventText) {};
 };
 
 class CWUQueryDetailsReq

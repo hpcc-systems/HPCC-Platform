@@ -606,7 +606,7 @@ public:
 struct CLogicalNameEntry: public CInterface
 {
     CLogicalNameEntry(CXRefManagerBase &_manager, const char *_lname,IPropertyTree &file) // takes ownership of grp
-        : manager(_manager),lname(_lname) 
+        : lname(_lname) , manager(_manager)
     {
         replicated = false;
         outsidedir = 0;
@@ -978,7 +978,7 @@ public:
     CXRefManagerBase &manager;
     byte incompletestate; // 0 unknown, 1 ignore, 2 incomplete
     COrphanEntry(CXRefManagerBase &_manager, const char *_fname,const char *_basedir,unsigned _max,const char *_modified,CLogicalNameEntry *_misplaced)
-        : manager(_manager),fname(_fname), basedir(_basedir), modified(_modified)
+        : basedir(_basedir), fname(_fname), modified(_modified), manager(_manager)
     {
         dirfailed = false;
         max = _max;

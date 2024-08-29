@@ -87,7 +87,7 @@ class CTransIDBuilder : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
     CTransIDBuilder(const char* _seed, bool _localSeed, const char* _seedType, unsigned _maxLength, unsigned _maxSeq, unsigned _seedExpiredSeconds)
-        : seed(_seed), localSeed(_localSeed), seedType(_seedType), maxLength(_maxLength), maxSeq(_maxSeq), seedExpiredSeconds(_seedExpiredSeconds)
+        : seed(_seed), seedType(_seedType), localSeed(_localSeed), maxLength(_maxLength), maxSeq(_maxSeq), seedExpiredSeconds(_seedExpiredSeconds)
     {
         CDateTime now;
         now.setNow();

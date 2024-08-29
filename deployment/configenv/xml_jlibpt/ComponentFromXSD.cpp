@@ -32,8 +32,8 @@ namespace ech
 #define TRACE_SCHEMA_NODE(msg, schemaNode)
 
 
-ComponentFromXSD::ComponentFromXSD(EnvHelper* peh):m_eh(peh), m_pCompTree(NULL),m_pDefTree(NULL),
-  m_pSchemaRoot(NULL),m_numAttrs(0),m_allSubTypes(true),m_genOptional(true),m_wizFlag(true)
+ComponentFromXSD::ComponentFromXSD(EnvHelper* peh):m_pSchemaRoot(NULL), m_pCompTree(NULL),m_pDefTree(NULL),
+  m_numAttrs(0),m_allSubTypes(true),m_wizFlag(true),m_genOptional(true),m_eh(peh)
 {
    m_pEnv.set(peh->getEnvTree());
 }

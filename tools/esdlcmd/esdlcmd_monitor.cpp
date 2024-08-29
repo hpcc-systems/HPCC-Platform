@@ -307,7 +307,7 @@ public:
 class EsdlMonitorCmd : public EsdlConvertCmd
 {
 public:
-    EsdlMonitorCmd() : optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF), optCassConsistency("LOCAL_QUORUM"){}
+    EsdlMonitorCmd() : optCassConsistency("LOCAL_QUORUM"), optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF) {}
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {

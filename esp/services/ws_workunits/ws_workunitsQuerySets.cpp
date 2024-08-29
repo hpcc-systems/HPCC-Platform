@@ -3017,7 +3017,7 @@ class QueryCloner
 {
 public:
     QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target, bool _useSSL) :
-        context(_context), target(_target), srcAddress(address), useSSL(_useSSL)
+        context(_context), srcAddress(address), target(_target), useSSL(_useSSL)
     {
         if (srcAddress.length())
             srcQuerySet.setown(fetchRemoteQuerySetInfo(context, srcAddress, source, useSSL));

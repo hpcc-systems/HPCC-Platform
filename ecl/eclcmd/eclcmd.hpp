@@ -24,7 +24,7 @@ class EclCMDShell
 {
 public:
     EclCMDShell(int argc, const char *argv[], EclCommandFactory _factory, const char *_version, bool _runExternals=false)
-        : args(argc, argv), factory(_factory), version(_version), optHelp(false), runExternals(_runExternals)
+        : args(argc, argv), factory(_factory), runExternals(_runExternals), version(_version), optHelp(false)
     {
         splitFilename(argv[0], NULL, NULL, &name, NULL);
     }

@@ -82,7 +82,7 @@ class CStrandJunction : public CInterfaceOf<IStrandJunction>
 {
 public:
     explicit CStrandJunction(unsigned _numProducers, unsigned _numStrands)
-    : numProducers(_numProducers), numStrands(_numStrands), stopping(false), started(false)
+    : numStrands(_numStrands), numProducers(_numProducers), stopping(false), started(false)
     {
         assertex(numProducers);
     }
@@ -312,7 +312,7 @@ class StreamToBlockQueueThread : public CInterface, implements IThreaded
 {
 public:
     StreamToBlockQueueThread(CStrandJunction & _junction, IRowQueue * _queue, RowBlockAllocator & _allocator)
-    : junction(_junction), queue(_queue), stream(NULL), allocator(_allocator) {}
+    : junction(_junction), allocator(_allocator), stream(NULL), queue(_queue) {}
 
     virtual void threadmain() override
     {
@@ -554,7 +554,7 @@ protected:
 class SingleItemBlockQueue
 {
 public:
-    SingleItemBlockQueue() : avail(0U), space(1U)
+    SingleItemBlockQueue() : space(1U), avail(0U)
     {
     }
 
@@ -650,7 +650,7 @@ class OrderedReadAheadThread : public CInterface, implements IThreaded
 {
     //friend class OrderedManyToOneJunction;
 public:
-    OrderedReadAheadThread(CStrandJunction & _junction, RowBlockAllocator & _allocator) : junction(_junction), stream(NULL), allocator(_allocator)
+    OrderedReadAheadThread(CStrandJunction & _junction, RowBlockAllocator & _allocator) : junction(_junction), allocator(_allocator), stream(NULL)
     {
         finished = false;
         alive = true;

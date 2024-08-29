@@ -2270,7 +2270,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaExpiryServer(IPropertyTree *_config)
-        : props(_config), Thread("CSashaExpiryServer")
+        : Thread("CSashaExpiryServer"), props(_config)
     {
         stopped = false;
 

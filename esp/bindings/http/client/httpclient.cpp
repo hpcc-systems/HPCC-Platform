@@ -165,7 +165,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 }
 
 
-CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false), m_isPersistentSocket(false), m_numRequests(0), m_persistable(false)
+CHttpClient::CHttpClient(const char *proxy, const char* url) : m_url(url), m_proxy(proxy), m_disableKeepAlive(false), m_persistable(false), m_isPersistentSocket(false), m_numRequests(0)
 {
     StringBuffer protocol,username,password, host, port, path;
     Utils::SplitURL(url, protocol,username,password, host, port, path);

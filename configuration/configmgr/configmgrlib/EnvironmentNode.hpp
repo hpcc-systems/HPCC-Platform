@@ -36,7 +36,7 @@ class CFGMGRLIB_API EnvironmentNode : public std::enable_shared_from_this<Enviro
     public:
 
         EnvironmentNode(const std::shared_ptr<SchemaItem> &pCfgItem, const std::string &elemName, const std::shared_ptr<EnvironmentNode> &pParent = std::shared_ptr<EnvironmentNode>()) :
-            m_pSchemaItem(pCfgItem), m_name(elemName), m_pParent(pParent) { }
+            m_name(elemName), m_pSchemaItem(pCfgItem), m_pParent(pParent) { }
         ~EnvironmentNode() { }
         const std::string &getName() const { return m_name;  }
         void addChild(std::shared_ptr<EnvironmentNode> pNode);

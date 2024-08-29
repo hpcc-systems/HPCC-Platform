@@ -70,7 +70,7 @@ void ChannelInfo::noteChannelHealthy(unsigned subChannel) const
 }
 
 ChannelInfo::ChannelInfo(unsigned _mySubChannel, unsigned _numSubChannels, unsigned _replicationLevel)
-: mySubChannel(_mySubChannel), numSubChannels(_numSubChannels), myReplicationLevel(_replicationLevel)
+: mySubChannel(_mySubChannel), myReplicationLevel(_replicationLevel), numSubChannels(_numSubChannels)
 {
     for (unsigned i = 0; i < numSubChannels; i++)
         currentDelay.emplace_back(initIbytiDelay);

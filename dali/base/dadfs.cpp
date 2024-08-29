@@ -1547,7 +1547,7 @@ class CDistributedFileTransaction: implements IDistributedFileTransactionExt, pu
             IDistributedFile *file;
             StringAttr name;
         public:
-            HTMapping(const char *_name, IDistributedFile *_file) : name(_name), file(_file) { }
+            HTMapping(const char *_name, IDistributedFile *_file) : file(_file), name(_name) { }
             IDistributedFile &query() { return *file; }
             const char *queryFindString() const { return name; }
             const void *queryFindParam() const { return &file; }
@@ -1712,7 +1712,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CDistributedFileTransaction(IUserDescriptor *user, IDistributedSuperFile *_owner=NULL, ICodeContext *_codeCtx=NULL)
-        : isactive(false), depth(0), prepared(0), owner(_owner), codeCtx(_codeCtx)
+        : isactive(false), depth(0), prepared(0), codeCtx(_codeCtx), owner(_owner)
     {
         setUserDescriptor(udesc,user);
     }
@@ -2630,7 +2630,7 @@ class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributed
 
 public:
     CDistributedFileIterator(IDistributedFileDirectory *_dir,const char *wildname,bool includesuper,IUserDescriptor *user,bool _isPrivilegedUser, IDistributedFileTransaction *_transaction=NULL)
-        : isPrivilegedUser(_isPrivilegedUser), transaction(_transaction)
+        : transaction(_transaction), isPrivilegedUser(_isPrivilegedUser)
     {
         setUserDescriptor(udesc,user);
         if (!wildname||!*wildname)
@@ -2676,7 +2676,7 @@ class CDistributedSuperFileIterator: public CDistributedFileIteratorBase<IDistri
 
 public:
     CDistributedSuperFileIterator(IDistributedFile *_owner, CDistributedFileDirectory *_parent,IPropertyTree *root,IUserDescriptor *user, IDistributedFileTransaction *_transaction)
-        : owner(_owner), transaction(_transaction)
+        : transaction(_transaction), owner(_owner)
     {
         setUserDescriptor(udesc,user);
         parent = _parent;
@@ -4520,7 +4520,7 @@ public:
             IException *except;
 
             casyncforbase(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : newNames(_newNames),crit(_crit)
+                : crit(_crit), newNames(_newNames)
             {
                 width = _width;
                 file = _file;
@@ -7560,7 +7560,7 @@ public:
     }
 
     CNamedGroupCacheEntry(IException *_exception, const char *_name)
-    : exception(_exception), name(_name), groupType(grp_unknown)
+    : name(_name), groupType(grp_unknown), exception(_exception)
     {
         cachedtime = msTick();
     }
@@ -8478,7 +8478,7 @@ public:
                            IUserDescriptor *_user,
                            const char *_flname,
                            bool _interleaved)
-        : parent(_parent), user(_user), created(false), interleaved(_interleaved)
+        : parent(_parent), user(_user), interleaved(_interleaved), created(false)
     {
         tracing.appendf("CreateSuperFile: super: %s", _flname);
         logicalname.set(_flname);
@@ -8684,7 +8684,7 @@ public:
                       IUserDescriptor *_user,
                       const char *_flname,
                       const char *_newname)
-        : user(_user), parent(_parent)
+        : parent(_parent), user(_user)
     {
         tracing.appendf("RenameFile: name: %s, newname: %s", _flname, _newname);
         fromName.set(_flname);
@@ -9342,9 +9342,9 @@ public:
     CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, const char *_filterValue, const char *_filterValueHigh)
         : filterType(_filterType), attrPath(_attrPath), filterValue(_filterValue), filterValueHigh(_filterValueHigh) {};
     CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _hasFilter, const int _filterValue, bool _hasFilterHigh, const int _filterValueHigh)
-        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), filterValueInt(_filterValue), hasFilterHigh(_hasFilterHigh), filterValueHighInt(_filterValueHigh) {};
+        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), hasFilterHigh(_hasFilterHigh), filterValueInt(_filterValue), filterValueHighInt(_filterValueHigh) {};
     CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _hasFilter, const __int64 _filterValue, bool _hasFilterHigh, const __int64 _filterValueHigh)
-        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), filterValueInt64(_filterValue), hasFilterHigh(_hasFilterHigh), filterValueHighInt64(_filterValueHigh) {};
+        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), hasFilterHigh(_hasFilterHigh), filterValueInt64(_filterValue), filterValueHighInt64(_filterValueHigh) {};
     CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _filterValue)
         : filterType(_filterType), attrPath(_attrPath), filterValueBoolean(_filterValue) {};
     CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, const char *_filterValue, const char *_sep, StringArray& _filterArray)
@@ -13254,7 +13254,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
         SocketEndpointArray &ips;
     public:
         casyncfor(IPropertyTree* _file,SocketEndpointArray &_ips,Owned<IException> &_exc,CriticalSection &_errcrit)
-            : ips(_ips), exc(_exc), errcrit(_errcrit)
+            : errcrit(_errcrit), exc(_exc), ips(_ips)
         {
             file = _file;
         }

@@ -146,7 +146,7 @@ class DECL_EXCEPTION CRemoteException: implements IRemoteException, public CInte
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRemoteException(int code,const char *str,int kind) : msg(str),errcode(code),errkind((RemoteExceptionKind)kind) {};
+    CRemoteException(int code,const char *str,int kind) : errcode(code),errkind((RemoteExceptionKind)kind),msg(str) {};
     
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   

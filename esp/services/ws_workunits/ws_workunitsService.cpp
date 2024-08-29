@@ -2439,8 +2439,7 @@ public:
 
     CArchivedWUsReader(IEspContext& _context, const char* _sashaServerIP, unsigned _sashaServerPort, ArchivedWuCache& _archivedWuCache,
         unsigned _cacheMinutes, unsigned _pageSize)
-        : context(_context), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort),
-        archivedWuCache(_archivedWuCache), cacheMinutes(_cacheMinutes), pageSize(_pageSize)
+        : context(_context), pageSize(_pageSize), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort), cacheMinutes(_cacheMinutes), archivedWuCache(_archivedWuCache)
     {
         hasMoreWU = false;
         numberOfWUsReturned = 0;

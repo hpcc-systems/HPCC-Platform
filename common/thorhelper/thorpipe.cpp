@@ -198,7 +198,7 @@ class CReadRowXMLStream : implements IReadRowStream, implements IXMLSelect, impl
 public:
     IMPLEMENT_IINTERFACE;
     CReadRowXMLStream(IEngineRowAllocator * _rowAllocator, IXmlToRowTransformer * _xmlTransformer, const char * _iteratorPath, unsigned _pipeFlags)
-        : rowAllocator(_rowAllocator), xmlTransformer(_xmlTransformer), iteratorPath(_iteratorPath), pipeFlags(_pipeFlags)
+        : xmlTransformer(_xmlTransformer), rowAllocator(_rowAllocator), iteratorPath(_iteratorPath), pipeFlags(_pipeFlags)
     {
     }
 
@@ -293,7 +293,7 @@ class THORHELPER_API CPipeWriteXformHelper : implements IPipeWriteXformHelper, p
     unsigned flags;
 public:
     CPipeWriteXformHelper(unsigned _flags, IHThorXmlWriteExtra * _xmlWriterExtra, IHThorCsvWriteExtra * _csvWriterExtra, IOutputRowSerializer *_rawSerializer)
-        : flags(_flags), xmlWriterExtra(_xmlWriterExtra), csvWriterExtra(_csvWriterExtra), rawSerializer(_rawSerializer) {};
+        : csvWriterExtra(_csvWriterExtra), xmlWriterExtra(_xmlWriterExtra), rawSerializer(_rawSerializer), flags(_flags) {};
     IMPLEMENT_IINTERFACE;
 
     virtual void writeHeader(IPipeProcess * pipe)

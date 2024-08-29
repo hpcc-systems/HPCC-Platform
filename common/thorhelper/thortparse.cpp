@@ -83,7 +83,8 @@ Terminal::Terminal(symbol_id _id, const FeatureInfo * featureInfo, unsigned _len
 
 //---------------------------------------------------------------------------
 
-NonTerminal::NonTerminal(symbol_id _id, IAtom * _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow) : GrammarSymbol(_id), resultSize(_resultSize), resultRow(_resultRow)
+NonTerminal::NonTerminal(symbol_id _id, IAtom * _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow)
+: GrammarSymbol(_id), resultRow(_resultRow), resultSize(_resultSize)
 {
     unsigned nullCount = 0;
     unsigned nonNullIndex = 0;
@@ -1207,7 +1208,7 @@ const void * TomitaResultIterator::getRow()
 //---------------------------------------------------------------------------
 
 TomitaParser::TomitaParser(ICodeContext * ctx, TomitaAlgorithm * _def, unsigned _activityId, INlpHelper * _helper, IHThorParseArg * arg) 
-: parser(_def->table, rowState), lexer(_def->tokenDfa, _def->skipDfa, _def->endTokenChars, _def->eofId), iter(rowState, _def)
+: lexer(_def->tokenDfa, _def->skipDfa, _def->endTokenChars, _def->eofId), parser(_def->table, rowState), iter(rowState, _def)
 {
     assertex(ctx);
     def = _def;

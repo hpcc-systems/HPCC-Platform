@@ -452,7 +452,7 @@ public:
     }
 
     CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver,unsigned flags)
-        : name(_name),group(_group)
+        : group(_group), name(_name)
     {
         name.toLowerCase();
         mspec =_mspec;

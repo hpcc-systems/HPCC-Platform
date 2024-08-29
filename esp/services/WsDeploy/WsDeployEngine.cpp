@@ -80,11 +80,11 @@ private:
 
 CWsDeployEngine::CWsDeployEngine( CWsDeployExCE& service, IEspContext* ctx, IConstDeployInfo& deployInfo, const char* selComps, short version)
 : m_service(service),
+m_depInfo(deployInfo),
 m_bAbort(false),
 m_bEnvUpdated(false),
-m_errorCount(0),
 m_version(version),
-m_depInfo(deployInfo),
+m_errorCount(0),
 m_pDeploy(createPTreeFromXMLString(selComps))
 {
   m_pResponseXml.setown( createPTreeFromXMLString(selComps) );
@@ -122,8 +122,8 @@ CWsDeployEngine::CWsDeployEngine( CWsDeployExCE& service, IConstDeployInfo& depl
 m_depInfo(deployInfo),
 m_bAbort(false),
 m_bEnvUpdated(false),
-m_errorCount(0),
-m_version(1)
+m_version(1),
+m_errorCount(0)
 {
   //init our cache
   //

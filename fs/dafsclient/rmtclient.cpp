@@ -1029,7 +1029,7 @@ CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMetho
 }
 
 CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char *_storageSecret, const char * _filename)
-    : ep(_ep), storageSecret(_storageSecret), filename(_filename)
+    : filename(_filename), ep(_ep), storageSecret(_storageSecret)
 {
 }
 

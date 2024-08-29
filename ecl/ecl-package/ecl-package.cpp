@@ -469,8 +469,8 @@ private:
 class EclCmdPackageAdd : public EclCmdCommon
 {
 public:
-    EclCmdPackageAdd() : optActivate(false), optOverWrite(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false),
-        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false), optReplacePackagemap(false)
+    EclCmdPackageAdd() : 
+        optActivate(false), optOverWrite(false), optReplacePackagemap(false), optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)

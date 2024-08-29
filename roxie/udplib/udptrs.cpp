@@ -720,7 +720,7 @@ public:
     }
 
     UdpReceiverEntry(const IpAddress _ip, const IpAddress _myIP, unsigned _numQueues, unsigned _queueSize, unsigned _sendFlowPort, unsigned _dataPort, bool _encrypted)
-    : ip (_ip), sourceIP(_myIP), numQueues(_numQueues), isLocal(_ip.isLocal()), encrypted(_encrypted), maxRequestDeadTimeouts(getMaxRequestDeadTimeout())
+    : isLocal(_ip.isLocal()), encrypted(_encrypted), numQueues(_numQueues), maxRequestDeadTimeouts(getMaxRequestDeadTimeout()), sourceIP(_myIP), ip(_ip)
     {
         assert(!initialized);
         assert(numQueues > 0);
@@ -1053,7 +1053,7 @@ class CSendManager : implements ISendManager, public CInterface
 
     public:
         send_data(CSendManager &_parent, TokenBucket *_bucket)
-            : StartedThread("UdpLib::send_data"), parent(_parent), bucket(_bucket), send_queue(100) // MORE - send q size should be configurable and/or related to size of cluster?
+            : StartedThread("UdpLib::send_data"), parent(_parent), send_queue(100), bucket(_bucket) // MORE - send q size should be configurable and/or related to size of cluster?
         {
             if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
@@ -1171,9 +1171,9 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
-        : bucket(_bucket),
-          myIP(_myIP),
+        : myIP(_myIP),
           receiversTable([_numQueues, q_size, server_flow_port, data_port, _encrypted, this](const ServerIdentifier ip) { return new UdpReceiverEntry(ip.getIpAddress(), myIP, _numQueues, q_size, server_flow_port, data_port, _encrypted);}),
+          bucket(_bucket),
           encrypted(_encrypted)
     {
         myId = myIP.getHostText(myIdStr).str();

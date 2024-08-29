@@ -172,7 +172,7 @@ public:
         public:
             Owned<IException> &exc;
             casyncfor(CriticalSection &_crit,Semaphore &_sem,IFileDescriptor *_srcdesc,IFileDescriptor *_dstdesc,Owned<IException> &_exc, StringArray &_tmpnames, StringArray &_dstnames)
-                : crit(_crit), sem(_sem), exc(_exc), tmpnames(_tmpnames), dstnames(_dstnames)
+                : crit(_crit), sem(_sem), tmpnames(_tmpnames), dstnames(_dstnames), exc(_exc)
             {
                 srcdesc = _srcdesc;
                 dstdesc = _dstdesc;

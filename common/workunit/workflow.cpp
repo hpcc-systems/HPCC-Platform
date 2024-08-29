@@ -852,12 +852,12 @@ private:
 //-------------------------------------------------------------------------------------------------
 
 WorkflowMachine::WorkflowMachine()
-    : ctx(NULL), process(NULL), currentWfid(0), currentScheduledWfid(0), itemsWaiting(0), itemsUnblocked(0), condition(false), logctx(queryDummyContextLogger())
+    : logctx(queryDummyContextLogger()), ctx(NULL), process(NULL), currentWfid(0), currentScheduledWfid(0), itemsWaiting(0), itemsUnblocked(0), condition(false)
 {
 }
 
 WorkflowMachine::WorkflowMachine(const IContextLogger &_logctx)
-    : ctx(NULL), process(NULL), currentWfid(0), currentScheduledWfid(0), itemsWaiting(0), itemsUnblocked(0), condition(false), logctx(_logctx)
+    : logctx(_logctx), ctx(NULL), process(NULL), currentWfid(0), currentScheduledWfid(0), itemsWaiting(0), itemsUnblocked(0), condition(false)
 {
 }
 

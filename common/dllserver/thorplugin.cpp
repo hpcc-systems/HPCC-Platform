@@ -330,7 +330,7 @@ public:
 };
 
 HelperDll::HelperDll(const char *_name, const IFileIO *_dllFile)
-: name(_name), dllFile(_dllFile), manifestFiles(false)
+: dllFile(_dllFile), manifestFiles(false), name(_name)
 {
     logLoad = false;
 }

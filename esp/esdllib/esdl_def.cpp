@@ -93,7 +93,7 @@ protected:
     IEsdlDefObjectIterator* baseIterator;
 
 public:
-    EsdlDefObjectWrapper( IEsdlDefObject& _obj, unsigned _flags = 0 ) : object(_obj), flags(_flags), baseIterator(NULL)
+    EsdlDefObjectWrapper( IEsdlDefObject& _obj, unsigned _flags = 0 ) : flags(_flags), object(_obj), baseIterator(NULL)
     {
     }
 

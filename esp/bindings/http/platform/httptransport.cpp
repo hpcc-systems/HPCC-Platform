@@ -163,7 +163,7 @@ class SOAPMessageLog : implements IPTreeNotifyEvent, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    SOAPMessageLog() : m_readNext(true), m_foundPassword(false), m_lastTagFound(NONE), m_pPassword(NULL), m_pStart(NULL)
+    SOAPMessageLog() : m_lastTagFound(NONE), m_pStart(NULL), m_pPassword(NULL), m_foundPassword(false), m_readNext(true)
     {
         m_messageForLog.clear();
         m_skipTag.clear();
@@ -1341,8 +1341,8 @@ bool CHttpMessage::checkPersistentEligible()
               CHttpRequest Implementation
 *******************************************************************************/
 
-CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket), m_pathIsParsed(false), 
-    m_sstype(sub_serv_unknown), m_MaxRequestEntityLength(0)
+CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket),
+    m_sstype(sub_serv_unknown), m_pathIsParsed(false), m_MaxRequestEntityLength(0)
 {
 };
 

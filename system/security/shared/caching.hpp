@@ -53,7 +53,7 @@ class CResPermissionsCache
 {
 public:
     CResPermissionsCache(class CPermissionsCache* parentCache, const char* user)
-        : m_pParentCache(parentCache), m_user(user)
+        : m_user(user), m_pParentCache(parentCache)
     {
         time( &m_tLastCleanup );
     }
