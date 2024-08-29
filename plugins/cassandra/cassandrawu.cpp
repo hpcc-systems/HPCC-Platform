@@ -3893,7 +3893,7 @@ public:
             {
                 waiter->wait(20000);  // recheck state every 20 seconds, in case eclagent has crashed.
                 if (waiter->isAborted())
-                    return WUStateUnknown;  // MORE - throw an exception?
+                    return WUStateAborting;
             }
             else if (waited > timeout || !waiter->wait(timeout-waited))
                 return WUStateUnknown;  // MORE - throw an exception?
