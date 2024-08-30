@@ -2239,6 +2239,7 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
 
 //////////////
 
+static bool releaseActiveManager = false;
 static ISDSManager * activeSDSManager=NULL;
 static ISDSManager * savedSDSManager=NULL;
 
@@ -2248,10 +2249,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
-    delete activeSDSManager;
-    activeSDSManager = nullptr;
-    delete savedSDSManager;
-    savedSDSManager = nullptr;
+    if (releaseActiveManager)
+    {
+        delete activeSDSManager;
+        activeSDSManager = nullptr;
+        delete savedSDSManager;
+        savedSDSManager = nullptr;
+    }
 }
 
 ISDSManager &querySDS()
@@ -2261,9 +2265,8 @@ ISDSManager &querySDS()
         return *activeSDSManager;
     else if (!queryCoven().inCoven())
     {
-        if (!activeSDSManager)
-            activeSDSManager = new CClientSDSManager();
-
+        releaseActiveManager = true;
+        activeSDSManager = new CClientSDSManager();
         return *activeSDSManager;
     }
     else
