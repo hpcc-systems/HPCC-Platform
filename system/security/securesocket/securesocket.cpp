@@ -2023,6 +2023,7 @@ public:
 #ifndef OPENSSL_NO_CRYPTO_MDEBUG
         CRYPTO_mem_leaks(bio_err);
 #endif
+        BIO_free(bio_err);
         BIO_free(pmem);
         BIO_free(reqmem);
         EVP_PKEY_free (pkey);
@@ -2191,6 +2192,7 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 #ifndef OPENSSL_NO_CRYPTO_MDEBUG
     CRYPTO_mem_leaks(bio_err);
 #endif
+    BIO_free(bio_err);
     BIO_free(csrmem);
     BIO_free(cacertmem);
     BIO_free(cmem);
