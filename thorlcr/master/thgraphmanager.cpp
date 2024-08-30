@@ -361,6 +361,7 @@ public:
     void run();
     bool execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep);
     IException *queryExitException() { return exitException; }
+    void clearExitException() { exitException.clear(); }
 
 // IExceptionHandler
     bool fireException(IException *e);
@@ -1486,29 +1487,31 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             }
                             SocketEndpoint dummyAgentEp;
                             jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
-                            IException *e = jobManager->queryExitException();
-                            if (e)
-                            {
-                                // NB: exitException has already been relayed.
-                                break;
-                            }
 
                             Owned<IWorkUnit> w = &workunit->lock();
                             if (!multiJobLinger && lingerPeriod)
                                 w->setDebugValue(instance, "1", true);
 
-                            switch (w->getState())
+                            if (jobManager->queryExitException())
                             {
-                                case WUStateRunning:
-                                    w->setState(WUStateWait);
-                                    break;
-                                case WUStateAborting:
-                                case WUStateAborted:
-                                case WUStateFailed:
-                                    break;
-                                default:
-                                    w->setState(WUStateFailed);
-                                    break;
+                                // NB: exitException has already been relayed.
+                                jobManager->clearExitException();
+                            }
+                            else
+                            {
+                                switch (w->getState())
+                                {
+                                    case WUStateRunning:
+                                        w->setState(WUStateWait);
+                                        break;
+                                    case WUStateAborting:
+                                    case WUStateAborted:
+                                    case WUStateFailed:
+                                        break;
+                                    default:
+                                        w->setState(WUStateFailed);
+                                        break;
+                                }
                             }
                         }
                     }
