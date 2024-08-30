@@ -6431,7 +6431,7 @@ public:
             return WUStateUnknown;
         }
 
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, (WUSubscribeOptions)(SubscribeOptionState|SubscribeOptionAbort));
         LocalIAbortHandler abortHandler(*waiter);
         if (conn)
         {
@@ -6505,7 +6505,7 @@ public:
                     waiter->wait(20000);  // recheck state every 20 seconds, in case eclagent has crashed.
                     if (waiter->isAborted())
                     {
-                        ret = WUStateUnknown;  // MORE - throw an exception?
+                        ret = WUStateAborting;
                         break;
                     }
                 }
@@ -14483,13 +14483,13 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         unsigned runningTimeLimit = workunit.getDebugValueInt("maxRunTime", 0);
         runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
 
-        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait, WUStateFailed };
+        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait, WUStateAborting, WUStateFailed };
         unsigned __int64 blockedTime = 0;
         for (unsigned i=0; i<2; i++)
         {
             WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
             DBGLOG("Got state: %s", getWorkunitStateStr(state));
-            if ((WUStateWait == state) || (WUStateFailed == state)) // already finished or failed
+            if ((WUStateWait == state) || (WUStateFailed == state) || (WUStateAborting == state)) // already finished or failed or aborting
             {
                 // workunit may have spent time in blocked state, but then transitioned to
                 // wait or failed state quickly such that this code did not see its running state.

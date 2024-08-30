@@ -699,20 +699,33 @@ class WorkUnitWaiter : public CInterface, implements IAbortHandler, implements I
 {
     Semaphore changed;
     Owned<IWorkUnitWatcher> watcher;
-    bool aborted;
+    mutable bool aborted = false;
+    mutable bool abortDirty = false;
+    StringAttr wuid;
 public:
     IMPLEMENT_IINTERFACE;
-    WorkUnitWaiter(const char *wuid, WUSubscribeOptions watchFor)
+    WorkUnitWaiter(const char *_wuid, WUSubscribeOptions watchFor) : wuid(_wuid)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         watcher.setown(factory->getWatcher(this, watchFor, wuid));
-        aborted = false;
+        if (watchFor & SubscribeOptionAbort)
+            abortDirty = true;
     }
     ~WorkUnitWaiter()
     {
         unsubscribe();
     }
-    bool isAborted() const { return aborted; }
+    bool isAborted() const
+    {
+        if (!aborted && abortDirty)
+        {
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            if (factory->isAborting(wuid))
+                aborted = true;
+            abortDirty = false;
+        }
+        return aborted;
+    }
     bool wait(unsigned timeout)
     {
         return changed.wait(timeout) && !aborted;
@@ -728,6 +741,8 @@ public:
 // IWorkUnitSubscriber
     virtual void notify(WUSubscribeOptions flags, unsigned valueLen, const void *valueData) override
     {
+        if (SubscribeOptionAbort == flags)
+             abortDirty = true;
         changed.signal();
     }
 // IAbortHandler

@@ -6,7 +6,7 @@ define([
     "@hpcc-js/comms",
 
     "hpcc/GraphsWidget",
-    "src/ESPQuery"
+    "src/ESPQuery",
 ], function (declare, lang, arrayUtil,
     hpccComms,
     GraphsWidget, ESPQuery) {
@@ -58,6 +58,18 @@ define([
                 if (lang.exists("StatsList.QuerySummaryStats", response)) {
                     context.store.setData(response.StatsList.QuerySummaryStats);
                     context.grid.refresh();
+                }
+            }).catch(err => {
+                if (err?.Exception.length) {
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Error",
+                        Source: "WsWorkunits.WUQueryGetSummaryStats",
+                        Exceptions: [{
+                            Source: context.i18n.Error,
+                            Message: err.Exception[0].Description,
+                            duration: -1
+                        }]
+                    });
                 }
             });
         }

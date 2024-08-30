@@ -6,9 +6,9 @@ import { hasLogAccess } from "src/ESPLog";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
-import { useUserTheme } from "../hooks/theme";
 import { useSessionStore } from "../hooks/store";
-import { usePivotItemDisable } from "../layouts/pivot";
+import { useUserTheme } from "../hooks/theme";
+import { useMyAccount } from "../hooks/user";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 export interface NextPrevious {
@@ -227,7 +227,8 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     hashPath
 }) => {
 
-    const { theme } = useUserTheme();
+    const { theme, themeV9 } = useUserTheme();
+    const { isAdmin } = useMyAccount();
 
     const [favorites] = useFavorites();
     const [favoriteCount, setFavoriteCount] = React.useState(0);
@@ -301,7 +302,12 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             setLogsDisabled(true);
         });
     }, []);
-    const logsDisabledStyle = usePivotItemDisable(logsDisabled);
+    const linkStyle = React.useCallback((disabled) => {
+        return disabled ? {
+            background: themeV9.colorNeutralBackgroundDisabled,
+            color: themeV9.colorNeutralForegroundDisabled
+        } : {};
+    }, [themeV9]);
 
     const favoriteMenu: IContextualMenuItem[] = React.useMemo(() => {
         const retVal: IContextualMenuItem[] = [];
@@ -321,8 +327,9 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
+                            const linkDisabled = (row.itemKey === "/topology/logs" && logsDisabled) || (row.itemKey.indexOf("security") > -1 && !isAdmin);
                             return <Link
-                                disabled={row.itemKey === "/topology/logs" && logsDisabled}
+                                disabled={linkDisabled}
                                 key={`MenuLink_${idx}`}
                                 href={`#${row.itemKey}`}
                                 className={[
@@ -330,7 +337,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                                     row.itemKey === subNav ? navStyles.active : "",
                                     !subNav && row.itemKey === "/topology/configuration" ? navStyles.active : ""
                                 ].join(" ")}
-                                style={row.itemKey === "/topology/logs" && logsDisabled ? logsDisabledStyle?.style : {}}
+                                style={linkStyle(linkDisabled)}
                             >
                                 {row.headerText}
                             </Link>;

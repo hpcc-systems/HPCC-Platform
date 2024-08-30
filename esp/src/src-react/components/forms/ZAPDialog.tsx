@@ -75,7 +75,7 @@ interface ZAPDialogValues {
         SelectColumnMode?: ColumnMode;
         CustomColumns?: string;
         ComponentsFilter?: string;
-        Format?: string;
+        Format?: LogFormat;
         sortByTimeDirection?: string;
         LogEventType?: string;
     };
@@ -113,7 +113,7 @@ const defaultValues: ZAPDialogValues = {
         SelectColumnMode: ColumnMode.DEFAULT,
         CustomColumns: "",
         ComponentsFilter: "",
-        Format: "CSV",
+        Format: LogFormat.CSV,
         sortByTimeDirection: "1",
         LogEventType: "ALL"
     }
@@ -170,8 +170,6 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     const [emailDisabled, setEmailDisabled] = React.useState(true);
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
     const [spinnerHidden, setSpinnerHidden] = React.useState(true);
-    const [columnMode, setColumnMode] = React.useState(ColumnMode.DEFAULT);
-    const [logFormat, setLogFormat] = React.useState(LogFormat.CSV);
     const [showCustomColumns, setShowCustomColumns] = React.useState(false);
     const [logAccessorMessage, setLogAccessorMessage] = React.useState("");
 
@@ -378,6 +376,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     label={nlsHPCC.PasswordOpenZAP}
                     value={value}
                     type="password"
+                    autoComplete="off"
                     canRevealPassword={true}
                     revealPasswordAriaLabel={nlsHPCC.ShowPassword}
                 />}
@@ -593,7 +592,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.SelectColumnMode"
                 render={({
-                    field: { name: fieldName }
+                    field: { onChange, name: fieldName, value }
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.ColumnMode}
@@ -603,7 +602,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             { key: ColumnMode.ALL, text: "ALL" },
                             { key: ColumnMode.CUSTOM, text: "CUSTOM" }
                         ]}
-                        selectedKey={columnMode}
+                        selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterSelectColumnModeTooltip}
@@ -611,7 +610,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         />}
                         onChange={(evt, option) => {
                             setShowCustomColumns(option.key === ColumnMode.CUSTOM ? true : false);
-                            setColumnMode(option.key as ColumnMode);
+                            onChange(option.key);
                         }}
                     />
                 }
@@ -661,7 +660,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.Format"
                 render={({
-                    field: { name: fieldName }
+                    field: { onChange, name: fieldName, value }
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.LogFormat}
@@ -670,14 +669,14 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             { key: LogFormat.JSON, text: "JSON" },
                             { key: LogFormat.XML, text: "XML" }
                         ]}
-                        selectedKey={logFormat}
+                        selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterFormatTooltip}
                             {...props}
                         />}
                         onChange={(evt, option) => {
-                            setLogFormat(option.key as LogFormat);
+                            onChange(option.key);
                         }}
                     />
                 }
