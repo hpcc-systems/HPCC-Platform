@@ -376,6 +376,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     label={nlsHPCC.PasswordOpenZAP}
                     value={value}
                     type="password"
+                    autoComplete="off"
                     canRevealPassword={true}
                     revealPasswordAriaLabel={nlsHPCC.ShowPassword}
                 />}
