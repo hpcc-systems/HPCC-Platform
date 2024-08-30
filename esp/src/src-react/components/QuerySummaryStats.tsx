@@ -1,9 +1,12 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import { Query } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+
+const logger = scopedLogger("src-react/components/QuerySummaryStats.tsx");
 
 interface QuerySummaryStatsProps {
     querySet: string;
@@ -65,7 +68,7 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
                     };
                 }));
             }
-        });
+        }).catch(err => logger.error(err));
     }, [query]);
 
     React.useEffect(() => {
