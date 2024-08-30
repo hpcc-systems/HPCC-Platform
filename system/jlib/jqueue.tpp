@@ -290,6 +290,10 @@ protected:
     bool qwait(Semaphore &sem,unsigned &waiting,unsigned timeout,unsigned &start) 
     { 
         // in crit block
+        // Prevent any more threads from waiting once the queue has been stopped
+        if (stopped)
+            return false;
+
         unsigned remaining;
         if (timeout) {
             if (timeout==INFINITE) 
@@ -527,21 +531,15 @@ public:
     void stop() // stops all waiting operations
     {
         CriticalBlock b(SELF::crit); 
-        do {
-            stopped = true;
-            if (enqwaiting) {
-                enqwaitsem.signal(enqwaiting);
-                enqwaiting = 0;
-            }
-            if (deqwaiting) {
-                deqwaitsem.signal(deqwaiting);
-                deqwaiting = 0;
-            }
-            {
-                CriticalUnblock ub(SELF::crit); 
-                Sleep(10);      // bit of a kludge
-            }
-        } while (enqwaiting||deqwaiting);
+        stopped = true;
+        if (enqwaiting) {
+            enqwaitsem.signal(enqwaiting);
+            enqwaiting = 0;
+        }
+        if (deqwaiting) {
+            deqwaitsem.signal(deqwaiting);
+            deqwaiting = 0;
+        }
     }
 };
 
