@@ -295,9 +295,24 @@ public:
 
                     {
                         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                        Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
-                        if (isContainerized())
-                            workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
+                        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+                        if (!cw)
+                        {
+                            WARNLOG("Queued wuid does not exist: %s", wuid.str());
+                            return; // exit pooled thread
+                        }
+                        if (isThorAgent)
+                        {
+                            SessionId agentSessionID = cw->getAgentSession();
+                            if ((agentSessionID <= 0) || querySessionManager().sessionStopped(agentSessionID, 0))
+                            {
+                                WARNLOG("Discarding agentless queued Thor job: %s", wuid.str());
+                                return; // exit pooled thread
+                            }
+                        }
+
+                        Owned<IWorkUnit> workunit = &cw->lock();
+                        workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
                         addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                     }
                     k8s::runJob(jobSpecName, wuid, jobName, params);

@@ -608,6 +608,9 @@ class DFUAccessTests : public CppUnit::TestFixture
 protected:
     void testStartServer()
     {
+        StringBuffer sysTmpDir;
+        setBaseDirectory(getSystemTempDir(sysTmpDir).str(), 0, DFD_OSdefault);
+
         Owned<ISocket> socket;
 
         unsigned endPort = MP_END_PORT;

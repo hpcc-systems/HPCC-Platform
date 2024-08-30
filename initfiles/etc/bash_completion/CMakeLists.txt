@@ -19,6 +19,7 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc
     ${CMAKE_CURRENT_SOURCE_DIR}/eclplus
     ${CMAKE_CURRENT_SOURCE_DIR}/eclagent
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp-api
 )
     install ( FILES ${oFILES} DESTINATION etc/bash_completion.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )

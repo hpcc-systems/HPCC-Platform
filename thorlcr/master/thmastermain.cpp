@@ -69,8 +69,8 @@
 #include "thmem.hpp"
 
 #define DEFAULT_QUERY_SO_DIR "sodir"
-#define MAX_SLAVEREG_DELAY 60*1000*15 // 15 mins
-#define SLAVEREG_VERIFY_DELAY 5*1000
+#define MAX_WORKERREG_DELAY 60*1000*15 // 15 mins
+#define WORKERREG_VERIFY_DELAY 5*1000
 #define SHUTDOWN_IN_PARALLEL 20
 
 
@@ -142,7 +142,7 @@ MODULE_EXIT()
 
 class CRegistryServer : public CSimpleInterface
 {
-    unsigned msgDelay, slavesRegistered;
+    unsigned msgDelay, workersRegistered;
     CriticalSection crit;
     bool stopped = false;
     static CriticalSection regCrit;
@@ -193,7 +193,7 @@ class CRegistryServer : public CSimpleInterface
                     throwUnexpected();
                 Owned<IException> e = deserializeException(msg);
                 if (e.get())
-                    EXCLOG(e, "Slave unregistered with exception");
+                    EXCLOG(e, "Worker unregistered with exception");
                 registry.deregisterNode(sender-1);
             }
             running = false;
@@ -206,8 +206,8 @@ public:
     CRegistryServer() : deregistrationWatch(*this)
     {
         status = createThreadSafeBitSet();
-        msgDelay = SLAVEREG_VERIFY_DELAY;
-        slavesRegistered = 0;
+        msgDelay = WORKERREG_VERIFY_DELAY;
+        workersRegistered = 0;
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createMasterWatchdog());
         else
@@ -231,44 +231,44 @@ public:
         CriticalBlock b(regCrit);
         return LINK(registryServer);
     }
-    void deregisterNode(unsigned slave)
+    void deregisterNode(unsigned worker)
     {
-        const SocketEndpoint &ep = queryNodeGroup().queryNode(slave+1).endpoint();
+        const SocketEndpoint &ep = queryNodeGroup().queryNode(worker+1).endpoint();
         StringBuffer url;
         ep.getEndpointHostText(url);
-        if (!status->test(slave))
+        if (!status->test(worker))
         {
-            PROGLOG("Slave %d (%s) trying to unregister, but not currently registered", slave+1, url.str());
+            PROGLOG("Worker %d (%s) trying to unregister, but not currently registered", worker+1, url.str());
             return;
         }
-        PROGLOG("Slave %d (%s) unregistered", slave+1, url.str());
-        status->set(slave, false);
-        --slavesRegistered;
+        PROGLOG("Worker %d (%s) unregistered", worker+1, url.str());
+        status->set(worker, false);
+        --workersRegistered;
         if (watchdog)
-            watchdog->removeSlave(ep);
-        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the slave was shutdown. Aborting Thor", url.str()), TEC_SlaveInit);
+            watchdog->removeWorker(ep);
+        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str()), TEC_WorkerInit);
     }
-    void registerNode(unsigned slave)
+    void registerNode(unsigned worker)
     {
-        SocketEndpoint ep = queryNodeGroup().queryNode(slave+1).endpoint();
+        SocketEndpoint ep = queryNodeGroup().queryNode(worker+1).endpoint();
         StringBuffer url;
         ep.getEndpointHostText(url);
-        if (status->test(slave))
+        if (status->test(worker))
         {
-            PROGLOG("Slave %d (%s) already registered, rejecting", slave+1, url.str());
+            PROGLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
             return;
         }
-        PROGLOG("Slave %d (%s) registered", slave+1, url.str());
-        status->set(slave);
+        PROGLOG("Worker %d (%s) registered", worker+1, url.str());
+        status->set(worker);
         if (watchdog)
-            watchdog->addSlave(ep);
-        ++slavesRegistered;
+            watchdog->addWorker(ep, worker);
+        ++workersRegistered;
     }
-    void connect(unsigned slaves)
+    void connect(unsigned workers)
     {
-        IPointerArrayOf<INode> connectedSlaves;
-        connectedSlaves.ensureCapacity(slaves);
-        unsigned remaining = slaves;
+        IPointerArrayOf<INode> connectedWorkers;
+        connectedWorkers.ensureCapacity(workers);
+        unsigned remaining = workers;
         INode *_sender = nullptr;
         CMessageBuffer msg;
 
@@ -277,7 +277,7 @@ public:
         unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
         constexpr unsigned oneMinMs = 60000;
 
-        PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", slaves, maxRegistrationMins);
+        PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
         CTimeMon registerTM(maxRegistrationMins * oneMinMs);
         while (remaining)
         {
@@ -300,22 +300,22 @@ public:
             else
             {
                 Owned<INode> sender = _sender;
-                if (NotFound != connectedSlaves.find(sender))
+                if (NotFound != connectedWorkers.find(sender))
                 {
                     StringBuffer epStr;
-                    throw makeStringExceptionV(TE_AbortException, "Same slave registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
+                    throw makeStringExceptionV(TE_AbortException, "Same worker registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
                 }
 
-                /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
-                * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
+                /* NB: in base metal setup, the workers know which worker number they are in advance, and send their workerNum at registration.
+                * In non attached storage setup, they do not send a worker by default and instead are given a # once all are registered
                 */
-                unsigned slaveNum;
-                msg.read(slaveNum);
+                unsigned workerNum;
+                msg.read(workerNum);
                 StringBuffer workerPodName, workerContainerName;
-                if (NotFound == slaveNum)
+                if (NotFound == workerNum)
                 {
-                    connectedSlaves.append(sender.getLink());
-                    slaveNum = connectedSlaves.ordinality();
+                    connectedWorkers.append(sender.getLink());
+                    workerNum = connectedWorkers.ordinality();
                     if (isContainerized())
                     {
                         msg.read(workerPodName);
@@ -325,20 +325,20 @@ public:
                 }
                 else
                 {
-                    unsigned pos = slaveNum - 1; // NB: slaveNum is 1 based
-                    while (connectedSlaves.ordinality() < pos)
-                        connectedSlaves.append(nullptr);
-                    if (connectedSlaves.ordinality() == pos)
-                        connectedSlaves.append(sender.getLink());
+                    unsigned pos = workerNum - 1; // NB: workerNum is 1 based
+                    while (connectedWorkers.ordinality() < pos)
+                        connectedWorkers.append(nullptr);
+                    if (connectedWorkers.ordinality() == pos)
+                        connectedWorkers.append(sender.getLink());
                     else
-                        connectedSlaves.replace(sender.getLink(), pos);
+                        connectedWorkers.replace(sender.getLink(), pos);
                 }
                 StringBuffer epStr;
-                PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getEndpointHostText(epStr).str());
+                PROGLOG("Worker %u connected from %s", workerNum, sender->endpoint().getEndpointHostText(epStr).str());
                 --remaining;
             }
         }
-        assertex(slaves == connectedSlaves.ordinality());
+        assertex(workers == connectedWorkers.ordinality());
 
         if (isContainerized())
         {
@@ -351,8 +351,8 @@ public:
             publishPodNames(workunit, graphName);
         }
 
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
+        unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
         unsigned channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
 
         Owned<IGroup> processGroup;
@@ -377,45 +377,45 @@ public:
                     return 1;
                 return lep.ipcompare(rep);
             };
-            connectedSlaves.sort(compareINodeOrder);
-            processGroup.setown(createIGroup(connectedSlaves.ordinality(), connectedSlaves.getArray()));
-            setupCluster(queryMyNode(), processGroup, channelsPerWorker, slaveBasePort, localThorPortInc);
+            connectedWorkers.sort(compareINodeOrder);
+            processGroup.setown(createIGroup(connectedWorkers.ordinality(), connectedWorkers.getArray()));
+            setupCluster(queryMyNode(), processGroup, channelsPerWorker, workerBasePort, localThorPortInc);
         }
 
-        PROGLOG("Slaves connected, initializing..");
+        PROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
         globals->serialize(msg);
         getGlobalConfigSP()->serialize(msg);
-        msg.append(masterSlaveMpTag);
+        msg.append(managerWorkerMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
-            throw makeStringException(TE_AbortException, "Failed to initialize slaves");
+            throw makeStringException(TE_AbortException, "Failed to initialize workers");
 
-        // Wait for confirmation from slaves
-        PROGLOG("Initialization sent to slave group");
+        // Wait for confirmation from workers
+        PROGLOG("Initialization sent to worker group");
         Owned<IException> exception;
         try
         {
-            while (slavesRegistered < slaves)
+            while (workersRegistered < workers)
             {
                 rank_t sender;
                 CMessageBuffer msg;
-                if (!queryNodeComm().recv(msg, RANK_ALL, MPTAG_THORREGISTRATION, &sender, MAX_SLAVEREG_DELAY))
+                if (!queryNodeComm().recv(msg, RANK_ALL, MPTAG_THORREGISTRATION, &sender, MAX_WORKERREG_DELAY))
                 {
-                    PROGLOG("Slaves not responding to cluster initialization: ");
+                    PROGLOG("Workers not responding to cluster initialization: ");
                     unsigned s=0;
                     for (;;)
                     {
                         unsigned ns = status->scan(s, false);
-                        if (ns<s || ns >= slaves)
+                        if (ns<s || ns >= workers)
                             break;
                         s = ns+1;
                         StringBuffer str;
-                        PROGLOG("Slave %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
+                        PROGLOG("Worker %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
                     }
-                    throw MakeThorException(TE_AbortException, "Slaves failed to respond to cluster initialization");
+                    throw MakeThorException(TE_AbortException, "Workers failed to respond to cluster initialization");
                 }
                 StringBuffer str;
                 PROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
@@ -428,14 +428,14 @@ public:
                 registerNode(sender-1);
             }
 
-            // this is like a barrier, let slaves know all slaves are now connected
-            PROGLOG("Slaves initialized");
+            // this is like a barrier, let workers know all workers are now connected
+            PROGLOG("Workers initialized");
             unsigned s=0;
-            for (; s<slaves; s++)
+            for (; s<workers; s++)
             {
                 CMessageBuffer msg;
                 if (!queryNodeComm().send(msg, s+1, MPTAG_THORREGISTRATION))
-                    throw makeStringExceptionV(TE_AbortException, "Failed to acknowledge slave %d registration", s+1);
+                    throw makeStringExceptionV(TE_AbortException, "Failed to acknowledge worker %d registration", s+1);
             }
             if (watchdog)
                 watchdog->start();
@@ -444,7 +444,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Slave registration exception");
+            EXCLOG(e, "Worker registration exception");
             exception.setown(e);
         }
         shutdown();
@@ -474,39 +474,39 @@ public:
                 serializeMPtag(msg, shutdownTag);
                 try
                 {
-                    queryNodeComm().send(msg, i+1, masterSlaveMpTag, MP_ASYNC_SEND);
+                    queryNodeComm().send(msg, i+1, managerWorkerMpTag, MP_ASYNC_SEND);
                 }
                 catch (IMP_Exception *e) { e->Release(); }
                 catch (IException *e)
                 {
-                    EXCLOG(e, "Shutting down slave");
+                    EXCLOG(e, "Shutting down worker");
                     e->Release();
                 }
                 if (watchdog)
-                    watchdog->removeSlave(ep);
+                    watchdog->removeWorker(ep);
             }
         }
 
         CTimeMon tm(20000);
         unsigned numReplied = 0;
-        while (numReplied < slavesRegistered)
+        while (numReplied < workersRegistered)
         {
             unsigned remaining;
             if (tm.timedout(&remaining))
             {
-                PROGLOG("Timeout waiting for Shutdown reply from slave(s) (%u replied out of %u total)", numReplied, slavesRegistered);
-                StringBuffer slaveList;
-                for (i=0;i<slavesRegistered;i++)
+                PROGLOG("Timeout waiting for Shutdown reply from worker(s) (%u replied out of %u total)", numReplied, workersRegistered);
+                StringBuffer workerList;
+                for (i=0;i<workersRegistered;i++)
                 {
                     if (status->test(i))
                     {
-                        if (slaveList.length())
-                            slaveList.append(",");
-                        slaveList.append(i+1);
+                        if (workerList.length())
+                            workerList.append(",");
+                        workerList.append(i+1);
                     }
                 }
-                if (slaveList.length())
-                    PROGLOG("Slaves that have not replied: %s", slaveList.str());
+                if (workerList.length())
+                    PROGLOG("Workers that have not replied: %s", workerList.str());
                 break;
             }
             try
@@ -522,7 +522,7 @@ public:
             }
             catch (IException *e)
             {
-                // do not log MP link closed exceptions from ending slaves
+                // do not log MP link closed exceptions from ending workers
                 e->Release();
             }
         }
@@ -625,17 +625,17 @@ int main( int argc, const char *argv[]  )
     _CrtSetDbgFlag( tmpFlag );
 #endif
 
-    loadMasters(); // actually just a dummy call to ensure dll linked
+    loadManagers(); // actually just a dummy call to ensure dll linked
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, false));
     }
 #ifdef _DEBUG
-    unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
-    if (0 == holdSlave) // master
+    unsigned holdWorker = globals->getPropInt("@holdSlave", NotFound);
+    if (0 == holdWorker) // manager
     {
-        DBGLOG("Thor master paused for debugging purposes, attach and set held=false to release");
+        DBGLOG("Thor manager paused for debugging purposes, attach and set held=false to release");
         bool held = true;
         while (held)
             Sleep(5);
@@ -654,10 +654,10 @@ int main( int argc, const char *argv[]  )
     }
 
     SocketEndpoint thorEp;
-    const char *master = globals->queryProp("@master");
-    if (master)
+    const char *manager = globals->queryProp("@master");
+    if (manager)
     {
-        thorEp.set(master);
+        thorEp.set(manager);
         thorEp.setLocalHost(thorEp.port);
     }
     else
@@ -774,8 +774,8 @@ int main( int argc, const char *argv[]  )
         {
             Owned<IPropertyTree> nasConfig = envGetNASConfiguration();
             if (nasConfig)
-                globals->setPropTree("NAS", nasConfig.getLink()); // for use by slaves
-            Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
+                globals->setPropTree("NAS", nasConfig.getLink()); // for use by workers
+            Owned<IPropertyTree> managerNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
 #endif
 
@@ -848,7 +848,7 @@ int main( int argc, const char *argv[]  )
                 mmemSize = (unsigned)(sizeBytes / 0x100000);
             }
             else
-                mmemSize = gmemSize; // default to same as slaves
+                mmemSize = gmemSize; // default to same as workers
         }
         managerMemory->setPropInt("@total", mmemSize);
 
@@ -946,7 +946,7 @@ int main( int argc, const char *argv[]  )
     }
     catch (IException *e)
     {
-        FLLOG(MCexception(e), e,"ThorMaster");
+        FLLOG(MCexception(e), e,"ThorManager");
         e->Release();
         return -1;
     }
@@ -987,7 +987,7 @@ int main( int argc, const char *argv[]  )
         serverStatus.commitProperties();
 
         addAbortHandler(ControlHandler);
-        masterSlaveMpTag = allocateClusterMPTag();
+        managerWorkerMpTag = allocateClusterMPTag();
         kjServiceMpTag = allocateClusterMPTag();
 
         auditThorSystemEvent("Initializing");
@@ -998,7 +998,7 @@ int main( int argc, const char *argv[]  )
             JobNameScope activeJobName(workunit);
 
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1043,13 +1043,13 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
             LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
+            unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
             unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
-            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
+            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, workerBasePort, localThorPortInc);
             numWorkers = queryNodeClusterWidth();
             if (numWorkersPerNode > 1)
             {
@@ -1072,23 +1072,23 @@ int main( int argc, const char *argv[]  )
             }
         }
 
-        unsigned totSlaveProcs = queryNodeClusterWidth();
-        for (unsigned s=0; s<totSlaveProcs; s++)
+        unsigned totWorkerProcs = queryNodeClusterWidth();
+        for (unsigned s=0; s<totWorkerProcs; s++)
         {
-            StringBuffer slaveStr;
+            StringBuffer workerStr;
             for (unsigned c=0; c<channelsPerWorker; c++)
             {
-                unsigned o = s + (c * totSlaveProcs);
+                unsigned o = s + (c * totWorkerProcs);
                 if (c)
-                    slaveStr.append(",");
-                slaveStr.append(o+1);
+                    workerStr.append(",");
+                workerStr.append(o+1);
             }
             StringBuffer virtStr;
             if (channelsPerWorker>1)
-                virtStr.append("virtual slaves:");
+                virtStr.append("virtual workers:");
             else
-                virtStr.append("slave:");
-            PROGLOG("Slave log %u contains %s %s", s+1, virtStr.str(), slaveStr.str());
+                virtStr.append("worker:");
+            PROGLOG("Worker log %u contains %s %s", s+1, virtStr.str(), workerStr.str());
         }
 
         PROGLOG("verifying mp connection to rest of cluster");
@@ -1108,7 +1108,7 @@ int main( int argc, const char *argv[]  )
  * 
  * The mechanism works by:
  * a) Creating a pseudo StoragePlane (publishes group to Dali).
- * b) Spins up a dafilesrv thread in each slave container.
+ * b) Spins up a dafilesrv thread in each worker container.
  * c) Changes the default StoragePlane used to publish files, to point to the SP/group created in step (a).
  * 
  * In this way, a Thor instance, whilst up, will act similarly to a bare-metal system, using local disks as storage.
@@ -1139,11 +1139,11 @@ int main( int argc, const char *argv[]  )
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
         auditThorSystemEvent("Terminate");
-        LOG(MCdebugProgress, "ThorMaster terminated OK");
+        LOG(MCdebugProgress, "ThorManager terminated OK");
     }
     catch (IException *e) 
     {
-        FLLOG(MCexception(e), e,"ThorMaster");
+        FLLOG(MCexception(e), e,"ThorManager");
         exception.setown(e);
     }
     if (isContainerized())

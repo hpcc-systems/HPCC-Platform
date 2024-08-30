@@ -25,7 +25,7 @@ CSDSServerStatus &openThorServerStatus();
 void closeThorServerStatus();
 void thorMain(ILogMsgHandler *logHandler, const char *workunit, const char *graphName);
 
-enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_SlaveInit, TEC_Swap, TEC_DaliDown, TEC_Exception };
+enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_WorkerInit, TEC_Swap, TEC_DaliDown, TEC_Exception };
 
 void abortThor(IException *e, unsigned errCode, bool abortCurrentJob=true);
 void setExitCode(int code);

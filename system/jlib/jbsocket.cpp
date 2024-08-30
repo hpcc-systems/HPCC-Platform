@@ -69,6 +69,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
         return 0;
 
     int ptr = 0;
+    bool sockClosed = false;
 
     try
     {
@@ -100,7 +101,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                         m_curptr = 0;
                         m_endptr = 0;
                         unsigned readlen;
-                        readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
+                        sockClosed = readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
                         if(readlen > 0)
                         {
                             m_endptr = readlen;
@@ -126,7 +127,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                 buf[ptr++] = m_buf[m_curptr++];
             }
             
-            if(foundCRLF)
+            if (foundCRLF || sockClosed)
                 break;
 
             // If no data left, read more
@@ -135,7 +136,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                 m_curptr = 0;
                 m_endptr = 0;
                 unsigned readlen;
-                readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
+                sockClosed = readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
                 if(readlen <= 0)
                     break;
                 m_endptr = readlen;

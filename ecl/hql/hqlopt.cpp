@@ -4269,9 +4269,24 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                         if (ok)
                         {
-                            //If expanding the project removed all references to left (very silly join....) make it an all join
-                            if (transformed->hasAttribute(lookupAtom) && !exprReferencesDataset(&args.item(2), newLeft))
+                            //If expanding the project removed all references to left (very silly join....)
+                            //then it can be converted to an ALL join against a filtered right dataset
+                            IHqlExpression * transformedCond = &args.item(2);
+                            if (transformed->hasAttribute(lookupAtom) && !exprReferencesDataset(transformedCond, newLeft))
+                            {
+                                IHqlExpression * rightDs = &args.item(1);
+                                OwnedHqlExpr right = createSelector(no_right, rightDs, transformedSeq);
+                                if (exprReferencesDataset(transformedCond, right))
+                                {
+                                    OwnedHqlExpr newCond = replaceSelector(transformedCond, right, rightDs);
+                                    OwnedHqlExpr filteredRightDs = createDataset(no_filter, { LINK(rightDs), LINK(newCond) });
+                                    //Replace the right dataset with the filtered dataset, and the join condition is now unconditional
+                                    args.replace(*filteredRightDs.getClear(), 1);
+                                    args.replace(*createConstant(true), 2);
+                                }
+
                                 args.append(*createAttribute(allAtom));
+                            }
                             if (doTrace(traceOptimizations))
                                 DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                             noteUnused(child);
@@ -4287,6 +4302,10 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                             if (merged)
                                 return merged.getClear();
+
+                            //The combined join is not going to replace the join(project), so the noteUnused() above
+                            //needs to be reversed so that the usage counts stay correct
+                            incUsage(child);
                         }
                         break;
                     }

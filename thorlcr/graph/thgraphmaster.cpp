@@ -367,8 +367,9 @@ void CSlaveMessageHandler::threadmain()
     }
     catch (IException *e)
     {
-        job.fireException(e);
+        Owned<IThorException> te = ThorWrapException(e, "CSlaveMessageHandler::threadmain");
         e->Release();
+        job.fireException(te);
     }
 }
 
@@ -1764,7 +1765,7 @@ void CJobMaster::sendQuery()
 
     CTimeMon queryToSlavesTimer;
     querySent = true;
-    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
+    broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendQuery");
     PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
 }
 
@@ -1774,7 +1775,7 @@ void CJobMaster::jobDone()
     CMessageBuffer msg;
     msg.append(QueryDone);
     msg.append(queryKey());
-    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "jobDone");
+    broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "jobDone");
 }
 
 void CJobMaster::saveSpills()
@@ -1833,7 +1834,8 @@ void CJobMaster::saveSpills()
 
 bool CJobMaster::go()
 {
-    class CWorkunitPauseHandler : public CInterface, implements IWorkUnitSubscriber
+    // detected abort conditions or pause state changes.
+    class CWorkunitStateChangeHandler : public CInterface, implements IWorkUnitSubscriber
     {
         CJobMaster &job;
         IConstWorkUnit &wu;
@@ -1842,12 +1844,12 @@ bool CJobMaster::go()
     public:
         IMPLEMENT_IINTERFACE;
 
-        CWorkunitPauseHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
+        CWorkunitStateChangeHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             watcher.setown(factory->getWatcher(this, (WUSubscribeOptions) (SubscribeOptionAction | SubscribeOptionAbort), wu.queryWuid()));
         }
-        ~CWorkunitPauseHandler() { stop(); }
+        ~CWorkunitStateChangeHandler() { stop(); }
         void stop()
         {
             Owned<IWorkUnitWatcher> _watcher;
@@ -1885,7 +1887,7 @@ bool CJobMaster::go()
                     job.fireException(e);
                 }
                 else
-                    PROGLOG("CWorkunitPauseHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
+                    PROGLOG("CWorkunitStateChangeHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
             }
             if (flags & SubscribeOptionAction)
             {
@@ -1912,7 +1914,7 @@ bool CJobMaster::go()
                 }
             }
         }
-    } workunitPauseHandler(*this, *workunit);
+    } workunitStateChangeHandler(*this, *workunit);
     class CQueryTimeoutHandler : public CTimeoutTrigger
     {
         CJobMaster &job;
@@ -1928,6 +1930,53 @@ bool CJobMaster::go()
             return true;
         }
     };
+    class CAgentSessionWatcher : implements IThreaded
+    {
+        CJobMaster &job;
+        SessionId agentSessionID = -1;
+        unsigned periodMs = 0;
+        CThreaded threaded;
+        std::atomic<bool> stopped{true};
+        Semaphore sem;
+    public:
+        CAgentSessionWatcher(CJobMaster &_job, unsigned _periodMs) : job(_job), periodMs(_periodMs), threaded("AgentSessionWatcher", this)
+        {
+            if (queryDaliServerVersion().compare("2.1")>=0)
+            {
+                agentSessionID = job.queryWorkUnit().getAgentSession();
+                if (agentSessionID <= 0)
+                    throw MakeThorException(0, "Unexpected: job has an invalid agent sesssion id: %" I64F "d", agentSessionID);
+                stopped = false;
+                threaded.start(true);
+            }
+        }
+        ~CAgentSessionWatcher()
+        {
+            stop();
+        }
+        void stop()
+        {
+            if (stopped)
+                return;
+            stopped = true;
+            sem.signal();
+            threaded.join();
+        }
+        virtual void threadmain() override
+        {
+            while (!stopped)
+            {
+                if (sem.wait(periodMs))
+                    break; // signaled by dtor/abort
+                if (querySessionManager().sessionStopped(agentSessionID, 0))
+                {
+                    DBGLOG("Agent session stopped");
+                    job.fireException(MakeThorException(0, "Agent session stopped"));
+                    break;
+                }
+            }
+        }
+    } agentSessionWatcher(*this, 60000); // check every minute
     Owned<CTimeoutTrigger> qtHandler;
     int guillotineTimeout = workunit->getDebugValueInt("maxRunTime", 0);
     if (guillotineTimeout > 0)
@@ -1965,7 +2014,8 @@ bool CJobMaster::go()
             if (queryPausing()) break;
         }
         queryJobChannel(0).wait();
-        workunitPauseHandler.stop();
+        workunitStateChangeHandler.stop();
+        agentSessionWatcher.stop();
         ForEachItemIn(tr, toRun)
         {
             CMasterGraph &graph = toRun.item(tr);
@@ -1976,7 +2026,12 @@ bool CJobMaster::go()
             }
         }
     }
-    catch (IException *e) { fireException(e); e->Release(); }
+    catch (IException *e)
+    {
+        Owned<IThorException> te = ThorWrapException(e, "Error running sub graphs");
+        e->Release();
+        fireException(te);
+    }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
     workunit->setGraphState(queryGraphName(), getWfid(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
@@ -1987,8 +2042,9 @@ bool CJobMaster::go()
     try { jobDone(); }
     catch (IException *e)
     {
-        EXCLOG(e, NULL); 
-        jobDoneException.setown(e);
+        jobDoneException.setown(ThorWrapException(e, "Error in jobDone"));
+        e->Release();
+        EXCLOG(jobDoneException, NULL);
     }
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();
@@ -2164,7 +2220,7 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
         msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
-        ((CJobMaster &)graph.queryJob()).broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+        ((CJobMaster &)graph.queryJob()).broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
 
         unsigned numSlaves = graph.queryJob().querySlaves();
         for (unsigned n=0; n<numSlaves; n++)
@@ -2397,7 +2453,7 @@ void CMasterGraph::abort(IException *e)
             msg.append(job.queryKey());
             msg.append(dumpInfo);
             msg.append(queryGraphId());
-            jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
+            jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "abort");
         }
         catch (IException *e)
         {
@@ -2678,7 +2734,7 @@ void CMasterGraph::sendGraph()
     // slave graph data
     try
     {
-        jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
+        jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
     }
     catch (IException *e)
     {
@@ -2748,7 +2804,7 @@ void CMasterGraph::getFinalProgress(bool aborting)
     msg.append(queryGraphId());
     // If aborted, some slaves may have disconnnected/aborted so don't wait so long
     unsigned timeOutPeriod = aborting ? SHORTTIMEOUT : LONGTIMEOUT;
-    jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, timeOutPeriod, "graphEnd", NULL, true, aborting);
+    jobM->broadcast(queryNodeComm(), msg, managerWorkerMpTag, timeOutPeriod, "graphEnd", NULL, true, aborting);
 
     Owned<IBitSet> respondedBitSet = createBitSet();
     unsigned n=queryJob().queryNodes();

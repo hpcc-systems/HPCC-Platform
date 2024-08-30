@@ -2082,10 +2082,11 @@ private:
         StringBuffer dbgheader, contentEncoding;
         bool chunked = false;
         size32_t read = 0;
+        bool sockClosed = false;
         do {
             checkTimeLimitExceeded(&remainingMS);
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
-            readtmsAllowClose(socket, buffer+read, 1, WSCBUFFERSIZE-read, bytesRead, MIN(master->timeoutMS, remainingMS));
+            sockClosed = readtmsAllowClose(socket, buffer+read, 1, WSCBUFFERSIZE-read, bytesRead, MIN(master->timeoutMS, remainingMS));
             checkTimeLimitExceeded(&remainingMS);
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -2185,7 +2186,7 @@ private:
                     break;
                 }
             }
-            if (bytesRead == 0)         // socket closed
+            if ( (bytesRead == 0) || (sockClosed) )   // socket closed
                 break;
         } while (bytesRead&&(read<WSCBUFFERSIZE));
         if (!chunked)
@@ -2201,33 +2202,40 @@ private:
             }
             if (read)
                 response.append(read,payload);
-            if (payloadsize) {  // read directly into response
-                while (read<payloadsize) {
+            if (payloadsize) // read directly into response
+            {
+                while (read<payloadsize)
+                {
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    readtmsAllowClose(socket, response.reserve(payloadsize-read), 1, payloadsize-read, bytesRead, MIN(master->timeoutMS, remainingMS));
+                    sockClosed = readtmsAllowClose(socket, response.reserve(payloadsize-read), 1, payloadsize-read, bytesRead, MIN(master->timeoutMS, remainingMS));
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
                     read += bytesRead;
                     response.setLength(read);
-                    if (bytesRead==0) {
+                    if ( (bytesRead==0) || (sockClosed && (read < payloadsize)) )
+                    {
                         master->logctx.CTXLOG("%s: Warning %sHTTP response terminated prematurely", getWsCallTypeName(master->wscType),chunked?"CHUNKED ":"");
                         break; // oops  looks likesocket closed early
                     }
                 }
             }
-            else {
-                for (;;) {
+            else
+            {
+                for (;;)
+                {
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    readtmsAllowClose(socket, buffer, 1, WSCBUFFERSIZE, bytesRead, MIN(master->timeoutMS, remainingMS));
+                    sockClosed = readtmsAllowClose(socket, buffer, 1, WSCBUFFERSIZE, bytesRead, MIN(master->timeoutMS, remainingMS));
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
                     if (bytesRead==0)
                         break;              // rely on socket closing to terminate message
                     response.append(bytesRead,buffer);
+                    if (sockClosed)
+                        break;
                 }
             }
         }

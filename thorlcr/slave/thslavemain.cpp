@@ -165,8 +165,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         }
 #endif
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
         setupCluster(masterNode, processGroup, channelsPerSlave, slaveBasePort, localThorPortInc);
 
         if (vmajor != THOR_VERSION_MAJOR || vminor != THOR_VERSION_MINOR)
@@ -217,7 +217,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
 #endif
         }
-        readUnderlyingType<mptag_t>(msg, masterSlaveMpTag);
+        readUnderlyingType<mptag_t>(msg, managerWorkerMpTag);
         readUnderlyingType<mptag_t>(msg, kjServiceMpTag);
 
         msg.clear();
