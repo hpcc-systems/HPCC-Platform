@@ -1427,7 +1427,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
-        std::unordered_set<std::string> publishedPodWuids;
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
@@ -1459,44 +1458,58 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                 while (true)
                 {
-                    JobNameScope activeJobName(currentWuid.str());
-
-                    PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
-
                     {
                         Owned<IWorkUnitFactory> factory;
                         Owned<IConstWorkUnit> workunit;
                         factory.setown(getWorkUnitFactory());
                         workunit.setown(factory->openWorkUnit(currentWuid));
+                        SessionId agentSessionID = workunit->getAgentSession();
+                        if (agentSessionID <= 0)
                         {
-                            Owned<IWorkUnit> wu = &workunit->lock();
-                            publishPodNames(wu, currentGraphName);
+                            WARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
+                            currentWuid.clear();
                         }
-                        SocketEndpoint dummyAgentEp;
-                        jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
-                        IException *e = jobManager->queryExitException();
-                        if (e)
+                        else if (querySessionManager().sessionStopped(agentSessionID, 0))
                         {
-                            // NB: exitException has already been relayed.
-                            break;
+                            WARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            currentWuid.clear();
                         }
-
-                        Owned<IWorkUnit> w = &workunit->lock();
-                        if (!multiJobLinger && lingerPeriod)
-                            w->setDebugValue(instance, "1", true);
-
-                        switch (w->getState())
+                        else
                         {
-                            case WUStateRunning:
-                                w->setState(WUStateWait);
+                            JobNameScope activeJobName(currentWuid.str());
+                            saveWuidToFile(currentWuid);
+                            PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+
+                            {
+                                Owned<IWorkUnit> wu = &workunit->lock();
+                                publishPodNames(wu, currentGraphName);
+                            }
+                            SocketEndpoint dummyAgentEp;
+                            jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
+                            IException *e = jobManager->queryExitException();
+                            if (e)
+                            {
+                                // NB: exitException has already been relayed.
                                 break;
-                            case WUStateAborting:
-                            case WUStateAborted:
-                            case WUStateFailed:
-                                break;
-                            default:
-                                w->setState(WUStateFailed);
-                                break;
+                            }
+
+                            Owned<IWorkUnit> w = &workunit->lock();
+                            if (!multiJobLinger && lingerPeriod)
+                                w->setDebugValue(instance, "1", true);
+
+                            switch (w->getState())
+                            {
+                                case WUStateRunning:
+                                    w->setState(WUStateWait);
+                                    break;
+                                case WUStateAborting:
+                                case WUStateAborted:
+                                case WUStateFailed:
+                                    break;
+                                default:
+                                    w->setState(WUStateFailed);
+                                    break;
+                            }
                         }
                     }
                     currentGraphName.clear();
@@ -1513,26 +1526,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             int ret = recvNextGraph(remaining, currentWuid.str(), wuid, currentGraphName);
                             if (ret > 0)
                             {
-                                if (!streq(currentWuid, wuid))
-                                {
-                                    activeJobName.set(wuid);
-
-                                    // perhaps slightly overkill, but avoid checking/locking wuid to add pod info.
-                                    // if this instance has already done so.
-                                    auto it = publishedPodWuids.find(wuid.str());
-                                    if (it == publishedPodWuids.end())
-                                    {                                        
-                                        // trivial safe-guard against growing too big
-                                        // but unlikely to ever grow this big
-                                        if (publishedPodWuids.size() > 10000)
-                                            publishedPodWuids.clear();
-
-                                        publishedPodWuids.insert(wuid.str());
-                                    }
-                                    // NB: this set of pods could still already be published, if so, publishPodNames will not re-add.
-                                }
                                 currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
-                                saveWuidToFile(currentWuid);
                                 break; // success
                             }
                             else if (ret < 0)
