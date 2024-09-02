@@ -1083,6 +1083,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
                 out->setCreateFlags(S_IRWXU);
                 OwnedIFileIO io = out->open(IFOcreate);
                 io->write(0, file.length(), file.toByteArray());
+                io->close();
                 io.clear();
             }
             catch (IException *e)

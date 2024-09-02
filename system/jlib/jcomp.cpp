@@ -475,7 +475,10 @@ void CppCompiler::writeLogFile(const char* filepath, StringBuffer& log)
 
     Owned <IFileIO> fio = f->open(IFOcreate);
     if(fio.get())
+    {
         fio->write(0, log.length(), log.str());
+        fio->close();
+    }
 }
 
 bool CppCompiler::compile()
@@ -560,6 +563,7 @@ bool CppCompiler::compile()
 
         //Don't leave lots of blank log files around if the compile was successful
         bool logIsEmpty = (dstIO->size() == 0);
+        dstIO->close();
         dstIO.clear();
         if (ret && logIsEmpty)
             dstfile->remove();

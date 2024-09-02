@@ -23,24 +23,13 @@ public:
     CppWriterTemplate(const char * codeTemplate);
     IMPLEMENT_IINTERFACE
 
-    virtual void generate(ISectionWriter & writer, unsigned pass, IProperties * properties = NULL);
+    virtual void generate(ISectionWriter & writer, IFile * _output, unsigned pass, IProperties * properties = NULL);
 
     void outputQuoted(ISectionWriter & writer, size32_t len, const char * str)
     {
         writer.noteLines(memcount(len, str, '\n'));
         outStream->write(len, str);
     }
-
-    void setOutput(IFile * _output)
-    {
-        Owned<IFileIO> io = _output->open(IFOcreate);
-        if (!io)
-            throwError1(HQLERR_CouldNotCreateOutputX, _output->queryFilename());
-
-        out.set(_output);
-        outStream.setown(createIOStream(io));
-    }
-
 
 private:
     void loadTemplate(const char * codeTemplate);
@@ -58,7 +47,6 @@ protected:
     const char * text;
     unsigned len;
     CIArray sections;
-    Owned<IFile> out;
     Owned<IIOStream> outStream;
 };
 

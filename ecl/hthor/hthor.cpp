@@ -1295,6 +1295,7 @@ void CHThorIndexWriteActivity::execute()
         offsetBranches = builder->getOffsetBranches();
         out->flush();
         out.clear();
+        io->close();
     }
 
     if(clusterHandler)
