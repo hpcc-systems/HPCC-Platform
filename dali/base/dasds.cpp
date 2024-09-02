@@ -5289,6 +5289,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             iFileIO->write(0, sizeof(unsigned), crc);
         if (storeInfo)
             storeInfo->cache.set(filename.str());
+        iFileIO->close();
     }
 
     void updateStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crc, CStoreInfo *storeInfo=NULL)
@@ -5400,6 +5401,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 
             OwnedIFileIO detachIPIO = detachIPIFile->open(IFOcreate);
             detachIPIO->write(0, sizeof(storeHelper.mySessId), &storeHelper.mySessId);
+            detachIPIO->close();
             detachIPIO.clear();
             detachIPIFile->rename(activeDetachIPStr.str());
             // check often do not wait any longer than necessary

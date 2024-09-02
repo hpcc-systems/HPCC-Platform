@@ -183,6 +183,7 @@ public:
     virtual offset_t size() override { return hwm; }
     virtual offset_t tell() override { return offset; }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return stats.getStatistic(kind); }
+    virtual void close() override { }
 private:
     offset_t offset = 0;
     offset_t hwm = 0;
