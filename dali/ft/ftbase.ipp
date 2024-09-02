@@ -134,6 +134,10 @@ public:
     virtual offset_t tell() override;
     virtual size32_t write(size32_t len, const void * data) override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) override { return stream->getStatistic(kind); }
+    virtual void close() override
+    {
+        stream->close();
+    }
 
     unsigned getCRC()               { return crc; }
     void setCRC(unsigned long _crc)     { crc = _crc; }
