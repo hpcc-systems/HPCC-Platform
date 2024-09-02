@@ -2943,7 +2943,11 @@ protected:
     {
         return io->getStatistic(kind);
     }
-
+    virtual void close() override
+    {
+        flush();
+        io->close();
+    }
 protected:
     IFileIOAttr             io;
 };
@@ -3054,6 +3058,13 @@ public:
     virtual size32_t directWrite(size32_t len, const void * data) { assertex(false); return 0; }    // shouldn't get called
     virtual offset_t directSize() { waitAsyncWrite(); return io->size(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
+    virtual void close() override
+    {
+        flush();
+        waitAsyncWrite();
+        waitAsyncRead();
+        io->close();
+    }
 };
 
 
@@ -4560,6 +4571,10 @@ IFileIOStream *createProgressIFileIOStream(IFileIOStream *iFileIOStream, offset_
         virtual unsigned __int64 getStatistic(StatisticKind kind) override
         {
             return iFileIOStream->getStatistic(kind);
+        }
+        virtual void close() override
+        {
+            iFileIOStream->close();
         }
     };
     return new CProgressIFileIOStream(iFileIOStream, totalSize, msg, periodSecs);

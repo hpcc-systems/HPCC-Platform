@@ -219,6 +219,7 @@ public:
     virtual offset_t tell();
     virtual size32_t write(size32_t len, const void * data);
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
+    virtual void close() override { io->close(); }
 protected:
     Linked<IFileIO>     io;
     offset_t            curOffset;
@@ -238,6 +239,7 @@ public:
     virtual offset_t tell();
     virtual size32_t write(size32_t len, const void * data);
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return stream->getStatistic(kind); }
+    virtual void close() override { stream->close(); }
 protected:
     Linked<IFileIOStream>     stream;
 };
