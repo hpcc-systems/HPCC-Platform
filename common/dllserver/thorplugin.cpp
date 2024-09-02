@@ -551,6 +551,7 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
             OwnedIFileIO o = f->open(IFOcreate);
             assertex(o.get() != nullptr);
             o->write(0, len, data);
+            o->close();
             list->append(extractName);
             if (doTrace(traceJava) && streq(type, "jar"))
                 DBGLOG("Extracted jar resource %u size %u to %s in %u ms", id, len, extractName.str(), msTick() - start);

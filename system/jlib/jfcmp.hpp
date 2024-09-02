@@ -434,6 +434,12 @@ public:
     {
         return baseio->getStatistic(kind);
     }
+
+    virtual void close() override
+    {
+        flush();
+        baseio->close();
+    }
 };
 
 #endif

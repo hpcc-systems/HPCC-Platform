@@ -221,6 +221,7 @@ interface IFileIOStream : extends IIOStream
     virtual offset_t size() = 0;
     virtual offset_t tell() = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual void close() = 0;
 };
 
 interface IDiscretionaryLock: extends IInterface
