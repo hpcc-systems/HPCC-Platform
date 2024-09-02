@@ -750,6 +750,7 @@ public:
         VStringBuffer redirect("IMPORT %s.%s.%s.%s as _%s; EXPORT %s := _%s;", VERSION_SUBDIR, name, version, name, name, name, name);
         Owned<IFileIO> rfile = redirector->open(IFOcreate);
         rfile->write(0, redirect.length(), redirect.str());
+        rfile->close();
         bundle->setActive(true);
     }
     virtual void setActive(const char *version)

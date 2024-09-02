@@ -563,12 +563,14 @@ public:
         Owned<IFile> f = createIFile(storename.get());
         Owned<IFileIO> io = f->open(IFOcreate);
         io->write(0, xml.length(), xml.str());
+        io->close();
         io.clear();
         if (!backupname.isEmpty()) {
             try {
                 f.setown(createIFile(backupname.get()));
                 io.setown(f->open(IFOcreate));
                 io->write(0, xml.length(), xml.str());
+                io->close();
                 io.clear();
             }
             catch (IException *e) {
