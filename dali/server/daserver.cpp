@@ -611,6 +611,7 @@ int main(int argc, const char* argv[])
                     backupCheck.append("bakchk.").append((unsigned)GetCurrentProcessId());
                     OwnedIFile iFileDataDir = createIFile(backupCheck.str());
                     OwnedIFileIO iFileIO = iFileDataDir->open(IFOcreate);
+                    iFileIO->close();
                     iFileIO.clear();
                     try
                     {

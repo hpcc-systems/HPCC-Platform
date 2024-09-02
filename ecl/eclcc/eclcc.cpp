@@ -1985,8 +1985,11 @@ void EclCC::outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree *
     {
         //Work around windows problem writing 64K to stdout if not redirected/piped
         Owned<IIOStream> stream = createIOStream(ifileio.get());
-        Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
-        saveXML(*buffered, xml);
+        {
+            Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
+            saveXML(*buffered, xml);
+        }
+        ifileio->close();
     }
 }
 
@@ -2039,7 +2042,10 @@ void EclCC::generateOutput(EclCompileInstance & instance)
 
             OwnedIFileIO ifileio = createArchiveOutputFile(instance);
             if (ifileio)
+            {
                 ifileio->write(0, filenames.length(), filenames.str());
+                ifileio->close();
+            }
         }
         else
         {

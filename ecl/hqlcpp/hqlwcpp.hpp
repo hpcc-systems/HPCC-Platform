@@ -35,7 +35,7 @@ public:
 interface HQLCPP_API ITemplateExpander : public IInterface
 {
 public:
-    virtual void generate(ISectionWriter & writer, unsigned pass, IProperties * properties = NULL) = 0;
+    virtual void generate(ISectionWriter & writer, IFile * _output, unsigned pass, IProperties * properties = NULL) = 0;
 };
 
 extern HQLCPP_API StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr, CompilerType compiler);
@@ -43,7 +43,7 @@ extern HQLCPP_API StringBuffer & generateTypeCpp(StringBuffer & out, ITypeInfo *
 bool generateFunctionPrototype(StringBuffer & out, IHqlExpression * funcdef, CompilerType compiler);
 void generateFunctionReturnType(StringBuffer & prefix, StringBuffer & params, ITypeInfo * retType, IHqlExpression * attrs, CompilerType compiler);
 
-extern HQLCPP_API ITemplateExpander * createTemplateExpander(IFile * output, const char * codeTemplate);
+extern HQLCPP_API ITemplateExpander * createTemplateExpander(const char * codeTemplate);
 extern HQLCPP_API ISectionWriter * createCppWriter(IHqlCppInstance & _instance, CompilerType compiler);
 extern bool isTypePassedByAddress(ITypeInfo * type);
 

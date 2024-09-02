@@ -2054,38 +2054,50 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
 
         //If the blocks are being expanded incrementally check if the position is within the current block
         //This test will never be true for row compressed data, or non-incremental decompression
-        if ((pos >= startBlockPos) && (pos < startBlockPos + fullBlockSize))
+        try
         {
-            if (pos < nextExpansionPos)
+            if ((pos >= startBlockPos) && (pos < startBlockPos + fullBlockSize))
             {
-                //Start decompressing again and avoid re-reading the data from disk
-                const void * rawData;
-                if (fileio)
-                    rawData = compressedInputBlock.get();
-                else
-                    rawData = mmfile->base()+startBlockPos;
-
-                assertex(rawData);
-                size32_t exp = expander->expandFirst(curblockbuf, rawData);
-                curblockpos = startBlockPos;
-                nextExpansionPos = startBlockPos + exp;
                 if (pos < nextExpansionPos)
-                    return;
+                {
+                    //Start decompressing again and avoid re-reading the data from disk
+                    const void * rawData;
+                    if (fileio)
+                        rawData = compressedInputBlock.get();
+                    else
+                        rawData = mmfile->base()+startBlockPos;
 
-                curblockbuf.clear();
+                    assertex(rawData);
+                    nextExpansionPos = startBlockPos; // update in case an exception is thrown
+                    size32_t exp = expander->expandFirst(curblockbuf, rawData);
+                    curblockpos = startBlockPos;
+                    nextExpansionPos = startBlockPos + exp;
+                    if (pos < nextExpansionPos)
+                        return;
+
+                    curblockbuf.clear();
+                }
+
+                for (;;)
+                {
+                    size32_t nextSize = expander->expandNext(curblockbuf);
+                    if (nextSize == 0)
+                        throw makeStringException(-1, "Unexpected zero length compression block");
+
+                    curblockpos = nextExpansionPos;
+                    nextExpansionPos = nextExpansionPos+nextSize;
+                    if (pos < nextExpansionPos)
+                        return;
+                }
             }
-
-            for (;;)
-            {
-                size32_t nextSize = expander->expandNext(curblockbuf);
-                if (nextSize == 0)
-                    throw makeStringExceptionV(-1, "Unexpected zero length compression block at position %llu", curblockpos);
-
-                curblockpos = nextExpansionPos;
-                nextExpansionPos = nextExpansionPos+nextSize;
-                if (pos < nextExpansionPos)
-                    return;
-            }
+        }
+        catch (IException * e)
+        {
+            unsigned code = e->errorCode();
+            StringBuffer msg;
+            e->errorMessage(msg).appendf(" at position %llu of %llu", nextExpansionPos, trailer.indexPos);
+            e->Release();
+            throw makeStringException(code, msg.str());
         }
 
         size32_t expsize;
@@ -2433,6 +2445,8 @@ public:
             }
             checkedwrite(trailer.indexPos,indexbuf.length(),indexbuf.toByteArray());
             indexbuf.clear();
+            if (fileio)
+                fileio->close();
         }
         mode = ICFread;
         curblockpos = 0;

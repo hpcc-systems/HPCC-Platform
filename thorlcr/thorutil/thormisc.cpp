@@ -1692,4 +1692,5 @@ void saveWuidToFile(const char *wuid)
     if (!wuidFileIO)
         throw makeStringException(0, "Failed to create file 'wuid' to store current workunit for post mortem script");
     wuidFileIO->write(0, strlen(wuid), wuid);
+    wuidFileIO->close();
 }
