@@ -103,9 +103,14 @@ CppWriterTemplate::CppWriterTemplate(const char * codeTemplate)
     loadTemplate(codeTemplate);
 }
 
-void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProperties * properties)
+void CppWriterTemplate::generate(ISectionWriter & writer, IFile * outputFile, unsigned pass, IProperties * properties)
 {
-    writer.setOutput(out, outStream);
+    Owned<IFileIO> io = outputFile->open(IFOcreate);
+    if (!io)
+        throwError1(HQLERR_CouldNotCreateOutputX, outputFile->queryFilename());
+
+    outStream.setown(createIOStream(io));
+    writer.setOutput(outputFile, outStream);
 
     const char * finger = text;
     bool output = true;
@@ -149,6 +154,8 @@ void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProper
         outputQuoted(writer, end-finger, finger);
 
     writer.setOutput(NULL, NULL);
+    outStream.clear();
+    io->close();
 }
 
 void CppWriterTemplate::loadTemplate(const char * codeTemplate)
@@ -2271,11 +2278,9 @@ void HqlCppSectionWriter::generateSection(unsigned delta, IAtom * section, unsig
 
 //---------------------------------------------------------------------------
 
-ITemplateExpander * createTemplateExpander(IFile * output, const char * codeTemplate)
+ITemplateExpander * createTemplateExpander(const char * codeTemplate)
 {
-    Owned<CppWriterTemplate> expander = new CppWriterTemplate(codeTemplate);
-    expander->setOutput(output);
-    return expander.getClear();
+    return new CppWriterTemplate(codeTemplate);
 }
 
 ISectionWriter * createCppWriter(IHqlCppInstance & _instance, CompilerType compiler)

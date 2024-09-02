@@ -1831,6 +1831,7 @@ public:
                                     iFile->setCreateFlags(S_IRWXU);
                                     Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
                                     iFileIO->write(0, size, queryPtr);
+                                    iFileIO->close();
                                 }
                                 catch (IException *e)
                                 {
