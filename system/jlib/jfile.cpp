@@ -73,6 +73,9 @@
                                             // this should not be enabled in WindowRemoteDirectory used
 //#define CHECK_FILE_IO           // If enabled, reads and writes are checked for sensible parameters
 
+#ifdef _DEBUG
+//#define CHECK_FILE_CLOSED_BEFORE_DELETE
+#endif
 
 #ifdef _DEBUG
 #define ASSERTEX(e) assertex(e); 
@@ -2065,13 +2068,22 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
 
 CFileIO::~CFileIO()
 {
+#ifdef CHECK_FILE_CLOSED_BEFORE_DELETE
+    //Any file that is being written to, should be closed before the object is destroyed, otherwise errors from failing to commit will be lost
+    if ((file != NULLFILE) && (openmode!=IFOread))
+    {
+        OERRLOG("CFileIO::~CFileIO - file object destroyed without being closed first"); // A programmer problem, but the operator should know about it.
+        PrintStackReport();
+    }
+#endif
     try
     {
         close();
     }
     catch (IException * e)
     {
-        EXCLOG(e, "CFileIO::~CFileIO");
+        //An error closing a file cannot throw an exception, but should be logged as a very severe error in the logs.
+        DISLOG(e, "CFileIO::~CFileIO");
         PrintStackReport();
         e->Release();
     }
@@ -3279,6 +3291,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
             if (progress && progress->onProgress(offset, total) != CFPcontinue)
                 break;
         }
+        targetIO->close(); // Ensure errors are reported.
         targetIO.clear();
         if (usetmp) {
             StringAttr tail(pathTail(target->queryFilename()));
@@ -4431,6 +4444,7 @@ void touchFile(IFile *iFile)
     Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
     if (!iFileIO)
         throw makeStringExceptionV(0, "touchFile: failed to create file %s", iFile->queryFilename());
+    iFileIO->close();
 }
 
 void touchFile(const char *filename)
@@ -7267,6 +7281,7 @@ extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
         {
             Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
             sentinel->write(0, 5, "rerun");
+            sentinel->close();
         }
         catch(IException *E)
         {

@@ -6332,6 +6332,7 @@ void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned 
     if (!ifileio)
         throw MakeStringException(0, "saveXML: could not find %s to open", ifile.queryFilename());
     saveXML(*ifileio, tree, indent, flags);
+    ifileio->close(); // Ensure errors are reported
 }
 
 void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags)
@@ -9684,6 +9685,7 @@ void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned
     if (!ifileio)
         throw MakeStringException(0, "saveXML: could not find %s to open", ifile.queryFilename());
     saveYAML(*ifileio, tree, indent, flags);
+    ifileio->close();
 }
 
 void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags)
