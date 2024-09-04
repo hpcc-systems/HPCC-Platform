@@ -14,6 +14,7 @@ import { GetLogicalFilePart } from "./GetLogicalFilePart";
 import { GetProtectedList } from "./GetProtectedList";
 import { GetValue } from "./GetValue";
 import { SetLogicalFilePartAttr } from "./SetLogicalFilePartAttr";
+import { DaliSDSUnlock } from "./DaliSDSUnlock";
 import { SetProtected } from "./SetProtected";
 import { SetUnprotected } from "./SetUnprotected";
 import { SetValue } from "./SetValue";
@@ -66,6 +67,9 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SetLogicalFileAttribute} itemKey="setlogicalfilepartattr" style={pivotItemStyle(size)} >
                 <SetLogicalFilePartAttr />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.UnlockSDSLock} itemKey="unlockSdsLock" style={pivotItemStyle(size)} >
+                <DaliSDSUnlock />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SetProtected} itemKey="setprotected" style={pivotItemStyle(size)} >
                 <SetProtected />
