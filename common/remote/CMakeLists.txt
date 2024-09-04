@@ -23,6 +23,7 @@
 #####################################################
 
 project( remote ) 
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 HPCC_ADD_SUBDIRECTORY(hooks)
 
