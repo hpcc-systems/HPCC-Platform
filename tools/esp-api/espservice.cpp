@@ -93,6 +93,6 @@ int EspService::sendRequest()
 
 }
 EspService::EspService(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType,
-const char* target, const char* username, const char* password):reqString(reqString), url(target), resType(resType),reqType(reqType), username(username), password(password)
+const char* target, const char* username, const char* password):reqString(reqString), resType(resType), reqType(reqType), username(username), password(password), url(target)
 {
 }
