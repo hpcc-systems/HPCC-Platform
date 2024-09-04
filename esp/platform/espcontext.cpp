@@ -244,7 +244,7 @@ public:
         return m_servName.str();
     }
 
-    virtual const unsigned queryCreationTime()
+    virtual unsigned queryCreationTime()
     {
         return m_creationTime;
     }
@@ -252,7 +252,7 @@ public:
     {
         m_processingTime = msTick() - m_creationTime;
     }
-    virtual const unsigned queryProcessingTime()
+    virtual unsigned queryProcessingTime()
     {
         return m_processingTime;
     }
@@ -262,7 +262,7 @@ public:
         m_exceptionCode = exceptionCode;
         m_exceptionTime = msTick() - m_creationTime;
     }
-    virtual const bool queryException(int& exceptionCode, unsigned& exceptionTime)
+    virtual bool queryException(int& exceptionCode, unsigned& exceptionTime)
     {
         if (m_hasException)
         {
@@ -271,7 +271,7 @@ public:
         }
         return m_hasException;
     }
-    virtual const bool queryHasException()
+    virtual bool queryHasException()
     {
         return m_hasException;
     }
@@ -951,7 +951,7 @@ LogLevel getTxSummaryLevel()
     return LogMin;
 }
 
-const unsigned int readTxSummaryStyle(char const* style)
+unsigned int readTxSummaryStyle(char const* style)
 {
     if (isEmptyString(style))
         return TXSUMMARY_OUT_TEXT;
@@ -966,7 +966,7 @@ const unsigned int readTxSummaryStyle(char const* style)
     return TXSUMMARY_OUT_TEXT;
 }
 
-const unsigned int readTxSummaryGroup(char const* group)
+unsigned int readTxSummaryGroup(char const* group)
 {
     if (isEmptyString(group))
         return TXSUMMARY_GRP_CORE;
@@ -981,14 +981,14 @@ const unsigned int readTxSummaryGroup(char const* group)
     return TXSUMMARY_GRP_CORE;
 }
 
-const unsigned int getTxSummaryStyle()
+unsigned int getTxSummaryStyle()
 {
     if (getContainer())
         return getContainer()->getTxSummaryStyle();
     return TXSUMMARY_OUT_TEXT;
 }
 
-const unsigned int getTxSummaryGroup()
+unsigned int getTxSummaryGroup()
 {
     if (getContainer())
         return getContainer()->getTxSummaryGroup();

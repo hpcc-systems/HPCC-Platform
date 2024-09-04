@@ -127,7 +127,7 @@ public:
     CEspBindingEntry* queryBindingItem(int item)
     {
         ReadLockBlock rblock(rwLock);
-        return (item<bindings.length()) ? &bindings.item(item) : nullptr;
+        return bindings.isItem(item) ? &bindings.item(item) : nullptr;
     }
     CEspBindingEntry* getDefaultBinding()
     {

@@ -253,7 +253,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_JOB_NAME)||iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchFlag(optProtect, ECLOPT_PROTECT))
@@ -1496,7 +1495,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
@@ -1532,7 +1530,7 @@ public:
             reqQ->setJobname(optName.get());
 
             Owned<IClientWUQueryResponse> respQ = client->WUQuery(reqQ);
-            int res = respQ->queryClientStatus();
+            [[maybe_unused]] int res = respQ->queryClientStatus();
 
             if (!respQ->getCount_isNull())
             {
@@ -1628,7 +1626,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
@@ -1714,7 +1711,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
             {
                 retVal = EclCmdOptionMatch;
@@ -1799,7 +1795,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
@@ -1847,7 +1842,7 @@ public:
             req->setJobname(optName.get());
 
         Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
-        int res = resp->queryClientStatus();
+        [[maybe_unused]] int res = resp->queryClientStatus();
 
         IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
 

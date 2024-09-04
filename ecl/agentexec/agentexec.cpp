@@ -278,7 +278,6 @@ public:
             if (isContainerized() && !useChildProcesses)
             {
                 sharedK8sJob = true;
-                constexpr unsigned queueWaitingTimeoutMs = 10000;
                 constexpr unsigned queueWaitingCheckPeriodMs = 1000;
                 if (!owner.lingerQueue || !queueJobIfQueueWaiting(owner.lingerQueue, item, queueWaitingCheckPeriodMs, queueWaitingCheckPeriodMs))
                 {

@@ -1082,7 +1082,6 @@ protected:
             if (optVerbose)
                 printf("mkdir %s\n", tmp.str());
 
-            const char *ext = pathExtension(url);
             if (isGitUrl(url))
             {
                 fetchedLocation.append(tmp).append(PATHSEPCHAR);

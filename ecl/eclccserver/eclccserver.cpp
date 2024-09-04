@@ -223,17 +223,6 @@ public:
 // A threadpool is used to allow multiple compiles to be submitted at once. Threads are reused when compilation completes.
 //------------------------------------------------------------------------------------------------------------------
 
-static bool getHomeFolder(StringBuffer & homepath)
-{
-    if (!getHomeDir(homepath))
-        return false;
-    addPathSepChar(homepath);
-#ifndef WIN32
-    homepath.append('.');
-#endif
-    homepath.append(hpccBuildInfo.dirName);
-    return true;
-}
 
 static bool guardGitUpdates = false;
 static StringBuffer gitLockKey;
@@ -1118,6 +1107,7 @@ public:
     }
 };
 
+#ifndef _CONTAINERIZED
 #ifndef _WIN32
 static void generatePrecompiledHeader()
 {
@@ -1149,6 +1139,7 @@ static void removePrecompiledHeader()
 {
     removeFileTraceIfFail("eclinclude4.hpp.gch");
 }
+#endif
 #endif
 
 //------------------------------------------------------------------------------------------------------------------

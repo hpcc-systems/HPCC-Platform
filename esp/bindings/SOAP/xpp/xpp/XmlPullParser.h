@@ -102,7 +102,7 @@ namespace xpp {
     virtual const SXT_STRING getPosDesc() const = 0;
     virtual int getLineNumber() const = 0;
     virtual int getColumnNumber() const = 0;
-    virtual const bool whitespaceContent() const = 0;
+    virtual bool whitespaceContent() const = 0;
  };
 
   class XmlPullParser : implements IXmlPullParser {
@@ -387,7 +387,7 @@ namespace xpp {
    }
 
 
-    virtual const bool whitespaceContent() const override {
+    virtual bool whitespaceContent() const override {
       if(eventType != CONTENT) {
         throw XmlPullParserException("no content available to read");
       }
@@ -773,8 +773,7 @@ namespace xpp {
       }
     }
 
-    void ensureNsBufSpace(int addSpace) {
-      addSpace = addSpace;
+    void ensureNsBufSpace(int) {
     /*
     // NOTE: unfortunately it can not be used as i was storing char* pointers 
     //   to this block of memory, storing relative offsets though will work - but later!

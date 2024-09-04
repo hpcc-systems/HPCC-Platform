@@ -161,12 +161,12 @@ interface IEspContext : extends IInterface
 
     virtual void setServiceName(const char *name)=0;
     virtual const char * queryServiceName(const char *name)=0;
-    virtual const unsigned queryCreationTime()=0;
+    virtual unsigned queryCreationTime()=0;
     virtual void setProcessingTime()=0;
-    virtual const unsigned queryProcessingTime()=0;
+    virtual unsigned queryProcessingTime()=0;
     virtual void setException(int exceptionCode)=0;
-    virtual const bool queryException(int& exceptionCode, unsigned& exceptionTime)=0;
-    virtual const bool queryHasException()=0;
+    virtual bool queryException(int& exceptionCode, unsigned& exceptionTime)=0;
+    virtual bool queryHasException()=0;
 
     virtual IProperties *   queryRequestParameters()=0;
     virtual void            setRequestParameters(IProperties * Parameters)=0;

@@ -97,8 +97,8 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
         }
         SetConsoleMode(hStdIn, dwInputMode); 
 #else
-        int fn = fileno(stdin);
 #if defined (__linux__)
+        int fn = fileno(stdin);
         struct termio t;
         /* If ioctl fails, we're probably not connected to a terminal. */
         if(!ioctl(fn, TCGETA, &t))
@@ -147,8 +147,6 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
         if (arg[0] == '-')
         {
             StringBuffer name;
-            const char * value = NULL;
-
             if (arg[1] == 'f')
             {
                 if (eq)

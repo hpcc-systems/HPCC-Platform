@@ -13,6 +13,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+project (ecl)
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 HPCC_ADD_SUBDIRECTORY (agentexec "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (eclagent "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (eclcc)
