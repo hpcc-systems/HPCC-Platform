@@ -673,6 +673,7 @@ void CHThorDiskWriteActivity::close()
     {
         io->flush();
         numDiskWrites = io->getStatistic(StNumDiskWrites);
+        io->close();
         io.clear();
     }
     if(clusterHandler)
