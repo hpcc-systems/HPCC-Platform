@@ -280,7 +280,7 @@ private:
         return ret;
     }
 
-    void fail(char const * msg)
+    [[noreturn]] void fail(char const * msg)
     {
         throw MakeStringException(0, "bad %s (%s at character %u): %s", label, msg, (unsigned) (finger-value), value);
     }

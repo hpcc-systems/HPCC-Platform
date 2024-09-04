@@ -257,7 +257,7 @@ public:
                             password.set(parm);
                             break;
                         }
-                        // continue
+                        [[fallthrough]];
                     default:
                         throw MakeStringException(-1,"Unknown option %s",argv[i]);
                 }
