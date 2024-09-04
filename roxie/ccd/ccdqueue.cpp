@@ -646,6 +646,11 @@ public:
         acknowledged = true;
     }
 
+    virtual void clearAcknowledged() override
+    {
+        acknowledged = false;
+    }
+
     virtual bool isAcknowledged() const override
     {
         return acknowledged;
@@ -2723,6 +2728,8 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
+                if (retries >= SUBCHANNEL_MASK)
+                    return; // I already failed unrecoverably on this request - ignore it
                 if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {
 #ifdef DEBUG
@@ -2742,9 +2749,6 @@ public:
                 {
                     // MORE - is this fast enough? By the time I am seeing retries I may already be under load. Could move onto a separate thread
                     assertex(header.channel); // should never see a retry on channel 0
-                    if (retries >= SUBCHANNEL_MASK)
-                        return; // someone sent a failure or something - ignore it
-
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                     if (!(testAgentFailure & 0x800) && !acknowledgeAllRequests)
                     {

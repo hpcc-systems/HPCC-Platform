@@ -4164,11 +4164,11 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         unsigned now = 0;
         if (acknowledgeAllRequests)
         {
-            if (doTrace(traceRoxiePackets))
-                DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
             now = msTick();
             if (now-lastRetryCheck < packetAcknowledgeTimeout/4)
                 return;
+            if (doTrace(traceRoxiePackets))
+                DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
             lastRetryCheck = now;
         }
         CriticalBlock b(pendingCrit);
@@ -5235,7 +5235,9 @@ public:
                             Owned<IMessageUnpackCursor> exceptionData = mr->getCursor(rowManager);
                             throwRemoteException(exceptionData);
                         }
-                        // Leave it on pending queue in original location
+                        // One channel has failed, but should be recoverable
+                        // Leave it on pending queue in original location, but clear acknowledged flag
+                        op->clearAcknowledged();
                         break;
 
                     case ROXIE_ALIVE:

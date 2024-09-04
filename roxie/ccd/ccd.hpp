@@ -265,6 +265,7 @@ interface IRoxieQueryPacket : extends IInterface
 
     virtual void noteTimeSent() = 0;
     virtual void setAcknowledged() = 0;
+    virtual void clearAcknowledged() = 0;
     virtual bool isAcknowledged() const = 0;
     virtual bool resendNeeded(unsigned now) = 0;
 };
