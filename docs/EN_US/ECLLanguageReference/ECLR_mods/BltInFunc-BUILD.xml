@@ -172,9 +172,12 @@
     <para>The following options are available on all three INDEX forms of
     BUILD (only):</para>
 
-    <para><emphasis role="bold">[, CLUSTER<indexterm>
+    <para><emphasis role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
       </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">) ] | [ , PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
     role="bold">)] [, SORTED<indexterm>
         <primary>SORTED</primary>
       </indexterm>] [, DISTRIBUTE<indexterm>
@@ -253,20 +256,43 @@
               written to disk is always determined by the number of nodes in
               the cluster on which the workunit executes, regardless of the
               number of nodes on the target cluster(s) unless the WIDTH option
-              is also specified.</entry>
+              is also specified. Use this option for bare-metal deployments.
+              </entry>
             </row>
 
             <row>
               <entry><emphasis>target</emphasis></entry>
 
               <entry>A comma-delimited list of string constants containing the
-              names of the clusters to write the
-              <emphasis>indexfile</emphasis> to. The names must be listed as
-              they appear on the ECL Watch Activity page or returned by the
-              Std.System.Thorlib.Group() function, optionally with square
-              brackets containing a comma-delimited list of node-numbers
-              (1-based) and/or ranges (specified with a dash, as in n-m) to
-              indicate the specific set of nodes to write to.</entry>
+              names of the clusters to write the indexfile to. The names must
+              be listed as they appear on the ECL Watch Activity page or
+              returned by the Std.System.Thorlib.Group() function, optionally
+              with square brackets containing a comma-delimited list of
+              node-numbers (1-based) and/or ranges (specified with a dash, as
+              in n-m) to indicate the specific set of nodes to write
+              to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Specifies writing the <emphasis>indexfile</emphasis> to
+              the specified list of target planes. If omitted, the
+              <emphasis>indexfile</emphasis> is written to the default plane.
+              Planes are used by containerized systems, but since bare-metal
+              clusters are implicitly backed with a plane with the same name,
+              you can use PLANE('clustername') for bare-metal
+              deployments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the plane(s) to write the
+              <emphasis>indexfile</emphasis> to. The
+              <emphasis>targetPlane</emphasis> names must be listed as they
+              are defined in the deployment. </entry>
             </row>
 
             <row>
@@ -700,7 +726,7 @@ BUILD(Vehicles,SearchTerms,Payload,'vkey::st.city2');
     );</emphasis></para>
 
     <para>Form 3 creates an index file by using a previously defined INDEX
-    definition. </para>
+    definition.</para>
 
     <para>You can also use this form to build an index based upon two MERGEd
     indexes. To write a MERGEd index to disk, you must use the BUILD action
