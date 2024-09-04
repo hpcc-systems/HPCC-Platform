@@ -907,6 +907,7 @@ public:
                 status = ApiCopyStatus::Failed;
             }
             // fallthrough to delete any file remnants
+            [[fallthrough]];
         case ApiCopyStatus::Success:
             // already copied-> need to delete
             try
@@ -935,7 +936,7 @@ class AzureFileClient : public AzureAPICopyClientBase
 
     virtual void doStartCopy(const char * source) override
     {
-        fileCopyOp = std::move(fileClient->StartCopy(source));
+        fileCopyOp = fileClient->StartCopy(source);
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
     {
@@ -977,7 +978,7 @@ class AzureBlobClient : public AzureAPICopyClientBase
 
     virtual void doStartCopy(const char * source) override
     {
-        blobCopyOp = std::move(blobClient->StartCopyFromUri(source));
+        blobCopyOp = blobClient->StartCopyFromUri(source);
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
     {

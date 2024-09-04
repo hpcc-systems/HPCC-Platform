@@ -31,6 +31,7 @@ find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
 find_package(azure-storage-common-cpp CONFIG REQUIRED)
 
 project( azurefile )
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (   SRCS
         azurefile.cpp
