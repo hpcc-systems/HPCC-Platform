@@ -140,7 +140,7 @@ public:
 class HQLCPP_API HqlCppInstance : public IHqlCppInstance, public CInterface
 {
 public:
-    HqlCppInstance(IWorkUnit * _workunit, const char * _wupathname);
+    HqlCppInstance(IWorkUnit * _workunit, const char * _wupathname, CompilerType _compiler);
     IMPLEMENT_IINTERFACE
 
     virtual HqlStmts * ensureSection(IAtom * section);
@@ -193,6 +193,7 @@ public:
     Owned<IPropertyTree> plugins;
     Owned<IFileIOStream> hintFile;
     CIArrayOf<CppFileInfo> cppInfo;
+    CompilerType        compilerType;
 };
 
 //---------------------------------------------------------------------------
