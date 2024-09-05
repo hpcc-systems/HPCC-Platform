@@ -274,7 +274,7 @@ extern jlib_decl IFile * createIFile(const char * filename);
 extern jlib_decl IFile * createIFile(MemoryBuffer & buffer);
 extern jlib_decl void touchFile(const char *filename);
 extern jlib_decl void touchFile(IFile *file);
-extern jlib_decl IFileIO * createIFileIO(HANDLE handle,IFOmode mode,IFEflags extraFlags=IFEnone);
+extern jlib_decl IFileIO * createIFileIO(IFile * creator, HANDLE handle,IFOmode mode,IFEflags extraFlags=IFEnone);
 extern jlib_decl IDirectoryIterator * createDirectoryIterator(const char * path = NULL, const char * wildcard = NULL, bool sub = false, bool includedirs = true);
 extern jlib_decl IDirectoryIterator * createNullDirectoryIterator();
 extern jlib_decl IFileIO * createIORange(IFileIO * file, offset_t header, offset_t length);     // restricts input/output to a section of a file.

@@ -1785,8 +1785,8 @@ class jlib_decl CSequentialFileIO : public CFileIO
     }
 
 public:
-    CSequentialFileIO(HANDLE h,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags)
-        : CFileIO(h,_openmode,_sharemode,_extraFlags)
+    CSequentialFileIO(IFile * _creator, HANDLE h,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags)
+        : CFileIO(_creator, h,_openmode,_sharemode,_extraFlags)
     {
         pos = 0;
     }
@@ -1808,7 +1808,7 @@ public:
         }
         size32_t ret = (size32_t)numRead;
 #else
-        size32_t ret = checked_read(file, data, len);
+        size32_t ret = checked_read(querySafeFilename(), file, data, len);
 #endif
         pos += ret;
         return ret;
@@ -1854,9 +1854,9 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
     //       No - while read-ahead can put more into page-cache, IFEnocache is a hint and
     //       disabling readahead might affect performance negatively too much ...
     if (stdh>=0)
-        return new CSequentialFileIO(handle,mode,share,extraFlags);
+        return new CSequentialFileIO(this, handle,mode,share,extraFlags);
 
-    Owned<IFileIO> io = new CFileIO(handle,mode,share,extraFlags);
+    Owned<IFileIO> io = new CFileIO(this,handle,mode,share,extraFlags);
 #ifdef CHECK_FILE_IO
     return new CCheckingFileIO(filename, io);
 #else
@@ -1869,9 +1869,9 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 //---------------------------------------------------------------------------
 
 
-extern jlib_decl IFileIO *createIFileIO(HANDLE handle,IFOmode openmode,IFEflags extraFlags)
+extern jlib_decl IFileIO *createIFileIO(IFile * creator,HANDLE handle,IFOmode openmode,IFEflags extraFlags)
 {
-    return new CFileIO(handle,openmode,IFSHfull,extraFlags);
+    return new CFileIO(creator, handle,openmode,IFSHfull,extraFlags);
 }
 
 offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
@@ -1910,8 +1910,8 @@ unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 
 //-- Windows implementation -------------------------------------------------
 
-CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : unflushedReadBytes(0), unflushedWriteBytes(0)
+CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+    : creator(_creator), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1948,14 +1948,14 @@ void CFileIO::close()
         std::swap(tmpHandle, file);
 
         if (!CloseHandle(tmpHandle))
-            throw makeOsException(GetLastError(),"CFileIO::close");
+            throw makeOsExceptionV(GetLastError(),"CFileIO::close for file '%s'", querySafeFilename());
     }
 }
 
 void CFileIO::flush()
 {
     if (!FlushFileBuffers(file))
-        throw makeOsException(GetLastError(),"CFileIO::flush");
+        throw makeOsExceptionV(GetLastError(),"CFileIO::flush for file '%s'", querySafeFilename());
 }
 
 offset_t CFileIO::size()
@@ -1979,7 +1979,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
     DWORD numRead;
     setPos(pos);
     if (ReadFile(file,data,len,&numRead,NULL) == 0)
-        throw makeOsException(GetLastError(),"CFileIO::read");
+        throw makeOsExceptionV(GetLastError(),"CFileIO::read for file '%s'", querySafeFilename());
     stats.ioReadCycles.fetch_add(timer.elapsedCycles());
     stats.ioReadBytes.fetch_add(numRead);
     ++stats.ioReads;
@@ -2001,9 +2001,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
     DWORD numWritten;
     setPos(pos);
     if (!WriteFile(file,data,len,&numWritten,NULL))
-        throw makeOsException(GetLastError(),"CFileIO::write");
+        throw makeOsExceptionV(GetLastError(),"CFileIO::write for file '%s'", querySafeFilename());
     if (numWritten != len)
-        throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+        throw makeOsExceptionV(DISK_FULL_EXCEPTION_CODE,"CFileIO::write for file '%s'", querySafeFilename());
     stats.ioWriteCycles.fetch_add(timer.elapsedCycles());
     stats.ioWriteBytes.fetch_add(numWritten);
     ++stats.ioWrites;
@@ -2016,7 +2016,7 @@ void CFileIO::setSize(offset_t pos)
     CriticalBlock procedure(cs);
     setPos(pos);
     if (!SetEndOfFile(file))
-        throw makeOsException(GetLastError(), "CFileIO::setSize");
+        throw makeOsExceptionV(GetLastError(), "CFileIO::setSize for file '%s'", querySafeFilename());
 }
 
 #else
@@ -2053,8 +2053,8 @@ static void syncFileData(int fd, bool notReadOnly, IFEflags extraFlags, bool wai
 }
 
 // More errorno checking TBD
-CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : unflushedReadBytes(0), unflushedWriteBytes(0)
+CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+    : creator(_creator), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -2082,7 +2082,7 @@ CFileIO::~CFileIO()
     //Any file that is being written to, should be closed before the object is destroyed, otherwise errors from failing to commit will be lost
     if ((file != NULLFILE) && (openmode!=IFOread))
     {
-        OERRLOG("CFileIO::~CFileIO - file object destroyed without being closed first"); // A programmer problem, but the operator should know about it.
+        OERRLOG("CFileIO::~CFileIO - file '%s' object destroyed without being closed first", querySafeFilename()); // A programmer problem, but the operator should know about it.
         PrintStackReport();
     }
 #endif
@@ -2114,7 +2114,7 @@ void CFileIO::close()
             syncFileData(tmpHandle, openmode!=IFOread, extraFlags, false);
 
         if (::close(tmpHandle) < 0)
-            throw makeErrnoException(errno, "CFileIO::close");
+            throw makeErrnoExceptionV(errno, "CFileIO::close for file '%s'", querySafeFilename());
     }
 }
 
@@ -2152,7 +2152,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
     if (0==len) return 0;
 
     CCycleTimer timer;
-    size32_t ret = checked_pread(file, data, len, pos);
+    size32_t ret = checked_pread(querySafeFilename(), file, data, len, pos);
     stats.ioReadCycles.fetch_add(timer.elapsedCycles());
     stats.ioReadBytes.fetch_add(ret);
     ++stats.ioReads;
@@ -2183,9 +2183,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
     ++stats.ioWrites;
 
     if (ret==(size32_t)-1)
-        throw makeErrnoException(errno, "CFileIO::write");
+        throw makeErrnoExceptionV(errno, "CFileIO::write for file '%s'", querySafeFilename());
     if (ret<len)
-        throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::write");
+        throw makeOsExceptionV(DISK_FULL_EXCEPTION_CODE, "CFileIO::write for file '%s'", querySafeFilename());
     if ( (extraFlags & (IFEnocache | IFEsync)) && (ret > 0) )
     {
         if (unflushedWriteBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
@@ -2201,7 +2201,7 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 void CFileIO::setSize(offset_t pos)
 {
     if (0 != ftruncate(file, pos))
-        throw makeErrnoException(errno, "CFileIO::setSize");
+        throw makeErrnoExceptionV(errno, "CFileIO::setSize for file '%s'", querySafeFilename());
 }
 #endif
 

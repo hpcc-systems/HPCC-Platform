@@ -91,7 +91,7 @@ protected:
 class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
-    CFileIO(HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
+    CFileIO(IFile * _creator,HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
@@ -105,9 +105,16 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind);
 
     HANDLE queryHandle() { return file; } // for debugging
+    const char * queryFilename() const { return creator ? creator->queryFilename() : nullptr; }
+    const char * querySafeFilename() const
+    {
+        const char * name = queryFilename();
+        return name ? name : "<unknown>";
+    }
 
 protected:
     CriticalSection     cs;
+    Linked<IFile>       creator;
     HANDLE              file;
     bool                throwOnError;
     IFSHmode            sharemode;
