@@ -40,7 +40,7 @@ public:
 
     int  loadAllServices();
     void loadAllMethods(const char* serviceName);
-    void addFilesToDefinition(std::vector<Owned<IFile>> files);
+    void addFilesToDefinition(std::vector<Owned<IFile>> &files);
     void getFiles(std::vector<Owned<IFile>> &files);
     void getFiles(std::vector<Owned<IFile>> &files, const char* path);
     void describe(const char* serviceName, const char* methodName);

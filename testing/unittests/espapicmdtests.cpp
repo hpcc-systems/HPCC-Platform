@@ -226,95 +226,71 @@ static constexpr const char* sashaXML = R"!!(<esxdl name="ws_sasha">
     <EsdlMethod name='RestoreWU' request_type='RestoreWURequest' response_type='ResultResponse'  auth_feature='SashaAccess:FULL'/>
         </EsdlService></esxdl>)!!";
 
-class EspApiTest: public EspDef{
-    public:
-    EspApiTest();
-    const std::vector<const char*>& getAllServices() {
-        return allServicesList;
-    }
-
-    const std::vector<const char*>& getAllMethods()  {
-        return allMethodsList;
-    }
-};
-
-EspApiTest::EspApiTest()
-    :EspDef(){
-
-}
-
-struct Init{
-    EspApiTest esdlDefObj;
-    std::vector<Owned<IFile>> files;
-    Owned<IFile> file;
-    Owned<IFile> common;
-    Owned<IFile> store;
-    Owned<IFile> sasha;
-
-    Init() :file(createIFile("/tmp/hpcctest")),
-          common(createIFile("/tmp/hpcctest/common.xml")),
-          store(createIFile("/tmp/hpcctest/store.xml")),
-          sasha(createIFile("/tmp/hpcctest/sasha.xml"))
-    {
-        try{
-            InitModuleObjects();
-            queryStderrLogMsgHandler()->setMessageFields(0);
-            queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
-            file->createDirectory();
-
-            Owned<IFileIO> ioCommon = common->open(IFOcreate);
-            ioCommon->write(0, strlen(commonXML), commonXML);
-
-            Owned<IFileIO> ioStore = store->open(IFOcreate);
-            ioStore->write(0, strlen(storeXML), storeXML);
-
-            Owned<IFileIO> ioSasha = sasha->open(IFOcreate);
-            ioSasha->write(0, strlen(sashaXML), sashaXML);
-
-            esdlDefObj.getFiles(files,"/tmp/hpcctest");
-            esdlDefObj.addFilesToDefinition(files);
-            esdlDefObj.loadAllServices();
-            esdlDefObj.loadAllMethods("WSSasha");
-        }catch(IException * e){
-            StringBuffer msg;
-            e->errorMessage(msg);
-            cerr << msg.str();
-        }
-    }
-    ~Init(){
-        common->remove();
-        store->remove();
-        sasha->remove();
-        file->remove();
-    }
-};
-
-void sortAndWriteBack(string& input)
-{
-    stringstream ss(input);
-    string token;
-    char delimiter = '\n';
-    set<string> sortedSet;
-
-    while(getline(ss, token, delimiter))
-    {
-        sortedSet.insert(token);
-    }
-    input.clear();
-
-    for(const string &s : sortedSet)
-    {
-        if(!input.empty())
-        {
-            input.append(" ");
-        }
-        input.append(s);
-    }
-}
-
-Init setup;
 class EspApiCmdTest : public CppUnit::TestFixture
 {
+    class TestEspDef : public EspDef
+    {
+    public:
+        const std::vector<const char*>& getAllServices()
+        {
+            return allServicesList;
+        }
+
+        const std::vector<const char*>& getAllMethods()
+        {
+            return allMethodsList;
+        }
+    };
+
+    struct Environment
+    {
+        TestEspDef   esdlDefObj;
+        std::vector<Owned<IFile>> files;
+        Owned<IFile> dir;
+        Owned<IFile> common;
+        Owned<IFile> store;
+        Owned<IFile> sasha;
+
+        Environment()
+           :dir(createIFile("/tmp/hpcctest")),
+            common(createIFile("/tmp/hpcctest/common.xml")),
+            store(createIFile("/tmp/hpcctest/store.xml")),
+            sasha(createIFile("/tmp/hpcctest/sasha.xml"))
+        {
+            try{
+                InitModuleObjects();
+                queryStderrLogMsgHandler()->setMessageFields(0);
+                queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
+                dir->createDirectory();
+
+                Owned<IFileIO> ioCommon = common->open(IFOcreate);
+                ioCommon->write(0, strlen(commonXML), commonXML);
+
+                Owned<IFileIO> ioStore = store->open(IFOcreate);
+                ioStore->write(0, strlen(storeXML), storeXML);
+
+                Owned<IFileIO> ioSasha = sasha->open(IFOcreate);
+                ioSasha->write(0, strlen(sashaXML), sashaXML);
+
+                esdlDefObj.getFiles(files,"/tmp/hpcctest");
+                esdlDefObj.addFilesToDefinition(files);
+                esdlDefObj.loadAllServices();
+                esdlDefObj.loadAllMethods("WSSasha");
+            }catch(IException * e){
+                StringBuffer msg;
+                e->errorMessage(msg);
+                cerr << msg.str();
+            }
+        }
+        ~Environment()
+        {
+            common->remove();
+            store->remove();
+            sasha->remove();
+            dir->remove();
+        }
+    };
+
 public:
     EspApiCmdTest()
     {
@@ -341,7 +317,7 @@ protected:
         "/tmp/hpcctest/common.xml\n"
         "/tmp/hpcctest/store.xml\n";
 
-        for(Owned<IFile>& myfile: setup.files)
+        for(Owned<IFile>& myfile: env.files)
         {
             fileStr.append(myfile->queryFilename());
             fileStr.append("\n");
@@ -357,7 +333,7 @@ protected:
         string refStr =
         "WSSasha\n"
         "wsstore\n";
-        vector<const char*> services = setup.esdlDefObj.getAllServices();
+        vector<const char*> services = env.esdlDefObj.getAllServices();
         for(const char* service : services)
         {
             serviceStr.append(service);
@@ -375,7 +351,7 @@ protected:
         ostringstream oss;
         string res;
 
-        setup.esdlDefObj.describeAllServices(oss);
+        env.esdlDefObj.describeAllServices(oss);
         res = oss.str();
 
         sortAndWriteBack(res);
@@ -392,7 +368,7 @@ protected:
         "Ping\n"
         "RestoreWU\n";
 
-        vector<const char*> methods = setup.esdlDefObj.getAllMethods();
+        vector<const char*> methods = env.esdlDefObj.getAllMethods();
         for(const char* &method:methods)
         {
             methodStr.append(method);
@@ -412,7 +388,7 @@ protected:
         ostringstream oss;
         string res;
 
-        setup.esdlDefObj.describeAllMethods("WSSasha",oss);
+        env.esdlDefObj.describeAllMethods("WSSasha",oss);
         res = oss.str();
 
         sortAndWriteBack(res);
@@ -423,22 +399,22 @@ protected:
     }
     void testCheckValidService()
     {
-        bool validCheck = setup.esdlDefObj.checkValidService("WSSasha");
-        bool invalidCheck = setup.esdlDefObj.checkValidService("InvalidService");
+        bool validCheck = env.esdlDefObj.checkValidService("WSSasha");
+        bool invalidCheck = env.esdlDefObj.checkValidService("InvalidService");
         CPPUNIT_ASSERT_EQUAL(validCheck, true);
         CPPUNIT_ASSERT_EQUAL(invalidCheck, false);
     }
     void testCheckValidMethod()
     {
-        bool validCheck = setup.esdlDefObj.checkValidMethod("GetVersion", "WSSasha");
-        bool invalidCheck = setup.esdlDefObj.checkValidMethod("InvalidMethod", "WSSasha");
+        bool validCheck = env.esdlDefObj.checkValidMethod("GetVersion", "WSSasha");
+        bool invalidCheck = env.esdlDefObj.checkValidMethod("InvalidMethod", "WSSasha");
         CPPUNIT_ASSERT_EQUAL(validCheck, true);
         CPPUNIT_ASSERT_EQUAL(invalidCheck, false);
 
     }
     void testDescribe()
     {
-        setup.esdlDefObj.loadAllMethods("wsstore");
+        env.esdlDefObj.loadAllMethods("wsstore");
         string refString =
         "ListStoresRequest\n"
         "string NameFilter\n"
@@ -462,26 +438,54 @@ protected:
 
         ostringstream oss;
         string res;
-        setup.esdlDefObj.describe("wsstore","ListStores", oss);
+        env.esdlDefObj.describe("wsstore","ListStores", oss);
         res = oss.str();
 
         oss.str("");
         oss.clear();
         string invalidServiceRes;
-        setup.esdlDefObj.describe("bad_name","ListStores", oss);
+        env.esdlDefObj.describe("bad_name","ListStores", oss);
         invalidServiceRes = oss.str();
 
         oss.str("");
         oss.clear();
         string invalidMethodRes;
-        setup.esdlDefObj.describe("wsstore","bad_name", oss);
+        env.esdlDefObj.describe("wsstore","bad_name", oss);
         invalidMethodRes = oss.str();
 
         CPPUNIT_ASSERT_EQUAL(refString, res);
         CPPUNIT_ASSERT_EQUAL(refInvalidServiceString, invalidServiceRes);
         CPPUNIT_ASSERT_EQUAL(refInvalidMethodString, invalidMethodRes);
     }
+
+private:
+    static Environment env;
+
+    void sortAndWriteBack(string& input)
+    {
+        stringstream ss(input);
+        string token;
+        char delimiter = '\n';
+        set<string> sortedSet;
+
+        while(getline(ss, token, delimiter))
+        {
+            sortedSet.insert(token);
+        }
+        input.clear();
+
+        for(const string &s : sortedSet)
+        {
+            if(!input.empty())
+            {
+                input.append(" ");
+            }
+            input.append(s);
+        }
+    }
 };
+
+EspApiCmdTest::Environment EspApiCmdTest::env;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( EspApiCmdTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EspApiCmdTest, "EspApiCmdTest" );
