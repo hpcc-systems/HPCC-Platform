@@ -1382,7 +1382,10 @@ public:
         fprintf(stdout, "\nWriting to file %s\n", file->queryFilename());
 
         if (io.get())
+        {
             io->write(0, strlen(s), s);
+            io->close();
+        }
         else
             fprintf(stderr, "\nFailed to create file %s\n", file->queryFilename());
     }

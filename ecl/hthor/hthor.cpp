@@ -673,6 +673,7 @@ void CHThorDiskWriteActivity::close()
     {
         io->flush();
         numDiskWrites = io->getStatistic(StNumDiskWrites);
+        io->close();
         io.clear();
     }
     if(clusterHandler)
@@ -1295,6 +1296,7 @@ void CHThorIndexWriteActivity::execute()
         offsetBranches = builder->getOffsetBranches();
         out->flush();
         out.clear();
+        io->close();
     }
 
     if(clusterHandler)

@@ -294,7 +294,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [selection]);
 
     const renderRowTimings = React.useCallback((props: IDetailsRowProps, size: { readonly width: number; readonly height: number; }) => {
-        if (showTimeline && props) {
+        if (showTimeline && props?.item?.timings) {
             const total = props.item.timings.page.end - props.item.timings.page.start;
             const startPct = 100 - (props.item.timings.start - props.item.timings.page.start) / total * 100;
             const endPct = 100 - (props.item.timings.end - props.item.timings.page.start) / total * 100;

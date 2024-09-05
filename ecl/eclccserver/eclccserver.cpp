@@ -559,6 +559,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         {
             Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
             dstIO->write(0, output.length(), output.str());
+            dstIO->close();
 
             IArrayOf<IError> errors;
             extractErrorsFromCppLog(errors, output.str(), numFailed != 0);

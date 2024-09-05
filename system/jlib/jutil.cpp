@@ -3444,6 +3444,7 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
         if (!ifileio)
             throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
         ifileio->write(0, strlen(output), output);
+        ifileio->close();
     }
 #else
     VStringBuffer newFileName("%s.XXXXXX", fileName);
@@ -3453,10 +3454,11 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
     Owned<IFile> newFile = createIFile(newFileName);
     Owned<IFile> file = createIFile(fileName);
     {
-        OwnedIFileIO ifileio = createIFileIO(fh, IFOwrite);
+        OwnedIFileIO ifileio = createIFileIO(file, fh, IFOwrite);
         if (!ifileio)
             throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
         ifileio->write(0, strlen(output), output);
+        ifileio->close();
     }
 #endif
     if (file->exists())

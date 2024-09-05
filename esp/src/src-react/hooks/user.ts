@@ -3,6 +3,8 @@ import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { AccessService, AccountService, WsAccount } from "@hpcc-js/comms";
 import { cookieKeyValStore } from "src/KeyValStore";
 
+declare const dojoConfig;
+
 const defaults = {
     ESPSessionTimeout: 7200,
     ESPAuthenticated: false,
@@ -97,12 +99,15 @@ export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAd
                         const adminGroupNames = ["Administrator", "Directory Administrators"];
                         if (response.isLDAPAdmin || groups.filter(group => !adminGroupNames.indexOf(group.name)).length > 0) {
                             setIsAdmin(true);
+                            dojoConfig.isAdmin = true;
                         } else {
                             setIsAdmin(account.accountType === "Administrator");
+                            dojoConfig.isAdmin = account.accountType === "Administrator";
                         }
                     });
                 } else {
                     setIsAdmin(true);
+                    dojoConfig.isAdmin = true;
                 }
                 setCurrentUser(account);
             });

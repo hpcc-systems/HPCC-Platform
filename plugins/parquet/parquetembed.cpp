@@ -745,9 +745,17 @@ arrow::Status ParquetWriter::fieldToNode(const RtlFieldInfo *field, std::vector<
             {
                 arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::int64()));
             }
-            else
+            else if (field->type->length > 2)
             {
                 arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::int32()));
+            }
+            else if (field->type->length > 1)
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::int16()));
+            }
+            else
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::int8()));
             }
         }
         else
@@ -756,14 +764,29 @@ arrow::Status ParquetWriter::fieldToNode(const RtlFieldInfo *field, std::vector<
             {
                 arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::uint64()));
             }
-            else
+            else if (field->type->length > 2)
             {
                 arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::uint32()));
+            }
+            else if (field->type->length > 1)
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::uint16()));
+            }
+            else
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::uint8()));
             }
         }
         break;
     case type_real:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::float64()));
+        if (field->type->length > 4)
+        {
+            arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::float64()));
+        }
+        else
+        {
+            arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::float32()));
+        }
         break;
     case type_char:
     case type_string:
@@ -772,8 +795,17 @@ arrow::Status ParquetWriter::fieldToNode(const RtlFieldInfo *field, std::vector<
     case type_utf8:
     case type_unicode:
     case type_varunicode:
+        if (field->type->length > 4 || field->type->length == 0)
+        {
+            arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::large_utf8()));
+        }
+        else
+        {
+            arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::utf8()));
+        }
+        break;
     case type_decimal:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::utf8())); // TODO: add decimal encoding
+        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::large_utf8())); // TODO: add decimal encoding
         break;
     case type_data:
         if (field->type->length > 0)
@@ -1006,6 +1038,12 @@ void ParquetWriter::addFieldToBuilder(const RtlFieldInfo *field, unsigned len, c
         {
             arrow::StringBuilder *stringBuilder = static_cast<arrow::StringBuilder *>(fieldBuilder);
             reportIfFailure(stringBuilder->Append(data, len));
+            break;
+        }
+        case arrow::Type::LARGE_STRING:
+        {
+            arrow::LargeStringBuilder *largeStringBuilder = static_cast<arrow::LargeStringBuilder *>(fieldBuilder);
+            reportIfFailure(largeStringBuilder->Append(data, len));
             break;
         }
         case arrow::Type::LARGE_BINARY:
@@ -1765,6 +1803,18 @@ void ParquetRecordBinder::processInt(__int64 value, const RtlFieldInfo *field)
     arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field);
     switch(fieldBuilder->type()->id())
     {
+        case arrow::Type::type::INT8:
+        {
+            arrow::Int8Builder *int8Builder = static_cast<arrow::Int8Builder *>(fieldBuilder);
+            reportIfFailure(int8Builder->Append(value));
+            break;
+        }
+        case arrow::Type::type::INT16:
+        {
+            arrow::Int16Builder *int16Builder = static_cast<arrow::Int16Builder *>(fieldBuilder);
+            reportIfFailure(int16Builder->Append(value));
+            break;
+        }
         case arrow::Type::type::INT32:
         {
             arrow::Int32Builder *int32Builder = static_cast<arrow::Int32Builder *>(fieldBuilder);
@@ -1793,6 +1843,18 @@ void ParquetRecordBinder::processUInt(unsigned __int64 value, const RtlFieldInfo
     arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field);
     switch(fieldBuilder->type()->id())
     {
+        case arrow::Type::type::UINT8:
+        {
+            arrow::UInt8Builder *uInt8Builder = static_cast<arrow::UInt8Builder *>(fieldBuilder);
+            reportIfFailure(uInt8Builder->Append(value));
+            break;
+        }
+        case arrow::Type::type::UINT16:
+        {
+            arrow::UInt16Builder *uInt16Builder = static_cast<arrow::UInt16Builder *>(fieldBuilder);
+            reportIfFailure(uInt16Builder->Append(value));
+            break;
+        }
         case arrow::Type::type::UINT32:
         {
             arrow::UInt32Builder *uInt32Builder = static_cast<arrow::UInt32Builder *>(fieldBuilder);
@@ -1823,6 +1885,11 @@ void ParquetRecordBinder::processReal(double value, const RtlFieldInfo *field)
     {
         arrow::DoubleBuilder *doubleBuilder = static_cast<arrow::DoubleBuilder *>(fieldBuilder);
         reportIfFailure(doubleBuilder->Append(value));
+    }
+    else if (fieldBuilder->type()->id() == arrow::Type::type::FLOAT)
+    {
+        arrow::FloatBuilder *floatBuilder = static_cast<arrow::FloatBuilder *>(fieldBuilder);
+        reportIfFailure(floatBuilder->Append(value));
     }
     else
         failx("Incorrect type for real field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());

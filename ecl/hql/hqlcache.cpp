@@ -492,6 +492,7 @@ static void extractFile(const char * path, const char * moduleName, const char *
     Owned<IFileIO> io = file->open(IFOcreate);
     if (text)
         io->write(0, strlen(text), text);
+    io->close();
     io.clear();
     if (ts)
     {

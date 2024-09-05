@@ -3,7 +3,7 @@ import type { IScope } from "@hpcc-js/comms";
 import { graphviz } from "@hpcc-js/graph";
 import { Graph2, hashSum, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
-import { MetricsOptions } from "../hooks/metrics";
+import { MetricsView } from "../hooks/metrics";
 
 import "/src-react/util/metricGraph.css";
 
@@ -216,11 +216,11 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return id.replace(/\s/, "_");
     }
 
-    vertexLabel(v: IScope, options: MetricsOptions): string {
+    vertexLabel(v: IScope, options: MetricsView): string {
         return v.type === "activity" ? format(options.activityTpl, v) :
-               v.type === "function" ? v.id + "()" :
-               v.type === "operation" && v.id.charAt(0) === ">" ? v.id.substring(1) :
-               v.Label || v.id;
+            v.type === "function" ? v.id + "()" :
+                v.type === "operation" && v.id.charAt(0) === ">" ? v.id.substring(1) :
+                    v.Label || v.id;
     }
 
     vertexStatus(v: IScope): ScopeStatus {
@@ -243,13 +243,13 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     protected _dedupVertices: { [scopeName: string]: boolean } = {};
-    vertexTpl(v: IScope, options: MetricsOptions): string {
+    vertexTpl(v: IScope, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
         return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}"]`;
     }
 
-    hiddenTpl(v: IScope, options: MetricsOptions): string {
+    hiddenTpl(v: IScope, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
         return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}" rank="min"]`;
@@ -282,7 +282,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     protected _dedupEdges: { [scopeName: string]: boolean } = {};
-    edgeTpl(e: IScopeEdge, options: MetricsOptions) {
+    edgeTpl(e: IScopeEdge, options: MetricsView) {
         if (this._dedupEdges[e.id] === true) return "";
         this._dedupEdges[e.id] = true;
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
@@ -306,7 +306,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     protected _dedupSubgraphs: { [scopeName: string]: boolean } = {};
-    subgraphTpl(sg: IScope, options: MetricsOptions): string {
+    subgraphTpl(sg: IScope, options: MetricsView): string {
         if (this._dedupSubgraphs[sg.id] === true) return "";
         this._dedupSubgraphs[sg.id] = true;
         const childTpls: string[] = [];
@@ -335,7 +335,7 @@ subgraph cluster_${encodeID(sg.id)} {
 }`;
     }
 
-    graphTpl(items: IScope[] = [], options: MetricsOptions) {
+    graphTpl(items: IScope[] = [], options: MetricsView) {
         this._dedupSubgraphs = {};
         this._dedupVertices = {};
         this._dedupEdges = {};

@@ -540,23 +540,31 @@ class CDFUengine: public CInterface, implements IDFUengine
         return result;
     }
 
-    void ensureFilePermissions(const char * planeName, const char * fileName, SecAccessFlags perm, bool write)
+    void ensureFilePermissions(const char * planeName, const char * fileName, SecAccessFlags perm, IUserDescriptor *user, bool write)
     {
         if ((write && !HASWRITEPERMISSION(perm)) || (!write && !HASREADPERMISSION(perm)))
         {
+            StringBuffer context;
+            StringBuffer username;
+            if (user)
+                user->getUserName(username);
+            else
+                username.append("Null user");
+            context.appendf("user: '%s', assigned access %s (%d)", username.str(), getSecAccessFlagName(perm), perm);
+
             if (!isEmptyString(planeName))
             {
                 CDfsLogicalFileName dlfn;
                 dlfn.setPlaneExternal(planeName, fileName);
                 if (write)
-                    throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for file scope: %s on DropZone: %s", dlfn.get(), planeName);
+                    throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for file scope: %s on DropZone: %s, %s", dlfn.get(), planeName, context.str());
                 else
-                    throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for file scope: %s on DropZone: %s", dlfn.get(), planeName);
+                    throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for file scope: %s on DropZone: %s, %s", dlfn.get(), planeName, context.str());
             }
             if (write)
-                throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s", fileName);
+                throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s, %s", fileName, context.str());
             else
-                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for physical file(s): %s", fileName);
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for physical file(s): %s, %s", fileName, context.str());
         }
     }
 
@@ -618,12 +626,13 @@ public:
     void checkPhysicalFilePermissions(IFileDescriptor *fd,IUserDescriptor *user,bool write)
     {
         unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
+        logNullUser(user);//stack trace if NULL user
         if (write)
             auditflags |= DALI_LDAP_WRITE_WANTED;
 
         SecAccessFlags perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
         StringBuffer name;
-        ensureFilePermissions(nullptr,getFDescName(fd,name),perm,write);
+        ensureFilePermissions(nullptr,getFDescName(fd,name),perm,user,write);
     }
 
     void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user)
@@ -667,6 +676,7 @@ public:
 
     void checkPlaneFilePermissions(IFileDescriptor *fd,IUserDescriptor *user,bool write)
     {
+        logNullUser(user);//stack trace if NULL user
         //This function checks the scope permissions for a file or files that reside in a single directory on a single plane.
         //The IFileDescriptor is used to discover the plane and directory.
         //If the plane is not present, it implies that it is a bare-metal system and useDropZoneRestriction is off, and there
@@ -697,7 +707,8 @@ public:
             {
                 if (getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized()))
                     perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
-                ensureFilePermissions(planeName,relativePath,perm,write);
+
+                ensureFilePermissions(planeName,relativePath,perm,user,write);
             }
         }
         else

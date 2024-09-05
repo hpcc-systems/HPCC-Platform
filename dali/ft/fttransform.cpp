@@ -790,6 +790,8 @@ bool TransferServer::pull()
             assertex(curProgress.status != OutputProgress::StatusRenamed);
             if (curProgress.status != OutputProgress::StatusCopied)
             {
+                if (out)
+                    out->close();
                 out.setown(createIOStream(outio));
                 out->seek(progressOffset, IFSbegin);
                 wrapOutInCRC(curProgress.outputCRC);
@@ -885,6 +887,8 @@ processedProgress:
                 }
             }
 
+            if (out)
+                out->close();
             out.setown(createIOStream(outio));
             out->seek(0, IFSbegin);
             wrapOutInCRC(0);
@@ -903,7 +907,10 @@ processedProgress:
     }
 
     crcOut.clear();
+    if (out)
+        out->close();
     out.clear();
+
     //Once the transfers have completed, rename the files, and sync file times
     //if replicating...
     if (!isSafeMode)
@@ -997,6 +1004,7 @@ bool TransferServer::push()
                 }
                 outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZ4));
             }
+
             out.setown(createIOStream(outio));
             if (!compressOutput)
                 out->seek(curPartition.outputOffset + curProgress.outputLength, IFSbegin);
@@ -1011,6 +1019,7 @@ bool TransferServer::push()
                 sendProgress(curProgress);
             }
             crcOut.clear();
+            out->close();
             out.clear();
         }
     }
