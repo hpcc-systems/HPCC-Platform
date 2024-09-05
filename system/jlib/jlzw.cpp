@@ -2448,6 +2448,8 @@ public:
     {
         CriticalBlock block(crit);
         if (mode!=ICFread) {
+            //Ensure that a subsequent close() does not re-enter this code if an exception is thrown
+            mode = ICFread;
             if (overflow.length()) {
                 unsigned ol = overflow.length();
                 overflow.clear();
@@ -2471,7 +2473,6 @@ public:
             if (fileio)
                 fileio->close();
         }
-        mode = ICFread;
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
     }
