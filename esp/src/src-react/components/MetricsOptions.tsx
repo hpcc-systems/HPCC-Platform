@@ -1,12 +1,121 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem, TextField } from "@fluentui/react";
+import { DefaultButton, Dropdown, PrimaryButton, Checkbox, Pivot, PivotItem, TextField, IDropdownOption, Stack, SelectionMode, Selection } from "@fluentui/react";
+import { useConst, useForceUpdate } from "@fluentui/react-hooks";
+import { Button } from "@fluentui/react-components";
+import { BookmarkAddRegular, DeleteRegular } from "@fluentui/react-icons";
 import nlsHPCC from "src/nlsHPCC";
-import { useMetricMeta, useMetricsOptions } from "../hooks/metrics";
+import { MetricsView, clone, useMetricMeta, useMetricsViews } from "../hooks/metrics";
 import { MessageBox } from "../layouts/MessageBox";
 import { JSONSourceEditor, SourceEditor } from "./SourceEditor";
+import { FluentColumns, FluentGrid, useFluentStoreState } from "./controls/Grid";
+import { DockPanelLayout } from "../layouts/DockPanel";
 
 const width = 640;
 const innerHeight = 400;
+
+interface GridOptionsProps {
+    label: string;
+    strArray: string[];
+    strSelection: string[];
+    setSelection: (_: string[]) => void;
+}
+
+const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
+    label,
+    strArray,
+    strSelection,
+    setSelection
+}) => {
+    const [data, setData] = React.useState<{ id: string }[]>([]);
+    const { setTotal, refreshTable } = useFluentStoreState({});
+
+    const columns = React.useMemo((): FluentColumns => {
+        return {
+            col1: {
+                width: 27,
+                selectorType: "checkbox"
+            },
+            id: {
+                label,
+                width: 200,
+                sortable: true
+            }
+        };
+    }, [label]);
+
+    React.useEffect(() => {
+        setData(strArray.map(str => ({ id: str })));
+    }, [strArray]);
+
+    const selectionHandler = useConst(() => {
+        return new Selection({
+            getKey: (item: { id: string }) => item.id,
+            onSelectionChanged: () => setSelection(selectionHandler.getSelection().map(item => item.id)),
+            onItemsChanged: () => {
+                selectionHandler.setAllSelected(false);
+                for (const str of strSelection) {
+                    selectionHandler.setKeySelected(str, true, false);
+                }
+            }
+        });
+    });
+
+    React.useEffect(() => {
+        selectionHandler.setAllSelected(false);
+        for (const str of strSelection) {
+            selectionHandler.setKeySelected(str, true, false);
+        }
+    }, [selectionHandler, strSelection]);
+
+    return <FluentGrid
+        data={data}
+        primaryID={"id"}
+        columns={columns}
+        selectionMode={SelectionMode.multiple}
+        setSelection={selectionHandler}
+        setTotal={setTotal}
+        refresh={refreshTable}
+        height={`${innerHeight}px`}
+    ></FluentGrid>;
+};
+
+interface AddLabelProps {
+    show: boolean;
+    setShow: (_: boolean) => void;
+    onOk: (label: string) => void
+}
+
+export const AddLabel: React.FunctionComponent<AddLabelProps> = ({
+    show,
+    setShow,
+    onOk
+}) => {
+    const [label, setLabel] = React.useState("");
+    const onChangeAddLabel = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+        setLabel(newValue || "");
+    }, [],);
+
+    return <MessageBox title={nlsHPCC.Add} show={show} setShow={setShow} minWidth={width}
+        footer={<>
+            <PrimaryButton text={nlsHPCC.OK} disabled={!label} onClick={() => {
+                onOk(label);
+                setShow(false);
+            }}
+            />
+            <DefaultButton
+                text={nlsHPCC.Cancel}
+                onClick={() => {
+                    setLabel("");
+                    setShow(false);
+                }}
+            />
+        </>}>
+        <TextField label={nlsHPCC.Label} value={label}
+            onChange={onChangeAddLabel}
+        />
+    </MessageBox>;
+
+};
 
 interface MetricsOptionsProps {
     show: boolean;
@@ -15,107 +124,157 @@ interface MetricsOptionsProps {
 
 export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     show,
-    setShow
+    setShow,
 }) => {
+    const [globalScopeTypes, globalProperties] = useMetricMeta();
+    const { viewIds, viewId, setViewId, view, addView, updateView } = useMetricsViews();
+    const [dirtyView, setDirtyView] = React.useState<MetricsView>(clone(view));
+    const [showAdd, setShowAdd] = React.useState(false);
+    const forceRefresh = useForceUpdate();
 
-    const [scopeTypes, properties] = useMetricMeta();
-    const [options, setOptions, save, reset] = useMetricsOptions();
+    const options = React.useMemo(() => {
+        return viewIds.map(id => ({ key: id, text: id }));
+    }, [viewIds]);
+
+    React.useEffect(() => {
+        setDirtyView(clone(view));
+    }, [view]);
 
     const closeOptions = React.useCallback(() => {
         setShow(false);
     }, [setShow]);
 
-    const allChecked = scopeTypes.length === options.scopeTypes.length;
+    const onDropdownChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item?: IDropdownOption) => {
+        updateView({ ...view, ...dirtyView });
+        setViewId(item.key as string, true);
+    }, [dirtyView, setViewId, updateView, view]);
 
-    return <MessageBox title={nlsHPCC.Options} show={show} setShow={setShow} minWidth={width}
-        footer={<>
-            <PrimaryButton
-                text={nlsHPCC.OK}
-                onClick={() => {
-                    save();
-                    closeOptions();
-                }}
-            />
-            <DefaultButton
-                text={nlsHPCC.Cancel}
-                onClick={() => {
-                    reset();
-                    closeOptions();
-                }}
-            />
-            <DefaultButton
-                text={nlsHPCC.Defaults}
-                onClick={() => {
-                    reset(true);
-                }}
-            />
-        </>} >
-        <Pivot>
-            <PivotItem key="metrics" headerText={nlsHPCC.Metrics}>
-                <div style={{ height: innerHeight, overflow: "auto" }}>
-                    <Checkbox key="all" label={nlsHPCC.All} checked={allChecked} onChange={(ev, checked) => {
-                        if (checked) {
-                            setOptions({
-                                ...options, scopeTypes: [...scopeTypes]
-                            });
-                        }
+    const onAddLabel = React.useCallback((label: string) => {
+        if (label) {
+            addView(label, { ...view, ...dirtyView });
+        }
+    }, [addView, dirtyView, view]);
+
+    console.log("dirtyView.scopeTypes", viewId, view.scopeTypes);
+
+    return <>
+        <MessageBox title={nlsHPCC.Options} show={show && !showAdd} setShow={setShow} minWidth={width}
+            footer={<>
+                <PrimaryButton
+                    text={nlsHPCC.OK}
+                    onClick={() => {
+                        updateView(dirtyView);
+                        closeOptions();
+                    }}
+                />
+                <DefaultButton
+                    text={nlsHPCC.Cancel}
+                    onClick={() => {
+                        setDirtyView(clone(view));
+                        closeOptions();
+                    }}
+                />
+                <DefaultButton
+                    text={nlsHPCC.Reset}
+                    onClick={() => {
+                        setDirtyView(clone(view));
+                        forceRefresh();
+                    }}
+                />
+            </>}>
+            <>
+                <Stack horizontal>
+                    <Stack.Item grow>
+                        <Dropdown selectedKey={viewId} onChange={onDropdownChange} options={options} />
+                    </Stack.Item>
+                    <Button appearance="subtle" icon={<BookmarkAddRegular />} title={nlsHPCC.Add} disabled hidden onClick={() => {
+                        setShowAdd(true);
                     }} />
-                    {scopeTypes.map(st => {
-                        return <Checkbox key={st} label={st} checked={options.scopeTypes.indexOf(st) >= 0} onChange={(ev, checked) => {
-                            const scopeTypes = options.scopeTypes.filter(row => row !== st);
-                            if (checked) {
-                                scopeTypes.push(st);
-                            }
-                            setOptions({ ...options, scopeTypes });
-                        }} />;
-                    })}
-                </div>
-            </PivotItem>
-            <PivotItem key="columns" headerText={nlsHPCC.Columns}>
-                <div style={{ height: innerHeight, overflow: "auto" }}>
-                    {properties.map(p => {
-                        return <Checkbox key={p} label={p} checked={options.properties.indexOf(p) >= 0} onChange={(ev, checked) => {
-                            const properties = options.properties.filter(row => row !== p);
-                            if (checked) {
-                                properties.push(p);
-                            }
-                            setOptions({ ...options, properties });
-                        }} />;
-                    })}
-                </div>
-            </PivotItem>
-            <PivotItem key="sql" headerText={nlsHPCC.SQL} >
-                <div style={{ height: innerHeight }}>
-                    <SourceEditor mode="sql" text={options.sql} onTextChange={sql => {
-                        setOptions({ ...options, sql });
+                    <Button appearance="subtle" icon={<DeleteRegular />} title={nlsHPCC.Delete} disabled hidden onClick={() => {
                     }} />
-                </div>
-            </PivotItem>
-            <PivotItem key="graph" headerText={nlsHPCC.Graph}>
-                <div style={{ height: innerHeight, overflow: "auto" }}>
-                    <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={options.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
-                        setOptions({ ...options, ignoreGlobalStoreOutEdges: !!checked });
-                    }} />
-                    <TextField label={nlsHPCC.SubgraphLabel} value={options.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                        setOptions({ ...options, subgraphTpl: newValue });
-                    }} />
-                    <TextField label={nlsHPCC.ActivityLabel} value={options.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                        setOptions({ ...options, activityTpl: newValue });
-                    }} />
-                    <TextField label={nlsHPCC.EdgeLabel} value={options.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                        setOptions({ ...options, edgeTpl: newValue });
-                    }} />
-                </div>
-            </PivotItem>
-            <PivotItem key="layout" headerText={nlsHPCC.Layout} >
-                <div style={{ height: innerHeight }}>
-                    <JSONSourceEditor json={options.layout} onChange={obj => {
-                        if (obj) {
-                            setOptions({ ...options, layout: obj });
-                        }
-                    }} />
-                </div>
-            </PivotItem>
-        </Pivot>
-    </MessageBox >;
+                </Stack>
+                <Pivot>
+                    <PivotItem key="metrics" headerText={nlsHPCC.Metrics}>
+                        <div style={{ height: innerHeight, overflow: "auto" }}>
+                            <Stack horizontal>
+                                <Stack.Item grow={1}>
+                                    <GridOptions
+                                        label={nlsHPCC.ScopeTypes}
+                                        strArray={globalScopeTypes}
+                                        strSelection={dirtyView.scopeTypes}
+                                        setSelection={scopeTypes => {
+                                            dirtyView.scopeTypes = [...scopeTypes];
+                                        }}
+                                    ></GridOptions>
+                                </Stack.Item>
+                                <Stack.Item grow={1}>
+                                    <GridOptions
+                                        label={nlsHPCC.ScopeColumns}
+                                        strArray={globalProperties}
+                                        strSelection={dirtyView.properties}
+                                        setSelection={properties => {
+                                            dirtyView.properties = [...properties];
+                                        }}
+                                    ></GridOptions>
+                                </Stack.Item>
+                            </Stack>
+                        </div>
+                    </PivotItem>
+                    <PivotItem key="sql" headerText={nlsHPCC.SQL} >
+                        <div style={{ height: innerHeight }}>
+                            <SourceEditor mode="sql" text={dirtyView.sql} toolbar={false} onTextChange={sql => {
+                                dirtyView.sql = sql;
+                                forceRefresh();
+                            }} />
+                        </div>
+                    </PivotItem>
+                    <PivotItem key="graph" headerText={nlsHPCC.Graph}>
+                        <div style={{ height: innerHeight, overflow: "auto" }}>
+                            <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
+                                dirtyView.ignoreGlobalStoreOutEdges = checked;
+                                forceRefresh();
+                            }} />
+                            <TextField label={nlsHPCC.SubgraphLabel} value={dirtyView.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                                dirtyView.subgraphTpl = newValue;
+                                forceRefresh();
+                            }} />
+                            <TextField label={nlsHPCC.ActivityLabel} value={dirtyView.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                                dirtyView.activityTpl = newValue;
+                                forceRefresh();
+                            }} />
+                            <TextField label={nlsHPCC.EdgeLabel} value={dirtyView.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                                dirtyView.edgeTpl = newValue;
+                                forceRefresh();
+                            }} />
+                        </div>
+                    </PivotItem>
+                    <PivotItem key="layout" headerText={nlsHPCC.Layout} >
+                        <div style={{ height: innerHeight }}>
+                            <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(ev, checked) => {
+                                dirtyView.showTimeline = checked;
+                                forceRefresh();
+                            }} />
+                            <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
+                                if (obj) {
+                                    dirtyView.layout = obj as DockPanelLayout;
+                                    forceRefresh();
+                                }
+                            }} />
+                        </div>
+                    </PivotItem>
+                    <PivotItem key="all" headerText={nlsHPCC.All} >
+                        <div style={{ height: innerHeight }}>
+                            <JSONSourceEditor json={dirtyView} toolbar={false} onChange={(obj?: MetricsView) => {
+                                if (obj) {
+                                    setDirtyView(obj);
+                                    forceRefresh();
+                                }
+                            }} />
+                        </div>
+                    </PivotItem>
+                </Pivot>
+            </>
+        </MessageBox>
+        <AddLabel show={showAdd} setShow={setShowAdd} onOk={onAddLabel} />
+    </>;
 };

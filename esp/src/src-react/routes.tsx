@@ -2,6 +2,8 @@ import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parsePage, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
 
+declare const dojoConfig;
+
 export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "operations";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
@@ -327,6 +329,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/security",
+                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/topology"); } },
                 children: [
                     {
                         path: "", action: (ctx, params) => import("./components/Security").then(_ => {
@@ -462,6 +465,7 @@ export const routes: RoutesEx = [
             {
 
                 path: "/security",
+                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/operations"); } },
                 children: [
                     {
                         path: "", action: (ctx, params) => import("./components/Security").then(_ => {

@@ -161,7 +161,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 }
             },
             Name: {
-                label: nlsHPCC.LogicalName, width: 600,
+                label: nlsHPCC.LogicalName, width: 180,
                 formatter: (_, row) => {
                     let name = row.Name?.split("::").pop();
                     let url = `#/files/${row.NodeGroup ? row.NodeGroup + "/" : ""}${[].concat(".", scopePath, name).join("::")}`;
