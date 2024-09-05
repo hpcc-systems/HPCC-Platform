@@ -296,14 +296,6 @@ extern jlib_decl IFileIO * createIFileIO(MemoryBuffer & buffer);
 
 //-- Creation of routines to implement other interfaces on the interfaces above.
 
-interface IReadSeq;
-interface IWriteSeq;
-
-// NB the following are unbuffered 
-extern jlib_decl IReadSeq *createReadSeq(IFileIOStream * stream, offset_t _offset, size32_t size); // no buffering
-extern jlib_decl IWriteSeq *createWriteSeq(IFileIOStream * stream, size32_t size);                 // no buffering
-
-
 extern jlib_decl IDiscretionaryLock *createDiscretionaryLock(IFile *file);
 extern jlib_decl IDiscretionaryLock *createDiscretionaryLock(IFileIO *fileio);
 
