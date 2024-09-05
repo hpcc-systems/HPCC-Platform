@@ -124,9 +124,11 @@ export function formatQuery(_filter): { [id: string]: any } {
         delete filter.LastNDays;
     } else {
         if (filter.StartDate) {
+            if (filter.StartDate.indexOf("Z") < 0) { filter.StartDate += ":00.000Z"; }
             filter.StartDate = new Date(filter.StartDate).toISOString();
         }
         if (filter.EndDate) {
+            if (filter.EndDate.indexOf("Z") < 0) { filter.EndDate += ":00.000Z"; }
             filter.EndDate = new Date(filter.EndDate).toISOString();
         }
     }

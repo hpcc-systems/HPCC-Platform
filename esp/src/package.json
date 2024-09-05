@@ -77,6 +77,7 @@
     "react-hook-form": "7.51.2",
     "react-hot-toast": "2.4.1",
     "react-reflex": "4.2.6",
+    "react-singleton-hook": "3.4.0",
     "react-sizeme": "3.0.2",
     "universal-router": "9.2.0",
     "xstyle": "0.3.3"
