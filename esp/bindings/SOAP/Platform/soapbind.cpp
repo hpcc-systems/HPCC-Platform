@@ -258,7 +258,7 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
             response->sendBasicChallenge(m_challenge_realm.str(), false);
         else if (status == SOAP_AUTHENTICATION_ERROR)
         {
-            throw MakeStringExceptionDirect(401,"Unauthorized Access");
+            throw makeStringExceptionV(401, "Unauthorized Access: %s - user=%s", ctx->queryServiceName(nullptr), nullText(ctx->queryUserId()));
         }
         else
             response->setStatus(HTTP_STATUS_OK);
