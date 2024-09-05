@@ -147,7 +147,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
-    const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));
+    const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile ?? { isSuperfile: false, StateID: 999, ContentType: "" }));
     const compressedImage = file?.IsCompressed ? Utility.getImageURL("compressed.png") : "";
 
     return <>
@@ -170,7 +170,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                         <img src={compressedImage} />&nbsp;
                         <img src={protectedImage} />&nbsp;
                         <img src={stateImage} />&nbsp;
-                        {file?.Name}
+                        {file?.Name ?? `${logicalFile} (${nlsHPCC.Deleted})`}
                     </h2>
                 </div>
             </Sticky>

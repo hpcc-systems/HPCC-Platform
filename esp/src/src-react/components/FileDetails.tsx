@@ -156,3 +156,5 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         </div>
     }</SizeMe>;
 };
+
+export default FileDetails;

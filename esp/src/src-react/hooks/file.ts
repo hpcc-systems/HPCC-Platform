@@ -1,43 +1,13 @@
 import * as React from "react";
 import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./util";
+import { useFileContext } from "../components/contexts/FileContext";
 
 const logger = scopedLogger("../hooks/file.ts");
 
 export function useFile(cluster: string, name: string): [LogicalFile, boolean, number, () => void] {
-
-    const [file, setFile] = React.useState<LogicalFile>();
-    const [isProtected, setIsProtected] = React.useState(false);
-    const [lastUpdate, setLastUpdate] = React.useState(Date.now());
-    const [count, increment] = useCounter();
-
-    React.useEffect(() => {
-        const file = LogicalFile.attach({ baseUrl: "" }, cluster === "undefined" ? undefined : cluster, name);
-        let active = true;
-        let handle;
-        const fetchInfo = singletonDebounce(file, "fetchInfo");
-        fetchInfo()
-            .then((response) => {
-                if (active) {
-                    setFile(file);
-                    setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
-                    setLastUpdate(Date.now());
-                    handle = file.watch(() => {
-                        setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
-                        setLastUpdate(Date.now());
-                    });
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-        return () => {
-            active = false;
-            handle?.release();
-        };
-    }, [cluster, count, name]);
-
+    const { file, isProtected, lastUpdate, increment } = useFileContext();
     return [file, isProtected, lastUpdate, increment];
 }
 

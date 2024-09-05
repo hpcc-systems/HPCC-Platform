@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parsePage, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
+import nlsHPCC from "src/nlsHPCC";
 
 declare const dojoConfig;
 
@@ -130,19 +131,40 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => {
-                    return <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />;
-                })
+                path: "/:Name", action: (ctx, params) => {
+                    const FileContextProvider = React.lazy(() => import("./components/contexts/FileContext"));
+                    const FileDetails = React.lazy(() => import("./components/FileDetails"));
+
+                    return <React.Suspense fallback={<div>{nlsHPCC.Loading}</div>}>
+                        <FileContextProvider cluster={undefined} logicalFile={params.Name as string}>
+                            <FileDetails cluster={undefined} logicalFile={params.Name as string} />
+                        </FileContextProvider>
+                    </React.Suspense>;
+                }
             },
             {
-                path: "/:NodeGroup/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => {
-                    return <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} />;
-                })
+                path: "/:NodeGroup/:Name", action: (ctx, params) => {
+                    const FileContextProvider = React.lazy(() => import("./components/contexts/FileContext"));
+                    const FileDetails = React.lazy(() => import("./components/FileDetails"));
+
+                    return <React.Suspense fallback={<div>{nlsHPCC.Loading}</div>}>
+                        <FileContextProvider cluster={params.NodeGroup as string} logicalFile={params.Name as string}>
+                            <FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} />
+                        </FileContextProvider>
+                    </React.Suspense>;
+                }
             },
             {
-                path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => {
-                    return <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} sort={{ [params.Tab as string]: parseSort(ctx.search) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-                })
+                path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => {
+                    const FileContextProvider = React.lazy(() => import("./components/contexts/FileContext"));
+                    const FileDetails = React.lazy(() => import("./components/FileDetails"));
+
+                    return <React.Suspense fallback={<div>{nlsHPCC.Loading}</div>}>
+                        <FileContextProvider cluster={params.NodeGroup as string} logicalFile={params.Name as string}>
+                            <FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} sort={{ [params.Tab as string]: parseSort(ctx.search) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />
+                        </FileContextProvider>
+                    </React.Suspense>;
+                }
             },
         ]
     },
