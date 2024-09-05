@@ -273,7 +273,7 @@ public:
         catch (IException *_e)
         {
             ActPrintLog(_e, "Error closing file: %s", partFname.str());
-            _e->Release();
+            e.setown(_e);
         }
         if (abortSoon)
             removeFiles(partDesc);

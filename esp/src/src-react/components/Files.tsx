@@ -70,10 +70,12 @@ function formatQuery(_filter): { [id: string]: any } {
     delete filter.NotInSuperFiles;
     delete filter.Indexes;
     if (filter.StartDate) {
+        if (filter.StartDate.indexOf("Z") < 0) { filter.StartDate += ":00.000Z"; }
         filter.StartDate = new Date(filter.StartDate).toISOString();
     }
     if (filter.EndDate) {
-        filter.EndDate = new Date(filter.StartDate).toISOString();
+        if (filter.EndDate.indexOf("Z") < 0) { filter.EndDate += ":00.000Z"; }
+        filter.EndDate = new Date(filter.EndDate).toISOString();
     }
     return filter;
 }

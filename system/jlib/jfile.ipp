@@ -91,7 +91,7 @@ protected:
 class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
-    CFileIO(HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
+    CFileIO(IFile * _creator,HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
@@ -105,9 +105,16 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind);
 
     HANDLE queryHandle() { return file; } // for debugging
+    const char * queryFilename() const { return creator ? creator->queryFilename() : nullptr; }
+    const char * querySafeFilename() const
+    {
+        const char * name = queryFilename();
+        return name ? name : "<unknown>";
+    }
 
 protected:
     CriticalSection     cs;
+    Linked<IFile>       creator;
     HANDLE              file;
     bool                throwOnError;
     IFSHmode            sharemode;
@@ -219,6 +226,7 @@ public:
     virtual offset_t tell();
     virtual size32_t write(size32_t len, const void * data);
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
+    virtual void close() override { io->close(); }
 protected:
     Linked<IFileIO>     io;
     offset_t            curOffset;
@@ -238,6 +246,7 @@ public:
     virtual offset_t tell();
     virtual size32_t write(size32_t len, const void * data);
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return stream->getStatistic(kind); }
+    virtual void close() override { stream->close(); }
 protected:
     Linked<IFileIOStream>     stream;
 };

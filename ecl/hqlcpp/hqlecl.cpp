@@ -310,7 +310,7 @@ void HqlDllGenerator::expandCode(StringBuffer & filename, const char * codeTempl
     addDirectoryPrefix(fullname, targetDir).append(filename);
 
     Owned<IFile> out = createIFile(fullname.str());
-    Owned<ITemplateExpander> expander = createTemplateExpander(out, codeTemplate);
+    Owned<ITemplateExpander> expander = createTemplateExpander(codeTemplate);
 
     Owned<ISectionWriter> writer = createCppWriter(*code, compiler);
     Owned<IProperties> props = createProperties(true);
@@ -324,7 +324,7 @@ void HqlDllGenerator::expandCode(StringBuffer & filename, const char * codeTempl
     props->setProp("headerName", headerName.str());
     props->setProp("outputName", fullname.str());
 
-    expander->generate(*writer, pass, props);
+    expander->generate(*writer, out, pass, props);
 
     totalGeneratedSize += out->size();
 

@@ -12173,7 +12173,11 @@ public:
                 if (outSeq)
                     uncompressedBytesWritten = outSeq->getPosition();
                 outSeq.clear();
-                diskout.clear();  // Make sure file is properly closed or date may not match published info
+                if (diskout)
+                {
+                    diskout->close();
+                    diskout.clear();  // Make sure file is properly closed or date may not match published info
+                }
                 if (writer)
                 {
                     updateWorkUnitResult(processed);
@@ -12751,6 +12755,10 @@ public:
             originalBlobSize = bc.queryTotalSize();
             branchMemorySize = builder->getBranchMemorySize();
             leafMemorySize = builder->getLeafMemorySize();
+
+            builder.clear();
+            out.clear();
+            io->close();
 
             noteStatistic(StNumLeafCacheAdds, numLeafNodes);
             noteStatistic(StNumNodeCacheAdds, numBranchNodes);

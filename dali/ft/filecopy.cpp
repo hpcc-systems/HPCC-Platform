@@ -1023,6 +1023,7 @@ void FileSprayer::beforeTransfer()
                         io->write(lastOutputOffset-sizeof(null), sizeof(null), &null);
                     }
                 }
+                io->close();
             }
         }
     }
