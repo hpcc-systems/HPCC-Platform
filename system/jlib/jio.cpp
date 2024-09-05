@@ -56,7 +56,7 @@ extern jlib_decl offset_t checked_lseeki64( int handle, offset_t offset, int ori
     return ret;
 }
 
-extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
+extern jlib_decl size32_t checked_read(const char * filename, int file, void *buffer, size32_t len)
 {
     if (0==len) return 0;
     unsigned attempts = 0;
@@ -86,7 +86,7 @@ extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
                     readNow = 0;
                     break;
                 }
-                throw makeErrnoException(errno, "checked_read");
+                throw makeErrnoExceptionV(errno, "checked_read for file '%s'", filename);
             }
         }
         else if (!readNow)
@@ -105,7 +105,7 @@ static bool atomicsupported = true;
 static CriticalSection atomicsection;
 #endif
 
-extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, offset_t pos)
+extern jlib_decl size32_t checked_pread(const char * filename, int file, void *buffer, size32_t len, offset_t pos)
 {
     if (0==len) return 0;
 #ifdef WIN32
@@ -125,12 +125,12 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
         if (err == ERROR_INVALID_PARAMETER) // Win98 etc
             atomicsupported = false;
         else
-            throw makeOsException(GetLastError(), "checked_pread");
+            throw makeOsExceptionV(GetLastError(), "checked_pread for file '%s'", filename);
     }
     {
         CriticalBlock blk(atomicsection);
         checked_lseeki64(file, pos, FILE_BEGIN);
-        return checked_read(file, buffer, len);
+        return checked_read(filename, file, buffer, len);
     }
 #else
     size32_t ret = 0;
@@ -160,7 +160,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
                     readNow = 0;
                     break;
                 }
-                throw makeErrnoException(errno, "checked_pread");
+                throw makeErrnoExceptionV(errno, "checked_pread for file '%s'", filename);
             }
         }
         else if (!readNow)
@@ -176,15 +176,15 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
 #endif
 }
 
-extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_t count )
+extern jlib_decl size32_t checked_write(const char * filename, int handle, const void *buffer, size32_t count )
 {
     int ret=_write(handle,buffer,count);
     if ((size32_t)ret != count)
     {
         if (-1 != ret)
-            throw makeOsException(DISK_FULL_EXCEPTION_CODE, "checked_write");
+            throw makeOsExceptionV(DISK_FULL_EXCEPTION_CODE, "checked_write for file '%s'", filename);
         else
-            throw makeErrnoException(errno, "checked_write");
+            throw makeErrnoExceptionV(errno, "checked_write for file '%s'", filename);
     }
     return (size32_t)ret;
 }
@@ -241,7 +241,7 @@ class CReadSeq : public IReadSeq, public CInterface
         if (endpos-nextbufpos<(offset_t)rd)
             rd = (size32_t)(endpos-nextbufpos);
         if (rd) 
-            rd = checked_pread(fh, buffer+left, rd, nextbufpos);
+            rd = checked_pread("unknown", fh, buffer+left, rd, nextbufpos);
         nextbufpos += rd;
         bytesInBuffer = left+rd;
         ptr = buffer;
@@ -389,7 +389,7 @@ private:
             }
             while (_size>=bufSize) // write out directly
             {
-                checked_write(fh, src, bufSize); // stick to writing bufSize blocks
+                checked_write("unknown", fh, src, bufSize); // stick to writing bufSize blocks
                 src = (char *)src + bufSize;
                 _size -= bufSize;
             }
@@ -470,7 +470,7 @@ public:
     {
         if (ptr != buffer)
         {
-            checked_write(fh, buffer, (size32_t)(ptr-buffer));
+            checked_write("unknown", fh, buffer, (size32_t)(ptr-buffer));
             ptr = buffer;
         }
     }
@@ -514,13 +514,13 @@ CUnbufferedReadWriteSeq::CUnbufferedReadWriteSeq(int _fh, offset_t _offset, size
 
 void CUnbufferedReadWriteSeq::put(const void *src)
 {
-    checked_write(fh, src, size);
+    checked_write("unknown", fh, src, size);
     fpos += size;
 }
 
 void CUnbufferedReadWriteSeq::putn(const void *src, unsigned n)
 {
-    checked_write(fh, src, size*n);
+    checked_write("unknown", fh, src, size*n);
     fpos += size*n;
 }
 
@@ -537,7 +537,7 @@ bool CUnbufferedReadWriteSeq::get(void *dst)
     size32_t toread = size;
     while (toread)
     {
-        int read = checked_read(fh, dst, toread);
+        int read = checked_read("unknown", fh, dst, toread);
         if (!read) 
             return false;
         toread -= read;
@@ -552,7 +552,7 @@ unsigned CUnbufferedReadWriteSeq::getn(void *dst, unsigned n)
     size32_t totread = 0;
     while (toread)
     {
-        int read = checked_read(fh, dst, toread);
+        int read = checked_read("unknown", fh, dst, toread);
         if (!read) 
             break;
         toread -= read;
