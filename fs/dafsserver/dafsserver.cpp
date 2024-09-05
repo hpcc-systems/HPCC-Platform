@@ -2365,7 +2365,11 @@ protected:
 
     void close()
     {
-        iFileIO.clear();
+        if (iFileIO)
+        {
+            iFileIO->close();
+            iFileIO.clear();
+        }
         opened = false;
         eofSeen = true;
     }
