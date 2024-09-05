@@ -3364,7 +3364,7 @@ void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char *
 {
     StringBuffer buff;
     e->errorMessage(buff);
-    ctxlogReport(cat, e->errorCode(), "%s%s%s", prefix ? prefix : "", prefix ? prefix : " : ", buff.str());
+    ctxlogReport(cat, e->errorCode(), "%s%s%s", prefix ? prefix : "", prefix ? " : " : "", buff.str());
 }
 IException * ctxlogReport(IException * e, const char * prefix, LogMsgClass cls)
 {
