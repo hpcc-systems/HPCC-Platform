@@ -12170,8 +12170,11 @@ public:
                 if (outSeq)
                     uncompressedBytesWritten = outSeq->getPosition();
                 outSeq.clear();
-                diskout->close();
-                diskout.clear();  // Make sure file is properly closed or date may not match published info
+                if (diskout)
+                {
+                    diskout->close();
+                    diskout.clear();  // Make sure file is properly closed or date may not match published info
+                }
                 if (writer)
                 {
                     updateWorkUnitResult(processed);
