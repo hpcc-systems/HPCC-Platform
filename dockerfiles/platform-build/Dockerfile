@@ -68,8 +68,6 @@ RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git &
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
-ARG GITHUB_ACTOR=hpcc-systems
-ARG GITHUB_TOKEN=none
 
 WORKDIR /hpcc-dev/build
 
