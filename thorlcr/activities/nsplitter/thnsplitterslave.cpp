@@ -218,7 +218,7 @@ public:
 
                 PARENT::start();
                 initMetaInfo(cachedMetaInfo);
-                cachedMetaInfo.suppressLookAhead = true;
+                cachedMetaInfo.suppressLookAhead = spill; // only suppress downstream lookaheads if this is a spilling splitter
 
                 calcMetaInfoSize(cachedMetaInfo, queryInput(0));
 
