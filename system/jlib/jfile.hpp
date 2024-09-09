@@ -46,7 +46,7 @@ enum IFOmode { IFOcreate, IFOread, IFOwrite, IFOreadwrite, IFOcreaterw };    // 
 enum IFSHmode { IFSHnone, IFSHread=0x8, IFSHfull=0x10};   // sharing modes
 enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN };    // seek mode
 enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
-enum IFEflags { IFEnone=0x0, IFEnocache=0x1, IFEcache=0x2, IFEsync=0x4 };    // mask
+enum IFEflags { IFEnone=0x0, IFEnocache=0x1, IFEcache=0x2, IFEsync=0x4, IFEsyncAtClose=0x8 }; // mask
 constexpr offset_t unknownFileSize = -1;
 
 class CDateTime;
@@ -756,12 +756,19 @@ enum PlaneAttributeType
 {
     BlockedSequentialIO,
     BlockedRandomIO,
+    FileSyncMaxRetrySecs,
     PlaneAttributeCount
 };
 extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
 extern jlib_decl unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue);
+extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffer &result);
+//returns true if plane exists, fills resultValue with defaultValue if attribute is unset
+extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
+constexpr int fileSyncRetryDisabled = -2;
+constexpr int defaultGlobalFileSyncMaxRetrySecs = fileSyncRetryDisabled;
+extern jlib_decl int getMaxFileSyncSecs(const char *planeName, int defaultSecs = defaultGlobalFileSyncMaxRetrySecs);
 
 //---- Pluggable file type related functions ----------------------------------------------
 
