@@ -513,6 +513,7 @@ public:
     void checkAggregateRecords(IHqlExpression * expr, IHqlExpression * record, attribute & errpos);
     void checkExportedModule(const attribute & errpos, IHqlExpression * scopeExpr);
     bool checkCompatibleSymbol(const attribute & errpos, IHqlExpression * prevValue, IHqlExpression * newValue);
+    bool insideSignedMacro();
     bool checkAllowed(const attribute & errpos, const char *category, const char *description);
     void saveDiskAccessInformation(const attribute & errpos, HqlExprArray & options);
     void saveDiskAccessInformation(const attribute & errpos, OwnedHqlExpr & options);
@@ -1221,6 +1222,8 @@ class HqlLex
         {
             legacyWhenMode = _legacyWhenMode;
         }
+
+        bool isImplicitlySigned();
 
     protected:
         void init(IFileContents * _text);

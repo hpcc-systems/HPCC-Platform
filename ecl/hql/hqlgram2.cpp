@@ -9766,9 +9766,18 @@ void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHq
     }
 }
 
+bool HqlGram::insideSignedMacro()
+{
+    if (inSignedModule)
+        return true;
+    if (!lexObject)
+        return false;
+    return lexObject->isImplicitlySigned();
+}
+
 bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const char *description)
 {
-    if (lookupCtx.queryParseContext().codegenCtx && !lookupCtx.queryParseContext().codegenCtx->allowAccess(category, inSignedModule))
+    if (lookupCtx.queryParseContext().codegenCtx && !lookupCtx.queryParseContext().codegenCtx->allowAccess(category, insideSignedMacro()))
     {
         if (!inSignedModule && lookupCtx.queryParseContext().codegenCtx->allowAccess(category, true))
             reportWarning(CategorySecurity, WRN_REQUIRES_SIGNED, errpos.pos, "%s is only permitted in a signed module", description);
