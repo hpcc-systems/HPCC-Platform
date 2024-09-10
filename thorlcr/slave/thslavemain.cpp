@@ -117,7 +117,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
     StringBuffer masterStr;
-    LOG(MCdebugProgress, "registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
+    PROGLOG("registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
     try
     {
         SocketEndpoint ep = masterEp;
@@ -260,7 +260,7 @@ bool UnregisterSelf(IException *e)
 
     StringBuffer slfStr;
     slfEp.getEndpointHostText(slfStr);
-    LOG(MCdebugProgress, "Unregistering slave : %s", slfStr.str());
+    DBGLOG("Unregistering slave : %s", slfStr.str());
     try
     {
         CMessageBuffer msg;
@@ -268,16 +268,17 @@ bool UnregisterSelf(IException *e)
         serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
-            LOG(MCerror, "Failed to unregister slave : %s", slfStr.str());
+            IERRLOG("Failed to unregister slave : %s", slfStr.str());
             return false;
         }
-        LOG(MCdebugProgress, "Unregistered slave : %s", slfStr.str());
+        DBGLOG("Unregistered slave : %s", slfStr.str());
         isRegistered = false;
         return true;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         if (!jobListenerStopped)
-            FLLOG(MCexception(e), e,"slave unregistration error");
+            IERRLOG(e, "slave unregistration error");
         e->Release();
     }
     return false;
@@ -297,9 +298,9 @@ bool ControlHandler(ahType type)
     raiseSignalInFuture(SIGTERM, 20);
 
     if (ahInterrupt == type)
-        LOG(MCdebugProgress, "CTRL-C detected");
+        DBGLOG("CTRL-C detected");
     else if (!jobListenerStopped)
-        LOG(MCdebugProgress, "SIGTERM detected");
+        DBGLOG("SIGTERM detected");
 
     bool unregOK = false;
     if (!jobListenerStopped)
@@ -346,7 +347,7 @@ ILogMsgHandler *startSlaveLog()
         queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-        LOG(MCdebugProgress, "Opened log file %s", lf->queryLogFileSpec());
+        DBGLOG("Opened log file %s", lf->queryLogFileSpec());
     }
     else
     {
@@ -361,7 +362,7 @@ ILogMsgHandler *startSlaveLog()
     }
 
     //setupContainerizedStorageLocations();
-    LOG(MCdebugProgress, "Build %s", hpccBuildInfo.buildTag);
+    PROGLOG("Build %s", hpccBuildInfo.buildTag);
     return logHandler;
 }
 
@@ -442,7 +443,7 @@ int main( int argc, const char *argv[]  )
 
 #ifdef USE_MP_LOG
         startLogMsgParentReceiver();
-        LOG(MCdebugProgress, "MPServer started on port %d", getFixedPort(TPORT_mp));
+        DBGLOG("MPServer started on port %d", getFixedPort(TPORT_mp));
 #endif
 
         SocketEndpoint masterEp(master);
@@ -521,16 +522,16 @@ int main( int argc, const char *argv[]  )
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
-            LOG(MCdebugProgress, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
+            PROGLOG("ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                LOG(MCdebugInfo, "Total disk space = %" I64F "d k", total.QuadPart/1000);
-                LOG(MCdebugInfo, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
-                LOG(MCdebugInfo, "%d%% disk free\n",pc);
+                PROGLOG("Total disk space = %" I64F "d k", total.QuadPart/1000);
+                PROGLOG"Free  disk space = %" I64F "d k", free.QuadPart/1000);
+                PROGLOG"%d%% disk free\n",pc);
             }
 #endif
      
@@ -595,7 +596,7 @@ int main( int argc, const char *argv[]  )
             slaveMain(jobListenerStopped, slaveLogHandler);
         }
 
-        LOG(MCdebugProgress, "ThorSlave terminated OK");
+        DBGLOG("ThorSlave terminated OK");
     }
     catch (IException *e) 
     {

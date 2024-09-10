@@ -637,7 +637,7 @@ public:
             if (file.isFile()==fileBool::foundYes)
             {
                 if (log)
-                    LOG(MCdebugInfo, "Deleting %s", file.queryFilename());
+                    DBGLOG("Deleting %s", file.queryFilename());
                 try { file.remove(); }
                 catch (IException *e)
                 {
@@ -665,7 +665,7 @@ public:
         {
             // temp dir. should not exist, but if it does issue warning only.
             if (checkDirExists(subDirPath))
-                WARNLOG("Existing temp directory %s already exists", subDirPath.str());
+                IWARNLOG("Existing temp directory %s already exists", subDirPath.str());
             else
                 throw MakeThorException(0, "%s", msg.str());
         }
@@ -689,7 +689,7 @@ public:
         {
             Owned<IFile> dirIFile = createIFile(subDirPath);
             if (!dirIFile->remove() && log)
-                WARNLOG("Failed to delete temp directory: %s", subDirPath.str());
+                IWARNLOG("Failed to delete temp directory: %s", subDirPath.str());
         }
         catch (IException *e)
         {
@@ -733,7 +733,7 @@ void GetTempFilePath(StringBuffer &name, const char *suffix)
 void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir)
 {
     TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix, clearDir);
-    LOG(MCdebugProgress, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
+    DBGLOG("temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
 void ClearTempDir()
@@ -798,7 +798,7 @@ void ensureDirectoryForFile(const char *fName)
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
 void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
-    LOG(MCwarning, e, "Reporting exception to WU");
+    LOG(MCprogress, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
     if (wu)
     {

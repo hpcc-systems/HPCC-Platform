@@ -119,7 +119,7 @@ void CDiskPartHandlerBase::open()
     {
         StringBuffer locations;
         IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", activity.logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
-        ERRLOG(e, "CDiskPartHandlerBase::open()");
+        IERRLOG(e, "CDiskPartHandlerBase::open()");
         throw e;
     }
     filename.set(iFile->queryFilename());

@@ -2299,7 +2299,7 @@ CFileSizeTracker * CGraphBase::queryTempFileSizeTracker()
 CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
 {
     assertex(temp);
-    LOG(MCdebugProgress, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
+    DBGLOG("registerTmpFile name=%s, usageCount=%d", name, usageCount);
     CriticalBlock b(crit);
     if (tmpFiles.find(name))
         throw MakeThorException(TE_FileAlreadyUsedAsTempFile, "File already used as temp file (%s)", name);
@@ -2310,7 +2310,7 @@ CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id gra
 
 void CGraphTempHandler::deregisterFile(const char *name, bool kept)
 {
-    LOG(MCdebugProgress, "deregisterTmpFile name=%s", name);
+    DBGLOG("deregisterTmpFile name=%s", name);
     CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
@@ -2327,7 +2327,7 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
         try
         {
             if (!removeTemp(name))
-                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", name);
+                IWARNLOG("Failed to delete tmp file : %s (not found)", name);
         }
         catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(name).str()); }
     }
@@ -2346,7 +2346,7 @@ void CGraphTempHandler::clearTemps()
         try
         {
             if (!removeTemp(tmpname))
-                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", tmpname);
+                IWARNLOG("Failed to delete tmp file : %s (not found)", tmpname);
         }
         catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(tmpname).str()); }
     }
@@ -2781,7 +2781,7 @@ CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity
 
 void CJobBase::startJob()
 {
-    LOG(MCdebugProgress, "New Graph started : %s", graphName.get());
+    DBGLOG("New Graph started : %s", graphName.get());
     perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
@@ -2828,7 +2828,7 @@ void CJobBase::endJob()
 
     jobEnded = true;
     setPerformanceMonitorHook(nullptr);
-    LOG(MCdebugProgress, "Job ended : %s", graphName.get());
+    DBGLOG("Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
     PrintMemoryStatusLog();
 

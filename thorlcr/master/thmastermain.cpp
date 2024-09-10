@@ -585,7 +585,7 @@ bool ControlHandler(ahType type)
     {
         if (firstCtrlC)
         {
-            LOG(MCdebugProgress, "CTRL-C detected");
+            DBGLOG("CTRL-C detected");
             firstCtrlC = false;
             {
                 Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
@@ -596,7 +596,7 @@ bool ControlHandler(ahType type)
         }
         else
         {
-            LOG(MCdebugProgress, "2nd CTRL-C detected - terminating process");
+            DBGLOG("2nd CTRL-C detected - terminating process");
 
             if (auditStartLogged)
             {
@@ -610,7 +610,7 @@ bool ControlHandler(ahType type)
     // ahTerminate
     else
     {
-        LOG(MCdebugProgress, "SIGTERM detected, shutting down");
+        DBGLOG("SIGTERM detected, shutting down");
         Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
         if (registry)
             registry->stop();
@@ -656,7 +656,7 @@ int main( int argc, const char *argv[]  )
     StringBuffer daliServer;
     if (!globals->getProp("@daliServers", daliServer)) 
     {
-        LOG(MCerror, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
+        OERRLOG("No Dali server list specified in THOR.XML (daliServers=iport,iport...)");
         return 0; // no recycle
     }
 
@@ -715,7 +715,7 @@ int main( int argc, const char *argv[]  )
             queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-            LOG(MCdebugProgress, "Opened log file %s", logUrl.str());
+            DBGLOG("Opened log file %s", logUrl.str());
         }
 #else
         setupContainerizedLogMsgHandler();
@@ -731,7 +731,7 @@ int main( int argc, const char *argv[]  )
         {
             try
             {
-                LOG(MCdebugProgress, "calling initClientProcess %d", thorEp.port);
+                DBGLOG("calling initClientProcess %d", thorEp.port);
                 initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port, nullptr, nullptr, MP_WAIT_FOREVER, true);
                 if (0 == thorEp.port)
                     thorEp.port = queryMyNode()->endpoint().port;
@@ -749,7 +749,7 @@ int main( int argc, const char *argv[]  )
                 if (retry++>10) 
                     throw;
                 e->Release();
-                LOG(MCdebugProgress, "Retrying");
+                DBGLOG("Retrying");
                 Sleep(retry*2000);  
             }
         }
@@ -1005,7 +1005,7 @@ int main( int argc, const char *argv[]  )
             JobNameScope activeJobName(workunit);
 
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1050,8 +1050,8 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            PROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
             unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -1146,7 +1146,7 @@ int main( int argc, const char *argv[]  )
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
         auditThorSystemEvent("Terminate");
-        LOG(MCdebugProgress, "ThorManager terminated OK");
+        DBGLOG("ThorManager terminated OK");
     }
     catch (IException *e) 
     {

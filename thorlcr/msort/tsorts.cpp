@@ -106,7 +106,7 @@ class CWriteIntercept : public CSimpleInterface
                 {
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryIFile().queryFilename());
-                    LOG(MCerror, "%s", err.str());
+                    IERRLOG("%s", err.str());
                     throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
                 idxFileStream.setown(createBufferedIOStream(idxFileIO,0x100000));

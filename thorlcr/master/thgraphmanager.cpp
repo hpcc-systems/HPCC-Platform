@@ -282,7 +282,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             else if (strncmp(command,"quit", 4) == 0)
             {
-                LOG(MCwarning, "ABORT detected from user during debug session");
+                DBGLOG("ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
@@ -412,7 +412,7 @@ void CJobManager::stop()
 {
     if (!stopped)
     {
-        LOG(MCdebugProgress, "Stopping jobManager");
+        DBGLOG("Stopping jobManager");
         stopped = true;
         if (jobq)
         {
@@ -604,7 +604,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
 void CJobManager::run()
 {
-    LOG(MCdebugProgress, "Listening for graph");
+    DBGLOG("Listening for graph");
 
     setWuid(NULL);
 #ifndef _CONTAINERIZED
@@ -907,7 +907,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
 
     JobNameScope activeJobName(wuid);
 
-    LOG(MCdebugInfo, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
+    DBGLOG("Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     auditThorJobEvent("Start", wuid, graphName, user);
 
     Owned<IException> e;
@@ -1217,7 +1217,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
             }
             DBGLOG(e, "abortThor");
         }
-        LOG(MCdebugProgress, "abortThor called");
+        DBGLOG("abortThor called");
         if (jM)
             jM->stop();
         if (thorQueue)
@@ -1229,7 +1229,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
     if (2 > aborting && abortCurrentJob)
     {
         aborting = 2;
-        LOG(MCdebugProgress, "aborting any current active job");
+        DBGLOG("aborting any current active job");
         if (jM)
         {
             if (!e)
@@ -1241,7 +1241,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         }
         if (errCode == TEC_Clean)
         {
-            LOG(MCdebugProgress, "Removing sentinel upon normal shutdown");
+            DBGLOG("Removing sentinel upon normal shutdown");
             Owned<IFile> sentinelFile = createSentinelTarget();
             removeSentinelFile(sentinelFile);
         }
@@ -1338,7 +1338,7 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
     }
     else
     {
-        WARNLOG("Unrecognised job format received: %s", next.str());
+        IWARNLOG("Unrecognised job format received: %s", next.str());
         return 0; // unrecognised format, ignore
     }
     retWuid.set(sArray.item(1));
@@ -1474,12 +1474,12 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         SessionId agentSessionID = workunit->getAgentSession();
                         if (agentSessionID <= 0)
                         {
-                            WARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
+                            IWARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
                             currentWuid.clear();
                         }
                         else if (querySessionManager().sessionStopped(agentSessionID, 0))
                         {
-                            WARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            IWARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
                             currentWuid.clear();
                         }
                         else

@@ -73,7 +73,7 @@ void enableThorSlaveAsDaliClient()
     {
         try
         {
-            LOG(MCdebugProgress, "calling initClientProcess");
+            DBGLOG("calling initClientProcess");
             initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
             break;
         }
@@ -85,7 +85,7 @@ void enableThorSlaveAsDaliClient()
             if (retry++>10)
                 throw;
             e->Release();
-            LOG(MCdebugProgress, "Retrying");
+            DBGLOG("Retrying");
             Sleep(retry*2000);
         }
     }

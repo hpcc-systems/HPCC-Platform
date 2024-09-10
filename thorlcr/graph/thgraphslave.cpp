@@ -1275,7 +1275,7 @@ void CSlaveGraph::done()
             if (aborted || !graphDone)
             {
                 if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
-                    WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+                    IWARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
             }
             else
                 getDoneSem.wait();
