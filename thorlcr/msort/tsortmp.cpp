@@ -515,7 +515,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
         }
     }
     catch (IException *e) {
-        EXCLOG(e,"SortSlaveMP::marshall");
+        IERRLOG(e,"SortSlaveMP::marshall");
         if (!replydone)  {
             mbout.clear();
             okout = 0;

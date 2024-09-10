@@ -51,7 +51,7 @@ template <class T>
 inline void traceWait(const char *name, T &sem,unsigned interval=60*1000)
 {
     while (!sem.wait(interval))
-        PROGLOG("Waiting for %s",name);
+        DBGLOG("Waiting for %s",name);
 }
 
 
@@ -106,7 +106,7 @@ class CWriteIntercept : public CSimpleInterface
                 {
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryIFile().queryFilename());
-                    LOG(MCerror, "%s", err.str());
+                    IERRLOG("%s", err.str());
                     throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
                 idxFileStream.setown(createBufferedIOStream(idxFileIO,0x100000));
@@ -895,7 +895,7 @@ public:
     virtual void GetGatherInfo(rowcount_t &numlocal, offset_t &totalsize, unsigned &_overflowscale, bool haskeyserializer)
     {
         if (!gatherdone)
-            ERRLOG("GetGatherInfo:***Error called before gather complete");
+            IERRLOG("GetGatherInfo:***Error called before gather complete");
         if (haskeyserializer != (NULL != keyserializer))
             throwUnexpected();
         numlocal = rowArray.ordinality(); // JCSMORE - this is sample total, why not return actual spill total?
@@ -1176,8 +1176,9 @@ public:
             if (transferserver)
                 transferserver->subjoin(); // need to have finished merge threads 
         }
-        catch (IException *e) {
-            EXCLOG(e,"CThorSorter");
+        catch (IException *e)
+        {
+            IERRLOG(e,"CThorSorter");
             if (closeexc.get())
                 e->Release();
             else

@@ -1462,7 +1462,7 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
     }
     catch (IException *e)
     {
-        EXCLOG(e, "CThorSpillableRowArray::save");
+        IERRLOG(e, "CThorSpillableRowArray::save");
         firstRow += i; // ensure released rows are noted.
         throw;
     }
@@ -2211,7 +2211,7 @@ public:
 
     void run() // on master
     {
-        PROGLOG("cMultiThorResourceMutex thread run");
+        DBGLOG("cMultiThorResourceMutex thread run");
         try {
             CMessageBuffer mbuf;
             while (!stopping) {
@@ -2233,27 +2233,32 @@ public:
                 }
             }
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::run");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::run");
+            e->Release();
         }
     }
 
     void stop()
     {
-        PROGLOG("cMultiThorResourceMutex::stop enter");
+        DBGLOG("cMultiThorResourceMutex::stop enter");
         stopping = true;
         if (mutex) 
             mutex->kill();
-        try {
+        try
+        {
             nodeComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::stop");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::stop");
+            e->Release();
         }
         if (thread)
             thread->join();
         mutex.clear();
-        PROGLOG("cMultiThorResourceMutex::stop leave");
+        DBGLOG("cMultiThorResourceMutex::stop leave");
     }
 
     bool take(memsize_t tot)
@@ -2267,12 +2272,15 @@ public:
         CMessageBuffer mbuf;
         byte req = 1;
         mbuf.append(req);
-        try {
+        try
+        {
             if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::take");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::take");
+            e->Release();
         }
         return !stopping;
     }
@@ -2288,14 +2296,16 @@ public:
         CMessageBuffer mbuf;
         byte req = 0;
         mbuf.append(req);
-        try {
+        try
+        {
             if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::give");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::give");
+            e->Release();
         }
-
     }
 
     //IDaliMutexNotifyWaiting
@@ -2474,7 +2484,7 @@ CThorAllocator::CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, u
 
 IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned numChannels, unsigned memorySpillAtPercentage, IContextLogger &logctx, bool crcChecking, bool usePacked)
 {
-    PROGLOG("Thor allocator: Size=%d (MB), sharedLimit=%d (MB), CRC=%s, Packed=%s", memLimitMB, sharedMemLimitMB, crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
+    DBGLOG("Thor allocator: Size=%d (MB), sharedLimit=%d (MB), CRC=%s, Packed=%s", memLimitMB, sharedMemLimitMB, crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
     roxiemem::RoxieHeapFlags flags;
     flags = defaultHeapFlags;
     if (usePacked)

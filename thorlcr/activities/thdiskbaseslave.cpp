@@ -119,7 +119,7 @@ void CDiskPartHandlerBase::open()
     {
         StringBuffer locations;
         IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", activity.logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
-        EXCLOG(e, NULL);
+        IERRLOG(e, "CDiskPartHandlerBase::open()");
         throw e;
     }
     filename.set(iFile->queryFilename());
@@ -618,7 +618,7 @@ void CDiskWriteSlaveActivityBase::process()
             try { close(); }
             catch (IException *e)
             {
-                EXCLOG(e, "close()");
+                IWARNLOG(e, "close()"); // NB: primary exception will be rethrown
                 e->Release();
             }
             throw;
@@ -629,7 +629,7 @@ void CDiskWriteSlaveActivityBase::process()
             try { close(); }
             catch (IException *e)
             {
-                EXCLOG(e, "close()");
+                IWARNLOG(e, "close()");
                 e->Release();
             }
             throw;

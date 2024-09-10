@@ -142,7 +142,7 @@ private:
                     }
                     catch (IException *e)
                     {
-                        EXCLOG(e, "CTracingThorDataLink::dump");
+                        IERRLOG(e, "CTracingThorDataLink::dump");
                         e->Release();
                     }
                     xmlwrite.outputEndNested("Row", true);

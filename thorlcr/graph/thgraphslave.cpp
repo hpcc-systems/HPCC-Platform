@@ -1071,7 +1071,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (error)
             {
                 Owned<IException> e = deserializeException(msg);
-                EXCLOG(e, "Master hit exception");
+                IERRLOG(e, "Master hit exception");
                 msg.clear();
                 if (!queryJobChannel().queryJobComm().send(msg, 0, replyTag, LONGTIMEOUT))
                     throw MakeStringException(0, "Timeout sending init data back to master");
@@ -1275,7 +1275,7 @@ void CSlaveGraph::done()
             if (aborted || !graphDone)
             {
                 if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
-                    WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+                    IWARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
             }
             else
                 getDoneSem.wait();
@@ -2045,7 +2045,7 @@ public:
         {
             StringBuffer locations;
             IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
-            EXCLOG(e, NULL);
+            IERRLOG(e);
             throw e;
         }
     }

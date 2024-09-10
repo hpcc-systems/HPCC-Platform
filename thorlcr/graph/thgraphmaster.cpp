@@ -255,7 +255,7 @@ void CSlaveMessageHandler::threadmain()
                         }
                         catch (IException *e)
                         {
-                            EXCLOG(e, NULL);
+                            IWARNLOG(e);
                             exception.setown(e);
                             break;
                         }
@@ -298,7 +298,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_getPhysicalName:
                 {
-                    LOG(MCdebugProgress, "getPhysicalName called from node %d", sender-1);
+                    DBGLOG("getPhysicalName called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     bool create;
@@ -317,7 +317,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_getFileOffset:
                 {
-                    LOG(MCdebugProgress, "getFileOffset called from node %d", sender-1);
+                    DBGLOG("getFileOffset called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     msg.read(logicalName);
@@ -330,7 +330,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_actMsg:
                 {
-                    LOG(MCdebugProgress, "smt_actMsg called from node %d", sender-1);
+                    DBGLOG("smt_actMsg called from node %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
                     activity_id id;
@@ -348,7 +348,7 @@ void CSlaveMessageHandler::threadmain()
                 {
                     unsigned slave;
                     msg.read(slave);
-                    LOG(MCdebugProgress, "smt_getresult called from slave %d", slave);
+                    DBGLOG("smt_getresult called from slave %d", slave);
                     graph_id gid;
                     msg.read(gid);
                     activity_id ownerId;
@@ -971,7 +971,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Problem deleting temp files");
+            IERRLOG(e, "Problem deleting temp files");
             e->Release();
         }
         CGraphTempHandler::clearTemps();
@@ -1002,7 +1002,7 @@ class CThorCodeContextMaster : public CThorCodeContextBase
         return getWorkUnitResult(workunit, name, sequence);
     }
     #define PROTECTED_GETRESULT(STEPNAME, SEQUENCE, KIND, KINDTEXT, ACTION) \
-        LOG(MCdebugProgress, "getResult%s(%s,%d)", KIND, STEPNAME?STEPNAME:"", SEQUENCE); \
+        DBGLOG("getResult%s(%s,%d)", KIND, STEPNAME?STEPNAME:"", SEQUENCE); \
         Owned<IConstWUResult> r = getResultForGet(STEPNAME, SEQUENCE); \
         try \
         { \
@@ -1267,7 +1267,7 @@ public:
     {
         try
         {
-            LOG(MCdebugProgress, "getExternalResultRaw %s", stepname);
+            DBGLOG("getExternalResultRaw %s", stepname);
 
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
             return r->getResultHash();
@@ -1309,7 +1309,7 @@ public:
         tgt = NULL;
         try
         {
-            LOG(MCdebugProgress, "getExternalResultRaw %s", stepname);
+            DBGLOG("getExternalResultRaw %s", stepname);
 
             Variable2IDataVal result(&tlen, &tgt);
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
@@ -1640,7 +1640,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
     }
     if (sendExcept)
     {
-        EXCLOG(sendExcept, "broadcastSendAsync");
+        IWARNLOG(sendExcept, "broadcastSendAsync");
         abort(sendExcept);
         throw sendExcept.getClear();
     }
@@ -1672,7 +1672,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
             }
             tmpStr.append("]");
             Owned<IException> e = MakeThorFatal(NULL, 0, " %s", tmpStr.str());
-            EXCLOG(e, NULL);
+            IWARNLOG(e);
             throw e.getClear();
         }
         bool error;
@@ -1731,7 +1731,7 @@ void CJobMaster::sendQuery()
     tmp.append(queryWuid());
     tmp.append(graphName);
     const char *soName = queryDllEntry().queryName();
-    PROGLOG("Query dll: %s", soName);
+    DBGLOG("Query dll: %s", soName);
     tmp.append(soName);
     if (getExpertOptBool("saveQueryDlls"))
     {
@@ -1744,7 +1744,7 @@ void CJobMaster::sendQuery()
             size32_t sz = (size32_t)iFileIO->size();
             tmp.append(sz);
             read(iFileIO, 0, sz, tmp);
-            PROGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
+            DBGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
         }
         queryJobManager().addCachedSo(soName);
     }
@@ -1766,7 +1766,7 @@ void CJobMaster::sendQuery()
     CTimeMon queryToSlavesTimer;
     querySent = true;
     broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendQuery");
-    PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
+    DBGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
 }
 
 void CJobMaster::jobDone()
@@ -1871,7 +1871,7 @@ bool CJobMaster::go()
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory->isAborting(wu.queryWuid()))
                 {
-                    LOG(MCwarning, "ABORT detected from user");
+                    DBGLOG("ABORT detected from user");
 
                     unsigned code = TE_WorkUnitAborting; // default
                     if (job.getOptBool("dumpInfoOnUserAbort", false))
@@ -2044,7 +2044,7 @@ bool CJobMaster::go()
     {
         jobDoneException.setown(ThorWrapException(e, "Error in jobDone"));
         e->Release();
-        EXCLOG(jobDoneException, NULL);
+        IWARNLOG(jobDoneException);
     }
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();
@@ -2145,13 +2145,13 @@ bool CJobMaster::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, e);
+            LOG(MCprogress, e);
             reportExceptionToWorkunitCheckIgnore(*workunit, e);
             break;
         }
         default:
         {
-            LOG(MCerror, e);
+            LOG(MCprogress, e);
             queryJobManager().replyException(*this, e); 
             fatalHandler->inform(LINK(e));
             try { abort(e); }
@@ -2397,13 +2397,13 @@ bool CMasterGraph::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, e);
+            LOG(MCprogress, e);
             reportExceptionToWorkunitCheckIgnore(job.queryWorkUnit(), e);
             break;
         }
         default:
         {
-            LOG(MCerror, e);
+            LOG(MCprogress, e);
             if (NULL != fatalHandler)
                 fatalHandler->inform(LINK(e));
             if (owner)
@@ -2834,7 +2834,7 @@ void CMasterGraph::getFinalProgress(bool aborting)
             }
             if (aborting)
             {
-                WARNLOG("Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
+                IWARNLOG("Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
                 return;
             }
             else
