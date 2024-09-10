@@ -611,51 +611,6 @@ IThorException *MakeGraphException(CGraphBase *graph, IException *e)
     return e2;
 }
 
-#if 0
-void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master) 
-{
-    StringBuffer logname;
-    if (logdir && *logdir !='\0')
-    {
-        if (!recursiveCreateDirectory(logdir))
-        {
-            OWARNLOG("Failed to use %s as log directory, using current working directory", logdir); // default working directory should be open already
-            return;
-        }
-        logname.append(logdir);
-    }
-    else
-    {
-        char cwd[1024];
-        GetCurrentDirectory(1024, cwd);
-        logname.append(cwd);
-    }
-
-    if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
-        logname.append(PATHSEPCHAR);
-    logname.append(prefix);
-#if 0
-    time_t tNow;
-    time(&tNow);
-    char timeStamp[32];
-#ifdef _WIN32
-    struct tm *ltNow;
-    ltNow = localtime(&tNow);
-    strftime(timeStamp, 32, ".%m_%d_%y_%H_%M_%S", ltNow);
-#else
-    struct tm ltNow;
-    localtime_r(&tNow, &ltNow);
-    strftime(timeStamp, 32, ".%m_%d_%y_%H_%M_%S", &ltNow);
-#endif
-    logname.append(timeStamp);
-#endif
-    logname.append(".log");
-    StringBuffer lf;
-    openLogFile(lf, logname.str());
-    PROGLOG("Opened log file %s", lf.str());
-    PROGLOG("Build %s", hpccBuildInfo.buildTag);
-}
-#endif
 
 class CTempNameHandler
 {
@@ -733,9 +688,8 @@ public:
         try
         {
             Owned<IFile> dirIFile = createIFile(subDirPath);
-            bool success = dirIFile->remove();
-            if (log)
-                PROGLOG("%s to delete temp directory: %s", subDirPath.str(), success ? "succeeded" : "failed");
+            if (!dirIFile->remove() && log)
+                WARNLOG("Failed to delete temp directory: %s", subDirPath.str());
         }
         catch (IException *e)
         {
@@ -1085,7 +1039,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             Owned<IFile> file;
             if (activity->getOptBool("forceDafilesrv"))
             {
-                PROGLOG("Using dafilesrv for: %s", locationName.str());
+                DBGLOG("Using dafilesrv for: %s", locationName.str());
                 file.setown(createDaliServixFile(rfn));
             }
             else
@@ -1211,7 +1165,7 @@ void CFifoFileCache::add(const char *filename)
     if (files.ordinality() > limit)
     {
         const char *toRemoveFname = files.item(limit);
-        PROGLOG("Removing %s from fifo cache", toRemoveFname);
+        DBGLOG("Removing %s from fifo cache", toRemoveFname);
         OwnedIFile ifile = createIFile(toRemoveFname);
         deleteFile(*ifile);
         files.remove(limit);
@@ -1673,14 +1627,14 @@ void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double 
 {
     workunit.set(_workunit);
     subGraphId = _subGraphId;
-    PROGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
+    DBGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
     perf.setInterval(interval);
     perf.start();    
 }
 
 void CThorPerfTracer::stop()
 {
-    PROGLOG("Stopping perf trace of subgraph %u", subGraphId);
+    DBGLOG("Stopping perf trace of subgraph %u", subGraphId);
     perf.stop();
     StringBuffer flameGraphName;
     if (getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), flameGraphName))

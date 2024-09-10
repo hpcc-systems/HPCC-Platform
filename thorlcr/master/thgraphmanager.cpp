@@ -676,7 +676,7 @@ void CJobManager::run()
                     break;
                 }
                 else
-                    PROGLOG("Unknown cmd = %s", cmd.get());
+                    IWARNLOG("Unknown cmd = %s", cmd.get());
             }
         }
     } stopThorListener(MPTAG_THOR);
@@ -820,7 +820,7 @@ void CJobManager::run()
         {
             if (!stopped)
                 setExitCode(0);
-            PROGLOG("acceptConversation aborted - terminating");
+            DBGLOG("acceptConversation aborted - terminating");
             break;
         }
         StringAttr graphName, wuid;
@@ -1062,7 +1062,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringBuffer soPath;
     if (!getExpertOptBool("saveQueryDlls"))
     {
-        PROGLOG("Loading query name: %s", soName.str());
+        DBGLOG("Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
         soPath.append(querySo->queryName());
     }
@@ -1074,12 +1074,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         soPath.append(soName.str());
         getCompoundQueryName(compoundPath, soName.str(), version);
         if (querySoCache.isAvailable(compoundPath.str()))
-            PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
+            DBGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
         else
         {
             MemoryBuffer file;
             queryDllServer().getDll(soName.str(), file);
-            PROGLOG("Saving dll: %s", compoundPath.str());
+            DBGLOG("Saving dll: %s", compoundPath.str());
             OwnedIFile out = createIFile(compoundPath.str());
             try
             {
@@ -1103,15 +1103,14 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
-    PROGLOG("Started wuid=%s, user=%s, graph=%s", wuid.str(), user.str(), graphName);
+    PROGLOG("Started wuid=%s, user=%s, graph=%s, query=%s", wuid.str(), user.str(), graphName, soPath.str());
 
-    PROGLOG("Query %s loaded", soPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     unsigned wfid = job->getWfid();
     StringBuffer graphScope;
     graphScope.append(WorkflowScopePrefix).append(wfid).append(":").append(graphName);
-    PROGLOG("Graph %s created", graphName);
-    PROGLOG("Running graph=%s", job->queryGraphName());
+    DBGLOG("Graph %s created", graphName);
+    DBGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
     bool allDone = false;
     Owned<IException> exception;

@@ -188,7 +188,7 @@ class CRegistryServer : public CSimpleInterface
                 ep.getEndpointHostText(url);
                 if (RANK_NULL == sender)
                 {
-                    PROGLOG("Node %s trying to deregister is not part of this cluster", url.str());
+                    IWARNLOG("Node %s trying to deregister is not part of this cluster", url.str());
                     continue;
                 }
                 RegistryCode code;
@@ -242,10 +242,10 @@ public:
         ep.getEndpointHostText(url);
         if (!status->test(worker))
         {
-            PROGLOG("Worker %d (%s) trying to unregister, but not currently registered", worker+1, url.str());
+            DBGLOG("Worker %d (%s) trying to unregister, but not currently registered", worker+1, url.str());
             return;
         }
-        PROGLOG("Worker %d (%s) unregistered", worker+1, url.str());
+        DBGLOG("Worker %d (%s) unregistered", worker+1, url.str());
         status->set(worker, false);
         --workersRegistered;
         if (watchdog)
@@ -259,7 +259,7 @@ public:
         ep.getEndpointHostText(url);
         if (status->test(worker))
         {
-            PROGLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
+            IWARNLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
             return;
         }
         PROGLOG("Worker %d (%s) registered", worker+1, url.str());
@@ -411,7 +411,7 @@ public:
                 CMessageBuffer msg;
                 if (!queryNodeComm().recv(msg, RANK_ALL, MPTAG_THORREGISTRATION, &sender, MAX_WORKERREG_DELAY))
                 {
-                    PROGLOG("Workers not responding to cluster initialization: ");
+                    WARNLOG("Workers not responding to cluster initialization: ");
                     unsigned s=0;
                     for (;;)
                     {
@@ -420,7 +420,7 @@ public:
                             break;
                         s = ns+1;
                         StringBuffer str;
-                        PROGLOG("Worker %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
+                        WARNLOG("Worker %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
                     }
                     throw MakeThorException(TE_AbortException, "Workers failed to respond to cluster initialization");
                 }
@@ -501,7 +501,7 @@ public:
             unsigned remaining;
             if (tm.timedout(&remaining))
             {
-                PROGLOG("Timeout waiting for Shutdown reply from worker(s) (%u replied out of %u total)", numReplied, workersRegistered);
+                IWARNLOG("Timeout waiting for Shutdown reply from worker(s) (%u replied out of %u total)", numReplied, workersRegistered);
                 StringBuffer workerList;
                 for (i=0;i<workersRegistered;i++)
                 {
@@ -513,7 +513,7 @@ public:
                     }
                 }
                 if (workerList.length())
-                    PROGLOG("Workers that have not replied: %s", workerList.str());
+                    WARNLOG("Workers that have not replied: %s", workerList.str());
                 break;
             }
             try
@@ -547,7 +547,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
 {
     // check the dafilesrv is running (and right version) 
     unsigned start = msTick();
-    PROGLOG("Checking cluster replicate nodes");
+    DBGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
     grp.getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
@@ -564,7 +564,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
         ep.getHostText(ips);
         FLLOG(MCoperatorError, "VALIDATE FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
     }
-    PROGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
+    DBGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
     return (failures.ordinality()==0);
 }
 
@@ -722,7 +722,7 @@ int main( int argc, const char *argv[]  )
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        LOG(MCdebugProgress, "Build %s", hpccBuildInfo.buildTag);
+        PROGLOG("Build %s", hpccBuildInfo.buildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
@@ -765,7 +765,7 @@ int main( int argc, const char *argv[]  )
         thorname = globals->queryProp("@name");
         if (!thorname)
         {
-            PROGLOG("No 'name' setting, defaulting to \"local\"");
+            WARNLOG("No 'name' setting, defaulting to \"local\"");
             thorname = "local";
             globals->setProp("@name", thorname);
         }
@@ -1128,7 +1128,7 @@ int main( int argc, const char *argv[]  )
             queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
             // change default plane
             getComponentConfigSP()->setProp("@dataPlane", uniqueGrpName);
-            PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
+            DBGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
         }
 #endif
         auditThorSystemEvent("Startup");
@@ -1212,19 +1212,19 @@ int main( int argc, const char *argv[]  )
     // cleanup handler to be sure we end
     thorEndHandler->start(30);
 
-    PROGLOG("Thor closing down 5");
+    DBGLOG("Thor closing down 5");
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
-    PROGLOG("Thor closing down 4");
+    DBGLOG("Thor closing down 4");
     closeDllServer();
-    PROGLOG("Thor closing down 3");
+    DBGLOG("Thor closing down 3");
     closeEnvironment();
-    PROGLOG("Thor closing down 2");
+    DBGLOG("Thor closing down 2");
     closedownClientProcess();
-    PROGLOG("Thor closing down 1");
+    DBGLOG("Thor closing down 1");
     UseSysLogForOperatorMessages(false);
     releaseAtoms(); // don't know why we can't use a module_exit to destruct this...
 

@@ -1731,7 +1731,7 @@ void CJobMaster::sendQuery()
     tmp.append(queryWuid());
     tmp.append(graphName);
     const char *soName = queryDllEntry().queryName();
-    PROGLOG("Query dll: %s", soName);
+    DBGLOG("Query dll: %s", soName);
     tmp.append(soName);
     if (getExpertOptBool("saveQueryDlls"))
     {
@@ -1744,7 +1744,7 @@ void CJobMaster::sendQuery()
             size32_t sz = (size32_t)iFileIO->size();
             tmp.append(sz);
             read(iFileIO, 0, sz, tmp);
-            PROGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
+            DBGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
         }
         queryJobManager().addCachedSo(soName);
     }
@@ -1766,7 +1766,7 @@ void CJobMaster::sendQuery()
     CTimeMon queryToSlavesTimer;
     querySent = true;
     broadcast(queryNodeComm(), msg, managerWorkerMpTag, LONGTIMEOUT, "sendQuery");
-    PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
+    DBGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
 }
 
 void CJobMaster::jobDone()

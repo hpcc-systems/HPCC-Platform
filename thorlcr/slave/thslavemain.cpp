@@ -133,7 +133,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;
-        PROGLOG("Initialization received");
+        DBGLOG("Initialization received");
         unsigned vmajor, vminor;
         msg.read(vmajor);
         msg.read(vminor);
@@ -223,20 +223,20 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.clear();
         if (!queryNodeComm().send(msg, 0, MPTAG_THORREGISTRATION))
             return false;
-        PROGLOG("Registration confirmation sent");
+        DBGLOG("Registration confirmation sent");
 
         if (!queryNodeComm().recv(msg, 0, MPTAG_THORREGISTRATION))
             return false;
-        PROGLOG("Registration confirmation receipt received");
+        DBGLOG("Registration confirmation receipt received");
 
         ::masterNode = LINK(masterNode);
 
-        PROGLOG("verifying mp connection to rest of cluster");
+        DBGLOG("verifying mp connection to rest of cluster");
         if (!queryNodeComm().verifyAll())
             OERRLOG("Failed to connect to all nodes");
         else
-            PROGLOG("verified mp connection to rest of cluster");
-        LOG(MCdebugProgress, "registered %s",slfStr.str());
+            DBGLOG("verified mp connection to rest of cluster");
+        PROGLOG("registered %s",slfStr.str());
     }
     catch (IException *e)
     {
@@ -515,7 +515,7 @@ int main( int argc, const char *argv[]  )
                     str.swapWith(uniqSoPath);
                     globals->setProp("@query_so_dir", str.str());
                 }
-                PROGLOG("Using querySo directory: %s", str.str());
+                DBGLOG("Using querySo directory: %s", str.str());
                 recursiveCreateDirectory(str.str());
             }
 
@@ -567,7 +567,7 @@ int main( int argc, const char *argv[]  )
                 }
                 ~CServerThread()
                 {
-                    PROGLOG("Stopping dafilesrv");
+                    DBGLOG("Stopping dafilesrv");
                     dafsInstance->stop();
                     threaded.join();
                 }
@@ -577,7 +577,7 @@ int main( int argc, const char *argv[]  )
                     SocketEndpoint listenEp(DAFILESRV_PORT);
                     try
                     {
-                        PROGLOG("Starting dafilesrv");
+                        DBGLOG("Starting dafilesrv");
                         dafsInstance->run(nullptr, SSLNone, listenEp);
                     }
                     catch (IException *e)

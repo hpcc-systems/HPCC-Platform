@@ -2211,7 +2211,7 @@ public:
 
     void run() // on master
     {
-        PROGLOG("cMultiThorResourceMutex thread run");
+        DBGLOG("cMultiThorResourceMutex thread run");
         try {
             CMessageBuffer mbuf;
             while (!stopping) {
@@ -2242,7 +2242,7 @@ public:
 
     void stop()
     {
-        PROGLOG("cMultiThorResourceMutex::stop enter");
+        DBGLOG("cMultiThorResourceMutex::stop enter");
         stopping = true;
         if (mutex) 
             mutex->kill();
@@ -2258,7 +2258,7 @@ public:
         if (thread)
             thread->join();
         mutex.clear();
-        PROGLOG("cMultiThorResourceMutex::stop leave");
+        DBGLOG("cMultiThorResourceMutex::stop leave");
     }
 
     bool take(memsize_t tot)
@@ -2484,7 +2484,7 @@ CThorAllocator::CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, u
 
 IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned numChannels, unsigned memorySpillAtPercentage, IContextLogger &logctx, bool crcChecking, bool usePacked)
 {
-    PROGLOG("Thor allocator: Size=%d (MB), sharedLimit=%d (MB), CRC=%s, Packed=%s", memLimitMB, sharedMemLimitMB, crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
+    DBGLOG("Thor allocator: Size=%d (MB), sharedLimit=%d (MB), CRC=%s, Packed=%s", memLimitMB, sharedMemLimitMB, crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
     roxiemem::RoxieHeapFlags flags;
     flags = defaultHeapFlags;
     if (usePacked)

@@ -51,7 +51,7 @@ template <class T>
 inline void traceWait(const char *name, T &sem,unsigned interval=60*1000)
 {
     while (!sem.wait(interval))
-        PROGLOG("Waiting for %s",name);
+        DBGLOG("Waiting for %s",name);
 }
 
 

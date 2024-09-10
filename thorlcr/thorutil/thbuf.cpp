@@ -1240,8 +1240,8 @@ IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IThorRo
 }
 
 
-#define VALIDATEEQ(LHS, RHS) if ((LHS)!=(RHS)) { StringBuffer s("FAIL(EQ) - LHS="); s.append(LHS).append(", RHS=").append(RHS); PROGLOG("%s", s.str()); throwUnexpected();  }
-#define VALIDATELT(LHS, RHS) if ((LHS)>=(RHS)) { StringBuffer s("FAIL(LT) - LHS="); s.append(LHS).append(", RHS=").append(RHS); PROGLOG("%s", s.str()); throwUnexpected(); }
+#define VALIDATEEQ(LHS, RHS) if ((LHS)!=(RHS)) { StringBuffer s("FAIL(EQ) - LHS="); s.append(LHS).append(", RHS=").append(RHS); IERRLOG("%s", s.str()); throwUnexpected();  }
+#define VALIDATELT(LHS, RHS) if ((LHS)>=(RHS)) { StringBuffer s("FAIL(LT) - LHS="); s.append(LHS).append(", RHS=").append(RHS); IERRLOG("%s", s.str()); throwUnexpected(); }
 
 //#define TRACE_WRITEAHEAD
 class CSharedWriteAheadBase;

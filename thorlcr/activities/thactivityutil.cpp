@@ -176,7 +176,7 @@ public:
                 {
                     if (threaded.join(60000))
                         break;
-                    PROGLOG("Still waiting on lookahead CNotifyThread thread to complete");
+                    DBGLOG("Still waiting on lookahead CNotifyThread thread to complete");
                 }
             }
         // IThreaded impl.

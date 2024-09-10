@@ -1582,7 +1582,7 @@ public:
         processorPool->stopAll(true);
         processorPool->joinAll(true);
         while (!threaded.join(60000, false))
-            PROGLOG("Receiver waiting on remote handlers to signal completion");
+            DBGLOG("Receiver waiting on remote handlers to signal completion");
         if (aborted)
             return;
         aborted = true;
@@ -1937,7 +1937,7 @@ public:
                         if (!getExpertOptBool("slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
                             disableThorSlaveAsDaliClient();
 
-                        PROGLOG("QueryDone, removing %s from jobs", key.get());
+                        DBGLOG("QueryDone, removing %s from jobs", key.get());
                         Owned<IException> exception;
                         try
                         {
@@ -1948,7 +1948,7 @@ public:
                             exception.setown(e);
                         }
                         jobs.removeExact(job);
-                        PROGLOG("QueryDone, removed %s from jobs", key.get());
+                        DBGLOG("QueryDone, removed %s from jobs", key.get());
 
                         // reset for next job
                         setProcessAborted(false);
@@ -2113,7 +2113,7 @@ public:
                     {
                         StringAttr jobKey;
                         msg.read(jobKey);
-                        PROGLOG("GraphGetResult: %s", jobKey.get());
+                        DBGLOG("GraphGetResult: %s", jobKey.get());
                         CJobSlave *job = jobs.find(jobKey.get());
                         if (job)
                         {
@@ -2284,7 +2284,7 @@ public:
         iFileIO.setown(iFile->open(IFOreadwrite));
         if (!iFileIO)
         {
-            PROGLOG("Failed to open/create backup file: %s", path.str());
+            IWARNLOG("Failed to open/create backup file: %s", path.str());
             return;
         }
         MemoryBuffer mb;

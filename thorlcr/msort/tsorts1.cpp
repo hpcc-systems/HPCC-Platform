@@ -337,7 +337,7 @@ public:
         // bit of a kludge
         CriticalBlock block(rowifsect);
         while (!rowif&&!term) {
-            PROGLOG("CSortTransferServerThread waiting for row interface");
+            DBGLOG("CSortTransferServerThread waiting for row interface");
             CriticalUnblock unblock(rowifsect);
             rowifsem.wait(60*1000);
         }

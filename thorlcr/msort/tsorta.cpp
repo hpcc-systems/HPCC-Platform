@@ -405,16 +405,16 @@ catch (IException *e)
     unsigned i;
     for (i=0;i<10;i++)
         s.appendf(" %02x",(int)*((const byte *)row+i));
-    PROGLOG("%s",s.str());
+    DBGLOG("%s",s.str());
     for (i=0;i<(unsigned)n;i++)
     {
         s.clear().appendf("k%d:",i);
         const byte *k=(const byte *)queryKey(i);
         for (unsigned j=0;j<10;j++) 
             s.appendf(" %02x",(int)*(k+j));
-        PROGLOG("%s",s.str());
+        DBGLOG("%s",s.str());
     }
-    PROGLOG("a=%d, b=%d, cmp=%d",a,b,cmp);
+    DBGLOG("a=%d, b=%d, cmp=%d",a,b,cmp);
     throw;
 }
 #endif
@@ -472,7 +472,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
             rowif->queryRowSerializer()->serialize(ssz,(const byte *)rowcmp.get());
             pos += ssz.size();
         }
-        //PROGLOG("CThorKeyArray::calcPositions %d: initpos = %" I64F "d pos = %" I64F "d",i,initpos,pos);
+        //DBGLOG("CThorKeyArray::calcPositions %d: initpos = %" I64F "d pos = %" I64F "d",i,initpos,pos);
         filepos->replace(pos,i);
     }
     totalfilesize = sample.totalfilesize;
@@ -561,7 +561,7 @@ void traceKey(IOutputRowSerializer *serializer, const char *prefix,const void *k
 {
     StringBuffer out;
     getRecordString(key, serializer, prefix, out);
-    PROGLOG("%s",out.str());
+    DBGLOG("%s",out.str());
 }
 
 void CThorKeyArray::traceKey(const char *prefix,unsigned idx)

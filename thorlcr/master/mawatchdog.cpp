@@ -87,7 +87,7 @@ void CMasterWatchdog::start()
 {
     if (stopped)
     {
-        PROGLOG("Starting watchdog");
+        DBGLOG("Starting watchdog");
         stopped = false;
         threaded.init(this, false);
 #ifdef _WIN32
