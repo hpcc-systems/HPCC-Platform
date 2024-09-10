@@ -2723,9 +2723,37 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 </para>
               </sect3>
 
-              <xi:include href="ECLWatch/TheECLWatchMan.xml"
+             <!-- NOTE PER ISSUE HPCC-32399 - 
+                 PLEASE DELETE THIS ENTIRE COMMENT - 
+                 INCLUDING THE FOLLOWING xi:xinclude link
+                   
+             
+                 <xi:include href="ECLWatch/TheECLWatchMan.xml"
                           xpointer="xpointer(//*[@id='ECLWatchXREFMultiThor'])"
-                          xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                          xmlns:xi="http://www.w3.org/2001/XInclude"/> 
+                          
+                          ***
+                          ***REPLACE WITH FOLLOWING TRANSLATED:
+                          ***
+                            <sect3 id="ECLWatchXREFMultiThor">
+          <title>XREF with multiple Thor clusters</title>
+
+          <para>XREF runs on the primary Thor cluster. For a configuration
+          with more than one Thor cluster on the same physical node group, ECL
+          Watch only displays the primary Thor and not any other Thor that
+          shares the same node group. This is the Thor cluster whose name
+          matches the <emphasis>nodeGroup</emphasis> in the
+          configuration.</para>
+
+          <para>To allow XREF to run in an environment with multiple Thor
+          clusters, set the nodeGroup to the same value for all Thor
+          clusters.</para>
+        </sect3>
+                ***
+                *** END REPLACEMENT TEXT
+                ***
+                *** END OF COMMENT TO DELETE ISSUE HPCC-32399                    
+                           -->
 
               <?hard-pagebreak ?>
 
