@@ -791,7 +791,7 @@ void ClearTempDir()
     }
     catch (IException *e)
     {
-        EXCLOG(e, "ClearTempDir");
+        IERRLOG(e, "ClearTempDir");
         e->Release();
     }
 }
@@ -1645,7 +1645,7 @@ void checkAndDumpAbortInfo(const char *cmd)
     }
     catch (IException *e)
     {
-        EXCLOG(e, nullptr);
+        IERRLOG(e);
         e->Release();
     }
 }
@@ -1700,7 +1700,7 @@ void CThorPerfTracer::stop()
     }
     catch (IException *E)
     {
-        EXCLOG(E);
+        IERRLOG(E);
         ::Release(E);
     }
 }

@@ -569,7 +569,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         }
         void replyError(IException *e)
         {
-            EXCLOG(e, "CLookupRequest");
+            IERRLOG(e, "CLookupRequest");
             if (replyAttempt)
                 return;
             byte errorCode = kjse_exception;
@@ -1500,20 +1500,20 @@ public:
             catch (IMP_Exception *e)
             {
                 if (!recvShutdown)
-                    EXCLOG(e, nullptr);
+                    IERRLOG(e);
                 e->Release();
                 break;
             }
             catch (IJSOCK_Exception *e)
             {
-                EXCLOG(e, nullptr);
+                IERRLOG(e);
                 e->Release();
                 break;
             }
             catch (IException *e)
             {
                 if (replyAttempt)
-                    EXCLOG(e, "CKJService: failed to send reply");
+                    IERRLOG(e, "CKJService: failed to send reply");
                 else if (TAG_NULL == replyTag)
                 {
                     StringBuffer msg("CKJService: Exception without reply tag. Received from slave: ");
@@ -1521,7 +1521,7 @@ public:
                         msg.append("<unknown>");
                     else
                         msg.append(sender-1);
-                    EXCLOG(e, msg.str());
+                    IERRLOG(e, msg.str());
                     msg.clear();
                 }
                 else
@@ -1537,7 +1537,7 @@ public:
             {
                 if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
                 {
-                    OERRLOG("CKJService: Failed to send error response");
+                    IERRLOG("CKJService: Failed to send error response");
                     break;
                 }
             }
@@ -1592,7 +1592,7 @@ public:
     virtual bool fireException(IException *e) override
     {
         // exceptions should always be handled by processor
-        EXCLOG(e, nullptr);
+        IERRLOG(e);
         e->Release();
         return true;
     }
@@ -1628,7 +1628,7 @@ class CJobListener : public CSimpleInterface
                 CriticalBlock b(jobListener.crit);
                 if (0 == jobListener.jobs.count())
                 {
-                    EXCLOG(e, "No job active exception: ");
+                    IERRLOG(e, "No job active exception: ");
                     return true;
                 }
                 IThorException *te = QUERYINTERFACE(e, IThorException);
@@ -1650,14 +1650,14 @@ class CJobListener : public CSimpleInterface
             try
             {
                 if (!queryNodeComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
-                    EXCLOG(e, "Failed to send exception to master");
+                    IERRLOG(e, "Failed to send exception to master");
             }
             catch (IException *e2)
             {
                 StringBuffer str("Error whilst sending exception '");
                 e->errorMessage(str);
                 str.append("' to master");
-                EXCLOG(e2, str.str());
+                IERRLOG(e2, str.str());
                 e2->Release();
             }
             return true;
@@ -2163,7 +2163,7 @@ public:
             }
             catch (IException *e)
             {
-                EXCLOG(e, NULL);
+                IERRLOG(e);
                 if (doReply && TAG_NULL != msg.getReplyTag())
                 {
                     doReply = false;
@@ -2227,7 +2227,7 @@ class CFileInProgressHandler : public CSimpleInterface, implements IFileInProgre
         catch (IException *e)
         {
             StringBuffer errStr("FileInProgressHandler, failed to remove: ");
-            EXCLOG(e, errStr.append(fip).str());
+            IERRLOG(e, errStr.append(fip).str());
             e->Release();
         }
     }

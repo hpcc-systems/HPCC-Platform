@@ -180,15 +180,18 @@ public:
         Owned<IDistributedFile> patchFile;
         // set part sizes etc
         queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile);
-        try { // set file size
-            if (patchFile) {
+        try // set file size
+        {
+            if (patchFile)
+            {
                 __int64 fs = patchFile->getFileSize(true,false);
                 if (fs!=-1)
                     patchFile->queryAttributes().setPropInt64("@size",fs);
             }
         }
-        catch (IException *e) {
-            EXCLOG(e,"keydiff setting file size");
+        catch (IException *e)
+        {
+            IERRLOG(e, "keydiff setting file size");
             e->Release();
         }
         // Add a new 'Patch' description to the secondary key.

@@ -197,7 +197,7 @@ class CRegistryServer : public CSimpleInterface
                     throwUnexpected();
                 Owned<IException> e = deserializeException(msg);
                 if (e.get())
-                    EXCLOG(e, "Worker unregistered with exception");
+                    IERRLOG(e, "Worker unregistered with exception");
                 registry.deregisterNode(sender-1);
             }
             running = false;
@@ -429,7 +429,7 @@ public:
                 if (msg.length())
                 {
                     Owned<IException> e = deserializeException(msg);
-                    EXCLOG(e, "Registration error");
+                    IERRLOG(e, "Registration error");
                     throw e.getClear();
                 }
                 registerNode(sender-1);
@@ -451,7 +451,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Worker registration exception");
+            IERRLOG(e, "Worker registration exception");
             exception.setown(e);
         }
         shutdown();
@@ -486,7 +486,7 @@ public:
                 catch (IMP_Exception *e) { e->Release(); }
                 catch (IException *e)
                 {
-                    EXCLOG(e, "Shutting down worker");
+                    IERRLOG(e, "Shutting down worker");
                     e->Release();
                 }
                 if (watchdog)
@@ -1189,7 +1189,7 @@ int main( int argc, const char *argv[]  )
                 }
                 catch (IException *e)
                 {
-                    EXCLOG(e);
+                    IERRLOG(e);
                     e->Release();
                 }
             }
@@ -1201,7 +1201,7 @@ int main( int argc, const char *argv[]  )
                 }
                 catch (IException *e)
                 {
-                    EXCLOG(e);
+                    IERRLOG(e);
                     e->Release();
                 }
             }

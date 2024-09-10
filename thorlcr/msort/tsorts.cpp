@@ -895,7 +895,7 @@ public:
     virtual void GetGatherInfo(rowcount_t &numlocal, offset_t &totalsize, unsigned &_overflowscale, bool haskeyserializer)
     {
         if (!gatherdone)
-            ERRLOG("GetGatherInfo:***Error called before gather complete");
+            IERRLOG("GetGatherInfo:***Error called before gather complete");
         if (haskeyserializer != (NULL != keyserializer))
             throwUnexpected();
         numlocal = rowArray.ordinality(); // JCSMORE - this is sample total, why not return actual spill total?
@@ -1176,8 +1176,9 @@ public:
             if (transferserver)
                 transferserver->subjoin(); // need to have finished merge threads 
         }
-        catch (IException *e) {
-            EXCLOG(e,"CThorSorter");
+        catch (IException *e)
+        {
+            IERRLOG(e,"CThorSorter");
             if (closeexc.get())
                 e->Release();
             else

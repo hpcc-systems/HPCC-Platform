@@ -255,7 +255,7 @@ void CSlaveMessageHandler::threadmain()
                         }
                         catch (IException *e)
                         {
-                            EXCLOG(e, NULL);
+                            IWARNLOG(e);
                             exception.setown(e);
                             break;
                         }
@@ -971,7 +971,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Problem deleting temp files");
+            IERRLOG(e, "Problem deleting temp files");
             e->Release();
         }
         CGraphTempHandler::clearTemps();
@@ -1640,7 +1640,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
     }
     if (sendExcept)
     {
-        EXCLOG(sendExcept, "broadcastSendAsync");
+        IWARNLOG(sendExcept, "broadcastSendAsync");
         abort(sendExcept);
         throw sendExcept.getClear();
     }
@@ -1672,7 +1672,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
             }
             tmpStr.append("]");
             Owned<IException> e = MakeThorFatal(NULL, 0, " %s", tmpStr.str());
-            EXCLOG(e, NULL);
+            IWARNLOG(e);
             throw e.getClear();
         }
         bool error;
@@ -2044,7 +2044,7 @@ bool CJobMaster::go()
     {
         jobDoneException.setown(ThorWrapException(e, "Error in jobDone"));
         e->Release();
-        EXCLOG(jobDoneException, NULL);
+        IWARNLOG(jobDoneException);
     }
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();

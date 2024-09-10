@@ -161,7 +161,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             catch (IException *e)
             {
-                EXCLOG(e);
+                IERRLOG(e);
                 e->Release();
             }
         }
@@ -337,7 +337,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 }
                 catch (IException *E)
                 {
-                    EXCLOG(E);
+                    IERRLOG(E);
                     E->Release();
                 }
                 catch (...)
@@ -444,7 +444,7 @@ void CJobManager::fatal(IException *e)
     }
     catch (IException *e)
     {
-        EXCLOG(e, NULL);
+        IERRLOG(e);
         e->Release();
     }
     catch (...)
@@ -530,11 +530,10 @@ static int getRunningMaxPriority(const char *qname)
     }
     catch (IException *e)
     {
-        EXCLOG(e,"getRunningMaxPriority");
+        IERRLOG(e,"getRunningMaxPriority");
         e->Release();
     }
     return maxpriority;
-
 }
 
 bool CJobManager::fireException(IException *e)
@@ -995,7 +994,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         if (e)
         {
             // likely if WUActionPauseNow, shouldn't happen if WUActionPause
-            EXCLOG(e, "Exception at time of pause");
+            IERRLOG(e, "Exception at time of pause");
             replyMb.append(true);
             serializeException(e, replyMb);
         }
@@ -1217,7 +1216,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
                 _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
                 e = _e;
             }
-            EXCLOG(e,"abortThor");
+            DBGLOG(e, "abortThor");
         }
         LOG(MCdebugProgress, "abortThor called");
         if (jM)
@@ -1563,7 +1562,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         catch (IException *e)
         {
-            EXCLOG(e, NULL);
+            IERRLOG(e);
             throw;
         }
     }

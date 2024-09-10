@@ -113,7 +113,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
         {
             StringBuffer errMsg("copying: ");
             LOG(MCwarning, e, errMsg.append(item->src));
-            try { backupIFile->remove(); } catch (IException *e) { EXCLOG(e); e->Release(); }
+            try { backupIFile->remove(); } catch (IException *e) { IERRLOG(e); e->Release(); }
             if (!ignoreError)
                 throw;
             e->Release();

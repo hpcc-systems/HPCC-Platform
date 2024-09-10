@@ -582,7 +582,7 @@ int main( int argc, const char *argv[]  )
                     }
                     catch (IException *e)
                     {
-                        EXCLOG(e, "dafilesrv error");
+                        IERRLOG(e, "dafilesrv error");
                         throw;
                     }
                 }

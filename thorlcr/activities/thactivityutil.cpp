@@ -724,7 +724,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "CWriteHandler::beforeDispose");
+            DISLOG(e, "CWriteHandler::beforeDispose");
             e->Release();
         }
     }

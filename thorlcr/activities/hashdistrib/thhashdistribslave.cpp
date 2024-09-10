@@ -2291,13 +2291,15 @@ public:
 
     ~CHDRproportional()
     {
-        try {
+        try
+        {
             tempstrm.clear();
             if (tempfile)
                 tempfile->remove();
         }
-        catch (IException *e) {
-            EXCLOG(e,"REDISTRIBUTE");
+        catch (IException *e)
+        {
+            IWARNLOG(e,"REDISTRIBUTE");
             e->Release();
         }
         free(sizes);

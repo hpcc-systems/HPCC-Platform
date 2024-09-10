@@ -101,14 +101,14 @@ public:
     }
     virtual bool fireException(IException *e) override
     {
-        EXCLOG(e, "Loop master passed exception, aborting loop graph(s)");
+        DBGLOG(e, "Loop master passed exception, aborting loop graph(s)");
         try
         {
             loopGraph->abort(e);
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Exception whilst aborting loop graphs");
+            IWARNLOG(e, "Exception whilst aborting loop graphs");
             e->Release();
         }
         return CMasterActivity::fireException(e);

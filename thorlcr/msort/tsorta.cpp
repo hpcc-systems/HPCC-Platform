@@ -400,7 +400,7 @@ try {
 }
 catch (IException *e)
 {
-    EXCLOG(e,"binchopPartition");
+    IERRLOG(e,"binchopPartition");
     StringBuffer s("row: ");
     unsigned i;
     for (i=0;i<10;i++)

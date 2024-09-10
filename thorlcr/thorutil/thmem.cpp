@@ -1462,7 +1462,7 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
     }
     catch (IException *e)
     {
-        EXCLOG(e, "CThorSpillableRowArray::save");
+        IERRLOG(e, "CThorSpillableRowArray::save");
         firstRow += i; // ensure released rows are noted.
         throw;
     }
@@ -2233,8 +2233,10 @@ public:
                 }
             }
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::run");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::run");
+            e->Release();
         }
     }
 
@@ -2244,11 +2246,14 @@ public:
         stopping = true;
         if (mutex) 
             mutex->kill();
-        try {
+        try
+        {
             nodeComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::stop");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::stop");
+            e->Release();
         }
         if (thread)
             thread->join();
@@ -2267,12 +2272,15 @@ public:
         CMessageBuffer mbuf;
         byte req = 1;
         mbuf.append(req);
-        try {
+        try
+        {
             if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::take");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::take");
+            e->Release();
         }
         return !stopping;
     }
@@ -2288,14 +2296,16 @@ public:
         CMessageBuffer mbuf;
         byte req = 0;
         mbuf.append(req);
-        try {
+        try
+        {
             if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
-        catch (IException *e) {
-            EXCLOG(e,"cMultiThorResourceMutex::give");
+        catch (IException *e)
+        {
+            IERRLOG(e,"cMultiThorResourceMutex::give");
+            e->Release();
         }
-
     }
 
     //IDaliMutexNotifyWaiting
