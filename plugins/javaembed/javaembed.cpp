@@ -787,7 +787,6 @@ static void setupGlobals(CheckedJNIEnv *J)
     }
     catch (IException *E)
     {
-        Owned<IException> e = E;
         throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to load Java system classes - is classpath set properly?");
     }
 
@@ -803,7 +802,6 @@ static void setupGlobals(CheckedJNIEnv *J)
     }
     catch (IException *E)
     {
-        Owned<IException> e = E;
         throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HPCC classes - is classpath set properly?");
     }
 }
@@ -4537,7 +4535,6 @@ protected:
                     }
                     catch (IException *E)
                     {
-                        Owned<IException> e = E;
                         throw makeWrappedExceptionV(E, E->errorCode(), "Failed to resolve class name %s", classname.str());
                     }
                     javaClass = (jclass) JNIenv->NewGlobalRef(javaClass, "javaClass");

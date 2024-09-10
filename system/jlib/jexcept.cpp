@@ -301,8 +301,13 @@ public:
         return str;
     }
 protected:
-    Linked<IException> exception;
+    Owned<IException> exception;
 };
+
+IException *makeWrappedException(IException *e, int code, const char *why)
+{
+    return new WrappedException(e, code, why);
+}
 
 IException *makeWrappedExceptionVA(IException *e, int code, const char *format, va_list args)
 {
