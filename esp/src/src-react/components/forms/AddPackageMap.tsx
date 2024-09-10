@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -51,6 +51,8 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddPackageMapValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const [remoteTargets, setRemoteTargets] = React.useState<IDropdownOption[]>([]);
 
@@ -67,15 +69,21 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 WsPackageMaps.AddPackage({
                     request: data
                 })
                     .then(({ AddPackageResponse, Exceptions }) => {
                         if (AddPackageResponse?.status?.Code === 0) {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             refreshData(true);
                             reset(defaultValues);
                         } else if (Exceptions) {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             logger.error(Exceptions.Exception[0].Message);
                         }
@@ -99,7 +107,8 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm} minWidth={500}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

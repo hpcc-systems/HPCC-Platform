@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, Spinner, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -32,6 +32,8 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<GroupAddUserValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
@@ -43,6 +45,8 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request: any = data;
                 request.groupname = groupname;
                 request.action = "add";
@@ -52,9 +56,13 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
                         if (GroupMemberEditResponse?.retcode < 0) {
                             //log exception from API
                             setShowError(true);
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             setErrorMessage(GroupMemberEditResponse?.retmsg);
                             logger.error(GroupMemberEditResponse?.retmsg);
                         } else {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             reset(defaultValues);
                             if (refreshGrid) refreshGrid();
@@ -69,7 +77,8 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.PleaseSelectAUserToAdd} minWidth={400}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
         </>}>
         <Controller
