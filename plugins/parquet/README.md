@@ -1,10 +1,15 @@
-# Parquet Plugin for HPCC-Systems
+# Parquet Plugin for HPCC Systems
 
-The Parquet Plugin for HPCC-Systems is a powerful tool designed to facilitate the fast transfer of data stored in a columnar format to the ECL (Enterprise Control Language) data format. This plugin provides seamless integration between Parquet files and HPCC-Systems, enabling efficient data processing and analysis.
+The Parquet Plugin for HPCC Systems is a powerful tool designed to facilitate the fast transfer of data stored in a columnar format to the ECL (Enterprise Control Language) data format. This plugin provides seamless integration between Parquet files and HPCC Systems, enabling efficient data processing and analysis.
 
 ## Installation
 
+The Parquet Plugin comes bundled with the HPCC Platform, so there's no need for a separate download. When you install or update HPCC Systems, you'll automatically have access to the latest version of the Parquet Plugin.
+
+If the Parquet plugin is missing, you can either ensure it's enabled by turning on the `-DUSE_PARQUET=ON` option during the build, or follow the instructions below to install it manually.
+
 The plugin uses vcpkg and can be installed by creating a separate build directory from the platform and running the following commands:
+
 ```
 cd ./parquet-build
 cmake -DPARQUETEMBED=ON ../HPCC-Platform
@@ -77,5 +82,79 @@ To select the fields that you wish to partition your data on pass in a string of
 ```
 ParquetIO.HivePartition.Write(outDataset, rowSize, '/source/directory/partioned_dataset', overwriteOption, 'year;month;day');
 
-ParquetIO.DirectoryPartition.Read(outDataset, rowSize, '/source/directory/partioned_dataset', overwriteOption, 'year;month;day');
+ParquetIO.DirectoryPartition.Write(outDataset, rowSize, '/source/directory/partioned_dataset', overwriteOption, 'year;month;day');
 ```
+
+## Apache Parquet/Arrow to ECL Type Mappings
+### ECL Record to Arrow Schema Mappings
+
+| ECL Record Type | Apache Arrow/Parquet Type | Notes |
+|:----------------|:--------------------------|:------|
+| BOOLEAN         | Boolean                   |       |
+| INTEGER         | Int64                     | Defaults to 8 bytes (64-bit). Can be explicitly sized using INTEGER1, INTEGER2, INTEGER4, or INTEGER8 |
+| INTEGER8        | Int64                     |       |
+| UNSIGNED        | UInt64                    | Defaults to 8 bytes (64-bit). Can be explicitly sized using UNSIGNED1, UNSIGNED2, UNSIGNED4, or UNSIGNED8 |
+| UNSIGNED8       | UInt64                    |       |
+| REAL4           | Float                     |       |
+| REAL8           | Double                    |       |
+| DECIMAL         | LargeString               |       |
+| STRING          | LargeString               |       |
+| VARSTRING       | LargeString               |       |
+| UTF8            | LargeString               |       |
+| DATA            | LargeBinary               |       |
+| DATA[n]         | FixedSizeBinary[n]        | Where n is the fixed length |
+| SET OF          | LargeList                 |       |
+| RECORD          | Struct                    |       |
+
+
+### Default Supported Parquet/Arrow Types for ECL
+
+| Apache Parquet / Arrow Type   | Notes |
+|:------------------------------|:------|
+| Boolean                       |       |
+| Int8, Int16, Int32, Int64     | Size in ECL depends on the Arrow type |
+| UInt8, UInt16, UInt32, UInt64 | Size in ECL depends on the Arrow type |
+| Float16 (Half Float)          | Stored as REAL4 or REAL8. Processed in 64-bit buffer internally  |
+| Float                         |       |
+| Double                        |       |
+| Decimal128                    | Precision and scale in the Parquet file schema should match the ECL record definition|
+| Decimal256                    | Precision and scale in the Parquet schema should match the ECL record definition. Note that arrow::Decimal256 supports larger precision and scale than the 64-digit maximum in ECL. |
+| Date32, Date64                | Stored as days since epoch |
+| Time32, Time64                | Stored as milliseconds or microseconds since midnight (time of day) |
+| Timestamp                     | Stored as microseconds since epoch |
+| Duration                      | Measure of elapsed time in either seconds, milliseconds, microseconds or nanoseconds |
+| LargeString                   |       |
+| LargeBinary                   |       |
+| FixedSizeBinary               | Fixed-length binary data |
+| LargeList                     |       |
+| FixedSizeList                 | With fixed number of elements |
+| Struct                        | Nested structure |
+
+For more detailed information about Apache Arrow data types, refer to the [Apache Arrow Documentation](https://arrow.apache.org/docs/cpp/api/datatype.html).
+
+## Example Usage
+
+
+```
+IMPORT Parquet;
+
+// Record definition with both fixed-size and large binary fields
+BinaryTypesRecord := RECORD
+    UNSIGNED1 id;
+    DATA10 fixedBinary;  // Fixed-size binary (10 bytes)
+    DATA largeBinary;    // Large binary (variable size)
+END;
+
+// Sample dataset
+sampleData := DATASET([
+    {1, (DATA10)123.45, (DATA)6789.01},
+    {2, (DATA10)234.56, (DATA)7890.12}
+], BinaryTypesRecord);
+
+// Write and read using ParquetIO
+ParquetIO.Write(sampleData, '/var/lib/HPCCSystems/mydropzone/BinaryTypes.parquet');
+readData := ParquetIO.Read(BinaryTypesRecord, '/var/lib/HPCCSystems/mydropzone/BinaryTypes.parquet');
+
+OUTPUT(readData);
+```
+This example demonstrates how to define an ECL record structure with fixed-size and variable-size binary fields, create a sample dataset, write it to a Parquet file, and then read it back using ParquetIO, showcasing the handling of different binary data types in HPCC Systems.
