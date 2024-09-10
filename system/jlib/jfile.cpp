@@ -3099,68 +3099,6 @@ static inline bool isPCFlushAllowed()
     return false;
 }
 
-static inline size32_t doread(IFileIOStream * stream,void *dst, size32_t size)
-{
-    size32_t toread=size;
-    while (toread)
-    {
-        int read = stream->read(toread, dst);
-        if (!read) 
-            return size-toread;
-        toread -= read;
-        dst = (char *) dst + read;
-    }
-    return size;
-}
-
-
-
-CIOStreamReadWriteSeq::CIOStreamReadWriteSeq(IFileIOStream * _stream, offset_t _offset, size32_t _size)
-{
-    stream.set(_stream);
-//  stream->setThrowOnError(true);
-    size = _size;
-    offset = _offset;  // assumption that stream at correct location already
-}
-
-void CIOStreamReadWriteSeq::put(const void *src)
-{
-    stream->write(size, src);
-}
-
-void CIOStreamReadWriteSeq::putn(const void *src, unsigned n)
-{
-    stream->write(size*n, src);
-}
-
-void CIOStreamReadWriteSeq::flush()
-{
-    stream->flush();
-}
-
-offset_t CIOStreamReadWriteSeq::getPosition()
-{
-    return stream->tell();
-}
-
-bool CIOStreamReadWriteSeq::get(void *dst)
-{
-    return doread(stream,dst,size)==size;
-}
-
-unsigned CIOStreamReadWriteSeq::getn(void *dst, unsigned n)
-{
-    return doread(stream,dst,size*n)/size;
-}
-
-void CIOStreamReadWriteSeq::reset()
-{
-    stream->seek(offset, IFSbegin);
-}
-
-
-
-
 //-- Helper routines --------------------------------------------------------
 
 size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
@@ -4589,17 +4527,6 @@ IFileIOStream *createProgressIFileIOStream(IFileIOStream *iFileIOStream, offset_
     };
     return new CProgressIFileIOStream(iFileIOStream, totalSize, msg, periodSecs);
 }
-
-IReadSeq *createReadSeq(IFileIOStream * stream, offset_t offset, size32_t size)
-{
-    return new CIOStreamReadWriteSeq(stream, offset, size);
-}
-
-IWriteSeq *createWriteSeq(IFileIOStream * stream, size32_t size)
-{
-    return new CIOStreamReadWriteSeq(stream, 0, size);
-}
-
 
 
 extern jlib_decl offset_t filesize(const char *name)

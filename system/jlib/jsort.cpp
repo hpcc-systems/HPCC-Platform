@@ -696,12 +696,6 @@ bool heap_push_up(unsigned c, unsigned * heap, const void ** rows, ICompare * co
 
 typedef void ** VECTOR;
 
-interface IMergeSorter
-{
-public:
-    virtual IWriteSeq *getOutputStream(bool isEOF) = 0;
-};
-
 #define INSERTMAX 10000
 #define BUFFSIZE 0x100000   // used for output buffer
 
