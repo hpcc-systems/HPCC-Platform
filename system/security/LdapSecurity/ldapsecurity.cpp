@@ -1627,7 +1627,7 @@ void CLdapSecManager::createLdapBasedn(ISecUser* user, const char* basedn, SecPe
     m_ldap_client->createLdapBasedn(user, basedn, ptype, description);
 }
 
-const bool CLdapSecManager::organizationalUnitExists(const char * ou) const
+bool CLdapSecManager::organizationalUnitExists(const char * ou) const
 {
     return m_ldap_client->organizationalUnitExists(ou);
 }

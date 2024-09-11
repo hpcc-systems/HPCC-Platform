@@ -175,7 +175,7 @@ int main(int argc, const char *argv[])
     StringBuffer glue;
     StringBuffer prefix;
     bool sub = false;
-    for (unsigned ai=1;ai<argc;ai++) {
+    for (int ai=1;ai<argc;ai++) {
         const char *arg = argv[ai];
         if (arg[0]=='-')
         {

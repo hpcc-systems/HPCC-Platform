@@ -17,7 +17,10 @@
 
 #ifndef _CACHING_HPP__
 #define _CACHING_HPP__
+#ifdef _MSC_VER
+#pragma warning (push)
 #pragma warning(disable:4786)
+#endif
 
 #include "jliball.hpp"
 #include "seclib.hpp"
@@ -180,7 +183,7 @@ public:
         else
             setTransactionalCacheTimeout(timeoutSeconds);
     }
-    const int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
+    int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
 
     void setTransactionalEnabled(bool enable)
@@ -192,7 +195,7 @@ public:
             setTransactionalCacheTimeout(getCacheTimeout());
     }
     void setTransactionalCacheTimeout(int timeoutSeconds) { m_transactionalCacheTimeout = timeoutSeconds; }
-    const int getTransactionalCacheTimeout() { return m_transactionalCacheTimeout; }
+    int getTransactionalCacheTimeout() { return m_transactionalCacheTimeout; }
 
     bool isTransactionalEnabled() { return m_transactionalEnabled;}
 
@@ -239,4 +242,7 @@ private:
 
 time_t getThreadCreateTime();
 
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
 #endif
