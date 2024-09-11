@@ -2639,9 +2639,6 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 //Critical sections are 40bytes on linux so < 0.5% overhead for an 8K page and trivial overhead when constructed (<10ns)
 static std::atomic<cycle_t> lastLockingReportCycles{0};
 static std::atomic<cycle_t> lastLoadReportCycles{0};
-static std::atomic<unsigned> countExcessiveLock_x1{0};
-static std::atomic<unsigned> countExcessiveLock_x10{0};
-static std::atomic<unsigned> countExcessiveLock_x100{0};
 
 const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
@@ -2761,24 +2758,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         cycle_t lockingCycles = startLoadCycles - startCycles;
         if (lockingCycles > traceCacheLockingThreshold)
         {
-            if (lockingCycles >= traceCacheLockingThreshold*100)
-                countExcessiveLock_x100++;
-            else if (lockingCycles >= traceCacheLockingThreshold*10)
-                countExcessiveLock_x10++;
-            else
-                countExcessiveLock_x1++;
-
             if ((endLoadCycles - lastLockingReportCycles) >= traceCacheLockingFrequency)
             {
                 lastLockingReportCycles = endLoadCycles;
-                WARNLOG("CNodeCache::getNode lock(%s) took %lluns  counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], cycle_to_nanosec(lockingCycles),
-                         cycle_to_nanosec(traceCacheLockingThreshold),
-                         countExcessiveLock_x1.load() + countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
-                         countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
-                         countExcessiveLock_x100.load());
-                countExcessiveLock_x1 = 0;
-                countExcessiveLock_x10 = 0;
-                countExcessiveLock_x100 = 0;
+                WARNLOG("CNodeCache::getNode lock(%s) took %lluns", cacheTypeText[cacheType], cycle_to_nanosec(lockingCycles));
             }
         }
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
@@ -2787,7 +2770,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
             if ((endLoadCycles - lastLoadReportCycles) >= traceNodeLoadFrequency)
             {
                 lastLoadReportCycles = endLoadCycles;
-                WARNLOG("CNodeCache::getNode load(%s %x:%llu) took %lluus size(%u)", cacheTypeText[cacheType], iD, pos, cycle_to_microsec(actualLoadCycles), ownedCacheEntry->queryNode()->getMemSize());
+                WARNLOG("CNodeCache::getNode load(%s %x:%llu) took %lluus fetch(%lluus) size(%u)", cacheTypeText[cacheType], iD, pos,
+                        cycle_to_microsec(actualLoadCycles), cycle_to_microsec(fetchCycles), ownedCacheEntry->queryNode()->getMemSize());
             }
         }
 
