@@ -569,7 +569,7 @@ public:
         return recSelectors.get();
     }
 
-    inline const bool checkIsEsdlList() { return isEsdlList; };
+    inline bool checkIsEsdlList() { return isEsdlList; };
 };
 
 class EsdlDefAttribute : public EsdlDefObject, implements IEsdlDefAttribute
