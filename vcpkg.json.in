@@ -150,7 +150,7 @@
         {
             "name": "openblas",
             "features": [
-                "dynamic-arch",
+                @VCPKG_ECLBLAS_DYNAMIC_ARCH_FEATURE@
                 "threads"
             ],
             "platform": "@VCPKG_ECLBLAS@ & !windows"

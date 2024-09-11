@@ -155,6 +155,12 @@ if (USE_ZLIB)
     set(VCPKG_ZLIB "${VCPKG_INCLUDE}")
 endif()
 
+if (VCPKG_ECLBLAS_DYNAMIC_ARCH)
+    set(VCPKG_ECLBLAS_DYNAMIC_ARCH_FEATURE "\"dynamic-arch\",")
+else ()
+    set(VCPKG_ECLBLAS_DYNAMIC_ARCH_FEATURE "")
+endif()
+
 configure_file("${HPCC_SOURCE_DIR}/vcpkg.json.in" "${HPCC_SOURCE_DIR}/vcpkg.json")
 
 endif()
