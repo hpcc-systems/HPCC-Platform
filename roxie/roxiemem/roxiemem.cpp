@@ -9193,7 +9193,6 @@ protected:
         {
             for (unsigned i=0; i < 10000; i++)
             {
-                unsigned total = 0;
                 for (unsigned j=0; j < numAllocs; j++)
                 {
                     unsigned blks = ((rand() % 4) + 1);
@@ -9203,7 +9202,6 @@ protected:
                         continue;
                     void * newrow = rowManager->allocate(size, 0);
                     rowset[target] = newrow;
-                    total += numAllocs;
                 }
             }
         }

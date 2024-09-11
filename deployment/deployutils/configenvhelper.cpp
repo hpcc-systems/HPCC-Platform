@@ -148,7 +148,6 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
   unsigned int nComputers = 0;//computers.size();
   IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
   IPropertyTree* pFarm;
-  bool bNewFarm;
   StringBuffer sFarmName;
   StringBuffer xpath;
 
@@ -161,7 +160,6 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
       return false;
 
     sFarmName = pFarm->queryProp(XML_ATTR_NAME);
-    bNewFarm = false;
 
     if (!pFarm->hasProp("@port"))
       pFarm->addPropInt("@port", 9876);
@@ -184,7 +182,6 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
   {
     xpath.clear().appendf("RoxieCluster[@name='%s']/" XML_TAG_ROXIE_FARM, pszRoxieCluster);
     createUniqueName("farm", xpath.str(), sFarmName);
-    bNewFarm = true;
 
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
       

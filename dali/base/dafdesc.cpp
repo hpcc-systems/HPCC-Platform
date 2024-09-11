@@ -3243,14 +3243,12 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
                     throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,p);
                 RemoteFilename rfn;
                 rfn.setRemotePath(path);
-                bool found = false;
                 ForEachItemIn(d,locdirs) {
                     if (strcmp(rfn.getLocalPath(locpath.clear()).str(),locdirs.item(d))==0) {
                         SocketEndpoint ep = rfn.queryEndpoint();
                         if (ep.port==DAFILESRV_PORT || ep.port==SECURE_DAFILESRV_PORT)
                             ep.port = 0;
                         epa[d].append(ep);
-                        found = true;
                         break;
                     }
                 }
