@@ -399,7 +399,6 @@ int main(int argc, char * const * argv)
     try
     {
         bool test=false;
-        unsigned arg = 1;
         StringBuffer fname1;
         StringBuffer fname2;
         bool lzw = false;

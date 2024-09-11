@@ -159,16 +159,16 @@ unsigned long mcrc32(const char *buf, unsigned len, unsigned long crc)
 
     switch (len)
     {
-    case 11: c = *buf++; crc = UPDC32(c,crc);
-    case 10: c = *buf++; crc = UPDC32(c,crc);
-    case 9: c = *buf++; crc = UPDC32(c,crc);
-    case 8: c = *buf++; crc = UPDC32(c,crc);
-    case 7: c = *buf++; crc = UPDC32(c,crc);
-    case 6: c = *buf++; crc = UPDC32(c,crc);
-    case 5: c = *buf++; crc = UPDC32(c,crc);
-    case 4: c = *buf++; crc = UPDC32(c,crc);
-    case 3: c = *buf++; crc = UPDC32(c,crc);
-    case 2: c = *buf++; crc = UPDC32(c,crc);
+    case 11: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 10: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 9: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 8: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 7: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 6: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 5: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 4: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 3: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
+    case 2: c = *buf++; crc = UPDC32(c,crc); [[fallthrough]];
     case 1: c = *buf++; crc = UPDC32(c,crc);
     }
 

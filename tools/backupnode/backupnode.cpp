@@ -86,12 +86,12 @@ static void printerr(const char *format, ...) __attribute__((format(printf, 1, 2
 }
 #endif
 
+#ifdef _WIN32
 static bool shouldCompressFile(const char *name)
 {
     if (compressAll)
         return true;
     OwnedIFile file = createIFile(name);
-    bool iskey = false;
     unsigned __int64 filesize = file->size();
     if (filesize < MINCOMPRESS_THRESHOLD)
     {
@@ -101,7 +101,7 @@ static bool shouldCompressFile(const char *name)
     }
     return !isCompressedIndex(name);
 }
-
+#endif
 
 static bool CopySingleFile(IFile *srcfile,IFile *dstfile, bool compress, bool suppressnotfounderrs)
 {
@@ -216,7 +216,6 @@ static void usage()
     printf("   generates data files in outdir containing all files to be checked (*.DAT) \n\n");
     printf("Options:\n");
     printf("  -A - compression options apply to all files (normally excludes small files and all keys)\n");
-    printf("  -B - use /mnt/mirror for replicate target\n");
     printf("  -C - compress files on target (including existing files)\n");
     printf("  -D - overwrite existing files if size/date mismatch\n");
     printf("  -E - set compression state of existing files\n");
@@ -227,7 +226,6 @@ static void usage()
     printf("  -Q - quiet mode: only errors are reported\n");
     printf("  -V - verbose mode\n");
     printf("  -Y - report what would have been copied/compressed but do nothing\n");
-    printf("  -S - snmp enabled\n");
     printf("  -X <dir> - read part lists (%%n.DAT) from and write %%n.ERR to specified dir\n");
     exit(2);
 }
@@ -290,7 +288,7 @@ static void CopyDirectory(const char *source, const char *target, unsigned numSl
                 targetname.append(PATHSEPCHAR);
                 dir->getName(targetname);
                 OwnedIFile destFile = createIFile(targetname.str());
-                if ((destFile->size()==-1) || (sourceIsMaster && different(*destFile, sourceFile)))
+                if ((destFile->size()==(offset_t)-1) || (sourceIsMaster && different(*destFile, sourceFile)))
                 {
                     if (first && !checkMode)
                     {
@@ -526,8 +524,6 @@ int main(int argc, const char *argv[])
     bool thorMode = false;
     bool waitMode = false;
     bool forceSlaveIP = false;
-    bool snmpEnabled = false;
-    bool useMirrorMount = false;
     bool outputMode = false;
     StringAttr errdatdir;
     StringArray args;
@@ -549,7 +545,8 @@ int main(int argc, const char *argv[])
                     compressAll = true;
                     break;
                 case 'B':
-                    useMirrorMount = true;
+                    // Deprecated option - ignore
+                    println("Ignoring deprecated option B");
                     break;
                 case 'C':
                     compress = true;
@@ -586,7 +583,8 @@ int main(int argc, const char *argv[])
                         silent = true;
                     break;
                 case 'S':
-                    snmpEnabled = true;
+                    // Deprecated option - ignore
+                    println("Ignoring deprecated option S");
                     break;
                 case 'T':
                     thorMode = true;
@@ -637,7 +635,7 @@ int main(int argc, const char *argv[])
             slaveNum = atoi(args.item(0));
             numSlaves = atoi(args.item(1));
             const char *myIp = args.item(2);
-            const char *backupIp = args.item(3);
+            [[maybe_unused]] const char *backupIp = args.item(3);
 
             setDaliServixSocketCaching(true); 
             if (!slaveNum || slaveNum>numSlaves)
