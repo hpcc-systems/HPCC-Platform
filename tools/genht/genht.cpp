@@ -124,7 +124,6 @@ void process(const char *fname)
     bool valuesshort = true;
     strcpy(eclmodname,"UNKNOWN");
     char ln[1024];
-    bool gotheader=false;
     unsigned count = 0;
     unsigned lastres = (unsigned)-1;
     unsigned lastpos = 0;
@@ -187,7 +186,6 @@ void process(const char *fname)
             else if (memcmp(ln,"MAPVALUE:",9)==0) 
                 mapvalue = ln[9]=='Y';
 */
-            gotheader = true;
         }
     }
     fclose(inFile);
