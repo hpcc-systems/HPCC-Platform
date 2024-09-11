@@ -379,7 +379,7 @@ namespace xpp {
 
 
        }
-     } catch(XmlTokenizerException ex) {
+     } catch(XmlTokenizerException const &ex) {
        throw XmlPullParserException(string("tokenizer exception: ") 
          + ex.getMessage());
      }
@@ -588,7 +588,7 @@ namespace xpp {
             +to_string(token));      
         }
       }
-    } catch(XmlTokenizerException ex) {
+    } catch(XmlTokenizerException const &ex) {
       throw XmlPullParserException(string("tokenizer exception: ") 
         + ex.getMessage());
     }
@@ -759,8 +759,8 @@ namespace xpp {
       if(elStackSize < newSize) {
         ElementContent* newStack = new ElementContent[newSize];
         if(elStack != NULL) {
-          //System.arraycopy(elStack, 0, newStack, 0, elStackDepth);
-          memcpy(newStack, elStack, elStackDepth * sizeof(newStack[0]));
+          for(int i = 0; i < elStackDepth; ++i)
+            new(newStack+i) ElementContent(std::move(elStack[i]));
           delete [] elStack;
           elStack = NULL;
         }
@@ -876,6 +876,21 @@ namespace xpp {
           defaultNs = NULL;
           qName = uri = localName = NULL;
           prevNsBufPos = -1;
+        }
+
+        ElementContent(ElementContent &&src) {
+          qName = src.qName;
+          uri = src.uri;
+          localName = src.localName;
+          prefix = src.prefix;
+          defaultNs = src.defaultNs;
+          prevNsBufPos = src.prevNsBufPos;
+          prefixesEnd = src.prefixesEnd;
+          prefixesSize = src.prefixesSize;
+          prefixes = src.prefixes;
+          src.prefixes = NULL;
+          prefixPrevNs = src.prefixPrevNs; 
+          src.prefixPrevNs = NULL;
         }
 
         ~ElementContent() {
