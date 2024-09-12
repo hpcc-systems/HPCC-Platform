@@ -278,3 +278,11 @@ export function updateState(key: string, val?: string | string[] | number | bool
     }
     globalHistory.replaceState(state, "");
 }
+
+export function navCategory(hash: string): string {
+    let category = hash.split("/").slice(0, 2).join("/");
+    if (category.indexOf("?") > -1) {
+        category = category.substring(0, category.indexOf("?"));
+    }
+    return category;
+}
