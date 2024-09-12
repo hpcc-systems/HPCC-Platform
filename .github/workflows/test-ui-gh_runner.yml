@@ -33,6 +33,7 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android
           echo "user:$USER"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
           
 
       - name: Download UI Test Files
