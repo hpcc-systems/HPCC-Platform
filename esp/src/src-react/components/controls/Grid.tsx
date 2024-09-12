@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, Sticky } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -293,45 +293,22 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [memoizedColumns]);
 
     const renderDetailsHeader = React.useCallback((props: IDetailsHeaderProps, defaultRender?: any) => {
-        return defaultRender({
-            ...props,
-            onRenderColumnHeaderTooltip: (tooltipHostProps) => {
-                return <TooltipHost {...tooltipHostProps} content={tooltipHostProps?.column?.data?.headerTooltip ?? ""} />;
-            },
-            styles: { root: { paddingTop: 1 } }
-        });
+        return <Sticky>
+            {defaultRender({
+                ...props,
+                onRenderColumnHeaderTooltip: (tooltipHostProps) => {
+                    return <TooltipHost {...tooltipHostProps} content={tooltipHostProps?.column?.data?.headerTooltip ?? ""} />;
+                },
+                styles: { root: { paddingTop: 1 } }
+            })}
+        </Sticky>;
     }, []);
 
     const columnResize = React.useCallback((column: IColumn, newWidth: number, columnIndex?: number) => {
         columnWidths.set(column.key, newWidth);
     }, [columnWidths]);
 
-    /*  Monitor Scroll Events (hack)
-
-        Essentially we are setting the scrollElement of the DetailsList to the div that contains the DetailsList (rather than a scrollable pane host).
-        See:  https://github.com/microsoft/fluentui/blob/55d3a31042e8972ea373841bef616c68e6ab69f9/packages/react/src/components/List/List.tsx#L355-L369
-
-        Note: Not sure if `_onScroll` call is needed, but excluding for now as it seems to work without it and is more performant.
-    */
-    // const id = useId("fluent-store-grid-");
-    // const detailListScrollComponent = React.useRef<HTMLDivElement | null>(null);
-    // const detailListComponent = React.useRef<IDetailsListEx | null>(null);
-    // const [detailListElement, setDetailListElement] = React.useState<HTMLDivElement | null>(null);
-    // useMount(() => {
-    //     const detailListElement = document.querySelector<HTMLDivElement>(`#${id} .ms-DetailsList`);
-    //     setDetailListElement(detailListElement);
-    //     if (detailListComponent.current?._list?.current) {
-    //         detailListComponent.current._list.current._scrollElement = detailListElement;
-    //     }
-    // });
-    // useOnEvent(detailListScrollComponent, "scroll", () => {
-    //     detailListComponent.current?._list?.current?._onScroll();
-    // });
-    // useOnEvent(detailListScrollComponent, "scroll", () => {
-    //     detailListComponent.current?._list?.current?._onAsyncScrollDebounced();
-    // });
-
-    return <div data-is-scrollable={"true"} style={{ overflow: "auto" }}>
+    return <ScrollablePane>
         <DetailsList
             compact={true}
             items={items}
@@ -348,7 +325,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             styles={gridStyles(height)}
             selectionMode={selectionMode}
         />
-    </div>;
+    </ScrollablePane>;
 };
 
 interface FluentGridProps {
