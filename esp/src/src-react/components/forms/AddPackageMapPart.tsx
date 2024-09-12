@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
@@ -50,6 +50,8 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
     refreshData,
 }) => {
     const { handleSubmit, control, reset } = useForm<AddPackageMapPartValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -58,15 +60,21 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 WsPackageMaps.AddPartToPackageMap({
                     request: { ...data, Target: target, PackageMap: packageMap }
                 })
                     .then(({ AddPartToPackageMapResponse, Exceptions }) => {
                         if (AddPartToPackageMapResponse?.status?.Code === 0) {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             if (refreshData) refreshData();
                             reset(defaultValues);
                         } else if (Exceptions) {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             logger.error(Exceptions.Exception[0].Message);
                         }
@@ -82,7 +90,8 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

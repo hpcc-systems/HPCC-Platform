@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -37,6 +37,8 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
 
     const [file] = useFile(cluster, logicalFile);
     const { handleSubmit, control, reset } = useForm<ReplicateFileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -45,8 +47,12 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request = { ...data, srcname: logicalFile };
                 FileSpray.Replicate({ request: request }).then(response => {
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
                     closeForm();
                     pushUrl(`/dfuworkunits/${response?.ReplicateResponse?.wuid}`);
                 });
@@ -64,7 +70,8 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Rename} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Replicate} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Replicate} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>
