@@ -9,6 +9,9 @@ export default {
     themeConfig: {
         repo: "hpcc-systems/HPCC-Platform",
         docsBranch: "master",
+        search: {
+            provider: 'local'
+        }, 
         editLink: {
             pattern: 'https://github.com/hpcc-systems/HPCC-Platform/edit/master/:path',
             text: 'Edit this page on GitHub'
