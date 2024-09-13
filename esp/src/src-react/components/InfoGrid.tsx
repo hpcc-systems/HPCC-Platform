@@ -5,7 +5,6 @@ import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { pivotItemStyle } from "../layouts/pivot";
 
 function extractGraphInfo(msg) {
     const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
@@ -237,23 +236,19 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         }
     }, [data.length]);
 
-    return <div style={{ height: "100%", overflowY: "hidden" }}>
+    return <div style={{ height: "100%" }}>
         <CommandBar items={buttons} farItems={copyButtons} />
         <SizeMe monitorHeight >{({ size }) =>
-            <div style={{ height: "100%", overflowY: "hidden" }}>
-                <div style={{ ...pivotItemStyle(size), overflowY: "hidden" }}>
-                    <FluentGrid
-                        data={data}
-                        primaryID={"id"}
-                        columns={columns}
-                        setSelection={_ => { }}
-                        setTotal={setTotal}
-                        refresh={refreshTable}
-                        height={`${size.height - (44 + 8 + 45 + 12)}px`}
-                        selectionMode={SelectionMode.none}
-                    ></FluentGrid>
-                </div>
-            </div>
+            <FluentGrid
+                data={data}
+                primaryID={"id"}
+                columns={columns}
+                setSelection={_ => { }}
+                setTotal={setTotal}
+                refresh={refreshTable}
+                height={`${size.height - (44 + 8 + 45 + 12)}px`}
+                selectionMode={SelectionMode.none}
+            ></FluentGrid>
         }</SizeMe>
     </div>;
 };

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
@@ -65,6 +65,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
     const [, { isContainer }] = useBuildInfo();
 
     const { handleSubmit, control, reset } = useForm<BlobImportFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -74,6 +76,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 let request = {};
                 const files = data.selectedFiles;
 
@@ -115,6 +119,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                             }
                         });
                         if (errors.length === 0) {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                         }
                     }
@@ -153,7 +159,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
 
     return <MessageBox title={`${nlsHPCC.Import} ${nlsHPCC.Blob}`} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Import} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Import} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService, FileSprayStates } from "@hpcc-js/comms";
@@ -39,6 +39,8 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<RenameFileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const service = useConst(() => new FileSprayService({ baseUrl: "" }));
 
@@ -49,6 +51,8 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             async (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const renameRequests = [];
                 const getDfuWuRequests = [];
 
@@ -87,6 +91,8 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                         }
                     }
                 });
+                setSubmitDisabled(false);
+                setSpinnerHidden(true);
                 closeForm();
                 if (refreshGrid) refreshGrid(true);
             },
@@ -116,7 +122,8 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Rename} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Rename} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Rename} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

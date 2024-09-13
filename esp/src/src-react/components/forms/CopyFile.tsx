@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -56,6 +56,8 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<CopyFileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -64,10 +66,14 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 if (logicalFiles.length > 0) {
                     if (logicalFiles.length === 1) {
                         const request = { ...data, sourceLogicalName: logicalFiles[0] };
                         FileSpray.Copy({ request: request }).then(response => {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             pushUrl(`/dfuworkunits/${response.CopyResponse.result}`);
                         });
@@ -77,6 +83,8 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                             const requests = [];
                             requests.push(FileSpray.Copy({ request: request }));
                             Promise.all(requests).then(_ => {
+                                setSubmitDisabled(false);
+                                setSpinnerHidden(true);
                                 closeForm();
                                 if (refreshGrid) refreshGrid();
                             });
@@ -115,7 +123,8 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Copy} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Copy} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Copy} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

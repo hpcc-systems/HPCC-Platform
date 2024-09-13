@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, MessageBar, MessageBarType, PrimaryButton, TextField, } from "@fluentui/react";
+import { DefaultButton, MessageBar, MessageBarType, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -29,6 +29,8 @@ export const PushEventForm: React.FunctionComponent<PushEventProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<PushEventValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
@@ -40,6 +42,8 @@ export const PushEventForm: React.FunctionComponent<PushEventProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request: any = data;
 
                 WsWorkunits.WUPushEvent({ request: request })
@@ -47,9 +51,13 @@ export const PushEventForm: React.FunctionComponent<PushEventProps> = ({
                         if (WUPushEventResponse?.retcode < 0) {
                             //log exception from API
                             setShowError(true);
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             setErrorMessage(WUPushEventResponse?.retmsg);
                             logger.error(WUPushEventResponse?.retmsg);
                         } else {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             reset(defaultValues);
                         }
@@ -62,7 +70,8 @@ export const PushEventForm: React.FunctionComponent<PushEventProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.PushEvent} minWidth={400}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Apply} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Apply} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
         </>}>
         <Controller
