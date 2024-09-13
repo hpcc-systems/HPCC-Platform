@@ -150,9 +150,9 @@ In case of workflow_call, the event type of called workflow shares the same even
       done
     elif [[ "${EVENT_TYPE}" == "pull_request" ]]; then
       git diff --name-only HEAD^1 HEAD > updatedFiles.txt
-      cat updatedFiles.txt | grep -E "*.xml" | tee xmlFilesList.txt
-      cat updatedFiles.txt | grep -E "*.md"  | tee mdFilesList.txt
-      cat updatedFiles.txt | grep -E "*.rst" | tee rstFilesList.txt
+      cat updatedFiles.txt | grep -E "*\.xml" | tee xmlFilesList.txt
+      cat updatedFiles.txt | grep -E "*\.md"  | tee mdFilesList.txt
+      cat updatedFiles.txt | grep -E "*\.rst" | tee rstFilesList.txt
     fi  
 ```
 
