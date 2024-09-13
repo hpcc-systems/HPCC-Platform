@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
@@ -43,6 +43,8 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddGroupResourceFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -51,6 +53,8 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request: any = data;
 
                 request["action"] = "update";
@@ -60,6 +64,8 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
 
                 service.PermissionAction(request)
                     .then(() => {
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         closeForm();
                         reset(defaultValues);
                         if (refreshGrid) refreshGrid();
@@ -73,7 +79,8 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddGroup} minWidth={400}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
         </>}>
         <Controller

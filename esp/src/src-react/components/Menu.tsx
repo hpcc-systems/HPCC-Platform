@@ -4,6 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
 import { containerized, bare_metal } from "src/BuildInfo";
+import { navCategory } from "../util/history";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useSessionStore } from "../hooks/store";
@@ -98,7 +99,7 @@ routes.forEach((route: any) => {
 });
 
 function navSelectedKey(hashPath) {
-    const rootPath = navIdx(`/${hashPath?.split("/")[1]}`);
+    const rootPath = navIdx(`/${navCategory(hashPath)?.split("/")[1]}`);
     if (rootPath?.length) {
         return rootPath[0];
     }
@@ -164,7 +165,7 @@ const subMenuItems: SubMenuItems = {
     "files": [
         { headerText: nlsHPCC.LogicalFiles, itemKey: "/files" },
         { headerText: nlsHPCC.LandingZones, itemKey: "/landingzone" },
-        { headerText: nlsHPCC.Workunits, itemKey: "/dfuworkunits" },
+        { headerText: nlsHPCC.title_GetDFUWorkunits, itemKey: "/dfuworkunits" },
         { headerText: nlsHPCC.XRef + " (L)", itemKey: "/xref" },
     ],
     "queries": [
@@ -215,8 +216,8 @@ for (const key in subMenuItems) {
 }
 
 function subNavSelectedKey(hashPath) {
-    const hashCategory = hashPath.split("/").slice(0, 3).join("/");
-    return subNavIdx(hashCategory).length ? hashCategory : null;
+    const category = navCategory(hashPath);
+    return subNavIdx(category).length ? category : null;
 }
 
 interface SubNavigationProps {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, TextField } from "@fluentui/react";
+import { DefaultButton, PrimaryButton, Spinner, TextField } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
@@ -31,6 +31,8 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddFileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -39,6 +41,8 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const dropZone = {
                     ...store.get(data.NetAddress),
                     NetAddress: data.NetAddress
@@ -57,6 +61,8 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
                 };
                 store.addUserFile(file);
                 refreshGrid();
+                setSubmitDisabled(false);
+                setSpinnerHidden(true);
                 closeForm();
                 reset(defaultValues);
             },
@@ -68,7 +74,8 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
 
     return <MessageBox title={nlsHPCC.AddFile} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Controller

@@ -8759,14 +8759,26 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     lower.append(propname);
     if (!strchr(lower, ':'))
         lower.toLowerCase();
-    CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    if (overwrite || !p->hasProp(prop.str()))
+    try
     {
-        // MORE - not sure this line should be needed....
-        p->setProp("Debug", "");
-        p->setProp(prop.str(), value);
+        CriticalBlock block(crit);
+        StringBuffer prop("Debug/");
+        prop.append(lower);
+        if (overwrite || !p->hasProp(prop.str()))
+        {
+            // MORE - not sure this line should be needed....
+            p->setProp("Debug", "");
+            p->setProp(prop.str(), value);
+        }
+    }
+    catch (IException * e)
+    {
+        if (!validateXMLTag(propname))
+        {
+            e->Release();
+            throw makeStringExceptionV(WUERR_InvalidDebugValueName, "Attempt to set debug value with invalid name: %s", propname);
+        }
+        throw;
     }
 }
 
@@ -8844,14 +8856,26 @@ void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool over
     lower.append(propname);
     if (!strchr(lower, ':'))
         lower.toLowerCase();
-    CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    if (overwrite || !p->hasProp(prop.str()))
+    try
     {
-        // MORE - not sure this line should be needed....
-        p->setProp("Debug", "");
-        p->setPropInt(prop.str(), value);
+        CriticalBlock block(crit);
+        StringBuffer prop("Debug/");
+        prop.append(lower);
+        if (overwrite || !p->hasProp(prop.str()))
+        {
+            // MORE - not sure this line should be needed....
+            p->setProp("Debug", "");
+            p->setPropInt(prop.str(), value);
+        }
+    }
+    catch (IException * e)
+    {
+        if (!validateXMLTag(propname))
+        {
+            e->Release();
+            throw makeStringExceptionV(WUERR_InvalidDebugValueName, "Attempt to set debug value with invalid name: %s", propname);
+        }
+        throw;
     }
 }
 

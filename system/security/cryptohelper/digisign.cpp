@@ -271,7 +271,6 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromFiles"));
 
             exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load public key file"));
-            e->Release();
         }
     }
 
@@ -287,7 +286,6 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromFiles"));
 
             exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load private key file"));
-            e->Release();
         }
     }
 
@@ -331,7 +329,6 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
 
             exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromKeys:Cannot load public key"));
-            e->Release();
         }
     }
     if (!isEmptyString(privKeyString))
@@ -346,7 +343,6 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
 
             exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromKeys:Cannot load private key"));
-            e->Release();
         }
     }
 
