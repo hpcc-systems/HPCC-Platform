@@ -1850,6 +1850,11 @@ public:
         else
             return NULL;
     }
+
+    virtual IPropertyTree *getQueryStats(time_t from, time_t to) override
+    {
+        return queryStats->getStats(from, to);
+    }
 };
 
 unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)

@@ -87,7 +87,6 @@ protected:
     unsigned flags;
 };
 
-
 class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
@@ -121,6 +120,7 @@ protected:
     IFOmode             openmode;
     IFEflags            extraFlags;
     FileIOStats         stats;
+    int fileSyncMaxRetrySecs = fileSyncRetryDisabled; // enabled conditionally in ctor
     RelaxedAtomic<unsigned> unflushedReadBytes; // more: If this recorded flushedReadBytes it could have a slightly lower overhead
     RelaxedAtomic<unsigned> unflushedWriteBytes;
 private:
@@ -250,34 +250,6 @@ public:
 protected:
     Linked<IFileIOStream>     stream;
 };
-
-
-class jlib_decl CIOStreamReadWriteSeq : public IWriteSeq, public IReadSeq, public CInterface
-{
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CIOStreamReadWriteSeq(IFileIOStream * _stream, offset_t _offset, size32_t _size);
-
-    virtual void put(const void *src);
-    virtual void putn(const void *src, unsigned n);
-    virtual void flush();
-    virtual size32_t getRecordSize() { return size; }
-    virtual offset_t getPosition();
-
-    virtual bool get(void *dst);
-    virtual unsigned getn(void *dst, unsigned n);
-    virtual void reset();
-    virtual void stop() {} // no action required
-
-private:
-    offset_t offset;
-    size32_t    size;
-    Linked<IFileIOStream> stream;
-};
-
-
-
 
 
 class jlib_decl DirectBufferI : implements IFileIO, public CInterface

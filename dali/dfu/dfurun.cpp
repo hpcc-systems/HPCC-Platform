@@ -670,7 +670,16 @@ public:
                 authorized = HASREADPERMISSION(perm);
             }
             if (!authorized)
-                throw makeStringExceptionV(DFSERR_LookupAccessDenied,"Lookup permission denied for foreign file: %s",logicalName.str());
+            {
+                StringBuffer context;
+                StringBuffer username;
+                if (user)
+                    user->getUserName(username);
+                else
+                    username.append("Null user");
+                context.appendf("user: '%s', assigned access %s (%d)", username.str(), getSecAccessFlagName(perm), perm);
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for foreign file: %s, %s", logicalName.str(), context.str());
+            }
         }
     }
 

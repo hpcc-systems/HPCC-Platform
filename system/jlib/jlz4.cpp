@@ -276,7 +276,7 @@ public:
 
             for (;;)
             {
-                //Try and compress into the current target buffer.  If too small increase size and repeat
+                //Try and decompress into the current target buffer.  If too small increase size and repeat
                 written = LZ4_decompress_safe((const char *)in, (char *)target.reserve(maxOut), szchunk, maxOut);
                 if ((int)written > 0)
                 {

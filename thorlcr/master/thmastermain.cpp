@@ -19,6 +19,10 @@
 
 #include "platform.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -266,8 +270,8 @@ public:
     }
     void connect(unsigned workers)
     {
-        IPointerArrayOf<INode> connectedWorkers;
-        connectedWorkers.ensureCapacity(workers);
+        std::vector<CConnectedWorkerDetail> connectedWorkers;
+        connectedWorkers.reserve(workers);
         unsigned remaining = workers;
         INode *_sender = nullptr;
         CMessageBuffer msg;
@@ -300,11 +304,15 @@ public:
             else
             {
                 Owned<INode> sender = _sender;
-                if (NotFound != connectedWorkers.find(sender))
+                StringBuffer workerEPStr;
+                sender->endpoint().getEndpointHostText(workerEPStr);
+
+                auto findFunc = [&workerEPStr](const CConnectedWorkerDetail& worker)
                 {
-                    StringBuffer epStr;
-                    throw makeStringExceptionV(TE_AbortException, "Same worker registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
-                }
+                    return streq(worker.host.c_str(), workerEPStr.str());
+                };
+                if (connectedWorkers.end() != std::find_if(connectedWorkers.begin(), connectedWorkers.end(), findFunc))
+                    throw makeStringExceptionV(TE_AbortException, "Same worker registered twice!! : %s", workerEPStr.str());
 
                 /* NB: in base metal setup, the workers know which worker number they are in advance, and send their workerNum at registration.
                 * In non attached storage setup, they do not send a worker by default and instead are given a # once all are registered
@@ -314,31 +322,61 @@ public:
                 StringBuffer workerPodName, workerContainerName;
                 if (NotFound == workerNum)
                 {
-                    connectedWorkers.append(sender.getLink());
-                    workerNum = connectedWorkers.ordinality();
                     if (isContainerized())
                     {
                         msg.read(workerPodName);
                         msg.read(workerContainerName);
-                        addConnectedWorkerPod(workerPodName, workerContainerName); // NB: these are added in worker # order
                     }
+                    connectedWorkers.emplace_back(workerEPStr.str(), workerPodName.str(), workerContainerName.str());
+                    PROGLOG("Worker connected from %s", workerEPStr.str());
                 }
                 else
                 {
                     unsigned pos = workerNum - 1; // NB: workerNum is 1 based
-                    while (connectedWorkers.ordinality() < pos)
-                        connectedWorkers.append(nullptr);
-                    if (connectedWorkers.ordinality() == pos)
-                        connectedWorkers.append(sender.getLink());
+                    while (connectedWorkers.size() < pos)
+                        connectedWorkers.emplace_back();
+                    if (connectedWorkers.size() == pos)
+                        connectedWorkers.emplace_back(workerEPStr.str());
                     else
-                        connectedWorkers.replace(sender.getLink(), pos);
+                        connectedWorkers[pos] = {workerEPStr.str()};
+                    PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
                 }
-                StringBuffer epStr;
-                PROGLOG("Worker %u connected from %s", workerNum, sender->endpoint().getEndpointHostText(epStr).str());
                 --remaining;
             }
         }
-        assertex(workers == connectedWorkers.ordinality());
+        assertex(workers == connectedWorkers.size());
+
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
+        unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
+        unsigned channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
+
+        Owned<IGroup> processGroup;
+
+        // NB: in bare metal Thor is bound to a group and cluster/communicator have already been setup (see earlier setClusterGroup call)
+        if (clusterInitialized())
+            processGroup.set(&queryProcessGroup());
+        else
+        {
+            if (isContainerized())
+            {
+                // sort by pod+container name so that storage striping doesn't clump too much within single pods
+                auto sortFunc = [](const CConnectedWorkerDetail& a, const CConnectedWorkerDetail& b)
+                {
+                    if (a.podName != b.podName)
+                        return a.podName < b.podName;
+                    return a.containerName < b.containerName;
+                };
+                std::sort(connectedWorkers.begin(), connectedWorkers.end(), sortFunc);
+            }
+            SocketEndpointArray connectedWorkerEps;
+            for (const auto &worker: connectedWorkers)
+            {
+                SocketEndpoint ep(worker.host.c_str());
+                connectedWorkerEps.append(ep);
+            }
+            processGroup.setown(createIGroup(connectedWorkerEps));
+            setupCluster(queryMyNode(), processGroup, channelsPerWorker, workerBasePort, localThorPortInc);
+        }
 
         if (isContainerized())
         {
@@ -348,38 +386,7 @@ public:
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
             addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
-            publishPodNames(workunit, graphName);
-        }
-
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
-        unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
-        unsigned channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
-
-        Owned<IGroup> processGroup;
-
-        // NB: in bare metal Thor is bound to a group and cluster/communicator have alreday been setup (see earlier setClusterGroup call)
-        if (clusterInitialized())
-            processGroup.set(&queryProcessGroup());
-        else
-        {
-            /* sort by {port, ip}
-             * So that workers are not bunched on same node, but striped across the pod ips
-             */
-            auto compareINodeOrder = [](IInterface * const *ll, IInterface * const *rr)
-            {
-                INode *l = (INode *) *ll;
-                INode *r = (INode *) *rr;
-                const SocketEndpoint &lep = l->endpoint();
-                const SocketEndpoint &rep = r->endpoint();
-                if (lep.port < rep.port)
-                    return -1;
-                else if (lep.port > rep.port)
-                    return 1;
-                return lep.ipcompare(rep);
-            };
-            connectedWorkers.sort(compareINodeOrder);
-            processGroup.setown(createIGroup(connectedWorkers.ordinality(), connectedWorkers.getArray()));
-            setupCluster(queryMyNode(), processGroup, channelsPerWorker, workerBasePort, localThorPortInc);
+            publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
         PROGLOG("Workers connected, initializing..");

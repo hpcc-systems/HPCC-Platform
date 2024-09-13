@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, PrimaryButton, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -46,6 +46,8 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
     const [workunit] = useWorkunit(wuid);
 
     const { handleSubmit, control, reset } = useForm<PublishFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -54,6 +56,8 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request = {
                     Wuid: workunit?.Wuid,
                     Cluster: workunit?.Cluster,
@@ -70,6 +74,8 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
                 workunit.publishEx(request).then(() => {
                     return workunit.update({ Jobname: data.jobName });
                 }).then(() => {
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
                     closeForm();
                     reset(defaultValues);
                 }).catch(err => logger.error(err));
@@ -86,7 +92,8 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.Publish}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Publish} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Publish} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Controller
