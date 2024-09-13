@@ -25,7 +25,7 @@ env:
 jobs:
 
   main:
-    timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
+    timeout-minutes: 100 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ${{ inputs.os }}
     steps:
 
