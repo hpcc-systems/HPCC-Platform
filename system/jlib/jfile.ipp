@@ -87,7 +87,6 @@ protected:
     unsigned flags;
 };
 
-
 class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
@@ -121,6 +120,7 @@ protected:
     IFOmode             openmode;
     IFEflags            extraFlags;
     FileIOStats         stats;
+    int fileSyncMaxRetrySecs = fileSyncRetryDisabled; // enabled conditionally in ctor
     RelaxedAtomic<unsigned> unflushedReadBytes; // more: If this recorded flushedReadBytes it could have a slightly lower overhead
     RelaxedAtomic<unsigned> unflushedWriteBytes;
 private:
