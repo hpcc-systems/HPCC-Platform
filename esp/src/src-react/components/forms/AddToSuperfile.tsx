@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChoiceGroup, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { ChoiceGroup, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -48,6 +48,8 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddToSuperfileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -56,8 +58,12 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 WsDfu.AddtoSuperfile(data.names, data.superFile, data.existingFile)
                     .then(response => {
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         closeForm();
                         if (refreshGrid) refreshGrid(true);
                     })
@@ -83,7 +89,8 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
 
     return <MessageBox title={nlsHPCC.AddToSuperfile} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

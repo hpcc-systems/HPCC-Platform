@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, PrimaryButton, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { EsdlDefinitionsTextField, EsdlEspProcessesTextField } from "./Fields";
@@ -39,6 +39,8 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddBindingFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -47,11 +49,16 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
+
                 const request: any = data;
                 request.Overwrite = true;
 
                 WsESDLConfig.PublishESDLBinding({ request: request })
                     .then(() => {
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         closeForm();
                         reset(defaultValues);
                         if (refreshGrid) refreshGrid();
@@ -66,7 +73,8 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddBinding}
         minWidth={minWidth}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Controller

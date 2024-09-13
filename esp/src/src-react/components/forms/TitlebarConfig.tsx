@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, TextField, TooltipHost } from "@fluentui/react";
+import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { MessageBox } from "../../layouts/MessageBox";
 import { useGlobalStore } from "../../hooks/store";
@@ -32,6 +32,8 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     setShowForm
 }) => {
     const { handleSubmit, control, reset } = useForm<TitlebarConfigValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
     const [color, setColor] = React.useState(white);
     const updateColor = React.useCallback((evt: any, colorObj: IColor) => setColor(colorObj), []);
     const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
@@ -45,6 +47,8 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 const request: any = data;
                 request.titlebarColor = color.str;
 
@@ -52,6 +56,8 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
                 setEnvironmentTitle(request?.environmentTitle);
                 setTitlebarColor(request.titlebarColor);
 
+                setSubmitDisabled(false);
+                setSpinnerHidden(true);
                 closeForm();
             },
         )();
@@ -78,7 +84,8 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} blocking={true} modeless={false} title={nlsHPCC.SetToolbarColor} minWidth={400}
         footer={<>
-            <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.OK} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
             <DefaultButton text={nlsHPCC.Reset} onClick={() => { onReset(); }} />
         </>}>

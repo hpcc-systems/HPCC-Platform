@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Spinner, Stack, TextField } from "@fluentui/react";
 import { Controller, useForm } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -58,20 +58,28 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
 
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
-
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
     const [selectedDestGroup, setSelectedDestGroup] = React.useState("");
     const [replicateDisabled, setReplicateDisabled] = React.useState(true);
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
+
                 FileSpray.Copy({
                     request: data
                 }).then(({ CopyResponse, Exceptions }) => {
                     if (Exceptions?.Exception) {
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         setShowError(true);
                         setErrorMessage(Exceptions?.Exception[0]?.Message);
                     } else {
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         setShowForm(false);
                         reset(defaultValues);
                         if (refreshGrid) refreshGrid(true);
@@ -113,7 +121,8 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
 
     return <MessageBox title={nlsHPCC.RemoteCopy} show={showForm} setShow={setShowForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Copy} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Copy} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => setShowForm(false)} />
         </>}>
         {showError &&

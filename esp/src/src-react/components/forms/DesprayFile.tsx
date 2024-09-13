@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { FileSpray, FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -67,6 +67,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     const [os, setOs] = React.useState<number>();
 
     const { handleSubmit, control, reset } = useForm<DesprayFileFormValues>({ defaultValues });
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -75,6 +77,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
                 if (logicalFiles.length > 0) {
                     if (logicalFiles.length === 1) {
                         const request = {
@@ -84,6 +88,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             sourceLogicalName: logicalFiles[0]
                         } as FileSpray.Despray;
                         myFileSprayService.Despray(request).then(response => {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             reset(defaultValues);
                             if (refreshGrid) refreshGrid(true);
@@ -99,6 +105,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             requests.push(myFileSprayService.Despray(request));
                         });
                         Promise.all(requests).then(_ => {
+                            setSubmitDisabled(false);
+                            setSpinnerHidden(true);
                             closeForm();
                             if (refreshGrid) refreshGrid(true);
                         }).catch(err => logger.error(err));
@@ -136,7 +144,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Despray} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Despray} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Despray} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Stack>

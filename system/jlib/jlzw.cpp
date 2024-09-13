@@ -2506,7 +2506,7 @@ static bool isCompressedType(__int64 compressedType)
     return 0 != getCompressedMethod(compressedType);
 }
 
-bool isCompressedFile(IFileIO *iFileIO, CompressedFileTrailer *trailer=nullptr)
+static bool isCompressedFile(IFileIO *iFileIO, CompressedFileTrailer *trailer=nullptr)
 {
     if (iFileIO)
     {
@@ -2523,6 +2523,16 @@ bool isCompressedFile(IFileIO *iFileIO, CompressedFileTrailer *trailer=nullptr)
                 if (isCompressedType(trailer->compressedType))
                     return true;
             }
+        }
+        else if ((fsize == 0) && trailer)
+        {
+            //If the file is empty, but we are expecting a compressed file, fill in the trailer with default information
+            memset(trailer,0,sizeof(*trailer));
+            trailer->crc = ~0U;
+            trailer->compressedType = LZ4COMPRESSEDFILEFLAG;
+            trailer->blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
+            trailer->recordSize = 0;
+            return true;
         }
     }
     return false;
