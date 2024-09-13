@@ -132,6 +132,21 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
     const [sourceFiles, setSourceFiles] = React.useState<SourceFile[]>([]);
     const [count, inc] = useCounter();
 
+    // sorts the WU source files alphabetically by parent name, then name
+    // with children immediately following parents
+    const sortFiles = React.useCallback(files => {
+        const sortedFiles = [];
+        const temp = files.sort((a, b) => a.Name.localeCompare(b.Name));
+
+        temp.filter(item => item.__hpcc_parentName === "").forEach(parent => {
+            sortedFiles.push(parent);
+            const relatedChildren = temp.filter(child => child.__hpcc_parentName === parent.Name);
+            sortedFiles.push(...relatedChildren);
+        });
+
+        return sortedFiles;
+    }, []);
+
     React.useEffect(() => {
         if (workunit) {
             const fetchInfo = singletonDebounce(workunit, "fetchInfo");
@@ -151,10 +166,10 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
                         });
                     });
                 });
-                setSourceFiles(sourceFiles);
+                setSourceFiles(sortFiles(sourceFiles));
             }).catch(err => logger.error(err));
         }
-    }, [workunit, state, count]);
+    }, [count, sortFiles, state, workunit]);
 
     return [sourceFiles, workunit, state, inc];
 }
