@@ -137,8 +137,14 @@ export function useCheckFeatures(): Features {
         timestamp
     };
 }
-
-const fetchReleases = () => {
+interface OctokitRelease {
+    id: number;
+    draft: boolean;
+    prerelease: boolean;
+    tag_name: string;
+    html_url: string;
+}
+const fetchReleases = (): Promise<{ data: OctokitRelease[] }> => {
     const octokit = new Octokit({});
     return octokit.request("GET /repos/{owner}/{repo}/releases", {
         owner: "hpcc-systems",
@@ -149,16 +155,12 @@ const fetchReleases = () => {
         }
     });
 };
-type ReleasesPromise = ReturnType<typeof fetchReleases>;
-type ReleasesResponse = Awaited<ReleasesPromise>;
-type Releases = ReleasesResponse["data"];
-type Release = Releases[number];
 
-const _fetchLatestReleases = (): Promise<Releases> => {
+const _fetchLatestReleases = (): Promise<OctokitRelease[]> => {
     return fetchReleases().then(response => {
-        const latest: { [id: string]: Release } = response.data
+        const latest: { [releaseID: string]: OctokitRelease } = response.data
             .filter(release => !release.draft || !release.prerelease)
-            .reduce((prev, curr: Release) => {
+            .reduce((prev, curr: OctokitRelease) => {
                 const versionParts = curr.tag_name.split(".");
                 versionParts.length = 2;
                 const partialVersion = versionParts.join(".");
@@ -167,14 +169,14 @@ const _fetchLatestReleases = (): Promise<Releases> => {
                 }
                 return prev;
             }, {});
-        return Object.values(latest) as Releases;
+        return Object.values(latest);
     }).catch(err => {
         logger.error(err);
-        return [] as Releases;
+        return [];
     });
 };
-let releasesPromise: Promise<Releases> | undefined;
-export const fetchLatestReleases = (): Promise<Releases> => {
+let releasesPromise: Promise<any> | undefined;
+export const fetchLatestReleases = (): Promise<OctokitRelease[]> => {
     if (!releasesPromise) {
         releasesPromise = _fetchLatestReleases();
     }
