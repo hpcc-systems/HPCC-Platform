@@ -58,6 +58,7 @@ enum : unsigned
 {
     WUERR_ModifyFilterAfterFinalize = WORKUNIT_ERROR_START,
     WUERR_FinalizeAfterFinalize,
+    WUERR_InvalidDebugValueName,
 };
 
 // error codes
