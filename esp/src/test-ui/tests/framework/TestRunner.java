@@ -14,6 +14,7 @@ public class TestRunner {
     public static void main(String[] args) {
 
         try {
+            Common.checkIfLocalConfigIsSet();
             getCommandLineParameters(args);
             Common.initializeLoggerAndDriver();
 
