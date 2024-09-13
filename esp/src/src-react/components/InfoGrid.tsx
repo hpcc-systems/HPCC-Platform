@@ -5,7 +5,6 @@ import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { pivotItemStyle } from "../layouts/pivot";
 
 function extractGraphInfo(msg) {
     const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
