@@ -27,8 +27,7 @@ import { Workflows } from "./Workflows";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { TabInfo, DelayLoadedPanel, OverflowTabList } from "./controls/TabbedPanes/index";
 import { ECLArchive } from "./ECLArchive";
-
-const Metrics = React.lazy(() => import("./Metrics").then(mod => ({ default: mod.Metrics })));
+import { Metrics } from "./Metrics";
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
