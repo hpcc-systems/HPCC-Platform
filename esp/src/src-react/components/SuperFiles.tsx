@@ -1,8 +1,9 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useFile } from "../hooks/file";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
@@ -88,18 +89,18 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
         }
     }, [file]);
 
-    return <ScrollablePane>
-        <Sticky>
-            <CommandBar items={buttons} farItems={copyButtons} />
-        </Sticky>
-        <FluentGrid
-            data={data}
-            primaryID={"Name"}
-            sort={sort}
-            columns={columns}
-            setSelection={setSelection}
-            setTotal={setTotal}
-            refresh={refreshTable}
-        ></FluentGrid>
-    </ScrollablePane>;
+    return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={
+            <FluentGrid
+                data={data}
+                primaryID={"Name"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
+        }
+    />;
 };
