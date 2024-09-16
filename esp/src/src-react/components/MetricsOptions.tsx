@@ -67,16 +67,18 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
         }
     }, [selectionHandler, strSelection]);
 
-    return <FluentGrid
-        data={data}
-        primaryID={"id"}
-        columns={columns}
-        selectionMode={SelectionMode.multiple}
-        setSelection={selectionHandler}
-        setTotal={setTotal}
-        refresh={refreshTable}
-        height={`${innerHeight}px`}
-    ></FluentGrid>;
+    return <div style={{ position: "relative", height: 400 }}>
+        <FluentGrid
+            data={data}
+            primaryID={"id"}
+            columns={columns}
+            selectionMode={SelectionMode.multiple}
+            setSelection={selectionHandler}
+            setTotal={setTotal}
+            refresh={refreshTable}
+            height={`${innerHeight}px`}
+        ></FluentGrid>
+    </div>;
 };
 
 interface AddLabelProps {

@@ -102,16 +102,14 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <div style={{ position: "relative", height: "100%" }}>
-                <FluentGrid
-                    data={data}
-                    primaryID={"dateTime"}
-                    columns={columns}
-                    setSelection={setSelection}
-                    setTotal={setTotal}
-                    refresh={refreshTable}
-                ></FluentGrid>
-            </div>
+            <FluentGrid
+                data={data}
+                primaryID={"dateTime"}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };
