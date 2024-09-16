@@ -97,6 +97,7 @@ const StatisticsMapping hashDedupActivityStatistics({}, diskWriteRemoteStatistic
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
 const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizeGraphSpill, StSizePeakTempDisk, StSizePeakEphemeralDisk, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory}, executeStatistics);
+const StatisticsMapping tempFileStatistics({StNumSpills}, diskRemoteStatistics);
 
 const StatKindMap diskToTempStatsMap
 ={ {StSizeDiskWrite, StSizeSpillFile},
