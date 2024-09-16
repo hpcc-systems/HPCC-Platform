@@ -1,11 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link } from "@fluentui/react";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import * as WsDfu from "src/WsDfu";
 import { useConfirm } from "../hooks/confirm";
 import { useFile, useSubfiles } from "../hooks/file";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
@@ -159,21 +160,21 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         setUIState(state);
     }, [selection]);
 
-    return <>
-        <ScrollablePane>
-            <Sticky>
-                <CommandBar items={buttons} farItems={copyButtons} />
-            </Sticky>
-            <FluentGrid
-                data={data}
-                primaryID={"Name"}
-                columns={columns}
-                alphaNumColumns={{ RecordCount: true, Totalsize: true }}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
-        </ScrollablePane >
-        <DeleteSubfilesConfirm />
-    </>;
+    return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={
+            <div style={{ position: "relative", height: "100%" }}>
+                <FluentGrid
+                    data={data}
+                    primaryID={"Name"}
+                    columns={columns}
+                    alphaNumColumns={{ RecordCount: true, Totalsize: true }}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
+                <DeleteSubfilesConfirm />
+            </div>
+        }
+    />;
 };

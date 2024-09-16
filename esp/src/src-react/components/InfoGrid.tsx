@@ -236,7 +236,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         }
     }, [data.length]);
 
-    return <div style={{ height: "100%" }}>
+    return <div style={{ height: "100%", overflow: "hidden" }}>
         <CommandBar items={buttons} farItems={copyButtons} />
         <SizeMe monitorHeight >{({ size }) =>
             <FluentGrid
