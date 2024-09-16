@@ -1210,6 +1210,7 @@ void traceMemUsage()
 }
 
 /////
+static CriticalSection tempFileSizeTrackerCrit; // shared amongst all, because very unlikely to contend
 
 CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
 {
@@ -2288,6 +2289,10 @@ IThorGraphResults *CGraphBase::createThorGraphResults(unsigned num)
     return new CThorGraphResults(num);
 }
 
+CFileSizeTracker * CGraphBase::queryTempFileSizeTracker()
+{
+    return tempFileSizeTracker.query([] { return new CFileSizeTracker; }, tempFileSizeTrackerCrit);
+}
 
 ////
 
@@ -3280,6 +3285,12 @@ IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta, 
     activity_id id = createCompoundActSeqId(queryId(), seq);
     return createThorRowInterfaces(queryRowManager(), meta, id, heapFlags, queryCodeContext());
 }
+
+CFileSizeTracker * CActivityBase::queryTempFileSizeTracker()
+{
+    return tempFileSizeTracker.query([&] { return new CFileSizeTracker(queryGraph().queryParent()->queryTempFileSizeTracker()); }, tempFileSizeTrackerCrit);
+}
+
 
 bool CActivityBase::fireException(IException *e)
 {
