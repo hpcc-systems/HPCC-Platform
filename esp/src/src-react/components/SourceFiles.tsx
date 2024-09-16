@@ -1,10 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link } from "@fluentui/react";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { pushParams } from "../util/history";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -131,20 +132,22 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         setData(files);
     }, [filter, sourceFiles]);
 
-    return <ScrollablePane>
-        <Sticky>
-            <CommandBar items={buttons} farItems={copyButtons} />
-        </Sticky>
-        <FluentGrid
-            data={data}
-            primaryID={"Name"}
-            alphaNumColumns={{ Value: true }}
-            sort={sort}
-            columns={columns}
-            setSelection={setSelection}
-            setTotal={setTotal}
-            refresh={refreshTable}
-        ></FluentGrid>
-        <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-    </ScrollablePane>;
+    return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={
+            <div style={{ position: "relative", height: "100%" }}>
+                <FluentGrid
+                    data={data}
+                    primaryID={"Name"}
+                    alphaNumColumns={{ Value: true }}
+                    sort={sort}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
+                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+            </div>
+        }
+    />;
 };

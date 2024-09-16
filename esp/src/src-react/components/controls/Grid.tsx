@@ -308,24 +308,26 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         columnWidths.set(column.key, newWidth);
     }, [columnWidths]);
 
-    return <ScrollablePane>
-        <DetailsList
-            compact={true}
-            items={items}
-            columns={fluentColumns}
-            layoutMode={DetailsListLayoutMode.fixedColumns}
-            constrainMode={ConstrainMode.unconstrained}
-            selection={selectionHandler}
-            isSelectedOnFocus={false}
-            selectionPreservedOnEmptyClick={true}
-            onColumnHeaderClick={onColumnClick}
-            onRenderDetailsHeader={renderDetailsHeader}
-            onColumnResize={columnResize}
-            onRenderRow={onRenderRow}
-            styles={gridStyles(height)}
-            selectionMode={selectionMode}
-        />
-    </ScrollablePane>;
+    return <div style={{ position: "relative", height: "100%" }}>
+        <ScrollablePane>
+            <DetailsList
+                compact={true}
+                items={items}
+                columns={fluentColumns}
+                layoutMode={DetailsListLayoutMode.fixedColumns}
+                constrainMode={ConstrainMode.unconstrained}
+                selection={selectionHandler}
+                isSelectedOnFocus={false}
+                selectionPreservedOnEmptyClick={true}
+                onColumnHeaderClick={onColumnClick}
+                onRenderDetailsHeader={renderDetailsHeader}
+                onColumnResize={columnResize}
+                onRenderRow={onRenderRow}
+                styles={gridStyles(height)}
+                selectionMode={selectionMode}
+            />
+        </ScrollablePane>
+    </div>;
 };
 
 interface FluentGridProps {
