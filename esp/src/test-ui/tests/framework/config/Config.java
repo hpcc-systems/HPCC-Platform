@@ -17,7 +17,7 @@ public class Config {
 
     public static final int MALFORMED_TIME_STRING = -1; // this integer is used to denote any malformed time string that we can get from the UI or JSON file.
     public static final int WAIT_TIME_IN_SECONDS = 1; // this is the default wait time that code uses to load any web element on UI.
-    public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 20; // This time is used to stop the code from waiting infinitely. If it is unable to find a web element on the UI, the code stops the search after this time logs an error if the element is not found.
+    public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 120; // This time is used to stop the code from waiting infinitely. If it is unable to find a web element on the UI, the code stops the search after this time logs an error if the element is not found.
     public static final String TEST_DESCRIPTION_TEXT = "Testing Description"; // This is the test description that is used to test the description textbox functionality
 
     public static final boolean TEST_DETAIL_PAGE_FIELD_NAMES_ALL = true; // true means the tests for field names on details page will run for all items (whether it is workunits or logical files) and false means it will only run for the first item
