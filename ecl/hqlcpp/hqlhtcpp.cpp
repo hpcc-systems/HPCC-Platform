@@ -18728,18 +18728,43 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
         }
         else
         {
-            HqlExprArray args;
-            args.append(*LINK(findInstance));
-            args.append(*LINK(expr->queryChild(2)));
-            IIdAtom * func = nullptr;
-            if (isUTF8Type(searchStringType))
-                func = regexNewU8StrFoundXId;
-            else if (isUnicodeType(searchStringType))
-                func = regexNewUStrFoundXId;
+            if (target && target->isFixedSize() && target->queryType()->getTypeCode() == expr->queryType()->getTypeCode())
+            {
+                // We need to build our arguments manually because we need to
+                // pass the size of the output buffer (the target) as an argument
+                IHqlExpression * targetVar = target->expr;
+                unsigned targetSize = target->queryType()->getStringLen();
+
+                HqlExprArray args;
+                args.append(*LINK(findInstance)); // instance on which method is called
+                args.append(*getSizetConstant(targetSize)); // size of the output buffer in code units
+                args.append(*getElementPointer(targetVar)); // pointer to the output buffer
+                args.append(*LINK(expr->queryChild(2))); // capture group to find and return
+
+                IIdAtom * func = nullptr;
+                if (isUTF8Type(searchStringType))
+                    func = regexNewU8StrFoundXFixedId;
+                else if (isUnicodeType(searchStringType))
+                    func = regexNewUStrFoundXFixedId;
+                else
+                    func = regexNewStrFoundXFixedId;
+                callProcedure(ctx, func, args);
+            }
             else
-                func = regexNewStrFoundXId;
-            OwnedHqlExpr call = bindFunctionCall(func, args);
-            buildExprOrAssign(ctx, target, call, bound);
+            {
+                HqlExprArray args;
+                args.append(*LINK(findInstance));
+                args.append(*LINK(expr->queryChild(2)));
+                IIdAtom * func = nullptr;
+                if (isUTF8Type(searchStringType))
+                    func = regexNewU8StrFoundXId;
+                else if (isUnicodeType(searchStringType))
+                    func = regexNewUStrFoundXId;
+                else
+                    func = regexNewStrFoundXId;
+                OwnedHqlExpr call = bindFunctionCall(func, args);
+                buildExprOrAssign(ctx, target, call, bound);
+            }
         }
     }
 }

@@ -6750,7 +6750,8 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
                     ignoreStretched = isStringType(targetType);
                     break;
                 case no_regex_replace:
-                    // replacing into a fixed-sized target should not require a temp
+                case no_regex_find:
+                    // Returning result into a fixed-sized target should not require a temp
                     useTemp = false;
                     break;
                 }

@@ -83,6 +83,7 @@ interface IStrRegExprFindInstance
 {
     virtual bool found() const = 0;
     virtual void getMatchX(size32_t & outlen, char * & out, unsigned n = 0) const = 0;
+    virtual void getMatchXFixed(size32_t tlen, char * tgt, unsigned n = 0) const = 0;
 };
 
 interface ICompiledStrRegExpr
@@ -102,6 +103,7 @@ interface IUStrRegExprFindInstance
 {
     virtual bool found() const = 0;
     virtual void getMatchX(size32_t & outlen, UChar * & out, unsigned n = 0) const = 0;
+    virtual void getMatchXFixed(size32_t tlen, UChar * tgt, unsigned n = 0) const = 0;
 };
 
 interface ICompiledUStrRegExpr
