@@ -630,7 +630,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     CChildGraphTable childGraphsTable;
     CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
-    Owned<CFileSizeTracker> tempFileSizeTracker;
+    AtomicShared<CFileSizeTracker> tempFileSizeTracker;
     void clean();
 
 protected:
@@ -805,23 +805,16 @@ public:
     virtual void end();
     virtual void abort(IException *e) override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
-    CFileSizeTracker * queryTempFileSizeTracker()
-    {
-        if (!tempFileSizeTracker)
-            tempFileSizeTracker.setown(new CFileSizeTracker);
-        return tempFileSizeTracker;
-    }
+    CFileSizeTracker * queryTempFileSizeTracker();
     offset_t queryPeakTempSize()
     {
-        if (tempFileSizeTracker)
-            return tempFileSizeTracker->queryPeakSize();
-        return 0;
+        CFileSizeTracker *tracker = tempFileSizeTracker.query();
+        return tracker ? tracker->queryPeakSize() : 0;
     }
     offset_t queryActiveTempSize()
     {
-        if (tempFileSizeTracker)
-            return tempFileSizeTracker->queryActiveSize();
-        return 0;
+        CFileSizeTracker *tracker = tempFileSizeTracker.query();
+        return tracker ? tracker->queryActiveSize() : 0;
     }
 // IExceptionHandler
     virtual bool fireException(IException *e);
@@ -1121,7 +1114,7 @@ class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, im
     CSingletonLock CABserializerlock;
     CSingletonLock CABdeserializerlock;
     roxiemem::RoxieHeapFlags defaultRoxieMemHeapFlags = roxiemem::RHFnone;
-    Owned<CFileSizeTracker> tempFileSizeTracker;
+    AtomicShared<CFileSizeTracker> tempFileSizeTracker;
 
 protected:
     CGraphElementBase &container;
@@ -1189,19 +1182,16 @@ public:
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, byte seq=0);
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, roxiemem::RoxieHeapFlags heapFlags, byte seq=0);
 
-    CFileSizeTracker * queryTempFileSizeTracker()
-    {
-        if (!tempFileSizeTracker)
-            tempFileSizeTracker.setown(new CFileSizeTracker(queryGraph().queryParent()->queryTempFileSizeTracker()));
-        return tempFileSizeTracker;
-    }
+    CFileSizeTracker * queryTempFileSizeTracker();
     offset_t queryActiveTempSize() const
     {
-        return tempFileSizeTracker ? tempFileSizeTracker->queryActiveSize() : 0;
+        CFileSizeTracker *tracker = tempFileSizeTracker.query();
+        return tracker ? tracker->queryActiveSize() : 0;
     }
     offset_t queryPeakTempSize() const
     {
-        return tempFileSizeTracker ? tempFileSizeTracker->queryPeakSize() : 0;
+        CFileSizeTracker *tracker = tempFileSizeTracker.query();
+        return tracker ? tracker->queryPeakSize() : 0;
     }
     CFileOwner * createOwnedTempFile(const char *fileName)
     {
