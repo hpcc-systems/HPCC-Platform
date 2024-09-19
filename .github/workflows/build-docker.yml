@@ -112,7 +112,7 @@ jobs:
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:${{ inputs.os == 'centos-7' && 'hpcc-platform-9.8.x' || '$vcpkg_sha_short' }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         shell: "bash"
