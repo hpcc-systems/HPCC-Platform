@@ -237,12 +237,21 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         });
     });
 
+    const abortController = React.useRef<AbortController>();
+
+    React.useEffect(() => {
+        if (abortController.current) {
+            abortController.current.abort({ message: "Grid aborting stale request" });
+        }
+        abortController.current = new AbortController();
+    }, [query]);
+
     const refreshTable = useDeepCallback((clearSelection = false) => {
         if (isNaN(start) || isNaN(count)) return;
         if (clearSelection) {
             selectionHandler.setItems([], true);
         }
-        const storeQuery = store.query({ ...query }, { start, count, sort: sorted ? [sorted] : undefined });
+        const storeQuery = store.query({ ...query }, { start, count, sort: sorted ? [sorted] : undefined }, abortController.current.signal);
         storeQuery.total.then(total => {
             setTotal(total);
         });
