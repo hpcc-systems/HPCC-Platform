@@ -656,6 +656,7 @@ int RSAZCryptor::unzip(int in_len, unsigned char* in, ZBuffer& outbuf)
         {
         case Z_NEED_DICT:
             ret = Z_DATA_ERROR;     /* and fall through */
+            [[fallthrough]];
         case Z_DATA_ERROR:
         case Z_MEM_ERROR:
             if(m_trace_level > 0)

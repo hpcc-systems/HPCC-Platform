@@ -900,7 +900,6 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                         if (matches==pages)
                         {
                             unsigned start = i;
-                            heap_t startHbi = hbi;
                             char *ret = heapBase + (i*HEAP_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
                             for (;;)
                             {
@@ -3841,7 +3840,6 @@ unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
     unsigned alreadyIncremented = 0;
     do
     {
-        bool needIncrement = false;
         char * ret = allocateSingle(allocated, false, alreadyIncremented);
         if (!ret)
         {
@@ -8183,7 +8181,6 @@ protected:
     void testRoundup()
     {
         Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL, false);
-        CChunkingRowManager * managerObject = static_cast<CChunkingRowManager *>(rowManager.get());
         const unsigned maxFrac = firstFractionalHeap;
 
         const void * tempRow[MAX_FRAC_ALLOCATOR];
@@ -8242,7 +8239,7 @@ protected:
         }
         void * otherrow = rowManager->allocate(100, 0);
         savedRowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFunique));
-        void * leakedRow = savedRowHeap->allocate();
+        [[maybe_unused]] void * leakedRow = savedRowHeap->allocate();
         ReleaseRoxieRow(otherrow);
         rowManager.clear();
     }
@@ -8428,7 +8425,8 @@ protected:
 
         for (unsigned pass=0; pass < 8; pass++)
         {
-            unsigned numPagesFull = rowManager->numPagesAfterCleanup(true);
+            //numPagesAfterCleanup() also has the side-effect of freeing up any empty pages.
+            [[maybe_unused]] unsigned numPagesFull = rowManager->numPagesAfterCleanup(true);
             unsigned numRowsLeft = 0;
             unsigned target=0;
             for (unsigned i2 = 0; i2 < numRows; i2++)
@@ -8758,8 +8756,6 @@ protected:
     void testResize()
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
-        memsize_t maxMemory = heapTotalPages * HEAP_ALIGNMENT_SIZE;
-        memsize_t wasted = 0;
 
         std::unique_ptr<void *[]> pages(new void * [heapTotalPages]);
         //Allocate a whole set of 1 page allocations

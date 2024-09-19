@@ -796,7 +796,6 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     unsigned int    month = (date - (year * 10000)) / 100;
     unsigned int    day = date - (year * 10000) - (month * 100);
     int             expectedMonthVal = month - 1;
-    time_t          seconds;
     unsigned int    result = 0;
 
     // Normalize the expected month value
@@ -823,7 +822,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     timeInfo.tm_mon += month_delta;
     timeInfo.tm_isdst = -1;
 
-    seconds = tlMKTime(&timeInfo);
+    tlMKTime(&timeInfo);
 
     if (timeInfo.tm_mon != expectedMonthVal)
     {

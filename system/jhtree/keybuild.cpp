@@ -271,16 +271,9 @@ public:
     }
 
 protected:
-    offset_t endLevel(bool close)
+    void nextLevel()
     {
-        return 0;
-    }
-
-    offset_t nextLevel()
-    {
-        offset_t ret = endLevel(false);
         levels++;
-        return 0;
     }
 
     void writeFileHeader(bool fixHdr, CRC32 *crc)
@@ -415,15 +408,8 @@ protected:
         if (children.ordinality() != 1)
         {
             // Note that we used to always create at least 2 levels as various places used to assume this.
-            offset_t offset = nextLevel();
-            if (offset)
-            {
-                ForEachItemIn(idx, children)
-                {
-                    CNodeInfo &info = children.item(idx);
-                    info.pos += offset;
-                }
-            }
+            nextLevel();
+
             NodeInfoArray parentInfo;
             buildLevel(children, parentInfo);
             buildTree(parentInfo);

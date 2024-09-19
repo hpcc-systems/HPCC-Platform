@@ -26,11 +26,6 @@ static const char * EclDefinition =
 "  varstring GetBuildInfo() : c,pure,entrypoint='dsGetBuildInfo',initFunction='dsInitDebugServices';\n"
 "END;";
 
-static const char * compatibleVersions[] = {
-    "DEBUGSERVICES 1.0  [7294888b4271178e0cfda307826d4823]", 
-    "DEBUGSERVICES 1.0.1",
-    NULL };
-
 DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
 {
     if (pb->size != sizeof(ECLPluginDefinitionBlock))
