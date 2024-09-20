@@ -536,7 +536,7 @@ protected:
 
 private:
     __int64 currentRow;                                                             // The index in the arrow Array to read the current value.
-    StringBuffer serialized;                                                        // Output string from serialization.
+    StringBuffer serialized;                                                        // Output string from serialization of numeric types.
     TableColumns *resultRows = nullptr;                                             // A pointer to the result rows map where the left side are the field names for the columns and the right is an array of values.
     std::vector<ParquetColumnTracker> pathStack;                                    // ParquetColumnTracker keeps track of nested data when reading sets.
     std::shared_ptr<ParquetArrayVisitor> arrayVisitor;                              // Visitor class for getting the correct type when reading a Parquet column.
@@ -561,10 +561,7 @@ public:
     virtual void processUInt(unsigned __int64 value, const RtlFieldInfo *field);
     virtual void processReal(double value, const RtlFieldInfo *field);
     virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field);
-    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field)
-    {
-        UNSUPPORTED("UNSIGNED decimals");
-    }
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field);
     virtual void processUnicode(unsigned chars, const UChar *value, const RtlFieldInfo *field);
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo *field);
     virtual void processUtf8(unsigned chars, const char *value, const RtlFieldInfo *field);
@@ -597,7 +594,7 @@ public:
 
 protected:
     inline unsigned checkNextParam(const RtlFieldInfo *field);
-
+    void addDecimalFieldToBuilder(rtlDataAttr *decText, size32_t bytes, int32_t digits, int32_t precision, const RtlFieldInfo *field);
     const RtlTypeInfo *typeInfo = nullptr;
     const IContextLogger &logctx;
     int firstParam;
