@@ -2235,7 +2235,7 @@ const char *DecimalValue::generateCPP(StringBuffer &s, CompilerType compiler)
 
 const char *DecimalValue::getStringValue(StringBuffer &s)
 {
-    char strval[64];
+    char strval[MAX_DECIMAL_CHARS];
     BcdCriticalBlock bcdBlock;
     pushDecimalValue();
     DecPopCString(sizeof(strval), strval);

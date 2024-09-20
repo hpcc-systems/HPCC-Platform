@@ -485,6 +485,7 @@ inline bool DeleteFile(const char * name) { return unlink(name)==0; }
 #define MAX_DECIMAL_LEADING    32          // Maximum number of leading digits in a decimal field
 #define MAX_DECIMAL_PRECISION  32          // Maximum digits in a decimal field
 #define MAX_DECIMAL_DIGITS     (MAX_DECIMAL_LEADING+MAX_DECIMAL_PRECISION)
+#define MAX_DECIMAL_CHARS      (MAX_DECIMAL_DIGITS+3) // Maximum digits with sign, decimal point, and null terminator
 
 #define strtok(a,b)   j_strtok_deprecated(a,b)  // will disappear at some point
 

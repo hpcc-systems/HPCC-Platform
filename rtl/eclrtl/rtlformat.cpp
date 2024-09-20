@@ -1048,7 +1048,7 @@ void CFormEncodedWriter::outputReal(double field, const char *fieldname)
 
 void CFormEncodedWriter::outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     updateCurrentScalarItemInfo(fieldname);
     appendFormUrlEncodedName(out, curIdx, curItemPath, fieldname, flags);
 
@@ -1065,7 +1065,7 @@ void CFormEncodedWriter::outputDecimal(const void *field, unsigned size, unsigne
 
 void CFormEncodedWriter::outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     updateCurrentScalarItemInfo(fieldname);
     appendFormUrlEncodedName(out, curIdx, curItemPath, fieldname, flags);
 
@@ -1446,7 +1446,7 @@ void CommonCSVWriter::outputDecimal(const void* field, unsigned size, unsigned p
         return;
 
     StringBuffer v;
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     BcdCriticalBlock bcdBlock;
     if (DecValid(true, size*2-1, field))
     {
@@ -1465,7 +1465,7 @@ void CommonCSVWriter::outputUDecimal(const void* field, unsigned size, unsigned 
         return;
 
     StringBuffer v;
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     BcdCriticalBlock bcdBlock;
     if (DecValid(false, size*2, field))
     {
@@ -2117,7 +2117,7 @@ inline void outputEncodedXmlReal(double field, const char *fieldname, StringBuff
 
 inline void outputEncodedXmlDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     if (fieldname)
         out.append('<').append(fieldname).append(" xsi:type=\"xsd:decimal\">");
 
@@ -2139,7 +2139,7 @@ inline void outputEncodedXmlDecimal(const void *field, unsigned size, unsigned p
 
 inline void outputEncodedXmlUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     if (fieldname)
         out.append('<').append(fieldname).append(" xsi:type=\"xsd:decimal\">");
 
