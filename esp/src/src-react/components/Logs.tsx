@@ -180,7 +180,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <>
+            <div style={{ position: "relative", height: "100%" }}>
                 <FluentPagedGrid
                     store={gridStore}
                     query={query}
@@ -198,7 +198,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                     refresh={refreshTable}
                 ></FluentPagedGrid>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-            </>
+            </div>
         }
         footer={<FluentPagedFooter
             persistID={"cloudlogs"}
