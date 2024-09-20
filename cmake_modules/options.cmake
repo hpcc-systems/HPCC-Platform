@@ -71,6 +71,7 @@ option(INSTALL_VCPKG_CATALOG "Install vcpkg-catalog.txt" ON)
 option(PORTALURL "Set url to hpccsystems portal download page")
 option(PROFILING "Set to true if planning to profile so stacks are informative" OFF)
 option(COLLECT_SERVICE_METRICS "Set to true to gather metrics for HIDL services by default" OFF)
+option(VCPKG_ECLBLAS_DYNAMIC_ARCH "Set to ON to build eclblas with dynamic architecture" ON)
 
 set(CUSTOM_LABEL "" CACHE STRING "Appends a custom label to the final package name")
 
