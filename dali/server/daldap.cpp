@@ -61,7 +61,7 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDaliLdapConnection(IPropertyTree *ldapprops)
+    CDaliLdapConnection(IPropertyTree *ldapprops) : disableFilesDefaultUser(false)
     {
         ldapflags = 0;
         if (ldapprops) {
