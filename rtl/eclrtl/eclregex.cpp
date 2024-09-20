@@ -296,6 +296,7 @@ private:
     PCRE2MatchData8 matchData;
     const char * subject = nullptr; // points to current subject of regex; do not free
     char * sample = nullptr; //only required if findstr/findvstr will be called
+    bool isUTF8Enabled = false;;
 
 public:
     CStrRegExprFindInstance(std::shared_ptr<pcre2_code_8> _compiledRegex, const char * _subject, size32_t _from, size32_t _len, bool _keep)
@@ -304,10 +305,10 @@ public:
         // See if UTF-8 is enabled on this compiled regex
         uint32_t option_bits;
         pcre2_pattern_info_8(compiledRegex.get(), PCRE2_INFO_ALLOPTIONS, &option_bits);
-        bool utf8Enabled = (option_bits & PCRE2_UTF) != 0;
+        isUTF8Enabled = (option_bits & PCRE2_UTF) != 0;
         // Make sure the offset and length is in code points (bytes), not characters
-        size32_t subjectOffset = (utf8Enabled ? rtlUtf8Size(_from, _subject) : _from);
-        size32_t subjectSize = (utf8Enabled ? rtlUtf8Size(_len, _subject) : _len);
+        size32_t subjectOffset = (isUTF8Enabled ? rtlUtf8Size(_from, _subject) : _from);
+        size32_t subjectSize = (isUTF8Enabled ? rtlUtf8Size(_len, _subject) : _len);
 
         if (_keep)
         {
@@ -360,6 +361,40 @@ public:
         {
             outlen = 0;
             out = nullptr;
+        }
+    }
+
+    void getMatchXFixed(size32_t tlen, char * tgt, unsigned n = 0) const
+    {
+        if (tlen == 0)
+            return;
+
+        if (matched && (n < pcre2_get_ovector_count_8(matchData)))
+        {
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
+            const char * matchStart = subject + ovector[2 * n];
+            size32_t foundSize = ovector[2 * n + 1] - ovector[2 * n];
+            if (foundSize <= tlen)
+            {
+                memcpy_iflen(tgt, matchStart, foundSize);
+                memset_iflen(tgt + foundSize, ' ', tlen - foundSize);
+            }
+            else
+            {
+                if (isUTF8Enabled)
+                {
+                    rtlUtf8ToUtf8(tlen, tgt, foundSize, matchStart);
+                }
+                else
+                {
+                    memcpy_iflen(tgt, matchStart, tlen);
+                }
+            }
+        }
+        else
+        {
+            // Return an empty string
+            memset_iflen(tgt, ' ', tlen);
         }
     }
 
@@ -944,6 +979,36 @@ public:
         {
             outlen = 0;
             out = nullptr;
+        }
+    }
+
+    void getMatchXFixed(size32_t tlen, UChar * tgt, unsigned n = 0) const
+    {
+        if (tlen == 0)
+            return;
+        
+        if (matched && (n < pcre2_get_ovector_count_16(matchData)))
+        {
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_16(matchData);
+            const UChar * matchStart = subject + ovector[2 * n];
+            size32_t foundSize = ovector[2 * n + 1] - ovector[2 * n];
+            if (foundSize <= tlen)
+            {
+                memcpy_iflen(tgt, matchStart, foundSize * sizeof(UChar));
+                while (foundSize < tlen)
+                    tgt[foundSize++] = ' ';
+            }
+            else
+            {
+                memcpy_iflen(tgt, matchStart, tlen * sizeof(UChar));
+            }
+        }
+        else
+        {
+            // Return an empty string
+            size32_t pos = 0;
+            while (pos < tlen)
+                tgt[pos++] = ' ';
         }
     }
 
