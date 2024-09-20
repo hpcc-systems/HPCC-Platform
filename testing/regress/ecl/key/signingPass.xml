@@ -1,0 +1,30 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>4</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>4</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>4</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>4</Result_4></Row>
+</Dataset>
+<Dataset name='profileResults'>
+ <Row><attribute>n</attribute><given_attribute_type>unsigned1</given_attribute_type><best_attribute_type>unsigned1</best_attribute_type><rec_count>1</rec_count><fill_count>1</fill_count><fill_rate>100</fill_rate><cardinality>1</cardinality><cardinality_breakdown><Row><value>1                                </value><rec_count>1</rec_count></Row></cardinality_breakdown><modes></modes><min_length>1</min_length><max_length>1</max_length><ave_length>1</ave_length><popular_patterns><Row><data_pattern>9                                </data_pattern><rec_count>1</rec_count><example>1                                </example></Row></popular_patterns><rare_patterns></rare_patterns><is_numeric>true</is_numeric><numeric_min>1</numeric_min><numeric_max>1</numeric_max><numeric_mean>1</numeric_mean><numeric_std_dev>0</numeric_std_dev><numeric_lower_quartile>0</numeric_lower_quartile><numeric_median>1</numeric_median><numeric_upper_quartile>0</numeric_upper_quartile><correlations></correlations></Row>
+</Dataset>
+<Dataset name='benfordResult'>
+ <Row><attribute>-- EXPECTED DIGIT 1 --</attribute><zero>-1</zero><one>30.1</one><two>17.6</two><three>12.5</three><four>9.7</four><five>7.9</five><six>6.7</six><seven>5.8</seven><eight>5.1</eight><nine>4.6</nine><chi_squared>20.09</chi_squared><num_values>1</num_values></Row>
+ <Row><attribute>n</attribute><zero>-1</zero><one>100</one><two>0</two><three>0</three><four>0</four><five>0</five><six>0</six><seven>0</seven><eight>0</eight><nine>0</nine><chi_squared>232.226</chi_squared><num_values>1</num_values></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>1970-01-02T03:46:40</Result_7></Row>
+</Dataset>
+<Dataset name='offset_to_utc_result'>
+ <Row><time>120000</time><tz>CT</tz><seconds_to_utc>21600</seconds_to_utc><seconds_to_utc_is_valid>true</seconds_to_utc_is_valid><seconds_to_utc_tz>UTC  </seconds_to_utc_tz><seconds_to_utc_location>WORLDWIDE      </seconds_to_utc_location></Row>
+ <Row><time>120000</time><tz>ET</tz><seconds_to_utc>18000</seconds_to_utc><seconds_to_utc_is_valid>true</seconds_to_utc_is_valid><seconds_to_utc_tz>UTC  </seconds_to_utc_tz><seconds_to_utc_location>WORLDWIDE      </seconds_to_utc_location></Row>
+</Dataset>
+<Dataset name='offset_to_pacific_time_result'>
+ <Row><time>120000</time><tz>CT</tz><seconds_to_pacific_time>-7200</seconds_to_pacific_time><seconds_to_pacific_time_is_valid>true</seconds_to_pacific_time_is_valid><seconds_to_pacific_time_tz>PT   </seconds_to_pacific_time_tz><seconds_to_pacific_time_location>NORTH AMERICA  </seconds_to_pacific_time_location></Row>
+ <Row><time>120000</time><tz>ET</tz><seconds_to_pacific_time>-10800</seconds_to_pacific_time><seconds_to_pacific_time_is_valid>true</seconds_to_pacific_time_is_valid><seconds_to_pacific_time_tz>PT   </seconds_to_pacific_time_tz><seconds_to_pacific_time_location>NORTH AMERICA  </seconds_to_pacific_time_location></Row>
+</Dataset>

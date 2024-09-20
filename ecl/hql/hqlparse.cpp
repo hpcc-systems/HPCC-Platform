@@ -2213,6 +2213,15 @@ void HqlLex::stripSlashNewline(attribute & returnToken, StringBuffer & target, s
     }
 }
 
+bool HqlLex::isImplicitlySigned()
+{
+    if (text && text->isImplicitlySigned())
+        return true;
+    if (!inmacro)
+        return false;
+    return inmacro->isImplicitlySigned();
+}
+
 //====================================== Error Reporting  ======================================
 
 bool HqlLex::checkAborting()
