@@ -1,9 +1,10 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useWorkunitResources } from "../hooks/workunit";
 import { updateParam } from "../util/history";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { IFrame } from "./IFrame";
@@ -108,21 +109,21 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         }));
     }, [resources, wuid]);
 
-    return <ScrollablePane>
-        <Sticky>
-            <CommandBar items={buttons} farItems={copyButtons} />
-        </Sticky>
-        {preview && webUrl ?
-            <IFrame src={webUrl} /> :
-            <FluentGrid
-                data={data}
-                primaryID={"DisplayPath"}
-                alphaNumColumns={{ Value: true }}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>}
-    </ScrollablePane>;
+    return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={
+            preview && webUrl ?
+                <IFrame src={webUrl} /> :
+                <FluentGrid
+                    data={data}
+                    primaryID={"DisplayPath"}
+                    alphaNumColumns={{ Value: true }}
+                    sort={sort}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
+        }
+    />;
 };

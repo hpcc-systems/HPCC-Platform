@@ -16,7 +16,7 @@ function dataPage<T>(array: T[], start: number, size: number, total: number): Pa
     return retVal;
 }
 
-type FetchData<R, T> = (query: QueryRequest<R>) => Thenable<{ data: T[], total: number }>;
+type FetchData<R, T> = (query: QueryRequest<R>, abortSignal?: AbortSignal) => Thenable<{ data: T[], total: number }>;
 
 export interface RequestFields<T extends BaseRow> {
     start: keyof T;
@@ -43,7 +43,7 @@ export class Paged<R extends BaseRow = BaseRow, T extends BaseRow = BaseRow> ext
         this._fetchData = fetchData;
     }
 
-    fetchData(request: QueryRequest<R>, options: QueryOptions<T>): ThenableResponse<T> {
+    fetchData(request: QueryRequest<R>, options: QueryOptions<T>, abortSignal?: AbortSignal): ThenableResponse<T> {
         if (options.start !== undefined && options.count !== undefined) {
             request[this._requestFields.start] = options.start as any;
             request[this._requestFields.count] = options.count as any;
@@ -52,7 +52,7 @@ export class Paged<R extends BaseRow = BaseRow, T extends BaseRow = BaseRow> ext
             request[this._requestFields.sortBy] = options.sort[0].attribute as any;
             request[this._requestFields.descending] = options.sort[0].descending as any;
         }
-        return this._fetchData(request).then(response => {
+        return this._fetchData(request, abortSignal).then(response => {
             response.data.forEach(row => {
                 this.index[this.getIdentity(row)] = row;
             });

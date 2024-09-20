@@ -1,5 +1,8 @@
 import * as QueryResults from "dojo/store/util/QueryResults";
 import { DeferredResponse, Thenable } from "./Deferred";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src/store/Store.ts");
 
 //  Query  ---
 export type Key = string | number | symbol;
@@ -32,7 +35,7 @@ export abstract class BaseStore<R extends BaseRow, T extends BaseRow> {
         this.responseIDField = responseIDField;
     }
 
-    protected abstract fetchData(request: QueryRequest<R>, options: QueryOptions<T>): ThenableResponse<T>;
+    protected abstract fetchData(request: QueryRequest<R>, options: QueryOptions<T>, abortSignal?: AbortSignal): ThenableResponse<T>;
 
     abstract get(id: string | number): T;
 
@@ -40,11 +43,13 @@ export abstract class BaseStore<R extends BaseRow, T extends BaseRow> {
         return object[this.responseIDField];
     }
 
-    protected query(request: QueryRequest<R>, options: QueryOptions<T>): DeferredResponse<T> {
+    protected query(request: QueryRequest<R>, options: QueryOptions<T>, abortSignal?: AbortSignal): DeferredResponse<T> {
         const retVal = new DeferredResponse<T>();
-        this.fetchData(request, options).then((data: QueryResponse<T>) => {
+        this.fetchData(request, options, abortSignal).then((data: QueryResponse<T>) => {
             retVal.total.resolve(data.total);
             retVal.resolve(data);
+        }, (err) => {
+            logger.debug(err);
         });
         return QueryResults(retVal);
     }
