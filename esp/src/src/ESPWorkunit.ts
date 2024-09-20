@@ -1082,11 +1082,11 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunitsNS.WUQuery, typeof Wo
         count: "PageSize",
         sortBy: "Sortby",
         descending: "Descending"
-    }, "Wuid", request => {
+    }, "Wuid", (request, abortSignal) => {
         if (request.Sortby && request.Sortby === "TotalClusterTime") {
             request.Sortby = "ClusterTime";
         }
-        return service.WUQuery(request).then(response => {
+        return service.WUQuery(request, abortSignal).then(response => {
             const page = {
                 start: undefined,
                 end: undefined

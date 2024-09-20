@@ -68,7 +68,7 @@ export class Deferred<T> implements Thenable<T> {
     }
 }
 
-export class DeferredResponse<T> extends Deferred<T[]>  {
+export class DeferredResponse<T> extends Deferred<T[]> {
 
     //  --- Legacy Dojo Support (fake QeuryResults) ---
     forEach(callback) {
