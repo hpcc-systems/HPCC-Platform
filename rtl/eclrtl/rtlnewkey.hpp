@@ -65,6 +65,7 @@ public:
     void createSegmentMonitors(IIndexReadContext *irc);
     void extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const;
     void extractMemKeyFilter(const RtlRecord & record, const UnsignedArray &sortOrder, IConstArrayOf<IFieldFilter> & keyFilters) const;
+    void splitIntoKeyFilter(const RtlRecord & record, RowFilter &keyFilter);
     unsigned numFilterFields() const { return filters.ordinality(); }
     const IFieldFilter & queryFilter(unsigned i) const { return filters.item(i); }
     const IFieldFilter *findFilter(unsigned fieldIdx) const;
@@ -75,6 +76,7 @@ public:
     void remove(unsigned idx);
     RowFilter & clear();
     void appendFilters(const IConstArrayOf<IFieldFilter> &_filters);
+    void sortByFieldOrder();
 protected:
     IConstArrayOf<IFieldFilter> filters;
     unsigned numFieldsRequired = 0;
