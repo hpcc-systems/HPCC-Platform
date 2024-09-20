@@ -9,8 +9,11 @@ import java.util.Map;
 
 public class URLConfig {
 
-    public static final String LOCAL_IP = "http://192.168.0.221:8010/";
-    public static final String GITHUB_ACTION_IP = "http://127.0.0.1:8010/";
+    // It can be similar to this "http://192.168.0.221:8010/" on Windows
+    // or "http://127.0.0.1:8010/" on Linux
+    // or 'http://192.168.49.2:31985' if the HPCC runing in a Minikube;
+    public static final String LOCAL_ECLWATCH_IP = "<ecl_watch_local_ip_and_port>";
+    public static final String GITHUB_ACTION_ECLWATCH_IP = "http://127.0.0.1:8010/";
 
     public static final String NAV_ACTIVITIES = "Activities";
     public static final String NAV_ECL = "ECL";
