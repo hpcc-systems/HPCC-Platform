@@ -209,6 +209,94 @@ void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpRe
     }
 }
 
+void CEspHttpServer::traceRequest(IEspContext* ctx, const char* normalizeMethod)
+{
+    // General Notice: Span attributes added here are recorded as shown. Certain backend collectors
+    // may transform the names seen here. For example, `client.address` may become
+    // `labels.client_address` on the backend. Not all attributes are affected by this.
+    if (!queryTraceManager().isTracingEnabled())
+        return;
+    ISpan* span = queryThreadedActiveSpan();
+    if (!span->isRecording())
+        return;
+    StringBuffer peer;
+    span->setSpanAttribute("client.address", m_request->getPeer(peer));
+    span->setSpanAttribute("http.request.method", normalizeMethod);
+
+    // Create a facsimile of the original URL, excluding potentially sensitive information. Certain
+    // backend collectors expect `url.full` to be recorded, and only display other URL attributes
+    // if extracted from `url.full`.
+    const char* scheme = (isSSL ? "https" : "http");
+    const char* domain = m_request->queryHost();
+    int         port = m_request->getPort();
+    const char* path = m_request->queryPath();
+    StringBuffer query, full;
+    if (m_request->getParameterCount())
+    {
+        // Parameters in this set will be ignored. Generally limited to ESP-created parameters
+        // created before reaching this point.
+        static const std::set<std::string> ignoredParams{"__querystring"};
+        // Parameters in this set will be included in the full URL's query fragment, with values
+        // intact. All other parameters will be redacted, meaning excluded from the query fragment
+        // and their names will be listed in the conditional `url.query.redacted` attribute. When
+        // redaction occurs, a `REDACTED` parameter will be appended to the query fragment with the
+        // number of redacted parameters.
+        static const std::set<std::string> visibleParams{
+            "all_annot_", "config_", "form_", "json_builder_", "no_annot_", "no_ns_", "rawxml_",
+            "reqjson_", "reqxml_", "respjson_", "respxml_", "soap_builder_", "roxie_builder_",
+            "ver_", "form", "main", "wsdl", "wsdl_ext", "xsd", "internal"};
+        StringBuffer redacted;
+        unsigned redactedCount = 0;
+        bool addRedacted = doTrace(TraceFlags::Always, traceDetailed);
+        IProperties* parameters = m_request->queryParameters(); // will not be NULL
+        Owned<IPropertyIterator> it = parameters->getIterator();
+        ForEach(*it)
+        {
+            const char* name = it->getPropKey();
+            if (isEmptyString(name) || ignoredParams.count(name))
+                continue;
+            if (!visibleParams.count(name))
+            {
+                redactedCount++;
+                if (addRedacted)
+                {
+                    if (!redacted.isEmpty())
+                        redacted.append("&");
+                    redacted.append(name);
+                }
+            }
+            else
+            {
+                if (!query.isEmpty())
+                    query.append('&');
+                query.append(name);
+                const char* value = it->queryPropValue();
+                if (isEmptyString(value))
+                    continue; // a property originally given as `foo=` will be represented as `foo`
+                query.append('=').append(value);
+            }
+        }
+        if (redactedCount)
+        {
+            if (!query.isEmpty())
+                query.append('&');
+            query.append("REDACTED").append('=').append(redactedCount);
+            if (addRedacted)
+                span->setSpanAttribute("url.query.redacted", redacted);
+        }
+    }
+    full.append(scheme).append("://").append(domain).append(':').append(port);
+    if (!isEmptyString(path))
+    {
+        if (path[0] != '/')
+            full.append('/');
+        full.append(path);
+    }
+    if (!query.isEmpty())
+        full.append('?').append(query);
+    span->setSpanAttribute("url.full", full);
+}
+
 int CEspHttpServer::processRequest()
 {
     IEspContext* ctx = m_request->queryContext();
@@ -421,12 +509,12 @@ int CEspHttpServer::processRequest()
             {
                 if(stricmp(method.str(), POST_METHOD)==0)
                 {
-                    serverSpan->setSpanAttribute("http.request.method", POST_METHOD);
+                    traceRequest(ctx, POST_METHOD);
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
                 }
                 else if(!stricmp(method.str(), GET_METHOD))
                 {
-                    serverSpan->setSpanAttribute("http.request.method", GET_METHOD);
+                    traceRequest(ctx, GET_METHOD);
                     if (stype==sub_serv_index_redirect)
                     {
                         StringBuffer url;
@@ -464,12 +552,12 @@ int CEspHttpServer::processRequest()
                 serverSpan->setSpanAttribute("http.unbound_target", 1);
                 if(!stricmp(method.str(), POST_METHOD))
                 {
-                    serverSpan->setSpanAttribute("http.request.method", POST_METHOD);
+                    traceRequest(ctx, POST_METHOD);
                     onPost();
                 }
                 else if(!stricmp(method.str(), GET_METHOD))
                 {
-                    serverSpan->setSpanAttribute("http.request.method", GET_METHOD);
+                    traceRequest(ctx, GET_METHOD);
                     onGet();
                 }
                 else
