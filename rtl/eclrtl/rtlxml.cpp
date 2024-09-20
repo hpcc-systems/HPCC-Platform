@@ -95,7 +95,7 @@ void outputXmlDecimal(const void *field, unsigned size, unsigned precision, cons
     if (DecValid(true, size*2-1, field))
     {
         Decimal temp;
-        char dec[50];
+        char dec[MAX_DECIMAL_CHARS];
         temp.setDecimal(size, precision, field);
         temp.getCString(sizeof(dec), dec);
 
@@ -118,7 +118,7 @@ void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, con
     if (DecValid(false, size*2, field))
     {
         Decimal temp;
-        char dec[50];
+        char dec[MAX_DECIMAL_CHARS];
         temp.setUDecimal(size, precision, field);
         temp.getCString(sizeof(dec), dec);
 
@@ -249,7 +249,7 @@ void outputJsonUnicode(unsigned len, const UChar *field, const char *fieldname, 
 
 void outputJsonDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     appendJSONNameOrDelimit(out, fieldname);
 
     BcdCriticalBlock bcdBlock;
@@ -265,7 +265,7 @@ void outputJsonDecimal(const void *field, unsigned size, unsigned precision, con
 
 void outputJsonUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
+    char dec[MAX_DECIMAL_CHARS];
     appendJSONNameOrDelimit(out, fieldname);
 
     BcdCriticalBlock bcdBlock;

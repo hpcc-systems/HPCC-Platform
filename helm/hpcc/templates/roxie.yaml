@@ -123,6 +123,7 @@ spec:
     metadata:
       labels:
 {{-    include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 8 }}
+        app: "toposerver"
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
         {{- include "hpcc.generateHelmVersion" . | nindent 8 }}
@@ -182,6 +183,7 @@ kind: Service
 metadata:
   name: {{ $commonCtx.toponame | quote }}
   labels:
+    app: "toposerver"
     {{- include "hpcc.generateHelmVersion" . | nindent 4 }}
     {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 4 }}
 spec:
@@ -239,6 +241,7 @@ spec:
   template:
     metadata:
       labels:
+        app: "roxie"
         run: {{ $servername | quote }}
         server: {{ $roxie.name | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
@@ -345,6 +348,7 @@ spec:
     metadata:
       labels:
 {{-     include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-agent" "name" "roxie" "instance" $name) | indent 8 }}
+        app: "roxie"
         run: {{ $name | quote}}
 {{-     if not $roxie.serverReplicas }}        
         server: {{ $servername | quote }}

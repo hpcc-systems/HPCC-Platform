@@ -1176,7 +1176,7 @@ protected:
     bool opened = false;
     bool eofSeen = false;
     const RtlRecord *record = nullptr;
-    RowFilter filters;
+    RowFilter filter;
     RtlDynRow *filterRow = nullptr;
     // virtual field values
     StringAttr logicalFilename;
@@ -1186,8 +1186,8 @@ protected:
     {
         if (filterRow)
         {
-            filterRow->setRow(buffer, filters.getNumFieldsRequired());
-            return filters.matches(*filterRow);
+            filterRow->setRow(buffer, filter.getNumFieldsRequired());
+            return filter.matches(*filterRow);
         }
         else
             return true;
@@ -1217,7 +1217,7 @@ public:
             filterRow = new RtlDynRow(*record);
             Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
             ForEach(*filterIter)
-                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+                filter.addFilter(*record, filterIter->query().queryProp(nullptr));
         }
     }
 // IRemoteReadActivity impl.
@@ -2228,6 +2228,7 @@ protected:
     unsigned fileCrc = 0;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
+    RowFilter keyFilter;
 
     void checkOpen()
     {
@@ -2243,7 +2244,7 @@ protected:
 
         keyIndex.setown(createKeyIndex(fileName, crc, isTlk, 0));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
-        filters.createSegmentMonitors(keyManager);
+        keyFilter.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();
         keyManager->reset();
 
@@ -2260,6 +2261,7 @@ public:
     CRemoteIndexBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
         setupInputMeta(config, getTypeInfoOutputMetaData(config, "input", false));
+        filter.splitIntoKeyFilter(*record, keyFilter);
 
         isTlk = config.getPropBool("isTlk");
         fileCrc = config.getPropInt("crc");

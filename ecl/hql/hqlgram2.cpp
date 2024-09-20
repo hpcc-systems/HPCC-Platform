@@ -3638,6 +3638,30 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
             {
                 HqlExprArray parameters;
                 bool isParametered = extractSymbolParameters(parameters, &baseSym);
+                if (baseSym.isFunction() != match->isFunction())
+                {
+                    if (isParametered)
+                    {
+                        //Convert the value to a function definition - the parameters will be ignored
+                        IHqlExpression * formals = queryFunctionParameters(&baseSym);
+                        IHqlExpression * defaults = queryFunctionDefaults(&baseSym);
+                        OwnedHqlExpr funcdef = createFunctionDefinition(id, LINK(match->queryBody()), LINK(formals), LINK(defaults), NULL);
+                        match.setown(match->cloneAllAnnotations(funcdef));
+                    }
+                    else
+                    {
+                        //Convert a function into a value - possible if all parameters (including none) have default values
+                        if (!allParametersHaveDefaults(match))
+                        {
+                            reportError(ERR_EXPECTED_ATTRIBUTE, ipos, "Symbol %s is defined as a value in the base scope, but a function with non-default parameters in the interface", str(id));
+                        }
+                        else
+                        {
+                            HqlExprArray actuals;
+                            match.setown(createBoundFunction(nullptr, match, actuals, nullptr, false));
+                        }
+                    }
+                }
 
                 checkDerivedCompatible(id, newScopeExpr, match, isParametered, parameters, modpos);
                 newScope->defineSymbol(LINK(match));

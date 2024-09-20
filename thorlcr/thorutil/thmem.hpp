@@ -413,7 +413,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
     size32_t compBlkSz = 0; // means use default
-
+    CRuntimeStatisticCollection stats; // reset after each kill
     bool _flush(bool force);
     void doFlush();
     inline bool needToMoveRows(bool force) { return (firstRow != 0 && (force || (firstRow >= commitRows/2))); }
@@ -484,6 +484,10 @@ public:
 
     inline rowidx_t numCommitted() const { return commitRows - firstRow; } //MORE::Not convinced this is very safe!
     inline rowidx_t queryTotalRows() const { return CThorExpandingRowArray::ordinality(); } // includes uncommited rows
+    inline unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        return stats.getStatisticValue(kind);
+    }
 
 // access to
     void swap(CThorSpillableRowArray &src);
@@ -542,7 +546,7 @@ interface IThorRowCollectorCommon : extends IInterface, extends IThorArrayLock
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
     virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
-    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
     virtual bool hasSpilt() const = 0; // equivalent to numOverlows() >= 1
     virtual void setTracingPrefix(const char *tracing) = 0;
     virtual void reset() = 0;

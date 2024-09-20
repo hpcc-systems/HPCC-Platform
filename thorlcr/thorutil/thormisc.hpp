@@ -175,6 +175,8 @@ extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 extern graph_decl const StatisticsMapping indexReadFileStatistics;
 extern graph_decl const StatisticsMapping hashDedupActivityStatistics;
 extern graph_decl const StatisticsMapping hashDistribActivityStatistics;
+extern graph_decl const StatisticsMapping tempFileStatistics;
+
 
 // Maps disk related stats to spill stats
 extern graph_decl const std::map<StatisticKind, StatisticKind> diskToTempStatsMap;
