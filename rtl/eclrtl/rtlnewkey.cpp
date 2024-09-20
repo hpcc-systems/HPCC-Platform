@@ -2245,6 +2245,27 @@ void RowFilter::extractMemKeyFilter(const RtlRecord & record, const UnsignedArra
     }
 }
 
+void RowFilter::splitIntoKeyFilter(const RtlRecord & record, RowFilter &keyFilter)
+{
+    if (0 == filters.ordinality())
+        return;
+
+    unsigned numKeyedFields = record.getNumKeyedFields();
+    ForEachItemInRev(i, filters)
+    {
+        const IFieldFilter & cur = filters.item(i);
+        if (cur.queryFieldIndex() < numKeyedFields)
+        {
+            keyFilter.addFilter(OLINK(cur));
+            filters.remove(i);
+        }
+    }
+    keyFilter.sortByFieldOrder(); // NB: need to be ordered ahead of keyFilter.createSegmentMonitors being used
+    //There is either a payload filter, in which case numFieldsRequired will not change, or now no filter
+    if (filters.ordinality() == 0)
+        numFieldsRequired = 0;
+}
+
 const IFieldFilter *RowFilter::findFilter(unsigned fieldNum) const
 {
     ForEachItemIn(i, filters)
@@ -2296,6 +2317,13 @@ void RowFilter::recalcFieldsRequired()
 void RowFilter::remapField(unsigned filterIdx, unsigned newFieldNum)
 {
     filters.replace(*filters.item(filterIdx).remap(newFieldNum), filterIdx);
+}
+
+void RowFilter::sortByFieldOrder()
+{
+    if (0 == filters.ordinality())
+        return;
+    filters.sort(compareFieldFilters);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

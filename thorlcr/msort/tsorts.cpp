@@ -1340,7 +1340,7 @@ public:
             throw;
         }
 
-        mergeStats(spillStats, sortedloader);
+        mergeRemappedStats(spillStats, sortedloader, diskToTempStatsMap);
 
         if (!abort)
         {

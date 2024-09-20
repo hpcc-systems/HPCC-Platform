@@ -234,6 +234,7 @@ protected:
     unsigned spillCompInfo;
     CThorSpillableRowArray rows;
     Owned<CFileOwner> spillFile;
+    CRuntimeStatisticCollection stats;
 
     bool spillRows()
     {
@@ -248,13 +249,13 @@ protected:
         spillFile.setown(activity.createOwnedTempFile(tempName.str()));
         VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
         rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        mergeStats(stats, &rows);
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
-        spillFile->noteSize(spillFile->queryIFile().size());
         return true;
     }
 public:
     CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, EmptyRowSemantics _emptyRowSemantics, unsigned _spillPriority)
-        : CSpillable(_activity, _rowIf, _spillPriority), rows(_activity), emptyRowSemantics(_emptyRowSemantics)
+        : CSpillable(_activity, _rowIf, _spillPriority), rows(_activity), emptyRowSemantics(_emptyRowSemantics), stats(diskRemoteStatistics)
     {
         assertex(inRows.isFlushed());
         spillCompInfo = 0x0;
@@ -264,6 +265,10 @@ public:
     ~CSpillableStreamBase()
     {
         ensureSpillingCallbackRemoved();
+    }
+    unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        return stats.getStatisticValue(kind);
     }
 // IBufferedRowCallback
     virtual bool freeBufferedRows(bool critical) override
@@ -1328,13 +1333,13 @@ void CThorSpillableRowArray::safeUnregisterWriteCallback(IWritePosCallback &cb)
 }
 
 CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity)
-    : CThorExpandingRowArray(activity)
+    : CThorExpandingRowArray(activity), stats(tempFileStatistics)
 {
     throwOnOom = false;
 }
 
 CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics, StableSortFlag stableSort, rowidx_t initialSize, size32_t _commitDelta)
-    : CThorExpandingRowArray(activity, rowIf, ers_forbidden, stableSort, false, initialSize), commitDelta(_commitDelta)
+    : CThorExpandingRowArray(activity, rowIf, ers_forbidden, stableSort, false, initialSize), commitDelta(_commitDelta), stats(tempFileStatistics)
 {
 }
 
@@ -1363,6 +1368,7 @@ void CThorSpillableRowArray::kill()
 {
     clearRows();
     CThorExpandingRowArray::kill();
+    stats.reset();
 }
 
 void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
@@ -1413,7 +1419,8 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
         nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
-    Owned<IExtRowWriter> writer = createRowWriter(&iFileOwner.queryIFile(), rowIf, rwFlags, nullptr, compBlkSz);
+    OwnedIFileIO iFileIO = iFileOwner.queryIFile().open(IFOcreate);
+    Owned<IExtRowWriter> writer = createRowWriter(iFileIO, rowIf, rwFlags, nullptr, compBlkSz);
     rowidx_t i=0;
     rowidx_t rowsWritten=0;
     try
@@ -1452,7 +1459,6 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
             ++i;
         }
         writer->flush(NULL);
-        iFileOwner.noteSize(writer->getStatistic(StSizeDiskWrite));
     }
     catch (IException *e)
     {
@@ -1463,6 +1469,10 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
+    mergeStats(stats, iFileIO);
+    offset_t sizeTempFile = iFileIO->getStatistic(StSizeDiskWrite);
+    iFileOwner.noteSize(sizeTempFile);
+    stats.addStatistic(StNumSpills, 1);
     ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, rows written = %" RIPF "u, bytes = %" I64F "u, firstRow = %u", _tracingPrefix, rowsWritten, (__int64)bytesWritten, firstRow);
     return rowsWritten;
 }
@@ -1638,11 +1648,7 @@ protected:
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options = 0;
     unsigned spillCompInfo = 0;
-    RelaxedAtomic<unsigned> statOverflowCount{0};
-    RelaxedAtomic<offset_t> statSizeSpill{0};
-    RelaxedAtomic<__uint64> statSpillCycles{0};
     RelaxedAtomic<__uint64> statSortCycles{0};
-
     bool spillRows(bool critical)
     {
         //This must only be called while a lock is held on spillableRows
@@ -1668,11 +1674,6 @@ protected:
         spillableRows.save(*tempFileOwner, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(tempFileOwner.getLink());
         ++overflowCount;
-        statOverflowCount.fastAdd(1); // NB: this is total over multiple uses of this class
-        offset_t tempFileSize = tempFileOwner->queryIFile().size();
-        statSizeSpill.fastAdd(tempFileSize);
-        tempFileOwner->noteSize(tempFileSize);
-        statSpillCycles.fastAdd(spillTimer.elapsedCycles());
         return true;
     }
     void setEmptyRowSemantics(EmptyRowSemantics _emptyRowSemantics)
@@ -1960,26 +1961,17 @@ public:
     {
         options = _options;
     }
-    unsigned __int64 getStatistic(StatisticKind kind)
+    unsigned __int64 getStatistic(StatisticKind kind) const
     {
         switch (kind)
         {
-        case StCycleSpillElapsedCycles:
-            return statSpillCycles;
         case StCycleSortElapsedCycles:
             return statSortCycles;
-        case StTimeSpillElapsed:
-            return cycle_to_nanosec(statSpillCycles);
         case StTimeSortElapsed:
             return cycle_to_nanosec(statSortCycles);
-        case StNumSpills:
-            return statOverflowCount;
-        case StSizeSpillFile:
-            return statSizeSpill;
         default:
-            break;
+            return spillableRows.getStatistic(kind);
         }
-        return 0;
     }
     bool hasSpilt() const { return overflowCount >= 1; }
 
@@ -2048,7 +2040,7 @@ public:
     }
     virtual void resize(rowidx_t max) override { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options) override { CThorRowCollectorBase::setOptions(options); }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override { return CThorRowCollectorBase::getStatistic(kind); }
     virtual bool hasSpilt() const override { return CThorRowCollectorBase::hasSpilt(); }
     virtual void setTracingPrefix(const char *tracing) override { CThorRowCollectorBase::setTracingPrefix(tracing); }
     virtual void reset() override { CThorRowCollectorBase::reset(); }
@@ -2103,7 +2095,7 @@ public:
     }
     virtual void resize(rowidx_t max) override { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options) override { CThorRowCollectorBase::setOptions(options); }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override { return CThorRowCollectorBase::getStatistic(kind); }
     virtual bool hasSpilt() const override { return CThorRowCollectorBase::hasSpilt(); }
     virtual void setTracingPrefix(const char *tracing) override { CThorRowCollectorBase::setTracingPrefix(tracing); }
 // IThorArrayLock
