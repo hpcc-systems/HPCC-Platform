@@ -181,7 +181,10 @@ int main(int argc, const char *argv[])
         }
     }
     if (verbose)
+    {
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+        attachStandardHandleLogMsgMonitor(stderr, 0);
+    }
     else
         removeLog();
 
