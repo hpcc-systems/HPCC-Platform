@@ -888,6 +888,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
+        if (topology->hasProp("@soapLogSepString"))
+            topology->getProp("@soapLogSepString", soapSepString);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
         traceRemoteFiles = topology->getPropBool("@traceRemoteFiles", false);
         testAgentFailure = topology->getPropInt("expert/@testAgentFailure", testAgentFailure);

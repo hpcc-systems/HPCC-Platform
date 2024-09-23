@@ -86,5 +86,6 @@ interface IRoxieAbortMonitor
 extern THORHELPER_API unsigned soapTraceLevel;
 extern THORHELPER_API IWSCHelper * createSoapCallHelper(IWSCRowProvider *, IEngineRowAllocator * outputAllocator, const char *authToken, SoapCallMode scMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor);
 extern THORHELPER_API IWSCHelper * createHttpCallHelper(IWSCRowProvider *, IEngineRowAllocator * outputAllocator, const char *authToken, SoapCallMode scMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor);
+extern THORHELPER_API StringBuffer soapSepString;
 
 #endif /* __THORSOAPCALL_HPP_ */

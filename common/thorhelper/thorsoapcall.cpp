@@ -50,6 +50,7 @@ using roxiemem::OwnedRoxieString;
 #define CONNECTION "Connection"
 
 unsigned soapTraceLevel = 1;
+StringBuffer soapSepString("");
 
 #define WSCBUFFERSIZE 0x10000
 #define MAXWSCTHREADS 50    //Max Web Service Call Threads
@@ -1014,7 +1015,6 @@ public:
         logXML = (flags & SOAPFlog) != 0;
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
         logUserTailMsg = (flags & SOAPFlogusertail) != 0;
-
         double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
         if (dval < 0.0) //not provided, or out of range
             timeoutMS = 300*1000; // 300 second default
@@ -1951,10 +1951,19 @@ private:
     {
         if (soapTraceLevel > 6 || master->logXML)
         {
-            if (!contentEncoded)
-                master->logctx.mCTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
+            StringBuffer contentStr("");
+            if (contentEncoded)
+                contentStr.append(", content encoded.");
+            if ( (master->logXML) && (soapSepString.length() > 0) )
+            {
+                StringBuffer request2(request);
+                request2.replaceString("\r\n", soapSepString.str());
+                request2.replaceString("\r", soapSepString.str());
+                request2.replaceString("\n", soapSepString.str());
+                master->logctx.mCTXLOG("%s: request(%s)%s", master->wscCallTypeText(), request2.str(), contentStr.str());
+            }
             else
-                master->logctx.mCTXLOG("%s: request(%s), content encoded.", master->wscCallTypeText(), request.str());
+                master->logctx.mCTXLOG("%s: request(%s)%s", master->wscCallTypeText(), request.str(), contentStr.str());
         }
     }
 
@@ -2250,9 +2259,19 @@ private:
         if (checkContentDecoding(dbgheader, response, contentEncoding))
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
-        else if (soapTraceLevel > 8)
-            master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", response.str()); // not sure this is that useful but...
+        {
+            if ( (master->logXML) && (soapSepString.length() > 0) )
+            {
+                StringBuffer response2(dbgheader);
+                response2.append(response);
+                response2.replaceString("\r\n", soapSepString.str());
+                response2.replaceString("\r", soapSepString.str());
+                response2.replaceString("\n", soapSepString.str());
+                master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", response2.str());
+            }
+            else
+                master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
+        }
         return rval;
     }
 

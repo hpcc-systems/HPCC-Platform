@@ -2750,6 +2750,7 @@ void CJobBase::init()
     failOnLeaks = getOptBool(THOROPT_FAIL_ON_LEAKS);
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
     soapTraceLevel = getOptInt(THOROPT_SOAP_TRACE_LEVEL, 1);
+    getOpt(THOROPT_SOAP_LOG_SEP_STRING, soapSepString);
 
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
