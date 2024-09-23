@@ -248,6 +248,7 @@ public:
     Linked<IThorRowInterfaces> rowif;
     Linked<IThorRowInterfaces> auxrowif;
     Linked<IThorRowInterfaces> keyIf;
+    Owned<roxiemem::IVariableRowHeap> partitionHeap;
 
     int AddSlave(ICommunicator *comm,rank_t rank,SocketEndpoint &endpoint,mptag_t mpTagRPC)
     {
@@ -522,9 +523,10 @@ public:
             CriticalSection &asect;
             unsigned averagesamples;
             rowcount_t averagerecspernode;
+            roxiemem::IVariableRowHeap *heap;
         public:
-            casyncfor1(CSortMaster &_owner, NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect)
-                : owner(_owner), slaves(_slaves), sample(_sample), asect(_asect)
+            casyncfor1(CSortMaster &_owner, NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect, roxiemem::IVariableRowHeap *_heap)
+                : owner(_owner), slaves(_slaves), sample(_sample), asect(_asect), heap(_heap)
             { 
                 averagesamples = _averagesamples;
                 averagerecspernode = _averagerecspernode;
@@ -537,13 +539,28 @@ public:
                 if (slavesamples)
                 {
                     size32_t samplebufsize;
-                    void *samplebuf=NULL;
-                    slave.GetMultiNthRow(slavesamples, samplebufsize, samplebuf);
-                    MemoryBuffer mb;
-                    fastLZDecompressToBuffer(mb, samplebuf);
-                    free(samplebuf);
+                    OwnedMalloc<void> samplebuf;
+                    void *p;
+                    slave.GetMultiNthRow(slavesamples, samplebufsize, p);
+                    samplebuf.setown(p);
+                    size32_t expandedSz;
+                    const void *expandedPtr = nullptr;
+                    MemoryBuffer expandedSampleMb;
+                    OwnedConstThorRow expandedSample;
+                    if (heap)
+                    {
+                        expandedSample.setown(fastLZDecompressToRoxieMem(*heap, samplebuf, expandedSz));
+                        expandedPtr = expandedSample;
+                    }
+                    else
+                    {
+                        fastLZDecompressToBuffer(expandedSampleMb, samplebuf);
+                        expandedSz = expandedSampleMb.length();
+                        expandedPtr = expandedSampleMb.toByteArray();
+                    }
+                    samplebuf.clear();
                     CriticalBlock block(asect);
-                    CThorStreamDeserializerSource d(mb.length(), mb.toByteArray());
+                    CThorStreamDeserializerSource d(expandedSz, expandedPtr);
                     while (!d.eos())
                     {
                         RtlDynamicRowBuilder rowBuilder(owner.keyIf->queryRowAllocator());
@@ -552,7 +569,7 @@ public:
                     }
                 }
             }
-        } afor1(*this, slaves,sample,averagesamples,averagerecspernode,asect);
+        } afor1(*this, slaves,sample,averagesamples,averagerecspernode,asect,partitionHeap);
         afor1.For(numnodes, 20, true);
 #ifdef TRACE_PARTITION2
         {
@@ -655,7 +672,6 @@ public:
         return splitMap.getClear();
     }
 
-
     rowcount_t *CalcPartition(bool logging)
     {
         CriticalBlock block(ECFcrit);
@@ -727,9 +743,10 @@ public:
                     Semaphore *nextsem;
                     unsigned numsplits;
                     IThorRowInterfaces *keyIf;
+                    roxiemem::IVariableRowHeap *heap;
                 public:
-                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IThorRowInterfaces *_keyIf)
-                        : slaves(_slaves), totmid(_totmid), keyIf(_keyIf)
+                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IThorRowInterfaces *_keyIf, roxiemem::IVariableRowHeap *_heap)
+                        : slaves(_slaves), totmid(_totmid), keyIf(_keyIf), heap(_heap)
                     { 
                         nextsem = _nextsem;
                         numsplits = _numsplits;
@@ -737,21 +754,40 @@ public:
                     void Do(unsigned i)
                     {
                         CSortNode &slave = slaves.item(i);
-                        void *p = NULL;
                         size32_t retlen=0;
-                        if (slave.numrecs!=0) 
-                            slave.GetMultiMidPointStop(retlen,p);
+                        OwnedMalloc<void> midPoints;
+                        if (slave.numrecs!=0)
+                        {
+                            // if the rows this SORT is based are large, these midpoints (nodes-1) could be large (but compressed)
+                            // could consider serializing and deserializnig them in chunks..
+                            void *p;
+                            slave.GetMultiMidPointStop(retlen, p);
+                            midPoints.setown(p);
+                        }
                         if (i)
                             nextsem[i-1].wait();
                         try
                         {
                             unsigned base = totmid.ordinality();
-                            if (p)
+                            if (midPoints)
                             {
-                                MemoryBuffer mb;
-                                fastLZDecompressToBuffer(mb, p);
-                                free(p);
-                                CThorStreamDeserializerSource d(mb.length(), mb.toByteArray());
+                                size32_t expandedSz;
+                                const void *expandedPtr = nullptr;
+                                MemoryBuffer expandedMidPointsMb;
+                                OwnedConstThorRow expandedMidPoints;
+                                if (heap)
+                                {
+                                    expandedMidPoints.setown(fastLZDecompressToRoxieMem(*heap, midPoints, expandedSz));
+                                    expandedPtr = expandedMidPoints;
+                                }
+                                else
+                                {
+                                    fastLZDecompressToBuffer(expandedMidPointsMb, midPoints);
+                                    expandedSz = expandedMidPointsMb.length();
+                                    expandedPtr = expandedMidPointsMb.toByteArray();
+                                }
+                                midPoints.clear();
+                                CThorStreamDeserializerSource d(expandedSz, expandedPtr);
                                 while (!d.eos())
                                 {
                                     RtlDynamicRowBuilder rowBuilder(keyIf->queryRowAllocator());
@@ -777,7 +813,7 @@ public:
                         }
                         nextsem[i].signal();
                     }
-                } afor2(slaves, totmid, numsplits, nextsem, keyIf);
+                } afor2(slaves, totmid, numsplits, nextsem, keyIf, partitionHeap);
                 afor2.For(numnodes, 20);
 
                 delete [] nextsem;
@@ -1096,6 +1132,12 @@ public:
         }
         ActPrintLog(activity, "Sort: canoptimizenullcolumns=%s, usepartitionrow=%s, betweensort=%s skewWarning=%f skewError=%f minisortthreshold=%" I64F "d",canoptimizenullcolumns?"true":"false",usepartitionrow?"true":"false",betweensort?"true":"false",skewWarning,skewError,(__int64)minisortthreshold);
         assertex(partitioninfo);
+
+        constexpr byte AT_SortPartition=1;
+        activity_id actId = createCompoundActSeqId(activity->queryId(), AT_SortPartition);
+        if (activity->getOptBool(THOROPT_ROXIEMEM_GLOBALSORT_PARTITION, true))
+            partitionHeap.setown(activity->queryRowManager()->createVariableRowHeap(actId | ACTIVITY_FLAG_ISREGISTERED, roxiemem::RoxieHeapFlags::RHFvariable));
+
         maxdeviance = _maxdeviance;
         unsigned i;
         bool overflowed = false;
