@@ -124,7 +124,7 @@ class TableEx extends Table {
                             row.__formattedProps[p] ??
                             row[p] ??
                             "";
-                    }), row.__StdDevsSource, row];
+                    }), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
                 }))
             ;
         return this;
