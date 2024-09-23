@@ -118,6 +118,7 @@
 #define THOROPT_MEMORY_SPILL_AT "memorySpillAt"                                   // The threshold (%) that roxiemem will request memory to be reduced (default=80)
 #define THOROPT_FAIL_ON_LEAKS "failOnLeaks"                                       // If any leaks are detected at the end of graph, fail the query (default=false)
 #define THOROPT_SOAP_TRACE_LEVEL "soapTraceLevel"                                 // The trace SOAP level (default=1)
+#define THOROPT_SOAP_LOG_SEP_STRING "soapLogSepString"                            // The SOAP request/response separator string for logging (default="")
 #define THOROPT_SORT_ALGORITHM "sortAlgorithm"                                    // The algorithm used to sort records (quicksort/mergesort)
 #define THOROPT_COMPRESS_ALLFILES "v9_4_compressAllOutputs"                       // Compress all output files (default: bare-metal=off, cloud=on)
 #define THOROPT_AVOID_RENAME "avoidRename"                                        // Avoid rename, write directly to target physical filenames (no temp file)
