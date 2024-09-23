@@ -553,6 +553,7 @@ bool CJobManager::fireException(IException *e)
 
 bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep)
 {
+    Owned<IException> exception;
     try
     {
         if (!workunit) // check workunit is available and ready to run.
@@ -592,12 +593,13 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
         IThorException *te = QUERYINTERFACE(e, IThorException);
         if (te && tea_shutdown==te->queryAction())
             stopped = true;
-        reply(workunit, wuid, e, agentep, false);
+        exception.setown(e);
     }
     catch (CATCHALL)
     {
-        reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false);
+        exception.setown(makeStringException(0, "Unknown exception"));
     }
+    reply(workunit, wuid, exception, agentep, false);
     return false;
 }
 
@@ -856,6 +858,7 @@ void CJobManager::run()
         }
         Owned<IWorkUnitFactory> factory;
         Owned<IConstWorkUnit> workunit;
+        Owned<IException> exception;
         bool allDone = false;
         try
         {
@@ -882,12 +885,13 @@ void CJobManager::run()
             IThorException *te = QUERYINTERFACE(e, IThorException);
             if (te && tea_shutdown==te->queryAction())
                 stopped = true;
-            reply(workunit, wuid, e, agentep, false);
+            exception.setown(e);
         }
         catch (CATCHALL)
         {
-            reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false);
+            exception.setown(makeStringException(0, "Unknown exception"));
         }
+        reply(workunit, wuid, exception, agentep, false);
 
         // reset for next job
         setProcessAborted(false);
@@ -963,7 +967,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     {
         if (!exitException)
         {
-            exitException.setown(e);
+            exitException.set(e);
             relayWuidException(workunit, e);
         }
         return;
