@@ -1,12 +1,12 @@
 <Dataset name='first_word_0'>
- <Row><unbounded_s>Colorless</unbounded_s><bounded_s>Colorless </bounded_s><unbounded_u>Colorless</unbounded_u><bounded_u>Colorless </bounded_u></Row>
+ <Row><bounded_s>Colorless </bounded_s><bounded_u>Colorless </bounded_u></Row>
 </Dataset>
 <Dataset name='two_words_1'>
- <Row><unbounded_s>Colorless</unbounded_s><bounded_s>Colorless </bounded_s><unbounded_u>Colorless</unbounded_u><bounded_u>Colorless </bounded_u></Row>
+ <Row><bounded_s>Colorless </bounded_s><bounded_u>Colorless </bounded_u></Row>
 </Dataset>
 <Dataset name='two_words_2'>
- <Row><unbounded_s>green</unbounded_s><bounded_s>green     </bounded_s><unbounded_u>green</unbounded_u><bounded_u>green     </bounded_u></Row>
+ <Row><bounded_s>green     </bounded_s><bounded_u>green     </bounded_u></Row>
 </Dataset>
 <Dataset name='two_words_3'>
- <Row><unbounded_s></unbounded_s><bounded_s>          </bounded_s><unbounded_u></unbounded_u><bounded_u>          </bounded_u></Row>
+ <Row><bounded_s>          </bounded_s><bounded_u>          </bounded_u></Row>
 </Dataset>
