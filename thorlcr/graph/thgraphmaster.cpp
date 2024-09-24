@@ -2145,13 +2145,13 @@ bool CJobMaster::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCprogress, e);
+            LOG(MCuserProgress, e);
             reportExceptionToWorkunitCheckIgnore(*workunit, e);
             break;
         }
         default:
         {
-            LOG(MCprogress, e);
+            LOG(MCuserProgress, e);
             queryJobManager().replyException(*this, e); 
             fatalHandler->inform(LINK(e));
             try { abort(e); }
@@ -2397,13 +2397,13 @@ bool CMasterGraph::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCprogress, e);
+            LOG(MCuserProgress, e);
             reportExceptionToWorkunitCheckIgnore(job.queryWorkUnit(), e);
             break;
         }
         default:
         {
-            LOG(MCprogress, e);
+            LOG(MCuserProgress, e);
             if (NULL != fatalHandler)
                 fatalHandler->inform(LINK(e));
             if (owner)

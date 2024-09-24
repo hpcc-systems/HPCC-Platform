@@ -798,7 +798,7 @@ void ensureDirectoryForFile(const char *fName)
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
 void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
-    LOG(MCprogress, e, "Reporting exception to WU");
+    LOG(MCuserProgress, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
     if (wu)
     {
