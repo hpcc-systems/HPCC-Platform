@@ -117,7 +117,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
     StringBuffer masterStr;
-    PROGLOG("registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
+    UPROGLOG("registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
     try
     {
         SocketEndpoint ep = masterEp;
@@ -202,11 +202,11 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             blockSize = defaultStrandBlockSize;
             globals->setPropInt(xpath, defaultStrandBlockSize);
         }
-        PROGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
+        UPROGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
 
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
-        PROGLOG("Master build: %s", masterBuildTag);
+        UPROGLOG("Master build: %s", masterBuildTag);
         if (!_masterBuildTag || 0 != strcmp(hpccBuildInfo.buildTag, _masterBuildTag))
         {
             StringBuffer errStr("Thor master/slave build mismatch, master = ");
@@ -236,7 +236,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             OERRLOG("Failed to connect to all nodes");
         else
             DBGLOG("verified mp connection to rest of cluster");
-        PROGLOG("registered %s",slfStr.str());
+        UPROGLOG("registered %s",slfStr.str());
     }
     catch (IException *e)
     {
@@ -362,7 +362,7 @@ ILogMsgHandler *startSlaveLog()
     }
 
     //setupContainerizedStorageLocations();
-    PROGLOG("Build %s", hpccBuildInfo.buildTag);
+    UPROGLOG("Build %s", hpccBuildInfo.buildTag);
     return logHandler;
 }
 
@@ -522,16 +522,16 @@ int main( int argc, const char *argv[]  )
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
-            PROGLOG("ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
+            UPROGLOG("ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                PROGLOG("Total disk space = %" I64F "d k", total.QuadPart/1000);
-                PROGLOG"Free  disk space = %" I64F "d k", free.QuadPart/1000);
-                PROGLOG"%d%% disk free\n",pc);
+                UPROGLOG("Total disk space = %" I64F "d k", total.QuadPart/1000);
+                UPROGLOG"Free  disk space = %" I64F "d k", free.QuadPart/1000);
+                UPROGLOG"%d%% disk free\n",pc);
             }
 #endif
      
@@ -543,7 +543,7 @@ int main( int argc, const char *argv[]  )
                 if (lgname.length()) {
                     Owned<ILargeMemLimitNotify> notify = createMultiThorResourceMutex(lgname.str());
                     setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                    PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
+                    UPROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
                 }   
                 else
                     multiThorMemoryThreshold = 0;

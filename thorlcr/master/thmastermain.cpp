@@ -262,7 +262,7 @@ public:
             IWARNLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
             return;
         }
-        PROGLOG("Worker %d (%s) registered", worker+1, url.str());
+        UPROGLOG("Worker %d (%s) registered", worker+1, url.str());
         status->set(worker);
         if (watchdog)
             watchdog->addWorker(ep, worker);
@@ -281,7 +281,7 @@ public:
         unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
         constexpr unsigned oneMinMs = 60000;
 
-        PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
+        UPROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
         CTimeMon registerTM(maxRegistrationMins * oneMinMs);
         while (remaining)
         {
@@ -299,7 +299,7 @@ public:
                 }
 
                 // NB: will not reach here if waitJob fails.
-                PROGLOG("Waiting for %u remaining workers to register", remaining);
+                UPROGLOG("Waiting for %u remaining workers to register", remaining);
             }
             else
             {
@@ -328,7 +328,7 @@ public:
                         msg.read(workerContainerName);
                     }
                     connectedWorkers.emplace_back(workerEPStr.str(), workerPodName.str(), workerContainerName.str());
-                    PROGLOG("Worker connected from %s", workerEPStr.str());
+                    UPROGLOG("Worker connected from %s", workerEPStr.str());
                 }
                 else
                 {
@@ -339,7 +339,7 @@ public:
                         connectedWorkers.emplace_back(workerEPStr.str());
                     else
                         connectedWorkers[pos] = {workerEPStr.str()};
-                    PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
+                    UPROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
                 }
                 --remaining;
             }
@@ -389,7 +389,7 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
-        PROGLOG("Workers connected, initializing..");
+        UPROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
@@ -401,7 +401,7 @@ public:
             throw makeStringException(TE_AbortException, "Failed to initialize workers");
 
         // Wait for confirmation from workers
-        PROGLOG("Initialization sent to worker group");
+        UPROGLOG("Initialization sent to worker group");
         Owned<IException> exception;
         try
         {
@@ -425,7 +425,7 @@ public:
                     throw MakeThorException(TE_AbortException, "Workers failed to respond to cluster initialization");
                 }
                 StringBuffer str;
-                PROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
+                UPROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
                 if (msg.length())
                 {
                     Owned<IException> e = deserializeException(msg);
@@ -436,7 +436,7 @@ public:
             }
 
             // this is like a barrier, let workers know all workers are now connected
-            PROGLOG("Workers initialized");
+            UPROGLOG("Workers initialized");
             unsigned s=0;
             for (; s<workers; s++)
             {
@@ -722,7 +722,7 @@ int main( int argc, const char *argv[]  )
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        PROGLOG("Build %s", hpccBuildInfo.buildTag);
+        UPROGLOG("Build %s", hpccBuildInfo.buildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
@@ -1005,7 +1005,7 @@ int main( int argc, const char *argv[]  )
             JobNameScope activeJobName(workunit);
 
             StringBuffer thorEpStr;
-            PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            UPROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1050,8 +1050,8 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            PROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            UPROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            UPROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
             unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -1095,13 +1095,13 @@ int main( int argc, const char *argv[]  )
                 virtStr.append("virtual workers:");
             else
                 virtStr.append("worker:");
-            PROGLOG("Worker log %u contains %s %s", s+1, virtStr.str(), workerStr.str());
+            UPROGLOG("Worker log %u contains %s %s", s+1, virtStr.str(), workerStr.str());
         }
 
-        PROGLOG("verifying mp connection to rest of cluster");
+        UPROGLOG("verifying mp connection to rest of cluster");
         if (!queryNodeComm().verifyAll(false, 1000*60*30, 1000*60))
             throwStringExceptionV(0, "Failed to connect to all nodes");
-        PROGLOG("verified mp connection to rest of cluster");
+        UPROGLOG("verified mp connection to rest of cluster");
 
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@_dafsStorage"))

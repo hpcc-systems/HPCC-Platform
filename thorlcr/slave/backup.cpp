@@ -72,7 +72,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
     }
     void doBackup(CStringTuple *item, bool ignoreError=true)
     {
-        PROGLOG("CThorBackupHandler, copying to target: %s", item->dst.get());
+        UPROGLOG("CThorBackupHandler, copying to target: %s", item->dst.get());
         StringBuffer backupTmp(item->dst);
         backupTmp.append(".__tmp");
         Owned<IFile> backupIFile = createIFile(backupTmp.str());
@@ -99,7 +99,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
                 OwnedIFile dstIFile = createIFile(item->dst);
                 dstIFile->remove();
                 backupIFile->rename(pathTail(item->dst.get()));
-                PROGLOG("Backed up: '%s'", item->dst.get());
+                UPROGLOG("Backed up: '%s'", item->dst.get());
             }
             else
             {

@@ -1785,7 +1785,7 @@ void CJobMaster::saveSpills()
         return;
     spillsSaved = true;
 
-    PROGLOG("Paused, saving spills..");
+    UPROGLOG("Paused, saving spills..");
     assertex(!queryUseCheckpoints()); // JCSMORE - checkpoints probably need revisiting
 
     unsigned numSavedSpills = 0;
@@ -1829,7 +1829,7 @@ void CJobMaster::saveSpills()
             }
         }
     }
-    PROGLOG("Paused, %d spill(s) saved.", numSavedSpills);
+    UPROGLOG("Paused, %d spill(s) saved.", numSavedSpills);
 }
 
 bool CJobMaster::go()
@@ -1887,7 +1887,7 @@ bool CJobMaster::go()
                     job.fireException(e);
                 }
                 else
-                    PROGLOG("CWorkunitStateChangeHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
+                    UPROGLOG("CWorkunitStateChangeHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
             }
             if (flags & SubscribeOptionAction)
             {
@@ -1909,7 +1909,7 @@ bool CJobMaster::go()
                 }
                 if (pause)
                 {
-                    PROGLOG("Pausing job%s", abort?" [now]":"");
+                    UPROGLOG("Pausing job%s", abort?" [now]":"");
                     job.pause(abort);
                 }
             }

@@ -1367,7 +1367,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
         if (currentChunkNum == totalChunksOut)
         {
 #ifdef TRACE_WRITEAHEAD
-            PROGLOG("output=%d, chunk=%d INMEM", output, currentChunkNum);
+            UPROGLOG("output=%d, chunk=%d INMEM", output, currentChunkNum);
 #endif
             rowSet.set(inMemRows);
         }

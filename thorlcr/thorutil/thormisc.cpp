@@ -1419,7 +1419,7 @@ void logDiskSpace()
     diskSpaceMsg.append(queryBaseDirectory(grp_unknown, 1)).append(" = ").append(getFreeSpace(queryBaseDirectory(grp_unknown, 1))/0x100000).append(" MB, ");
     const char *tempDir = globals->queryProp("@thorTempDirectory");
     diskSpaceMsg.append(tempDir).append(" = ").append(getFreeSpace(tempDir)/0x100000).append(" MB");
-    PROGLOG("%s", diskSpaceMsg.str());
+    UPROGLOG("%s", diskSpaceMsg.str());
 }
 
 IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMonHook *chain)
@@ -1446,7 +1446,7 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
         }
         virtual void log(int level, const char *msg)
         {
-            PROGLOG("%s", msg);
+            UPROGLOG("%s", msg);
             if ((maxLevel != -1) && (level <= maxLevel)) // maxLevel of -1 means disabled
             {
                 Owned<IThorException> e = MakeThorException(TE_KERN, "%s", msg);
@@ -1595,7 +1595,7 @@ void checkAndDumpAbortInfo(const char *cmd)
         }
         StringBuffer cmdOutput;
         unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", validateAllowedPrograms ? allowedPipePrograms.str() : nullptr);
-        PROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
+        UPROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
     }
     catch (IException *e)
     {
@@ -1649,7 +1649,7 @@ void CThorPerfTracer::stop()
         {
             StringBuffer &svg = perf.queryResult();
             iFileIO->write(0, svg.length(), svg.str());
-            PROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
+            UPROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
         }
     }
     catch (IException *E)

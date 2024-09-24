@@ -2423,7 +2423,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         Owned<IException> e;
                         try
                         {
-                            PROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
+                            UPROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
                             graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
                         }
                         catch (IException *_e)
@@ -2545,7 +2545,7 @@ public:
             }
         }
         job.markWuDirty();
-        PROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
+        UPROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
 
         while (toRun.ordinality())
         {
@@ -2703,7 +2703,7 @@ void CJobBase::applyMemorySettings(const char *context)
     bool gmemLockMemory = getBoolSetting("heapLockMemory", false);
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
-    PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
+    UPROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
 
 void CJobBase::init()
@@ -2795,13 +2795,13 @@ void CJobBase::startJob()
     setNodeCacheMem(keyNodeCacheBytes);
     setLeafCacheMem(keyLeafCacheBytes);
     setBlobCacheMem(keyBlobCacheBytes);
-    PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
+    UPROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
     if (!keyFileCacheLimit)
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
-    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+    UPROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
     if (getOptBool("dumpStacks")) // mainly as an example of printAllStacks() usage
     {
         StringBuffer output;

@@ -623,24 +623,24 @@ void CJobManager::run()
         {
             int p = getRunningMaxPriority(qn);
             if (p)
-                PROGLOG("Dynamic Min priority = %d",p);
+                UPROGLOG("Dynamic Min priority = %d",p);
             return p;
         }
     } *dp = NULL;
 
     if (globals->getPropBool("@multiThorPriorityLock")) {
-        PROGLOG("multiThorPriorityLock enabled");
+        UPROGLOG("multiThorPriorityLock enabled");
         dp = new cdynprio;
         dp->qn = queueName.get();
     }
 
-    PROGLOG("verifying mp connection to all slaves");
+    UPROGLOG("verifying mp connection to all slaves");
     Owned<IMPServer> mpServer = getMPServer();
     Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
     if (!comm->verifyAll(false, 1000*60*30, 1000*60))
         throwStringExceptionV(0, "Failed to connect to all slaves");
     else
-        PROGLOG("verified mp connection to all slaves");
+        UPROGLOG("verified mp connection to all slaves");
 
     class CThorListener : public CSimpleInterface, implements IThreaded
     {
@@ -690,7 +690,7 @@ void CJobManager::run()
                 FLLOG(MCoperatorWarning, "multiThorPriorityLock cannot be used in conjunction with multiThorExclusionLockName");
             else
             {
-                PROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
+                UPROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
                 exclLockDaliMutex.setown(createDaliMutex(exclusiveLockName.str()));
             }
         }
@@ -702,7 +702,7 @@ void CJobManager::run()
         conversation.clear();
         SocketEndpoint masterEp(getMasterPortBase());
         StringBuffer url;
-        PROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getEndpointHostText(url).str(),queueName.get());
+        UPROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getEndpointHostText(url).str(),queueName.get());
 
         struct CLock
         {
@@ -717,7 +717,7 @@ void CJobManager::run()
             {
                 lock = _lock;
                 name.set(_name);
-                PROGLOG("Took exclusive lock %s", name.get());
+                UPROGLOG("Took exclusive lock %s", name.get());
             }
             void clear()
             {
@@ -726,7 +726,7 @@ void CJobManager::run()
                     IDaliMutex *_lock = lock;
                     lock = NULL;
                     _lock->leave();
-                    PROGLOG("Cleared exclusive lock: %s", name.get());
+                    UPROGLOG("Cleared exclusive lock: %s", name.get());
                 }
             }
         } daliLock;
@@ -770,7 +770,7 @@ void CJobManager::run()
                                 msg.append("Nothing found on jobq::dequeue");
                             if (e>=5000)
                                 msg.append(" - acceptConversation took ").append(e/1000).append(" secs");
-                            PROGLOG("%s", msg.str());
+                            UPROGLOG("%s", msg.str());
                             if (_item.get())
                             {
                                 if (_item->isValidSession())
@@ -800,7 +800,7 @@ void CJobManager::run()
                     {
                         jobq->getStats(connected, waiting, enqueued);
                         if (enqueued)
-                            PROGLOG("Exclusive lock %s in use. Queue state (connected=%d, waiting=%d, enqueued=%d)", exclusiveLockName.str(), connected ,waiting, enqueued);
+                            UPROGLOG("Exclusive lock %s in use. Queue state (connected=%d, waiting=%d, enqueued=%d)", exclusiveLockName.str(), connected ,waiting, enqueued);
                     }
                 }
             }
@@ -985,7 +985,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     s.append(" to agent ");
     agentep.getEndpointHostText(s);
     s.append(" for workunit(").append(wuid).append(")");
-    PROGLOG("%s", s.str());
+    UPROGLOG("%s", s.str());
     MemoryBuffer replyMb;
     workunit->forceReload();
     if (!allDone && (WUActionPause == workunit->getAction() || WUActionPauseNow == workunit->getAction()))
@@ -1103,7 +1103,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
-    PROGLOG("Started wuid=%s, user=%s, graph=%s, query=%s", wuid.str(), user.str(), graphName, soPath.str());
+    UPROGLOG("Started wuid=%s, user=%s, graph=%s, query=%s", wuid.str(), user.str(), graphName, soPath.str());
 
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     unsigned wfid = job->getWfid();
@@ -1181,7 +1181,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     }
     fatalHdlr.setown(job->clearFatalHandler());
     job.clear();
-    PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
+    UPROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
 
     fatalHdlr->clear();
 
@@ -1424,7 +1424,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             {
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
+                UPROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
             }
             else
                 multiThorMemoryThreshold = 0;
@@ -1455,7 +1455,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     queueNames.append(",");
                     getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
 
-                    PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
+                    UPROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
                     thorQueue.setown(createJobQueue(queueNames));
                     thorQueue->connect(false);
                 }
@@ -1486,7 +1486,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         {
                             JobNameScope activeJobName(currentWuid.str());
                             saveWuidToFile(currentWuid);
-                            PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            UPROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
 
                             {
                                 Owned<IWorkUnit> wu = &workunit->lock();
@@ -1526,7 +1526,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                     if (lingerPeriod)
                     {
-                        PROGLOG("Lingering time left: %.2f", ((float)lingerPeriod)/1000);
+                        UPROGLOG("Lingering time left: %.2f", ((float)lingerPeriod)/1000);
                         StringBuffer nextJob;
                         CTimeMon timer(lingerPeriod);
                         unsigned remaining;

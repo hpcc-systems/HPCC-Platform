@@ -1769,7 +1769,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
-    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
+    UPROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
 
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
@@ -2198,7 +2198,7 @@ public:
         assertex(limit);
         purgeN = globals->getPropInt("@fileCachePurgeN", 10);
         if (purgeN > limit) purgeN=limit; // why would it be, but JIC.
-        PROGLOG("FileCache: limit = %d, purgeN = %d", limit, purgeN);
+        UPROGLOG("FileCache: limit = %d, purgeN = %d", limit, purgeN);
     }
     void opening(CLazyFileIO &lFile)
     {

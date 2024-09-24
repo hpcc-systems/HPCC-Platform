@@ -63,7 +63,7 @@ bool recvShutdown = false;
 void enableThorSlaveAsDaliClient()
 {
 #ifdef ISDALICLIENT
-    PROGLOG("Slave activated as a Dali client");
+    UPROGLOG("Slave activated as a Dali client");
     const char *daliServers = globals->queryProp("@daliServers");
     if (!daliServers)
         throw MakeStringException(0, "No Dali server list specified");
@@ -97,7 +97,7 @@ void disableThorSlaveAsDaliClient()
 #ifdef ISDALICLIENT
     closeEnvironment();
     closedownClientProcess();   // dali client closedown
-    PROGLOG("Slave deactivated as a Dali client");
+    UPROGLOG("Slave deactivated as a Dali client");
 #endif
 }
 
@@ -1718,7 +1718,7 @@ public:
             virtStr.append("virtual slaves:");
         else
             virtStr.append("slave:");
-        PROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
+        UPROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
         traceMemUsage();
 
         if (channelsPerSlave>1)
@@ -1740,11 +1740,11 @@ public:
                 virtual void threadmain() override
                 {
                     Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
-                    PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
+                    UPROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
                     if (!comm->verifyAll())
                         OERRLOG("Failed to connect to rest of slaves");
                     else
-                        PROGLOG("verified mp connection to rest of slaves");
+                        UPROGLOG("verified mp connection to rest of slaves");
                 }
             };
             CIArrayOf<CInterface> verifyThreads;
@@ -1897,12 +1897,12 @@ public:
 
                         activeJobName.set(wuid);
 
-                        PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]", wuid.get(), user.str(), graphName.get(), maxLogDetail);
-                        PROGLOG("Using query: %s", soPath.str());
+                        UPROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]", wuid.get(), user.str(), graphName.get(), maxLogDetail);
+                        UPROGLOG("Using query: %s", soPath.str());
 
                         if (!getExpertOptBool("slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
                         {
-                            PROGLOG("Workunit option 'slaveDaliClient' enabled");
+                            UPROGLOG("Workunit option 'slaveDaliClient' enabled");
                             enableThorSlaveAsDaliClient();
                         }
 
@@ -1932,7 +1932,7 @@ public:
                         StringAttr wuid = job->queryWuid();
                         StringAttr graphName = job->queryGraphName();
 
-                        PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
+                        UPROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
 
                         if (!getExpertOptBool("slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
                             disableThorSlaveAsDaliClient();
@@ -1994,7 +1994,7 @@ public:
                          */
                         for (unsigned c=0; c<job->queryJobChannels(); c++)
                         {
-                            PROGLOG("GraphInit: %s, graphId=%" GIDPF "d, slaveChannel=%d", jobKey.get(), subGraphId, c);
+                            UPROGLOG("GraphInit: %s, graphId=%" GIDPF "d, slaveChannel=%d", jobKey.get(), subGraphId, c);
                             CJobChannel &jobChannel = job->queryJobChannel(c);
                             Owned<CSlaveGraph> subGraph = (CSlaveGraph *)jobChannel.getGraph(subGraphId);
                             subGraph->setExecuteReplyTag(executeReplyTag);
@@ -2067,7 +2067,7 @@ public:
                     {
                         StringAttr jobKey;
                         msg.read(jobKey);
-                        PROGLOG("GraphAbort: %s", jobKey.get());
+                        UPROGLOG("GraphAbort: %s", jobKey.get());
                         CJobSlave *job = jobs.find(jobKey.get());
                         if (job)
                         {
@@ -2099,7 +2099,7 @@ public:
                     {
                         stopped = true;
                         recvShutdown = true;
-                        PROGLOG("Shutdown received");
+                        UPROGLOG("Shutdown received");
                         if (watchdog)
                             watchdog->stop();
                         mptag_t sdreplyTag;
@@ -2148,12 +2148,12 @@ public:
                             msg.setReplyTag(replyTag);
                             StringAttr rawText;
                             msg.read(rawText);
-                            PROGLOG("DebugRequest: %s %s", jobKey.get(), rawText.get());
+                            UPROGLOG("DebugRequest: %s %s", jobKey.get(), rawText.get());
                             msg.clear();
                             job->debugRequest(msg, rawText);
                         }
                         else
-                            PROGLOG("DebugRequest: %s - Job not found", jobKey.get());
+                            UPROGLOG("DebugRequest: %s - Job not found", jobKey.get());
 
                         break;
                     }
@@ -2403,7 +2403,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
         const IpAddress &ip = queryNodeGroup().queryNode(next+1).endpoint();
         StringBuffer ipStr;
         ip.getHostText(ipStr);
-        PROGLOG("Redirecting local mount to %s", ipStr.str());
+        UPROGLOG("Redirecting local mount to %s", ipStr.str());
         const char *replicateDirectory = queryBaseDirectory(grp_unknown, 1); // default directories configured at start up (see thslavemain.cpp)
         setLocalMountRedirect(ip, replicateDirectory, "/mnt/mirror");
     }
