@@ -68,7 +68,7 @@ interface IReferencedFileList : extends IInterface
     virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
     virtual void addFilesFromPackageMap(IPropertyTree *pm)=0;
 
-    virtual void addFile(const char *ln, const char *daliip=NULL, const char *sourceProcessCluster=NULL, const char *remotePrefix=NULL)=0;
+    virtual void addFile(const char *ln, const char *daliip=nullptr, const char *sourceProcessCluster=nullptr, const char *remotePrefix=nullptr, const char *remoteStorageName=nullptr)=0;
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
