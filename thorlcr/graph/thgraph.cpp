@@ -2329,7 +2329,7 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
             if (!removeTemp(name))
                 IWARNLOG("Failed to delete tmp file : %s (not found)", name);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(name).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCoperatorWarning, e, s.append(name).str()); }
     }
     else
         fileUsage->decUsage();
@@ -2348,7 +2348,7 @@ void CGraphTempHandler::clearTemps()
             if (!removeTemp(tmpname))
                 IWARNLOG("Failed to delete tmp file : %s (not found)", tmpname);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(tmpname).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCoperatorWarning, e, s.append(tmpname).str()); }
     }
     iter.clear();
     tmpFiles.kill();

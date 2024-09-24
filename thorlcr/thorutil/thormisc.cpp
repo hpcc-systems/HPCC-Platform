@@ -642,7 +642,7 @@ public:
                 catch (IException *e)
                 {
                     if (log)
-                        FLLOG(MCwarning, e);
+                        FLLOG(MCoperatorWarning, e);
                     e->Release();
                 }
             }
@@ -694,7 +694,7 @@ public:
         catch (IException *e)
         {
             if (log)
-                FLLOG(MCwarning, e);
+                FLLOG(MCoperatorWarning, e);
             e->Release();
         }
         subDirPath.clear();

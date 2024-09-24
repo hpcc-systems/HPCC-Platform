@@ -948,7 +948,7 @@ void CJobManager::setWuid(const char *wuid, const char *cluster)
     }
     catch (CATCHALL)
     {
-        FLLOG(MCerror, "WARNING: Failed to set wuid in SDS: Unknown error");
+        FLLOG(MCdebugError, "WARNING: Failed to set wuid in SDS: Unknown error");
     }
 }
 
