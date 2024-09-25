@@ -105,7 +105,7 @@ data:
 {{- end -}}
 {{- $signingEnabled := eq (include "hpcc.isIssuerEnabled" (dict "root" $ "issuerKeyName" "signing")) "true" -}}
 {{- $generateSigningCert := and ($signingEnabled) (eq $application "eclwatch") -}}
-{{- $signingCertGenerator := and ($signingEnabled) (has $application (list "eclwatch" "eclservices")) | ternary "eclwatch" "" -}}
+{{- $signingCertGenerator := and ($signingEnabled) (has $application (list "eclwatch" "eclservices")) | ternary "eclwatch" "" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
