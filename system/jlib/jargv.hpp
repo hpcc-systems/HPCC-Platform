@@ -47,7 +47,7 @@ public:
     // Extract the entire option if it matches.  isBoolFlag indicates a boolean option isShortOption for -I etc.
     bool matchOptionText(StringBuffer & option, const char * name, bool isBoolFlag, bool isShortOption);
 
-    inline const char * query() { return cur < argc ? argv[cur] : NULL; }
+    inline const char * query() const { return cur < argc ? argv[cur] : NULL; }
     inline bool hasMore(int num) { return (cur + num) < argc; }
     inline bool first() { cur = 1; return isValid(); }
     inline bool isValid() const { return cur < argc; }

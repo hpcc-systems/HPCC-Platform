@@ -116,8 +116,6 @@ bool ViewHelper::doit(FILE * fp)
             if (w->getStateID() == WUStateFailed)
                 return false;
 
-            int queryid = 0;
-
             IArrayOf<IConstECLResult>& results = w->getResults();
             ForEachItemIn(res_ind, results)
             {

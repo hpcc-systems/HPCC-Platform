@@ -387,7 +387,7 @@ public:
         return parserRef().getColumnNumber();
     }
     
-    virtual const bool whitespaceContent() const override
+    virtual bool whitespaceContent() const override
     {
         DataFrame* df = peekDataFrame();
         if (!df)

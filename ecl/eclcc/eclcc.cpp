@@ -212,6 +212,7 @@ static bool extractOption(StringBuffer & option, IProperties * globals, const ch
     return false;
 }
 
+#ifndef _CONTAINERIZED
 static bool extractOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
 {
     if (option)
@@ -221,6 +222,7 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
     option.set(temp.str());
     return ret;
 }
+#endif
 
 static bool getHomeFolder(StringBuffer & homepath)
 {
@@ -2128,8 +2130,6 @@ void EclCC::generateOutput(EclCompileInstance & instance)
 
 void EclCC::processReference(EclCompileInstance & instance, const char * queryAttributePath, const char * queryAttributePackage)
 {
-    const char * outputFilename = instance.outputFilename;
-
     instance.wu.setown(createLocalWorkUnit());
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());

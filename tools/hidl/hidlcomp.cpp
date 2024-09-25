@@ -2912,7 +2912,7 @@ void EspMessageInfo::write_esp()
     if (hasMapInfo())
     {
         outf("\tIEspContext* ctx = rpc_resp.queryContext();\n");
-        outf("\tdouble clientVer= ctx ? ctx->getClientVersion() : -1; /* no context gets everything */\n");
+        outf("\t[[maybe_unused]] double clientVer= ctx ? ctx->getClientVersion() : -1; /* no context gets everything */\n");
     }
 
     outf("\trpc_resp.set_ns(%s);\n", getMetaString("ns_var", "\"\""));
@@ -3040,7 +3040,7 @@ void EspMessageInfo::write_esp()
             outf("\t\tC%s::serializeContent(ctx,buffer);\n", parent);
 
         if (hasMapInfo())
-            outf("\t\tdouble clientVer = ctx ? ctx->getClientVersion() : -1;\n");
+            outf("\t\t[[maybe_unused]] double clientVer = ctx ? ctx->getClientVersion() : -1;\n");
 
         bool encodeJSON = true;
         const char * name = getName();
@@ -3064,7 +3064,7 @@ void EspMessageInfo::write_esp()
         if (parent)
             outf("\tC%s::serializeContent(ctx,buffer);\n", parent);
         if (hasMapInfo())
-            outf("\tdouble clientVer = ctx ? ctx->getClientVersion() : -1;\n");
+            outf("\t[[maybe_unused]] double clientVer = ctx ? ctx->getClientVersion() : -1;\n");
         //attributes first
         int attribCount=0;
         for (pi=getParams();pi!=NULL;pi=pi->next)
@@ -3167,7 +3167,7 @@ void EspMessageInfo::write_esp()
     // -- versioning
     if (hasMapInfo())
     {
-        outf("\tdouble clientVer = ctx ? ctx->getClientVersion() : -1;\n");
+        outf("\t[[maybe_unused]] double clientVer = ctx ? ctx->getClientVersion() : -1;\n");
     }
 
     // not respecting nil_remove: backward compatible
@@ -4188,7 +4188,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs(1, "IEspContext *ctx=rpc_call->queryContext();\n");
     outs(1, "DBGLOG(\"Client version: %g\", ctx->getClientVersion());\n");
     outs(1, "StringBuffer serviceName;\n");
-    outs(1, "double clientVer=(ctx) ? ctx->getClientVersion() : 0.0;\n");
+    outs(1, "[[maybe_unused]] double clientVer=(ctx) ? ctx->getClientVersion() : 0.0;\n");
     outs(1, "qualifyServiceName(*ctx, ctx->queryServiceName(NULL), NULL, serviceName, NULL);\n");
     outs(1, "CRpcCall* thecall = static_cast<CRpcCall *>(rpc_call);\n"); //interface must be from a class derived from CRpcCall
     outs(1, "CRpcResponse* response = static_cast<CRpcResponse*>(rpc_response);\n");  //interface must be from a class derived from CRpcResponse
@@ -4265,7 +4265,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
             if (hasMinVer)
             {
                 outf("\t\t\tif (clientVer!=-1.0 && clientVer<%s)\n", minVer.str());
-                outs("\t\t\t\tthrow MakeStringException(-1, \"Client version is too old, please update your client application.\");");
+                outs("\t\t\t\tthrow MakeStringException(-1, \"Client version is too old, please update your client application.\");\n");
             }
 
             if (mthi->getMetaInt("do_not_log",0))
@@ -4709,7 +4709,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
             outs("\t\t\telse\n");
             outs("\t\t\t{\n");
 
-            outs("\t\t\t\tIProperties *props=request->queryParameters();\n");
+            outs("\t\t\t\t[[maybe_unused]] IProperties *props=request->queryParameters();\n");
             outs("\t\t\t\tif (skipXslt(context))\n");
             outs("\t\t\t\t{\n");
             outs("\t\t\t\t\tMemoryBuffer content;\n");
@@ -5532,7 +5532,12 @@ void HIDLcompiler::write_esp_ex_ipp()
 
     outf("#ifndef %s_EX_ESPGEN_INCLUDED\n", packagename);
     outf("#define %s_EX_ESPGEN_INCLUDED\n\n", packagename);
-    outs("#pragma warning( disable : 4786)\n\n");
+    outs("#ifdef _MSC_VER\n");
+    outs("#pragma warning( disable : 4786)\n");
+    outs("#else\n");
+    outs("#pragma GCC diagnostic push\n");
+    outs("#pragma GCC diagnostic ignored \"-Woverloaded-virtual\"\n");
+    outs("#endif\n\n");
     outs("//JLib\n");
     outs("#include \"jliball.hpp\"\n");
     outs("\n");
@@ -5576,6 +5581,12 @@ void HIDLcompiler::write_esp_ex_ipp()
 
     outs("}\n");
     outf("using namespace %s;\n\n", packagename);
+
+    outs("#ifdef _MSC_VER\n");
+    outs("#pragma pop\n");
+    outs("#else\n");
+    outs("#pragma GCC diagnostic pop\n");
+    outs("#endif\n");
 
     outf("#endif //%s_ESPGEN_INCLUDED\n", packagename);
 }

@@ -919,7 +919,7 @@ public:
     {
         if (s)
         {
-            int tempval = enumstrings.find(s);
+            aindex_t tempval = enumstrings.find(s);
 
             if (tempval == NotFound)
                 throw MakeStringException(-1, "Invalid value for type %s: %s", typeName_.get(), s);
@@ -956,7 +956,7 @@ public:
     {
         if (s)
         {
-            int tempval = enumstrings.find(s);
+            aindex_t tempval = enumstrings.find(s);
             if (tempval != NotFound)
                 return (enumtype)tempval;
         }
@@ -987,7 +987,7 @@ public:
     {
         if (s)
         {
-            int tempval = enumstrings.find(s);
+            aindex_t tempval = enumstrings.find(s);
             if (tempval == NotFound)
                 throw MakeStringException(-1, "Invalid value for type %s: %s", typeName_.get(), s);
             else
@@ -1022,7 +1022,7 @@ public:
 
     void marshall(IRpcMessage &rpc_call, const char *tagname, const char* itemname, const char* elementtype="",const char *basepath="", const char *prefix="")
     {
-        if ((value >= 0) && (value < enumstrings.length()))
+        if (enumstrings.isItem(value))
             rpc_call.add_value(basepath, prefix, tagname, "string", enumstrings.item(value));
     }
 

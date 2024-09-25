@@ -47,8 +47,10 @@ typedef char SXT_CHAR;
 //#define SXT_TRACING false;
 //#define SXT_TEST_VALIDATING  false;
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4290)
+#endif
 
 namespace sxt {
 
@@ -377,7 +379,6 @@ namespace sxt {
           } else { // it must be STag or ETag
             //bool prevMixSeenContent = seenContent;
             bool prevMixInElement = mixInElement;
-            bool prevMixSeenContent = seenContent;
             if(ch == _MYT('/')) {
               state = STATE_SCAN_ETAG_NAME;
               mixInElement = false;
@@ -1080,7 +1081,9 @@ inline ostream& operator<<(ostream& output,
 
 } // namespace
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 #endif // SXT_XML_TOKENIZER_H_
 

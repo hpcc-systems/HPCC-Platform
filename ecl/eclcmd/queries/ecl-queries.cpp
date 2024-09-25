@@ -396,7 +396,6 @@ public:
         int ret = outputMultiExceptionsEx(resp->getExceptions());
         if (ret == 0)
         {
-            IArrayOf<IConstFileUsedByQuery> &files = resp->getFiles();
             if (optQuery.length())
                 outputQueryFiles(optQuery.str(), resp->getFiles(), resp->getSuperFiles());
             else
