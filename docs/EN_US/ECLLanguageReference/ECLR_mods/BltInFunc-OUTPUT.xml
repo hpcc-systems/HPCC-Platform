@@ -433,10 +433,13 @@
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
+    role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">) ] | [ , PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
     role="bold">) ] </emphasis></para>
@@ -484,6 +487,26 @@
               node-numbers (1-based) and/or ranges (specified with a dash, as
               in n-m) to indicate the specific set of nodes to write
               to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to the specified
+              list of target planes. If omitted, the file is written to the
+              default plane. Planes are used by containerized systems, but
+              since bare-metal clusters are implicitly backed with a plane
+              with the same name, you can use PLANE('clustername') for
+              bare-metal deployments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the plane(s) to write the file to. The
+              <emphasis>targetPlane</emphasis> names must be listed as they
+              are defined in the deployment.</entry>
             </row>
 
             <row>
@@ -594,10 +617,14 @@ OUTPUT(People(Attr1=FALSE));
         <primary>CSV</primary>
       </indexterm>[ (</emphasis><emphasis>csvoptions</emphasis><emphasis
     role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
+    role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">)] <emphasis role="bold">[,ENCRYPT<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold"> <emphasis
+    role="bold">[,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]</emphasis> [,COMPRESSED]</emphasis></para>
@@ -643,6 +670,26 @@ OUTPUT(People(Attr1=FALSE));
               node-numbers (1-based) and/or ranges (specified with a dash, as
               in n-m) to indicate the specific set of nodes to write
               to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to the specified
+              list of target planes. If omitted, the file is written to the
+              default plane. Planes are used by containerized systems, but
+              since bare-metal clusters are implicitly backed with a plane
+              with the same name, you can use PLANE('clustername') for
+              bare-metal deployments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the plane(s) to write the file to. The
+              <emphasis>targetPlane</emphasis> names must be listed as they
+              are defined in the deployment.</entry>
             </row>
 
             <row>
@@ -884,11 +931,14 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
+    role="bold">) ] <emphasis role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
-    OVERWRITE<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
     UPDATE<indexterm>
@@ -928,6 +978,26 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
               node-numbers (1-based) and/or ranges (specified with a dash, as
               in n-m) to indicate the specific set of nodes to write
               to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to the specified
+              list of target planes. If omitted, the file is written to the
+              default plane. Planes are used by containerized systems, but
+              since bare-metal clusters are implicitly backed with a plane
+              with the same name, you can use PLANE('clustername') for
+              bare-metal deployments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the plane(s) to write the file to. The
+              <emphasis>targetPlane</emphasis> names must be listed as they
+              are defined in the deployment.</entry>
             </row>
 
             <row>
@@ -1109,10 +1179,14 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
+    role="bold">)] [, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold">
+    [</emphasis><emphasis>,</emphasis><emphasis role="bold">
     OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
@@ -1153,6 +1227,26 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
               node-numbers (1-based) and/or ranges (specified with a dash, as
               in n-m) to indicate the specific set of nodes to write
               to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to the specified
+              list of target planes. If omitted, the file is written to the
+              default plane. Planes are used by containerized systems, but
+              since bare-metal clusters are implicitly backed with a plane
+              with the same name, you can use PLANE('clustername') for
+              bare-metal deployments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the plane(s) to write the file to. The
+              <emphasis>targetPlane</emphasis> names must be listed as they
+              are defined in the deployment.</entry>
             </row>
 
             <row>
