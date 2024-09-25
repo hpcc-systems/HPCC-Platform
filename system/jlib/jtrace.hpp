@@ -108,6 +108,29 @@ struct SpanError
     void setError(const char * _errorMessage, int _errorCode) { errorMessage = _errorMessage; errorCode = _errorCode; }
 };
 
+struct SpanTimeStamp
+{
+    std::chrono::nanoseconds steadyClockTime = std::chrono::nanoseconds::zero();
+    std::chrono::nanoseconds systemClockTime = std::chrono::nanoseconds::zero();
+
+    void now()
+    {
+        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
+        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch());
+    }
+
+    void setMSTickTime(const unsigned int msTickTime)
+    {
+        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
+        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
+    }
+
+    bool isInitialized() const
+    {
+        return systemClockTime != std::chrono::nanoseconds::zero();
+    }
+};
+
 interface ISpan : extends IInterface
 {
     virtual void setSpanAttribute(const char * key, const char * val) = 0;
@@ -127,8 +150,8 @@ interface ISpan : extends IInterface
     virtual const char * queryTraceId() const = 0;
     virtual const char * querySpanId() const = 0;
 
-    virtual ISpan * createClientSpan(const char * name) = 0;
-    virtual ISpan * createInternalSpan(const char * name) = 0;
+    virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr)  = 0;
+    virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) = 0;
 
 //Old-style global/caller/local id interface functions
     virtual const char* queryGlobalId() const = 0;
@@ -158,29 +181,6 @@ private:
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
 extern jlib_decl IProperties * getSpanContext(const ISpan * span);
-
-struct SpanTimeStamp
-{
-    std::chrono::nanoseconds steadyClockTime = std::chrono::nanoseconds::zero();
-    std::chrono::nanoseconds systemClockTime = std::chrono::nanoseconds::zero();
-
-    void now()
-    {
-        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
-        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch());
-    }
-
-    void setMSTickTime(const unsigned int msTickTime)
-    {
-        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
-        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
-    }
-
-    bool isInitialized() const
-    {
-        return systemClockTime != std::chrono::nanoseconds::zero();
-    }
-};
 
 interface ITraceManager : extends IInterface
 {
