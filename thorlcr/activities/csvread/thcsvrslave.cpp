@@ -39,7 +39,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
 
     IHThorCsvReadArg *helper;
     StringAttr csvQuote, csvSeparate, csvTerminate, csvEscape;
-    Owned<IRowStream> out;
+    Owned<CSeqPartHandler> out;
     rowcount_t limit;
     rowcount_t stopAfter;
     unsigned headerLines;

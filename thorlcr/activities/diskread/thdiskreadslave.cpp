@@ -185,14 +185,6 @@ public:
         if (in)
             merged.mergeStatistic(StNumDiskRowsRead, in->queryProgress());
     }
-    virtual unsigned __int64 queryProgress() override
-    {
-        CriticalBlock block(inputCs);
-        if (in)
-            return in->queryProgress();
-        else
-            return 0;
-    }
 };
 
 /////////////////////////////////////////////////
@@ -516,34 +508,9 @@ public:
         }
     };
 
-    class PgRecordSize : implements IRecordSize, public CSimpleInterface
-    {
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        PgRecordSize(IRecordSize *_rcSz)
-        {
-            rcSz = LINK(_rcSz);
-        }
-        ~PgRecordSize()
-        {
-            rcSz->Release();
-        }
-        virtual size32_t getRecordSize(const void *rec)
-        {
-            return rcSz->getRecordSize(rec) + 1;
-        }
-        virtual size32_t getFixedSize() const 
-        {
-            return rcSz->getFixedSize()?(rcSz->getFixedSize()+1):0;
-        }
-    private:
-        IRecordSize *rcSz;
-    };
-
 public:
     bool unsorted = false, countSent = false;
-    IRowStream *out = nullptr;
+    Owned<CSeqPartHandler> partSequencer;
 
     IHThorDiskReadArg *helper;
 
@@ -558,7 +525,6 @@ public:
     }
     ~CDiskReadSlaveActivity()
     {
-        ::Release(out);
     }
 
 // IThorSlaveActivity
@@ -588,11 +554,7 @@ public:
     }
     virtual void kill()
     {
-        if (out)
-        {
-            out->Release();
-            out = NULL;
-        }
+        partSequencer.clear();
         CDiskReadSlaveActivityRecord::kill();
     }
 
@@ -627,28 +589,27 @@ public:
             if (limit && (limit < remoteLimit))
                 remoteLimit = limit+1; // 1 more to ensure triggered when received back. // JCSMORE remote side could handle skip too..
         }
-        out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
+        partSequencer.setown(createSequentialPartHandler(partHandler, partDescs, grouped));
     }
     virtual bool isGrouped() const override { return grouped; }
 
 // IRowStream
     virtual void stop()
     {
-        if (out)
+        if (partSequencer)
         {
-            out->stop();
-            out->Release();
-            out = NULL;
+            partSequencer->stop();
+            partSequencer.clear();
         }
         PARENT::stop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (NULL == out) // guard against, but shouldn't happen
+        if (unlikely(NULL == partSequencer)) // guard against, but shouldn't happen
             return NULL;
-        OwnedConstThorRow ret = out->nextRow();
-        if (!ret)
+        OwnedConstThorRow ret = partSequencer->nextRow();
+        if (unlikely(!ret))
             return NULL;
         rowcount_t c = getDataLinkCount();
         if (stopAfter && (c >= stopAfter))  // NB: only slave limiter, global performed in chained choosen activity
@@ -739,7 +700,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
     };
 
     IHThorDiskNormalizeArg *helper;
-    IRowStream *out = nullptr;
+    Owned<CSeqPartHandler> partSequencer;
 
 public:
     CDiskNormalizeSlave(CGraphElementBase *_container) 
@@ -750,7 +711,6 @@ public:
     }
     ~CDiskNormalizeSlave()
     {
-        ::Release(out);
     }
 
 // IThorSlaveActivity
@@ -782,28 +742,27 @@ public:
         else
             limit = (rowcount_t)helper->getRowLimit();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
-        out = createSequentialPartHandler(partHandler, partDescs, false);
+        partSequencer.setown(createSequentialPartHandler(partHandler, partDescs, false));
     }
     virtual bool isGrouped() const override { return false; }
 
 // IRowStream
     virtual void stop()
     {
-        if (out)
+        if (partSequencer)
         {
-            out->stop();
-            out->Release();
-            out = NULL;
+            partSequencer->stop();
+            partSequencer.clear();
         }
         PARENT::stop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (!out)
+        if (unlikely(!partSequencer))
             return NULL;
-        OwnedConstThorRow ret = out->nextRow();
-        if (!ret)
+        OwnedConstThorRow ret = partSequencer->nextRow();
+        if (unlikely(!ret))
             return NULL;
         rowcount_t c = getDataLinkCount();
         if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
