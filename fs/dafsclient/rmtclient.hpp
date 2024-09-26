@@ -63,7 +63,7 @@ extern DAFSCLIENT_API int getDafsInfo(ISocket * socket, unsigned level, StringBu
 extern DAFSCLIENT_API void setDafsEndpointPort(SocketEndpoint &ep);
 extern DAFSCLIENT_API void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 extern DAFSCLIENT_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree *service); // NOTE: might alter ep.port if configured for multiple ports ...
-extern DAFSCLIENT_API ISocket *checkSocketSecure(ISocket *socket);
+extern DAFSCLIENT_API ISocket *checkSocketSecure(ISocket *socket, unsigned timeoutms);
 extern DAFSCLIENT_API unsigned short getActiveDaliServixPort(const IpAddress &ip);
 extern DAFSCLIENT_API unsigned getDaliServixVersion(const IpAddress &ip,StringBuffer &ver);
 extern DAFSCLIENT_API unsigned getDaliServixVersion(const SocketEndpoint &ep,StringBuffer &ver);

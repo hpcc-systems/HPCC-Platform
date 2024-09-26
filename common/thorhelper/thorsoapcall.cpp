@@ -2499,7 +2499,7 @@ public:
                             if (ssock)
                             {
                                 checkTimeLimitExceeded(&remainingMS);
-                                int status = ssock->secure_connect();
+                                int status = ssock->secure_connect(remainingMS);
                                 if (status < 0)
                                 {
                                     StringBuffer err;

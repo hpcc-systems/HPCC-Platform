@@ -727,13 +727,16 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
             //PrintStackReport();
         }
         bool ok = true;
+        unsigned connecttimeoutMs = DEFAULT_CONNECT_TIME;
         try
         {
+            CCycleTimer timer;
             if (tm.timemon)
             {
                 unsigned remaining;
                 if (tm.timemon->timedout(&remaining))
                     THROWJSOCKEXCEPTION(JSOCKERR_connection_failed);
+                connecttimeoutMs = remaining;
                 socket.setown(ISocket::connect_timeout(ep,remaining));
             }
             else
@@ -767,7 +770,8 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
                     }
                     else
                         ssock.setown(createSecureSocket(socket.getClear(), nullptr));
-                    int status = ssock->secure_connect();
+                    unsigned remainingMs = timer.remainingMs(connecttimeoutMs);
+                    int status = ssock->secure_connect(remainingMs);
                     if (status < 0)
                         throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
                     socket.setown(ssock.getLink());
@@ -1128,7 +1132,7 @@ IDaFsConnection *createDaFsConnection(const SocketEndpoint &ep, DAFSConnectCfg c
 
 /////////////////////////
 
-ISocket *checkSocketSecure(ISocket *socket)
+ISocket *checkSocketSecure(ISocket *socket, unsigned timeoutms = DEFAULT_CONNECT_TIME)
 {
     if (securitySettings.queryConnectMethod() == SSLNone)
         return LINK(socket);
@@ -1144,7 +1148,7 @@ ISocket *checkSocketSecure(ISocket *socket)
         try
         {
             ssock.setown(createSecureSocket(LINK(socket), nullptr));
-            int status = ssock->secure_connect();
+            int status = ssock->secure_connect(timeoutms);
             if (status < 0)
                 throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
             return ssock.getClear();
@@ -1173,6 +1177,7 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
 
     if (isContainerized())
     {
+        CCycleTimer timer;
         socket.setown(ISocket::connect_timeout(ep, timeoutms));
 
         if (service && service->getPropBool("@tls"))
@@ -1182,7 +1187,8 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
             try
             {
                 ssock.setown(createSecureSocket(LINK(socket), service->queryProp("@issuer")));
-                int status = ssock->secure_connect();
+                unsigned remainingMs = timer.remainingMs(timeoutms);
+                int status = ssock->secure_connect(remainingMs);
                 if (status < 0)
                     throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection to dafilesrv");
                 return ssock.getClear();
@@ -1214,12 +1220,15 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
     {
         if ( (securitySettings.queryConnectMethod() == SSLNone) || (securitySettings.queryConnectMethod() == SSLOnly) || (securitySettings.queryConnectMethod() == UnsecureAndSSL))
         {
+            CCycleTimer timer;
             socket.setown(ISocket::connect_timeout(ep, timeoutms));
-            return checkSocketSecure(socket);
+            unsigned remainingMs = timer.remainingMs(timeoutms);
+            return checkSocketSecure(socket, remainingMs);
         }
 
         // SSLFirst or UnsecureFirst ...
 
+        unsigned remainingMs;
         unsigned newtimeout = timeoutms;
         if (newtimeout > 5000)
             newtimeout = 5000;
@@ -1229,10 +1238,12 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
         {
             conAttempts--;
             bool connected = false;
+            CCycleTimer timer;
             try
             {
                 socket.setown(ISocket::connect_timeout(ep, newtimeout));
                 connected = true;
+                remainingMs = timer.remainingMs(newtimeout);
                 newtimeout = timeoutms;
             }
             catch (IJSOCK_Exception *e)
@@ -1257,7 +1268,7 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
                 {
                     try
                     {
-                        return checkSocketSecure(socket);
+                        return checkSocketSecure(socket, remainingMs);
                     }
                     catch (IDAFS_Exception *e)
                     {
@@ -1343,7 +1354,7 @@ unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
     if (!origSock)
         return 0;
 
-    Owned<ISocket> socket = checkSocketSecure(origSock);
+    Owned<ISocket> socket = checkSocketSecure(origSock, 10000);
 
     unsigned ret;
     MemoryBuffer sendbuf;

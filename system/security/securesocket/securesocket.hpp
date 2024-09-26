@@ -50,8 +50,8 @@ enum SecureSocketType
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
-    virtual int secure_accept(int logLevel=1) = 0;
-    virtual int secure_connect(int logLevel=1) = 0;
+    virtual int secure_accept(unsigned timeoutMS = DEFAULT_CONNECT_TIME) = 0;
+    virtual int secure_connect(unsigned timeoutMS = DEFAULT_CONNECT_TIME) = 0;
     virtual StringBuffer& get_ssl_version(StringBuffer& ver) = 0;
 };
 

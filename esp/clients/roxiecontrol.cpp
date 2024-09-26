@@ -123,6 +123,7 @@ IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *ms
 static ISocket *createRoxieControlSocket(ISmartSocketFactory *conn, unsigned wait, unsigned connect_wait)
 {
     const SocketEndpoint &ep = conn->nextEndpoint();
+    CCycleTimer timer;
     Owned<ISocket> sock = ISocket::connect_timeout(ep, connect_wait);
     if (conn->isTlsService())
     {
@@ -137,7 +138,8 @@ static ISocket *createRoxieControlSocket(ISmartSocketFactory *conn, unsigned wai
         if (!ssock)
             throw makeStringException(SECURE_CONNECTION_FAILURE, "failed creating secure socket for roxie control message");
 
-        int status = ssock->secure_connect();
+        unsigned remainingMs = timer.remainingMs(connect_wait);
+        int status = ssock->secure_connect(remainingMs);
         if (status < 0)
         {
             StringBuffer err;

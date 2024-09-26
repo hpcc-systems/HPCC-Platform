@@ -113,8 +113,6 @@
 #define CONNECT_TIMEOUT_REFUSED_WAIT    1000        // maximum to sleep on connect_timeout
 #define TRACE_SLOW_BLOCK_TRANSFER   
 
-#define DEFAULT_CONNECT_TIME    (100*1000)      // for connect_wait
-
 #ifdef _DEBUG
 //  #define SIMULATE_LOST_UDP_PACKETS
 #endif

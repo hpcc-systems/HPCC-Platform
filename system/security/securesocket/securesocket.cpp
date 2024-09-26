@@ -16,6 +16,7 @@
 ############################################################################## */
 
 // Some ssl prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
+#include "jexcept.hpp"
 #ifndef _MSC_VER
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
@@ -167,8 +168,8 @@ public:
     CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callback, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
     ~CSecureSocket();
 
-    virtual int secure_accept(int logLevel);
-    virtual int secure_connect(int logLevel);
+    virtual int secure_accept(unsigned timeoutMs);
+    virtual int secure_connect(unsigned timeoutMs);
 
     virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
@@ -674,16 +675,17 @@ bool CSecureSocket::verify_cert(X509* cert)
     }
 }
 
-int CSecureSocket::secure_accept(int logLevel)
+int CSecureSocket::secure_accept(unsigned timeoutMs)
 {
     checkForUpdatedContext();
     int err;
+    CCycleTimer timer;
     while (true)
     {
         err = SSL_accept(m_ssl);
         if (err > 0)
         {
-            if (logLevel > SSLogNormal)
+            if (this->m_loglevel > SSLogNormal)
                 DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
 
             if (m_verify)
@@ -716,7 +718,7 @@ int CSecureSocket::secure_accept(int logLevel)
                 // which can happen with port scan / VIP ...
                 // NOTE: ret could also be SSL_ERROR_ZERO_RETURN if client closed
                 // gracefully after ssl neg initiated ...
-                if ( (logLevel > SSLogNormal) || (ret != SSL_ERROR_SYSCALL) )
+                if ( (this->m_loglevel > SSLogNormal) || (ret != SSL_ERROR_SYSCALL) )
                 {
                     char errbuf[512];
                     ERR_error_string_n(ERR_get_error(), errbuf, 512);
@@ -746,10 +748,13 @@ int CSecureSocket::secure_accept(int logLevel)
 #endif
             // JCSMORE this should really handle accept_cancel_pending
             if (PORT_CHECK_SSL_ACCEPT_ERROR != srtn)
-                handleError(ret, false, true, WAIT_FOREVER, "SSL_accept");
+            {
+                unsigned remainingMs = timer.remainingMs(timeoutMs);
+                handleError(ret, false, true, remainingMs, "SSL_accept");
+            }
             else
             {
-                if ((logLevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
+                if ((this->m_loglevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
                     return srtn;
                 char errbuf[512];
                 ERR_error_string_n(errnum, errbuf, 512);
@@ -770,6 +775,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
 {
     // if !wait, then we only perform ssl_err checking, we do not wait_read/wait_write or timeout
     int rc = 0;
+    int sockErr = 0;
     switch (ssl_err)
     {
         case SSL_ERROR_ZERO_RETURN:
@@ -791,7 +797,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
         }
         case SSL_ERROR_SYSCALL:
         {
-            int sockErr = SOCKETERRNO();
+            sockErr = SOCKETERRNO();
             if (sockErr == EAGAIN || sockErr == EWOULDBLOCK)
             {
                 if (wait)
@@ -810,7 +816,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
             char errbuf[512];
             ERR_error_string_n(ssl_err, errbuf, 512);
             ERR_clear_error();
-            VStringBuffer errmsg("%s error %d - %s", opStr, ssl_err, errbuf);
+            VStringBuffer errmsg("%s error %d [%d] - %s", opStr, ssl_err, sockErr, errbuf);
             if (m_loglevel >= SSLogMax)
                 DBGLOG("Warning: %s", errmsg.str());
             THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
@@ -831,7 +837,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
     }
 }
 
-int CSecureSocket::secure_connect(int logLevel)
+int CSecureSocket::secure_connect(unsigned timeoutMs)
 {
     if (m_fqdn.length() > 0)
     {
@@ -839,7 +845,6 @@ int CSecureSocket::secure_connect(int logLevel)
             SSL_set_tlsext_host_name(m_ssl, m_fqdn.str());
     }
 
-    unsigned timeoutMs = 60*1000; // more than enough, used to be infinite
     CCycleTimer timer;
     while (true)
     {
@@ -851,7 +856,7 @@ int CSecureSocket::secure_connect(int logLevel)
         handleError(ssl_err, true, true, remainingMs, "SSL_connect");
     }
     
-    if (logLevel > SSLogNormal)
+    if (this->m_loglevel > SSLogNormal)
         DBGLOG("SSL connect ok, using %s", SSL_get_cipher (m_ssl));
 
     // Currently only do fake verify - simply logging the subject and issuer
@@ -2221,12 +2226,14 @@ public:
         SocketEndpoint ep;
         SmartSocketEndpoint *ss = nullptr;
         Owned<ISecureSocket> ssock;
+        CCycleTimer timer;
         Owned<ISocket> sock = connect_sock(timeoutms, ss, ep);
         try
         {
             ssock.setown(secureContext->createSecureSocket(sock.getClear()));
             // secure_connect may also DBGLOG() errors ...
-            int res = ssock->secure_connect();
+            unsigned remainingMs = timer.remainingMs(timeoutms);
+            int res = ssock->secure_connect(remainingMs);
             if (res < 0)
                 throw MakeStringException(-1, "connect_timeout : Failed to establish secure connection");
         }
@@ -2279,11 +2286,13 @@ public:
 
     bool connect(unsigned timeoutms) override
     {
+        CCycleTimer timer;
         bool srtn = CSingletonSocketConnection::connect(timeoutms);
         if (srtn)
         {
             Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(sock.getClear(), tlsLogLevel);
-            int status = ssock->secure_connect(tlsLogLevel);
+            unsigned remainingMs = timer.remainingMs(timeoutms);
+            int status = ssock->secure_connect(remainingMs);
             if (status < 0)
             {
                 ssock->close();
@@ -2304,7 +2313,7 @@ public:
         if (srtn)
         {
             Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear(), tlsLogLevel);
-            int status = ssock->secure_accept(tlsLogLevel);
+            int status = ssock->secure_accept(timeoutms);
             if (status < 0)
             {
                 ssock->close();
