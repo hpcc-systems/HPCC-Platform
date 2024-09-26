@@ -1,5 +1,5 @@
 ###############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 20214HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -17,3 +17,4 @@
 HPCC_ADD_SUBDIRECTORY (file)
 HPCC_ADD_SUBDIRECTORY (log)
 HPCC_ADD_SUBDIRECTORY (prometheus)
+HPCC_ADD_SUBDIRECTORY (elastic)
