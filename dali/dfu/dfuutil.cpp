@@ -503,10 +503,10 @@ public:
         if (iskey&&repeattlk)
             spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
         StringBuffer dstpartmask;
-        getPartMask(dstpartmask,destfilename,srcfdesc->numParts());
+        unsigned numParts = srcfdesc->numParts();
+        getPartMask(dstpartmask, destfilename, numParts);
         dstfdesc->setPartMask(dstpartmask.str());
-        unsigned np = srcfdesc->numParts();
-        dstfdesc->setNumParts(srcfdesc->numParts());
+        dstfdesc->setNumParts(numParts);
         StringBuffer dir;
         StringBuffer dstdir;
         getLFNDirectoryUsingBaseDir(dstdir, dstlfn.get(), spec.defaultBaseDir.get());
@@ -518,7 +518,7 @@ public:
             DBGLOG("cloneSubFile: destfilename='%s', plane='%s', dirPerPart=%s", destfilename, cluster1.get(), boolToStr(plane->queryDirPerPart()));
 
             FileDescriptorFlags newFlags = srcfdesc->getFlags();
-            if (plane->queryDirPerPart())
+            if (plane->queryDirPerPart() && (numParts > 1))
                 newFlags |= FileDescriptorFlags::dirperpart;
             else
                 newFlags &= ~FileDescriptorFlags::dirperpart;
@@ -530,7 +530,7 @@ public:
         if (iskey&&!cluster2.isEmpty())
             dstfdesc->addCluster(cluster2,grp2,spec2);
 
-        for (unsigned pn=0;pn<srcfdesc->numParts();pn++) {
+        for (unsigned pn=0; pn<numParts; pn++) {
             offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
             if (sz!=(offset_t)-1)
                 dstfdesc->queryPart(pn)->queryProperties().setPropInt64("@size",sz);
