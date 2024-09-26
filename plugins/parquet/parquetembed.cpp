@@ -805,7 +805,7 @@ arrow::Status ParquetWriter::fieldToNode(const RtlFieldInfo *field, std::vector<
         }
         break;
     case type_decimal:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::large_utf8())); // TODO: add decimal encoding
+        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::decimal(field->type->getDecimalDigits(), field->type->getDecimalPrecision())));
         break;
     case type_data:
         if (field->type->length > 0)
@@ -1231,7 +1231,16 @@ std::string_view ParquetRowBuilder::getCurrView(const RtlFieldInfo *field)
         case LargeStringType:
             return arrayVisitor->largeStringArr->GetView(currArrayIndex());
         case DecimalType:
-            return arrayVisitor->size == 128 ? arrayVisitor->decArr->GetView(currArrayIndex()) : arrayVisitor->largeDecArr->GetView(currArrayIndex());
+            if (arrayVisitor->size == 128)
+            {
+                serialized.append(arrayVisitor->decArr->FormatValue(currArrayIndex()).c_str());
+                return serialized.str();
+            }
+            else
+            {
+                serialized.append(arrayVisitor->largeDecArr->FormatValue(currArrayIndex()).c_str());
+                return serialized.str();
+            }
         case FixedSizeBinaryType:
             return arrayVisitor->fixedSizeBinaryArr->GetView(currArrayIndex());
         default:
@@ -1896,11 +1905,63 @@ void ParquetRecordBinder::processReal(double value, const RtlFieldInfo *field)
 }
 
 /**
- * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
+ * @brief Adds DECIMAL and UDECIMAL fields to the builder based on the size of the decimal
+ *
+ * @param decText Data to be written to the Parquet file.
+ * @param bytes Number of bytes holding the digits.
+ * @param digits Number of digits in the decimal.
+ * @param precision Number of digits after the decimal point.
+ * @param field RtlFieldInfo holds metadata about the field.
+ */
+void ParquetRecordBinder::addDecimalFieldToBuilder(rtlDataAttr *decText, size32_t bytes, int32_t digits, int32_t precision, const RtlFieldInfo *field)
+{
+    arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field);
+    if (fieldBuilder->type()->id() == arrow::Type::DECIMAL128)
+    {
+        arrow::Decimal128Builder *decimal128Builder = static_cast<arrow::Decimal128Builder *>(fieldBuilder);
+        arrow::Decimal128 decimal128;
+        reportIfFailure(arrow::Decimal128::FromString(std::string_view(decText->getstr(), bytes), &decimal128, &digits, &precision));
+        reportIfFailure(decimal128Builder->Append(decimal128));
+    }
+    else if (fieldBuilder->type()->id() == arrow::Type::DECIMAL256)
+    {
+        arrow::Decimal256Builder *decimal256Builder = static_cast<arrow::Decimal256Builder *>(fieldBuilder);
+        arrow::Decimal256 decimal256;
+        reportIfFailure(arrow::Decimal256::FromString(std::string_view(decText->getstr(), bytes), &decimal256, &digits, &precision));
+        reportIfFailure(decimal256Builder->Append(decimal256));
+    }
+    else
+        failx("Incorrect type for Decimal field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
+}
+
+/**
+ * @brief Convert from Binary Coded Decimal to string and add to Decimal field builder.
  *
  * @param value Data to be written to the Parquet file.
- * @param digits Number of digits in decimal.
- * @param precision Number of digits of precision.
+ * @param digits Number of bytes holding the digits.
+ * @param precision Number of digits after the decimal point.
+ * @param field RtlFieldInfo holds metadata about the field.
+ */
+void ParquetRecordBinder::processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field)
+{
+    Decimal val;
+    size32_t bytes;
+    rtlDataAttr decText;
+    val.setUDecimal(digits, precision, value);
+    val.getStringX(bytes, decText.refstr());
+
+    // convert digits from number of bytes to number of digits
+    val.getPrecision(digits, precision);
+    assert(digits <= 64 && precision <= 32);
+    addDecimalFieldToBuilder(&decText, bytes, digits, precision, field);
+}
+
+/**
+ * @brief Convert from Binary Coded Decimal to string and add to Decimal field builder.
+ *
+ * @param value Data to be written to the Parquet file.
+ * @param digits Number of bytes holding the digits.
+ * @param precision Number of digits after the decimal point.
  * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field)
@@ -1911,7 +1972,10 @@ void ParquetRecordBinder::processDecimal(const void *value, unsigned digits, uns
     val.setDecimal(digits, precision, value);
     val.getStringX(bytes, decText.refstr());
 
-    parquetWriter->addFieldToBuilder(field, bytes, decText.getstr());
+    // convert digits from number of bytes to number of digits
+    val.getPrecision(digits, precision);
+    assert(digits <= 64 && precision <= 32);
+    addDecimalFieldToBuilder(&decText, bytes, digits, precision, field);
 }
 
 /**
