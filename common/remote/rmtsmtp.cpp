@@ -19,7 +19,7 @@
 
 #include "jlib.hpp"
 #include "jlog.hpp"
-#include "jsocket.hpp"
+#include "securesocket.hpp"
 #include "jbuff.hpp"
 
 #include "rmtsmtp.hpp"
@@ -472,8 +472,9 @@ class CMailInfo
     unsigned port;
     StringAttr sender;
     Owned<ISocket> socket;
+    Owned<ISecureSocketContext> secureSocketContext;
     StringBuffer lastAction;
-    char inbuff[200];
+    char inbuff[2048];
     unsigned inlen;
     bool highPriority;
     bool termJobOnFail;
@@ -503,6 +504,20 @@ public:
         if(strlen(subjectHeader) + subject.length() > 998)
             throw MakeStringException(0, "Email subject too long: %" I64F "u characters",  static_cast<__uint64>(subject.length()));
         validator.validateValue(subject.get(), "email subject");
+    }
+
+    void convertToTLSSocket()
+    {
+        secureSocketContext.setown(createSecureSocketContext(ClientSocket));
+        Owned<ISecureSocket> ssock = secureSocketContext->createSecureSocket(socket.getClear());
+        int status = ssock->secure_connect(SSLogNone);
+        if (status < 0)
+        {
+            ssock->close();
+            VStringBuffer errmsg("Secure connect failed: %d", status);
+            THROWJSOCKEXCEPTION_MSG(JSOCKERR_connection_failed, errmsg);
+        }
+        socket.setown(ssock.getClear());
     }
 
     void open()
@@ -631,6 +646,70 @@ public:
     void getHelo(StringBuffer & out) const
     {
         out.append("HELO ").append(mailServer.get()).append("\r\n");
+    }
+
+    void getEhlo(StringBuffer & out) const
+    {
+        out.append("EHLO ").append(mailServer.get()).append("\r\n");
+    }
+
+    void processEsmtpOptions(StringBuffer & out)
+    {
+#if defined(_USE_OPENSSL)
+        bool useTLS = false;
+        if (inlen > 12) // 12 == '250 STARTTLS'
+        {
+            // Walk the buffer, looking for the STARTTLS option
+            char* buffPtr = inbuff;
+            while (buffPtr < (inbuff + inlen - 12))
+            {
+                if (strncmp(buffPtr, "250", 3) == 0)
+                {
+                    buffPtr += 3;
+                    bool hasMoreOptions = (*buffPtr == '-');
+                    ++buffPtr;
+                    if (strnicmp(buffPtr, "STARTTLS", 8) == 0) // case-insensitive
+                    {
+                        useTLS = true;
+                        break;
+                    }
+                    if (hasMoreOptions)
+                    {
+                        // Skip to the character past the end of the line
+                        while (buffPtr < (inbuff + inlen))
+                        {
+                            buffPtr++;
+                            if (*buffPtr == '\n')
+                            {
+                                buffPtr++;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (useTLS)
+        {
+            // Tell the server we're starting TLS
+            out.set("STARTTLS\r\n");
+            writeAndAck(out.str(), out.length());
+            // Upgrade existing connection to TLS
+            convertToTLSSocket();
+            // Start the EHLO conversation again
+            getEhlo(out.clear());
+            writeAndAck(out.str(), out.length());
+        }
+#endif
     }
 
     void getMailFrom(StringBuffer & out) const
@@ -824,9 +903,25 @@ static void doSendEmail(CMailInfo & info, CMailPart const & part)
         StringBuffer outbuff;
 
         info.read(0);
-        info.getHelo(outbuff);
 
-        info.writeAndAck(outbuff.str(), outbuff.length());
+        // Try to use ESMTP and fall back to SMTP if necessary
+        try
+        {
+            info.getEhlo(outbuff.clear());
+            info.writeAndAck(outbuff.str(), outbuff.length());
+            info.processEsmtpOptions(outbuff);
+        }
+        catch(IException * e)
+        {
+            // Log error as a warning
+            StringBuffer msg;
+            info.addToWarnings(e->errorMessage(msg).str());
+            EXCLOG(MCoperatorError, e, "WARNING");
+            e->Release();
+            // Fall back to SMTP
+            info.getHelo(outbuff.clear());
+            info.writeAndAck(outbuff.str(), outbuff.length());
+        }
 
         info.getMailFrom(outbuff.clear());
 
