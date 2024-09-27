@@ -412,6 +412,7 @@ export = {
         IgnoreGlobalStoreOutEdges: "Ignore Global Store Out Edges",
         Import: "Import",
         Inactive: "Inactive",
+        IncludePendingItems: "Include pending items",
         IncludeSlaveLogs: "Include worker logs",
         IncludeSubFileInfo: "Include sub file info?",
         Index: "Index",
