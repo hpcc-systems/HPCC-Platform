@@ -2066,9 +2066,14 @@ static void retrySync(int fd, int retrySecs, bool dataOnly)
     unsigned retryAttempts = 0;
     while (true)
     {
+        CCycleTimer timer;
         int ret = dataOnly ? fdatasync(fd) : fsync(fd);
         if (ret == 0)
+        {
+            if (timer.elapsedMs() >= 10000)
+                IWARNLOG("retrySync slow fsync success: took %u ms", timer.elapsedMs());
             break;
+        }
         if (fileSyncRetryDisabled == retrySecs) // error, but unchecked! Temporary, to allow to be disabled JIC causes unexpected side-effects
             break;
         if (EIO != errno)
@@ -2081,7 +2086,7 @@ static void retrySync(int fd, int retrySecs, bool dataOnly)
             throw e.getClear();
         }
         // In the event, not sure I care about burst of logging on retries (there won't be that many and this is fatal last throw of dice)
-        IWARNLOG("retrySync: failed with EIO, retry: %u", ++retryAttempts);
+        IWARNLOG("retrySync: failed after %u ms with EIO, retry: %u", timer.elapsedMs(), ++retryAttempts);
         if (delayMs >= 60000) // cap max delay to 1 minute
             MilliSleep(60000);
         else
@@ -7975,8 +7980,9 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str(), unsetPlaneAttrValue);
             values[BlockedSequentialIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
             value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str(), unsetPlaneAttrValue);
+            // plane expert settings
             values[BlockedRandomIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
-            values[FileSyncMaxRetrySecs] = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[FileSyncMaxRetrySecs])).c_str(), unsetPlaneAttrValue);
+            values[FileSyncMaxRetrySecs] = plane.getPropInt64(("expert/@" + std::string(planeAttributeTypeStrings[FileSyncMaxRetrySecs])).c_str(), unsetPlaneAttrValue);
         }
 
         // reset defaults
