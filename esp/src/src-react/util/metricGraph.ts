@@ -164,7 +164,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return retVal.reverse();
     }
 
-    load(data: any[]): this {
+    load(data: IScope[]): this {
         this.clear();
 
         //  Index all items  ---
