@@ -260,7 +260,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             setItems(items);
             selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
         });
-    }, [count, selectionHandler, start, store], [query, sorted]);
+    }, [abortController?.current?.signal, count, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
         //  Dummy line to ensure its included in the dependency array  ---
