@@ -2,6 +2,8 @@
 
 ##The elasticsearch component can be customized by modifying helm chart values here.
 elasticsearch:
+  service:
+    type: "LoadBalancer"
   enabled: true
   description: "HPCC Managed Elasticsearch"
   ##See https://github.com/elastic/helm-charts/blob/master/elasticsearch/values.yaml for all available options
