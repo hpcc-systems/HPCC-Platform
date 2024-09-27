@@ -157,8 +157,6 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
         }
     }, [addView, dirtyView, view]);
 
-    console.log("dirtyView.scopeTypes", viewId, view.scopeTypes);
-
     return <>
         <MessageBox title={nlsHPCC.Options} show={show && !showAdd} setShow={setShow} minWidth={width}
             footer={<>
