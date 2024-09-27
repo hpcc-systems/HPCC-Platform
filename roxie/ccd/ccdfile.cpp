@@ -379,9 +379,10 @@ public:
             }
             catch (IException *E)
             {
-                EXCLOG(MCoperatorError, E, "Read error");
+                StringBuffer msg;
+                E->errorMessage(msg);
                 E->Release();
-                OERRLOG("Failed to read length %d offset %" I64F "x file %s", len, pos, sources.item(activeIdx).queryFilename());
+                OERRLOG("Failed to read length %d offset %" I64F "x file %s [%s]", len, pos, sources.item(activeIdx).queryFilename(), msg.str());
                 {
                     CriticalBlock b(crit);
                     if (currentIdx == activeIdx)

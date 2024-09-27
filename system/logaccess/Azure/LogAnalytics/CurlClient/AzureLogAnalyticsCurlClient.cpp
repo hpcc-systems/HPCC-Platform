@@ -947,7 +947,18 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                 ForEach(*fields)
                 {
                     const char * fieldName = header.item(idx++);
-                    returnbuf.appendf("<%s>%s</%s>", fieldName, fields->query().queryProp("."), fieldName);
+                    const char * rawValue = fields->query().queryProp(".");
+
+                    if (isEmptyString(rawValue))
+                    {
+                        returnbuf.appendf("<%s/>", fieldName);
+                    }
+                    else
+                    {
+                        StringBuffer encodedValue;
+                        encodeXML(rawValue, encodedValue);
+                        returnbuf.appendf("<%s>%s</%s>", fieldName, encodedValue.str(), fieldName);
+                    }
                 }
                 returnbuf.append("</line>");
                 recsProcessed++;
@@ -976,7 +987,10 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                     if (!firstField)
                         hitchildjson.append(", ");
 
-                    hitchildjson.appendf("\"%s\":\"%s\"", header.item(idx++), fields->query().queryProp("."));
+                    StringBuffer encodedValue;
+                    encodeJSON(encodedValue, fields->query().queryProp("."));
+
+                    hitchildjson.appendf("\"%s\":\"%s\"", header.item(idx++), encodedValue.str());
 
                     firstField = false;
                 }
@@ -1020,7 +1034,7 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                     else
                         first = false;
 
-                    fieldElementsItr->query().getProp(nullptr, returnbuf); // commas in data should be escaped
+                    encodeCSVColumn(returnbuf, fieldElementsItr->query().queryProp("."));
                 }
                 returnbuf.newline();
                 recsProcessed++;
