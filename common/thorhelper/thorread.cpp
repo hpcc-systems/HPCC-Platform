@@ -526,7 +526,7 @@ public:
     BinaryDiskRowReader(IDiskReadMapping * _mapping);
 
     virtual const void *nextRow() override;
-    virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *prefetchRow(size32_t & resultSize) override;
     virtual const void * nextRow(MemoryBufferBuilder & builder) override;
     virtual bool getCursor(MemoryBuffer & cursor) override;
     virtual void setCursor(MemoryBuffer & cursor) override;
@@ -681,7 +681,7 @@ const void *BinaryDiskRowReader::nextRow()
 
 
 //Similar to above, except the code at the end will translate to a local buffer or return the pointer
-const void *BinaryDiskRowReader::nextRow(size32_t & resultSize)
+const void *BinaryDiskRowReader::prefetchRow(size32_t & resultSize)
 {
     return inlineNextRow(
         [this,&resultSize](size32_t sizeRead, const byte * next)
@@ -885,7 +885,7 @@ public:
     CsvDiskRowReader(IDiskReadMapping * _mapping);
 
     virtual const void *nextRow() override;
-    virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *prefetchRow(size32_t & resultSize) override;
     virtual const void *nextRow(MemoryBufferBuilder & builder) override;
 
     virtual void stop() override;
@@ -1006,7 +1006,7 @@ const void *CsvDiskRowReader::nextRow()
 
 
 //Implementation of IRawRowStream
-const void *CsvDiskRowReader::nextRow(size32_t & resultSize)
+const void *CsvDiskRowReader::prefetchRow(size32_t & resultSize)
 {
     for (;;)
     {
@@ -1232,7 +1232,7 @@ public:
     MarkupDiskRowReader(IDiskReadMapping * _mapping, ThorActivityKind _kind);
 
     virtual const void *nextRow() override;
-    virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *prefetchRow(size32_t & resultSize) override;
     virtual const void *nextRow(MemoryBufferBuilder & builder) override;
 
     virtual void stop() override;
@@ -1302,7 +1302,7 @@ const void *MarkupDiskRowReader::nextRow()
 }
 
 //Implementation of IRawRowStream
-const void *MarkupDiskRowReader::nextRow(size32_t & resultSize)
+const void *MarkupDiskRowReader::prefetchRow(size32_t & resultSize)
 {
     tempOutputBuffer.clear();
     const void * next = nextRow(bufferBuilder);
@@ -1494,10 +1494,10 @@ public:
     virtual void setCursor(MemoryBuffer & cursor) override { rawInputStream->setCursor(cursor); }
     virtual void stop() override { rawInputStream->stop(); }
 
-    virtual const void *nextRow(size32_t & resultSize) override
+    virtual const void *prefetchRow(size32_t & resultSize) override
     {
         size32_t rawInputSize;
-        const void * next = rawInputStream->nextRow(rawInputSize);
+        const void * next = rawInputStream->prefetchRow(rawInputSize);
         if (isSpecialRow(next))
             return next;
 
@@ -1512,7 +1512,7 @@ public:
     virtual const void *nextRow() override
     {
         size32_t rawInputSize;
-        const void * next = rawInputStream->nextRow(rawInputSize);
+        const void * next = rawInputStream->prefetchRow(rawInputSize);
         if (isSpecialRow(next))
             return next;
 
@@ -1523,7 +1523,7 @@ public:
     virtual const void *nextRow(MemoryBufferBuilder & builder) override
     {
         size32_t rawInputSize;
-        const void * next = rawInputStream->nextRow(rawInputSize);
+        const void * next = rawInputStream->prefetchRow(rawInputSize);
         if (isSpecialRow(next))
             return next;
 
@@ -1651,7 +1651,7 @@ public:
     virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) override;
 
     virtual const void * nextRow() override;
-    virtual const void * nextRow(size32_t & resultSize) override;
+    virtual const void * prefetchRow(size32_t & resultSize) override;
     virtual const void * nextRow(MemoryBufferBuilder & builder) override;
     virtual bool getCursor(MemoryBuffer & cursor) override { return parquetFileReader->getCursor(cursor); }
     virtual void setCursor(MemoryBuffer & cursor) override { parquetFileReader->setCursor(cursor); }
@@ -1720,7 +1720,7 @@ const void * ParquetDiskRowReader::nextRow()
 
 // Returns temporary rows for filtering/counting etc.
 // Row is built in temporary buffer and reused.
-const void * ParquetDiskRowReader::nextRow(size32_t & resultSize)
+const void * ParquetDiskRowReader::prefetchRow(size32_t & resultSize)
 {
     tempOutputBuffer.clear();
     const void * next = nextRow(bufferBuilder);
@@ -1812,7 +1812,7 @@ public:
     RemoteDiskRowReader(const char * _format, IDiskReadMapping * _mapping);
 
     virtual const void *nextRow() override;
-    virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *prefetchRow(size32_t & resultSize) override;
     virtual const void *nextRow(MemoryBufferBuilder & builder) override;
     virtual bool getCursor(MemoryBuffer & cursor) override;
     virtual void setCursor(MemoryBuffer & cursor) override;
@@ -1988,7 +1988,7 @@ const void *RemoteDiskRowReader::nextRow()
 
 
 //Similar to above, except the code at the end will translate to a local buffer or return the pointer
-const void *RemoteDiskRowReader::nextRow(size32_t & resultSize)
+const void *RemoteDiskRowReader::prefetchRow(size32_t & resultSize)
 {
     return inlineNextRow(
         [this,&resultSize](size32_t sizeRead, const byte * next)

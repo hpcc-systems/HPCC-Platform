@@ -34,7 +34,7 @@ class NullDiskRowStream : public CInterfaceOf<IDiskRowStream>
     virtual void stop()
     {
     }
-    virtual const void *nextRow(size32_t & size) override
+    virtual const void *prefetchRow(size32_t & size) override
     {
         size = 0;
         return eofRow;
