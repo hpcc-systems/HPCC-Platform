@@ -557,8 +557,8 @@ public:
         return spanID.get();
     }
 
-    ISpan * createClientSpan(const char * name) override;
-    ISpan * createInternalSpan(const char * name) override;
+    ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
+    ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
 
     virtual void endSpan() final override
     {
@@ -918,8 +918,8 @@ public:
     virtual const char* queryCallerId() const override { return nullptr; }
     virtual const char* queryLocalId() const override { return nullptr; }
 
-    virtual ISpan * createClientSpan(const char * name) override { return getNullSpan(); }
-    virtual ISpan * createInternalSpan(const char * name) override { return getNullSpan(); }
+    virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
+    virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
 
 private:
     CNullSpan(const CNullSpan&) = delete;
@@ -930,9 +930,14 @@ private:
 class CChildSpan : public CSpan
 {
 protected:
-    CChildSpan(const char * spanName, CSpan * parent)
+    CChildSpan(const char * spanName, CSpan * parent, const SpanTimeStamp *spanStartTimeStamp = nullptr)
     : CSpan(spanName), localParentSpan(parent)
     {
+        if (spanStartTimeStamp && spanStartTimeStamp->isInitialized())
+        {
+            opts.start_system_time = opentelemetry::common::SystemTimestamp(spanStartTimeStamp->systemClockTime);
+            opts.start_steady_time = opentelemetry::common::SteadyTimestamp(spanStartTimeStamp->steadyClockTime);
+        }
         injectlocalParentSpan(localParentSpan);
     }
 
@@ -984,8 +989,8 @@ protected:
 class CInternalSpan : public CChildSpan
 {
 public:
-    CInternalSpan(const char * spanName, CSpan * parent)
-    : CChildSpan(spanName, parent)
+    CInternalSpan(const char * spanName, CSpan * parent, const SpanTimeStamp * spanStartTimeStamp = nullptr)
+    : CChildSpan(spanName, parent, spanStartTimeStamp)
     {
         opts.kind = opentelemetry::trace::SpanKind::kInternal;
         init(SpanFlags::None);
@@ -1001,8 +1006,8 @@ public:
 class CClientSpan : public CChildSpan
 {
 public:
-    CClientSpan(const char * spanName, CSpan * parent)
-    : CChildSpan(spanName, parent)
+    CClientSpan(const char * spanName, CSpan * parent, const SpanTimeStamp * spanStartTimeStamp = nullptr)
+    : CChildSpan(spanName, parent, spanStartTimeStamp)
     {
         opts.kind = opentelemetry::trace::SpanKind::kClient;
         init(SpanFlags::None);
@@ -1015,14 +1020,14 @@ public:
     }
 };
 
-ISpan * CSpan::createClientSpan(const char * name)
+ISpan * CSpan::createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
-    return new CClientSpan(name, this);
+    return new CClientSpan(name, this, spanStartTimeStamp);
 }
 
-ISpan * CSpan::createInternalSpan(const char * name)
+ISpan * CSpan::createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
-    return new CInternalSpan(name, this);
+    return new CInternalSpan(name, this, spanStartTimeStamp);
 }
 
 class CServerSpan : public CSpan

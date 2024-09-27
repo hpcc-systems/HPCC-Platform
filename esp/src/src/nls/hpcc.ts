@@ -421,6 +421,7 @@ export = {
         Inactive: "Inactive",
         IncludePerComponentLogs: "Include per-component logs",
         IncludeRelatedLogs: "Include related logs",
+        IncludePendingItems: "Include pending items",
         IncludeSlaveLogs: "Include worker logs",
         IncludeSubFileInfo: "Include sub file info?",
         Index: "Index",

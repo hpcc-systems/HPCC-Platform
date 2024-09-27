@@ -359,7 +359,7 @@ protected:
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
-    ICppCompiler *createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, const char *compileBatchOut);
+    ICppCompiler *createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType targetCompiler, const char *compileBatchOut);
     void evaluateResult(EclCompileInstance & instance);
     bool generatePrecompiledHeader();
     void generateOutput(EclCompileInstance & instance);
@@ -852,9 +852,9 @@ void EclCC::applyApplicationOptions(IWorkUnit * wu)
 
 //=========================================================================================
 
-ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, const char *compileBatchOut)
+ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType targetCompiler, const char *compileBatchOut)
 {
-    Owned<ICppCompiler> compiler = ::createCompiler(coreName, sourceDir, targetDir, optTargetCompiler, logVerbose, compileBatchOut);
+    Owned<ICppCompiler> compiler = ::createCompiler(coreName, sourceDir, targetDir, targetCompiler, logVerbose, compileBatchOut);
     compiler->setOnlyCompile(optOnlyCompile);
     compiler->setCCLogPath(cclogFilename);
 
@@ -1001,7 +1001,8 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.str(), nullptr, nullptr, optCompileBatchOut);
+                    CompilerType targetCompiler = queryCompilerType(instance.wu, optTargetCompiler);
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str(), nullptr, nullptr, targetCompiler, optCompileBatchOut);
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -2206,7 +2207,7 @@ bool EclCC::generatePrecompiledHeader()
         traceError("Cannot find eclinclude4.hpp");
         return false;
     }
-    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, nullptr, nullptr);
+    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, nullptr, optTargetCompiler, nullptr);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
     compiler->addSourceFile("eclinclude4.hpp", nullptr);
     compiler->setPrecompileHeader(true);

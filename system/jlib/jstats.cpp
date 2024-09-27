@@ -3186,8 +3186,8 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
                 //First test is redundant - but protects against minValue != maxValue test above changing.
                 if ((cur.minNode != cur.maxNode) && isSignificantRange(serialKind, range, mean))
                 {
-                    target.addStatistic((StatisticKind)(serialKind|StNodeMin), cur.minNode);
-                    target.addStatistic((StatisticKind)(serialKind|StNodeMax), cur.maxNode);
+                    target.addStatistic((StatisticKind)(serialKind|StNodeMin), cur.minNode+1);
+                    target.addStatistic((StatisticKind)(serialKind|StNodeMax), cur.maxNode+1);
 
                     if (skewHasMeaning(serialKind))
                     {

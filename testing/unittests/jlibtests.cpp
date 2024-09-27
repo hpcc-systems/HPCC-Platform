@@ -231,6 +231,13 @@ protected:
             OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("declaredSpanStartTime", emptyMockHTTPHeaders, &declaredSpanStartTime);
             //{ "type": "span", "name": "declaredSpanStartTime", "trace_id": "0a2eff24e1996540056745aaeb2f5824", "span_id": "46d0faf8b4da893e",
             //"start": 1702672311203213259, "duration": 125311051 }
+
+            SpanTimeStamp clientSpanTimeStamp;
+            clientSpanTimeStamp.now();
+            MilliSleep(20);
+            OwnedSpanScope clientSpan = serverSpan->createClientSpan("clientSpanStartTime", &clientSpanTimeStamp);
+            //{ "type": "span", "name": "clientSpanStartTime", "trace_id": "f73b171fdcd120f88ca5b656866befee", "span_id": "7c798125d10ee0ec",
+            //"start": 1727200325699918374, "duration": 20256156, "parent_span_id": "b79fe15b7d727fca" }
         }
 
         auto reqStartMSTick = msTick();
@@ -247,6 +254,14 @@ protected:
             nowTimeStamp.now();
             {
                 OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("msTickOffsetStartTime", emptyMockHTTPHeaders, &msTickOffsetTimeStamp);
+
+                unsigned clientStartMS = msTick();
+                MilliSleep(20);
+                SpanTimeStamp clientSpanTimeStamp;
+                clientSpanTimeStamp.setMSTickTime(clientStartMS);
+                OwnedSpanScope clientSpan = serverSpan->createClientSpan("clientSpanOffsetTime", &clientSpanTimeStamp);
+                //{ "type": "span", "name": "clientSpanOffsetTime", "trace_id": "9a41723ddc0048d854ab34b79340e749", "span_id": "11af70aa6a6dbee3",
+                //"start": 1727200325770619773, "duration": 20015542, "parent_span_id": "531ad336071f453b" }
             }
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
