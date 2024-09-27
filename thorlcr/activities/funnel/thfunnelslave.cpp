@@ -85,6 +85,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
                 inputStream = funnel.activity.queryInputStream(inputIndex);
                 while (!stopping)
                 {
+                    LookAheadTimer timer(funnel.activity.getActivityTimerAccumulator(), funnel.activity.queryTimeActivities());
                     numRows = 0;
                     for (;numRows < chunkSize; numRows++)
                     {
@@ -141,14 +142,15 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     Linked<IOutputRowSerializer> serializer;
 
     void push(const void *row)
-    {   
+    {
         size32_t rowSize = thorRowMemoryFootprint(serializer, row);
 
         bool waitForSpace = false;
         // only allow a single writer at a time, so only a single thread is waiting on the semaphore - otherwise signal() takes a very long time
         {
-
+            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
             CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
+            timer.leave();
             if (stopped)
             {
                 ReleaseThorRow(row);
@@ -179,7 +181,9 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         bool waitForSpace = false;
         // only allow a single writer at a time, so only a single thread is waiting on the semaphore - otherwise signal() takes a very long time
         {
+            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
             CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
+            timer.leave();
             if (stopped)
             {
                 for (unsigned i=0; i < numRows; i++)
@@ -266,7 +270,9 @@ public:
         }
 
         {
+            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
             CriticalBlock b(crit);
+            timer.leave();
             stopped = true; // ensure any pending push()'s don't enqueue and if big row potentially block again.
             if (waiting)
             {
@@ -301,7 +307,9 @@ public:
         size32_t sz = thorRowMemoryFootprint(serializer, row.get());
         unsigned numToSignal = 0;
         {
+            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
             CriticalBlock b(crit);
+            timer.leave();
             assertex(totSize>=sz);
             totSize -= sz;
             if (waiting && (totSize <= FUNNEL_MIN_BUFF_SIZE))
