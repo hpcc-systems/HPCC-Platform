@@ -3,10 +3,9 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, S
 import { Label, Spinner, ToggleButton } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
-import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
-import { Database } from "@hpcc-js/common";
-import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
-import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
+import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled } from "@fluentui/react-icons";
+import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
+import { Table } from "@hpcc-js/dgrid";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
@@ -24,6 +23,7 @@ import { MetricsOptions } from "./MetricsOptions";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
+import { ScopesTable } from "./MetricsScopes";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -35,126 +35,6 @@ const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const defaultUIState = {
     hasSelection: false
 };
-
-class ColumnFormatEx extends ColumnFormat {
-    formatterFunc(): CellFormatter | undefined {
-        const colIdx = this._owner.columns().indexOf("__StdDevs");
-
-        return function (this: ColumnType, cell: any, row: RowType): string {
-            return row[colIdx];
-        };
-    }
-}
-
-class DBStoreEx extends DBStore {
-
-    constructor(protected _table: TableEx, db: Database.Grid) {
-        super(db);
-    }
-
-    sort(opts) {
-        this._table.sort(opts);
-        return this;
-    }
-}
-
-class TableEx extends Table {
-
-    constructor() {
-        super();
-        this._store = new DBStoreEx(this, this._db);
-    }
-
-    scopeFilterFunc(row: object, scopeFilter: string, matchCase: boolean): boolean {
-        const filter = scopeFilter.trim();
-        if (filter) {
-            let field = "";
-            const colonIdx = filter.indexOf(":");
-            if (colonIdx > 0) {
-                field = filter.substring(0, colonIdx);
-            }
-            if (field) {
-                const value: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
-                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return value?.indexOf(filterValue.substring(colonIdx + 1)) >= 0 ?? false;
-            }
-            for (const field in row) {
-                const value: string = !matchCase ? row[field].toString().toLowerCase() : row[field].toString();
-                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return value?.indexOf(filterValue) >= 0 ?? false;
-            }
-            return false;
-        }
-        return true;
-    }
-
-    _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: any[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean): this {
-        this
-            .columns(["##"])    //  Reset hash to force recalculation of default widths
-            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
-            .columnFormats([
-                new ColumnFormatEx()
-                    .column("StdDevs")
-                    .paletteID("StdDevs")
-                    .min(0)
-                    .max(6),
-                new ColumnFormat()
-                    .column("__StdDevs")
-                    .width(0)
-            ])
-            .data(metrics
-                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
-                .filter(row => {
-                    return scopeTypes.indexOf(row.type) >= 0;
-                }).map((row, idx) => {
-                    if (idx === 0) {
-                        this._rawDataMap = {
-                            0: "##", 1: "type", 2: "__StdDevs", 3: "name"
-                        };
-                        properties.forEach((p, idx2) => {
-                            this._rawDataMap[4 + idx2] = p;
-                        });
-                    }
-                    row.__hpcc_id = row.name;
-                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
-                        return row.__groupedProps[p]?.Value ??
-                            row.__groupedProps[p]?.Max ??
-                            row.__groupedProps[p]?.Avg ??
-                            row.__formattedProps[p] ??
-                            row[p] ??
-                            "";
-                    }), row.__StdDevsSource, row];
-                }))
-            ;
-        return this;
-    }
-
-    sort(opts) {
-        const optsEx = opts.map(opt => {
-            return {
-                idx: opt.property,
-                metricLabel: this._rawDataMap[opt.property],
-                splitMetricLabel: splitMetric(this._rawDataMap[opt.property]),
-                descending: opt.descending
-            };
-        });
-
-        const lparamIdx = this.columns().length;
-        this._db.data().sort((l, r) => {
-            const llparam = l[lparamIdx];
-            const rlparam = r[lparamIdx];
-            for (const { idx, metricLabel, splitMetricLabel, descending } of optsEx) {
-                const lval = llparam[metricLabel] ?? llparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? llparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? l[idx];
-                const rval = rlparam[metricLabel] ?? rlparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? rlparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? r[idx];
-                if ((lval === undefined && rval !== undefined) || lval < rval) return descending ? 1 : -1;
-                if ((lval !== undefined && rval === undefined) || lval > rval) return descending ? -1 : 1;
-            }
-            return 0;
-        });
-        return this;
-    }
-}
 
 type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
 const TIMELINE_FIXEDHEIGHT = 152;
@@ -178,7 +58,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
-    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWUQueryMetrics(wuid, querySet, queryId);
+    const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId);
     const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews();
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -190,6 +70,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [isLayoutComplete, setIsLayoutComplete] = React.useState<boolean>(false);
     const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
     const [dot, setDot] = React.useState<string>("");
+    const [includePendingItems, setIncludePendingItems] = React.useState(false);
     const [matchCase, setMatchCase] = React.useState(false);
 
     React.useEffect(() => {
@@ -248,53 +129,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 ;
         }
     }, [metrics, timeline, view.showTimeline]);
-
-    //  Scopes Table  ---
-    const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setScopeFilter(newValue || "");
-    }, []);
-
-    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, selection: IScope[]) => {
-        setSelectedMetricsSource(source);
-        pushUrl(`${parentUrl}/${selection.map(row => row.__lparam?.id ?? row.id).join(",")}`);
-    }, [parentUrl]);
-
-    const scopesTable = useConst(() => new TableEx()
-        .multiSelect(true)
-        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase)
-        .sortable(true)
-    );
-
-    React.useEffect(() => {
-        scopesTable
-            .on("click", debounce((row, col, sel) => {
-                if (sel) {
-                    scopesSelectionChanged("scopesTable", scopesTable.selection());
-                }
-            }), true)
-            ;
-    }, [scopesSelectionChanged, scopesTable]);
-
-    React.useEffect(() => {
-        scopesTable
-            .metrics(metrics, view.scopeTypes, view.properties, scopeFilter, matchCase)
-            .lazyRender()
-            ;
-    }, [matchCase, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
-
-    const updateScopesTable = React.useCallback((selection: IScope[]) => {
-        if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
-            scopesTable.selection([]);
-            if (selection.length) {
-                const selRows = scopesTable.data().filter(row => {
-                    return selection.indexOf(row[row.length - 1]) >= 0;
-                });
-                scopesTable.render(() => {
-                    scopesTable.selection(selRows);
-                });
-            }
-        }
-    }, [scopesTable, selectedMetricsSource]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
@@ -438,7 +272,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     ], [metricGraphWidget, selectedMetrics.length, trackSelection]);
 
     const spinnerLabel: string = React.useMemo((): string => {
-        if (fetchStatus === FetchStatus.STARTED) {
+        if (status === FetchStatus.STARTED) {
             return nlsHPCC.FetchingData;
         } else if (!isLayoutComplete) {
             return `${nlsHPCC.PerformingLayout}(${dot.split("\n").length})`;
@@ -446,7 +280,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             return nlsHPCC.RenderSVG;
         }
         return "";
-    }, [fetchStatus, isLayoutComplete, isRenderComplete, dot]);
+    }, [status, isLayoutComplete, isRenderComplete, dot]);
 
     const breadcrumbs = React.useMemo<BreadcrumbInfo[]>(() => {
         return lineage.map(item => {
@@ -459,6 +293,63 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             };
         });
     }, [lineage, selectedLineage]);
+
+    //  Scopes Table  ---
+    const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+        setScopeFilter(newValue || "");
+    }, []);
+
+    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, selection: IScope[]) => {
+        setSelectedMetricsSource(source);
+        pushUrl(`${parentUrl}/${selection.map(row => row.__lparam?.id ?? row.id).join(",")}`);
+    }, [parentUrl]);
+
+    const scopesTable = useConst(() => new ScopesTable()
+        .multiSelect(true)
+        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase)
+        .sortable(true)
+    );
+
+    React.useEffect(() => {
+        scopesTable
+            .on("click", debounce((row, col, sel) => {
+                if (sel) {
+                    scopesSelectionChanged("scopesTable", scopesTable.selection());
+                }
+            }), true)
+            ;
+    }, [scopesSelectionChanged, scopesTable]);
+
+    React.useEffect(() => {
+        const scopesTableMetrics = includePendingItems ? metrics : metrics.filter(row => {
+            if (metricGraph.isVertex(row)) {
+                return metricGraph.vertexStatus(row) !== "unknown";
+            } else if (metricGraph.isEdge(row)) {
+                return metricGraph.edgeStatus(row) !== "unknown";
+            } else if (metricGraph.isSubgraph(row)) {
+                return metricGraph.subgraphStatus(row) !== "unknown";
+            }
+            return true;
+        });
+        scopesTable
+            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase)
+            .lazyRender()
+            ;
+    }, [includePendingItems, matchCase, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
+
+    const updateScopesTable = React.useCallback((selection: IScope[]) => {
+        if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
+            scopesTable.selection([]);
+            if (selection.length) {
+                const selRows = scopesTable.data().filter(row => {
+                    return selection.indexOf(row[row.length - 1]) >= 0;
+                });
+                scopesTable.render(() => {
+                    scopesTable.selection(selRows);
+                });
+            }
+        }
+    }, [scopesTable, selectedMetricsSource]);
 
     //  Props Table  ---
     const crossTabTable = useConst(() => new Table()
@@ -637,8 +528,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setShowMetricOptions(show);
     }, []);
 
-    console.log("View ID", viewId, view.scopeTypes);
-
     return <HolyGrail fullscreen={fullscreen}
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
@@ -650,6 +539,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
                             header={<Stack horizontal>
+                                <ToggleButton appearance="subtle" icon={matchCase ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
                                 <Stack.Item grow>
                                     <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
                                 </Stack.Item>

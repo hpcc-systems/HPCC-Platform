@@ -246,11 +246,22 @@ const nestedFilterDefault: WsWorkunits.NestedFilter = {
     ScopeTypes: []
 };
 
+export interface useMetricsResult {
+    metrics: IScope[];
+    columns: { [id: string]: any };
+    activities: WsWorkunits.Activity2[];
+    properties: WsWorkunits.Property2[];
+    measures: string[];
+    scopeTypes: string[];
+    status: FetchStatus;
+    refresh: () => void;
+}
+
 export function useWorkunitMetrics(
     wuid: string,
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
+): useMetricsResult {
 
     const [workunit, state] = useWorkunit(wuid);
     const [data, setData] = React.useState<IScope[]>([]);
@@ -303,7 +314,7 @@ export function useWorkunitMetrics(
         });
     }, [workunit, state, count, scopeFilter, nestedFilter]);
 
-    return [data, columns, activities, properties, measures, scopeTypes, status, increment];
+    return { metrics: data, columns, activities, properties, measures, scopeTypes, status, refresh: increment };
 }
 
 export function useQueryMetrics(
@@ -311,7 +322,7 @@ export function useQueryMetrics(
     queryId: string,
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
+): useMetricsResult {
 
     const [query, state, _refresh] = useQuery(querySet, queryId);
     const [data, setData] = React.useState<IScope[]>([]);
@@ -364,7 +375,7 @@ export function useQueryMetrics(
         });
     }, [query, state, count, scopeFilter, nestedFilter]);
 
-    return [data, columns, activities, properties, measures, scopeTypes, status, increment];
+    return { metrics: data, columns, activities, properties, measures, scopeTypes, status, refresh: increment };
 }
 
 export function useWUQueryMetrics(
@@ -373,8 +384,8 @@ export function useWUQueryMetrics(
     queryId: string,
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
+): useMetricsResult {
     const wuMetrics = useWorkunitMetrics(wuid, scopeFilter, nestedFilter);
     const queryMetrics = useQueryMetrics(querySet, queryId, scopeFilter, nestedFilter);
-    return querySet && queryId ? [...queryMetrics] : [...wuMetrics];
+    return querySet && queryId ? { ...queryMetrics } : { ...wuMetrics };
 }
