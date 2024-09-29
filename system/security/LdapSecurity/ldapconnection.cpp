@@ -5513,7 +5513,7 @@ private:
         }
     }
 
-    virtual const bool organizationalUnitExists(const char * ou) const
+    virtual bool organizationalUnitExists(const char * ou) const
     {
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* sys_ld = lconn.get()->getLd();

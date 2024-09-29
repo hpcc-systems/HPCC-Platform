@@ -227,12 +227,10 @@ public:
                     parent.numfiles++;
                     StringBuffer fn;
                     StringBuffer dir;
-                    bool incluster = true;          
                     StringBuffer ln;
                     for (unsigned p=0;p<np;p++) {
                         if (abort)
                             return;
-                        unsigned matched = 0;
                         unsigned nc = fdesc->numCopies(p);
                         unsigned c;
                         UnsignedArray map;
