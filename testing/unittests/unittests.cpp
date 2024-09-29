@@ -212,6 +212,7 @@ int main(int argc, const char *argv[])
     ForEachItemIn(idx, loadLocations)
     {
         const char *location = loadLocations.item(idx);
+        printf("loadLocations %s\n", location);
         Owned<IFile> file = createIFile(location);
         switch (file->isDirectory())
         {
@@ -249,7 +250,9 @@ int main(int argc, const char *argv[])
                         DBGLOG("Excluding test %s", name.c_str());
                 }
                 else if (list)
+                {
                     printf("%s\n", name.c_str());
+                }
                 else
                 {
                     if (verbose)
