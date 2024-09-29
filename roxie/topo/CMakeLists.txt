@@ -34,6 +34,8 @@ include_directories (
          .
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/roxie/roxie
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
     )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
@@ -54,5 +56,6 @@ HPCC_ADD_EXECUTABLE ( toposerver ${SRCS} )
 install ( TARGETS toposerver RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( toposerver
+         securesocket
          jlib 
     )
