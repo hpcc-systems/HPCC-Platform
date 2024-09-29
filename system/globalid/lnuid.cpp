@@ -94,8 +94,16 @@ namespace ln_uid {
         fp = fopen("/dev/urandom", "r");
         if (!fp || fread(&randomdata, 1, random_byte_count, fp) != random_byte_count)
         {
-            // Should never happen, but if it does log it and ignore
+            // Should never happen, but if it does log it and fallback
             OERRLOG("Could not read data from /dev/urandom");
+            auto randchar = []() -> char {
+                const char charset[] = "0123456789"
+                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                    "abcdefghijklmnopqrstuvwxyz";
+                const size_t max_index = (sizeof(charset) - 1);
+                return charset[static_cast<size_t>(rand()) % max_index];
+            };
+            std::generate_n(randomdata, random_byte_count, randchar);
         }
         if (fp)
             fclose(fp);
