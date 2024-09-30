@@ -292,6 +292,7 @@ public:
                         params.push_back({ "wfid", std::to_string(wfid) });
                     }
 
+                    SCMStringBuffer optPlatformVersion;
                     {
                         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
@@ -309,6 +310,9 @@ public:
                                 return; // exit pooled thread
                             }
                         }
+                        cw->getDebugValue("platformVersion", optPlatformVersion);
+                        if (optPlatformVersion.length())
+                            params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
 
                         Owned<IWorkUnit> workunit = &cw->lock();
                         workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
