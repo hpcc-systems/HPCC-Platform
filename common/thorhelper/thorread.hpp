@@ -68,18 +68,16 @@ THORHELPER_API IDiskReadMapping * createDiskReadMapping(RecordTranslationMode mo
 
 
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
-interface IRowReader : extends IInterface
+
+interface ITranslator;
+class CLogicalFileSlice;
+
+interface IDiskRowReader : extends IInterface
 {
 public:
     // get the interface for reading streams of row.  outputAllocator can be null if allocating next is not used.
     virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) = 0;
-};
 
-interface ITranslator;
-class CLogicalFileSlice;
-interface IDiskRowReader : extends IRowReader
-{
-public:
     virtual bool matches(const char * format, bool streamRemote, IDiskReadMapping * mapping) = 0;
 
     //Specify where the raw binary input for a particular file is coming from, together with its actual format.
@@ -90,6 +88,21 @@ public:
     virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) = 0;
     virtual bool setInputFile(const CLogicalFileSlice & slice, const FieldFilterArray & expectedFilter, unsigned copy) = 0;
 };
+
+interface IDiskRowWriter : extends IInterface
+{
+public:
+    //Get the interface for writing streams of row.
+    virtual ILogicalRowSink * queryRowSink() = 0;
+
+
+    //MORE: Should be a disk write mapping
+    virtual bool matches(const char * format, bool streamRemote, IDiskReadMapping * mapping) = 0;
+
+    //Specify where the data is being written to.  I'm not sure that output options are needed (can be passed in the constructor)
+    virtual bool setOutputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, const IPropertyTree * outputOptions) = 0;
+};
+
 
 //Create a row reader for a thor binary file.  The expected, projected, actual and options never change.  The file providing the data can change.
 extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IDiskReadMapping * mapping);
