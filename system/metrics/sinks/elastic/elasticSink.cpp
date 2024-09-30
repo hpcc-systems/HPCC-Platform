@@ -12,8 +12,23 @@
 ############################################################################## */
 
 #include "elasticSink.hpp"
-#include <cstdio>
-#include "platform.h"
+
+#include "nlohmann/json.hpp"
+
+//including cpp-httplib single header file REST client
+//  doesn't work with format-nonliteral as an error
+//
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
+#undef INVALID_SOCKET
+#include "httplib.h"
+
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 using namespace hpccMetrics;
 
@@ -25,10 +40,11 @@ extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pS
 
 
 ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSettingsTree) :
-    PeriodicMetricSink(name, "file", pSettingsTree),
-    ignoreZeroMetrics(false)
+    PeriodicMetricSink(name, "elastic", pSettingsTree)
 {
     ignoreZeroMetrics = pSettingsTree->getPropBool("@ignoreZeroMetrics", true);
+    pSettingsTree->getProp("@elasticHost", elasticHost);
+    pSettingsTree->getProp("@indexName", indexName);
 }
 
 

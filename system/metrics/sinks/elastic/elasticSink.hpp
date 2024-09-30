@@ -18,24 +18,6 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 
-//including cpp-httplib single header file REST client
-//  doesn't work with format-nonliteral as an error
-//
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-#endif
-
-#undef INVALID_SOCKET
-#include "httplib.h"
-
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
-#include "nlohmann/json.hpp"
-
-
 #ifdef ELASTICINK_EXPORTS
 #define ELASTICSINK_API DECL_EXPORT
 #else
@@ -49,11 +31,12 @@ public:
     ~ElasticMetricSink() override = default;
 
 protected:
-    void prepareToStartCollecting() override;
-    void collectingHasStopped() override;
-    void doCollection() override;
+    virtual void prepareToStartCollecting() override;
+    virtual void collectingHasStopped() override;
+    virtual void doCollection() override;
 
 protected:
     StringBuffer indexName;
-    bool ignoreZeroMetrics;
+    bool ignoreZeroMetrics = false;
+    StringBuffer elasticHost;
 };
