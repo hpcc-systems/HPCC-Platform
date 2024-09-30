@@ -1511,8 +1511,8 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
         muval = 100; // !
 
 
-    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
-        muval, total, mmapmem, sbrkmem, (unsigned)(virttot/1024), mu, su);
+    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK FLT=%" I64F "u CTX=%" I64F "u",
+        muval, total, mmapmem, sbrkmem, (unsigned)(virttot/1024), mu, su, processInfo.getMajorFaults(), processInfo.getNumContextSwitches());
 #ifdef _USE_MALLOC_HOOK
     if (totalMem) 
         out.appendf(" TM=%" I64F "d",totalMem);
