@@ -3241,6 +3241,43 @@ protected:
     void onLimitExceeded();
 };
 
+class CHThorGenericDiskWriteBaseActivity : public CHThorActivityBase/*, implements IThorDiskCallback, implements IIndexWriteContext, public IFileCollectionContext*/
+{
+protected:
+    IHThorNewDiskReadBaseArg &helper;
+    IDiskRowWriter * activeReader = nullptr;
+    CLogicalFileCollection files;
+    bool outputGrouped = false;
+public:
+    CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
+    IMPLEMENT_IINTERFACE_USING(CHThorActivityBase)
+
+    virtual void ready();
+    virtual void stop();
+    virtual void execute();
+
+    //interface IHThorInput
+    virtual bool isGrouped()                                { return outputGrouped; }
+    virtual IOutputMetaData * queryOutputMeta() const       { return outputMeta; }
+};
+
+class CHThorGenericDiskWriteActivity : public CHThorGenericDiskWriteBaseActivity
+{
+    typedef CHThorGenericDiskWriteBaseActivity PARENT;
+protected:
+    IHThorNewDiskReadArg &helper;
+public:
+    CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
+
+    virtual void ready();
+    virtual void stop();
+    virtual void execute();
+    virtual bool needsAllocator() const { return true; }
+
+    //interface IHThorInput
+    virtual const void *nextRow();
+};
+
 
 #define MAKEFACTORY(NAME) \
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EclGraph & _graph) \

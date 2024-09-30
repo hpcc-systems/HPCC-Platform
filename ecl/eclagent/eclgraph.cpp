@@ -53,7 +53,13 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     {
     case TAKdiskwrite:
     case TAKspillwrite:
-        return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind, graph);
+    {
+        // bool isGeneric = (((IHThorNewDiskReadArg &)arg).getFlags() & TDXgeneric) != 0;
+        if (1)
+            return createGenericDiskWriteActivity(agent, activityId, subgraphId, (IHThorNewDiskReadArg &)arg, kind, graph, node);
+        else
+            return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind, graph);
+    }
     case TAKsort:
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind, graph);
     case TAKdedup:

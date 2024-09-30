@@ -12003,6 +12003,55 @@ const void *CHThorGenericDiskReadActivity::nextRow()
     return NULL;
 }
 
+CHThorGenericDiskWriteBaseActivity::CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+: CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+{
+
+}
+
+void CHThorGenericDiskWriteBaseActivity::ready()
+{
+    // Implementation here
+}
+
+void CHThorGenericDiskWriteBaseActivity::stop()
+{
+    // Implementation here
+}
+
+void CHThorGenericDiskWriteBaseActivity::execute()
+{
+    // Implementation here
+}
+
+CHThorGenericDiskWriteActivity::CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+: CHThorGenericDiskWriteBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg)
+{
+
+}
+
+// Implement all pure virtual functions from CHThorGenericDiskWriteBaseActivity
+void CHThorGenericDiskWriteActivity::ready()
+{
+    // Implementation here
+}
+
+void CHThorGenericDiskWriteActivity::stop()
+{
+    // Implementation here
+}
+
+void CHThorGenericDiskWriteActivity::execute()
+{
+    // Implementation here
+}
+
+const void *CHThorGenericDiskWriteActivity::nextRow()
+{
+    // Implementation here
+    return nullptr;
+}
+
 //=====================================================================================================
 
 MAKEFACTORY(DiskWrite);
@@ -12068,6 +12117,11 @@ extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_age
 extern HTHOR_API IHThorActivity *createGenericDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree * node)
 {
     return new CHThorGenericDiskReadActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, node);
+}
+
+extern HTHOR_API IHThorActivity *createGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree * node)
+{
+    return new CHThorGenericDiskWriteActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, node);
 }
 
 MAKEFACTORY(Null);
