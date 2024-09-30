@@ -234,6 +234,8 @@ EXPORT Profile(inFile,
     LOCAL %AttributeType_t% := STRING36;
     #UNIQUENAME(NumericStat_t);
     LOCAL %NumericStat_t% := DECIMAL32_4;
+    #UNIQUENAME(RecCount_t);
+    LOCAL %RecCount_t% := UNSIGNED6;
 
     // Tests for enabled features
     #UNIQUENAME(FeatureEnabledFillRate);
@@ -391,12 +393,12 @@ EXPORT Profile(inFile,
     // Define the record layout that will be used by the inner _Inner_Profile() call
     LOCAL ModeRec := RECORD
         UTF8                            value;
-        UNSIGNED4                       rec_count;
+        %RecCount_t%                    rec_count;
     END;
 
     LOCAL PatternCountRec := RECORD
         STRING                          data_pattern;
-        UNSIGNED4                       rec_count;
+        %RecCount_t%                    rec_count;
         UTF8                            example;
     END;
 
@@ -408,11 +410,11 @@ EXPORT Profile(inFile,
     LOCAL OutputLayout := RECORD
         STRING                          sortValue;
         STRING                          attribute;
-        UNSIGNED4                       rec_count;
+        %RecCount_t%                    rec_count;
         STRING                          given_attribute_type;
         DECIMAL9_6                      fill_rate;
-        UNSIGNED4                       fill_count;
-        UNSIGNED4                       cardinality;
+        %RecCount_t%                    fill_count;
+        %RecCount_t%                    cardinality;
         DATASET(ModeRec)                cardinality_breakdown {MAXCOUNT(%lowCardinalityThreshold%)};
         STRING                          best_attribute_type;
         DATASET(ModeRec)                modes {MAXCOUNT(%MAX_MODES%)};
@@ -442,13 +444,13 @@ EXPORT Profile(inFile,
         #IF(%FeatureEnabledBestECLTypes%())
             STRING                      best_attribute_type;
         #END
-        UNSIGNED4                       rec_count;
+        %RecCount_t%                    rec_count;
         #IF(%FeatureEnabledFillRate%())
-            UNSIGNED4                   fill_count;
+            %RecCount_t%                fill_count;
             DECIMAL9_6                  fill_rate;
         #END
         #IF(%FeatureEnabledCardinality%())
-            UNSIGNED4                   cardinality;
+            %RecCount_t%                cardinality;
         #END
         #IF(%FeatureEnabledLowCardinalityBreakdown%())
             DATASET(ModeRec)            cardinality_breakdown;
@@ -623,11 +625,24 @@ EXPORT Profile(inFile,
         #UNIQUENAME(_MapAllUni);
         LOCAL %_MapAllUni%(UNICODE s) := (STRING)%_MapDigitUni%(%_MapLowerCharUni%(%_MapUpperCharUni%(s)));
 
+        // Pattern mapping a UTF8 datatype; using regex due to the complexity
+        // of the character set
+        #UNIQUENAME(_MapUpperCharUTF8);
+        LOCAL %_MapUpperCharUTF8%(UTF8 s) := REGEXREPLACE(u8'\\p{Lu}', s, u8'A');
+        #UNIQUENAME(_MapLowerCharUTF8);
+        LOCAL %_MapLowerCharUTF8%(UTF8 s) := REGEXREPLACE(u8'[\\p{Ll}\\p{Lt}\\p{Lm}\\p{Lo}]', s, u8'a');
+        #UNIQUENAME(_MapDigitUTF8);
+        LOCAL %_MapDigitUTF8%(UTF8 s) := REGEXREPLACE(u8'[1-9]', s, u8'9'); // Leave '0' as-is and replace with '9' later
+        #UNIQUENAME(_MapAllUTF8);
+        LOCAL %_MapAllUTF8%(UTF8 s) := (STRING)%_MapDigitUTF8%(%_MapLowerCharUTF8%(%_MapUpperCharUTF8%(s)));
+
         // Trimming strings
         #UNIQUENAME(_TrimmedStr);
         LOCAL %_TrimmedStr%(STRING s) := TRIM(s, LEFT, RIGHT);
         #UNIQUENAME(_TrimmedUni);
         LOCAL %_TrimmedUni%(UNICODE s) := TRIM(s, LEFT, RIGHT);
+        #UNIQUENAME(_TrimmedUTF8);
+        LOCAL %_TrimmedUTF8%(UTF8 s) := TRIM(s, LEFT, RIGHT);
 
         // Collect a list of the top-level attributes that we can process,
         // determine the actual maximum length of a data pattern (if we can
@@ -711,7 +726,7 @@ EXPORT Profile(inFile,
             %Attribute_t%       attribute;
             %AttributeType_t%   given_attribute_type;
             %StringValue_t%     string_value;
-            UNSIGNED4           value_count;
+            %RecCount_t%        value_count;
             %DataPattern_t%     data_pattern;
             UNSIGNED4           data_length;
             BOOLEAN             is_filled;
@@ -765,17 +780,23 @@ EXPORT Profile(inFile,
                                                                             #ELSE
                                                                                 %_TrimmedUni%((%StringValue_t%)_inFile.#EXPAND(%'namePrefix'% + %'@name'%))
                                                                             #END,
-                                                    UNSIGNED4           value_count := COUNT(GROUP),
+                                                    %RecCount_t%        value_count := COUNT(GROUP),
                                                     %DataPattern_t%     data_pattern :=
                                                                             #IF(%_IsSetType%(%'@type'%))
                                                                                 %_MapAllStr%(%_TrimmedStr%(Std.Str.CombineWords((SET OF STRING)_inFile.#EXPAND(%'namePrefix'% + %'@name'%), ', '))[..%foundMaxPatternLen%])
                                                                             #ELSEIF(REGEXFIND('(integer)|(unsigned)|(decimal)|(real)', %'@type'%))
                                                                                 %_MapAllStr%((STRING)_inFile.#EXPAND(%'namePrefix'% + %'@name'%))
-                                                                            #ELSEIF(REGEXFIND('(unicode)|(utf)', %'@type'%))
+                                                                            #ELSEIF(REGEXFIND('unicode', %'@type'%))
                                                                                 #IF(%@size% < 0 OR (%@size% DIV 2 + 1) > %foundMaxPatternLen%)
                                                                                     %_MapAllUni%(%_TrimmedUni%((UNICODE)_inFile.#EXPAND(%'namePrefix'% + %'@name'%))[..%foundMaxPatternLen%])
                                                                                 #ELSE
                                                                                     %_MapAllUni%(%_TrimmedUni%((UNICODE)_inFile.#EXPAND(%'namePrefix'% + %'@name'%)))
+                                                                                #END
+                                                                            #ELSEIF(REGEXFIND('utf', %'@type'%))
+                                                                                #IF(%@size% < 0 OR (%@size% DIV 2 + 1) > %foundMaxPatternLen%)
+                                                                                    %_MapAllUTF8%(%_TrimmedUTF8%((UNICODE)_inFile.#EXPAND(%'namePrefix'% + %'@name'%))[..%foundMaxPatternLen%])
+                                                                                #ELSE
+                                                                                    %_MapAllUTF8%(%_TrimmedUTF8%((UNICODE)_inFile.#EXPAND(%'namePrefix'% + %'@name'%)))
                                                                                 #END
                                                                             #ELSEIF(REGEXFIND('string', %'@type'%))
                                                                                 #IF(%@size% < 0 OR %@size% > %foundMaxPatternLen%)
@@ -1117,7 +1138,7 @@ EXPORT Profile(inFile,
                                 %filledDataInfoNumeric%(attribute = %'namePrefix'% + %'@name'%),
                                 {
                                     string_value,
-                                    UNSIGNED4 rec_count := SUM(GROUP, value_count)
+                                    %RecCount_t% rec_count := SUM(GROUP, value_count)
                                 },
                                 string_value,
                                 MERGE
@@ -1287,8 +1308,8 @@ EXPORT Profile(inFile,
                 {
                     attribute,
                     data_pattern,
-                    UTF8        example := string_value[..%foundMaxPatternLen%],
-                    UNSIGNED4   rec_count := SUM(GROUP, value_count)
+                    UTF8            example := string_value[..%foundMaxPatternLen%],
+                    %RecCount_t%    rec_count := SUM(GROUP, value_count)
                 },
                 attribute, data_pattern,
                 MERGE
@@ -1333,8 +1354,8 @@ EXPORT Profile(inFile,
                 {
                     attribute,
                     given_attribute_type,
-                    UNSIGNED4   rec_count := SUM(GROUP, value_count),
-                    UNSIGNED4   filled_count := SUM(GROUP, IF(is_filled, value_count, 0))
+                    %RecCount_t%    rec_count := SUM(GROUP, value_count),
+                    %RecCount_t%    filled_count := SUM(GROUP, IF(is_filled, value_count, 0))
                 },
                 attribute, given_attribute_type,
                 MERGE
@@ -1430,7 +1451,7 @@ EXPORT Profile(inFile,
                 {
                     %Attribute_t%       attribute,
                     BOOLEAN             is_numeric,
-                    UNSIGNED4           cardinality,
+                    %RecCount_t%        cardinality,
                     REAL                numeric_min,
                     REAL                numeric_max,
                     REAL                numeric_mean,
