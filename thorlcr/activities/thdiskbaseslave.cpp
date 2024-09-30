@@ -119,7 +119,7 @@ void CDiskPartHandlerBase::open()
     {
         StringBuffer locations;
         IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", activity.logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
-        EXCLOG(e, NULL);
+        IERRLOG(e, "CDiskPartHandlerBase::open()");
         throw e;
     }
     filename.set(iFile->queryFilename());
@@ -438,8 +438,8 @@ void CDiskWriteSlaveActivityBase::removeFiles()
         return;
     Owned<IFile> primary = createIFile(fName);
     try { primary->remove(); }
-    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Failed to remove file: %s", fName.get()); }
-    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "Failed to remove: %s", fName.get()); }
+    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCoperatorWarning, "Failed to remove file: %s", fName.get()); }
+    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCoperatorWarning, "Failed to remove: %s", fName.get()); }
 }
 
 void CDiskWriteSlaveActivityBase::close()
@@ -495,7 +495,7 @@ void CDiskWriteSlaveActivityBase::close()
     }
     catch (IException *e)
     { 
-        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
+        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCoperatorWarning, "Error closing file: %s", fName.get());
         abortSoon = true;
         removeFiles();
         throw e;
@@ -618,7 +618,7 @@ void CDiskWriteSlaveActivityBase::process()
             try { close(); }
             catch (IException *e)
             {
-                EXCLOG(e, "close()");
+                IWARNLOG(e, "close()"); // NB: primary exception will be rethrown
                 e->Release();
             }
             throw;
@@ -629,7 +629,7 @@ void CDiskWriteSlaveActivityBase::process()
             try { close(); }
             catch (IException *e)
             {
-                EXCLOG(e, "close()");
+                IWARNLOG(e, "close()");
                 e->Release();
             }
             throw;

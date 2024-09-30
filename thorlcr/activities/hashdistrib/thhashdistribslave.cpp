@@ -64,11 +64,11 @@
 
 // JCSMORE should really use JLog trace levels and make configurable
 #ifdef _DEBUG
-#define HDSendPrintLog(M) PROGLOG(M)
-#define HDSendPrintLog2(M,P1) PROGLOG(M,P1)
-#define HDSendPrintLog3(M,P1,P2) PROGLOG(M,P1,P2)
-#define HDSendPrintLog4(M,P1,P2,P3) PROGLOG(M,P1,P2,P3)
-#define HDSendPrintLog5(M,P1,P2,P3,P4) PROGLOG(M,P1,P2,P3,P4)
+#define HDSendPrintLog(M) DBGLOG(M)
+#define HDSendPrintLog2(M,P1) DBGLOG(M,P1)
+#define HDSendPrintLog3(M,P1,P2) DBGLOG(M,P1,P2)
+#define HDSendPrintLog4(M,P1,P2,P3) DBGLOG(M,P1,P2,P3)
+#define HDSendPrintLog5(M,P1,P2,P3,P4) DBGLOG(M,P1,P2,P3,P4)
 #else
 #define HDSendPrintLog(M)
 #define HDSendPrintLog2(M,P1)
@@ -2291,13 +2291,15 @@ public:
 
     ~CHDRproportional()
     {
-        try {
+        try
+        {
             tempstrm.clear();
             if (tempfile)
                 tempfile->remove();
         }
-        catch (IException *e) {
-            EXCLOG(e,"REDISTRIBUTE");
+        catch (IException *e)
+        {
+            IWARNLOG(e,"REDISTRIBUTE");
             e->Release();
         }
         free(sizes);
@@ -2323,7 +2325,7 @@ public:
             GetTempFilePath(tempname,"hdprop");
             tempfile.setown(createIFile(tempname.str()));
             {
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
+                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCdebugWarning, "REDISTRIBUTE size unknown, spilling to disk");
                 MemoryAttr ma;
                 if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
                 {

@@ -188,7 +188,7 @@ class CRegistryServer : public CSimpleInterface
                 ep.getEndpointHostText(url);
                 if (RANK_NULL == sender)
                 {
-                    PROGLOG("Node %s trying to deregister is not part of this cluster", url.str());
+                    IWARNLOG("Node %s trying to deregister is not part of this cluster", url.str());
                     continue;
                 }
                 RegistryCode code;
@@ -197,7 +197,7 @@ class CRegistryServer : public CSimpleInterface
                     throwUnexpected();
                 Owned<IException> e = deserializeException(msg);
                 if (e.get())
-                    EXCLOG(e, "Worker unregistered with exception");
+                    IERRLOG(e, "Worker unregistered with exception");
                 registry.deregisterNode(sender-1);
             }
             running = false;
@@ -242,10 +242,10 @@ public:
         ep.getEndpointHostText(url);
         if (!status->test(worker))
         {
-            PROGLOG("Worker %d (%s) trying to unregister, but not currently registered", worker+1, url.str());
+            DBGLOG("Worker %d (%s) trying to unregister, but not currently registered", worker+1, url.str());
             return;
         }
-        PROGLOG("Worker %d (%s) unregistered", worker+1, url.str());
+        DBGLOG("Worker %d (%s) unregistered", worker+1, url.str());
         status->set(worker, false);
         --workersRegistered;
         if (watchdog)
@@ -259,10 +259,10 @@ public:
         ep.getEndpointHostText(url);
         if (status->test(worker))
         {
-            PROGLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
+            IWARNLOG("Worker %d (%s) already registered, rejecting", worker+1, url.str());
             return;
         }
-        PROGLOG("Worker %d (%s) registered", worker+1, url.str());
+        UPROGLOG("Worker %d (%s) registered", worker+1, url.str());
         status->set(worker);
         if (watchdog)
             watchdog->addWorker(ep, worker);
@@ -281,7 +281,7 @@ public:
         unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
         constexpr unsigned oneMinMs = 60000;
 
-        PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
+        UPROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
         CTimeMon registerTM(maxRegistrationMins * oneMinMs);
         while (remaining)
         {
@@ -299,7 +299,7 @@ public:
                 }
 
                 // NB: will not reach here if waitJob fails.
-                PROGLOG("Waiting for %u remaining workers to register", remaining);
+                UPROGLOG("Waiting for %u remaining workers to register", remaining);
             }
             else
             {
@@ -328,7 +328,7 @@ public:
                         msg.read(workerContainerName);
                     }
                     connectedWorkers.emplace_back(workerEPStr.str(), workerPodName.str(), workerContainerName.str());
-                    PROGLOG("Worker connected from %s", workerEPStr.str());
+                    UPROGLOG("Worker connected from %s", workerEPStr.str());
                 }
                 else
                 {
@@ -339,7 +339,7 @@ public:
                         connectedWorkers.emplace_back(workerEPStr.str());
                     else
                         connectedWorkers[pos] = {workerEPStr.str()};
-                    PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
+                    UPROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
                 }
                 --remaining;
             }
@@ -389,7 +389,7 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
-        PROGLOG("Workers connected, initializing..");
+        UPROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
@@ -401,7 +401,7 @@ public:
             throw makeStringException(TE_AbortException, "Failed to initialize workers");
 
         // Wait for confirmation from workers
-        PROGLOG("Initialization sent to worker group");
+        UPROGLOG("Initialization sent to worker group");
         Owned<IException> exception;
         try
         {
@@ -411,7 +411,7 @@ public:
                 CMessageBuffer msg;
                 if (!queryNodeComm().recv(msg, RANK_ALL, MPTAG_THORREGISTRATION, &sender, MAX_WORKERREG_DELAY))
                 {
-                    PROGLOG("Workers not responding to cluster initialization: ");
+                    WARNLOG("Workers not responding to cluster initialization: ");
                     unsigned s=0;
                     for (;;)
                     {
@@ -420,23 +420,23 @@ public:
                             break;
                         s = ns+1;
                         StringBuffer str;
-                        PROGLOG("Worker %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
+                        WARNLOG("Worker %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
                     }
                     throw MakeThorException(TE_AbortException, "Workers failed to respond to cluster initialization");
                 }
                 StringBuffer str;
-                PROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
+                UPROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
                 if (msg.length())
                 {
                     Owned<IException> e = deserializeException(msg);
-                    EXCLOG(e, "Registration error");
+                    IERRLOG(e, "Registration error");
                     throw e.getClear();
                 }
                 registerNode(sender-1);
             }
 
             // this is like a barrier, let workers know all workers are now connected
-            PROGLOG("Workers initialized");
+            UPROGLOG("Workers initialized");
             unsigned s=0;
             for (; s<workers; s++)
             {
@@ -451,7 +451,7 @@ public:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "Worker registration exception");
+            IERRLOG(e, "Worker registration exception");
             exception.setown(e);
         }
         shutdown();
@@ -486,7 +486,7 @@ public:
                 catch (IMP_Exception *e) { e->Release(); }
                 catch (IException *e)
                 {
-                    EXCLOG(e, "Shutting down worker");
+                    IERRLOG(e, "Shutting down worker");
                     e->Release();
                 }
                 if (watchdog)
@@ -501,7 +501,7 @@ public:
             unsigned remaining;
             if (tm.timedout(&remaining))
             {
-                PROGLOG("Timeout waiting for Shutdown reply from worker(s) (%u replied out of %u total)", numReplied, workersRegistered);
+                IWARNLOG("Timeout waiting for Shutdown reply from worker(s) (%u replied out of %u total)", numReplied, workersRegistered);
                 StringBuffer workerList;
                 for (i=0;i<workersRegistered;i++)
                 {
@@ -513,7 +513,7 @@ public:
                     }
                 }
                 if (workerList.length())
-                    PROGLOG("Workers that have not replied: %s", workerList.str());
+                    WARNLOG("Workers that have not replied: %s", workerList.str());
                 break;
             }
             try
@@ -547,7 +547,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
 {
     // check the dafilesrv is running (and right version) 
     unsigned start = msTick();
-    PROGLOG("Checking cluster replicate nodes");
+    DBGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
     grp.getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
@@ -564,7 +564,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
         ep.getHostText(ips);
         FLLOG(MCoperatorError, "VALIDATE FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
     }
-    PROGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
+    DBGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
     return (failures.ordinality()==0);
 }
 
@@ -585,7 +585,7 @@ bool ControlHandler(ahType type)
     {
         if (firstCtrlC)
         {
-            LOG(MCdebugProgress, "CTRL-C detected");
+            DBGLOG("CTRL-C detected");
             firstCtrlC = false;
             {
                 Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
@@ -596,7 +596,7 @@ bool ControlHandler(ahType type)
         }
         else
         {
-            LOG(MCdebugProgress, "2nd CTRL-C detected - terminating process");
+            DBGLOG("2nd CTRL-C detected - terminating process");
 
             if (auditStartLogged)
             {
@@ -610,7 +610,7 @@ bool ControlHandler(ahType type)
     // ahTerminate
     else
     {
-        LOG(MCdebugProgress, "SIGTERM detected, shutting down");
+        DBGLOG("SIGTERM detected, shutting down");
         Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
         if (registry)
             registry->stop();
@@ -656,7 +656,7 @@ int main( int argc, const char *argv[]  )
     StringBuffer daliServer;
     if (!globals->getProp("@daliServers", daliServer)) 
     {
-        LOG(MCerror, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
+        OERRLOG("No Dali server list specified in THOR.XML (daliServers=iport,iport...)");
         return 0; // no recycle
     }
 
@@ -715,14 +715,14 @@ int main( int argc, const char *argv[]  )
             queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-            LOG(MCdebugProgress, "Opened log file %s", logUrl.str());
+            DBGLOG("Opened log file %s", logUrl.str());
         }
 #else
         setupContainerizedLogMsgHandler();
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        LOG(MCdebugProgress, "Build %s", hpccBuildInfo.buildTag);
+        UPROGLOG("Build %s", hpccBuildInfo.buildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
@@ -731,7 +731,7 @@ int main( int argc, const char *argv[]  )
         {
             try
             {
-                LOG(MCdebugProgress, "calling initClientProcess %d", thorEp.port);
+                DBGLOG("calling initClientProcess %d", thorEp.port);
                 initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port, nullptr, nullptr, MP_WAIT_FOREVER, true);
                 if (0 == thorEp.port)
                     thorEp.port = queryMyNode()->endpoint().port;
@@ -749,7 +749,7 @@ int main( int argc, const char *argv[]  )
                 if (retry++>10) 
                     throw;
                 e->Release();
-                LOG(MCdebugProgress, "Retrying");
+                DBGLOG("Retrying");
                 Sleep(retry*2000);  
             }
         }
@@ -765,7 +765,7 @@ int main( int argc, const char *argv[]  )
         thorname = globals->queryProp("@name");
         if (!thorname)
         {
-            PROGLOG("No 'name' setting, defaulting to \"local\"");
+            WARNLOG("No 'name' setting, defaulting to \"local\"");
             thorname = "local";
             globals->setProp("@name", thorname);
         }
@@ -1005,7 +1005,7 @@ int main( int argc, const char *argv[]  )
             JobNameScope activeJobName(workunit);
 
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            UPROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1050,8 +1050,8 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, "ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            UPROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            UPROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
             unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -1095,13 +1095,13 @@ int main( int argc, const char *argv[]  )
                 virtStr.append("virtual workers:");
             else
                 virtStr.append("worker:");
-            PROGLOG("Worker log %u contains %s %s", s+1, virtStr.str(), workerStr.str());
+            UPROGLOG("Worker log %u contains %s %s", s+1, virtStr.str(), workerStr.str());
         }
 
-        PROGLOG("verifying mp connection to rest of cluster");
+        UPROGLOG("verifying mp connection to rest of cluster");
         if (!queryNodeComm().verifyAll(false, 1000*60*30, 1000*60))
             throwStringExceptionV(0, "Failed to connect to all nodes");
-        PROGLOG("verified mp connection to rest of cluster");
+        UPROGLOG("verified mp connection to rest of cluster");
 
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@_dafsStorage"))
@@ -1128,7 +1128,7 @@ int main( int argc, const char *argv[]  )
             queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
             // change default plane
             getComponentConfigSP()->setProp("@dataPlane", uniqueGrpName);
-            PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
+            DBGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
         }
 #endif
         auditThorSystemEvent("Startup");
@@ -1146,7 +1146,7 @@ int main( int argc, const char *argv[]  )
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
         auditThorSystemEvent("Terminate");
-        LOG(MCdebugProgress, "ThorManager terminated OK");
+        DBGLOG("ThorManager terminated OK");
     }
     catch (IException *e) 
     {
@@ -1189,7 +1189,7 @@ int main( int argc, const char *argv[]  )
                 }
                 catch (IException *e)
                 {
-                    EXCLOG(e);
+                    IERRLOG(e);
                     e->Release();
                 }
             }
@@ -1201,7 +1201,7 @@ int main( int argc, const char *argv[]  )
                 }
                 catch (IException *e)
                 {
-                    EXCLOG(e);
+                    IERRLOG(e);
                     e->Release();
                 }
             }
@@ -1212,19 +1212,19 @@ int main( int argc, const char *argv[]  )
     // cleanup handler to be sure we end
     thorEndHandler->start(30);
 
-    PROGLOG("Thor closing down 5");
+    DBGLOG("Thor closing down 5");
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
-    PROGLOG("Thor closing down 4");
+    DBGLOG("Thor closing down 4");
     closeDllServer();
-    PROGLOG("Thor closing down 3");
+    DBGLOG("Thor closing down 3");
     closeEnvironment();
-    PROGLOG("Thor closing down 2");
+    DBGLOG("Thor closing down 2");
     closedownClientProcess();
-    PROGLOG("Thor closing down 1");
+    DBGLOG("Thor closing down 1");
     UseSysLogForOperatorMessages(false);
     releaseAtoms(); // don't know why we can't use a module_exit to destruct this...
 

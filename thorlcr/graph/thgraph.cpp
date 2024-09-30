@@ -2299,7 +2299,7 @@ CFileSizeTracker * CGraphBase::queryTempFileSizeTracker()
 CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
 {
     assertex(temp);
-    LOG(MCdebugProgress, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
+    DBGLOG("registerTmpFile name=%s, usageCount=%d", name, usageCount);
     CriticalBlock b(crit);
     if (tmpFiles.find(name))
         throw MakeThorException(TE_FileAlreadyUsedAsTempFile, "File already used as temp file (%s)", name);
@@ -2310,7 +2310,7 @@ CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id gra
 
 void CGraphTempHandler::deregisterFile(const char *name, bool kept)
 {
-    LOG(MCdebugProgress, "deregisterTmpFile name=%s", name);
+    DBGLOG("deregisterTmpFile name=%s", name);
     CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
@@ -2327,9 +2327,9 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
         try
         {
             if (!removeTemp(name))
-                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", name);
+                IWARNLOG("Failed to delete tmp file : %s (not found)", name);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(name).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCoperatorWarning, e, s.append(name).str()); }
     }
     else
         fileUsage->decUsage();
@@ -2346,9 +2346,9 @@ void CGraphTempHandler::clearTemps()
         try
         {
             if (!removeTemp(tmpname))
-                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", tmpname);
+                IWARNLOG("Failed to delete tmp file : %s (not found)", tmpname);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(tmpname).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCoperatorWarning, e, s.append(tmpname).str()); }
     }
     iter.clear();
     tmpFiles.kill();
@@ -2423,7 +2423,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         Owned<IException> e;
                         try
                         {
-                            PROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
+                            UPROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
                             graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
                         }
                         catch (IException *_e)
@@ -2471,7 +2471,7 @@ public:
     CGraphExecutor(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob())
     {
         limit = (unsigned)job.getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
-        PROGLOG("CGraphExecutor: limit = %d", limit);
+        DBGLOG("CGraphExecutor: limit = %d", limit);
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory();
@@ -2545,7 +2545,7 @@ public:
             }
         }
         job.markWuDirty();
-        PROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
+        UPROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
 
         while (toRun.ordinality())
         {
@@ -2579,7 +2579,7 @@ public:
         {
             for (;;)
             {
-                PROGLOG("Waiting on subgraph %" GIDPF "d", subGraph->queryGraphId());
+                DBGLOG("Waiting on subgraph %" GIDPF "d", subGraph->queryGraphId());
                 if (runningSem.wait(MEDIUMTIMEOUT) || job.queryAborted() || job.queryPausing())
                     break;
             }
@@ -2619,7 +2619,7 @@ public:
             if (running.ordinality()<limit)
             {
                 running.append(*LINK(graphInfo));
-                PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
+                DBGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                 graphPool->start(graphInfo.getClear());
             }
             else
@@ -2631,9 +2631,9 @@ public:
     virtual IThreadPool &queryGraphPool() { return *graphPool; }
     virtual void wait()
     {
-        PROGLOG("CGraphExecutor exiting, waiting on graph pool");
+        DBGLOG("CGraphExecutor exiting, waiting on graph pool");
         graphPool->joinAll();
-        PROGLOG("CGraphExecutor graphPool finished");
+        DBGLOG("CGraphExecutor graphPool finished");
     }
 };
 
@@ -2703,7 +2703,7 @@ void CJobBase::applyMemorySettings(const char *context)
     bool gmemLockMemory = getBoolSetting("heapLockMemory", false);
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
-    PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
+    UPROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
 
 void CJobBase::init()
@@ -2756,7 +2756,7 @@ void CJobBase::init()
         tracing.append(maxActivityCores);
     else
         tracing.append("[unbound]");
-    PROGLOG("%s", tracing.str());
+    DBGLOG("%s", tracing.str());
 }
 
 void CJobBase::beforeDispose()
@@ -2781,7 +2781,7 @@ CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity
 
 void CJobBase::startJob()
 {
-    LOG(MCdebugProgress, "New Graph started : %s", graphName.get());
+    DBGLOG("New Graph started : %s", graphName.get());
     perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
@@ -2795,13 +2795,13 @@ void CJobBase::startJob()
     setNodeCacheMem(keyNodeCacheBytes);
     setLeafCacheMem(keyLeafCacheBytes);
     setBlobCacheMem(keyBlobCacheBytes);
-    PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
+    UPROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
     if (!keyFileCacheLimit)
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
-    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+    UPROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
     if (getOptBool("dumpStacks")) // mainly as an example of printAllStacks() usage
     {
         StringBuffer output;
@@ -2828,7 +2828,7 @@ void CJobBase::endJob()
 
     jobEnded = true;
     setPerformanceMonitorHook(nullptr);
-    LOG(MCdebugProgress, "Job ended : %s", graphName.get());
+    DBGLOG("Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
     PrintMemoryStatusLog();
 

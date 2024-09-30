@@ -1030,7 +1030,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (mins >= jobS->queryActInitWaitTimeMins())
                 throw MakeStringException(0, "Timed out after %u minutes, waiting to receive actinit data for graph: %" GIDPF "u", mins, graphId);
 
-            GraphPrintLogEx(this, thorlog_null, MCwarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
+            GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
         }
         replyTag = msg.getReplyTag();
         msg.read(len);
@@ -1071,7 +1071,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (error)
             {
                 Owned<IException> e = deserializeException(msg);
-                EXCLOG(e, "Master hit exception");
+                IERRLOG(e, "Master hit exception");
                 msg.clear();
                 if (!queryJobChannel().queryJobComm().send(msg, 0, replyTag, LONGTIMEOUT))
                     throw MakeStringException(0, "Timeout sending init data back to master");
@@ -1275,7 +1275,7 @@ void CSlaveGraph::done()
             if (aborted || !graphDone)
             {
                 if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
-                    WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+                    IWARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
             }
             else
                 getDoneSem.wait();
@@ -1769,7 +1769,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
-    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
+    UPROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
 
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
@@ -2045,7 +2045,7 @@ public:
         {
             StringBuffer locations;
             IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
-            EXCLOG(e, NULL);
+            IERRLOG(e);
             throw e;
         }
     }
@@ -2198,7 +2198,7 @@ public:
         assertex(limit);
         purgeN = globals->getPropInt("@fileCachePurgeN", 10);
         if (purgeN > limit) purgeN=limit; // why would it be, but JIC.
-        PROGLOG("FileCache: limit = %d, purgeN = %d", limit, purgeN);
+        UPROGLOG("FileCache: limit = %d, purgeN = %d", limit, purgeN);
     }
     void opening(CLazyFileIO &lFile)
     {

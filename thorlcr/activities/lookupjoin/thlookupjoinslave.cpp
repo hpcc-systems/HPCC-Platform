@@ -143,7 +143,7 @@ class CBroadcaster : public CSimpleInterface
             }
             catch (IException *e)
             {
-                EXCLOG(e, "CRecv");
+                IWARNLOG(e, "CRecv");
                 abort(false);
                 broadcaster.cancel(e);
                 e->Release();
@@ -252,7 +252,7 @@ class CBroadcaster : public CSimpleInterface
             }
             catch (IException *e)
             {
-                EXCLOG(e, "CSend");
+                IWARNLOG(e, "CSend");
                 exception.setown(e);
                 abort(false);
                 broadcaster.cancel(e);
@@ -951,7 +951,7 @@ protected:
             catch (IException *e)
             {
                 exception.setown(e);
-                EXCLOG(e, "CRowProcessor");
+                IWARNLOG(e, "CRowProcessor");
                 owner.broadcaster->cancel(e);
             }
         }
@@ -2475,7 +2475,7 @@ protected:
         }
         catch (IException *e)
         {
-            EXCLOG(e, "During channel distribution");
+            IWARNLOG(e, "During channel distribution");
             exception.setown(e);
         }
 

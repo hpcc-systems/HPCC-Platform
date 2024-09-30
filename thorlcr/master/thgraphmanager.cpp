@@ -161,7 +161,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             catch (IException *e)
             {
-                EXCLOG(e);
+                IERRLOG(e);
                 e->Release();
             }
         }
@@ -282,7 +282,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             else if (strncmp(command,"quit", 4) == 0)
             {
-                LOG(MCwarning, "ABORT detected from user during debug session");
+                DBGLOG("ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
@@ -337,7 +337,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 }
                 catch (IException *E)
                 {
-                    EXCLOG(E);
+                    IERRLOG(E);
                     E->Release();
                 }
                 catch (...)
@@ -412,7 +412,7 @@ void CJobManager::stop()
 {
     if (!stopped)
     {
-        LOG(MCdebugProgress, "Stopping jobManager");
+        DBGLOG("Stopping jobManager");
         stopped = true;
         if (jobq)
         {
@@ -444,7 +444,7 @@ void CJobManager::fatal(IException *e)
     }
     catch (IException *e)
     {
-        EXCLOG(e, NULL);
+        IERRLOG(e);
         e->Release();
     }
     catch (...)
@@ -530,11 +530,10 @@ static int getRunningMaxPriority(const char *qname)
     }
     catch (IException *e)
     {
-        EXCLOG(e,"getRunningMaxPriority");
+        IERRLOG(e,"getRunningMaxPriority");
         e->Release();
     }
     return maxpriority;
-
 }
 
 bool CJobManager::fireException(IException *e)
@@ -605,7 +604,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
 void CJobManager::run()
 {
-    LOG(MCdebugProgress, "Listening for graph");
+    DBGLOG("Listening for graph");
 
     setWuid(NULL);
 #ifndef _CONTAINERIZED
@@ -624,24 +623,24 @@ void CJobManager::run()
         {
             int p = getRunningMaxPriority(qn);
             if (p)
-                PROGLOG("Dynamic Min priority = %d",p);
+                UPROGLOG("Dynamic Min priority = %d",p);
             return p;
         }
     } *dp = NULL;
 
     if (globals->getPropBool("@multiThorPriorityLock")) {
-        PROGLOG("multiThorPriorityLock enabled");
+        UPROGLOG("multiThorPriorityLock enabled");
         dp = new cdynprio;
         dp->qn = queueName.get();
     }
 
-    PROGLOG("verifying mp connection to all slaves");
+    UPROGLOG("verifying mp connection to all slaves");
     Owned<IMPServer> mpServer = getMPServer();
     Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
     if (!comm->verifyAll(false, 1000*60*30, 1000*60))
         throwStringExceptionV(0, "Failed to connect to all slaves");
     else
-        PROGLOG("verified mp connection to all slaves");
+        UPROGLOG("verified mp connection to all slaves");
 
     class CThorListener : public CSimpleInterface, implements IThreaded
     {
@@ -677,7 +676,7 @@ void CJobManager::run()
                     break;
                 }
                 else
-                    PROGLOG("Unknown cmd = %s", cmd.get());
+                    IWARNLOG("Unknown cmd = %s", cmd.get());
             }
         }
     } stopThorListener(MPTAG_THOR);
@@ -691,7 +690,7 @@ void CJobManager::run()
                 FLLOG(MCoperatorWarning, "multiThorPriorityLock cannot be used in conjunction with multiThorExclusionLockName");
             else
             {
-                PROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
+                UPROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
                 exclLockDaliMutex.setown(createDaliMutex(exclusiveLockName.str()));
             }
         }
@@ -703,7 +702,7 @@ void CJobManager::run()
         conversation.clear();
         SocketEndpoint masterEp(getMasterPortBase());
         StringBuffer url;
-        PROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getEndpointHostText(url).str(),queueName.get());
+        UPROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getEndpointHostText(url).str(),queueName.get());
 
         struct CLock
         {
@@ -718,7 +717,7 @@ void CJobManager::run()
             {
                 lock = _lock;
                 name.set(_name);
-                PROGLOG("Took exclusive lock %s", name.get());
+                UPROGLOG("Took exclusive lock %s", name.get());
             }
             void clear()
             {
@@ -727,7 +726,7 @@ void CJobManager::run()
                     IDaliMutex *_lock = lock;
                     lock = NULL;
                     _lock->leave();
-                    PROGLOG("Cleared exclusive lock: %s", name.get());
+                    UPROGLOG("Cleared exclusive lock: %s", name.get());
                 }
             }
         } daliLock;
@@ -771,7 +770,7 @@ void CJobManager::run()
                                 msg.append("Nothing found on jobq::dequeue");
                             if (e>=5000)
                                 msg.append(" - acceptConversation took ").append(e/1000).append(" secs");
-                            PROGLOG("%s", msg.str());
+                            UPROGLOG("%s", msg.str());
                             if (_item.get())
                             {
                                 if (_item->isValidSession())
@@ -801,7 +800,7 @@ void CJobManager::run()
                     {
                         jobq->getStats(connected, waiting, enqueued);
                         if (enqueued)
-                            PROGLOG("Exclusive lock %s in use. Queue state (connected=%d, waiting=%d, enqueued=%d)", exclusiveLockName.str(), connected ,waiting, enqueued);
+                            UPROGLOG("Exclusive lock %s in use. Queue state (connected=%d, waiting=%d, enqueued=%d)", exclusiveLockName.str(), connected ,waiting, enqueued);
                     }
                 }
             }
@@ -821,7 +820,7 @@ void CJobManager::run()
         {
             if (!stopped)
                 setExitCode(0);
-            PROGLOG("acceptConversation aborted - terminating");
+            DBGLOG("acceptConversation aborted - terminating");
             break;
         }
         StringAttr graphName, wuid;
@@ -908,7 +907,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
 
     JobNameScope activeJobName(wuid);
 
-    LOG(MCdebugInfo, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
+    DBGLOG("Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     auditThorJobEvent("Start", wuid, graphName, user);
 
     Owned<IException> e;
@@ -949,7 +948,7 @@ void CJobManager::setWuid(const char *wuid, const char *cluster)
     }
     catch (CATCHALL)
     {
-        FLLOG(MCerror, "WARNING: Failed to set wuid in SDS: Unknown error");
+        FLLOG(MCdebugError, "WARNING: Failed to set wuid in SDS: Unknown error");
     }
 }
 
@@ -986,7 +985,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     s.append(" to agent ");
     agentep.getEndpointHostText(s);
     s.append(" for workunit(").append(wuid).append(")");
-    PROGLOG("%s", s.str());
+    UPROGLOG("%s", s.str());
     MemoryBuffer replyMb;
     workunit->forceReload();
     if (!allDone && (WUActionPause == workunit->getAction() || WUActionPauseNow == workunit->getAction()))
@@ -995,7 +994,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         if (e)
         {
             // likely if WUActionPauseNow, shouldn't happen if WUActionPause
-            EXCLOG(e, "Exception at time of pause");
+            IERRLOG(e, "Exception at time of pause");
             replyMb.append(true);
             serializeException(e, replyMb);
         }
@@ -1063,7 +1062,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringBuffer soPath;
     if (!getExpertOptBool("saveQueryDlls"))
     {
-        PROGLOG("Loading query name: %s", soName.str());
+        DBGLOG("Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
         soPath.append(querySo->queryName());
     }
@@ -1075,12 +1074,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         soPath.append(soName.str());
         getCompoundQueryName(compoundPath, soName.str(), version);
         if (querySoCache.isAvailable(compoundPath.str()))
-            PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
+            DBGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
         else
         {
             MemoryBuffer file;
             queryDllServer().getDll(soName.str(), file);
-            PROGLOG("Saving dll: %s", compoundPath.str());
+            DBGLOG("Saving dll: %s", compoundPath.str());
             OwnedIFile out = createIFile(compoundPath.str());
             try
             {
@@ -1104,15 +1103,14 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
-    PROGLOG("Started wuid=%s, user=%s, graph=%s", wuid.str(), user.str(), graphName);
+    UPROGLOG("Started wuid=%s, user=%s, graph=%s, query=%s", wuid.str(), user.str(), graphName, soPath.str());
 
-    PROGLOG("Query %s loaded", soPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     unsigned wfid = job->getWfid();
     StringBuffer graphScope;
     graphScope.append(WorkflowScopePrefix).append(wfid).append(":").append(graphName);
-    PROGLOG("Graph %s created", graphName);
-    PROGLOG("Running graph=%s", job->queryGraphName());
+    DBGLOG("Graph %s created", graphName);
+    DBGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
     bool allDone = false;
     Owned<IException> exception;
@@ -1183,7 +1181,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     }
     fatalHdlr.setown(job->clearFatalHandler());
     job.clear();
-    PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
+    UPROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
 
     fatalHdlr->clear();
 
@@ -1217,9 +1215,9 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
                 _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
                 e = _e;
             }
-            EXCLOG(e,"abortThor");
+            DBGLOG(e, "abortThor");
         }
-        LOG(MCdebugProgress, "abortThor called");
+        DBGLOG("abortThor called");
         if (jM)
             jM->stop();
         if (thorQueue)
@@ -1231,7 +1229,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
     if (2 > aborting && abortCurrentJob)
     {
         aborting = 2;
-        LOG(MCdebugProgress, "aborting any current active job");
+        DBGLOG("aborting any current active job");
         if (jM)
         {
             if (!e)
@@ -1243,7 +1241,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         }
         if (errCode == TEC_Clean)
         {
-            LOG(MCdebugProgress, "Removing sentinel upon normal shutdown");
+            DBGLOG("Removing sentinel upon normal shutdown");
             Owned<IFile> sentinelFile = createSentinelTarget();
             removeSentinelFile(sentinelFile);
         }
@@ -1340,7 +1338,7 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
     }
     else
     {
-        WARNLOG("Unrecognised job format received: %s", next.str());
+        IWARNLOG("Unrecognised job format received: %s", next.str());
         return 0; // unrecognised format, ignore
     }
     retWuid.set(sArray.item(1));
@@ -1426,7 +1424,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             {
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
+                UPROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
             }
             else
                 multiThorMemoryThreshold = 0;
@@ -1457,7 +1455,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     queueNames.append(",");
                     getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
 
-                    PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
+                    UPROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
                     thorQueue.setown(createJobQueue(queueNames));
                     thorQueue->connect(false);
                 }
@@ -1476,19 +1474,19 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         SessionId agentSessionID = workunit->getAgentSession();
                         if (agentSessionID <= 0)
                         {
-                            WARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
+                            IWARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
                             currentWuid.clear();
                         }
                         else if (querySessionManager().sessionStopped(agentSessionID, 0))
                         {
-                            WARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            IWARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
                             currentWuid.clear();
                         }
                         else
                         {
                             JobNameScope activeJobName(currentWuid.str());
                             saveWuidToFile(currentWuid);
-                            PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            UPROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
 
                             {
                                 Owned<IWorkUnit> wu = &workunit->lock();
@@ -1528,7 +1526,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                     if (lingerPeriod)
                     {
-                        PROGLOG("Lingering time left: %.2f", ((float)lingerPeriod)/1000);
+                        UPROGLOG("Lingering time left: %.2f", ((float)lingerPeriod)/1000);
                         StringBuffer nextJob;
                         CTimeMon timer(lingerPeriod);
                         unsigned remaining;
@@ -1563,7 +1561,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         catch (IException *e)
         {
-            EXCLOG(e, NULL);
+            IERRLOG(e);
             throw;
         }
     }

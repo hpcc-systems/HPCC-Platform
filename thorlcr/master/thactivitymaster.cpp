@@ -701,7 +701,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
 
                 Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
                 if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
-                    LOG(MCwarning, e);
+                    IWARNLOG(e);
                 else
                 {
                     if (activity->queryContainer().queryJob().getWorkUnitValueBool("skipFileFormatCrcCheck", false))

@@ -131,12 +131,12 @@ void ProcessSlaveActivity::threadmain()
         else
             m.append("standard library exception (std::exception ").append(es.what()).append(")");
         m.appendf(" in %" ACTPF "d",container.queryId());
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "%s", m.str());
+        ActPrintLogEx(&queryContainer(), thorlog_null, MCdebugError, "%s", m.str());
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "%s", m.str()));
     }
     catch (CATCHALL)
     {
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Unknown exception thrown in process()");
+        ActPrintLogEx(&queryContainer(), thorlog_null, MCdebugError, "Unknown exception thrown in process()");
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "FATAL: Unknown exception thrown by ProcessThread"));
     }
     if (exception)

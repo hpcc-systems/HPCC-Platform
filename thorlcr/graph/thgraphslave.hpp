@@ -647,12 +647,12 @@ public:
         {
             // wait for reply
             if (!queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
-                EXCLOG(e, "Failed to sendrecv to master");
+                IERRLOG(e, "Failed to sendrecv to master");
         }
         else
         {
             if (!queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
-                EXCLOG(e, "Failed to send to master");
+                IERRLOG(e, "Failed to send to master");
         }
         return true;
     }

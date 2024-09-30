@@ -110,7 +110,7 @@ typedef enum
  *                                                                                      *
  *                                                                                      *
  * 5) For progress messages:                                                            *
- *    PROGLOG([LogMsgCode,] format,..)         - uses MCuserProgress                    *
+ *    UPROGLOG([LogMsgCode,] format,..)         - uses MCuserProgress                    *
  *                                                                                      *
  * More general logging functions include:                                              *
  * 1) Full control over the log message:                                                *
@@ -1017,6 +1017,8 @@ inline void UERRLOG(char const * format, ...)
 
 // TODO: Remove the following #define once all ERRLOG has been removed from code
 #define ERRLOG UERRLOG
+// TODO: Remove the following #define once all PROGLOG has been removed from code
+#define PROGLOG UPROGLOG
 
 inline void OERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void OERRLOG(char const * format, ...)
@@ -1076,8 +1078,8 @@ inline void IWARNLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void PROGLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
-inline void PROGLOG(const char * format, ...)
+inline void UPROGLOG(const char * format, ...) __attribute__((format(printf, 1, 2)));
+inline void UPROGLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -1194,8 +1196,8 @@ inline void UERRLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline void PROGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
-inline void PROGLOG(LogMsgCode code, char const * format, ...)
+inline void UPROGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
+inline void UPROGLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);

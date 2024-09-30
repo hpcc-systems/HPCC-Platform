@@ -404,7 +404,7 @@ public:
                         exception.setown(e);
                     else
                     {
-                        EXCLOG(e, nullptr);
+                        DBGLOG(e);
                         e->Release();
                     }
                 }

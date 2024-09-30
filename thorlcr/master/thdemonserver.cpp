@@ -75,7 +75,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, "Failed to update progress information: %s", e->errorMessage(s).str());
+            IWARNLOG("Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -100,7 +100,7 @@ private:
             const cost_type totalCost = workunitCost + sgCost + graph.getDiskAccessCost();
             if (costLimit>0 && totalCost > costLimit)
             {
-                LOG(MCwarning, "ABORT job cost exceeds limit");
+                WARNLOG("ABORT job cost exceeds limit");
                 graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
             }
         }
@@ -164,8 +164,7 @@ private:
             }
             catch (IException *E)
             {
-                StringBuffer s;
-                LOG(MCwarning, "Failed to update progress information: %s", E->errorMessage(s).str());
+                IWARNLOG(E, "Failed to update progress information");
                 E->Release();
             }
         }
@@ -193,7 +192,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, "Failed to update progress information: %s", e->errorMessage(s).str());
+            IWARNLOG(e, "Failed to update progress information");
             e->Release();
         }
     }
@@ -214,7 +213,7 @@ public:
         if (0 == activeGraphs.ordinality())
         {
             StringBuffer urlStr;
-            LOG(MCdebugProgress, "heartbeat packet received with no active graphs");
+            IWARNLOG("heartbeat packet received with no active graphs");
             return;
         }
         size32_t compressedProgressSz = progressMb.remaining();
@@ -232,12 +231,12 @@ public:
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
                 {
-                    LOG(MCdebugProgress, "heartbeat received from unknown graph %" GIDPF "d", graphId);
+                    IWARNLOG("heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
                 if (!graph->deserializeStats(slave, uncompressedMb))
                 {
-                    LOG(MCdebugProgress, "heartbeat error in graph %" GIDPF "d", graphId);
+                    IWARNLOG("heartbeat error in graph %" GIDPF "d", graphId);
                     break;
                 }
             }

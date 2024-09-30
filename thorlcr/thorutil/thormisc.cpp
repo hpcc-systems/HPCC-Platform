@@ -611,51 +611,6 @@ IThorException *MakeGraphException(CGraphBase *graph, IException *e)
     return e2;
 }
 
-#if 0
-void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master) 
-{
-    StringBuffer logname;
-    if (logdir && *logdir !='\0')
-    {
-        if (!recursiveCreateDirectory(logdir))
-        {
-            OWARNLOG("Failed to use %s as log directory, using current working directory", logdir); // default working directory should be open already
-            return;
-        }
-        logname.append(logdir);
-    }
-    else
-    {
-        char cwd[1024];
-        GetCurrentDirectory(1024, cwd);
-        logname.append(cwd);
-    }
-
-    if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
-        logname.append(PATHSEPCHAR);
-    logname.append(prefix);
-#if 0
-    time_t tNow;
-    time(&tNow);
-    char timeStamp[32];
-#ifdef _WIN32
-    struct tm *ltNow;
-    ltNow = localtime(&tNow);
-    strftime(timeStamp, 32, ".%m_%d_%y_%H_%M_%S", ltNow);
-#else
-    struct tm ltNow;
-    localtime_r(&tNow, &ltNow);
-    strftime(timeStamp, 32, ".%m_%d_%y_%H_%M_%S", &ltNow);
-#endif
-    logname.append(timeStamp);
-#endif
-    logname.append(".log");
-    StringBuffer lf;
-    openLogFile(lf, logname.str());
-    PROGLOG("Opened log file %s", lf.str());
-    PROGLOG("Build %s", hpccBuildInfo.buildTag);
-}
-#endif
 
 class CTempNameHandler
 {
@@ -682,12 +637,12 @@ public:
             if (file.isFile()==fileBool::foundYes)
             {
                 if (log)
-                    LOG(MCdebugInfo, "Deleting %s", file.queryFilename());
+                    DBGLOG("Deleting %s", file.queryFilename());
                 try { file.remove(); }
                 catch (IException *e)
                 {
                     if (log)
-                        FLLOG(MCwarning, e);
+                        FLLOG(MCoperatorWarning, e);
                     e->Release();
                 }
             }
@@ -710,7 +665,7 @@ public:
         {
             // temp dir. should not exist, but if it does issue warning only.
             if (checkDirExists(subDirPath))
-                WARNLOG("Existing temp directory %s already exists", subDirPath.str());
+                IWARNLOG("Existing temp directory %s already exists", subDirPath.str());
             else
                 throw MakeThorException(0, "%s", msg.str());
         }
@@ -733,14 +688,13 @@ public:
         try
         {
             Owned<IFile> dirIFile = createIFile(subDirPath);
-            bool success = dirIFile->remove();
-            if (log)
-                PROGLOG("%s to delete temp directory: %s", subDirPath.str(), success ? "succeeded" : "failed");
+            if (!dirIFile->remove() && log)
+                IWARNLOG("Failed to delete temp directory: %s", subDirPath.str());
         }
         catch (IException *e)
         {
             if (log)
-                FLLOG(MCwarning, e);
+                FLLOG(MCoperatorWarning, e);
             e->Release();
         }
         subDirPath.clear();
@@ -779,7 +733,7 @@ void GetTempFilePath(StringBuffer &name, const char *suffix)
 void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir)
 {
     TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix, clearDir);
-    LOG(MCdebugProgress, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
+    DBGLOG("temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
 void ClearTempDir()
@@ -791,7 +745,7 @@ void ClearTempDir()
     }
     catch (IException *e)
     {
-        EXCLOG(e, "ClearTempDir");
+        IERRLOG(e, "ClearTempDir");
         e->Release();
     }
 }
@@ -844,7 +798,7 @@ void ensureDirectoryForFile(const char *fName)
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
 void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
-    LOG(MCwarning, e, "Reporting exception to WU");
+    LOG(MCuserProgress, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
     if (wu)
     {
@@ -1085,7 +1039,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             Owned<IFile> file;
             if (activity->getOptBool("forceDafilesrv"))
             {
-                PROGLOG("Using dafilesrv for: %s", locationName.str());
+                DBGLOG("Using dafilesrv for: %s", locationName.str());
                 file.setown(createDaliServixFile(rfn));
             }
             else
@@ -1211,7 +1165,7 @@ void CFifoFileCache::add(const char *filename)
     if (files.ordinality() > limit)
     {
         const char *toRemoveFname = files.item(limit);
-        PROGLOG("Removing %s from fifo cache", toRemoveFname);
+        DBGLOG("Removing %s from fifo cache", toRemoveFname);
         OwnedIFile ifile = createIFile(toRemoveFname);
         deleteFile(*ifile);
         files.remove(limit);
@@ -1465,7 +1419,7 @@ void logDiskSpace()
     diskSpaceMsg.append(queryBaseDirectory(grp_unknown, 1)).append(" = ").append(getFreeSpace(queryBaseDirectory(grp_unknown, 1))/0x100000).append(" MB, ");
     const char *tempDir = globals->queryProp("@thorTempDirectory");
     diskSpaceMsg.append(tempDir).append(" = ").append(getFreeSpace(tempDir)/0x100000).append(" MB");
-    PROGLOG("%s", diskSpaceMsg.str());
+    UPROGLOG("%s", diskSpaceMsg.str());
 }
 
 IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMonHook *chain)
@@ -1492,7 +1446,7 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
         }
         virtual void log(int level, const char *msg)
         {
-            PROGLOG("%s", msg);
+            UPROGLOG("%s", msg);
             if ((maxLevel != -1) && (level <= maxLevel)) // maxLevel of -1 means disabled
             {
                 Owned<IThorException> e = MakeThorException(TE_KERN, "%s", msg);
@@ -1641,11 +1595,11 @@ void checkAndDumpAbortInfo(const char *cmd)
         }
         StringBuffer cmdOutput;
         unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", validateAllowedPrograms ? allowedPipePrograms.str() : nullptr);
-        PROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
+        UPROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
     }
     catch (IException *e)
     {
-        EXCLOG(e, nullptr);
+        IERRLOG(e);
         e->Release();
     }
 }
@@ -1673,14 +1627,14 @@ void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double 
 {
     workunit.set(_workunit);
     subGraphId = _subGraphId;
-    PROGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
+    DBGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
     perf.setInterval(interval);
     perf.start();    
 }
 
 void CThorPerfTracer::stop()
 {
-    PROGLOG("Stopping perf trace of subgraph %u", subGraphId);
+    DBGLOG("Stopping perf trace of subgraph %u", subGraphId);
     perf.stop();
     StringBuffer flameGraphName;
     if (getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), flameGraphName))
@@ -1695,12 +1649,12 @@ void CThorPerfTracer::stop()
         {
             StringBuffer &svg = perf.queryResult();
             iFileIO->write(0, svg.length(), svg.str());
-            PROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
+            UPROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
         }
     }
     catch (IException *E)
     {
-        EXCLOG(E);
+        IERRLOG(E);
         ::Release(E);
     }
 }

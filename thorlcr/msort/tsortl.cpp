@@ -160,7 +160,7 @@ public:
 #endif
             }
             catch (IException *e) {
-                EXCLOG(e,"CSocketRowStream::stop");
+                IERRLOG(e,"CSocketRowStream::stop");
                 e->Release();
             }
         }
