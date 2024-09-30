@@ -1279,7 +1279,7 @@ class EsdlDefServiceArrayIterator : public CInterface, implements IEsdlDefServic
 {
 private:
     ESDLServiceArray &   array;
-    aindex_t             cur;
+    aindex_t             cur = NotFound;
 
 public:
     IMPLEMENT_IINTERFACE;

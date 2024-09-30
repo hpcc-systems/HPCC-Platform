@@ -42,7 +42,7 @@ IEsdlDefReporter* createConcreteEsdlDefReporter()
     return new ConcreteEsdlDefReporter();
 }
 
-void EspDef::addFilesToDefinition(vector<Owned<IFile>> files)
+void EspDef::addFilesToDefinition(vector<Owned<IFile>> &files)
 {
     for(Owned<IFile>& file: files)
     {
