@@ -169,9 +169,10 @@ public:
     {
         return in->nextRow();
     }
-    inline const byte *prefetchRow()
+    inline const void *prefetchRow()
     {
-        return in->prefetchRow();
+        size32_t size;
+        return in->prefetchRow(size);
     }
     inline void prefetchDone()
     {
@@ -397,7 +398,8 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     {
         closedPartFileStats.mergeStatistic(StNumDiskRowsRead, partStream->queryProgress());
         activity.mergeFileStats(partDesc, partStream);
-        partStream->stop(&fileCRC);
+        partStream->stop();
+        fileCRC = partStream->queryCRC();
     }
 }
 
@@ -425,7 +427,7 @@ public:
                     {
                         for (;;)
                         {
-                            const byte *row = CDiskRecordPartHandler::prefetchRow();
+                            const void *row = CDiskRecordPartHandler::prefetchRow();
                             if (!row)
                             {
                                 if (!activity.grouped)

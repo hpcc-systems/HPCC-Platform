@@ -1074,16 +1074,18 @@ protected:
         }
         return false;
     }
-    const byte *getNextPrefetchRow()
+    const byte *getNextPrefetchRow(size32_t & size)
     {
         while (true)
         {
             ++progress;
             if (checkEmptyRow())
-                return nullptr;
+                break;
+
             currentRowOffset = prefetchBuffer.tell();
             prefetcher->readAhead(prefetchBuffer);
             bool matched = fieldFilterMatch(prefetchBuffer.queryRow());
+            size = prefetchBuffer.tell() - currentRowOffset;
             checkEog();
             if (matched) // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
             {
@@ -1095,6 +1097,7 @@ protected:
             if (checkExitConditions())
                 break;
         }
+        size = 0;
         return nullptr;
     }
     const void *getNextRow()
@@ -1194,7 +1197,8 @@ public:
             {
                 if (translator)
                 {
-                    const byte *row = getNextPrefetchRow();
+                    size32_t prefetchSize;
+                    const byte *row = getNextPrefetchRow(prefetchSize);
                     if (row)
                     {
                         RtlDynamicRowBuilder rowBuilder(*allocator);
@@ -1210,7 +1214,7 @@ public:
         return nullptr;
     }
 
-    virtual const byte *prefetchRow() override
+    virtual const void *prefetchRow(size32_t & size) override
     {
         // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
         if (eog)
@@ -1224,20 +1228,21 @@ public:
                 eos = true;
             else
             {
-                const byte *row = getNextPrefetchRow();
+                const byte *row = getNextPrefetchRow(size);
                 if (row)
                 {
                     if (translator)
                     {
                         translateBuf.setLength(0);
                         MemoryBufferBuilder rowBuilder(translateBuf, 0);
-                        translator->translate(rowBuilder, *fieldCallback, row);
+                        size = translator->translate(rowBuilder, *fieldCallback, row);
                         row = rowBuilder.getSelf();
                     }
                     return row;
                 }
             }
         }
+        size = 0;
         return nullptr;
     }
 
@@ -1248,7 +1253,11 @@ public:
 
     virtual void stop() override
     {
-        stop(NULL);
+        if (!eos)
+        {
+            eos = true;
+            clear();
+        }
     }
 
     void clear()
@@ -1257,15 +1266,10 @@ public:
         fileio.clear();
     }
 
-    virtual void stop(CRC32 *crcout) override
+    virtual CRC32 queryCRC() const override
     {
-        if (!eos) {
-            eos = true;
-            clear();
-        }
         // NB CRC will only be right if stopped at eos
-        if (crcout)
-            *crcout = crccb.crc;
+        return crccb.crc;
     }
 
     virtual offset_t getOffset() const override

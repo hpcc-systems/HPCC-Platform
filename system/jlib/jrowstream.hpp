@@ -59,13 +59,13 @@ interface IDiskRowStream : extends IRowStream
     virtual void setCursor(MemoryBuffer & cursor) = 0;
 
 // rows returned are only valid until next call.  Size is the number of bytes in the row.
-    virtual const void *nextRow(size32_t & size)=0;
+    virtual const void * prefetchRow(size32_t & size)=0;
 
-    inline const void *ungroupedNextRow(size32_t & size)  // size will not include the size of the eog
+    inline const void *ungroupedPrefetchRow(size32_t & size)  // size will not include the size of the eog
     {
         for (;;)
         {
-            const void *ret = nextRow(size);
+            const void *ret = prefetchRow(size);
             if (likely(!isEndOfGroup(ret)))
                 return ret;
         }

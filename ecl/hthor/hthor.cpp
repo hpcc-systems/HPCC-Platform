@@ -11350,7 +11350,7 @@ const void *CHThorNewDiskReadActivity::nextRow()
             {
                 //Returns a row in the serialized form of the projected format
                 size32_t nextSize;
-                const byte * next = (const byte *)inputRowStream->nextRow(nextSize);
+                const byte * next = (const byte *)inputRowStream->prefetchRow(nextSize);
                 if (!isSpecialRow(next))
                 {
                     if (likely(!hasMatchFilter || helper.canMatch(next)))
@@ -11910,7 +11910,7 @@ const void *CHThorGenericDiskReadActivity::nextRow()
             {
                 //Returns a row in the serialized form of the projected format
                 size32_t nextSize;
-                const byte * next = (const byte *)inputRowStream->nextRow(nextSize);
+                const byte * next = (const byte *)inputRowStream->prefetchRow(nextSize);
                 if (!isSpecialRow(next))
                 {
                     if (likely(!hasMatchFilter || helper.canMatch(next)))

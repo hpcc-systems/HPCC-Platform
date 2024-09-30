@@ -381,14 +381,13 @@ public:
 };
 
 // simple class which takes ownership of the underlying file and deletes it on destruction
-class graph_decl CFileOwner : public CSimpleInterface, implements IInterface
+class graph_decl CFileOwner : public CSimpleInterfaceOf<IInterface>
 {
     Linked<IFile> iFile;
     Linked<CFileSizeTracker> fileSizeTracker;
     offset_t fileSize = 0;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CFileOwner(IFile *_iFile, CFileSizeTracker *_fileSizeTracker = nullptr) : iFile(_iFile), fileSizeTracker(_fileSizeTracker)
     {
     }
@@ -429,12 +428,11 @@ public:
     }
     // IExtRowStream
     virtual const void *nextRow() override { return stream->nextRow(); }
-    virtual void stop() override { stream->stop(NULL); }
+    virtual void stop() override { stream->stop(); }
     virtual offset_t getOffset() const override { return stream->getOffset(); }
     virtual offset_t getLastRowOffset() const override { return stream->getLastRowOffset(); }
     virtual unsigned __int64 queryProgress() const override { return stream->queryProgress(); }
-    virtual void stop(CRC32 *crcout) override { stream->stop(crcout); }
-    virtual const byte *prefetchRow() override { return stream->prefetchRow(); }
+    virtual const void *prefetchRow(size32_t & size) override { return stream->prefetchRow(size); }
     virtual void prefetchDone() override { stream->prefetchDone(); }
     virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows) override
     {
@@ -448,6 +446,7 @@ public:
     {
         return stream->setFilters(filters);
     }
+    virtual CRC32 queryCRC() const override { return stream->queryCRC(); }
 };
 
 #define DEFAULT_THORMASTERPORT 20000
