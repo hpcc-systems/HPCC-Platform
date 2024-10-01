@@ -56,7 +56,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     {
         // bool isGeneric = (((IHThorNewDiskReadArg &)arg).getFlags() & TDXgeneric) != 0;
         if (1)
-            return createGenericDiskWriteActivity(agent, activityId, subgraphId, (IHThorNewDiskReadArg &)arg, kind, graph, node);
+            return createGenericDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind, graph, node);
         else
             return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind, graph);
     }

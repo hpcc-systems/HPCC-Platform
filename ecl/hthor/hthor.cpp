@@ -12003,28 +12003,43 @@ const void *CHThorGenericDiskReadActivity::nextRow()
     return NULL;
 }
 
-CHThorGenericDiskWriteBaseActivity::CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
-: CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorGenericDiskWriteBaseActivity::CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+: CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), inputOptions(_node)
 {
 
 }
 
 void CHThorGenericDiskWriteBaseActivity::ready()
 {
-    // Implementation here
+    CHThorActivityBase::ready();
 }
 
 void CHThorGenericDiskWriteBaseActivity::stop()
 {
-    // Implementation here
+    CHThorActivityBase::stop();
 }
 
 void CHThorGenericDiskWriteBaseActivity::execute()
 {
-    // Implementation here
+    CHThorActivityBase::execute();
 }
 
-CHThorGenericDiskWriteActivity::CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+IDiskRowWriter * CHThorGenericDiskWriteBaseActivity::ensureRowWriter(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * options)
+{
+    Owned<IDiskReadMapping> mapping = createDiskReadMapping(RecordTranslationMode::None, format, actualCrc, actual, expectedCrc, expected, projectedCrc, projected, options);
+
+    ForEachItemIn(i, writers)
+    {
+        IDiskRowWriter & cur = writers.item(i);
+        if (cur.matches(format, streamRemote, mapping))
+            return &cur;
+    }
+    IDiskRowWriter * writer = createDiskWriter(format, streamRemote, mapping);
+    writers.append(*writer);
+    return writer;
+}
+
+CHThorGenericDiskWriteActivity::CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 : CHThorGenericDiskWriteBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg)
 {
 
@@ -12033,23 +12048,75 @@ CHThorGenericDiskWriteActivity::CHThorGenericDiskWriteActivity(IAgentContext &_a
 // Implement all pure virtual functions from CHThorGenericDiskWriteBaseActivity
 void CHThorGenericDiskWriteActivity::ready()
 {
-    // Implementation here
+    PARENT::ready();
+    if (!activeWriter)
+        activeWriter = ensureRowWriter("flat", false, helper.getFormatCrc(), *helper.queryDiskRecordSize(), helper.getFormatCrc(), *helper.queryDiskRecordSize(), 0, *helper.queryDiskRecordSize(), inputOptions);
+    outSeq.setown(activeWriter->queryRowSink());
 }
 
 void CHThorGenericDiskWriteActivity::stop()
 {
-    // Implementation here
+    PARENT::stop();
 }
 
 void CHThorGenericDiskWriteActivity::execute()
 {
-    // Implementation here
+    // Loop thru the results
+    numRecords = 0;
+    while (next())
+        numRecords++;
+    finishOutput();
 }
 
-const void *CHThorGenericDiskWriteActivity::nextRow()
+const void * CHThorGenericDiskWriteActivity::getNext()
+{   // through operation (writes and returns row)
+    // needs a one row lookahead to preserve group
+    if (!nextrow.get())
+    {
+        nextrow.setown(input->nextRow());
+        if (!nextrow.get())
+        {
+            nextrow.setown(input->nextRow());
+            if (nextrow.get()&&grouped)  // only write eog if not at eof
+                outSeq->putRow(NULL);
+            return NULL;
+        }
+    }
+    outSeq->putRow(nextrow.getLink());
+    checkSizeLimit();
+    return nextrow.getClear();
+}
+
+bool CHThorGenericDiskWriteActivity::finishOutput()
 {
-    // Implementation here
-    return nullptr;
+    return true;
+}
+
+bool CHThorGenericDiskWriteActivity::next()
+{
+    if (!nextrow.get())
+    {
+        OwnedConstRoxieRow row(input->nextRow());
+        if (!row.get())
+        {
+            row.setown(input->nextRow());
+            if (!row.get())
+                return false; // we are done
+            if (grouped)
+                outSeq->putRow(NULL);
+        }
+        outSeq->putRow(row.getClear());
+    }
+    else
+        outSeq->putRow(nextrow.getClear());
+    checkSizeLimit();
+    return true;
+}
+
+void CHThorGenericDiskWriteActivity::checkSizeLimit()
+{
+    if (sizeLimit && (numRecords >= sizeLimit))
+        throw MakeStringException(0, "Size limit exceeded");
 }
 
 //=====================================================================================================
@@ -12119,7 +12186,7 @@ extern HTHOR_API IHThorActivity *createGenericDiskReadActivity(IAgentContext &_a
     return new CHThorGenericDiskReadActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, node);
 }
 
-extern HTHOR_API IHThorActivity *createGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree * node)
+extern HTHOR_API IHThorActivity *createGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree * node)
 {
     return new CHThorGenericDiskWriteActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, node);
 }

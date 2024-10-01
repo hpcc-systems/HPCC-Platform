@@ -2027,20 +2027,85 @@ void RemoteDiskRowReader::stop()
 {
 }
 
+///---------------------------------------------------------------------------------------------------------------------
+
+class DiskRowWriter : public CInterfaceOf<ILogicalRowSink>, implements IDiskRowWriter
+{
+public:
+    DiskRowWriter(IDiskReadMapping * _mapping) : mapping(_mapping) {}
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<ILogicalRowSink>);
+
+    ILogicalRowSink * queryRowSink() override;
+
+protected:
+    Linked<IDiskReadMapping> mapping;
+};
+
+ILogicalRowSink * DiskRowWriter::queryRowSink()
+{
+    return this;
+}
+
+class BinaryDiskRowWriter : public DiskRowWriter
+{
+public:
+    BinaryDiskRowWriter(IDiskReadMapping * _mapping) : DiskRowWriter(_mapping) {}
+
+    bool matches(const char * format, bool streamRemote, IDiskReadMapping * mapping) override;
+
+    bool setOutputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, const IPropertyTree * outputOptions) override;
+
+    void putRow(const void *row) override;  // takes ownership of row.  rename to putOwnedRow?
+    void flush() override;
+    void noteStopped() override;
+
+    void writeRow(const void *row) override;
+};
+
+
+bool BinaryDiskRowWriter::matches(const char * format, bool streamRemote, IDiskReadMapping * mapping)
+{
+    return strieq(format, "flat");
+}
+
+bool BinaryDiskRowWriter::setOutputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, const IPropertyTree * outputOptions)
+{
+    return false;
+}
+
+void BinaryDiskRowWriter::putRow(const void *row)
+{
+    throwUnexpected();
+}
+
+void BinaryDiskRowWriter::flush()
+{
+    throwUnexpected();
+}
+
+void BinaryDiskRowWriter::noteStopped()
+{
+    throwUnexpected();
+}
+
+void BinaryDiskRowWriter::writeRow(const void *row)
+{
+    throwUnexpected();
+}
 
 ///---------------------------------------------------------------------------------------------------------------------
 
 // Lookup to map the names of file types/formats to their object constructors;
 // map will be initialized within MODULE_INIT
-static std::map<std::string, std::function<DiskRowReader*(IDiskReadMapping*)>> genericFileTypeMap;
-
+static std::map<std::string, std::function<DiskRowReader*(IDiskReadMapping*)>> genericFileTypeReadersMap;
+static std::map<std::string, std::function<DiskRowWriter*(IDiskReadMapping*)>> genericFileTypeWritersMap;
 
 // format is assumed to be lowercase
 IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping * _mapping)
 {
-    auto foundReader = genericFileTypeMap.find(format);
+    auto foundReader = genericFileTypeReadersMap.find(format);
 
-    if (foundReader != genericFileTypeMap.end() && foundReader->second)
+    if (foundReader != genericFileTypeReadersMap.end() && foundReader->second)
         return foundReader->second(_mapping);
 
     UNIMPLEMENTED;
@@ -2085,19 +2150,74 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // should be defined here; the key is the lowecase name of the format,
     // as will be used in ECL, and the value should be a lambda
     // that creates the appropriate disk row reader object
-    genericFileTypeMap.emplace("flat", [](IDiskReadMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
-    genericFileTypeMap.emplace("csv", [](IDiskReadMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
-    genericFileTypeMap.emplace("xml", [](IDiskReadMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
+    genericFileTypeReadersMap.emplace("flat", [](IDiskReadMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
+    genericFileTypeReadersMap.emplace("csv", [](IDiskReadMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
+    genericFileTypeReadersMap.emplace("xml", [](IDiskReadMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
 #ifdef _USE_PARQUET
-    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
+    genericFileTypeReadersMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
 #else
-    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return nullptr; });
+    genericFileTypeReadersMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return nullptr; });
 #endif
 
     // Stuff the file type names that were just instantiated into a list;
     // list will be accessed by the ECL compiler to validate the names
     // at compile time
-    for (auto iter = genericFileTypeMap.begin(); iter != genericFileTypeMap.end(); iter++)
+    for (auto iter = genericFileTypeReadersMap.begin(); iter != genericFileTypeReadersMap.end(); iter++)
+        addAvailableGenericFileTypeName(iter->first.c_str());
+
+    return true;
+}
+
+// format is assumed to be lowercase
+IDiskRowWriter * doCreateLocalDiskWriter(const char * format, IDiskReadMapping * _mapping)
+{
+    auto foundReader = genericFileTypeWritersMap.find(format);
+
+    if (foundReader != genericFileTypeWritersMap.end() && foundReader->second)
+        return foundReader->second(_mapping);
+
+    UNIMPLEMENTED;
+}
+
+IDiskRowWriter * createLocalDiskWriter(const char * format, IDiskReadMapping * mapping)
+{
+    Owned<IDiskRowWriter> directReader = doCreateLocalDiskWriter(format, mapping);
+    if (mapping->expectedMatchesProjected() || strieq(format, "flat"))
+        return directReader.getClear();
+
+    // Owned<IDiskReadMapping> expectedMapping = createUnprojectedMapping(mapping);
+    // Owned<IDiskRowWriter> expectedReader = doCreateLocalDiskWriter(format, expectedMapping);
+    // return new AlternativeDiskRowWriter(directReader, expectedReader, mapping);
+    return nullptr;
+}
+
+// IDiskRowWriter * createRemoteDiskWriter(const char * format, IDiskReadMapping * _mapping)
+// {
+//     return new RemoteDiskRowWriter(format, _mapping);
+// }
+
+IDiskRowWriter * createDiskWriter(const char * format, bool streamRemote, IDiskReadMapping * _mapping)
+{
+    // if (streamRemote)
+    //     return createRemoteDiskWriter(format, _mapping);
+    // else
+    //     return createLocalDiskWriter(format, _mapping);
+
+    return createLocalDiskWriter(format, _mapping);
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    // All pluggable file types that use the generic disk reader
+    // should be defined here; the key is the lowecase name of the format,
+    // as will be used in ECL, and the value should be a lambda
+    // that creates the appropriate disk row reader object
+    genericFileTypeWritersMap.emplace("flat", [](IDiskReadMapping * _mapping) { return new BinaryDiskRowWriter(_mapping); });
+
+    // Stuff the file type names that were just instantiated into a list;
+    // list will be accessed by the ECL compiler to validate the names
+    // at compile time
+    for (auto iter = genericFileTypeWritersMap.begin(); iter != genericFileTypeWritersMap.end(); iter++)
         addAvailableGenericFileTypeName(iter->first.c_str());
 
     return true;

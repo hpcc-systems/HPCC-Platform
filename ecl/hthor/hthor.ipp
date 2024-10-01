@@ -3244,12 +3244,16 @@ protected:
 class CHThorGenericDiskWriteBaseActivity : public CHThorActivityBase/*, implements IThorDiskCallback, implements IIndexWriteContext, public IFileCollectionContext*/
 {
 protected:
-    IHThorNewDiskReadBaseArg &helper;
-    IDiskRowWriter * activeReader = nullptr;
+    IHThorDiskWriteArg &helper;
+    IDiskRowWriter * activeWriter = nullptr;
     CLogicalFileCollection files;
+    IArrayOf<IDiskRowWriter> writers;
+    Owned<IPropertyTree> inputOptions;
     bool outputGrouped = false;
+    OwnedConstRoxieRow nextrow; // needed for grouped spill
+
 public:
-    CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
+    CHThorGenericDiskWriteBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     IMPLEMENT_IINTERFACE_USING(CHThorActivityBase)
 
     virtual void ready();
@@ -3259,23 +3263,34 @@ public:
     //interface IHThorInput
     virtual bool isGrouped()                                { return outputGrouped; }
     virtual IOutputMetaData * queryOutputMeta() const       { return outputMeta; }
+
+    protected:
+    IDiskRowWriter * ensureRowWriter(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * options);
 };
 
 class CHThorGenericDiskWriteActivity : public CHThorGenericDiskWriteBaseActivity
 {
     typedef CHThorGenericDiskWriteBaseActivity PARENT;
 protected:
-    IHThorNewDiskReadArg &helper;
+    IHThorDiskWriteArg &helper;
+    bool grouped;
+    Owned<ILogicalRowSink> outSeq;
+    unsigned __int64 numRecords;
+    offset_t sizeLimit;
+
+    bool finishOutput();
+    bool next();
+    const void * getNext();
+    void checkSizeLimit();
 public:
-    CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
+    IMPLEMENT_SINKACTIVITY
+
+    CHThorGenericDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
 
     virtual void ready();
     virtual void stop();
     virtual void execute();
     virtual bool needsAllocator() const { return true; }
-
-    //interface IHThorInput
-    virtual const void *nextRow();
 };
 
 
