@@ -65,6 +65,7 @@
 #include "wsdfuaccess/wsdfuaccess.hpp"
 
 #include "ws_dfuService.hpp"
+#include "secmanagertracedecorator.hpp"
 
 using namespace wsdfuaccess;
 using namespace cryptohelper;
@@ -2020,7 +2021,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
             StringBuffer scopes;
             dlfn.getScopes(scopes);
 
-            permissionTemp = secmgr->authorizeFileScope(user, scopes.str());
+            permissionTemp = CSecManagerTraceDecorator(*secmgr).authorizeFileScope(user, scopes.str());
         }
 
         //Descrease the permission whenever a component has a lower permission.

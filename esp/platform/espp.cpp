@@ -49,6 +49,10 @@
 
 #include "jmetrics.hpp"
 #include "workunit.hpp"
+#include "esptrace.h"
+#include "tokenserialization.hpp"
+
+static TokenDeserializer deserializer;
 
 using namespace hpccMetrics;
 
@@ -354,6 +358,74 @@ static void usage()
 
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[]);
 
+// Modified version of jlib's loadTraceFlags. The modification adds special handling for traceLevel.
+static TraceFlags loadEspTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
+{
+    for (auto &o: optNames)
+    {
+        VStringBuffer attrName("@%s", o.name);
+        const char* value = nullptr;
+        if (!(value = ptree->queryProp(attrName)) && !(value = ptree->queryProp(attrName.setf("_%s", o.name))))
+            continue;
+        if (streq(value, "default"))
+            continue;
+        if (streq(o.name, propTraceLevel))
+        {
+            int level = int(dft & TraceFlags::LevelMask);
+            dft &= ~TraceFlags::LevelMask;
+            if (streq(value, "traceStandard"))
+                dft |= traceStandard;
+            else if (streq(value, "traceDetailed"))
+                dft |= traceDetailed;
+            else if (streq(value, "traceMax"))
+                dft |= traceMax;
+            else if (deserializer(value, level) == Deserialization_SUCCESS)
+                dft |= TraceFlags(level) & TraceFlags::LevelMask;
+            else
+                dft |= TraceFlags(level);
+        }
+        else
+        {
+            bool flag = false;
+            deserializer(value, flag);
+            if (flag)
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+    }
+    return dft;
+}
+
+//
+// Initialize trace settings
+void initializeTrace(CEspConfig* config)
+{
+    //
+    // Initialize trace settings
+    IPropertyTree* pEspTree = config->queryConfigPTree();
+    Owned<IPropertyTree> pTraceTree = pEspTree->getPropTree(propTraceFlags);
+    if (pTraceTree == nullptr)
+    {
+        pTraceTree.setown(getComponentConfigSP()->getPropTree(propTraceFlags));
+    }
+#ifdef _DEBUG
+    if (!pTraceTree)
+    {
+        static const char * defaultTraceYaml = R"!!(
+traceLevel: traceMax
+)!!";
+        pTraceTree.setown(createPTreeFromYAMLString(defaultTraceYaml));
+    }
+#endif
+
+    if (pTraceTree != nullptr)
+    {
+        TraceFlags defaults = loadEspTraceFlags(pTraceTree, mapTraceOptions(pEspTree), queryDefaultTraceFlags());
+        updateTraceFlags(defaults, true);
+    }
+}
+
 //
 // Initialize metrics
 void initializeMetrics(CEspConfig* config)
@@ -577,6 +649,7 @@ int init_main(int argc, const char* argv[])
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
+            initializeTrace(config);
             initializeMetrics(config);        
             initializeStorageGroups(daliClientActive());
         }
