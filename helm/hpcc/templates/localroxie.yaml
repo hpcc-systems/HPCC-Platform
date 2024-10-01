@@ -48,6 +48,7 @@ data:
 {{-   $enginePlaneDetails := dict -}}
 {{-   $_ := include "hpcc.getEnginePlanes" (dict "root" $ "me" . "result" $enginePlaneDetails) -}}
 {{-   $commonCtx := dict "root" $ "me" $roxie "includeCategories" $enginePlaneDetails.planeCategories "includeNames" $enginePlaneDetails.namedPlanes "secretsCategories" $secretsCategories "env" $env }}
+{{-   $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{-   $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{-   include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{-   $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
@@ -85,20 +86,15 @@ spec:
     spec:
 {{-    include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $roxie.name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
 {{-    include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
 {{-    include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ $roxie.name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
-                {{ include "hpcc.configArg" $roxie }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "Local Roxie" "optional" false) }},
-                "--server=true", 
-                "--localAgent={{ $localAgent }}",
-                "--resolveLocally=false"
-              ]
+{{- $extraArgs := list "--server=true" (printf "-localAgent=%s" $localAgent) "--resolveLocally=false" -}}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "extraArgs" $extraArgs "component" "Local Roxie" "optional" false)) | nindent 8 }}
         env:
 {{     include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 8 -}}
         - name: "SENTINEL"
@@ -118,15 +114,16 @@ spec:
 {{-    include "hpcc.addResources" (dict "me" $roxie.resources "root" $) | indent 8 }}
 {{     include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{     include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{     include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
 {{     include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{-    include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{     include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{     include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $roxie.name "component" "localroxie" "external" false) | indent 8 }}
 {{     include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $roxie.name "component" "localroxie" "external" true "includeRemote" true) | indent 8 }}
 {{     include "hpcc.addUDPCertificateVolumeMount" (dict "root" $ "name" $roxie.name "component" "localudpkey" ) | indent 8 }}
+{{-   include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{     include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{     include "hpcc.addEphemeralVolumes" . | indent 6 }}
 {{     include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{     include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{     include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}

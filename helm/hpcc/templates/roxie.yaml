@@ -110,6 +110,8 @@ data:
 {{-     end }}
 {{-    end }}
 
+{{-   $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
+{{-   $topServerMe := . | merge (dict "name" $commonCtx.toponame) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -151,19 +153,19 @@ spec:
 {{-    include "hpcc.addResources" (dict "me" .topoResources "defaults" $defaultResources "root" $) | indent 8 }}
 {{     include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" $toposerver "root" $ "process" "toposerver") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $toposerver "root" $ "process" "toposerver") | nindent 16 }}
-                {{ include "hpcc.configArg" $toposerver }}
-              ]
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "toposerver" "containerName" $commonCtx.toponame "component" "Toposerver" "optional" false "overrideConfigName" $toposerver.name)) | nindent 8 }}
         env:
 {{     include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.toponame }}.sentinel"
         volumeMounts:
-{{     include "hpcc.addConfigMapVolumeMount" $toposerver | indent 8 }}
+{{     include "hpcc.addEphemeralVolumeMounts" $toposerver | indent 8 }}
+{{     include "hpcc.addVolumeMounts" ($commonCtx | merge (dict "includeCategories" (list "debug"))) | indent 8 -}}
 {{     include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "topo" "name" $commonCtx.toponame "external" false) | indent 8 }}
+{{-   include "hpcc.addPostRunContainer" ($commonCtx | merge (dict "me" $topServerMe)) | nindent 6 }}
       volumes:
-{{     include "hpcc.addConfigMapVolume" $toposerver | indent 6 }}
+{{     include "hpcc.addEphemeralVolumes" $toposerver | indent 6 }}
+{{     include "hpcc.addVolumes" ($commonCtx | merge (dict "includeCategories" (list "debug"))) | indent 6 }}
 {{     include "hpcc.addCertificateVolume" (dict "root" $ "component" "topo" "name" $commonCtx.toponame "external" false) | indent 6 }}
 
 ---
@@ -227,6 +229,7 @@ kind: ConfigMap
 ---
 
 {{-    $_ := set $commonCtx "instanceNames" list -}}
+{{-    $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{     if $roxie.serverReplicas -}}
 {{      $_ := set $commonCtx "instanceNames" (list $servername) }}
 apiVersion: apps/v1
@@ -274,11 +277,7 @@ spec:
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "Roxie" "optional" false) }},
-                "--server=true" 
-              ]
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "component" "Roxie" "optional" false)) | nindent 8 }}
         env:
 {{      include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 8 -}}
         - name: "SENTINEL"
@@ -303,15 +302,16 @@ spec:
 {{-     include "hpcc.addResources" (dict "me"  ($roxie.serverResources | default $roxie.resources) "root" $) | indent 8 }}
 {{      include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{      include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
+{{      include "hpcc.addEphemeralVolumeMounts" $roxie | indent 8 }}
 {{      include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{      include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{      include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{      include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "external" false) | indent 8 }}
 {{      include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 8 }}
 {{      include "hpcc.addUDPCertificateVolumeMount" (dict "root" $ "component" "udpkey" "name" $udpkeyname ) | indent 8 }}
+{{-   include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{      include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
+{{      include "hpcc.addEphemeralVolumes" $roxie | indent 6 }}
 {{      include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{      include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{      include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
@@ -332,6 +332,7 @@ spec:
 {{- $channel := add $c 1 -}}
 {{- $name := printf "%s-agent-%d" $roxie.name $channel }}
 {{- $_ := set $commonCtx "instanceNames" (append $commonCtx.instanceNames $name) }}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 
 {{      include "hpcc.addCertificate" (dict "root" $ "name" $name "services" $roxie.services "component" "roxie-agent" "external" false) }}
 ---
@@ -379,13 +380,8 @@ spec:
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
-                {{ include "hpcc.configArg" $roxie }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "Roxie" "optional" false) }},
-                "--channels={{ $channel }}", 
-                "--server={{ not $roxie.serverReplicas }}",
-              ]
+{{- $extraArgs := list (printf "--channels=%d" $channel) (printf "--server=%t" (not $roxie.serverReplicas)) -}}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "extraArgs" $extraArgs "component" "Roxie" "optional" false)) | nindent 8 }}
         env:
 {{      include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 8 -}}
         - name: "SENTINEL"
@@ -412,7 +408,7 @@ spec:
 {{-     include "hpcc.addResources" (dict "me" ($roxie.channelResources | default $roxie.resources) "root" $) | indent 8 }}
 {{      include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{      include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
+{{      include "hpcc.addEphemeralVolumeMounts" $roxie | indent 8 }}
 {{      include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{      include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{      include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
@@ -423,8 +419,9 @@ spec:
 {{       include "hpcc.addUDPCertificateVolumeMount" (dict "root" $ "component" "udpkey" "name" $udpkeyname ) | indent 8 }}
 {{-     end }}{{/* not serverReplicas */}}
 
+{{-   include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{      include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
+{{      include "hpcc.addEphemeralVolumes" $roxie | indent 6 }}
 {{      include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{      include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{      include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}

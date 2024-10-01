@@ -48,6 +48,7 @@ true
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $daliPlaneIncludeCategories := list "dali" "debug" -}}
 {{- $commonCtx := dict "root" $ "me" $dali "includeCategories" $daliPlaneIncludeCategories "env" $env -}}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- $daliSecretsCategories := list "system" "authn" -}}
 {{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregatePlaneCategories" $daliPlaneIncludeCategories "aggregateSashaNamedPlanes" list -}}
 {{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
@@ -118,10 +119,7 @@ spec:
       containers:
       - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" $dali "root" $ "process" "daserver") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $dali "root" $ "process" "daserver") | nindent 16 }}
-                {{ include "hpcc.configArg" $dali }}
-              ]
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "daserver" "component" "Dali Server" "optional" false)) | nindent 8 }}
         env:
 {{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 4) | indent 8 -}}
         - name: "SENTINEL"
@@ -131,11 +129,11 @@ spec:
 {{- include "hpcc.addResources" (dict "me" $dali.resources "root" $) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
+{{ include "hpcc.addEphemeralVolumeMounts" $dali | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{- include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | nindent 8 }}
-{{ include "hpcc.addVaultClientCertificateVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | indent 8 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | nindent 8 }}
+{{- include "hpcc.addVaultClientCertificateVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | nindent 8 }}
+{{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | nindent 8 }}
 {{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
  {{- $sasha := deepCopy ($_sasha | default dict) -}}
  {{- $_ := set $sasha "name" $sashaName -}}
@@ -146,11 +144,11 @@ spec:
   {{- $_ := set $thisServiceCtx "sashaStoragePlane" ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha"))) -}}
  {{- end -}}
  {{- with ($sasha | merge (dict "access" $sashaAccess)) -}}
-  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "dali" $dali "overrideDaliHost" "localhost" "overrideDaliPort" $daliPort) | nindent 6 }}
+  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "lifeCycleCtx" $commonCtx.lifeCycleCtx "dali" $dali "overrideDaliHost" "localhost" "overrideDaliPort" $daliPort) | nindent 6 }}
         volumeMounts:
   {{- $serviceName := printf "sasha-%s" $sashaName -}}
   {{- with (dict "name" $serviceName) }}
-   {{- include "hpcc.addConfigMapVolumeMount" . | nindent 8 }}
+   {{- include "hpcc.addEphemeralVolumeMounts" (dict "name" $serviceName "volumeName" $dali.name) | nindent 8 }}
   {{ end -}}
   {{- $sashaPlaneCategories := splitList " " (include "hpcc.getSashaPlanesFromAccess" .) -}}
   {{- include "hpcc.addVolumeMounts" (dict "root" $ "includeCategories" $sashaPlaneCategories "includeNames" (list $thisServiceCtx.sashaStoragePlane)) | indent 8 }}
@@ -159,13 +157,14 @@ spec:
   {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $dali.name "component" "dali" "external" false) | nindent 8 }}
  {{- end }}
 {{- end }}
+{{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{- include "hpcc.addConfigMapVolume" $dali | nindent 6 -}}
+{{- include "hpcc.addEphemeralVolumes" $dali | nindent 6 -}}
 {{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
  {{- $sasha := ($_sasha | default dict) -}}
  {{- $serviceName := printf "sasha-%s" $sashaName -}}
  {{- with (dict "name" $serviceName) -}}
-  {{- include "hpcc.addConfigMapVolume" . | nindent 6 -}}
+  {{- include "hpcc.addEphemeralVolumes" (dict "name" $serviceName) | nindent 6 -}}
  {{- end -}}
 {{- end -}}
 {{- include "hpcc.addVolumes" (dict "root" $ "me" $dali "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes "includeCategories" $tmpDaliScope.aggregatePlaneCategories) | indent 6 }}
