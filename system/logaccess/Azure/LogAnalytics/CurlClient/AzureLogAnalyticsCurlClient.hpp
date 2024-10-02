@@ -77,6 +77,7 @@ private:
     StringBuffer m_instanceLookupKeyColumn;
 
     bool targetIsContainerLogV2 = false;
+    bool m_blobMode = false;
 
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);

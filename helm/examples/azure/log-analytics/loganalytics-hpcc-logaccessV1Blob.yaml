@@ -1,0 +1,103 @@
+# Configures HPCC logAccess to target Azure Log Analytics Workspace
+global:
+  logAccess:
+    name: "Azure LogAnalytics LogAccess"
+    type: "AzureLogAnalyticsCurl"
+    blobMode: "true"
+    #connection:
+      #All connection attributes are optional.
+      #It is preferable to provide connection values as secret values category 'esp', secret name 'azure_logaccess'
+      # NOTE: secret 'azure_logaccess' must include 'aad-client-secret' and it cannot be provided in configuration
+      #
+      #workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
+                               # Secret value equivalent: 'ala-workspace-id'
+      #clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access - format: 00000000-0000-0000-0000-000000000000
+                               # Secret value equivalent: 'aad-client-id'
+      #tenantID: "ABC"         #The Azure Active Directory Tenant ID, required for KQL API access
+                               # Secret value equivalent: 'aad-tenant-id'
+    logMaps:
+    - type: "global"
+      storeName: "ContainerLog"
+      searchColumn: "LogEntry"
+      columnType: "string"
+      columnMode: "MIN"
+      timeStampColumn: "TimeGenerated"
+    - type: "workunits"
+      searchColumn: "LogEntry"
+      columnMode: "DEFAULT"
+      columnType: "string"
+    - type: "components"
+      storeName: "ContainerInventory"
+      searchColumn: "Name"
+      keyColumn: "ContainerID"
+      columnMode: "MIN"
+      columnType: "string"
+      timeStampColumn: "TimeGenerated"
+      disableJoins: false #Potentially expensive join operations needed to fetch a certain column can be disabled
+    - type: "audience"
+      searchColumn: "LogEntry"
+      enumValues:
+      - code: OPR
+      - code: USR
+      - code: PRO
+      - code: ADT
+      - code: MON
+      columnMode: "DEFAULT"
+      columnType: "enum"
+    - type: "class"
+      searchColumn: "LogEntry"
+      enumValues:
+      - code: DIS
+      - code: ERR
+      - code: WRN
+      - code: INF
+      - code: PRO
+      - code: MET
+      - code: EVT
+      columnMode: "DEFAULT"
+      columnType: "enum"
+    - type: "instance"
+      columnMode: "DEFAULT"
+      searchColumn: "Computer"
+      columnMode: "ALL"
+      columnType: "string"
+    - type: "message"
+      searchColumn: "LogEntry"
+      columnMode: "MIN"
+      columnType: "string"
+    - type: "logid"
+      searchColumn: "LogEntry"
+      columnMode: "DEFAULT"
+      columnType: "string"
+    - type: "processid"
+      searchColumn: "LogEntry"
+      columnMode: "ALL"
+      columnType: "string"
+    - type: "threadid"
+      searchColumn: "LogEntry"
+      columnMode: "DEFAULT"
+      columnType: "string"
+    - type: "timestamp"
+      searchColumn: "TimeGenerated"
+      columnMode: "MIN"
+      columnType: "Timestamp"
+    #- type: "pod"
+    #  searchColumn: "PodName"
+    #  columnMode: "DEFAULT"
+    #  columnType: "string"
+    - type: "spanid"
+      searchColumn: "LogEntry"
+      columnMode: "DEFAULT"
+      columnType: "string"
+    - type: "traceid"
+      searchColumn: "LogEntry"
+      columnMode: "DEFAULT"
+      columnType: "string"
+secrets:
+  esp:
+    azure-logaccess: "azure-logaccess"
+vaults:
+  esp:
+  - name: my-azure-logaccess-vault
+    url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/esp/${secret}
+    kind: kv-v2
