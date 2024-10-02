@@ -203,6 +203,7 @@ unsigned maxGraphLoopIterations;
 bool steppingEnabled = true;
 bool simpleLocalKeyedJoins = true;
 bool adhocRoxie = false;
+bool limitWaitingWorkers = false;
 
 unsigned __int64 minFreeDiskSpace = 1024 * 0x100000;  // default to 1 GB
 unsigned socketCheckInterval = 5000;
@@ -1279,6 +1280,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         const char *sinkModeText = topology->queryProp("@sinkMode");
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);
+        limitWaitingWorkers = topology->getPropBool("@limitWaitingWorkers", limitWaitingWorkers);
 
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
         setLegacyAES(topology->getPropBool("expert/@useLegacyAES", false));

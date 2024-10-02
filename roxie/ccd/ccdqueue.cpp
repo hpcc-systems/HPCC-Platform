@@ -1157,6 +1157,7 @@ class RoxieQueue : public CInterface, implements IThreadFactory
     Owned <IThreadPool> workers;
     QueueOf<ISerializedRoxieQueryPacket, true> waiting;
     Semaphore available;
+    CriticalSection availCrit;    // Semaphore post may be slow with a lot of waiters - this crit may be used to limit to a single waiter
     CriticalSection qcrit;
     unsigned headRegionSize;
     unsigned numWorkers;
@@ -1324,7 +1325,10 @@ public:
     void wait()
     {
         idle++;
-        available.wait();
+        {
+            CLeavableCriticalBlock b(availCrit, limitWaitingWorkers);
+            available.wait();
+        }
         idle--;
     }
 
@@ -1431,16 +1435,17 @@ public:
     }
     inline void setPacket(IRoxieQueryPacket *p)
     {
+        Owned<IRoxieQueryPacket> temp(p);
         CriticalBlock b(actCrit);
         if (p)
         {
-            packet.setown(p);
+            packet.swap(temp);
             packetHeader.copy(p->queryHeader());
         }
         else
         {
             packetHeader.clear();
-            packet.setown(p);
+            packet.swap(temp);
         }
     }
     inline bool match(RoxiePacketHeader &h)

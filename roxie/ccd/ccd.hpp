@@ -390,6 +390,7 @@ extern bool ignoreFileDateMismatches;
 extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
+extern bool limitWaitingWorkers;
 
 #if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
 static constexpr bool roxieMulticastEnabled = false;
