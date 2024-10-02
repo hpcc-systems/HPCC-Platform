@@ -33,7 +33,8 @@ typedef unsigned ruid_t;   // at 1000/sec recycle every 49 days
 #define RUIDF   "0x%.8x"
 #define RUID_PING 0
 #define RUID_DISCARD 1
-#define RUID_FIRST 2
+#define RUID_NONE 2
+#define RUID_FIRST 3
 
 typedef unsigned RecordLengthType;
 #define MAX_RECORD_LENGTH 0xffffffff

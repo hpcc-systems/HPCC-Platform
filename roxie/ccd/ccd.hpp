@@ -159,7 +159,7 @@ public:
     unsigned activityId = 0;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash = 0;             // identifies the query
 
-    ruid_t uid = 0;                     // unique id
+    std::atomic<ruid_t> uid = 0;        // unique id
     ServerIdentifier serverId;
 #ifdef SUBCHANNELS_IN_HEADER
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
@@ -173,6 +173,7 @@ public:
 
     static unsigned getSubChannelMask(unsigned subChannel);
     unsigned priorityHash() const;
+    void clear();
     void copy(const RoxiePacketHeader &oh);
     bool matchPacket(const RoxiePacketHeader &oh) const;
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
