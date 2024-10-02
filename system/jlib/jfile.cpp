@@ -1868,25 +1868,36 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 
 //---------------------------------------------------------------------------
 
-static int globalFileSyncMaxRetrySecs = fileSyncRetryDisabled;
-static std::atomic<bool> globalFileSyncMaxRetrySecsConfigured{false};
-static CriticalSection globalFileSyncCS;
-static int getGlobalMaxFileSyncSecs()
+static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
 {
-    if (!globalFileSyncMaxRetrySecsConfigured)
+    "blockedFileIOKB",
+    "blockedRandomIOKB",
+    "fileSyncWriteClose"
+};
+
+static constexpr bool defaultGlobalFileSyncWriteCloseEnabled = false;
+static bool globalFileSyncWriteCloseEnabled = defaultGlobalFileSyncWriteCloseEnabled;
+static std::atomic<bool> globalFileSyncWriteCloseConfigured{false};
+static CriticalSection globalFileSyncCS;
+static bool getGlobalFileSyncWriteCloseEnabled()
+{
+    if (!globalFileSyncWriteCloseConfigured)
     {
         CriticalBlock b(globalFileSyncCS);
-        if (!globalFileSyncMaxRetrySecsConfigured)
+        if (!globalFileSyncWriteCloseConfigured)
         {
             Owned<IPropertyTree> global = getGlobalConfig();
             Owned<IPropertyTree> config = getComponentConfig();
-            globalFileSyncMaxRetrySecs = global->getPropInt("expert/@fileSyncMaxRetrySecs", defaultGlobalFileSyncMaxRetrySecs);
-            globalFileSyncMaxRetrySecs = config->getPropInt("expert/@fileSyncMaxRetrySecs", globalFileSyncMaxRetrySecs);
-            globalFileSyncMaxRetrySecsConfigured = true;
-            // NB: -1 == infinite, -2 == disable checking altogether
+            std::string propName = "expert/@" + std::string(planeAttributeTypeStrings[FileSyncWriteClose]);
+            if (config->hasProp(propName.c_str()))
+                globalFileSyncWriteCloseEnabled = config->getPropBool(propName.c_str());
+            else if (global->hasProp(propName.c_str()))
+                globalFileSyncWriteCloseEnabled = global->getPropBool(propName.c_str());
+            // else leave at default
+            globalFileSyncWriteCloseConfigured = true;
         }
     }
-    return globalFileSyncMaxRetrySecs;
+    return globalFileSyncWriteCloseEnabled;
 }
 
 
@@ -2044,66 +2055,36 @@ void CFileIO::setSize(offset_t pos)
 
 //-- Unix implementation ----------------------------------------------------
 
-// -2 disabled - don't validate fsync/fdatasync
-// -1 retry forever
-// 0 no retry
-static void retrySync(int fd, int retrySecs, bool dataOnly)
+static void doSync(int fd, bool dataOnly)
 {
 #ifdef F_FULLFSYNC
     // No EIO type retry available
     fcntl(fd, F_FULLFSYNC);
 #else
     CCycleTimer timer;
-    unsigned retryMaxMs;
-    if (retrySecs < 0)
-        retryMaxMs = UINT_MAX;
+    int ret = dataOnly ? fdatasync(fd) : fsync(fd);
+    if (ret == 0)
+    {
+        if (timer.elapsedMs() >= 10000)
+            IWARNLOG("doSync: slow success: took %u ms", timer.elapsedMs());
+    }
     else
     {
-        assertex(((unsigned)retrySecs) <= UINT_MAX/1000);
-        retryMaxMs = ((unsigned)retrySecs) * 1000;
-    }
-    unsigned delayMs = 200; // start with .2 secs
-    unsigned retryAttempts = 0;
-    while (true)
-    {
-        CCycleTimer timer;
-        int ret = dataOnly ? fdatasync(fd) : fsync(fd);
-        if (ret == 0)
-        {
-            if (timer.elapsedMs() >= 10000)
-                IWARNLOG("retrySync slow fsync success: took %u ms", timer.elapsedMs());
-            break;
-        }
-        if (fileSyncRetryDisabled == retrySecs) // error, but unchecked! Temporary, to allow to be disabled JIC causes unexpected side-effects
-            break;
-        if (EIO != errno)
-            throw makeErrnoException(errno, "retrySync");
-        if ((retrySecs >= 0) && timer.elapsedMs() > retryMaxMs)
-        {
-            printStackReport();
-            Owned<IException> e = makeErrnoExceptionV(errno, "retrySync: failed with EIO, retrying after %u seconds (%u retries)", retryMaxMs/1000, retryAttempts);
-            OWARNLOG(e);
-            throw e.getClear();
-        }
-        // In the event, not sure I care about burst of logging on retries (there won't be that many and this is fatal last throw of dice)
-        IWARNLOG("retrySync: failed after %u ms with EIO, retry: %u", timer.elapsedMs(), ++retryAttempts);
-        if (delayMs >= 60000) // cap max delay to 1 minute
-            MilliSleep(60000);
-        else
-        {
-            MilliSleep(delayMs);
-            delayMs *= 2;
-        }
+        int err = errno;
+        printStackReport();
+        Owned<IException> e = makeErrnoExceptionV(err, "doSync: failed after %u ms", timer.elapsedMs());
+        OWARNLOG(e);
+        throw e.getClear();
     }
 #endif
 }
 
-static void syncFileData(int fd, bool notReadOnly, IFEflags extraFlags, int syncRetrySecs, bool wait_previous=false)
+static void syncFileData(int fd, bool notReadOnly, IFEflags extraFlags, bool wait_previous=false)
 {
     if (notReadOnly)
     {
         if (extraFlags & IFEsync)
-            retrySync(fd, syncRetrySecs, true);
+            doSync(fd, true);
 #if defined(__linux__)
         else if (extraFlags & IFEnocache)
         {
@@ -2147,11 +2128,9 @@ CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _s
         if ('/' == filePath[0]) // only for absolute paths
         {
             unsigned __int64 value;
-            if (findPlaneAttrFromPath(filePath, FileSyncMaxRetrySecs, getGlobalMaxFileSyncSecs(), value)) // NB: returns only if plane found
+            if (findPlaneAttrFromPath(filePath, FileSyncWriteClose, getGlobalFileSyncWriteCloseEnabled() ? 1 : 0, value)) // NB: returns only if plane found
             {
-                // fileSyncMaxRetrySecs applies to IFEsync and IFEsyncAtClose
-                fileSyncMaxRetrySecs = value;
-                if (fileSyncRetryDisabled != fileSyncMaxRetrySecs)
+                if (value) // true or false
                     extraFlags = static_cast<IFEflags>(extraFlags | IFEsyncAtClose);
             }
         }
@@ -2197,9 +2176,9 @@ void CFileIO::close()
         DBGLOG("CFileIO::close(%d), extraFlags = %d", tmpHandle, extraFlags);
 #endif
         if (extraFlags & (IFEnocache | IFEsync))
-            syncFileData(tmpHandle, openmode!=IFOread, extraFlags, fileSyncMaxRetrySecs, false);
+            syncFileData(tmpHandle, openmode!=IFOread, extraFlags, false);
         else if (extraFlags & IFEsyncAtClose)
-            retrySync(tmpHandle, fileSyncMaxRetrySecs, false);
+            doSync(tmpHandle, false);
 
         if (::close(tmpHandle) < 0)
             throw makeErrnoExceptionV(errno, "CFileIO::close for file '%s'", querySafeFilename());
@@ -2213,7 +2192,7 @@ void CFileIO::flush()
 
     CriticalBlock procedure(cs);
 
-    syncFileData(file, true, extraFlags, fileSyncMaxRetrySecs, false);
+    syncFileData(file, true, extraFlags, false);
 }
 
 
@@ -2250,7 +2229,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
         if (unflushedReadBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
             unflushedReadBytes.store(0);
-            syncFileData(file, false, extraFlags, 0, false);
+            syncFileData(file, false, extraFlags, false);
         }
     }
     return ret;
@@ -2280,7 +2259,7 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         {
             unflushedWriteBytes.store(0);
             // request to write-out dirty pages
-            syncFileData(file, true, extraFlags, fileSyncMaxRetrySecs, true);
+            syncFileData(file, true, extraFlags, true);
         }
     }
     return ret;
@@ -7949,14 +7928,6 @@ bool hasGenericFiletypeName(const char * name)
 // Cache/update plane attributes settings
 static unsigned jFileHookId = 0;
 
-static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
-{
-    "blockedFileIOKB",
-    "blockedRandomIOKB",
-    "fileSyncMaxRetrySecs"
-};
-
-
 // {prefix, {key1: value1, key2: value2, ...}}
 typedef std::pair<std::string, std::array<unsigned __int64, PlaneAttributeCount>> PlaneAttributesMapElement;
 
@@ -7980,9 +7951,19 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str(), unsetPlaneAttrValue);
             values[BlockedSequentialIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
             value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str(), unsetPlaneAttrValue);
-            // plane expert settings
             values[BlockedRandomIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
-            values[FileSyncMaxRetrySecs] = plane.getPropInt64(("expert/@" + std::string(planeAttributeTypeStrings[FileSyncMaxRetrySecs])).c_str(), unsetPlaneAttrValue);
+
+            // plane expert settings
+            std::string propName = "expert/@" + std::string(planeAttributeTypeStrings[FileSyncWriteClose]);
+            if (plane.hasProp(propName.c_str()))
+                values[FileSyncWriteClose] = plane.getPropBool(propName.c_str()) ? 1 : 0;
+            else
+            {
+                // temporary (check legacy fileSyncMaxRetrySecs too), purely for short term backward compatibility (see HPCC-xxxx)
+                unsigned __int64 v = plane.getPropInt64("expert/@fileSyncMaxRetrySecs", unsetPlaneAttrValue);
+                // NB: fileSyncMaxRetrySecs==0 is treated as set/enabled
+                values[FileSyncWriteClose] = v != unsetPlaneAttrValue ? 1 : 0;
+            }
         }
 
         // reset defaults
@@ -7996,8 +7977,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         if (getComponentConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || getGlobalConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr))
             expertDisableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
 
-        // clear for getGlobalMaxFileSyncSecs() to re-evaluate
-        globalFileSyncMaxRetrySecsConfigured = false;
+        // clear for getGlobalFileSyncWriteCloseEnabled() to re-evaluate
+        globalFileSyncWriteCloseConfigured = false;
     };
     jFileHookId = installConfigUpdateHook(updateFunc, true);
 
@@ -8080,7 +8061,7 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
     return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
 }
 
-int getMaxFileSyncSecs(const char *planeName, int defaultSecs)
+bool getFileSyncWriteCloseEnabled(const char *planeName)
 {
-    return (int)getPlaneAttributeValue(planeName, FileSyncMaxRetrySecs, defaultSecs);
+    return 0 != getPlaneAttributeValue(planeName, FileSyncWriteClose, defaultGlobalFileSyncWriteCloseEnabled ? 1 : 0);
 }
