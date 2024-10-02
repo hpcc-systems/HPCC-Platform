@@ -296,7 +296,6 @@ extern unsigned callbackTimeout;
 extern unsigned lowTimeout;
 extern unsigned highTimeout;
 extern unsigned slaTimeout;
-extern unsigned headRegionSize;
 extern unsigned ccdMulticastPort;
 extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;

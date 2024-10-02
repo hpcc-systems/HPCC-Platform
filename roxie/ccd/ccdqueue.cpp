@@ -1159,7 +1159,6 @@ class RoxieQueue : public CInterface, implements IThreadFactory
     Semaphore available;
     CriticalSection availCrit;    // Semaphore post may be slow with a lot of waiters - this crit may be used to limit to a single waiter
     CriticalSection qcrit;
-    unsigned headRegionSize;
     unsigned numWorkers;
     RelaxedAtomic<unsigned> started;
     std::atomic<unsigned> idle;
@@ -1181,9 +1180,8 @@ class RoxieQueue : public CInterface, implements IThreadFactory
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieQueue(unsigned _headRegionSize, unsigned _numWorkers)
+    RoxieQueue(unsigned _numWorkers)
     {
-        headRegionSize = _headRegionSize;
         numWorkers = _numWorkers;
         workers.setown(createThreadPool("RoxieWorkers", this, false, nullptr, numWorkers));
         started = 0;
@@ -1340,31 +1338,7 @@ public:
     ISerializedRoxieQueryPacket *dequeue()
     {
         CriticalBlock qc(qcrit);
-        unsigned lim = waiting.ordinality();
-        if (lim)
-        {
-            if (headRegionSize)
-            {
-                if (lim > headRegionSize)
-                    lim = headRegionSize;
-                return waiting.dequeue(fastRand() % lim);
-            }
-            return waiting.dequeue();
-        }
-        else
-            return NULL;
-    }
-
-    unsigned getHeadRegionSize() const
-    {
-        return headRegionSize;
-    }
-
-    unsigned setHeadRegionSize(unsigned newsize)
-    {
-        unsigned ret = headRegionSize;
-        headRegionSize = newsize;
-        return ret;
+        return waiting.dequeue();
     }
 
     void noteOrphanIBYTI(const RoxiePacketHeader &hdr)
@@ -1914,20 +1888,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(_numWorkers), hiQueue(_numWorkers), loQueue(_numWorkers), numWorkers(_numWorkers)
     {
-    }
-
-    virtual unsigned getHeadRegionSize() const
-    {
-        return loQueue.getHeadRegionSize();
-    }
-
-    virtual void setHeadRegionSize(unsigned newSize)
-    {
-        slaQueue.setHeadRegionSize(newSize);
-        hiQueue.setHeadRegionSize(newSize);
-        loQueue.setHeadRegionSize(newSize);
     }
 
     virtual void start() 

@@ -177,9 +177,6 @@ interface IRoxieOutputQueueManager : public IInterface
     virtual bool replyPending(RoxiePacketHeader &x) = 0;
     virtual bool abortCompleted(RoxiePacketHeader &x) = 0;
 
-    virtual unsigned getHeadRegionSize() const = 0;
-    virtual void setHeadRegionSize(unsigned newsize) = 0;
-
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual void join() = 0;
