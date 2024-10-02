@@ -2422,6 +2422,31 @@ protected:
     DelayedPacketQueueManager delayed;
 #endif
 
+    class WorkerUdpTracker : public TimeDivisionTracker<6, false>
+    {
+    public:
+        enum
+        {
+            other,
+            waiting,
+            allocating,
+            processing,
+            pushing,
+            checkingRunning
+        };
+
+        WorkerUdpTracker(const char *name, unsigned reportIntervalSeconds) : TimeDivisionTracker<6, false>(name, reportIntervalSeconds)
+        {
+            stateNames[other] = "other";
+            stateNames[waiting] = "waiting";
+            stateNames[allocating] = "allocating";
+            stateNames[processing] = "processing";
+            stateNames[pushing] = "pushing";
+            stateNames[checkingRunning] = "checking running";
+        }
+
+    } timeTracker;
+
     class ReceiverThread : public Thread
     {
         RoxieSocketQueueManager &parent;
@@ -2441,7 +2466,7 @@ protected:
     } readThread;
 
 public:
-    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), readThread(*this)
+    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), timeTracker("WorkerUdpReader", 60), readThread(*this)
     {
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
@@ -2754,21 +2779,26 @@ public:
                     // if found, send an IBYTI and discard retry request
 
                     bool alreadyRunning = false;
-                    Owned<IPooledThreadIterator> wi = queue.running();
-                    ForEach(*wi)
                     {
-                        CRoxieWorker &w = (CRoxieWorker &) wi->query();
-                        if (w.match(header))
+                        WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::checkingRunning);
+
+                        Owned<IPooledThreadIterator> wi = queue.running();
+                        ForEach(*wi)
                         {
-                            alreadyRunning = true;
-                            ROQ->sendIbyti(header, logctx, mySubchannel);
-                            if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                            CRoxieWorker &w = (CRoxieWorker &) wi->query();
+                            if (w.match(header))
                             {
-                                StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for running activity %s", mySubchannel, header.toString(xx).str());
+                                alreadyRunning = true;
+                                ROQ->sendIbyti(header, logctx, mySubchannel);
+                                if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                                {
+                                    StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for running activity %s", mySubchannel, header.toString(xx).str());
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
+
                     if (!alreadyRunning && checkCompleted && ROQ->replyPending(header))
                     {
                         alreadyRunning = true;
@@ -2784,6 +2814,7 @@ public:
                         {
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
+                        WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
 #ifdef NEW_IBYTI
                         // It's debatable whether we should delay for the primary here - they had one chance already...
                         // But then again, so did we, assuming the timeout is longer than the IBYTIdelay
@@ -2802,6 +2833,7 @@ public:
                 }
                 else // first time (not a retry).
                 {
+                    WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
 #ifdef NEW_IBYTI
                     unsigned delay = 0;
                     if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
@@ -2826,6 +2858,7 @@ public:
                     doIbytiDelay?"YES":"NO", minIbytiDelay, initIbytiDelay);
 
         MemoryBuffer mb;
+        WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::other);
         for (;;)
         {
             mb.clear();
@@ -2840,8 +2873,14 @@ public:
 #else
                 unsigned timeout = 5000;
 #endif
+                division.switchState(WorkerUdpTracker::allocating);
+                void * buffer = mb.reserve(maxPacketSize);
+
+                division.switchState(WorkerUdpTracker::waiting);
                 unsigned l;
-                multicastSocket->readtms(mb.reserve(maxPacketSize), sizeof(RoxiePacketHeader), maxPacketSize, l, timeout);
+                multicastSocket->readtms(buffer, sizeof(RoxiePacketHeader), maxPacketSize, l, timeout);
+                division.switchState(WorkerUdpTracker::processing);
+
                 mb.setLength(l);
                 RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
                 if (l != header.packetlength)
