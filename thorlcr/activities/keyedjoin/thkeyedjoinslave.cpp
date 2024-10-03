@@ -1240,7 +1240,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     getInfo(errMsg);
                     Owned<IException> te = ThorWrapException(e, "%s", errMsg.str());
                     e->Release();
-                    EXCLOG(te, nullptr);
+                    IWARNLOG(te, nullptr);
                     activity.fireException(te);
                 }
                 processing.clearRows();

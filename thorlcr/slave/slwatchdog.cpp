@@ -138,7 +138,7 @@ public:
 #endif
             stopped = true;
             threaded.join();
-            LOG(MCdebugProgress, "Stopped watchdog");
+            DBGLOG("Stopped watchdog");
         }
     }
     virtual void debugRequest(MemoryBuffer &msg, const char *request) const override

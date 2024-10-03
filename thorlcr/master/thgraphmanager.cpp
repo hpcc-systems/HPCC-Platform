@@ -161,7 +161,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             catch (IException *e)
             {
-                EXCLOG(e);
+                IERRLOG(e);
                 e->Release();
             }
         }
@@ -282,7 +282,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             else if (strncmp(command,"quit", 4) == 0)
             {
-                LOG(MCwarning, "ABORT detected from user during debug session");
+                DBGLOG("ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
@@ -337,7 +337,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 }
                 catch (IException *E)
                 {
-                    EXCLOG(E);
+                    IERRLOG(E);
                     E->Release();
                 }
                 catch (...)
@@ -412,7 +412,7 @@ void CJobManager::stop()
 {
     if (!stopped)
     {
-        LOG(MCdebugProgress, "Stopping jobManager");
+        DBGLOG("Stopping jobManager");
         stopped = true;
         if (jobq)
         {
@@ -444,7 +444,7 @@ void CJobManager::fatal(IException *e)
     }
     catch (IException *e)
     {
-        EXCLOG(e, NULL);
+        IERRLOG(e);
         e->Release();
     }
     catch (...)
@@ -530,11 +530,10 @@ static int getRunningMaxPriority(const char *qname)
     }
     catch (IException *e)
     {
-        EXCLOG(e,"getRunningMaxPriority");
+        IERRLOG(e,"getRunningMaxPriority");
         e->Release();
     }
     return maxpriority;
-
 }
 
 bool CJobManager::fireException(IException *e)
@@ -605,7 +604,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
 void CJobManager::run()
 {
-    LOG(MCdebugProgress, "Listening for graph");
+    DBGLOG("Listening for graph");
 
     setWuid(NULL);
 #ifndef _CONTAINERIZED
@@ -677,7 +676,7 @@ void CJobManager::run()
                     break;
                 }
                 else
-                    PROGLOG("Unknown cmd = %s", cmd.get());
+                    IWARNLOG("Unknown cmd = %s", cmd.get());
             }
         }
     } stopThorListener(MPTAG_THOR);
@@ -821,7 +820,7 @@ void CJobManager::run()
         {
             if (!stopped)
                 setExitCode(0);
-            PROGLOG("acceptConversation aborted - terminating");
+            DBGLOG("acceptConversation aborted - terminating");
             break;
         }
         StringAttr graphName, wuid;
@@ -908,7 +907,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
 
     JobNameScope activeJobName(wuid);
 
-    LOG(MCdebugInfo, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
+    DBGLOG("Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     auditThorJobEvent("Start", wuid, graphName, user);
 
     Owned<IException> e;
@@ -995,7 +994,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         if (e)
         {
             // likely if WUActionPauseNow, shouldn't happen if WUActionPause
-            EXCLOG(e, "Exception at time of pause");
+            IERRLOG(e, "Exception at time of pause");
             replyMb.append(true);
             serializeException(e, replyMb);
         }
@@ -1063,7 +1062,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringBuffer soPath;
     if (!getExpertOptBool("saveQueryDlls"))
     {
-        PROGLOG("Loading query name: %s", soName.str());
+        DBGLOG("Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
         soPath.append(querySo->queryName());
     }
@@ -1075,12 +1074,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         soPath.append(soName.str());
         getCompoundQueryName(compoundPath, soName.str(), version);
         if (querySoCache.isAvailable(compoundPath.str()))
-            PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
+            DBGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
         else
         {
             MemoryBuffer file;
             queryDllServer().getDll(soName.str(), file);
-            PROGLOG("Saving dll: %s", compoundPath.str());
+            DBGLOG("Saving dll: %s", compoundPath.str());
             OwnedIFile out = createIFile(compoundPath.str());
             try
             {
@@ -1104,15 +1103,14 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
-    PROGLOG("Started wuid=%s, user=%s, graph=%s", wuid.str(), user.str(), graphName);
+    PROGLOG("Started wuid=%s, user=%s, graph=%s, query=%s", wuid.str(), user.str(), graphName, soPath.str());
 
-    PROGLOG("Query %s loaded", soPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     unsigned wfid = job->getWfid();
     StringBuffer graphScope;
     graphScope.append(WorkflowScopePrefix).append(wfid).append(":").append(graphName);
-    PROGLOG("Graph %s created", graphName);
-    PROGLOG("Running graph=%s", job->queryGraphName());
+    DBGLOG("Graph %s created", graphName);
+    DBGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
     bool allDone = false;
     Owned<IException> exception;
@@ -1217,9 +1215,9 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
                 _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
                 e = _e;
             }
-            EXCLOG(e,"abortThor");
+            DBGLOG(e, "abortThor");
         }
-        LOG(MCdebugProgress, "abortThor called");
+        DBGLOG("abortThor called");
         if (jM)
             jM->stop();
         if (thorQueue)
@@ -1231,7 +1229,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
     if (2 > aborting && abortCurrentJob)
     {
         aborting = 2;
-        LOG(MCdebugProgress, "aborting any current active job");
+        DBGLOG("aborting any current active job");
         if (jM)
         {
             if (!e)
@@ -1243,7 +1241,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         }
         if (errCode == TEC_Clean)
         {
-            LOG(MCdebugProgress, "Removing sentinel upon normal shutdown");
+            DBGLOG("Removing sentinel upon normal shutdown");
             Owned<IFile> sentinelFile = createSentinelTarget();
             removeSentinelFile(sentinelFile);
         }
@@ -1340,7 +1338,7 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
     }
     else
     {
-        WARNLOG("Unrecognised job format received: %s", next.str());
+        IWARNLOG("Unrecognised job format received: %s", next.str());
         return 0; // unrecognised format, ignore
     }
     retWfid.set(sArray.item(0));
@@ -1498,7 +1496,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         workunit.setown(factory->openWorkUnit(currentWuid));
                         if (!workunit)
                         {
-                            WARNLOG("Discarding unknown wuid: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            IWARNLOG("Discarding unknown wuid: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
                             currentWuid.clear();
                         }
                         else
@@ -1506,12 +1504,12 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             SessionId agentSessionID = workunit->getAgentSession();
                             if (agentSessionID <= 0)
                             {
-                                WARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
+                                IWARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
                                 currentWuid.clear();
                             }
                             else if (querySessionManager().sessionStopped(agentSessionID, 0))
                             {
-                                WARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                                IWARNLOG("Discarding agentless job: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
                                 currentWuid.clear();
                             }
                             else
@@ -1642,7 +1640,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         catch (IException *e)
         {
-            EXCLOG(e, NULL);
+            IERRLOG(e);
             throw;
         }
     }

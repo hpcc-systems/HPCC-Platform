@@ -257,19 +257,22 @@ public:
                     return false;
                 }
             }
-            catch (IException *e) {
-                EXCLOG(e,"CSortMerge notifySelected.1");
+            catch (IException *e)
+            {
+                IERRLOG(e,"CSortMerge notifySelected.1");
                 exception.setown(e);
                 done = true;
                 donesem.signal();
                 return false;
             }
-            try {
+            try
+            {
                 if (processRows()) 
                     return false;   // false correct here
             }
-            catch (IException *e) {
-                EXCLOG(e,"CSortMerge notifySelected.2");
+            catch (IException *e)
+            {
+                IERRLOG(e,"CSortMerge notifySelected.2");
                 exception.setown(e);
             }
             closing = true;
@@ -334,7 +337,7 @@ public:
         // bit of a kludge
         CriticalBlock block(rowifsect);
         while (!rowif&&!term) {
-            PROGLOG("CSortTransferServerThread waiting for row interface");
+            DBGLOG("CSortTransferServerThread waiting for row interface");
             CriticalUnblock unblock(rowifsect);
             rowifsem.wait(60*1000);
         }

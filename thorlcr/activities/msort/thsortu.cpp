@@ -1523,8 +1523,8 @@ public:
 
     void setException(IException *e,const char *title)
     {
+        DBGLOG(e,title);
         CriticalBlock b(sect);
-        EXCLOG(e,title);
         if (exc.get())
             e->Release();
         else
@@ -1894,8 +1894,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
 {
     void setException(IException *e,const char *title)
     {
+        DBGLOG(e,title);
         CriticalBlock b(sect);
-        EXCLOG(e,title);
         if (exc.get())
             e->Release();
         else

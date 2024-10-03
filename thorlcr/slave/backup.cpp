@@ -105,15 +105,15 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
             {
                 StringBuffer errMsg;
                 if (!currentAbort)
-                    LOG(MCwarning, "%s", errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
+                    IERRLOG("%s", errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
                 backupIFile->remove();
             }
         }
         catch (IException *e)
         {
             StringBuffer errMsg("copying: ");
-            LOG(MCwarning, e, errMsg.append(item->src));
-            try { backupIFile->remove(); } catch (IException *e) { EXCLOG(e); e->Release(); }
+            IERRLOG(e, errMsg.append(item->src));
+            try { backupIFile->remove(); } catch (IException *e) { IERRLOG(e); e->Release(); }
             if (!ignoreError)
                 throw;
             e->Release();
@@ -192,7 +192,7 @@ public:
         iFileIO.setown(iFile->open(IFOreadwrite));
         if (!iFileIO)
         {
-            PROGLOG("Failed to open/create backup file: %s", path.str());
+            WARNLOG("Failed to open/create backup file: %s", path.str());
             aborted = true;
             return;
         }
@@ -283,9 +283,9 @@ public:
             currentAbort = true;
             CriticalUnblock b(crit); // _cancel always called in critical block
             if (cancelSem.wait(5000))
-                PROGLOG("Backup: cancelled copy in progress: '%s'", dst);
+                DBGLOG("Backup: cancelled copy in progress: '%s'", dst);
             else
-                PROGLOG("Backup: cancelled [timeout] copy in progress: '%s'", dst);
+                DBGLOG("Backup: cancelled [timeout] copy in progress: '%s'", dst);
         }
         else if (async)
         {
@@ -296,7 +296,7 @@ public:
                 todo.dequeue(item);
                 item->Release();
                 write();
-                PROGLOG("Backup: cancelled: '%s'", dst);
+                DBGLOG("Backup: cancelled: '%s'", dst);
             }
         }
     }

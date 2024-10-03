@@ -263,7 +263,7 @@ public:
                                 catch (IException *e)
                                 {
     #ifdef _DEBUG
-                                    EXCLOG(e, nullptr);
+                                    DBGLOG(e);
     #endif
                                     if (remoteReadException)
                                         e->Release(); // only record 1st

@@ -56,7 +56,7 @@ public:
             markdead = false;
             StringBuffer epstr;
             ep.getEndpointHostText(epstr);
-            LOG(MCdebugProgress, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
+            DBGLOG("Watchdog : Marking Machine as Up! [%s]", epstr.str());
         }
     }   
 };
@@ -87,7 +87,7 @@ void CMasterWatchdog::start()
 {
     if (stopped)
     {
-        PROGLOG("Starting watchdog");
+        DBGLOG("Starting watchdog");
         stopped = false;
         threaded.init(this, false);
 #ifdef _WIN32
@@ -134,13 +134,13 @@ void CMasterWatchdog::stop()
         stopped = true;
     }
 
-    LOG(MCdebugProgress, "Stopping watchdog");
+    DBGLOG("Stopping watchdog");
 #ifdef _WIN32
     threaded.adjustPriority(0); // restore to normal before stopping
 #endif
     stopReading();
     threaded.join();
-    LOG(MCdebugProgress, "Stopped watchdog");
+    DBGLOG("Stopped watchdog");
 }
 
 void CMasterWatchdog::checkMachineStatus()
@@ -158,7 +158,7 @@ void CMasterWatchdog::checkMachineStatus()
             else
             {
                 mstate->markdead = true;
-                LOG(MCdebugProgress, "Watchdog : Marking Machine as Down! [%s]", epstr.str());
+                DBGLOG("Watchdog : Marking Machine as Down! [%s]", epstr.str());
                 //removeWorker(mstate->ep); // more TBD
             }
         }
@@ -203,7 +203,7 @@ void CMasterWatchdog::stopReading()
 
 void CMasterWatchdog::threadmain()
 {
-    LOG(MCdebugProgress, "Started watchdog");
+    DBGLOG("Started watchdog");
     unsigned lastbeat=msTick();
     unsigned lastcheck=lastbeat;
 
@@ -235,7 +235,7 @@ void CMasterWatchdog::threadmain()
                 {
                     StringBuffer epstr;
                     hb.sender.getEndpointHostText(epstr);
-                    LOG(MCdebugProgress, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
+                    DBGLOG("Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
                 }
             }
             unsigned now=msTick();

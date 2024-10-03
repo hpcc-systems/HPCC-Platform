@@ -318,7 +318,7 @@ public:
     }
     void inform(IException *e)
     {
-        LOG(MCdebugProgress, "INFORM [%s]", description.get());
+        DBGLOG("INFORM [%s]", description.get());
         CriticalBlock block(crit);
         if (exception.get())
             e->Release();
@@ -333,7 +333,7 @@ public:
         CriticalBlock block(crit);
         IException *e = exception.getClear();
         if (e)
-            LOG(MCdebugProgress, "CLEARING TIMEOUT [%s]", description.get());
+            DBGLOG("CLEARING TIMEOUT [%s]", description.get());
         todo.signal();
         return e;
     }
