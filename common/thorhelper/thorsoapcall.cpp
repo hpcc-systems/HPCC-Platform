@@ -2469,8 +2469,14 @@ public:
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
 
+                    CCycleTimer dnsTimer;
+
                     // TODO: for DNS, do we use timeoutMS or remainingMS or remainingMS / maxRetries+1 or ?
                     ep.set(connUrl.host.get(), connUrl.port, master->timeoutMS);
+
+                    unsigned __int64 dnsNs = dnsTimer.elapsedNs();
+                    master->logctx.noteStatistic(StTimeSoapcallDNS, dnsNs);
+                    master->activitySpanScope->setSpanAttribute("SoapcallDNSTimeNs", dnsNs);
 
                     if (ep.isNull())
                         throw MakeStringException(-1, "Failed to resolve host '%s'", nullText(connUrl.host.get()));
@@ -2491,6 +2497,8 @@ public:
                     {
                         isReused = false;
                         keepAlive = true;
+
+                        CCycleTimer connTimer;
 
                         // TODO: for each connect attempt, do we use timeoutMS or remainingMS or remainingMS / maxRetries or ?
                         socket.setown(blacklist->connect(ep, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor, master->rowProvider));
@@ -2521,11 +2529,17 @@ public:
                             throw makeStringException(0, err.str());
 #endif
                         }
+
+                        unsigned __int64 connNs = connTimer.elapsedNs();
+                        master->logctx.noteStatistic(StTimeSoapcallConnect, connNs);
+                        master->activitySpanScope->setSpanAttribute("SoapcallConnectTimeNs", connNs);
                     }
                     break;
                 }
                 catch (IException *e)
                 {
+                    master->logctx.noteStatistic(StNumSoapcallConnectFailures, 1);
+
                     if (master->timeLimitExceeded)
                     {
                         master->activitySpanScope->recordError(SpanError("Time Limit Exceeded", e->errorCode(), true, true));
