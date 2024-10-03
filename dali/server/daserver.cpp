@@ -106,12 +106,12 @@ static void stopServer()
         server.stop();
     }
     closeCoven();
+    stopLogMsgReceivers(); //MORE: deprecated feature, not used by any new clients, remove once all deployed clients that depend on it are upgraded
+    stopMPServer();
     ForEachItemInRev(j,servers)
     {
         servers.remove(j);      // ensure correct order for destruction
     }
-    stopLogMsgReceivers(); //MORE: deprecated feature, not used by any new clients, remove once all deployed clients that depend on it are upgraded
-    stopMPServer();
 }
 
 bool actionOnAbort()
