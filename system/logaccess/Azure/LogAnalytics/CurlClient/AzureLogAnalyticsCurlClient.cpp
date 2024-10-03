@@ -336,6 +336,10 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 
     m_pluginCfg.set(&logAccessPluginConfig);
 
+    //blobMode is a flag to determine if the log entry is to be parsed or not
+    m_blobMode = logAccessPluginConfig.getPropBool("@blobMode", false);
+    DBGLOG("%s: Blob Mode: %s", COMPONENT_NAME, m_blobMode ? "Enabled" : "Disabled");
+
     m_globalIndexTimestampField.set(defaultHPCCLogTimeStampCol);
     m_globalIndexSearchPattern.set(defaultIndexPattern);
     m_globalSearchColName.set(defaultHPCCLogMessageCol);
@@ -483,7 +487,11 @@ void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns, co
             columns.append(defaultHPCCLogComponentCol);
         columns.append(", ");
     }
-    columns.appendf("%s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
+
+    if (m_blobMode)
+        columns.appendf("%s, %s", m_globalIndexTimestampField.str(), m_globalSearchColName.str());
+    else
+        columns.appendf("%s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns, const bool includeComponentName)
@@ -517,12 +525,15 @@ void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns
     if (!isEmptyString(m_podSearchColName))
         columns.appendf("%s, ", m_podSearchColName.str());
 
-    columns.appendf("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s",
-    m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
-    m_audienceSearchColName.str(), m_workunitSearchColName.str(), m_traceSearchColName.str(), m_spanSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol, defaultHPCCLogProcIDCol);
+    if (m_blobMode)
+        columns.appendf("%s, %s", m_globalIndexTimestampField.str(), m_globalSearchColName.str());
+    else
+        columns.appendf("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s",
+            m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
+            m_audienceSearchColName.str(), m_workunitSearchColName.str(), m_traceSearchColName.str(), m_spanSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol, defaultHPCCLogProcIDCol);
 }
 
-bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName, bool targetsV2)
+bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName, bool targetsV2, bool blobMode)
 {
     if (isEmptyString(colName))
     {
@@ -538,24 +549,31 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName,
     else
         throw makeStringExceptionV(-1, "%s: Invalid Azure Log Analytics log message column name detected: '%s'. Review logAccess configuration.", COMPONENT_NAME, colName);
 
-    kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s*([0-9a-fA-F]{32}|UNK)?\\s*([0-9a-fA-F]{16}|UNK)?\\s+)?\\\"(.*)\\\"$', %s)[0]", sourceCol.str());
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[0])", defaultHPCCLogSeqCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[1])", defaultHPCCLogAudCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[2])", defaultHPCCLogTypeCol);
-    kql.appendf("\n| extend %s = todatetime(hpcclogfields.[3])", defaultHPCCLogTimeStampCol);
-    kql.appendf("\n| extend %s = toint(hpcclogfields.[4])", defaultHPCCLogProcIDCol);
-    kql.appendf("\n| extend %s = toint(hpcclogfields.[5])",  defaultHPCCLogThreadIDCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[6])", defaultHPCCLogJobIDCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[7])", defaultHPCCLogTraceIDCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[8])", defaultHPCCLogSpanIDCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[9])", defaultHPCCLogMessageCol);
-    kql.appendf("\n| project-away hpcclogfields, Type, TenantId, _ResourceId, %s, ", colName);
+    if (!blobMode)
+    {
+        kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s*([0-9a-fA-F]{32}|UNK)?\\s*([0-9a-fA-F]{16}|UNK)?\\s+)?\\\"(.*)\\\"$', %s)[0]", sourceCol.str());
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[0])", defaultHPCCLogSeqCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[1])", defaultHPCCLogAudCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[2])", defaultHPCCLogTypeCol);
+        kql.appendf("\n| extend %s = todatetime(hpcclogfields.[3])", defaultHPCCLogTimeStampCol);
+        kql.appendf("\n| extend %s = toint(hpcclogfields.[4])", defaultHPCCLogProcIDCol);
+        kql.appendf("\n| extend %s = toint(hpcclogfields.[5])",  defaultHPCCLogThreadIDCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[6])", defaultHPCCLogJobIDCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[7])", defaultHPCCLogTraceIDCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[8])", defaultHPCCLogSpanIDCol);
+        kql.appendf("\n| extend %s = tostring(hpcclogfields.[9])", defaultHPCCLogMessageCol);
+
+        kql.appendf("\n| project-away hpcclogfields, Type, TenantId, _ResourceId, %s, ", colName);
+    }
+    else
+    {
+        kql.appendf("\n| project-away Type, TenantId, _ResourceId, ");
+    }
 
     if (targetsV2)
         kql.append("LogSource, SourceSystem");
     else
         kql.append("LogEntrySource, TimeOfCommand, SourceSystem");
-
 
     return true;
 }
@@ -658,6 +676,11 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
     StringBuffer queryValue;
     std::string queryField = m_globalSearchColName.str();
     std::string queryOperator = " =~ ";
+
+    if (m_blobMode)
+    {
+        queryOperator = " has ";
+    }
 
     filter->toString(queryValue);
     switch (filter->filterType())
@@ -879,7 +902,8 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
             declareContainerIndexJoinTable(queryString, options);
 
         queryString.append(queryIndex);
-        generateHPCCLogColumnstAllColumns(queryString, m_globalSearchColName.str(), targetIsContainerLogV2);
+        //this used to parse m_globalSearchColName into hpcc.log.* fields, now just does a project-away
+        generateHPCCLogColumnstAllColumns(queryString, m_globalSearchColName.str(), targetIsContainerLogV2, m_blobMode);
 
         if (options.queryFilter() == nullptr || options.queryFilter()->filterType() == LOGACCESS_FILTER_wildcard) // No filter
         {
@@ -895,7 +919,6 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         StringBuffer range;
         azureLogAnalyticsTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
         queryString.append("\n| where ").append(range.str());
-        //if (includeComponentName)
         if (!m_disableComponentNameJoins && !targetIsContainerLogV2)
             queryString.append("\n) on ").append(m_componentsLookupKeyColumn);
 
