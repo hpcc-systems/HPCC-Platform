@@ -2225,7 +2225,7 @@ void CDeltaWriter::addToQueue(CTransactionItem *item)
         ++totalQueueLimitHits;
         // force a synchronous save
         CCycleTimer timer;
-        PROGLOG("Forcing synchronous save of %u transactions", (unsigned)pending.size());
+        PROGLOG("Forcing synchronous save of %u transactions (pendingSz=%zu)", (unsigned)pending.size(), pendingSz);
         CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
         if (save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
         {
@@ -6056,6 +6056,7 @@ CCovenSDSManager::~CCovenSDSManager()
 {
     if (unhandledThread) unhandledThread->join();
     if (coalesce) coalesce->stop();
+    deltaWriter.stop();
     scanNotifyPool.clear();
     notifyPool.clear();
     connections.kill();
