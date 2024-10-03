@@ -1,0 +1,18 @@
+<Environment>
+  <global>
+    <!-- logAccess element should be injected into active environment.xml-->
+    <logAccess name="grafanalogaccess" type="GrafanaCurl">
+      <!--username/pass only if secret not available!!-->
+      <connection protocol="http" port="3000" host="localhost" username="admin" password=""/>
+      <datasource name="Loki" id="1"/> <!-- Find this info from Grafana: http://localhost:3000/api/datasources/ -->
+      <namespace name="hpcc"/>
+      <logFormat type="table"/> <!--optional, only needed if HPCC log format set to XML or JSON-->
+      <logMaps type="global" searchColumn="log" columnMode="DEFAULT" columnType="string"/>
+      <logMaps type="timestamp" searchColumn="tsNs" columnMode="MIN" storeName="values" columnType="epoch"/>
+      <!-- logmaps based on streams can be found via http://localhost:3000/api/datasources/proxy/1/loki/api/v1/labels -->
+      <logMaps type="components" searchColumn="component" columnMode="ALL" storeName="stream" columnType="string"/>
+      <logMaps type="node" searchColumn="node_name" columnMode="ALL" storeName="stream" columnType="string"/>
+      <logMaps type="pod" searchColumn="pod" columnMode="DEFAULT" storeName="stream" columnType="string"/>
+   </logAccess>
+  </global>
+</Environment>

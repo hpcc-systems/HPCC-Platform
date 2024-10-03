@@ -2352,8 +2352,10 @@ bool CSocket::check_connection()
         return false;
 
     // This routine is for TCP stream sockets.
-    // It is the callers responsibility to ensure this is called
-    // in a thread-safe manner, while no other threads are reading.
+    // if another thread called sock->read() between the
+    // wait_read() and recv() calls below then the
+    // wait_read() might return EWOULDBLOCK and we would
+    // assume then the socket is still connected and ok.
 
     // wait_read() returns = 0 - socket ok atm
     //             returns < 0 - error, assume closed
@@ -2367,11 +2369,16 @@ bool CSocket::check_connection()
     int retrycount = 100;
     char buffer;
 
+    int recvFlags = MSG_PEEK;
+#ifndef _WIN32
+    recvFlags |= MSG_DONTWAIT;
+#endif
+
 EintrRecv:
-    rc = recv(sock, &buffer, sizeof(buffer), MSG_PEEK);
+    rc = recv(sock, &buffer, sizeof(buffer), recvFlags);
 
     // recv() returns = 0 - socket eof (closed)
-    //        returns < 0 - error, assume closed
+    //        returns < 0 - and errno not EWOULDBLOCK/EAGAIN, assume closed
     //        returns > 0 - socket ok atm
     if (rc == 0)
         return false;
@@ -2383,6 +2390,8 @@ EintrRecv:
             LOGERR2(err,7,"recv EINTR retrying");
             goto EintrRecv;
         }
+        else if ((err==EWOULDBLOCK) || (err==EAGAIN))
+            return true;
         else
             return false;
     }

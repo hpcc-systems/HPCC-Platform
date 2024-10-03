@@ -698,7 +698,6 @@ public:
     // IThorDataLink
     virtual void start() override
     {
-        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         keyedProcessed = 0;
         if (!eoi)

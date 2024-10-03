@@ -118,6 +118,13 @@ public:
 
     virtual void close() override
     {
+        //Protect against close() being called more than once on a compressor
+        if (!inbuf)
+        {
+            if (isDebugBuild())
+                throwUnexpectedX("CFCmpCompressor::close() called more than once");
+            return;
+        }
         if (inlenblk!=COMMITTED)
         {
             inlen = inlenblk; // transaction failed

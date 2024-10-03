@@ -2773,6 +2773,9 @@ public:
 
     virtual void close() override
     {
+        if (outmax == 0)
+            return;
+
         comp->close();
         // now encrypt
         MemoryBuffer buf;
