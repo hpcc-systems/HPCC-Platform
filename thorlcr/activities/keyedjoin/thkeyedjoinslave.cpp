@@ -2675,13 +2675,18 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             if (queryAbortSoon())
                 break;
-            OwnedConstThorRow lhsRow = inputStream->nextRow();
-            if (!lhsRow)
+            OwnedConstThorRow lhsRow;
             {
-                groupStart = nullptr; // NB: only ever set if preserveGroups on
+                LookAheadTimer t(slaveTimerStats, timeActivities);
+
                 lhsRow.setown(inputStream->nextRow());
                 if (!lhsRow)
-                    break;
+                {
+                    groupStart = nullptr; // NB: only ever set if preserveGroups on
+                    lhsRow.setown(inputStream->nextRow());
+                    if (!lhsRow)
+                        break;
+                }
             }
             Linked<CJoinGroup> jg;
             if (helper->leftCanMatch(lhsRow))
