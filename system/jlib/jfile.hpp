@@ -748,7 +748,7 @@ enum PlaneAttributeType
 {
     BlockedSequentialIO,
     BlockedRandomIO,
-    FileSyncMaxRetrySecs,
+    FileSyncWriteClose,
     PlaneAttributeCount
 };
 extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
@@ -758,9 +758,7 @@ extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffe
 extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
-constexpr int fileSyncRetryDisabled = -2;
-constexpr int defaultGlobalFileSyncMaxRetrySecs = fileSyncRetryDisabled;
-extern jlib_decl int getMaxFileSyncSecs(const char *planeName, int defaultSecs = defaultGlobalFileSyncMaxRetrySecs);
+extern jlib_decl bool getFileSyncWriteCloseEnabled(const char *planeName);
 
 //---- Pluggable file type related functions ----------------------------------------------
 

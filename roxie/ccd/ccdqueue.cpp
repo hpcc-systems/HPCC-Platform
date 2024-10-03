@@ -1409,8 +1409,12 @@ public:
     }
     inline void setActivity(IRoxieAgentActivity *act)
     {
-        CriticalBlock b(actCrit);
-        activity.setown(act);
+        //Ensure that the activity is released outside of the critical section
+        Owned<IRoxieAgentActivity> temp(act);
+        {
+            CriticalBlock b(actCrit);
+            activity.swap(temp);
+        }
     }
     inline bool match(RoxiePacketHeader &h)
     {
