@@ -573,6 +573,7 @@ extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, I
 extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, EmptyRowSemantics emptyRowSemantics=ers_forbidden);
 
 
+extern graph_decl void *fastLZDecompressToRoxieMem(roxiemem::IVariableRowHeap &heap, const void * src, size32_t &expsz);
 
 
 class CSDSServerStatus;

@@ -2666,4 +2666,20 @@ IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllo
     return new COutputMetaWithChildRow(childAllocator, extraSz);
 }
 
-
+void *fastLZDecompressToRoxieMem(roxiemem::IVariableRowHeap &heap, const void * src, size32_t &expsz)
+{
+    size32_t *sz = (size32_t *)src;
+    expsz = *(sz++);
+    size32_t cmpsz = *(sz++);
+    memsize_t capacity;
+    void *o = heap.allocate(expsz, capacity);
+    if (cmpsz!=expsz)
+    {
+        size32_t written = fastlz_decompress(sz,cmpsz,o,expsz);
+        if (written!=expsz)
+            throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(1) %d %d",written,expsz);
+    }
+    else
+        memcpy_iflen(o,sz,expsz);
+    return o;
+}

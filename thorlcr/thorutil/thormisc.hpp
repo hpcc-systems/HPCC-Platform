@@ -125,6 +125,7 @@
 #define THOROPT_LOOKAHEAD_WRITEAHEADK "readAheadWriteAheadK"                      // Splitter spilling write ahead size (K)                                        (default = 2MB)
 #define THOROPT_LOOKAHEAD_COMPRESSIONTOTALK "readAheadCompressionTotalK"          // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
 #define THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY "readAheadTempFileGranularity"     // Splitter temp file granularity (default = 1GB)
+#define THOROPT_ROXIEMEM_GLOBALSORT_PARTITION "useRoxieMemGlobalSortPartition"    // Use roxiemem for global sort partitioning (default = true)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000 // max of row matches before selfjoin emits warning
 
