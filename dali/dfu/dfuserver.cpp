@@ -307,6 +307,7 @@ int main(int argc, const char *argv[])
     delete serverstatus;
     if (stop)
         Sleep(2000);    // give time to stop
+    removeAbortHandler(exitDFUserver);
     engine.clear();
     globals.clear();
     closeEnvironment();
