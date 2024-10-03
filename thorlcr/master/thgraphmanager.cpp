@@ -1442,7 +1442,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
                 bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
                 VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
-                StringBuffer instance("thorinstance_");
+                StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false (and lingerPeriod>0)
 
                 if (multiJobLinger)
                 {
@@ -1457,7 +1457,12 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     thorQueue->connect(false);
                 }
 
-                queryMyNode()->endpoint().getEndpointHostText(instance);
+                if (!multiJobLinger && lingerPeriod)
+                {
+                    // We avoid using getEndpointHostText here and get an IP instead, because the client pod communicating directly with this Thor manager,
+                    // will not have the ability to resolve this pods hostname.
+                    queryMyNode()->endpoint().getEndpointIpText(instance);
+                }
                 StringBuffer currentGraphName(graphName);
                 StringBuffer currentWuid(wuid);
 
