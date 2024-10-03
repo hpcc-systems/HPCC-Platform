@@ -816,6 +816,54 @@ static struct CNtKernelInformation
 } NtKernelFunctions;
 #endif
 
+//===========================================================================
+
+#ifndef _WIN32
+
+static std::atomic<bool> gatheredGroup{false};
+static StringAttr cgroup;
+static CriticalSection csgroupCs;
+static const char * queryCGroup()
+{
+    if (!gatheredGroup)
+    {
+        CriticalBlock block(csgroupCs);
+        if (!gatheredGroup)
+        {
+            StringBuffer contents;
+            if (loadBinaryFile(contents, "/proc/self/cgroup", false))
+            {
+                auto processLine = [](size_t len, const char * ln)
+                {
+                    //Note ln points at the start of the line, but the line is not null terminated
+                    switch (*ln)
+                    {
+                    case '0':
+                        if (strncmp(ln, "0::/", 4) == 0)
+                        {
+                            //Format is 0::/<cgroup>
+                            //If not running in a container the "cgroup" may be something like user.slice/user-1000.slice/user@1000.service/....
+                            //If so ignore because it is not a real cgroup
+                            if (!memchr(ln+4, '/', len-4))
+                                cgroup.set(ln+4, len-4);
+                        }
+                        break;
+                    }
+                    //Some systems with version 1 cgroups have <n>:cpu,cpuacct:/<cgroup>
+                    const char  * match = (const char *)jmemmem(len, ln, 14, ":cpu,cpuacct:/");
+                    if (match)
+                        cgroup.set(match+14, (ln + len) - (match + 14));
+                };
+
+                processLines(contents, processLine);
+            }
+            gatheredGroup = true;
+        }
+    }
+    return cgroup.get();
+}
+
+#endif
 
 //===========================================================================
 
@@ -893,6 +941,9 @@ SystemProcessInfo SystemProcessInfo::operator - (const SystemProcessInfo & rhs) 
     result.activeDataMemory = activeDataMemory - rhs.activeDataMemory;
     result.majorFaults = majorFaults - rhs.majorFaults;
     result.numThreads = numThreads - rhs.numThreads;
+    result.numPeriods = numPeriods - rhs.numPeriods;
+    result.numThrottledPeriods = numThrottledPeriods - rhs.numThrottledPeriods;
+    result.timeThrottledNs = timeThrottledNs - rhs.timeThrottledNs;
     return result;
 }
 
@@ -995,7 +1046,7 @@ bool ProcessInfo::update(unsigned flags)
         if (loadBinaryFile(contents, "/proc/self/status", false))
         {
             contextSwitches = 0;
-            auto processLine = [this](const char * cur)
+            auto processLine = [this](size_t len, const char * cur)
             {
                 __uint64 value;
                 switch (*cur)
@@ -1070,7 +1121,7 @@ bool SystemInfo::update(unsigned flags)
     StringBuffer contents;
     if (loadBinaryFile(contents, "/proc/stat", false))
     {
-        auto processLine = [this](const char * ln)
+        auto processLine = [this](size_t len, const char * ln)
         {
             switch (*ln)
             {
@@ -1104,6 +1155,52 @@ bool SystemInfo::update(unsigned flags)
 
         processLines(contents, processLine);
     }
+
+    auto processLine = [this](size_t len, const char * ln)
+    {
+        switch (*ln)
+        {
+        case 'n':
+            if (strncmp(ln, "nr_periods ", 11) == 0)
+                numPeriods = strtod(ln+11, nullptr);
+            else if (strncmp(ln, "nr_throttled ", 13) == 0)
+                numThrottledPeriods = strtod(ln+13, nullptr);
+            break;
+        case 't':
+            if (strncmp(ln, "throttled_usec ", 15) == 0)
+                timeThrottledNs = strtod(ln+15, nullptr) * 1000;
+            else if (strncmp(ln, "throttled_time ", 15) == 0)
+                timeThrottledNs = strtod(ln+15, nullptr);
+            break;
+        }
+    };
+
+    bool done = false;
+    const char * cgroup = queryCGroup();
+    if (cgroup)
+    {
+        //Version 2 of cgroups has the information in cgroup/<cgroup>
+        VStringBuffer filename("/sys/fs/cgroup/%s/cpu.stat", cgroup);
+        if (loadBinaryFile(contents.clear(), filename.str(), false))
+        {
+            processLines(contents, processLine);
+            done = true;
+        }
+        else
+        {
+            //Some systems with version 1 cgroups have the information in /sys/fs/cgroup/cpu/<cgroup>/cpu.stat
+            filename.clear().appendf("/sys/fs/cgroup/cpu/%s/cpu.stat", cgroup);
+            if (loadBinaryFile(contents.clear(), filename.str(), false))
+            {
+                processLines(contents, processLine);
+                done = true;
+            }
+        }
+    }
+
+    //If the version 2 file was not found look for ther version 1 information in cgroup/cpu
+    if (!done && loadBinaryFile(contents.clear(), "/sys/fs/cgroup/cpu/cpu.stat", false))
+        processLines(contents, processLine);
 
     return true;
 #endif
@@ -2502,9 +2599,16 @@ public:
         }
         if (totalcpu)
         {
-            if (out.length()&&(out.charAt(out.length()-1)!=' '))
-                out.append(' ');
+            ensureSeparator(out, ' ');
             out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", deltacpu.getUserPercent(), deltacpu.getSystemPercent(), deltacpu.getIoWaitPercent(), deltacpu.getIdlePercent());
+
+            __uint64 periods = deltacpu.getNumPeriods();
+            if (periods)
+            {
+                unsigned throttling = deltacpu.getNumThrottledPeriods() * 100 / periods;
+                __uint64 timeThrottledNs = deltacpu.getTimeThrottledNs();
+                out.appendf(" thr=%u%% thrns=%llu", throttling, timeThrottledNs);
+            }
         }
         return true;
     }

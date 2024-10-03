@@ -3390,6 +3390,7 @@ public:
                 DBGLOG(" Process: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)",
                         (unsigned)(deltaProcess.getUserNs() / 1000000), (unsigned)(deltaProcess.getSystemNs() / 1000000), (unsigned)(deltaProcess.getTotalNs() / 1000000),
                         (unsigned)((deltaProcess.getUserNs() * 100) / deltaSystem.getTotalNs()), deltaProcess.getNumContextSwitches());
+                DBGLOG(" Throttled: Periods(%llu/%llu) TimeNs(%llu)", deltaSystem.getNumThrottledPeriods(), deltaSystem.getNumPeriods(), deltaSystem.getTimeThrottledNs());
             }
 
             for (unsigned j=0; j < i*100000000; j++)
@@ -4630,6 +4631,7 @@ class JLibStringTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JLibStringTest);
         CPPUNIT_TEST(testStristr);
+        CPPUNIT_TEST(testMemMem);
     CPPUNIT_TEST_SUITE_END();
 
     void testStristr()
@@ -4646,6 +4648,21 @@ public:
         CPPUNIT_ASSERT_EQUAL_STR(stristr("ababacz", "ABAC"), "abacz");
         CPPUNIT_ASSERT_EQUAL_STR(stristr("", "ABC"), "");
         CPPUNIT_ASSERT_EQUAL_STR(stristr("ABC", ""), "");
+    }
+
+    void testMemMem()
+    {
+        constexpr const char * haystack = "abcdefghijklmnopqrstuvwxyz";
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack), jmemmem(10, haystack, 0, nullptr));
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack), jmemmem(10, haystack, 3, "abc"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack), jmemmem(3, haystack, 3, "abc"));
+        CPPUNIT_ASSERT_EQUAL((const void*)nullptr, jmemmem(2, haystack, 3, "abc"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack+7), jmemmem(10, haystack, 3, "hij"));
+        CPPUNIT_ASSERT_EQUAL((const void*)nullptr, jmemmem(10, haystack, 3, "ijk"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack+8), jmemmem(10, haystack, 1, "i"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(nullptr), jmemmem(8, haystack, 1, "i"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(nullptr), jmemmem(9, haystack, 2, "ij"));
+        CPPUNIT_ASSERT_EQUAL((const void*)(haystack+8), jmemmem(10, haystack, 2, "ij"));
     }
 };
 
