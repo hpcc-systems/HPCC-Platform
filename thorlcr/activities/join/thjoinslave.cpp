@@ -299,7 +299,10 @@ public:
             stopOtherInput();
             throw;
         }
-        asyncSecondaryStart.wait();
+        {
+            BlockedActivityTimer t(slaveTimerStats, timeActivities);
+            asyncSecondaryStart.wait();
+        }
         if (secondaryStartException)
         {
             IException *e=secondaryStartException.getClear();
@@ -387,7 +390,10 @@ public:
             {
                 unsigned bn=noSortPartitionSide()?2:4;
                 ActPrintLog("JOIN waiting barrier.%d",bn);
-                barrier->wait(false);
+                {
+                    BlockedActivityTimer t(slaveTimerStats, timeActivities);
+                    barrier->wait(false);
+                }
                 ActPrintLog("JOIN barrier.%d raised",bn);
                 sorter->stopMerge();
             }
@@ -564,8 +570,11 @@ public:
                 return false;
             }
             ActPrintLog("JOIN waiting barrier.1");
-            if (!barrier->wait(false))
-                return false;
+            {
+                BlockedActivityTimer t(slaveTimerStats, timeActivities);
+                if (!barrier->wait(false))
+                    return false;
+            }
             ActPrintLog("JOIN barrier.1 raised");
 
             // primaryWriter will keep as much in memory as possible.
@@ -575,8 +584,11 @@ public:
             primaryStream.setown(primaryWriter->getReader()); // NB: rhsWriter no longer needed after this point
 
             ActPrintLog("JOIN waiting barrier.2");
-            if (!barrier->wait(false))
-                return false;
+            {
+                BlockedActivityTimer t(slaveTimerStats, timeActivities);
+                if (!barrier->wait(false))
+                    return false;
+            }
             ActPrintLog("JOIN barrier.2 raised");
             sorter->stopMerge();
             if (0 == sorter->getGlobalCount())

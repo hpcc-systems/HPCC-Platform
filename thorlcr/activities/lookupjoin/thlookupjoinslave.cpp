@@ -1027,6 +1027,7 @@ protected:
     }
     inline void interChannelBarrier()
     {
+        BlockedActivityTimer t(slaveTimerStats, timeActivities);
         if (queryJob().queryJobChannels()>1)
         {
             if (channels[0]->incNotifyCountAndCheck())

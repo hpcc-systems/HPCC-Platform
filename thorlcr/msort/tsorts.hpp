@@ -74,8 +74,8 @@ interface ISocketRowWriter: extends IRowWriter
     virtual void stop()=0;
 };
 
-class CActivityBase;
-THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC);
+class CSlaveActivity;
+THORSORT_API IThorSorter *CreateThorSorter(CSlaveActivity *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC);
 IRowStream *ConnectMergeRead(unsigned id,IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket);
 ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs);
 #define SOCKETSERVERINC                    1

@@ -35,6 +35,7 @@
 #include "thbuf.hpp"
 #include "thbufdef.hpp"
 #include "thgraph.hpp"
+#include "thgraphslave.hpp"
 
 #ifdef _DEBUG
 //#define TRACE_UNIQUE
@@ -58,8 +59,6 @@ inline void traceWait(const char *name, T &sem,unsigned interval=60*1000)
 #define TRANSFERBLOCKSIZE 0x100000 // 1MB
 #define MINCOMPRESSEDROWSIZE 16
 #define MAXCOMPRESSEDROWSIZE  0x2000
-
-#define MPBLOCKTIMEOUT (1000*60*15)             
 
 
 class CWriteIntercept : public CSimpleInterface
@@ -607,7 +606,7 @@ public:
 class CThorSorter : public CSimpleInterface, implements IThorSorter, implements ISortSlaveBase, implements ISortSlaveMP,
     private IThreaded
 {
-    CActivityBase *activity;
+    CSlaveActivity *activity;
     SocketEndpoint myendpoint;
     Linked<ICommunicator> clusterComm;
     mptag_t mpTagRPC;
@@ -816,7 +815,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
+    CThorSorter(CSlaveActivity *_activity, SocketEndpoint &ep, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
         : activity(_activity), myendpoint(ep), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
           rowArray(*_activity, _activity), threaded("CThorSorter", this), spillStats(spillStatistics)
     {
@@ -1269,11 +1268,14 @@ public:
     {
         ActPrintLog(activity, "Gather in");
         globalCount = 0;
-        for (;;) {
-            if (abort)
-                return;
-            if (startgathersem.wait(10000))
-                break;
+        {
+            BlockedActivityTimer t(activity->getTotalCyclesRef(), activity->queryTimeActivities());
+            for (;;) {
+                if (abort)
+                    return;
+                if (startgathersem.wait(10000))
+                    break;
+            }
         }
         ActPrintLog(activity, "SORT: Gather");
         assertex(!rowif);
@@ -1375,7 +1377,10 @@ public:
     virtual IRowStream * startMerge(rowcount_t &_totalrows)
     {
         ActPrintLog(activity, "SORT Merge Waiting");
-        traceWait("startmergesem",startmergesem);
+        {
+            BlockedActivityTimer t(activity->getTotalCyclesRef(), activity->queryTimeActivities());
+            traceWait("startmergesem",startmergesem);
+        }
         ActPrintLog(activity, "SORT Merge Start");
         _totalrows = totalrows;
         return merger.getLink();
@@ -1407,7 +1412,7 @@ public:
 
 //==============================================================================
 
-THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC)
+THORSORT_API IThorSorter *CreateThorSorter(CSlaveActivity *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC)
 {
     return new CThorSorter(activity, ep, clusterComm, _mpTagRPC);
 }
