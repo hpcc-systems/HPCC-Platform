@@ -230,6 +230,7 @@ protected:
     size32_t outlen;
     size32_t bufalloc;
     const size32_t *in = nullptr;
+    const void * original = nullptr;
 
 public:
     CFcmpExpander()
@@ -247,6 +248,7 @@ public:
 
     virtual size32_t init(const void *blk)
     {
+        original = blk;
         const size32_t *expsz = (const size32_t *)blk;
         outlen = *expsz;
         in = (expsz+1);

@@ -264,6 +264,13 @@ public:
         size32_t written;
         if (szchunk+totalExpanded<outlen)
         {
+            if (unlikely(szchunk == 0))
+            {
+                //Special case this corruption - otherwise it enters an infinite loop
+                VStringBuffer msg("Unexpected zero length block at block offset %u", (size32_t)((const byte *)in - (const byte *)original));
+                throwUnexpectedX(msg.str());
+            }
+
             //All but the last block are compressed (see expand() function above).
             //Slightly concerning there always has to be one trailing byte for this to work!
             size32_t maxOut = target.capacity();
@@ -286,7 +293,10 @@ public:
 
                 //Sanity check to catch corrupt lz4 data that always returns an error.
                 if (maxOut > outlen)
-                    throwUnexpected();
+                {
+                    VStringBuffer msg("Decompression expected max %u bytes, but now %u at block offset %u", outlen, maxOut, (size32_t)((const byte *)in - (const byte *)original));
+                    throwUnexpectedX(msg.str());
+                }
 
                 maxOut += szchunk; // Likely to quickly approach the actual expanded size
                 target.clear();
