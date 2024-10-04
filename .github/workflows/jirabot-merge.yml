@@ -1,0 +1,299 @@
+name: Jirabot - Merge
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches:
+      - "master"
+      - "candidate-*"
+
+jobs:
+  jirabot:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: "Debug Vars"
+        env:
+          JIRA_URL : ${{ vars.JIRA_URL }}
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          echo "JIRA_URL: $JIRA_URL"
+          echo "Pull Request Number: $PULL_REQUEST_NUMBER"
+          echo "Pull Request Title: $PULL_REQUEST_TITLE"
+          echo "Pull Request Author Name: $PULL_REQUEST_AUTHOR_NAME"
+          echo "Pull Request URL: $PULL_URL"
+          echo "Comments URL: $COMMENTS_URL"
+          echo "Branch Name: $BRANCH_NAME"
+      - uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.8"
+      - name: "Install dependencies"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade atlassian-python-api
+          python -m pip install --upgrade jira
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+      - name: "Run"
+        env:
+          JIRABOT_USERNAME : ${{ secrets.JIRABOT_USERNAME }}
+          JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASSWORD }}
+          JIRA_URL : ${{ vars.JIRA_URL }}
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
+          PROJECT_CONFIG: ${{ vars.PROJECT_CONFIG}}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        shell: python
+        run: |
+            import os
+            import re
+            import subprocess
+            import time
+            import sys
+            import json
+            from atlassian.jira import Jira
+
+            def extractVersion(versionStr):
+                parts = versionStr.split('.')
+                if len(parts) != 3:
+                    print('Invalid version: ' + versionStr)
+                    sys.exit(1)
+                if parts[2].lower() == 'x':
+                    parts[2] = '0'
+
+                major, minor, point = map(int, parts)
+                return [major, minor, point]
+
+            def getTagVersionForCmd(cmd):
+                versionPattern = re.compile(r".*([0-9]+\.[0-9]+\.[0-9]+).*")
+
+                # Get latest release version
+                gitTagProcess = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+                (output, err) = gitTagProcess.communicate()
+                gitTagProcessStatus = gitTagProcess.wait()
+
+                if gitTagProcessStatus != 0:
+                    print('Unable to retrieve latest git tag.')
+                    sys.exit(1)
+
+                latestGitTag = str(output)
+
+                versionMatch = versionPattern.match(latestGitTag)
+                if versionMatch:
+                    return extractVersion(versionMatch.group(1))
+                else:
+                    print('Unable to extract version from git tag.')
+                    sys.exit(2)
+
+            def buildVersionString(version):
+                major, minor, point = map(int, version)
+                return f"{major}.{minor}.{point}"
+
+            def createReleaseTagPattern(projectConfig, major = None, minor = None, point = None):
+                releaseTagPrefix = projectConfig.get('tagPrefix')
+                releaseTagPostfix = projectConfig.get('tagPostfix')
+
+                if releaseTagPrefix is None or releaseTagPostfix is None:
+                    print('Error: PROJECT_CONFIG is missing required fields: tagPrefix and/or tagPostfix')
+                    sys.exit(1)
+
+                releaseTagPattern = releaseTagPrefix
+                if major is not None:
+                    releaseTagPattern += str(major) + '\\.'
+                else:
+                    releaseTagPattern += '[0-9]+\\.'
+
+                if minor is not None:
+                    releaseTagPattern += str(minor) + '\\.'
+                else:
+                    releaseTagPattern += '[0-9]+\\.'
+
+                if point is not None:
+                    releaseTagPattern += str(point) + '(-[0-9]+)?'
+                else:
+                    releaseTagPattern += '[0-9]+(-[0-9]+)?'
+
+                releaseTagPattern += releaseTagPostfix + '$'
+
+                return releaseTagPattern
+
+            def getLatestSemVer(projectConfig, major = None, minor = None, point = None):
+                cmd = "git tag --list --sort=-v:refname | grep -E '" + createReleaseTagPattern(projectConfig, major, minor, point) + "' | head -n 1"
+                return getTagVersionForCmd(cmd)
+
+            def generateFixVersionList(jira, projectConfig, projectName, branchName):
+                latestVersion = getLatestSemVer(projectConfig)
+
+                # If we are merging into master we assume it is going into the next minor release
+                fixVersions = []
+                if branchName == "master":
+                    fixVersions = [buildVersionString([latestVersion[0], latestVersion[1] + 2, 0])]
+                else:
+                    # Extract candidate branch major / minor version
+                    candidateBranchPattern = re.compile(r"candidate-([0-9]+\.[0-9]+\.([0-9]+|x)).*")
+                    branchVersionMatch = candidateBranchPattern.match(branchName)
+                    branchVersion = extractVersion(branchVersionMatch.group(1))
+
+                    # Get latest release in branch
+                    latestBranchVer = getLatestSemVer(projectConfig, branchVersion[0], branchVersion[1])
+
+                    curMajor = branchVersion[0]
+                    latestMajor = latestVersion[0]
+                    while curMajor <= latestMajor:
+                        latestVersionInMajor = getLatestSemVer(projectConfig, curMajor)
+
+                        curMinor = 0
+                        if curMajor == branchVersion[0]:
+                            curMinor = branchVersion[1]
+
+                        latestMinor = latestVersionInMajor[1]
+
+                        while curMinor <= latestMinor:
+                            latestPointInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
+                            fixVersions.append(buildVersionString([latestPointInMinor[0], latestPointInMinor[1], latestPointInMinor[2] + 2]))
+                            curMinor += 2
+                        curMajor += 1
+
+                for fixVersion in fixVersions:
+                    try:
+                        alreadyHasFixVersion = False
+                        versions = jira.get_project_versions(projectName)
+                        for v in versions:
+                            if v['name'] == fixVersion:
+                                alreadyHasFixVersion = True
+
+                        if not alreadyHasFixVersion:
+                            project = jira.get_project(projectName)
+                            projectId = project['id']
+                            jira.add_version(projectName, projectId, fixVersion)
+                    except Exception as error:
+                        print('Error: Unable to add fix version: ' + fixVersion + ' with: ' + str(error))
+                        sys.exit(1)
+
+                return fixVersions
+
+            def resolveIssue(jira, projectName, issue, fixVersions) -> str:
+                result = ''
+
+                versionsToAdd = []
+
+                issueName = issue['key']
+                issueFields = issue['fields']
+
+                for addedVersion in fixVersions:
+                    alreadyHasFixVersion = False
+                    for v in issueFields['fixVersions']:
+                        if v['name'] == addedVersion:
+                            alreadyHasFixVersion = True
+                            break
+                    if not alreadyHasFixVersion:
+                        versionsToAdd.append(addedVersion)
+
+                versions = jira.get_project_versions(projectName)
+                updatedVersionList = []
+                for v in issueFields['fixVersions']:
+                    updatedVersionList.append({'id' : v['id']})
+
+                for fixVersionName in versionsToAdd:
+                    fixVersion = None
+                    for v in versions:
+                        if v['name'] == fixVersionName:
+                            fixVersion = v
+                            break
+
+                    if fixVersion:
+                        updatedVersionList.append({'id' : fixVersion['id']})
+                        result += "Added fix version: " + fixVersionName + "\n"
+                    else:
+                        result += "Error: Unable to find fix version: " + fixVersionName + "\n"
+
+                if len(versionsToAdd) > 0:
+                    try:
+                        jira.update_issue_field(issueName, {'fixVersions': updatedVersionList})
+                    except Exception as error:
+                        result += 'Error: Updating fix versions failed with: "' + str(error) + '\n'
+                else:
+                    result += "Fix versions already added.\n"
+
+                statusName = str(issueFields['status']['name'])
+                if statusName != 'Resolved':
+                    try:
+                        transitionId = jira.get_transition_id_to_status_name(issueName, 'Resolved')
+                        jira.set_issue_status_by_transition_id(issueName, transitionId)
+                        result += "Workflow Transition: 'Resolve issue'\n"
+                    except Exception as error:
+                        result += 'Error: Transitioning to: "Resolved" failed with: "' + str(error) + '\n'
+
+                return result
+
+            jirabot_user = os.environ['JIRABOT_USERNAME']
+            jirabot_pass = os.environ['JIRABOT_PASSWORD']
+            jira_url = os.environ['JIRA_URL']
+
+            pr = os.environ['PULL_REQUEST_NUMBER']
+            title = os.environ['PULL_REQUEST_TITLE']
+            user = os.environ['PULL_REQUEST_AUTHOR_NAME']
+            pull_url = os.environ['PULL_URL']
+            github_token = os.environ['GITHUB_TOKEN']
+            branch_name = os.environ['BRANCH_NAME']
+            comments_url = os.environ['COMMENTS_URL']
+
+            projectConfig = json.loads(os.environ['PROJECT_CONFIG'])
+            if not isinstance(projectConfig, dict):
+                print('Error: PROJECT_CONFIG is not a valid JSON object, aborting.')
+                sys.exit(1)
+
+            if 'tagPrefix' not in projectConfig or 'tagPostfix' not in projectConfig:
+                print('Error: PROJECT_CONFIG is missing required fields: tagPrefix and/or tagPostfix')
+                sys.exit(1)
+
+            project_prefixes = projectConfig.get('projectPrefixes')
+            if project_prefixes is None:
+                print('Error: PROJECT_CONFIG is missing required field: projectPrefixes')
+                sys.exit(1)
+
+            project_list_regex = '|'.join(project_prefixes)
+
+            result = ''
+            issuem = re.search("(" + project_list_regex + ")-[0-9]+", title, re.IGNORECASE)
+            if issuem:
+                project_name = issuem.group(1)
+                issue_name = issuem.group()
+
+                jira = Jira(url=jira_url, username=jirabot_user, password=jirabot_pass, cloud=True)
+
+                if not jira.issue_exists(issue_name):
+                    sys.exit('Error: Unable to find Jira issue: ' + issue_name)
+                else:
+                    issue = jira.issue(issue_name)
+
+                result = 'Jirabot Action Result:\n'
+
+                fixVersions = generateFixVersionList(jira, projectConfig, project_name, branch_name)
+                result += resolveIssue(jira, project_name, issue, fixVersions)
+                jira.issue_add_comment(issue_name, result)
+
+                # Escape the result for JSON
+                result = json.dumps(result)
+
+                subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {github_token}', '--data', f'{{ "body": {result} }}'], check=True)
+            else:
+                print('Unable to find Jira issue name in title')
+
+            print(result)
