@@ -18,7 +18,7 @@
 //noroxie
 //nohthor
 
-import Std.System;
+import Std.System.Thorlib;
 import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
@@ -26,10 +26,6 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 // Generate Data
 layout_user := RECORD
    STRING20 user;
-END;
-
-layout_names := RECORD
-   STRING30 name;
 END;
 
 ds1 := DATASET([{'Ned'},{'Robert'}, {'Jaime'}, {'Catelyn'}, {'Cersei'}, {'Daenerys'}, {'Jon'}], layout_user, DISTRIBUTED );
@@ -46,12 +42,10 @@ SEQUENTIAL(
     FileServices.AddSuperFile(prefix + 'superdata', prefix + 'subdata2'),
     FileServices.AddSuperFile(prefix + 'superdata', prefix + 'subdata3'),
     FileServices.FinishSuperFileTransaction(),
-    FileServices.Copy(sourceLogicalName := prefix + 'superdata', destinationGroup := 'mythor', destinationLogicalName := prefix + 'super_copy', ALLOWOVERWRITE := true),
+    FileServices.Copy(sourceLogicalName := prefix + 'superdata', destinationGroup := Thorlib.group(), destinationLogicalName := prefix + 'super_copy', ALLOWOVERWRITE := true),
     FileServices.DeleteLogicalFile(prefix + 'super_copy', true),
-    FileServices.DeleteOwnedSubFiles(prefix + 'superdata'),
+    FileServices.DeleteLogicalFile(prefix + 'superdata', true),
     FileServices.DeleteLogicalFile(prefix + 'subdata1', true),
     FileServices.DeleteLogicalFile(prefix + 'subdata2', true),
     FileServices.DeleteLogicalFile(prefix + 'subdata3', true),
-    FileServices.DeleteLogicalFile(prefix + 'superdata', true),
 )
-
