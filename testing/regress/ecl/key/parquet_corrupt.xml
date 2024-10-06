@@ -1,0 +1,2 @@
+<Exception><Source>eclagent</Source><Message>Error: 0: parquet: Invalid: Parquet magic bytes not found in footer. Either the file is corrupted or this is not a parquet file..</Message></Exception>
+

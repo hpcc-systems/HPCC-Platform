@@ -1,0 +1,8 @@
+<Dataset name='ComparisonResult'>
+ <Row><s1>          </s1><s2>                    </s2><s3>                              </s3></Row>
+ <Row><s1>          </s1><s2>                    </s2><s3>                              </s3></Row>
+ <Row><s1>          </s1><s2>                    </s2><s3>                              </s3></Row>
+</Dataset>
+<Dataset name='TestResult'>
+ <Row><TestResult>All records match</TestResult></Row>
+</Dataset>
