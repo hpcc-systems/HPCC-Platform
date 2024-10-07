@@ -937,28 +937,35 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
 StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
-    if (lenSource)
+    if (lenOldStr && lenSource >= lenOldStr)
     {
-        size_t left = lenSource;
-        while (left >= lenOldStr)
+        // Avoid allocating an unnecessarly large buffer and match the source string
+        result.ensureCapacity(lenSource);
+
+        size_t offset = 0;
+        size_t lastCopied = 0;
+        size_t maxOffset = lenSource - lenOldStr + 1;
+        char firstChar = oldStr[0];
+        while (offset < maxOffset)
         {
-            if (memcmp(source, oldStr, lenOldStr)==0)
+            if (unlikely(source[offset] == firstChar)
+                && unlikely((lenOldStr == 1) || memcmp(source + offset, oldStr, lenOldStr)==0))
             {
+                // If lastCopied matches the offset nothing is appended, but we can avoid a test for offset == lastCopied
+                result.append(offset - lastCopied, source + lastCopied);
                 result.append(lenNewStr, newStr);
-                source += lenOldStr;
-                left -= lenOldStr;
+                offset += lenOldStr;
+                lastCopied = offset;
             }
             else
-            {
-                result.append(*source);
-                source++;
-                left--;
-            }
+                offset++;
         }
-
-        // there are no more possible replacements, make sure we keep the end of the original buffer
-        result.append(left, source);
+        // Append the remaining characters
+        result.append(lenSource - lastCopied, source + lastCopied);
     }
+    else
+        result.append(lenSource, source); // Search string does not fit in source or is empty
+
     return result;
 }
 
