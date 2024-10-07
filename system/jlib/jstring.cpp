@@ -942,10 +942,14 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
     {
         // Scan for match on first character
         size_t offset = 0;
-        while (offset < lenSource)
+        size_t left = lenSource;
+        while (left >= lenOldStr)
         {
             if (source[offset] != oldStr[0])
+            {
                 offset++;
+                left--;
+            }
             else
                 break;
         }
@@ -959,7 +963,6 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
         result.append(offset, source);
 
         size_t unmatchedChars = 0;
-        size_t left = lenSource - offset;
         while (left >= lenOldStr)
         {
             if (memcmp(source + offset, oldStr, lenOldStr)==0)
