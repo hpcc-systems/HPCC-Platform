@@ -937,27 +937,55 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
 StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
-    if (lenSource)
+    // Only copy if the source and search (oldStr) strings are non-empty
+    if (lenSource && lenOldStr)
     {
-        size_t left = lenSource;
+        // Scan for match on first character
+        size_t offset = 0;
+        while (offset < lenSource)
+        {
+            if (source[offset] != oldStr[0])
+                offset++;
+            else
+                break;
+        }
+
+        // Reserve space when the new string is longer than the old string
+        unsigned steps = lenSource - lenOldStr - offset + 1;
+        unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
+        result.ensureCapacity(maxResultLength);
+
+        // Add any characters before the match
+        result.append(offset, source);
+
+        size_t unmatchedChars = 0;
+        size_t left = lenSource - offset;
         while (left >= lenOldStr)
         {
-            if (memcmp(source, oldStr, lenOldStr)==0)
+            if (memcmp(source + offset, oldStr, lenOldStr)==0)
             {
+                if (unmatchedChars)
+                {
+                    // Copy mismatched characters in blocks
+                    result.append(unmatchedChars, source + offset - unmatchedChars);
+                    unmatchedChars = 0;
+                }
                 result.append(lenNewStr, newStr);
-                source += lenOldStr;
+                offset += lenOldStr;
                 left -= lenOldStr;
             }
             else
             {
-                result.append(*source);
-                source++;
+                unmatchedChars++;
+                offset++;
                 left--;
             }
         }
 
-        // there are no more possible replacements, make sure we keep the end of the original buffer
-        result.append(left, source);
+        // If there were any characters left or characters that didn't match, append them
+        left += unmatchedChars;
+        if (left && (offset - left) < lenSource)
+            result.append(left, source + offset - unmatchedChars);
     }
     return result;
 }
