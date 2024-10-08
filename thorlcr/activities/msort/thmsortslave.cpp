@@ -140,9 +140,12 @@ public:
             throw;
         }
         ActPrintLog("SORT waiting barrier.1");
-        if (!barrier->wait(false)) {
-            Sleep(1000); // let original error through
-            throw MakeThorException(TE_BarrierAborted,"SORT: Barrier Aborted");
+        {
+            BlockedActivityTimer t(slaveTimerStats, timeActivities);
+            if (!barrier->wait(false)) {
+                Sleep(1000); // let original error through
+                throw MakeThorException(TE_BarrierAborted,"SORT: Barrier Aborted");
+            }
         }
         ActPrintLog("SORT barrier.1 raised");
         output.setown(sorter->startMerge(totalrows));
