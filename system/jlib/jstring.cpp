@@ -1002,7 +1002,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
             // If there were any characters left or characters that didn't match, append them
             left += unmatchedChars;
             if (left && (offset - left) < lenSource)
-                result.append(left, source + offset - unmatchedChars);
+                result.append(left, source + lenSource - left);
         }
         else
             result.append(lenSource, source); // Search string is empty, just copy the source
