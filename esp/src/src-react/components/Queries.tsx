@@ -120,8 +120,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerTooltip: nlsHPCC.ErrorWarnings,
                 width: 16,
                 sortable: false,
-                formatter: (error) => {
-                    if (error > 0) {
+                formatter: (error, row) => {
+                    if (row.ErrorCount > 0) {
                         return <Icon iconName="Warning" />;
                     }
                     return "";
@@ -133,8 +133,9 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerTooltip: nlsHPCC.MixedNodeStates,
                 width: 16,
                 sortable: false,
-                formatter: (mixed) => {
-                    if (mixed === true) {
+                formatter: (mixed, row) => {
+                    const mixedStates = row.Clusters.ClusterQueryState[0]?.MixedNodeStates ?? false;
+                    if (mixedStates === true) {
                         return <Icon iconName="Error" />;
                     }
                     return "";
@@ -144,8 +145,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerIcon: "SkypeCircleCheck",
                 headerTooltip: nlsHPCC.Active,
                 width: 16,
-                formatter: (activated) => {
-                    if (activated === true) {
+                formatter: (activated, row) => {
+                    if (row.Activated === true) {
                         return <Icon iconName="SkypeCircleCheck" />;
                     }
                     return "";
