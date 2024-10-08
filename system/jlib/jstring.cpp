@@ -937,37 +937,35 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
 StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
-    if (lenSource)
+    if (lenSource >= lenOldStr)
     {
-        if (lenOldStr)
-        {
-            // Reserve space when the new string is longer than the old string
-            unsigned steps = lenSource - lenOldStr + 1;
-            unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
-            result.ensureCapacity(maxResultLength);
+        // Reserve space when the new string is longer than the old string
+        unsigned steps = lenSource - lenOldStr + 1;
+        unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
+        result.ensureCapacity(maxResultLength);
 
-            size_t offset = 0;
-            size_t lastCopied = 0;
-            size_t maxOffset = lenSource - lenOldStr;
-            char firstChar = oldStr[0];
-            while (offset < maxOffset)
+        size_t offset = 0;
+        size_t lastCopied = 0;
+        size_t maxOffset = lenSource - lenOldStr;
+        char firstChar = oldStr[0];
+        while (offset < maxOffset)
+        {
+            if (unlikely(source[offset] == firstChar) && unlikely(memcmp(source + offset, oldStr, lenOldStr)==0))
             {
-                if (unlikely(source[offset] == firstChar) && unlikely(memcmp(source + offset, oldStr, lenOldStr)==0))
-                {
-                    if (lastCopied != offset)
-                        result.append(offset - lastCopied, source + lastCopied);
-                    result.append(lenNewStr, newStr);
-                    offset += lenOldStr;
-                    lastCopied = offset;
-                }
-                else
-                    offset++;
+                if (lastCopied != offset)
+                    result.append(offset - lastCopied, source + lastCopied);
+                result.append(lenNewStr, newStr);
+                offset += lenOldStr;
+                lastCopied = offset;
             }
-            result.append(lenSource - lastCopied, source + lastCopied);
+            else
+                offset++;
         }
-        else
-            result.append(lenSource, source); // Search string is empty, just copy the source
+        result.append(lenSource - lastCopied, source + lastCopied);
     }
+    else
+        result.append(lenSource, source); // Search string is empty, just copy the source
+
     return result;
 }
 
