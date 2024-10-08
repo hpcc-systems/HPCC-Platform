@@ -983,6 +983,19 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
                     unmatchedChars++;
                     offset++;
                     left--;
+
+                    // Skip ahead to the next possible match
+                    while (left >= lenOldStr)
+                    {
+                        if (source[offset] != oldStr[0])
+                        {
+                            unmatchedChars++;
+                            offset++;
+                            left--;
+                        }
+                        else
+                            break;
+                    }
                 }
             }
 
