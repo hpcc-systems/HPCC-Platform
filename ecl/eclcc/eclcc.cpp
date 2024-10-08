@@ -1054,8 +1054,11 @@ static bool convertPathToModule(StringBuffer & out, const char * filename)
     {
         char next = filename[i];
         if (isPathSepChar(next))
-            next = '.';
-        out.append(next);
+            out.append('.');
+        else if (isalnum(next) || (next == '_'))
+            out.append(next);
+        else
+            return false; // filename is not a valid identifier.
     }
     return true;
 }
@@ -1095,13 +1098,18 @@ static bool findFilenameInSearchPath(StringBuffer & attributePath, const char * 
                     tail++;
                 if (convertPathToModule(attributePath, tail))
                     return true;
+                else
+                    break;
             }
         }
 
         if (!sep)
-            return false;
+            break;
         cur = sep+1;
     }
+
+    attributePath.clear();
+    return false;
 }
 
 bool EclCC::isWithinPath(const char * sourcePathname, const char * searchPath)
@@ -1862,13 +1870,16 @@ void EclCC::processFile(EclCompileInstance & instance)
                 StringBuffer thisDirectory;
                 StringBuffer thisTail;
                 splitFilename(expandedSourceName, &thisDirectory, &thisDirectory, &thisTail, NULL);
-                attributePath.append(moduleName).append(".").append(thisTail);
+                if (isValidIdentifier(thisTail))
+                {
+                    attributePath.append(moduleName).append(".").append(thisTail);
 
-                inputFileCollection.setown(createSingleDefinitionEclCollection(attributePath, queryText));
-                localRepositoryManager.addRepository(inputFileCollection, nullptr, true);
+                    inputFileCollection.setown(createSingleDefinitionEclCollection(attributePath, queryText));
+                    localRepositoryManager.addRepository(inputFileCollection, nullptr, true);
 
-                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, ESFnone, 0);
-                localRepositoryManager.addNestedRepository(moduleNameId, directory, true);
+                    Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, ESFnone, 0);
+                    localRepositoryManager.addNestedRepository(moduleNameId, directory, true);
+                }
             }
         }
 
