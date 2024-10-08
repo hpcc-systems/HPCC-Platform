@@ -941,68 +941,29 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
     {
         if (lenOldStr)
         {
-            // Scan for match on first character
-            size_t offset = 0;
-            size_t left = lenSource;
-            while (left >= lenOldStr)
-            {
-                if (source[offset] != oldStr[0])
-                {
-                    offset++;
-                    left--;
-                }
-                else
-                    break;
-            }
-
             // Reserve space when the new string is longer than the old string
-            unsigned steps = lenSource - lenOldStr - offset + 1;
+            unsigned steps = lenSource - lenOldStr + 1;
             unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
             result.ensureCapacity(maxResultLength);
 
-            // Add any characters before the match
-            result.append(offset, source);
-
-            size_t unmatchedChars = 0;
-            while (left >= lenOldStr)
+            size_t offset = 0;
+            size_t lastCopied = 0;
+            size_t maxOffset = lenSource - lenOldStr;
+            char firstChar = oldStr[0];
+            while (offset < maxOffset)
             {
-                if (memcmp(source + offset, oldStr, lenOldStr)==0)
+                if (unlikely(source[offset] == firstChar) && unlikely(memcmp(source + offset, oldStr, lenOldStr)==0))
                 {
-                    if (unmatchedChars)
-                    {
-                        // Copy mismatched characters in blocks
-                        result.append(unmatchedChars, source + offset - unmatchedChars);
-                        unmatchedChars = 0;
-                    }
+                    if (lastCopied != offset)
+                        result.append(offset - lastCopied, source + lastCopied);
                     result.append(lenNewStr, newStr);
                     offset += lenOldStr;
-                    left -= lenOldStr;
+                    lastCopied = offset;
                 }
                 else
-                {
-                    unmatchedChars++;
                     offset++;
-                    left--;
-
-                    // Skip ahead to the next possible match
-                    while (left >= lenOldStr)
-                    {
-                        if (source[offset] != oldStr[0])
-                        {
-                            unmatchedChars++;
-                            offset++;
-                            left--;
-                        }
-                        else
-                            break;
-                    }
-                }
             }
-
-            // If there were any characters left or characters that didn't match, append them
-            left += unmatchedChars;
-            if (left && (offset - left) < lenSource)
-                result.append(left, source + lenSource - left);
+            result.append(lenSource - lastCopied, source + lastCopied);
         }
         else
             result.append(lenSource, source); // Search string is empty, just copy the source
