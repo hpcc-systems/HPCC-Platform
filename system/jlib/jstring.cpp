@@ -937,58 +937,62 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
 StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
-    // Only copy if the source and search (oldStr) strings are non-empty
-    if (lenSource && lenOldStr)
+    if (lenSource)
     {
-        // Scan for match on first character
-        size_t offset = 0;
-        size_t left = lenSource;
-        while (left >= lenOldStr)
+        if (lenOldStr)
         {
-            if (source[offset] != oldStr[0])
+            // Scan for match on first character
+            size_t offset = 0;
+            size_t left = lenSource;
+            while (left >= lenOldStr)
             {
-                offset++;
-                left--;
-            }
-            else
-                break;
-        }
-
-        // Reserve space when the new string is longer than the old string
-        unsigned steps = lenSource - lenOldStr - offset + 1;
-        unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
-        result.ensureCapacity(maxResultLength);
-
-        // Add any characters before the match
-        result.append(offset, source);
-
-        size_t unmatchedChars = 0;
-        while (left >= lenOldStr)
-        {
-            if (memcmp(source + offset, oldStr, lenOldStr)==0)
-            {
-                if (unmatchedChars)
+                if (source[offset] != oldStr[0])
                 {
-                    // Copy mismatched characters in blocks
-                    result.append(unmatchedChars, source + offset - unmatchedChars);
-                    unmatchedChars = 0;
+                    offset++;
+                    left--;
                 }
-                result.append(lenNewStr, newStr);
-                offset += lenOldStr;
-                left -= lenOldStr;
+                else
+                    break;
             }
-            else
-            {
-                unmatchedChars++;
-                offset++;
-                left--;
-            }
-        }
 
-        // If there were any characters left or characters that didn't match, append them
-        left += unmatchedChars;
-        if (left && (offset - left) < lenSource)
-            result.append(left, source + offset - unmatchedChars);
+            // Reserve space when the new string is longer than the old string
+            unsigned steps = lenSource - lenOldStr - offset + 1;
+            unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
+            result.ensureCapacity(maxResultLength);
+
+            // Add any characters before the match
+            result.append(offset, source);
+
+            size_t unmatchedChars = 0;
+            while (left >= lenOldStr)
+            {
+                if (memcmp(source + offset, oldStr, lenOldStr)==0)
+                {
+                    if (unmatchedChars)
+                    {
+                        // Copy mismatched characters in blocks
+                        result.append(unmatchedChars, source + offset - unmatchedChars);
+                        unmatchedChars = 0;
+                    }
+                    result.append(lenNewStr, newStr);
+                    offset += lenOldStr;
+                    left -= lenOldStr;
+                }
+                else
+                {
+                    unmatchedChars++;
+                    offset++;
+                    left--;
+                }
+            }
+
+            // If there were any characters left or characters that didn't match, append them
+            left += unmatchedChars;
+            if (left && (offset - left) < lenSource)
+                result.append(left, source + offset - unmatchedChars);
+        }
+        else
+            result.append(lenSource, source); // Search string is empty, just copy the source
     }
     return result;
 }
