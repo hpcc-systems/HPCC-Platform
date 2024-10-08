@@ -586,14 +586,17 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
                 break;
         }
     }
-    unsigned __int64 localCycles = queryTotalCycles();
-    if (localCycles < inputCycles) // not sure how/if possible, but guard against
+    unsigned __int64 processCycles = queryTotalCycles() + queryLookAheadCycles();
+    if (processCycles < inputCycles) // not sure how/if possible, but guard against
         return 0;
-    localCycles -= inputCycles;
+    processCycles -= inputCycles;
     const unsigned __int64 blockedCycles = queryBlockedCycles();
-    if (localCycles < blockedCycles)
+    if (processCycles < blockedCycles)
+    {
+        IWARNLOG("CSlaveActivity::queryLocalCycles - processCycles %" I64F "u < blockedCycles %" I64F "u", processCycles, blockedCycles);
         return 0;
-    return localCycles-blockedCycles;
+    }
+    return processCycles-blockedCycles;
 }
 
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
@@ -618,6 +621,8 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
     serializedStats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
     serializedStats.setStatistic(StTimeTotalExecute, (unsigned __int64)cycle_to_nanosec(queryTotalCycles()));
     serializedStats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
+    serializedStats.setStatistic(StTimeLookAhead, (unsigned __int64)cycle_to_nanosec(queryLookAheadCycles()));
+
     serializedStats.serialize(mb);
     ForEachItemIn(i, outputs)
     {
