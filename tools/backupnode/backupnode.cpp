@@ -532,6 +532,9 @@ int main(int argc, const char *argv[])
     StringAttr errdatdir;
     StringArray args;
     unsigned slaveNum = 0;
+
+    initNullConfiguration();
+
     unsigned argNo = 1;
     while ((int)argNo<argc)
     {
