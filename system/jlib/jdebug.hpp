@@ -446,6 +446,10 @@ public:
     unsigned getSystemPercent() const;
     unsigned getUserPercent() const;
 
+    __uint64 getNumPeriods() const { return numPeriods; }
+    __uint64 getNumThrottledPeriods() const { return numThrottledPeriods; }
+    __uint64 getTimeThrottledNs() const { return timeThrottledNs; }
+
     __uint64 getTotal() const { return user + system + idle + iowait; }
 protected:
     __uint64 user = 0;      // user time in jiffies (~`1/100s)
@@ -461,6 +465,9 @@ protected:
     __uint64 activeDataMemory = 0;
     __uint64 majorFaults = 0;
     __uint64 numThreads = 0;
+    __uint64 numPeriods = 0;
+    __uint64 numThrottledPeriods = 0;
+    __uint64 timeThrottledNs = 0;
 };
 
 class jlib_decl ProcessInfo : public SystemProcessInfo

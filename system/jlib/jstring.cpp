@@ -2902,6 +2902,12 @@ void getSnakeCase(StringBuffer & out, const char * camelValue)
     }
 }
 
+void ensureSeparator(StringBuffer & out, char separator)
+{
+    if (out.length() && (out.charAt(out.length()-1) != separator))
+        out.append(separator);
+}
+
 /**
  * stristr - Case insensitive strstr()
  * @haystack: Where we will search for our @needle
@@ -2947,5 +2953,33 @@ const char * stristr (const char *haystack, const char *needle)
             }
         }
     }
+    return nullptr;
+}
+
+
+const void * jmemmem(size_t lenHaystack, const void * haystack, size_t lenNeedle, const void *needle)
+{
+    if (lenNeedle == 0)
+        return haystack;
+
+    if (lenHaystack < lenNeedle)
+        return nullptr;
+
+    const char * search = (const char *)needle;
+    char first = *search;
+    if (lenNeedle == 1)
+        return memchr(haystack, first, lenHaystack);
+
+    const char * buffer = (const char *)haystack;
+    for (size_t i = 0; i <= lenHaystack - lenNeedle; i++)
+    {
+        //Special case the first character to avoid a function call each iteration.
+        if (buffer[i] == first)
+        {
+            if (memcmp(buffer + i + 1, search + 1, lenNeedle-1) == 0)
+                return buffer + i;
+        }
+    }
+
     return nullptr;
 }
