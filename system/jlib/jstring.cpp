@@ -963,7 +963,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
         result.append(lenSource - lastCopied, source + lastCopied);
     }
     else
-        result.append(lenSource, source); // Search string is empty, just copy the source
+        result.append(lenSource, source); // Search string does not fit in source
 
     return result;
 }
