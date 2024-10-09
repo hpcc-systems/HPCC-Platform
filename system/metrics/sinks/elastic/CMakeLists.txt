@@ -1,4 +1,4 @@
-###############################################################################
+################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,20 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (file)
-HPCC_ADD_SUBDIRECTORY (log)
-HPCC_ADD_SUBDIRECTORY (prometheus)
-HPCC_ADD_SUBDIRECTORY (elastic)
+project(hpccmetrics_elasticsink)
+
+set ( srcs
+        elasticSink.cpp
+        )
+
+include_directories(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/system/httplib
+)
+
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
+ADD_DEFINITIONS(  -DELASTICSINK_EXPORTS )
+HPCC_ADD_LIBRARY( hpccmetrics_elasticsink SHARED ${srcs} )
+TARGET_LINK_LIBRARIES( hpccmetrics_elasticsink jlib)
+INSTALL ( TARGETS hpccmetrics_elasticsink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
