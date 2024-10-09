@@ -129,7 +129,7 @@ void initOptions(int argc, const char **argv)
 {
     Owned<IPropertyTree> defaults = createPTreeFromYAMLString(defaultYaml);
     IPropertyTree * allowed = defaults->queryPropTree("udpsim");
-    for (unsigned argNo = 1; argNo < argc; argNo++)
+    for (int argNo = 1; argNo < argc; argNo++)
     {
         const char *arg = argv[argNo];
         if (arg[0]=='-' && arg[1]=='-')
@@ -248,7 +248,7 @@ static unsigned completedThreads = 0;
 
 void simulateTraffic()
 {
-    const unsigned maxSendQueueSize = 100;
+    unsigned maxSendQueueSize = 100;
     try
     {
         myNode.setIp(IpAddress("1.2.3.4"));
@@ -258,7 +258,7 @@ void simulateTraffic()
         unsigned begin = msTick();
         std::atomic<unsigned> workValue{0};
 
-        asyncFor(numThreads+1, numThreads+1, [&workValue, maxSendQueueSize, &rm, &mc, &rowManager](unsigned i)
+        asyncFor(numThreads+1, numThreads+1, [&workValue, &rm, &mc, &rowManager, maxSendQueueSize](unsigned i)
         {
             if (!i)
             {

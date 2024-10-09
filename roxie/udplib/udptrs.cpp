@@ -989,7 +989,7 @@ class CSendManager : implements ISendManager, public CInterface
 #endif
             while(running) 
             {
-                UdpPermitToSendMsg f = { flowType::ok_to_send, 0, { } };
+                UdpPermitToSendMsg f = { flowType::ok_to_send, 0, 0, { }, { } };
                 unsigned readsize = udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen);
                 while (running) 
                 {

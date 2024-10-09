@@ -68,7 +68,9 @@ class PackageSequencer : public CInterface, implements IInterface
     unsigned headerSize;
     const RoxiePacketHeader *header;
     unsigned maxSeqSeen = 0;
+#ifdef _DEBUG
     unsigned numPackets = 0;
+#endif
     bool outOfBand = false;
 
     MemoryBuffer metadata;
@@ -219,7 +221,7 @@ public:
                 unsigned pktseq = fingerHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK;
                 if (pktseq == prevseq+1)
                 {
-                    unsigned packetDataSize = fingerHdr->length - fingerHdr->metalength - sizeof(UdpPacketHeader);
+                    [[maybe_unused]] unsigned packetDataSize = fingerHdr->length - fingerHdr->metalength - sizeof(UdpPacketHeader);
                     assert(packetDataSize < roxiemem::DATA_ALIGNMENT_SIZE);
                     if (pktseq == 0)
                     {
