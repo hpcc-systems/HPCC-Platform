@@ -311,6 +311,9 @@ enum StatisticKind
     StNumMatchRightRowsMax,
     StNumMatchCandidates,
     StNumMatchCandidatesMax,
+    StNumParallelExecute,
+    StNumAgentRequests,
+    StSizeAgentRequests,
     StMax,
 
     //For any quantity there is potentially the following variants.
