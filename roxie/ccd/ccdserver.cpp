@@ -496,7 +496,7 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries, StNumAgentRequests, StSizeAgentRequests,
                                                StSizeContinuationData, StNumContinuationRequests }, actStatistics);
-static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
+static const StatisticsMapping soapStatistics({ StTimeSoapcall, StTimeSoapcallDNS, StTimeSoapcallConnect, StNumSoapcallConnectFailures }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
 static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys, StNumLeafCacheAdds, StNumNodeCacheAdds, StNumBlobCacheAdds }, actStatistics);
@@ -518,7 +518,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                       StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                       StNumDiskRejected, StSizeAgentReply, StTimeAgentWait,
-                                                      StTimeSoapcall,
+                                                      StTimeSoapcall, StTimeSoapcallDNS, StTimeSoapcallConnect, StNumSoapcallConnectFailures,
                                                       StNumGroups,
                                                       StTimeSortElapsed,
                                                       StNumDuplicateKeys,

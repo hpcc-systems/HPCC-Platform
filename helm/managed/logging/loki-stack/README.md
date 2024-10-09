@@ -10,7 +10,8 @@ A Loki Datasource is created automatically, which allowers users to monitor/quer
 ### Helm Deployment
 To deploy the light-weight Loki Stack for HPCC component log processing issue the following command:
 
->helm install myloki HPCC-Systems/helm/managed/logging/loki-stack/
+>helm install myloki4hpcclogs HPCC-Systems/helm/managed/logging/loki-stack/
+Note: the deployment name 'myloki4hpcclogs' is customizable; however, any changes need to be reflected in the LogAccess configuration (See section on configuring LogAccess below)
 
 ### Dependencies
 This chart is dependent on the Grafana Loki-stack Helm charts which in turn is dependent on Loki, Grafana, Promtail.
@@ -23,7 +24,9 @@ Helm provides a convenient command to automatically pull appropriate dependencie
 ##### HELM Install parameter
 Otherwise, provide the "--dependency-update" argument in the helm install command
 For example:
-> helm install myloki HPCC-Systems/helm/managed/logging/loki-stack/ --dependency-update
+> helm install myloki4hpcclogs HPCC-Systems/helm/managed/logging/loki-stack/ --dependency-update
+
+Note: the deployment name 'myloki4hpcclogs' is customizable; however, any changes need to be reflected in the LogAccess configuration (See section on configuring LogAccess below)
 
 ### Components
 Grafana Loki Stack is comprised of a set of components that which serve as a full-featured logging stack.
@@ -172,7 +175,7 @@ username:  5 bytes
 
 The target HPCC deployment should be directed to use the desired Grafana endpoint with the Loki datasource, and the newly created secret by providing appropriate logAccess values (such as ./grafana-hpcc-logaccess.yaml).
 
-Example use:
+Example use for targeting a loki stack deployed as 'myloki4hpcclogs' on the default namespace:
 
 ```
   helm install myhpcc hpcc/hpcc -f HPCC-Platform/helm/managed/logging/loki-stack/grafana-hpcc-logaccess.yaml
@@ -182,8 +185,10 @@ Example use:
 
 The grafana hpcc logaccess values should provide Grafana connection information, such as the host, and port; the Loki datasource where the logs reside; the k8s namespace under which the logs were created (non-default namespace highly recommended); and the hpcc component log format (table|json|xml)
 
+Example values file describing logAccess targeting loki stack deployed as 'myloki4hpcclogs' on the default namespace. Note that the "host" entry must reflect the name of the deployed Loki stack, as shown in the excerpt below (eg **_myloki4hpcclogs_**-grafana.default.svc.cluster.local):
+
 ```
-Example use:
+
   global:
     logAccess:
       name: "Grafana/loki stack log access"
