@@ -314,6 +314,11 @@ enum StatisticKind
     StNumParallelExecute,
     StNumAgentRequests,
     StSizeAgentRequests,
+    StTimeSoapcallDNS,                  // Time spent in DNS lookups for soapcalls
+    StTimeSoapcallConnect,              // Time spent in connect[+SSL_connect] for soapcalls
+    StCycleSoapcallDNSCycles,
+    StCycleSoapcallConnectCycles,
+    StNumSoapcallConnectFailures,
     StMax,
 
     //For any quantity there is potentially the following variants.

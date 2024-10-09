@@ -123,6 +123,36 @@ jobs:
       asset-name: 'docker-ubuntu-22_04'
       generate-zap: ""
     secrets: inherit
+
+  check-documentation-changes:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    runs-on: ubuntu-22.04
+    outputs:
+      documentation_contents_changed: ${{ steps.variables.outputs.documentation_contents_changed }}
+    steps:
+      - name: Check for Documentation Changes
+        id: changed
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            src:
+              - 'docs/**'
+              - '.github/workflows/test-documentation.yml'
+      - name: Set Output
+        id: variables
+        run: |
+          echo "documentation_contents_changed=${{ steps.changed.outputs.src }}" >> $GITHUB_OUTPUT
+      - name: Print Variables
+        run: |
+          echo "${{ toJSON(steps.variables.outputs)}}"
+
+  test-documentation-ubuntu-22_04:
+    needs: check-documentation-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.check-documentation-changes.outputs.documentation_contents_changed == 'true' }}
+    uses: ./.github/workflows/test-documentation.yml
+    with:
+      os: 'ubuntu-22.04'
+      asset-name: 'Documentation'
     
   build-docker-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
