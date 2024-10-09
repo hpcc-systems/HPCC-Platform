@@ -204,7 +204,7 @@ bool RoxiePacketHeader::allChannelsFailed()
     return (retries & mask) == mask;
 }
 
-bool RoxiePacketHeader::retry(bool ack)
+bool RoxiePacketHeader::retry()
 {
     bool worthRetrying = false;
     unsigned mask = SUBCHANNEL_MASK;
@@ -213,8 +213,7 @@ bool RoxiePacketHeader::retry(bool ack)
     {
         unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
         if (subRetries != SUBCHANNEL_MASK)
-            if (!subRetries || !ack)
-                subRetries++;
+            subRetries++;
         if (subRetries != SUBCHANNEL_MASK)
             worthRetrying = true;
         retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
@@ -498,6 +497,7 @@ protected:
     unsigned contextLength = 0;
     std::atomic<unsigned> timeFirstSent = 0;
     std::atomic<bool> acknowledged = false;
+    unsigned resends = 0;
     
 public:
     IMPLEMENT_IINTERFACE;
@@ -646,14 +646,22 @@ public:
         acknowledged = true;
     }
 
+    virtual void clearAcknowledged() override
+    {
+        acknowledged = false;
+    }
+
     virtual bool isAcknowledged() const override
     {
         return acknowledged;
     }
 
-    virtual bool resendNeeded(unsigned timeout, unsigned now) const override
+    virtual bool resendNeeded(unsigned now) override
     {
-        return timeFirstSent && !acknowledged && now-timeFirstSent > timeout;
+        bool ret = timeFirstSent && !acknowledged && now-timeFirstSent > packetAcknowledgeTimeout*(resends+1);
+        if (ret)
+            resends++;
+        return ret;
     }
 };
 
@@ -2724,6 +2732,8 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
+                if (retries >= SUBCHANNEL_MASK)
+                    return; // I already failed unrecoverably on this request - ignore it
                 if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {
 #ifdef DEBUG
@@ -2743,9 +2753,6 @@ public:
                 {
                     // MORE - is this fast enough? By the time I am seeing retries I may already be under load. Could move onto a separate thread
                     assertex(header.channel); // should never see a retry on channel 0
-                    if (retries >= SUBCHANNEL_MASK)
-                        return; // someone sent a failure or something - ignore it
-
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                     if (!(testAgentFailure & 0x800) && !acknowledgeAllRequests)
                     {

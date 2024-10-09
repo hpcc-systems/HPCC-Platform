@@ -4158,17 +4158,17 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         }
     }
 
-    void retryPending(unsigned timeout)
+    void retryPending()
     {
         checkDelayed();
         unsigned now = 0;
-        if (timeout)
+        if (acknowledgeAllRequests)
         {
+            now = msTick();
+            if (now-lastRetryCheck < packetAcknowledgeTimeout/4)
+                return;
             if (doTrace(traceRoxiePackets))
                 DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
-            now = msTick();
-            if (now-lastRetryCheck < timeout/4)
-                return;
             lastRetryCheck = now;
         }
         CriticalBlock b(pendingCrit);
@@ -4180,16 +4180,16 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 IRoxieQueryPacket *i = p.queryPacket();
                 if (i)
                 {
-                    if (timeout)
+                    if (acknowledgeAllRequests)
                     {
-                        if (!i->resendNeeded(timeout, now))
+                        if (!i->resendNeeded(now))
                             continue;
                         if (doTrace(traceAcknowledge) || doTrace(traceRoxiePackets))
-                            activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", timeout);
+                            activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", packetAcknowledgeTimeout);
                         activity.noteStatistic(StNumAckRetries, 1);
 
                     }
-                    if (!i->queryHeader().retry(timeout!=0))
+                    if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
                         IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from agent(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());
@@ -5026,7 +5026,7 @@ public:
             activity.queryContext()->checkAbort();
             if (acknowledgeAllRequests && !localAgent)
             {
-                retryPending(checkInterval);
+                retryPending();
             }
             bool anyActivity;
             if (ctxTraceLevel > 5)
@@ -5238,7 +5238,9 @@ public:
                             Owned<IMessageUnpackCursor> exceptionData = mr->getCursor(rowManager);
                             throwRemoteException(exceptionData);
                         }
-                        // Leave it on pending queue in original location
+                        // One channel has failed, but should be recoverable
+                        // Leave it on pending queue in original location, but clear acknowledged flag
+                        op->clearAcknowledged();
                         break;
 
                     case ROXIE_ALIVE:
@@ -5318,11 +5320,11 @@ public:
             else if (!anyActivity && !localAgent && !acknowledgeAllRequests)
             {
                 unsigned timeNow = msTick();
-                if (timeNow-lastActivity >= checkInterval)
+                if (timeNow-lastActivity >= timeout)
                 {
                     lastActivity = timeNow;
-                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", checkInterval);
-                    retryPending(0);
+                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
+                    retryPending();
                 }
             }
         }
