@@ -986,6 +986,11 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(ParallelExecute), "The number of parallel execution paths for this activity" },
     { NUMSTAT(AgentRequests), "The number of agent request packets for this activity" },
     { SIZESTAT(AgentRequests), "The total size of agent request packets for this activity" },
+    { TIMESTAT(SoapcallDNS), "The time taken for DNS lookup in SOAPCALL" },
+    { TIMESTAT(SoapcallConnect), "The time taken for connect[+SSL_connect] in SOAPCALL" },
+    { CYCLESTAT(SoapcallDNS) },
+    { CYCLESTAT(SoapcallConnect) },
+    { NUMSTAT(SoapcallConnectFailures), "The number of SOAPCALL connect failures" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
