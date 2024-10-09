@@ -132,16 +132,21 @@ void splitDerivedDfsLocationOrRemote(const char *address, StringBuffer &cluster,
 {
     if (!isEmptyString(address) && !isEmptyString(currentRemoteStorage))
         throw makeStringExceptionV(-1, "Cannot specify both a dfs location (%s) and a remote storage location (%s)", address, currentRemoteStorage);
-
+    // Choose either a daliip (split from address) or a remote-storage location to
+    // propagate to the next level of parsing as the effective method of resolving a file
     if (!isEmptyString(address))
     {
         splitDfsLocation(address, cluster, ip, prefix, defaultCluster);
+        if (!ip.isEmpty())
+            effectiveRemoteStorage.clear();
         return;
     }
 
     if (!isEmptyString(currentRemoteStorage))
     {
         effectiveRemoteStorage.append(currentRemoteStorage);
+        // Cluster and prefix aren't used if ip is empty, so they don't need to be cleared
+        ip.clear();
         return;
     }
 
@@ -954,36 +959,36 @@ void ReferencedFileList::addFileFromSubFile(IPropertyTree &subFile, const char *
     addFile(subFile.queryProp("@value"), ip, cluster, prefix, remoteStorageName);
 }
 
-void ReferencedFileList::addFilesFromSuperFile(IPropertyTree &superFile, const char *_ip, const char *_cluster, const char *_prefix, const char *_remoteStorageName)
+void ReferencedFileList::addFilesFromSuperFile(IPropertyTree &superFile, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage)
 {
     StringBuffer ip;
     StringBuffer cluster;
     StringBuffer prefix;
-    StringBuffer remoteStorageName;
+    StringBuffer effectiveRemoteStorage;
     splitDerivedDfsLocationOrRemote(superFile.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
-                                    superFile.queryProp("@remoteStorage"), remoteStorageName, _remoteStorageName);
+                                    superFile.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
     if (superFile.hasProp("@sourceCluster"))
         cluster.set(superFile.queryProp("@sourceCluster"));
 
     Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile[@value]");
     ForEach(*subFiles)
-        addFileFromSubFile(subFiles->query(), ip, cluster, prefix, remoteStorageName);
+        addFileFromSubFile(subFiles->query(), ip, cluster, prefix, effectiveRemoteStorage);
 }
 
-void ReferencedFileList::addFilesFromPackage(IPropertyTree &package, const char *_ip, const char *_cluster, const char *_prefix, const char *_remoteStorageName)
+void ReferencedFileList::addFilesFromPackage(IPropertyTree &package, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage)
 {
     StringBuffer ip;
     StringBuffer cluster;
     StringBuffer prefix;
-    StringBuffer remoteStorageName;
+    StringBuffer effectiveRemoteStorage;
     splitDerivedDfsLocationOrRemote(package.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
-                                    package.queryProp("@remoteStorage"), remoteStorageName, _remoteStorageName);
+                                    package.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
     if (package.hasProp("@sourceCluster"))
         cluster.set(package.queryProp("@sourceCluster"));
 
     Owned<IPropertyTreeIterator> supers = package.getElements("SuperFile");
     ForEach(*supers)
-        addFilesFromSuperFile(supers->query(), ip, cluster, prefix, remoteStorageName);
+        addFilesFromSuperFile(supers->query(), ip, cluster, prefix, effectiveRemoteStorage);
 }
 
 void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
@@ -1145,29 +1150,36 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
     remotePrefix.set(_remotePrefix);
 
     ReferencedFileIterator files(this);
+
+    // For use when expandSuperFiles=true
+    if (useRemoteStorage)
+        remoteStorage.set(remoteLocation);
+
     ForEach(files)
     {
         ReferencedFile &file = files.queryObject();
-        if (!file.remoteStorage.isEmpty() || useRemoteStorage)
+        if (file.daliip.isEmpty() && (!file.remoteStorage.isEmpty() || useRemoteStorage))
         {
-            DBGLOG("ReferencedFileList resolving remote storage files at %s", nullText(remoteLocation));
             if (!user)
                 user.setown(createUserDescriptor());
-            if (!file.remoteStorage.isEmpty()) // Can be set at multiple levels in a packagemap
-                remoteStorage.set(file.remoteStorage);
-            else
-                remoteStorage.set(remoteLocation);
-            file.resolveLocalOrRemote(locations, srcCluster, user, remoteStorage, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
-            remoteStorage.clear();
+
+            if (file.remoteStorage.isEmpty()) // Can be set at multiple levels in a packagemap
+                file.remoteStorage.set(remoteLocation); // Top-level remoteLocation has lowest precedence, used if nothing set in packagemap
+
+            DBGLOG("ReferencedFileList resolving remote storage file at %s", nullText(file.remoteStorage));
+            file.resolveLocalOrRemote(locations, srcCluster, user, file.remoteStorage, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
         }
         else
         {
-            if (!isEmptyString(remoteLocation))
-                DBGLOG("ReferencedFileList resolving remote dali files at %s", remoteLocation);
+            // The remoteLocation is a daliip when useRemoteStorage is false
+            const char *passedDaliip = !useRemoteStorage ? remoteLocation : nullptr;
+            if (!isEmptyString(passedDaliip) || !file.daliip.isEmpty())
+                DBGLOG("ReferencedFileList resolving remote dali file at %s", isEmptyString(passedDaliip) ? nullText(file.daliip) : passedDaliip);
             else
-                DBGLOG("ReferencedFileList resolving local files (no daliip)");
-            remote.setown(!isEmptyString(remoteLocation) ? createINode(remoteLocation, 7070) : nullptr);
-
+                DBGLOG("ReferencedFileList resolving local file (no daliip or remote storage)");
+            // Otherwise, passing nullptr for remote allows resolveLocalOrForeign to use ReferencedFile.daliip with
+            // the matching ReferencedFile.remotePrefix instead of the ReferencedFileList.remotePrefix passed in here.
+            remote.setown(!isEmptyString(passedDaliip) ? createINode(passedDaliip, 7070) : nullptr);
             file.resolveLocalOrForeign(locations, srcCluster, user, remote, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
         }
 
