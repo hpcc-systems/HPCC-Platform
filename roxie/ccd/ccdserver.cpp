@@ -1109,6 +1109,13 @@ protected:
             else
                 return ctx->registerTimer(activityId, name);
         }
+        virtual ISectionTimer *registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+        {
+            if (activityId == activity.queryId())
+                return activity.registerStatsTimer(activityId, name, statsOption);
+            else
+                return ctx->registerStatsTimer(activityId, name, statsOption);
+        }
     private:
         CRoxieServerActivity &activity;
     } interceptedCtx;
@@ -1299,11 +1306,15 @@ public:
     }
     virtual ISectionTimer *registerTimer(unsigned _activityId, const char * name)
     {
+        return registerStatsTimer(_activityId, name, 0);
+    }
+    virtual ISectionTimer *registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+    {
         CriticalBlock b(statscrit); // reuse statscrit to protect functionTimers - it will not be held concurrently
         ISectionTimer *timer = functionTimers.getValue(name);
         if (!timer)
         {
-            timer = ThorSectionTimer::createTimer(stats, name);
+            timer = ThorSectionTimer::createTimer(stats, name, static_cast<ThorStatOption>(statsOption));
             functionTimers.setValue(name, timer);
             timer->Release(); // Value returned is not linked
         }

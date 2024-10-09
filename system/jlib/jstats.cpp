@@ -773,6 +773,7 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
 #define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero)
 #define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum)
 #define PEAKSIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeMax)
+#define PEAKNUMSTAT(y) STAT(Num, y, SMeasureCount, StatsMergeMax)
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticMeta
@@ -993,6 +994,9 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(SoapcallConnectFailures), "The number of SOAPCALL connect failures" },
     { TIMESTAT(LookAhead), "The total time lookahead thread spend prefetching rows from upstream activities" },
     { CYCLESTAT(LookAhead) },
+    { NUMSTAT(CacheHits), "The number of times an item was retrieved from a cache" },
+    { NUMSTAT(CacheAdds), "The number of times an item was added to a cache" },
+    { PEAKNUMSTAT(PeakCacheObjects), "High water mark for number of objects in a cache"},
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

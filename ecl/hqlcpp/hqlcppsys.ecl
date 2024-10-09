@@ -553,7 +553,7 @@ const char * cppSystemText[]  = {
     "   unicode wregexReplaceX(unsigned8 compiled, const unicode text, const unicode replace)   :   eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlWRegExprReplace';",
     "   unicode wregexGetFindStr(unsigned8 compiled, unsigned4 idx):    eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlWRegExprGetFindStr';",
 
-    "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileStringRegex');"
+    "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileStringRegex', 1);"
     "   regexNewStrFind(boolean _compiled, const string _search, boolean _cloneSearch) : omethod,entrypoint='findTimed',timer('REGEXFIND');"
     "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
     "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
@@ -562,7 +562,7 @@ const char * cppSystemText[]  = {
     "   regexNewStrReplaceFixed(noconst string _tgt, const string _search, const string _replace) : method,pure,entrypoint='replaceFixedTimed',timer('REGEXREPLACE');"
     "   set of string regexMatchSet(const string _search) : method,pure,entrypoint='getMatchSetTimed',timer('REGEXFINDSET');"
 
-    "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileUnicodeRegex');"
+    "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileUnicodeRegex', 1);"
     "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='findTimed',timer('REGEXFIND');"
     "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
     "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
@@ -571,7 +571,7 @@ const char * cppSystemText[]  = {
     "   regexNewUStrReplaceFixed(noconst unicode _tgt, const unicode _search, const unicode _replace) : method,pure,entrypoint='replaceFixedTimed',timer('REGEXREPLACE');"
     "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSetTimed',timer('REGEXFINDSET');"
 
-    "   regexNewSetU8StrPattern(const utf8 _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileUTF8Regex');"
+    "   regexNewSetU8StrPattern(const utf8 _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPatternTimed',timer('CompileUTF8Regex', 1);"
     "   regexNewU8StrFind(boolean _compiled, const utf8 _search, boolean _cloneSearch) : omethod,entrypoint='findTimed',timer('REGEXFIND');"
     "   boolean regexNewU8StrFound() : method,pure,entrypoint='found';"
     "   utf8 regexNewU8StrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
@@ -915,6 +915,7 @@ const char * cppSystemText[]  = {
     "   varstring registerTimer(unsigned4 id, const varstring name) : ctxmethod;",
     "   unsigned8 getStartCycles() : method;",
     "   noteSectionTime(unsigned8 started) : method;",
+    "   varstring registerStatsTimer(unsigned4 id, const varstring name, unsigned4 statsOption) : ctxmethod;",
     "   END;",
     NULL };
 

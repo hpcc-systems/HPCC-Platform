@@ -204,6 +204,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void noteLibrary(IQueryFactory *library) = 0;
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption) = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory

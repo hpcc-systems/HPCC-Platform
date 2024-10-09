@@ -20,34 +20,63 @@
 #include "thorstats.hpp"
 #include "jdebug.hpp"
 
+// Available sets of statistics for a nested section
+const StatisticsMapping defaultNestedSectionStatistics({StCycleLocalExecuteCycles, StTimeLocalExecute, StNumStarts, StNumStops});
+const StatisticsMapping genericCacheNestedSectionStatistics({StNumCacheAdds, StNumCacheHits, StNumPeakCacheObjects}, defaultNestedSectionStatistics);
 
-//Cycles are accumulated locally, time is updated once it is serialized or persisted
-const StatisticsMapping nestedSectionStatistics({StCycleLocalExecuteCycles, StTimeLocalExecute, StNumStarts, StNumStops});
-
-ThorSectionTimer::ThorSectionTimer(const char * _name, CRuntimeStatistic & _starts, CRuntimeStatistic & _stops, CRuntimeStatistic & _elapsed)
-: starts(_starts), stops(_stops), elapsed(_elapsed), name(_name)
+ThorSectionTimer::ThorSectionTimer(const char * _name, CRuntimeStatisticCollection & _stats)
+: name(_name), stats(_stats)
 {
+}
+
+ThorSectionTimer * ThorSectionTimer::createTimer(CRuntimeStatisticCollection & stats, const char * name, const StatisticsMapping & nestedSectionStatistics)
+{
+    StatsScopeId scope(SSTfunction, name);
+    CRuntimeStatisticCollection & nested = stats.registerNested(scope, nestedSectionStatistics);
+    return new ThorSectionTimer(name, nested);
+}
+
+ThorSectionTimer * ThorSectionTimer::createTimer(CRuntimeStatisticCollection & stats, const char * name, ThorStatOption statOption)
+{
+    assertex(statOption < ThorStatMax);
+    switch (statOption)
+    {
+        case ThorStatGenericCache:
+            return createTimer(stats, name, genericCacheNestedSectionStatistics);
+        default:
+            return createTimer(stats, name, defaultNestedSectionStatistics);
+    }
 }
 
 ThorSectionTimer * ThorSectionTimer::createTimer(CRuntimeStatisticCollection & stats, const char * name)
 {
-    StatsScopeId scope(SSTfunction, name);
-    CRuntimeStatisticCollection & nested = stats.registerNested(scope, nestedSectionStatistics);
-    CRuntimeStatistic & starts = nested.queryStatistic(StNumStarts);
-    CRuntimeStatistic & stops = nested.queryStatistic(StNumStops);
-    CRuntimeStatistic & elapsed = nested.queryStatistic(StCycleLocalExecuteCycles);
-    return new ThorSectionTimer(name, starts, stops, elapsed);
+    return createTimer(stats, name, defaultNestedSectionStatistics);
 }
 
 unsigned __int64 ThorSectionTimer::getStartCycles()
 {
-    starts.addAtomic(1);
+    stats.queryStatistic(StNumStarts).addAtomic(1);
     return get_cycles_now();
 }
 
 void ThorSectionTimer::noteSectionTime(unsigned __int64 startCycles)
 {
     cycle_t delay = get_cycles_now() - startCycles;
-    elapsed.addAtomic(delay);
-    stops.addAtomic(1);
+    stats.addStatisticAtomic(StCycleLocalExecuteCycles, delay);
+    stats.addStatisticAtomic(StNumStops, 1);
+}
+
+void ThorSectionTimer::addStatistic(__int64 kind, unsigned __int64 value)
+{
+    stats.addStatisticAtomic(static_cast<StatisticKind>(kind), value);
+}
+
+void ThorSectionTimer::setStatistic(__int64 kind, unsigned __int64 value)
+{
+    stats.setStatistic(static_cast<StatisticKind>(kind), value);
+}
+
+void ThorSectionTimer::mergeStatistic(__int64 kind, unsigned __int64 value)
+{
+    stats.mergeStatistic(static_cast<StatisticKind>(kind), value);
 }

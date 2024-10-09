@@ -409,6 +409,7 @@ public:
     {
         return ctx->getElapsedMs();
     }
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption);
 };
 
 

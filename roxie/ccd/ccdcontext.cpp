@@ -2137,11 +2137,15 @@ public:
     }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
     {
+        return registerStatsTimer(activityId, name, 0);
+    }
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+    {
         CriticalBlock b(timerCrit);
         ISectionTimer *timer = functionTimers.getValue(name);
         if (!timer)
         {
-            timer = ThorSectionTimer::createTimer(globalStats, name);
+            timer = ThorSectionTimer::createTimer(globalStats, name, static_cast<ThorStatOption>(statsOption));
             functionTimers.setValue(name, timer);
             timer->Release(); // Value returned is not linked
         }

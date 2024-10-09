@@ -165,3 +165,8 @@ ISectionTimer * CThorCodeContextBase::registerTimer(unsigned activityId, const c
 {
     return queryNullSectionTimer();
 }
+
+ISectionTimer * CThorCodeContextBase::registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+{
+    return queryNullSectionTimer();
+}

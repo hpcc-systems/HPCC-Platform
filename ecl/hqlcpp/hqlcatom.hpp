@@ -550,6 +550,7 @@ extern IIdAtom * regexUStrMatchSetId;
 extern IIdAtom * regexU8StrMatchSetId;
 extern IIdAtom * regexReplaceXId;
 extern IIdAtom * registerTimerId;
+extern IIdAtom * registerStatsTimerId;
 extern IIdAtom * releaseRowId;
 extern IIdAtom * releaseRowsetId;
 extern IIdAtom * reportFieldOverflowId;

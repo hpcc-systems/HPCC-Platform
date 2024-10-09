@@ -349,6 +349,11 @@ unsigned CActivityCodeContext::getGraphLoopCounter() const
 
 ISectionTimer * CActivityCodeContext::registerTimer(unsigned activityId, const char * name)
 {
+    return registerStatsTimer(activityId, name, 0);
+}
+
+ISectionTimer * CActivityCodeContext::registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+{
     if (!stats) // if master context and local CQ, there is no activity instance, and hence no setStats call
         return queryNullSectionTimer();
     CriticalBlock b(contextCrit);
@@ -356,7 +361,7 @@ ISectionTimer * CActivityCodeContext::registerTimer(unsigned activityId, const c
     if (it != functionTimers.end())
         return it->second;
 
-    ISectionTimer *timer = ThorSectionTimer::createTimer(*stats, name);    
+    ISectionTimer *timer = ThorSectionTimer::createTimer(*stats, name, static_cast<ThorStatOption>(statsOption));    
     functionTimers.insert({name, timer}); // owns
     return timer;
 }

@@ -547,6 +547,11 @@ public:
     {
         return queryNullSectionTimer();
     }
+
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+    {
+        return queryNullSectionTimer();
+    }
 // IEngineContext
     virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode)
     {
