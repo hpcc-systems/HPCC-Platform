@@ -947,7 +947,8 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
         char firstChar = oldStr[0];
         while (offset < maxOffset)
         {
-            if (unlikely(source[offset] == firstChar) && unlikely((lenOldStr == 1) || memcmp(source + offset, oldStr, lenOldStr)==0))
+            if (unlikely(source[offset] == firstChar)
+                && unlikely((lenOldStr == 1) || memcmp(source + offset, oldStr, lenOldStr)==0))
             {
                 result.append(offset - lastCopied, source + lastCopied);
                 result.append(lenNewStr, newStr);
