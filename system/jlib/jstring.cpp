@@ -937,7 +937,7 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
 StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
-    if (lenSource >= lenOldStr)
+    if (lenOldStr && lenSource >= lenOldStr)
     {
         result.ensureCapacity(lenSource);
 
