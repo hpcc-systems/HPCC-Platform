@@ -2925,15 +2925,6 @@ private:
                 soapTraceLevel = control->getPropInt("@level", 0);
                 topology->setPropInt("@soapTraceLevel", soapTraceLevel);
             }
-            else if (stricmp(queryName, "control:soapLogSepString")==0)
-            {
-                if (control->hasProp("@string"))
-                {
-                    StringBuffer tmpSepString;
-                    control->getProp("@string", tmpSepString);
-                    setSoapSepString(tmpSepString.str());
-                }
-            }
             else if (stricmp(queryName, "control:socketCheckInterval")==0)
             {
                 socketCheckInterval = (unsigned) control->getPropInt64("@val", 0);

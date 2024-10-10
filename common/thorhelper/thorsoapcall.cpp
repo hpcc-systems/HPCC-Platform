@@ -51,11 +51,9 @@ using roxiemem::OwnedRoxieString;
 
 unsigned soapTraceLevel = 1;
 static StringBuffer soapSepString;
-static CriticalSection soapCrit;
 
 void setSoapSepString(const char *_soapSepString)
 {
-    CriticalBlock b(soapCrit);
     soapSepString.set(_soapSepString);
 }
 
@@ -63,6 +61,9 @@ static void multiLineAppendReplace(StringBuffer &origStr, StringBuffer &newStr)
 {
     if (origStr.isEmpty())
         return;
+
+    newStr.ensureCapacity(origStr.length());
+
     const char *cursor = origStr;
     while (*cursor)
     {
@@ -1987,6 +1988,7 @@ private:
             StringBuffer contentStr;
             if (contentEncoded)
                 contentStr.append(", content encoded.");
+            // Only do translation if soapcall LOG option set and soapSepString defined
             if ( (master->logXML) && (soapSepString.length() > 0) )
             {
                 StringBuffer request2;
@@ -2291,6 +2293,7 @@ private:
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
         {
+            // Only do translation if soapcall LOG option set and soapSepString defined
             if ( (master->logXML) && (soapSepString.length() > 0) )
             {
                 StringBuffer response2;
