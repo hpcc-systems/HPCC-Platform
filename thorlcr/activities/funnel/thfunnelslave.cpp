@@ -80,7 +80,10 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
             unsigned numRows = 0;
             try
             {
-                funnel.activity.startInput(inputIndex);
+                {
+                    LookAheadTimer t(funnel.activity.slaveTimerStats, funnel.activity.queryTimeActivities());
+                    funnel.activity.startInput(inputIndex);
+                }
                 started = true;
                 inputStream = funnel.activity.queryInputStream(inputIndex);
                 while (!stopping)
@@ -88,6 +91,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
                     numRows = 0;
                     for (;numRows < chunkSize; numRows++)
                     {
+                        LookAheadTimer t(funnel.activity.slaveTimerStats, funnel.activity.queryTimeActivities());
                         const void * row = inputStream->ungroupedNextRow();
                         if (!row)
                             break;
@@ -354,7 +358,6 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(slaveTimerStats, timeActivities);
         if (!grouped && parallel)
         {
             //NB starts inputs on each thread
@@ -376,7 +379,11 @@ public:
 
             auto startInputNFunc = [&](unsigned i)
             {
-                try { startInput(i); }
+                try
+                {
+                    LookAheadTimer s(slaveTimerStats, timeActivities);
+                    startInput(i);
+                }
                 catch (CATCHALL)
                 {
                     ActPrintLog("FUNNEL(%" ACTPF "d): Error staring input %d", container.queryId(), i);

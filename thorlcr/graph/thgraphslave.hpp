@@ -196,7 +196,6 @@ class graphslave_decl CSlaveActivity : public CActivityBase, public CEdgeProgres
 {
     mutable MemoryBuffer *data;
     mutable CriticalSection crit;
-
 protected:
     CThorInputArray inputs;
     IPointerArrayOf<IThorDataLink> outputs;
@@ -475,6 +474,7 @@ class graphslave_decl CThorStrandedActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 protected:
+    cycle_t startTime = 0;
     CThorStrandOptions strandOptions;
     IArrayOf<CThorStrandProcessor> strands;
     Owned<IStrandBranch> branch;

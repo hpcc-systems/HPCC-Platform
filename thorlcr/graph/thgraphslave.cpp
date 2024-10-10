@@ -588,7 +588,10 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     }
     unsigned __int64 processCycles = queryTotalCycles() + queryLookAheadCycles();
     if (processCycles < inputCycles) // not sure how/if possible, but guard against
+    {
+        ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < input %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(inputCycles));
         return 0;
+    }
     processCycles -= inputCycles;
     const unsigned __int64 blockedCycles = queryBlockedCycles();
     if (processCycles < blockedCycles)
@@ -731,6 +734,7 @@ void CThorStrandedActivity::strandedStop()
 //For some reason gcc doesn't let you specify a function as pure virtual and define it at the same time.
 void CThorStrandedActivity::start()
 {
+    SimpleActivityTimer s(startTime, timeActivities);
     CSlaveActivity::start();
     startJunction(splitter);
     onStartStrands();
@@ -854,7 +858,7 @@ IStrandJunction *CThorStrandedActivity::getOutputStreams(CActivityBase &ctx, uns
 
 unsigned __int64 CThorStrandedActivity::queryTotalCycles() const
 {
-    unsigned __int64 total = 0;;
+    cycle_t total = startTime;
     ForEachItemIn(i, strands)
     {
         CThorStrandProcessor &strand = strands.item(i);
