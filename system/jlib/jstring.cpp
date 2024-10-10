@@ -946,7 +946,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
 
         size_t offset = 0;
         size_t lastCopied = 0;
-        size_t maxOffset = lenSource - lenOldStr;
+        size_t maxOffset = lenSource - lenOldStr + 1;
         char firstChar = oldStr[0];
         while (offset < maxOffset)
         {
