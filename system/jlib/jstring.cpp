@@ -939,10 +939,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
 {
     if (lenSource >= lenOldStr)
     {
-        // Reserve space when the new string is longer than the old string
-        unsigned steps = lenSource - lenOldStr + 1;
-        unsigned maxResultLength = lenNewStr > lenOldStr ? lenSource + steps * (lenNewStr - lenOldStr) : lenSource;
-        result.ensureCapacity(maxResultLength);
+        result.ensureCapacity(lenSource);
 
         size_t offset = 0;
         size_t lastCopied = 0;
