@@ -845,6 +845,7 @@ class JlibStringTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JlibStringTest);
         CPPUNIT_TEST(testEncodeCSVColumn);
+        CPPUNIT_TEST(testReplaceString);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -859,6 +860,59 @@ void testEncodeCSVColumn()
         encodedCSV.clear();
         encodeCSVColumn(encodedCSV, csvCol2);
         CPPUNIT_ASSERT_EQUAL_STR(encodedCSV.str(), "\"hello world, \"\"how are you?\"\"\"");
+    }
+
+    void testReplaceString()
+    {
+        // Match string at the end of the source
+        StringBuffer source("aaaaaaaaab");
+        source.replaceString("aaab", "x");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaaax", source.str());
+
+        // Single char match at end of source
+        source.set("aaaaaaaaab");
+        source.replaceString("b", "x");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaaaaaax", source.str());
+
+        // Match string at the start of the source
+        source.set("abababab");
+        source.replaceString("aba", "xxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxxbxxxb", source.str());
+
+        // Match not found
+        source.set("aaaaa");
+        source.replaceString("bb", "xxx");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaa", source.str());
+
+        // Replace string is empty
+        source.set("aabaa");
+        source.replaceString("aa", "");
+        CPPUNIT_ASSERT_EQUAL_STR("b", source.str());
+
+        // Search string is empty
+        source.set("aaaaaa");
+        source.replaceString("", "b");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaaa", source.str());
+
+        // Source string is empty
+        source.set("");
+        source.replaceString("a", "b");
+        CPPUNIT_ASSERT_EQUAL_STR("", source.str());
+
+        // Search string is longer than source string
+        source.set("a");
+        source.replaceString("aa", "b");
+        CPPUNIT_ASSERT_EQUAL_STR("a", source.str());
+
+        // Replace every character
+        source.set("aaaaa");
+        source.replaceString("a", "b");
+        CPPUNIT_ASSERT_EQUAL_STR("bbbbb", source.str());
+
+        // Replace string is longer than search string
+        source.set("abbabab");
+        source.replaceString("ab", "xxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxxbxxxxxx", source.str());
     }
 };
 
