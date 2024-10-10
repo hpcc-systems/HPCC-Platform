@@ -2,13 +2,15 @@ import * as React from "react";
 import { Octokit } from "octokit";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
-import { Topology, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
+import { LogaccessService, Topology, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
 import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
 import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
 import { Palette } from "@hpcc-js/common";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
+
+export const service = new LogaccessService({ baseUrl: "" });
 
 declare const dojoConfig;
 
@@ -205,4 +207,14 @@ export function useModernMode(): {
     }, [modernMode, sessionStore, userStore]);
 
     return { modernMode, setModernMode };
-} 
+}
+
+export function useLoggingEngine(): string {
+    const [loggingEngine, setLoggingEngine] = React.useState("");
+
+    React.useEffect(() => {
+        service.GetLogAccessInfo({}).then(response => setLoggingEngine(response.RemoteLogManagerType ?? ""));
+    }, []);
+
+    return loggingEngine;
+}

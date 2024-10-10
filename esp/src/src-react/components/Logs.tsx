@@ -3,7 +3,8 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { GetLogsExRequest, LogaccessService, TargetAudience, LogType } from "@hpcc-js/comms";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { logColor, wuidToDate, wuidToTime } from "src/Utility";
+import { logColor, timestampToDate, wuidToDate, wuidToTime } from "src/Utility";
+import { useLoggingEngine } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -110,28 +111,49 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     const now = React.useMemo(() => new Date(), []);
 
+    const loggingEngine = useLoggingEngine();
+
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
-        return {
-            timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
-            message: { label: nlsHPCC.Message, width: 600, sortable: false, },
-            components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
-            instance: { label: nlsHPCC.PodName, width: 150, sortable: false },
-            audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
-            class: {
-                label: nlsHPCC.Class, width: 40, sortable: false,
-                formatter: level => {
-                    const colors = logColor(levelMap(level));
-                    const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
-                    return <span style={styles}>{level}</span>;
-                }
+        let retVal = {
+            timestamp: {
+                label: nlsHPCC.TimeStamp, width: 140, sortable: false,
+                formatter: ts => {
+                    if (ts) {
+                        if (ts.indexOf(":") < 0) {
+                            return timestampToDate(ts).toISOString();
+                        }
+                        return new Date(ts).toISOString();
+                    }
+                },
             },
-            workunits: { label: nlsHPCC.JobID, width: 50, sortable: false, hidden: wuid !== undefined, },
-            processid: { label: nlsHPCC.ProcessID, width: 75, sortable: false, },
-            logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
-            threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
+            message: { label: nlsHPCC.Message, width: 600, sortable: false, },
         };
-    }, [wuid]);
+        if (loggingEngine === "grafanacurl") {
+            retVal = Object.assign(retVal, {
+                pod: { label: nlsHPCC.PodName, width: 150, sortable: false },
+            });
+        } else {
+            retVal = Object.assign(retVal, {
+                instance: { label: nlsHPCC.PodName, width: 150, sortable: false },
+                components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
+                audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
+                class: {
+                    label: nlsHPCC.Class, width: 40, sortable: false,
+                    formatter: level => {
+                        const colors = logColor(levelMap(level));
+                        const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
+                        return <span style={styles}>{level}</span>;
+                    }
+                },
+                workunits: { label: nlsHPCC.JobID, width: 50, sortable: false, hidden: wuid !== undefined, },
+                processid: { label: nlsHPCC.ProcessID, width: 75, sortable: false, },
+                logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
+                threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
+            });
+        }
+        return retVal;
+    }, [loggingEngine, wuid]);
 
     const copyButtons = useCopyButtons(columns, selection, "logaccess");
 

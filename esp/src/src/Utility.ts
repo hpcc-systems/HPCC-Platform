@@ -1242,6 +1242,21 @@ export function format(labelTpl, obj) {
         .join("\n")
         ;
 }
+
+const TEN_TRILLION = 10000000000000;
+export function nanosToMillis(timestamp: number): number {
+    if (timestamp > TEN_TRILLION) {
+        return Math.round(timestamp / 1000000);
+    } else {
+        return timestamp;
+    }
+}
+
+export function timestampToDate(timestamp: number): Date {
+    const millis = nanosToMillis(timestamp);
+    return new Date(millis);
+}
+
 const theme = getTheme();
 const { semanticColors } = theme;
 
