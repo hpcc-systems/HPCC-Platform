@@ -117,19 +117,6 @@ time_t timelocal(struct tm * local)
 
 #endif //__GNUC__
 
-static unsigned readDigits(char const * & str, unsigned numDigits)
-{
-    unsigned ret = 0;
-    while(numDigits--)
-    {
-        char c = *str++;
-        if(!isdigit(c))
-            throwError1(JLIBERR_BadlyFormedDateTime, str);
-        ret  = ret * 10 + (c - '0');
-    }
-    return ret;
-}
-
 static void checkChar(char const * & str, char required)
 {
     char c = *str++;
@@ -222,22 +209,32 @@ void CDateTime::set(time_t simple)
 
 void CDateTime::setString(char const * str, char const * * end, bool local)
 {
+    char const * beginstr = str; // save for error message
     if (!str||!*str) {
         clear();
         return;
     }
-    unsigned year = readDigits(str, 4);
-    checkChar(str, '-');
-    unsigned month = readDigits(str, 2);
-    checkChar(str, '-');
-    unsigned day = readDigits(str, 2);
-    checkChar(str, 'T');
-    unsigned hour = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned minute = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned sec = readDigits(str, 2);
-    unsigned nano = 0;
+    unsigned year = 0, month = 0, day = 0, hour = 0, minute = 0, sec = 0, nano = 0;
+    try
+    {
+        year = readDigits(str, 4);
+        checkChar(str, '-');
+        month = readDigits(str, 2);
+        checkChar(str, '-');
+        day = readDigits(str, 2);
+        checkChar(str, 'T');
+        hour = readDigits(str, 2);
+        checkChar(str, ':');
+        minute = readDigits(str, 2);
+        checkChar(str, ':');
+        sec = readDigits(str, 2);
+    }
+    catch (IException * e)
+    {
+        e->Release();
+        throwError1(JLIBERR_BadlyFormedDateTime, beginstr);
+    }
+
     if(*str == '.')
     {
         unsigned digits;
@@ -256,26 +253,44 @@ void CDateTime::setString(char const * str, char const * * end, bool local)
 
 void CDateTime::setDateString(char const * str, char const * * end)
 {
-    unsigned year = readDigits(str, 4);
-    checkChar(str, '-');
-    unsigned month = readDigits(str, 2);
-    checkChar(str, '-');
-    unsigned day = readDigits(str, 2);
+    char const * beginstr = str; // save for error message
+    unsigned year = 0, month = 0, day = 0;
+    try
+    {
+        year = readDigits(str, 4);
+        checkChar(str, '-');
+        month = readDigits(str, 2);
+        checkChar(str, '-');
+        day = readDigits(str, 2);
+    }
+    catch (IException * e)
+    {
+        e->Release();
+        throwError1(JLIBERR_BadlyFormedDateTime, beginstr);
+    }
     if(end) *end = str;
     set(year, month, day, 0, 0, 0, 0, false);
 }
 
 void CDateTime::setTimeString(char const * str, char const * * end, bool local)
 {
-    unsigned year;
-    unsigned month;
-    unsigned day;
+    char const * beginstr = str; // save for error message
+    unsigned year = 0, month = 0, day = 0, hour = 0, minute = 0, sec = 0;
     getDate(year, month, day, false);
-    unsigned hour = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned minute = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned sec = readDigits(str, 2);
+
+    try
+    {
+        hour = readDigits(str, 2);
+        checkChar(str, ':');
+        minute = readDigits(str, 2);
+        checkChar(str, ':');
+        sec = readDigits(str, 2);
+    }
+    catch (IException * e)
+    {
+        e->Release();
+        throwError1(JLIBERR_BadlyFormedDateTime, beginstr);
+    }
     unsigned nano = 0;
     if(*str == '.')
     {
@@ -668,10 +683,18 @@ void CScmDateTime::setString(const char * pstr)
     else if ((sign == '-') || (sign == '+'))
     {
         end++;
-        int delta = readDigits(end, 2);
-        if (*end++ != ':')
+        int delta = 0;
+        try
+        {
+            delta = readDigits(end, 2);
+            checkChar(end, ':');
+            delta = delta * 60 + readDigits(end, 2);
+        }
+        catch (IException * e)
+        {
+            e->Release();
             throwError1(JLIBERR_BadlyFormedDateTime, pstr);
-        delta = delta * 60 + readDigits(end, 2);
+        }
         if (sign == '-')
             delta = -delta;
         utcToLocalDelta = delta;

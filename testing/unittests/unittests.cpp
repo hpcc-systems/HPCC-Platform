@@ -190,6 +190,7 @@ int main(int argc, const char *argv[])
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
         excludeNames.append("*slow*");
+        excludeNames.append("Dali*"); // disabled by default as dali not available when executed by smoketest
     }
 
     if (!includeNames.length())
