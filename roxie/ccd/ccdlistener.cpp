@@ -142,7 +142,7 @@ class CascadeManager : public CInterface
                     if (!ssock)
                         throw makeStringException(ROXIE_TLS_ERROR, "Roxie CascadeManager failed creating secure socket for roxie control message");
 
-                    int status = ssock->secure_connect();
+                    int status = ssock->secure_connect(2000);
                     if (status < 0)
                     {
                         StringBuffer err;

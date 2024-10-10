@@ -1099,16 +1099,19 @@ protected: friend class CMPPacketReader;
                 }
                 if (remaining<10000)
                     remaining = 10000; // 10s min granularity for MP
+
+                CCycleTimer timer;
                 newsock.setown(ISocket::connect_timeout(remoteep,remaining));
 
 #if defined(_USE_OPENSSL)
                 if (parent->useTLS)
                 {
-                    Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(newsock.getClear());
                     int tlsTraceLevel = SSLogMin;
                     if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
                         tlsTraceLevel = SSLogMax;
-                    int status = ssock->secure_connect(tlsTraceLevel);
+                    Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(newsock.getClear(), tlsTraceLevel);
+                    tm.timedout(&remaining);
+                    int status = ssock->secure_connect(remaining);
                     if (status < 0)
                     {
                         ssock->close();
@@ -2567,11 +2570,11 @@ int CMPConnectThread::run()
 #if defined(_USE_OPENSSL)
             if (parent->useTLS)
             {
-                Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
                 int tlsTraceLevel = SSLogMin;
                 if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
                     tlsTraceLevel = SSLogMax;
-                int status = ssock->secure_accept(tlsTraceLevel);
+                Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear(), tlsTraceLevel);
+                int status = ssock->secure_accept(10000);
                 if (status < 0)
                 {
                     ssock->close();

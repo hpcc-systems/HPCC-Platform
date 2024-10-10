@@ -64,16 +64,19 @@ public:
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
 
-        Owned<ISocket> socket = ISocket::connect_wait(mergeep,CONNECTTIMEOUT*1000);
+        unsigned timeoutMs = CONNECTTIMEOUT*1000;
+        CCycleTimer timer;
+        Owned<ISocket> socket = ISocket::connect_wait(mergeep, timeoutMs);
 
 #if defined(_USE_OPENSSL)
         if (secureContextClient)
         {
-            Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(socket.getClear());
             int tlsTraceLevel = SSLogMin;
             if (sortTraceLevel >= ExtraneousMsgThreshold)
                 tlsTraceLevel = SSLogMax;
-            int status = ssock->secure_connect(tlsTraceLevel);
+            Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(socket.getClear(), tlsTraceLevel);
+            unsigned remainingMs = timer.remainingMs(timeoutMs);
+            int status = ssock->secure_connect(remainingMs);
             if (status < 0)
             {
                 ssock->close();
@@ -368,12 +371,12 @@ public:
 #if defined(_USE_OPENSSL)
                 if (slave.queryTLS())
                 {
-                    Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(socket.getClear());
                     int tlsTraceLevel = SSLogMin;
                     unsigned sortTraceLevel = slave.queryTraceLevel();
                     if (sortTraceLevel >= ExtraneousMsgThreshold)
                         tlsTraceLevel = SSLogMax;
-                    int status = ssock->secure_accept(tlsTraceLevel);
+                    Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(socket.getClear(), tlsTraceLevel);
+                    int status = ssock->secure_accept();
                     if (status < 0)
                     {
                         ssock->close();

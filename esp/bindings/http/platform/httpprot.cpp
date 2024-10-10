@@ -436,7 +436,7 @@ bool CHttpThread::onRequest()
         try
         {
             ESPLOG(LogMax, "Accepting from secure socket");
-            res = secure_sock->secure_accept(logLevel);
+            res = secure_sock->secure_accept();
             if(res < 0)
                 return false;
         }
