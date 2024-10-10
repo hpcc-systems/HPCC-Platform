@@ -939,6 +939,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
 {
     if (lenOldStr && lenSource >= lenOldStr)
     {
+        // Avoid allocating an unnecessarly large buffer and match the source string
         result.ensureCapacity(lenSource);
 
         size_t offset = 0;
@@ -950,6 +951,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
             if (unlikely(source[offset] == firstChar)
                 && unlikely((lenOldStr == 1) || memcmp(source + offset, oldStr, lenOldStr)==0))
             {
+                // If lastCopied matches the offset nothing is appended, but we can avoid a test for offset == lastCopied
                 result.append(offset - lastCopied, source + lastCopied);
                 result.append(lenNewStr, newStr);
                 offset += lenOldStr;
@@ -958,10 +960,11 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
             else
                 offset++;
         }
+        // Append the remaining characters
         result.append(lenSource - lastCopied, source + lastCopied);
     }
     else
-        result.append(lenSource, source); // Search string does not fit in source
+        result.append(lenSource, source); // Search string does not fit in source or is empty
 
     return result;
 }
