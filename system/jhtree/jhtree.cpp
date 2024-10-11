@@ -662,6 +662,38 @@ public:
     CNodeMapping * next = nullptr;
 };
 
+class DelayedCacheEntryReleaser : public IRemovedMappingCallback
+{
+    //This number should be high enough so that in all common cases it is not exceeded.
+    //There is little downside in making it too large - other than cache locality on the stack.
+    //It will depend on the number of worker threads and the variation in expanded size of the
+    //different leaf nodes.  Running stresstest with 15 workers and the default compression I
+    //have seen numbers as high as 30.
+    static constexpr unsigned maxFixed = 40;
+public:
+    ~DelayedCacheEntryReleaser()
+    {
+        for (unsigned i=0; i < numFixed; i++)
+            fixedPending[i]->Release();
+    }
+    virtual void noteRemoval(void * _mapping) override
+    {
+        CNodeMapping *mapping = reinterpret_cast<CNodeMapping *>(_mapping);
+        //Save the node onto a list, so it will be released when this object is released.
+        CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->query().getNode());
+        if (numFixed < maxFixed)
+            fixedPending[numFixed++] = node;
+        else
+            pending.append(*node);
+    }
+protected:
+    CIArray pending;
+    //Use a fixed array for a small number of allocations to avoid a heap allocation inside the critsec
+    CJHTreeNode * fixedPending[maxFixed]; // deliberately uninitialized
+    unsigned numFixed = 0;
+
+};
+
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
 class CNodeMRUCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
@@ -700,10 +732,10 @@ public:
         size32_t oldMemLimit = memLimit;
         memLimit = _memLimit;
         if (full())
-            makeSpace();
+            makeSpace(nullptr);
         return oldMemLimit;
     }
-    virtual void makeSpace()
+    virtual void makeSpace(IRemovedMappingCallback * callback)
     {
         // remove LRU until !full
         // This code could walk the list, rather than restarting at the end each time - but there are unlikely to be
@@ -732,6 +764,8 @@ public:
 
             mruList.remove(tail);
             numEvicts.fastAdd(1);
+            if (callback)
+                callback->noteRemoval(tail);
             table.removeExact(tail);
         }
         while (full());
@@ -2667,6 +2701,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
     Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
+        DelayedCacheEntryReleaser delayedReleaser;
         CNodeCacheEntry * cacheEntry;
         unsigned hashcode = curCache.getKeyHash(key);
 
@@ -2691,7 +2726,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         else
         {
             cacheEntry = new CNodeCacheEntry;
-            curCache.replace(key, *cacheEntry);
+            curCache.replace(key, *cacheEntry, &delayedReleaser);
             alreadyExists = false;
             curCache.numAdds.fastAdd(1);
         }

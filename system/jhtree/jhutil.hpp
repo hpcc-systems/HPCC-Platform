@@ -22,6 +22,13 @@
 #include "jqueue.hpp"
 #include "jhtree.hpp"
 
+//This interface can be used to record the mapping items that are being removed when making more space.
+//If the cache is checked within a critical section this allows the removed items to be released outside the critsec
+interface IRemovedMappingCallback
+{
+    virtual void noteRemoval(void * mapping) = 0;
+};
+
 // TABLE should be SuperHashTable derivative to contain MAPPING's
 // MAPPING should be something that constructs with (KEY, ENTRY) and impl. query returning ref. to ENTRY
 template <class KEY, class ENTRY, class MAPPING, class TABLE>
@@ -38,13 +45,15 @@ protected:
     } table;
     DListOf<MAPPING> mruList;
 
-    void clear(int count)
+    void clear(int count, IRemovedMappingCallback * callback)
     {
         for (;;)
         {
             MAPPING *tail = mruList.dequeueTail();
             if (!tail)
                 break;
+            if (callback)
+                callback->noteRemoval(tail);
             table.removeExact(tail);
             if ((-1 != count) && (0 == --count))
                 break;
@@ -57,7 +66,16 @@ public:
     void replace(KEY key, ENTRY &entry)
     {
         if (full())
-            makeSpace();
+            makeSpace(nullptr);
+
+        MAPPING * mapping = new MAPPING(key, entry); // owns entry
+        table.replace(*mapping);
+        mruList.enqueueHead(mapping);
+    }
+    void replace(KEY key, ENTRY &entry, IRemovedMappingCallback * callback)
+    {
+        if (full())
+            makeSpace(callback);
 
         MAPPING * mapping = new MAPPING(key, entry); // owns entry
         table.replace(*mapping);
@@ -106,7 +124,7 @@ public:
         mruList.dequeue(mapping);
         return true;
     }
-    void kill() { clear(-1); }
+    void kill() { clear(-1, nullptr); }
     void promote(MAPPING *mapping)
     {
         mruList.moveToHead(mapping);
@@ -115,7 +133,7 @@ public:
     {
         return new SuperHashIteratorOf<MAPPING>(table);
     }
-    virtual void makeSpace() { }
+    virtual void makeSpace(IRemovedMappingCallback *) { }
     virtual bool full() { return false; }
     virtual void elementAdded(MAPPING *mapping) { }
     virtual void elementRemoved(MAPPING *mapping) { }
@@ -132,14 +150,14 @@ public:
     unsigned setCacheLimit(unsigned _cacheMax)
     {
         if (SELF::table.count() > _cacheMax)
-            this->clear(_cacheMax - SELF::table.count());
+            this->clear(_cacheMax - SELF::table.count(), nullptr);
         unsigned oldCacheMax = cacheMax;
         cacheMax = _cacheMax;
         return oldCacheMax;
     }
-    virtual void makeSpace()
+    virtual void makeSpace(IRemovedMappingCallback * callback)
     {
-        SELF::clear(cacheOverflow);
+        SELF::clear(cacheOverflow, callback);
     }
     virtual bool full()
     {
