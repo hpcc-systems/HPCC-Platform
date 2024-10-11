@@ -2638,6 +2638,10 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 static std::atomic<cycle_t> lastLockingReportCycles{0};
 static std::atomic<cycle_t> lastLoadReportCycles{0};
 
+// The following is used to ensure that a CNodeCacheEntry can be allocated (which includes creating a
+// critical section) outside of a critical section, but incurs minimal overhead if it is not used.
+static thread_local Owned<CNodeCacheEntry> threadedPreallocatedEntry;
+
 const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
@@ -2667,6 +2671,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
     Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
+        //Assign a reference to ensure thread local mapping only occurs once
+        Owned<CNodeCacheEntry> & preallocatedEntry = threadedPreallocatedEntry;
+        if (!preallocatedEntry)
+            preallocatedEntry.setown(new CNodeCacheEntry);
         CNodeCacheEntry * cacheEntry;
         unsigned hashcode = curCache.getKeyHash(key);
 
@@ -2690,7 +2698,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         }
         else
         {
-            cacheEntry = new CNodeCacheEntry;
+            //Use the preallocated entry and ensure a new one is allocated next time.
+            cacheEntry = preallocatedEntry.getClear();
             curCache.replace(key, *cacheEntry);
             alreadyExists = false;
             curCache.numAdds.fastAdd(1);
