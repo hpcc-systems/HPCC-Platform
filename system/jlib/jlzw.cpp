@@ -2118,7 +2118,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         {
             unsigned code = e->errorCode();
             StringBuffer msg;
-            e->errorMessage(msg).appendf(" at position %llu of %llu", nextExpansionPos, trailer.indexPos);
+            e->errorMessage(msg).appendf(" at uncompressed position %llu block %u of %llu", nextExpansionPos, curblocknum, trailer.indexPos);
             e->Release();
             throw makeStringException(code, msg.str());
         }
@@ -2157,37 +2157,48 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
 
     void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize, offset_t compressedPos)
     {
-        size32_t rs = trailer.recordSize;
-        if (rs) { // diff expand
-            const byte *src = (const byte *)compbuf;
-            byte *dst = (byte *)expbuf.reserve(expsize);
-            if (expsize) {
-                assertex(expsize>=rs);
-                memcpy(dst,src,rs);
-                dst += rs;
-                src += rs;
-                expsize -= rs;
-                while (expsize) {
+        try
+        {
+            size32_t rs = trailer.recordSize;
+            if (rs) { // diff expand
+                const byte *src = (const byte *)compbuf;
+                byte *dst = (byte *)expbuf.reserve(expsize);
+                if (expsize) {
                     assertex(expsize>=rs);
-                    src += DiffExpand(src, dst, dst-rs, rs);
-                    expsize -= rs;
+                    memcpy(dst,src,rs);
                     dst += rs;
+                    src += rs;
+                    expsize -= rs;
+                    while (expsize) {
+                        assertex(expsize>=rs);
+                        src += DiffExpand(src, dst, dst-rs, rs);
+                        expsize -= rs;
+                        dst += rs;
+                    }
                 }
             }
-        }
-        else { // lzw or fastlz or lz4
-            assertex(expander.get());
-            size32_t exp = expander->expandFirst(expbuf, compbuf);
-            if (exp == 0)
-            {
-                unsigned numZeros = countZeros(trailer.blockSize, (const byte *)compbuf);
-                if (numZeros >= 16)
-                    throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
-            }
+            else { // lzw or fastlz or lz4
+                assertex(expander.get());
+                size32_t exp = expander->expandFirst(expbuf, compbuf);
+                if (exp == 0)
+                {
+                    unsigned numZeros = countZeros(trailer.blockSize, (const byte *)compbuf);
+                    if (numZeros >= 16)
+                        throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
+                }
 
-            startBlockPos = curblockpos;
-            nextExpansionPos = startBlockPos + exp;
-            fullBlockSize = expsize;
+                startBlockPos = curblockpos;
+                nextExpansionPos = startBlockPos + exp;
+                fullBlockSize = expsize;
+            }
+        }
+        catch (IException * e)
+        {
+            unsigned code = e->errorCode();
+            StringBuffer msg;
+            e->errorMessage(msg).appendf(" at compressed position %llu of %llu", compressedPos, trailer.indexPos);
+            e->Release();
+            throw makeStringException(code, msg.str());
         }
     }
 

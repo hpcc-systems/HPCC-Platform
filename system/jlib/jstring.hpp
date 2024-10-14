@@ -632,11 +632,18 @@ void processLines(const StringBuffer & content, LineProcessor process)
     const char * cur = content;
     while (*cur)
     {
-        process(cur);
         const char * next = strchr(cur, '\n');
-        if (!next)
+        if (next)
+        {
+            if (next != cur)
+                process(next-cur, cur);
+            cur = next+1;
+        }
+        else
+        {
+            process(strlen(cur), cur);
             break;
-        cur = next+1;
+        }
     }
 }
 
@@ -646,5 +653,10 @@ extern jlib_decl void processOptionString(const char * options, optionCallback c
 
 extern jlib_decl const char * stristr(const char *haystack, const char *needle);
 extern jlib_decl void getSnakeCase(StringBuffer & out, const char * camelValue);
+//If the string has any characters, ensure the last character matches the separator
+extern jlib_decl void ensureSeparator(StringBuffer & out, char separator);
+
+//Search for one block of bytes within another block of bytes - memmem is not standard, so we provide our own
+extern jlib_decl const void * jmemmem(size_t lenHaystack, const void * haystack, size_t lenNeedle, const void *needle);
 
 #endif
