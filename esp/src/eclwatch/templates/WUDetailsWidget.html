@@ -183,7 +183,7 @@
     <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="${i18n.ZippedAnalysisPackage}">
         <div class="dijitDialogPaneContentArea">
             <div id="${id}ZapForm" style="width:460px;" method="post" enctype="application/x-www-form-urlencoded" data-dojo-type="dijit.form.Form">
-                <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                <div data-dojo-props="cols:2" style="width:410px" data-dojo-type="hpcc.TableContainer">
                     <input id="${id}ZapName" title="${i18n.FileName}:" name="ZAPFileName" colspan="2" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
                     <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                     <input id="${id}BuildVersion" title="${i18n.ESPBuildVersion}:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
@@ -199,8 +199,41 @@
                     <input id="${id}EmailFrom" title="${i18n.EmailFrom}:" name="EmailFrom" colspan="2" data-dojo-props="trim:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
                     <input id="${id}EmailSubject" title="${i18n.EmailSubject}:" name="EmailSubject" colspan="2" data-dojo-props="trim:true" data-dojo-type="dijit.form.ValidationTextBox" required="false" />
                     <input id="${id}EmailBody" title="${i18n.EmailBody}:" name="EmailBody" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                    <input id="${id}StartDateTime" name="LogFilter_AbsoluteTimeRange_StartDate" type="hidden" />
+                    <input id="${id}StartDate" title="${i18n.FromDate}:" name="StartDate" data-dojo-props="trim: true" required="required" data-dojo-type="dijit.form.DateTextBox" />
+                    <input id="${id}StartTime" title="" name="StartTime" data-dojo-props="trim: true" value="T07:30:00" data-dojo-type="dijit.form.TimeTextBox" />
+                    <input id="${id}EndDateTime" name="LogFilter_AbsoluteTimeRange_EndDate" type="hidden" />
+                    <input id="${id}EndDate" title="${i18n.ToDate}:" name="EndDate" data-dojo-props="trim: true" required="required" data-dojo-type="dijit.form.DateTextBox" />
+                    <input id="${id}EndTime" title="" name="EndTime" data-dojo-props="trim: true" value="T19:30:00" data-dojo-type="dijit.form.TimeTextBox" />
+                    <input id="${id}RelativeTimeRangeBuffer" title="${i18n.RelativeTimeRange}" name="LogFilter_RelativeTimeRangeBuffer" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}LineLimit" title="${i18n.LogLineLimit}" name="LogFilter_LineLimit" colspan="2" value="10000" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}LineStartFrom" title="${i18n.LogLineStartFrom}" name="LogFilter_LineStartFrom" value="0" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                    <select id="${id}SelectColumnMode" title="${i18n.ColumnMode}" name="LogFilter_SelectColumnMode" colspan="2" data-dojo-type="dijit.form.Select">
+                        <option value="0">MIN</option>
+                        <option selected="selected" value="1">DEFAULT</option>
+                        <option value="2">ALL</option>
+                    </select>
+                    <select id="${id}LogFilterFormat" title="${i18n.LogFormat}" name="LogFilter_Format" colspan="2" data-dojo-type="dijit.form.Select">
+                        <option selected="selected" value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+                    <input id="${id}WildcardFilter" title="${i18n.WildcardFilter}" name="LogFilter_WildcardFilter" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                    <select id="${id}sortByTimeDirection" title="${i18n.Sort} ${i18n.TimeStamp}" name="LogFilter_sortByTimeDirection" colspan="2" data-dojo-type="dijit.form.Select">
+                        <option value="0">ASC</option>
+                        <option selected="selected" value="1">DESC</option>
+                    </select>
+                    <select id="${id}LogEventType" title="${i18n.LogEventType}" name="LogFilter_LogEventType" colspan="2" data-dojo-type="dijit.form.Select">
+                        <option selected="selected" value="ALL">All</option>
+                        <option value="DIS">Disaster</option>
+                        <option value="ERR">Error</option>
+                        <option value="WRN">Warning</option>
+                        <option value="INF">Information</option>
+                        <option value="PRO">Progress</option>
+                        <option value="MET">Metric</option>
+                    </select>
                 </div>
-                <div class="dijitDialogPaneActionBar">
+                <div style="width:410px" class="dijitDialogPaneActionBar">
                     <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onSubmitDialog" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
                     <button style="float:left" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
                 </div>
