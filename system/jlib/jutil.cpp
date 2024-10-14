@@ -3632,3 +3632,20 @@ void hold(const char *msg)
 }
 
 
+
+unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure)
+{
+    unsigned ret = 0;
+    while (numDigits--)
+    {
+        char c = *str++;
+        if (!isdigit(c))
+        {
+            if (throwOnFailure)
+                throw makeStringExceptionV(-1, "Invalid format (readDigits): %s", str);
+            return 0;
+        }
+        ret  = ret * 10 + (c - '0');
+    }
+    return ret;
+}

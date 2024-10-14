@@ -117,6 +117,16 @@ define([
             this.emailFrom = registry.byId(this.id + "EmailFrom");
             this.emailSubject = registry.byId(this.id + "EmailSubject");
             this.emailBody = registry.byId(this.id + "EmailBody");
+
+            //Zap LogFilters
+            this.logFilterStartDateTime = dom.byId(this.id + "StartDateTime");
+            this.logFilterStartDate = registry.byId(this.id + "StartDate");
+            this.logFilterStartTime = registry.byId(this.id + "StartTime");
+            this.logFilterEndDateTime = dom.byId(this.id + "EndDateTime");
+            this.logFilterEndDate = registry.byId(this.id + "EndDate");
+            this.logFilterEndTime = registry.byId(this.id + "EndTime");
+            this.logFilterRelativeTimeRangeBuffer = registry.byId(this.id + "RelativeTimeRangeBuffer");
+
             this.protected = registry.byId(this.id + "Protected");
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -146,14 +156,33 @@ define([
             this.checkThorLogStatus();
         },
 
+        formatLogFilterDateTime: function (dateField, timeField, dateTimeField) {
+            if (dateField.value.toString() !== "Invalid Date") {
+                const d = new Date(dateField.value);
+                const date = `${d.getFullYear()}-${(d.getMonth() < 9 ? "0" : "") + parseInt(d.getMonth() + 1, 10)}-${d.getDate()}`;
+                const time = timeField.value.toString().replace(/.*1970\s(\S+).*/, "$1");
+                dateTimeField.value = `${date}T${time}.000Z`;
+            }
+        },
+
         _onSubmitDialog: function () {
             var context = this;
             var includeSlaveLogsCheckbox = this.includeSlaveLogsCheckbox.get("checked");
+            if (this.logFilterRelativeTimeRangeBuffer.value !== "") {
+                this.logFilterEndDate.required = "";
+                this.logFilterStartDate.required = "";
+            }
             if (this.zapForm.validate()) {
                 //WUCreateAndDownloadZAPInfo is not a webservice so relying on form to submit.
                 //Server treats "on" and '' as the same thing.
                 this.includeSlaveLogsCheckbox.set("value", includeSlaveLogsCheckbox ? "on" : "off");
+
+                // Log Filters
+                this.formatLogFilterDateTime(this.logFilterStartDate, this.logFilterStartTime, this.logFilterStartDateTime);
+                this.formatLogFilterDateTime(this.logFilterEndDate, this.logFilterEndTime, this.logFilterEndDateTime);
+
                 this.zapForm.set("action", "/WsWorkunits/WUCreateAndDownloadZAPInfo");
+
                 this.zapDialog.hide();
                 this.checkThorLogStatus();
                 if (this.logAccessorMessage !== "") {
