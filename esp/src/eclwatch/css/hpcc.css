@@ -74,6 +74,10 @@ form li label {
     padding-top: 4px;
 }
 
+.dijitDialogPaneContent {
+    overflow-x: hidden !important;
+}
+
 .dijitDialogPaneContent form li label {
     float: left;
     width: 25%;
