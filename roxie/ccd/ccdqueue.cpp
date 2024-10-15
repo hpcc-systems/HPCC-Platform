@@ -56,7 +56,7 @@ RoxiePacketHeader::RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _
 {
     // Used to create the header to send a callback to originating server or an IBYTI to a buddy
     activityId = _activityId;
-    uid = source.uid;
+    uid.store(source.uid);
     queryHash = source.queryHash;
     channel = source.channel;
     overflowSequence = source.overflowSequence;
@@ -88,13 +88,19 @@ unsigned RoxiePacketHeader::priorityHash() const
 
 void RoxiePacketHeader::copy(const RoxiePacketHeader &oh)
 {
-    // used for saving away kill packets for later matching by match
-    uid = oh.uid;
+    // used for saving away info for later matching by match, without having to lock
     overflowSequence = oh.overflowSequence;
     continueSequence = oh.continueSequence;
     serverId = oh.serverId;
     channel = oh.channel;
+    uid.store(oh.uid);
     // MORE - would it be safer, maybe even faster to copy the rest too?
+}
+
+void RoxiePacketHeader::clear()
+{
+    // used for saving away kill packets for later matching by match
+    uid = RUID_NONE;  // Will never match a queued packet
 }
 
 bool RoxiePacketHeader::matchPacket(const RoxiePacketHeader &oh) const
@@ -156,7 +162,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
             ret.appendf(" (fetch part)");
         break;
     }
-    ret.appendf(" uid=" RUIDF " pri=", uid);
+    ret.appendf(" uid=" RUIDF " pri=", uid.load());
     switch(activityId & ROXIE_PRIORITY_MASK)
     {
         case ROXIE_SLA_PRIORITY: ret.append("SLA"); break;
@@ -1151,8 +1157,8 @@ class RoxieQueue : public CInterface, implements IThreadFactory
     Owned <IThreadPool> workers;
     QueueOf<ISerializedRoxieQueryPacket, true> waiting;
     Semaphore available;
+    CriticalSection availCrit;    // Semaphore post may be slow with a lot of waiters - this crit may be used to limit to a single waiter
     CriticalSection qcrit;
-    unsigned headRegionSize;
     unsigned numWorkers;
     RelaxedAtomic<unsigned> started;
     std::atomic<unsigned> idle;
@@ -1174,9 +1180,8 @@ class RoxieQueue : public CInterface, implements IThreadFactory
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieQueue(unsigned _headRegionSize, unsigned _numWorkers)
+    RoxieQueue(unsigned _numWorkers)
     {
-        headRegionSize = _headRegionSize;
         numWorkers = _numWorkers;
         workers.setown(createThreadPool("RoxieWorkers", this, false, nullptr, numWorkers));
         started = 0;
@@ -1192,7 +1197,6 @@ public:
 
 
     virtual IPooledThread *createNew();
-    void abortChannel(unsigned channel);
 
     void start()
     {
@@ -1319,7 +1323,10 @@ public:
     void wait()
     {
         idle++;
-        available.wait();
+        {
+            CLeavableCriticalBlock b(availCrit, limitWaitingWorkers);
+            available.wait();
+        }
         idle--;
     }
 
@@ -1331,31 +1338,7 @@ public:
     ISerializedRoxieQueryPacket *dequeue()
     {
         CriticalBlock qc(qcrit);
-        unsigned lim = waiting.ordinality();
-        if (lim)
-        {
-            if (headRegionSize)
-            {
-                if (lim > headRegionSize)
-                    lim = headRegionSize;
-                return waiting.dequeue(fastRand() % lim);
-            }
-            return waiting.dequeue();
-        }
-        else
-            return NULL;
-    }
-
-    unsigned getHeadRegionSize() const
-    {
-        return headRegionSize;
-    }
-
-    unsigned setHeadRegionSize(unsigned newsize)
-    {
-        unsigned ret = headRegionSize;
-        headRegionSize = newsize;
-        return ret;
+        return waiting.dequeue();
     }
 
     void noteOrphanIBYTI(const RoxiePacketHeader &hdr)
@@ -1389,6 +1372,7 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     Owned<const ITopologyServer> topology;
 #endif
     AgentContextLogger logctx;
+    RoxiePacketHeader packetHeader;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1417,41 +1401,41 @@ public:
     }
     inline void setActivity(IRoxieAgentActivity *act)
     {
-        //Ensure that the activity is released outside of the critical section
         Owned<IRoxieAgentActivity> temp(act);
         {
             CriticalBlock b(actCrit);
             activity.swap(temp);
         }
     }
+    inline void setPacket(IRoxieQueryPacket *p)
+    {
+        Owned<IRoxieQueryPacket> temp(p);
+        CriticalBlock b(actCrit);
+        if (p)
+        {
+            packet.swap(temp);
+            packetHeader.copy(p->queryHeader());
+        }
+        else
+        {
+            packetHeader.clear();
+            packet.swap(temp);
+        }
+    }
     inline bool match(RoxiePacketHeader &h)
     {
         // There is a window between getting packet from queue and being able to match it. 
         // This could cause some deduping to fail, but it does not matter if it does (so long as it is rare!)
-        CriticalBlock b(actCrit);
-        return packet && packet->queryHeader().matchPacket(h);
-    }
-
-    void abortChannel(unsigned channel)
-    {
-        CriticalBlock b(actCrit);
-        if (packet && packet->queryHeader().channel==channel)
-        {
-            abortLaunch = true;
-#ifndef NEW_IBYTI
-            if (doIbytiDelay) 
-                ibytiSem.signal();
-#endif
-            if (activity) 
-                activity->abort();
-        }
+        return packetHeader.matchPacket(h);
     }
 
     bool checkAbort(RoxiePacketHeader &h, bool checkRank, bool &queryFound, bool &preActivity)
     {
-        CriticalBlock b(actCrit);
-        if (packet && packet->queryHeader().matchPacket(h))
+        if (packetHeader.matchPacket(h))
         {
+            CriticalBlock b(actCrit);
+            if (!packetHeader.matchPacket(h))
+                return false;
             queryFound = true;
             abortLaunch = true;
 #ifndef NEW_IBYTI
@@ -1772,7 +1756,7 @@ public:
 #ifdef NEW_IBYTI
                         logctx.setStatistic(StTimeIBYTIDelay, next->queryIBYTIDelayTime());
 #endif
-                        packet.setown(next->deserialize());
+                        setPacket(next->deserialize());
                         next.clear();
                         RoxiePacketHeader &header = packet->queryHeader();
 #ifndef SUBCHANNELS_IN_HEADER
@@ -1804,8 +1788,7 @@ public:
                     }
                     workerThreadBusy = false;
                     {
-                        CriticalBlock b(actCrit);
-                        packet.clear();
+                        setPacket(nullptr);
 #ifndef SUBCHANNELS_IN_HEADER
                         topology.clear();
 #endif
@@ -1815,12 +1798,11 @@ public:
             }
             catch(IException *E)
             {
-                CriticalBlock b(actCrit);
                 EXCLOG(E);
                 if (packet)
                 {
                     throwRemoteException(E, NULL, packet, false);
-                    packet.clear();
+                    setPacket(nullptr);
                 }
                 else
                     E->Release();
@@ -1830,13 +1812,12 @@ public:
             }
             catch(...)
             {
-                CriticalBlock b(actCrit);
                 Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception in Roxie worker thread");
                 EXCLOG(E);
                 if (packet)
                 {
                     throwRemoteException(E.getClear(), NULL, packet, false);
-                    packet.clear();
+                    setPacket(nullptr);
                 }
 #ifndef SUBCHANNELS_IN_HEADER
                 topology.clear();
@@ -1849,16 +1830,6 @@ public:
 IPooledThread *RoxieQueue::createNew()
 {
     return new CRoxieWorker;
-}
-
-void RoxieQueue::abortChannel(unsigned channel)
-{
-    Owned<IPooledThreadIterator> wi = workers->running();
-    ForEach(*wi)
-    {
-        CRoxieWorker &w = (CRoxieWorker &) wi->query();
-        w.abortChannel(channel);
-    }
 }
 
 //=================================================================================
@@ -1917,20 +1888,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(_numWorkers), hiQueue(_numWorkers), loQueue(_numWorkers), numWorkers(_numWorkers)
     {
-    }
-
-    virtual unsigned getHeadRegionSize() const
-    {
-        return loQueue.getHeadRegionSize();
-    }
-
-    virtual void setHeadRegionSize(unsigned newSize)
-    {
-        slaQueue.setHeadRegionSize(newSize);
-        hiQueue.setHeadRegionSize(newSize);
-        loQueue.setHeadRegionSize(newSize);
     }
 
     virtual void start() 

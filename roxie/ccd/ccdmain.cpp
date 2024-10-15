@@ -75,7 +75,6 @@ unsigned numRequestArrayThreads = 5;
 bool blockedLocalAgent = true;
 bool acknowledgeAllRequests = true;
 unsigned packetAcknowledgeTimeout = 100;
-unsigned headRegionSize;
 unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
 unsigned parallelLoopFlowLimit = 100;
@@ -203,6 +202,7 @@ unsigned maxGraphLoopIterations;
 bool steppingEnabled = true;
 bool simpleLocalKeyedJoins = true;
 bool adhocRoxie = false;
+bool limitWaitingWorkers = false;
 
 unsigned __int64 minFreeDiskSpace = 1024 * 0x100000;  // default to 1 GB
 unsigned socketCheckInterval = 5000;
@@ -1005,7 +1005,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         minPayloadSize = topology->getPropInt("@minPayloadSize", minPayloadSize);
         blockedLocalAgent = topology->getPropBool("@blockedLocalAgent", blockedLocalAgent);
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
-        headRegionSize = topology->getPropInt("@headRegionSize", 0);
         packetAcknowledgeTimeout = topology->getPropInt("@packetAcknowledgeTimeout", packetAcknowledgeTimeout);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
@@ -1285,6 +1284,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         const char *sinkModeText = topology->queryProp("@sinkMode");
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);
+        limitWaitingWorkers = topology->getPropBool("@limitWaitingWorkers", limitWaitingWorkers);
 
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
         setLegacyAES(topology->getPropBool("expert/@useLegacyAES", false));
@@ -1454,7 +1454,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             DBGLOG("Loading all packages took %ums", loadPackageTimer.elapsedMs());
 
         ROQ = createOutputQueueManager(numAgentThreads, encryptInTransit);
-        ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
 #if defined(WIN32) && defined(_DEBUG) && defined(_DEBUG_HEAP_FULL)
