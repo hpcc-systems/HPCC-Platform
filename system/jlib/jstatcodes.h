@@ -319,6 +319,8 @@ enum StatisticKind
     StCycleSoapcallDNSCycles,
     StCycleSoapcallConnectCycles,
     StNumSoapcallConnectFailures,
+    StTimeLookAhead,
+    StCycleLookAheadCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

@@ -119,10 +119,17 @@ public:
             {
                 while (requiredLeft&&running)
                 {
-                    OwnedConstThorRow row = inputStream->nextRow();
+                    OwnedConstThorRow row;
+                    {
+                        LookAheadTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
+                        row.setown(inputStream->nextRow());
+                    }
                     if (!row)
                     {
-                        row.setown(inputStream->nextRow());
+                        {
+                            LookAheadTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
+                            row.setown(inputStream->nextRow());
+                        }
                         if (!row)
                             break;
                         else
@@ -138,7 +145,11 @@ public:
             {
                 while (requiredLeft&&running)
                 {
-                    OwnedConstThorRow row = inputStream->ungroupedNextRow();
+                    OwnedConstThorRow row;
+                    {
+                        LookAheadTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
+                        row.setown(inputStream->ungroupedNextRow());
+                    }
                     if (!row)
                         break;
                     ++count;
@@ -234,7 +245,15 @@ public:
 // IEngineRowStream
     virtual const void *nextRow() override
     {
-        OwnedConstThorRow row = smartbuf->nextRow();
+        OwnedConstThorRow row;
+        {
+            // smartbuf->nextRow should return immediately if a row is available.
+            // smartbuf->nextRow will take time if blocked, so record time taken as blocked time.
+            // N.b. smartbuf->next may take a trivial amount of time if row is available but
+            // for the purposes of stats this will still be considered blocked.
+            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
+            row.setown(smartbuf->nextRow());
+        }
         if (getexception)
             throw getexception.getClear();
         if (!row)

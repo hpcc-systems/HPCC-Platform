@@ -245,6 +245,7 @@ public:
     unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
     cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
     cycle_t blockedCycles;  // Time spent blocked
+    cycle_t lookAheadCycles;  // Time spent by lookahead thread
 
     // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
@@ -264,6 +265,7 @@ public:
         firstRow = 0;
         firstExitCycles = 0;
         blockedCycles = 0;
+        lookAheadCycles = 0;
     }
 };
 
@@ -335,31 +337,20 @@ public:
     }
 };
 
-class BlockedActivityTimer
+class BlockedActivityTimer : public SimpleActivityTimer
 {
-    unsigned __int64 startCycles;
-    ActivityTimeAccumulator &accumulator;
-protected:
-    const bool enabled;
 public:
     BlockedActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
-        : accumulator(_accumulator), enabled(_enabled)
-    {
-        if (enabled)
-            startCycles = get_cycles_now();
-        else
-            startCycles = 0;
-    }
-
-    ~BlockedActivityTimer()
-    {
-        if (enabled)
-        {
-            cycle_t elapsedCycles = get_cycles_now() - startCycles;
-            accumulator.blockedCycles += elapsedCycles;
-        }
-    }
+        : SimpleActivityTimer(_accumulator.blockedCycles, _enabled) { }
 };
+
+class LookAheadTimer : public SimpleActivityTimer
+{
+public:
+    inline LookAheadTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : SimpleActivityTimer(_accumulator.lookAheadCycles, _enabled) { }
+};
+
 #else
 class ActivityTimer
 {
@@ -373,7 +364,13 @@ struct SimpleActivityTimer
 struct BlockedActivityTimer
 {
     inline BlockedActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
+
 };
+struct LookAheadTimer
+{
+    inline LookAheadTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled){ }
+};
+
 #endif
 
 class THORHELPER_API IndirectCodeContextEx : public IndirectCodeContext
