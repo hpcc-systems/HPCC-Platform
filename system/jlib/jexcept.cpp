@@ -1815,7 +1815,9 @@ bool getDebuggerGetStacksCmd(StringBuffer &output)
         output.append("Unable to capture stacks");
         return false;
     }
-    return output.appendf("gdb --batch -n -ex 'thread apply all bt' %s %u", exePath, GetCurrentProcessId());
+
+    output.appendf("gdb --batch -ix %s/.gdbinit -x %s/post-mortem-gdb %s %u", hpccBuildInfo.execDir, hpccBuildInfo.execDir, exePath, GetCurrentProcessId());
+    return true;
 }
 
 bool getAllStacks(StringBuffer &output)
