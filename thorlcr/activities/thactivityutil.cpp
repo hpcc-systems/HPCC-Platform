@@ -120,21 +120,22 @@ public:
                 while (requiredLeft&&running)
                 {
                     OwnedConstThorRow row;
+                    bool eog = false;
                     {
                         LookAheadTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
                         row.setown(inputStream->nextRow());
-                    }
-                    if (!row)
-                    {
-                        {
-                            LookAheadTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
-                            row.setown(inputStream->nextRow());
-                        }
                         if (!row)
-                            break;
-                        else
-                            writer->putRow(NULL); // eog
+                        {
+                            row.setown(inputStream->nextRow());
+                            if (!row)
+                                break;
+                            eog = true;
+                        }
                     }
+
+                    if (unlikely(eog))
+                        writer->putRow(NULL);
+
                     ++count;
                     writer->putRow(row.getClear());
                     if (requiredLeft!=RCUNBOUND)
