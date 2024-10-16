@@ -55,7 +55,7 @@ template <class X> inline void Release(X * ptr) { if (ptr) ptr->Release(); }
 template <class CLASS> class Shared
 {
 public:
-    inline Shared()                              { ptr = NULL; }
+    constexpr inline Shared() = default;
     inline Shared(CLASS * _ptr, bool owned)      { ptr = _ptr; if (!owned && _ptr) _ptr->Link(); }
     inline Shared(const Shared & other)          { ptr = other.getLink(); }
 #if defined(__cplusplus) && __cplusplus >= 201100
@@ -107,7 +107,7 @@ private:
     inline Shared<CLASS> & operator = (const CLASS * other);
 
 private:
-    CLASS * ptr;
+    CLASS * ptr = nullptr;
 };
 
 
@@ -115,7 +115,7 @@ private:
 template <class CLASS> class Owned : public Shared<CLASS>
 {
 public:
-    inline Owned()                              { }
+    constexpr inline Owned() = default;
     inline Owned(CLASS * _ptr) : Shared<CLASS>(_ptr)   { }
 
     inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
@@ -130,7 +130,7 @@ private:
 template <class CLASS> class Linked : public Shared<CLASS>
 {
 public:
-    inline Linked()                         { }
+    constexpr inline Linked() = default;
     inline Linked(CLASS * _ptr) : Shared<CLASS>(LINK(_ptr)) { }
     inline Linked(const Shared<CLASS> & other) : Shared<CLASS>(other) { }
 
