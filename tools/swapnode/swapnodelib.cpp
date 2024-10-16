@@ -618,7 +618,6 @@ class CAutoSwapNode : public CSwapNode
         SocketEndpointArray badepa;
         UnsignedArray failedcodes;
         StringArray failedmessages;
-        unsigned start = msTick();
 
         const char *thorname = options->queryProp("@name");
         StringBuffer dataDir, mirrorDir;
@@ -653,7 +652,7 @@ class CAutoSwapNode : public CSwapNode
                 return false;
             }
             bnt->setProp("@time", ts.str());
-            int r = bnt->getPropInt("@rank", -1);
+            rank_t r = bnt->getPropInt("@rank", -1);
             if ((int)r < 0)
             { // shouldn't occur
                 ERRLOG("SWAPNODE node %s rank not found in group %s", ips.str(), groupName.get());
@@ -664,7 +663,7 @@ class CAutoSwapNode : public CSwapNode
             {
                 SocketEndpoint ep1(badepa.item(j1));
                 ep1.port = 0; // should be no ports in group
-                int r1 = (int)badrank.item(j1);
+                rank_t r1 = badrank.item(j1);
                 if ((r == (r1 + 1) % grp->ordinality()) ||
                     (r1 == (r + 1) % grp->ordinality()))
                 {
@@ -693,13 +692,14 @@ class CAutoSwapNode : public CSwapNode
             const char *ips = swappednode.queryProp("@outNetAddress");
             if (!ips || !*ips)
                 continue;
-            int r1 = swappednode.getPropInt("@rank", -1);
+            rank_t r1 = swappednode.getPropInt("@rank", -1);
+            // MORE - should perhaps assert that it is NOT -1
             SocketEndpoint swappedep(ips);
             swappedep.port = 0;
             ForEachItemIn(i2, badepa)
             {
                 SocketEndpoint badep(badepa.item(i2));
-                int badr = (int)badrank.item(i2);
+                rank_t badr = badrank.item(i2);
                 badep.port = 0;
                 if (swappedep.equals(badep))
                 {

@@ -242,14 +242,12 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             break;
         }
 
-        bool isSpecial = false;
         bool pluginRequest = false;
         bool dataBlockRequest = false;
         bool remoteReadRequest = false;
         if (len & 0x80000000)
         {
             unsigned char flag;
-            isSpecial = true;
             socket->read(&flag, sizeof(flag));
             switch (flag)
             {
@@ -395,7 +393,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                     mb.read(dataLen);
                     if (!dataLen)
                         break;
-                    const void *rowData = mb.readDirect(dataLen);
+                    [[maybe_unused]] const void *rowData = mb.readDirect(dataLen);
                     // JCSMORE - output binary row data?
 
                     // cursor

@@ -140,7 +140,6 @@ bool initLDAP(IPropertyTree * ldapProps)
         return false;
     }
     StringAttr adminGroup;
-    bool isActiveDir = true;
     if (0 == stricmp(serverType.get(),"ActiveDirectory"))
         adminGroup.set("Administrators");
     else

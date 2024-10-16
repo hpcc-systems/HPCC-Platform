@@ -335,7 +335,7 @@ interface ILdapClient : extends IInterface
     virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
     virtual bool userInView(const char * user, const char* viewName) = 0;
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) = 0;
-    virtual const bool organizationalUnitExists(const char * ou) const = 0;
+    virtual bool organizationalUnitExists(const char * ou) const = 0;
     virtual bool addUser(ISecUser & user, const char* basedn) = 0;
 };
 
