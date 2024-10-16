@@ -794,8 +794,8 @@ public:
 
 extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
-    if (!encryptInTransit)
-        return new CNocryptRoxieQueryPacket(_data, _len);
+    //if (!encryptInTransit)
+    //    return new CNocryptRoxieQueryPacket(_data, _len);
     if ((unsigned short)_len != _len)
     {
         StringBuffer s;
@@ -844,8 +844,13 @@ extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-    if (encryptInTransit)
-        return new CSerializedRoxieQueryPacket(m.detachOwn(), length);
+    if (true || encryptInTransit)
+    {
+//        void *data = m.detachOwn();
+        void *data = malloc(length);
+        memcpy(data, m.bufferBase(), length);
+        return new CSerializedRoxieQueryPacket(data, length);
+    }
     else
         return new CNocryptRoxieQueryPacket(m.detachOwn(), length); 
 }
@@ -2194,7 +2199,10 @@ public:
 
     void append(ISerializedRoxieQueryPacket *packet, unsigned expires)
     {
-        // Goes on the end. But percolate the expiry time backwards
+        // Insert in the list at the appropriate point that the list stays in expiry order
+        // With a single buddy this is usually on the end, but with multiple buddies we will be inserting at various points.
+        // Should we consider a queue per buddy?
+        
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
         packet->noteQueued(0);
         DelayedPacketEntry *newEntry = new DelayedPacketEntry(packet, expires);
@@ -2203,6 +2211,8 @@ public:
             StringBuffer s;
             DBGLOG("Adding delayed packet %s expires in %u ms", packet->queryHeader().toString(s).str(), expires - msTick());
         }
+#if 0
+// old code assumed only one buddy
         newEntry->prev = tail;
         if (tail)
         {
@@ -2218,6 +2228,41 @@ public:
         else
             head = newEntry;
         tail = newEntry;
+#else
+        if (tail)
+        {
+            DelayedPacketEntry *last = nullptr;
+            DelayedPacketEntry *finger = tail;
+            while (finger != nullptr)
+            {
+                if ((int) (finger->waitExpires - expires) <= 0)
+                    break;
+                last = finger;
+                finger = finger->prev;
+            }
+            if (last)
+                last->prev = newEntry;
+            else
+                tail = newEntry;
+            newEntry->next = last;
+            newEntry->prev = finger;
+            if (finger)
+                finger->next = newEntry;
+            else
+                head = newEntry;
+        }
+        else
+        {
+            head = newEntry;
+            tail = newEntry;
+        }
+#endif
+        numEntries++;
+        if (numEntries > maxNumEntries)
+        {
+            maxNumEntries = numEntries;
+            DBGLOG("WorkerUdpReader: Max IBYTI queue length is now %u", numEntries);
+        }
     }
 
     // Move any that we are done waiting for our buddy onto the active queue
@@ -2283,11 +2328,13 @@ private:
         if (goer==tail)
             tail = goer->prev;
         delete goer;
+        numEntries--;
     }
 
     DelayedPacketEntry *head = nullptr;
     DelayedPacketEntry *tail = nullptr;
-
+    unsigned numEntries = 0;
+    unsigned maxNumEntries = 0;
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -2393,7 +2440,7 @@ protected:
     DelayedPacketQueueManager delayed;
 #endif
 
-    class WorkerUdpTracker : public TimeDivisionTracker<6, false>
+    class WorkerUdpTracker : public TimeDivisionTracker<13, false>
     {
     public:
         enum
@@ -2403,17 +2450,31 @@ protected:
             allocating,
             processing,
             pushing,
-            checkingRunning
+            deferring,
+            checkingRunning,
+            checkingExpired,
+            decoding,
+            acknowledging,
+            retrying,
+            creatingPacket,
+            getTimeout
         };
 
-        WorkerUdpTracker(const char *name, unsigned reportIntervalSeconds) : TimeDivisionTracker<6, false>(name, reportIntervalSeconds)
+        WorkerUdpTracker(const char *name, unsigned reportIntervalSeconds) : TimeDivisionTracker<13, false>(name, reportIntervalSeconds)
         {
             stateNames[other] = "other";
             stateNames[waiting] = "waiting";
             stateNames[allocating] = "allocating";
             stateNames[processing] = "processing";
             stateNames[pushing] = "pushing";
+            stateNames[deferring] = "deferring";
             stateNames[checkingRunning] = "checking running";
+            stateNames[checkingExpired] = "checking expiry";
+            stateNames[decoding] = "decoding";
+            stateNames[acknowledging] = "acknowledging";
+            stateNames[retrying] = "retrying";
+            stateNames[creatingPacket] = "creating packet";
+            stateNames[getTimeout] = "getting timeout";
         }
 
     } timeTracker;
@@ -2437,7 +2498,7 @@ protected:
     } readThread;
 
 public:
-    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), timeTracker("WorkerUdpReader", 60), readThread(*this)
+    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), timeTracker("WorkerUdpReader", 5), readThread(*this)
     {
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
@@ -2666,6 +2727,7 @@ public:
     {
         // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
         // DO NOT put tracing on this thread except at very high tracelevels!
+        WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::processing);
         if ((header.activityId & ~ROXIE_PRIORITY_MASK) == 0)
             doIbyti(header, queue);
         else
@@ -2708,18 +2770,20 @@ public:
             }
             else
             {
+                division.switchState(WorkerUdpTracker::decoding);
+
 #ifdef SUBCHANNELS_IN_HEADER
                 unsigned mySubchannel = header.mySubChannel();
 #else
                 Owned<const ITopologyServer> topology = getTopology();
                 unsigned mySubchannel = topology->queryChannelInfo(header.channel).subChannel();
 #endif
-                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries >= SUBCHANNEL_MASK)
                     return; // I already failed unrecoverably on this request - ignore it
                 if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {
+                    division.switchState(WorkerUdpTracker::acknowledging);
 #ifdef DEBUG
                     if (testAgentFailure & 0x1 && !retries)
                         return;
@@ -2736,6 +2800,7 @@ public:
                 if (retries)
                 {
                     // MORE - is this fast enough? By the time I am seeing retries I may already be under load. Could move onto a separate thread
+                    division.switchState(WorkerUdpTracker::retrying);
                     assertex(header.channel); // should never see a retry on channel 0
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                     if (!(testAgentFailure & 0x800) && !acknowledgeAllRequests)
@@ -2784,7 +2849,9 @@ public:
                         {
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
-                        WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
+                        division.switchState(WorkerUdpTracker::creatingPacket);
+                        Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
+                        division.switchState(WorkerUdpTracker::pushing);
 #ifdef NEW_IBYTI
                         // It's debatable whether we should delay for the primary here - they had one chance already...
                         // But then again, so did we, assuming the timeout is longer than the IBYTIdelay
@@ -2795,15 +2862,22 @@ public:
                                 delay += getIbytiDelay(header.subChannels[subChannel]);
                         }
                         if (delay)
+                        {
+                            division.switchState(WorkerUdpTracker::deferring);
                             delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
+                        }
                         else
 #endif
+                        {
+                            division.switchState(WorkerUdpTracker::pushing);
                             queue.enqueueUnique(packet.getClear(), mySubchannel, 0);
+                        }
                     }
                 }
                 else // first time (not a retry).
                 {
-                    WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
+                    division.switchState(WorkerUdpTracker::creatingPacket);
+                    Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
 #ifdef NEW_IBYTI
                     unsigned delay = 0;
                     if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
@@ -2812,10 +2886,16 @@ public:
                             delay += getIbytiDelay(header.subChannels[subChannel]);
                     }
                     if (delay)
+                    {
+                        division.switchState(WorkerUdpTracker::deferring);
                         delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
+                    }
                     else
 #endif
+                    {
+                        division.switchState(WorkerUdpTracker::pushing);
                         queue.enqueue(packet.getClear(), 0);
+                    }
                 }
             }
         }
@@ -2831,12 +2911,12 @@ public:
         WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::other);
         for (;;)
         {
-            mb.clear();
             try
             {
                 // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
                 // DO NOT put tracing on this thread except at very high tracelevels!
 #ifdef NEW_IBYTI
+                division.switchState(WorkerUdpTracker::getTimeout);
                 unsigned timeout = delayed.timeout(msTick());
                 if (timeout>5000)
                     timeout = 5000;
@@ -2844,6 +2924,7 @@ public:
                 unsigned timeout = 5000;
 #endif
                 division.switchState(WorkerUdpTracker::allocating);
+                mb.clear();
                 void * buffer = mb.reserve(maxPacketSize);
 
                 division.switchState(WorkerUdpTracker::waiting);
@@ -2904,11 +2985,18 @@ public:
                 }
             }
 #ifdef NEW_IBYTI
-            delayed.checkExpired(msTick(), slaQueue, hiQueue, loQueue);
+            division.switchState(WorkerUdpTracker::checkingExpired);
+            unsigned now = msTick();
+            if (now != lastCheck)
+            {
+                lastCheck = now;
+                delayed.checkExpired(now, slaQueue, hiQueue, loQueue);
+            }
 #endif
         }
         return 0;
     }
+    unsigned lastCheck = 0;
 
     void start() 
     {

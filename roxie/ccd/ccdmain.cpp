@@ -284,7 +284,11 @@ void init_signals()
 {
 //  signal(SIGTERM, caughtSIGTERM);
 #ifndef _WIN32
+#ifdef __APPLE__
+    signal(SIGPIPE, SIG_IGN);  // Otherwise it seems semaphore gets interrupted
+#else
     signal(SIGPIPE, caughtSIGPIPE);
+#endif
     signal(SIGHUP, caughtSIGHUP);
     signal(SIGALRM, caughtSIGALRM);
 
@@ -484,18 +488,23 @@ void readStaticTopology()
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
     if (!numNodes && oneShotRoxie)
     {
-        if (topology->getPropBool("expert/@addDummyNode", false))
+        unsigned dummyNodes = topology->getPropInt("expert/@addDummyNode", 0);
+        if (dummyNodes)
         {
             // Special config for testing some multinode things on a single node
+            numNodes = dummyNodes + 1;
             topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
-            topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", "192.0.2.0");  // A non-existent machine (this address is reserved for documentation)
-            numNodes = 2;
+            for (unsigned dummyNo = 0; dummyNo < dummyNodes; dummyNo++)
+            {
+                VStringBuffer dummyIP("192.0.2.%u", dummyNo);   // A non-existent machine (this address is reserved for documentation)
+                topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", dummyIP.str());
+            }
             localAgent = false;
-            topology->setPropInt("@numChannels", 2);
-            numChannels = 2;
-            topology->setPropInt("@numDataCopies", 2);
-            topology->setPropInt("@channelsPerNode", 2);
-            topology->setProp("@agentConfig", "cyclic");
+            topology->setPropInt("@numChannels", 1);
+            numChannels = 1;
+            topology->setPropInt("@numDataCopies", numNodes);
+            topology->setPropInt("@channelsPerNode", 1);
+            topology->setProp("@agentConfig", "simple");
         }
         else if (oneShotRoxie)
         {
@@ -506,6 +515,8 @@ void readStaticTopology()
     Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
 
     bool myNodeSet = false;
+    StringBuffer forceIP;
+    topology->getProp("expert/@forceIP", forceIP);
     unsigned calcNumChannels = 0;
     ForEach(*roxieServers)
     {
@@ -514,11 +525,23 @@ void readStaticTopology()
         IpAddress ip(iptext);
         if (ip.isNull())
             throw MakeStringException(ROXIE_UDP_ERROR, "Could not resolve address %s", iptext);
-        if (ip.isLocal() && !myNodeSet)
+        if (forceIP.length())
         {
-            myNodeSet = true;
-            myNode.setIp(ip);
-            myAgentEP.set(ccdMulticastPort, myNode.getIpAddress());
+            if (streq(iptext, forceIP) && !myNodeSet)
+            {
+                myNodeSet = true;
+                myNode.setIp(ip);
+                myAgentEP.set(ccdMulticastPort, myNode.getIpAddress());
+            }
+        }
+        else
+        {
+            if (ip.isLocal() && !myNodeSet)
+            {
+                myNodeSet = true;
+                myNode.setIp(ip);
+                myAgentEP.set(ccdMulticastPort, myNode.getIpAddress());
+            }
         }
         ForEachItemIn(idx, nodeTable)
         {
