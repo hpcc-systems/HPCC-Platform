@@ -59,6 +59,7 @@
 #include "daqueue.hpp"
 #include "workunit.ipp"
 #include "digisign.hpp"
+#include "secmanagertracedecorator.hpp"
 
 #include <list>
 #include <string>
@@ -113,7 +114,7 @@ static bool checkWuScopeSecAccess(const char *wuscope, ISecManager *secmgr, ISec
 {
     if (!secmgr || !secuser)
         return true;
-    bool ret = secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required;
+    bool ret = CSecManagerTraceDecorator(*secmgr).authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required;
     if (!ret && (log || excpt))
         wuAccessError(secuser->getName(), action, wuscope, NULL, excpt, log);
     return ret;
@@ -146,7 +147,7 @@ static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager *secmgr, ISecUser *
 {
     if (!secmgr || !secuser)
         return true;
-    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.queryWuScope())>=required;
+    bool ret=CSecManagerTraceDecorator(*secmgr).authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.queryWuScope())>=required;
     if (!ret && (log || excpt))
     {
         wuAccessError(secuser->getName(), action, cw.queryWuScope(), cw.queryWuid(), excpt, log);
@@ -159,7 +160,7 @@ static bool checkWuSecAccess(const char *wuid, ISecManager *secmgr, ISecUser *se
         return true;
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw->queryWuScope())>=required;
+    bool ret=CSecManagerTraceDecorator(*secmgr).authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw->queryWuScope())>=required;
     if (!ret && (log || excpt))
     {
         wuAccessError(secuser->getName(), action, cw->queryWuScope(), cw->queryWuid(), excpt, log);
@@ -5220,7 +5221,7 @@ private:
         SecAccessFlags perm;
         if (!perms)
         {
-            perm = secuser.get() ? secmgr->authorizeWorkunitScope(*secuser, scopeName) : SecAccess_Unavailable;
+            perm = secuser.get() ? CSecManagerTraceDecorator(*secmgr).authorizeWorkunitScope(*secuser, scopeName) : SecAccess_Unavailable;
             scopePermissions.setValue(scopeName, perm);
         }
         else

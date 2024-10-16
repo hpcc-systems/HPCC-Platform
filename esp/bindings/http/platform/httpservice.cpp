@@ -296,6 +296,36 @@ int CEspHttpServer::processRequest()
         else //user ID is in HTTP header
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
+        // The user auth check may create trace output, in which case case the root server span
+        // must be created first. Since the span was intentionally created after dispatching a
+        // variety of requests, span creation is conditional.
+        bool wantTracing = true;
+        if (!queryTraceManager().isTracingEnabled())
+            wantTracing = false;
+        else if (streq(method, GET_METHOD))
+        {
+            if (sub_serv_root == stype)
+                wantTracing = false;
+            else if (strieq(serviceName, "esp"))
+            {
+                wantTracing = !(methodName.isEmpty() ||
+                    strieq(methodName, "files") ||
+                    strieq(methodName, "xslt") ||
+                    strieq(methodName, "frame") ||
+                    strieq(methodName, "titlebar") ||
+                    strieq(methodName, "nav") ||
+                    strieq(methodName, "navdata") ||
+                    strieq(methodName, "navmenuevent") ||
+                    strieq(methodName, "soapreq"));
+            }
+        }
+        else if (!m_apport)
+            wantTracing = false;
+        //The context will be destroyed when this request is destroyed. So initialise a SpanScope in the context to
+        //ensure the span is also terminated at the same time.
+        Owned<ISpan> serverSpan = (wantTracing ? m_request->createServerSpan(serviceName, methodName) : getNullSpan());
+        ctx->setRequestSpan(serverSpan);
+
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
@@ -411,11 +441,6 @@ int CEspHttpServer::processRequest()
                 ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
                 return 0;
             }
-
-            //The context will be destroyed when this request is destroyed. So initialise a SpanScope in the context to
-            //ensure the span is also terminated at the same time.
-            Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
-            ctx->setRequestSpan(serverSpan);
 
             if (thebinding!=NULL)
             {
