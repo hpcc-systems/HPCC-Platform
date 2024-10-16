@@ -95,6 +95,7 @@ class CDistributorBase : implements IHashDistributor, implements IExceptionHandl
     size32_t fixedEstSize;
     Owned<IRowWriter> pipewr;
     Owned<ISmartRowBuffer> piperd;
+    mutable CriticalSection critPiperd;
 
 protected:
     /*
@@ -1189,21 +1190,24 @@ public:
         ihash = _ihash;
         iCompare = _iCompare;
         keepBestCompare = _keepBestCompare;
-        if (allowSpill)
         {
-            StringBuffer temp;
-            GetTempFilePath(temp,"hddrecvbuff");
-            if (newLookAhead)
+            CriticalBlock block(critPiperd);
+            if (allowSpill)
             {
-                options.totalCompressionBufferSize = pullBufferSize; // hd option overrides defaults
-                ICompressHandler *compressHandler = pullBufferSize ? queryDefaultCompressHandler() : nullptr;
-                piperd.setown(createCompressedSpillingRowStream(activity, temp.str(), false, rowIf, options, compressHandler));
+                StringBuffer temp;
+                GetTempFilePath(temp,"hddrecvbuff");
+                if (newLookAhead)
+                {
+                    options.totalCompressionBufferSize = pullBufferSize; // hd option overrides defaults
+                    ICompressHandler *compressHandler = pullBufferSize ? queryDefaultCompressHandler() : nullptr;
+                    piperd.setown(createCompressedSpillingRowStream(activity, temp.str(), false, rowIf, options, compressHandler));
+                }
+                else
+                    piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
             }
             else
-                piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
+                piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));
         }
-        else
-            piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));
 
         pipewr.set(piperd->queryWriter());
         connected = true;
@@ -1245,7 +1249,10 @@ public:
         deserializer = NULL;
         fixedEstSize = 0;
         input.clear();
-        piperd.clear();
+        {
+            CriticalBlock block(critPiperd);
+            piperd.clear();
+        }
         pipewr.clear();
         ihash = NULL;
         iCompare = NULL;
@@ -1447,6 +1454,9 @@ public:
     virtual void mergeStats(CRuntimeStatisticCollection &stats) const
     {
         sender.mergeStats(stats);
+        CriticalBlock block(critPiperd);
+        if (piperd)
+            mergeRemappedStats(stats, piperd, diskToTempStatsMap);
     }
     // IExceptionHandler impl.
     virtual bool fireException(IException *e)

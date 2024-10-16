@@ -76,6 +76,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
     ThorRowQueue *out;
     CFileOwner tmpFileOwner;
     Owned<IFileIO> tempFileIO;
+    mutable CriticalSection critTmpFileIO;
     SpinLock lock;
     bool waiting;
     Semaphore waitsem;
@@ -146,6 +147,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         }
         if (!tempFileIO) {
             SpinUnblock unblock(lock);
+            CriticalBlock block(critTmpFileIO);
             tempFileIO.setown(tmpFileOwner.queryIFile().open(IFOcreaterw));
             if (!tempFileIO)
             {
@@ -424,6 +426,14 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        CriticalBlock block(critTmpFileIO);
+        if (tempFileIO)
+            return tempFileIO->getStatistic(kind);
+        else
+            return 0;
+    }
 };
 
 
@@ -607,6 +617,10 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        return 0;
+    }
 };
 
 
@@ -708,6 +722,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     memsize_t pendingFlushToDiskSz = 0;
     CFileOwner *currentOwnedOutputFile = nullptr;
     Owned<IFileIO> currentOutputIFileIO; // keep for stats
+    mutable CriticalSection critCurrentOutputIFileIO;
     CriticalSection outputFilesQCS;
     std::queue<CFileOwner *> outputFiles;
     unsigned writeTempFileNum = 0;
@@ -733,6 +748,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     RowEntry readFromStreamMarker = { nullptr, 0, 0 };
 
     // misc
+    CRuntimeStatisticCollection inactiveStats;
     bool grouped = false; // ctor input parameter
     CriticalSection readerWriterCS;
 #ifdef STRESSTEST_SPILLING_ROWSTREAM
@@ -766,7 +782,12 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
 
         auto res = createSerialOutputStream(iFile, compressHandler, options, 2); // (2) input & output sharing totalCompressionBufferSize
         outputStream.setown(std::get<0>(res));
-        currentOutputIFileIO.setown(std::get<1>(res));
+        {
+            CriticalBlock b(critCurrentOutputIFileIO);
+            if (currentOutputIFileIO)
+                mergeStats(inactiveStats, currentOutputIFileIO);
+            currentOutputIFileIO.setown(std::get<1>(res));
+        }
         outputStreamSerializer = std::make_unique<COutputStreamSerializer>(outputStream);
     }
     void createNextInputStream()
@@ -1005,7 +1026,8 @@ public:
 
     explicit CCompressedSpillingRowStream(CActivityBase *_activity, const char *_baseTmpFilename, bool _grouped, IThorRowInterfaces *rowIf, const LookAheadOptions &_options, ICompressHandler *_compressHandler)
         : activity(*_activity), baseTmpFilename(_baseTmpFilename), grouped(_grouped), options(_options), compressHandler(_compressHandler),
-          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer())
+          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
+          inactiveStats(tempFileStatistics)
     {
         size32_t minSize = meta->getMinRecordSize();
 
@@ -1052,6 +1074,14 @@ public:
     virtual IRowWriter *queryWriter() override
     {
         return this;
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        unsigned __int64 v = inactiveStats.queryStatistic(kind).get();
+        CriticalBlock b(critCurrentOutputIFileIO);
+        if (currentOutputIFileIO)
+            v += currentOutputIFileIO->getStatistic(kind);
+        return v;
     }
 // IRowStream
     virtual const void *nextRow() override
