@@ -564,6 +564,11 @@ public:
         return queryNullSectionTimer();
     }
 
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+    {
+        return queryNullSectionTimer();
+    }
+
     // Not yet thought about these....
 
     virtual char *getWuid() { throwUnexpected(); } // caller frees return string.

@@ -18814,7 +18814,7 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name)
+void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name, int statsOption)
 {
     BuildCtx * initCtx = &ctx;
     BuildCtx * declareCtx = &ctx;
@@ -18828,7 +18828,16 @@ void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer
     HqlExprArray registerArgs;
     registerArgs.append(*getSizetConstant(activityId));
     registerArgs.append(*createConstant(name));
-    OwnedHqlExpr call = bindFunctionCall(registerTimerId, registerArgs);
+    OwnedHqlExpr call;
+    if (statsOption == 0) // enum ThorStatOption.ThorStatDefault
+    {
+        call.setown(bindFunctionCall(registerTimerId, registerArgs));
+    }
+    else
+    {
+        registerArgs.append(*createConstant(statsOption));
+        call.setown(bindFunctionCall(registerStatsTimerId, registerArgs));
+    }
 
     if (!declareCtx->getMatchExpr(call, boundTimer))
     {
@@ -18840,14 +18849,14 @@ void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer
     }
 }
 
-void HqlCppTranslator::buildHelperTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name)
+void HqlCppTranslator::buildHelperTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name, int statsOption)
 {
-    buildTimerBase(ctx, boundTimer, name);
+    buildTimerBase(ctx, boundTimer, name, statsOption);
 }
 
 void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name)
 {
-    buildTimerBase(ctx, boundTimer, name);
+    buildTimerBase(ctx, boundTimer, name, 0);
 
     HqlExprArray nowArgs;
     nowArgs.append(*boundTimer.getTranslatedExpr());

@@ -552,6 +552,7 @@ IIdAtom * regexUStrMatchSetId;
 IIdAtom * regexU8StrMatchSetId;
 IIdAtom * regexReplaceXId;
 IIdAtom * registerTimerId;
+IIdAtom * registerStatsTimerId;
 IIdAtom * releaseRowId;
 IIdAtom * releaseRowsetId;
 IIdAtom * reportFieldOverflowId;
@@ -1243,6 +1244,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(regexU8StrMatchSet);
     MAKEID(regexReplaceX);
     MAKEID(registerTimer);
+    MAKEID(registerStatsTimer);
     MAKEID(releaseRow);
     MAKEID(releaseRowset);
     MAKEID(reportFieldOverflow);

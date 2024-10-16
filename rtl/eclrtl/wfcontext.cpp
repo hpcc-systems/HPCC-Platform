@@ -366,6 +366,11 @@ unsigned IndirectCodeContext::getWorkflowId() const
     return ctx->getWorkflowId();
 }
 
+ISectionTimer *IndirectCodeContext::registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption)
+{
+    return ctx->registerStatsTimer(activityId, name, statsOption);
+}
+
 ICodeContext * GlobalCodeContextExtra::queryCodeContext()
 {
     return &codeContextEx;

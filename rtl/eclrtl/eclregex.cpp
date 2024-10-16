@@ -763,13 +763,14 @@ public:
  * or creates a new one if it doesn't. The regular expression object is created based on the provided
  * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
  *
+ * @param sectionTimer      Pointer to a stat-aware section timer object; may be null.
  * @param _regexLength      The length of the regex pattern.
  * @param _regex            The regex pattern.
  * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
  * @return  A pointer to a copy of the fetched or created CCompiledStrRegExpr object.  The returned object
  * *        must eventually be deleted.
  */
-CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
+CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
     if (compiledCacheEnabled)
     {
@@ -784,6 +785,9 @@ CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const cha
 
             if (cacheEntry && cacheEntry->hasSamePattern(_regexLength, _regex, options))
             {
+                // Note a cache hit
+                if (sectionTimer)
+                    sectionTimer->addStatistic(StNumCacheHits, 1);
                 // Return a new compiled pattern object based on the cached information
                 return new CCompiledStrRegExpr(*cacheEntry, false);
             }
@@ -792,6 +796,12 @@ CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const cha
             compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, false);
             // Create a cache entry for the new object
             compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(_regexLength, _regex, options, compiledObjPtr->getCompiledRegex()));
+            // Note a cache miss (add-to-cache)
+            if (sectionTimer)
+            {
+                sectionTimer->addStatistic(StNumCacheAdds, 1);
+                sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+            }
         }
 
         return compiledObjPtr;
@@ -806,24 +816,24 @@ CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const cha
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledStrRegExpr(strlen(regExpr), regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledStrRegExpr(nullptr, strlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledStrRegExpr(regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledStrRegExpr(timer, strlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledStrRegExpr(nullptr, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledStrRegExpr(timer, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -849,13 +859,14 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
  * or creates a new one if it doesn't. The regular expression object is created based on the provided
  * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
  *
+ * @param sectionTimer      Pointer to a stat-aware section timer object; may be null.
  * @param _regexLength      The length of the regex pattern, in code points.
  * @param _regex            The regex pattern.
  * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
  * @return  A pointer to a copy of the fetched or created CCompiledStrRegExpr object.  The returned object
  * *        must eventually be deleted.
  */
-CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
+CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
     if (compiledCacheEnabled)
     {
@@ -871,6 +882,9 @@ CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const c
 
             if (cacheEntry && cacheEntry->hasSamePattern(regexSize, _regex, options))
             {
+                // Note a cache hit
+                if (sectionTimer)
+                    sectionTimer->addStatistic(StNumCacheHits, 1);
                 // Return a new compiled pattern object based on the cached information
                 return new CCompiledStrRegExpr(*cacheEntry, true);
             }
@@ -879,6 +893,12 @@ CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const c
             compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, true);
             // Create a cache entry for the new object
             compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, _regex, options, compiledObjPtr->getCompiledRegex()));
+            // Note a cache miss (add-to-cache)
+            if (sectionTimer)
+            {
+                sectionTimer->addStatistic(StNumCacheAdds, 1);
+                sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+            }
         }
 
         return compiledObjPtr;
@@ -893,24 +913,24 @@ CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const c
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledU8StrRegExpr(rtlUtf8Length(regExpr), regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledU8StrRegExpr(nullptr, rtlUtf8Length(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledU8StrRegExpr(regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledU8StrRegExpr(timer, rtlUtf8Length(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledU8StrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledU8StrRegExpr(nullptr, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledU8StrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledU8StrRegExpr(timer, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -1331,13 +1351,14 @@ public:
  * or creates a new one if it doesn't. The regular expression object is created based on the provided
  * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
  *
+ * @param sectionTimer      Pointer to a stat-aware section timer object; may be null.
  * @param _regexLength      The length of the regex pattern, in code points.
  * @param _regex            The regex pattern.
  * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
  * @return  A pointer to a copy of the fetched or created CCompiledUStrRegExpr object.  The returned object
  * *        must eventually be deleted.
  */
-CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive)
+CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const UChar * _regex, bool _isCaseSensitive)
 {
     if (compiledCacheEnabled)
     {
@@ -1353,6 +1374,9 @@ CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const U
 
             if (cacheEntry && cacheEntry->hasSamePattern(regexSize, reinterpret_cast<const char *>(_regex), options))
             {
+                // Note a cache hit
+                if (sectionTimer)
+                    sectionTimer->addStatistic(StNumCacheHits, 1);
                 // Return a new copy of the cached object
                 return new CCompiledUStrRegExpr(*cacheEntry);
             }
@@ -1361,6 +1385,9 @@ CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const U
             compiledObjPtr = new CCompiledUStrRegExpr(_regexLength, _regex, _isCaseSensitive);
             // Create a cache entry for the new object
             compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, reinterpret_cast<const char *>(_regex), options, compiledObjPtr->getCompiledRegex()));
+            // Note a cache miss (add-to-cache)
+            if (sectionTimer)
+                sectionTimer->addStatistic(StNumCacheAdds, 1);
         }
 
         return compiledObjPtr;
@@ -1375,24 +1402,24 @@ CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const U
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledUStrRegExpr(rtlUnicodeStrlen(regExpr), regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledUStrRegExpr(nullptr, rtlUnicodeStrlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, const UChar * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledUStrRegExpr(regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledUStrRegExpr(timer, rtlUnicodeStrlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive)
 {
-    return fetchOrCreateCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledUStrRegExpr(nullptr, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, int regExprLength, const UChar * regExpr, bool isCaseSensitive)
 {
     SectionTimerBlock sectionTimer(timer);
-    return rtlCreateCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
+    return fetchOrCreateCompiledUStrRegExpr(timer, regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)

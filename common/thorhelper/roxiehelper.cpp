@@ -2875,6 +2875,9 @@ class NullSectionTimer : public CSimpleInterfaceOf<ISectionTimer>
 {
     virtual unsigned __int64 getStartCycles() { return 0; }
     virtual void noteSectionTime(unsigned __int64 startCycles) {}
+    virtual void addStatistic(__int64 kind, unsigned __int64 value) {}
+    virtual void setStatistic(__int64 kind, unsigned __int64 value) {}
+    virtual void mergeStatistic(__int64 kind, unsigned __int64 value) {}
 };
 
 static NullSectionTimer nullSectionTimer;

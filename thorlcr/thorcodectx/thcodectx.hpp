@@ -129,6 +129,7 @@ public:
     virtual IWorkUnit *updateWorkUnit() const override { throwUnexpected(); }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) override;
     virtual unsigned getElapsedMs() const override {UNIMPLEMENTED;} //Implementing for roxie first, not sure what this means from a thor perspective.  ECL plugin implies elapsed time of entire query
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption) override;
 };
 
 #endif

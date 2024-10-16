@@ -85,6 +85,7 @@ public:
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char *source) override;
     virtual unsigned getElapsedMs() const override;
     virtual unsigned getWorkflowId() const override;
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption) override;
 };
 
 class ECLRTL_API GlobalCodeContextExtra : implements IGlobalCodeContext

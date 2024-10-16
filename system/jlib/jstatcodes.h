@@ -321,6 +321,9 @@ enum StatisticKind
     StNumSoapcallConnectFailures,
     StTimeLookAhead,
     StCycleLookAheadCycles,
+    StNumCacheHits,                     // Generic 'cache hit' stats, potentially used for many caches; Roxie-specific stats are above
+    StNumCacheAdds,                     // Generic 'cache add/miss' stats, potentially used for many caches; Roxie-specific stats are above
+    StNumPeakCacheObjects,              // Peak number of objects in a generic cache
     StMax,
 
     //For any quantity there is potentially the following variants.

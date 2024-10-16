@@ -1676,8 +1676,8 @@ public:
     IHqlExpression * getFirstCharacter(IHqlExpression * source);
     bool hasAddress(BuildCtx & ctx, IHqlExpression * expr);
 
-    void buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name);
-    void buildHelperTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name);
+    void buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name, int statsOption);
+    void buildHelperTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name, int statsOption);
     void buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name);
     void buildStopTimer(BuildCtx & ctx, const CHqlBoundExpr & boundTimer, const CHqlBoundExpr & boundStart);
 

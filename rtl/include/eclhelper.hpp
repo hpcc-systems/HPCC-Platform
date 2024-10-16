@@ -674,6 +674,11 @@ interface ISectionTimer : public IInterface
 {
     virtual unsigned __int64 getStartCycles() = 0;
     virtual void noteSectionTime(unsigned __int64 startCycles) = 0;
+
+    // arg kind is of type StatisticKind
+    virtual void addStatistic(__int64 kind, unsigned __int64 value) = 0;
+    virtual void setStatistic(__int64 kind, unsigned __int64 value) = 0;
+    virtual void mergeStatistic(__int64 kind, unsigned __int64 value) = 0;
 };
 
 //NB: New methods must always be added at the end of this interface to retain backward compatibility
@@ -787,11 +792,12 @@ interface ICodeContext : public IResourceContext
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
     virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
-    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0; // see also registerStatTimer
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) = 0;
     virtual unsigned getElapsedMs() const = 0;
     virtual unsigned getWorkflowId() const = 0; // Note: don't use yet as it has not been fully implemented in all derived classes
+    virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption) = 0;
 };
 
 //Provided by engine=>can extend

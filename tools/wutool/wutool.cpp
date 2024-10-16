@@ -2206,6 +2206,7 @@ protected:
             virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
             virtual void addWuExceptionEx(const char*, unsigned int, unsigned int, unsigned int, const char*) override { throwUnexpected(); }
             virtual unsigned getElapsedMs() const override { throwUnexpected(); }
+            virtual ISectionTimer * registerStatsTimer(unsigned activityId, const char * name, unsigned int statsOption) { throwUnexpected(); }
 
         } ctx;
 

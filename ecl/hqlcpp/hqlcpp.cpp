@@ -2248,7 +2248,9 @@ void HqlCppTranslator::callProcedure(BuildCtx & ctx, IIdAtom * name, HqlExprArra
         const char * timerName = str(external->queryId());
         if (getStringValue(nameTemp, queryAttributeChild(external, timerAtom, 0)).length())
             timerName = nameTemp;
-        buildHelperTimer(ctx, boundTimer, timerName);
+        // Grab optional ThorStatOption enum (as an int)
+        int statOption = getIntValue(queryAttributeChild(external, timerAtom, 1), 0);
+        buildHelperTimer(ctx, boundTimer, timerName, statOption);
         // We need to patch the args to include the timer; helper timers will always be the first argument
         // passed to the helper function, which means that it is either the first argument in the
         // array (for a bare function call) or the second argument (for a method call)
@@ -6127,7 +6129,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         const char * name = str(external->queryId());
         if (getStringValue(nameTemp, queryAttributeChild(external, timerAtom, 0)).length())
             name = nameTemp;
-        buildHelperTimer(ctx, boundTimer, name);
+        // Grab optional ThorStatOption enum (as an int)
+        int statOption = getIntValue(queryAttributeChild(external, timerAtom, 1), 0);
+        buildHelperTimer(ctx, boundTimer, name, statOption);
         args.append(*LINK(boundTimer.expr));
     }
     if (external->hasAttribute(userMatchFunctionAtom))
