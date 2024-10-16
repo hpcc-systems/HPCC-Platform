@@ -184,7 +184,7 @@ public:
         setMatchMsgId(msgId);
     }
     CSysInfoLoggerMsgFilter(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day, const char *_source) :
-                            visibleOnly(_visibleOnly), hiddenOnly(_hiddenOnly), matchSource(_source)
+                            hiddenOnly(_hiddenOnly), visibleOnly(_visibleOnly), matchSource(_source)
     {
         if (hiddenOnly && visibleOnly)
             throw makeStringException(-1, "ISysInfoLoggerMsgFilter: cannot filter by both hiddenOnly and visibleOnly");
@@ -437,7 +437,7 @@ class CSysInfoLoggerMsgIterator : public CSimpleInterfaceOf<ISysInfoLoggerMsgIte
     }
 
 public:
-    CSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * _filter, bool _updateable=false, IRemoteConnection *_conn=nullptr) : filter(_filter), updateable(_updateable), conn(_conn)
+    CSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * _filter, bool _updateable=false, IRemoteConnection *_conn=nullptr) : filter(_filter), conn(_conn), updateable(_updateable)
     {
         if (!conn)
         {
@@ -685,7 +685,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     unsigned count = 0;
     for (auto & xpath: deleteXpathList)
     {
-        if (root->removeProp(xpath.c_str()));
+        if (root->removeProp(xpath.c_str()))
             ++count;
     }
 
