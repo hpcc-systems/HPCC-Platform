@@ -18,7 +18,10 @@
 #ifndef __LDAPSECURITY_IPP_
 #define __LDAPSECURITY_IPP_
 
+#ifdef _MSC_VER
+#pragma warning (push)
 #pragma warning(disable:4786)
+#endif
 
 #include "permissions.ipp"
 #include "aci.ipp"
@@ -447,7 +450,7 @@ public:
     bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override;
     bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override { return false; }
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description);
-    virtual const bool organizationalUnitExists(const char * ou) const;
+    virtual bool organizationalUnitExists(const char * ou) const;
     virtual bool addUser(ISecUser & user, const char* basedn);
     
     //Data View related interfaces
@@ -465,4 +468,7 @@ public:
     virtual bool userInView(const char * user, const char* viewName);
 };
 
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
 #endif

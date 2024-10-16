@@ -179,7 +179,7 @@ void EspDef::describeType(const char* reqRes, int indent, std::ostream& out, boo
         if(!propVec.empty())
         {
             out << " [" << propVec[0].first << " (" << propVec[0].second << ")";
-            for(int i=1; i<propVec.size(); i++)
+            for(unsigned i=1; i<propVec.size(); i++)
             {
                 out << ", ";
                 out  << propVec[i].first << " (" << propVec[i].second << ")";

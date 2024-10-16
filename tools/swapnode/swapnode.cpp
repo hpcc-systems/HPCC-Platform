@@ -82,7 +82,6 @@ int main(int argc, const char *argv[])
 
     int ret = 0;
     bool dryRun = false;
-    bool offline = false;
     StringAttr daliServer, envPath;
 
     enum CmdType { cmd_none, cmd_swap, cmd_auto, cmd_history, cmd_email, cmd_swapped, cmd_reset, cmd_resetspares, cmd_addspares, cmd_removespares, cmd_resethistory };
@@ -92,7 +91,6 @@ int main(int argc, const char *argv[])
 
     try
     {
-        bool stop=false;
         StringArray params;
         for (; !ret&&!iter.done(); iter.next())
         {
@@ -102,8 +100,6 @@ int main(int argc, const char *argv[])
                 bool value;
                 if (iter.matchFlag(value, "-dryrun"))
                     dryRun = value;
-                else if (iter.matchFlag(value, "-offline"))
-                    offline = value;
                 else
                 {
                     PROGLOG("Unknown option");

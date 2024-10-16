@@ -140,12 +140,10 @@ public:
         SCMStringBuffer curFormattedValue;
 
         StatisticCreatorType curCreatorType = cur.getCreatorType();
-        StatisticScopeType curScopeType = cur.getScopeType();
         StatisticMeasure curMeasure = cur.getMeasure();
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
-        const char * curScope = cur.queryScope();
         cur.getCreator(curCreator);
         cur.getDescription(curDescription, false);
         cur.getFormattedValue(curFormattedValue);
@@ -371,7 +369,6 @@ int main(int argc, const char *argv[])
     int ret = 0;
     InitModuleObjects();
     Owned<IPropertyTree> dummyconfig = loadConfiguration(defaultYaml, argv, "wutool", "WUTOOL", "wutool.xml", nullptr, nullptr, false);
-    unsigned count=0;
     globals.setown(createProperties("wutool.ini", true));
     const char *action = NULL;
     StringArray wuids;
@@ -842,11 +839,11 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
-        for (int i = 0; i < testSize; i++)
+        for (unsigned i = 0; i < testSize; i++)
         {
-            VStringBuffer userId("WuTestUser%02d", i % 50);
-            VStringBuffer clusterName("WuTestCluster%d", i % 5);
-            VStringBuffer jobName("WuTest job %d", i % 3);
+            VStringBuffer userId("WuTestUser%02u", i % 50);
+            VStringBuffer clusterName("WuTestCluster%u", i % 5);
+            VStringBuffer jobName("WuTest job %u", i % 3);
             Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
             if (i % 6)
                 wu->setState(WUStateCompleted);
@@ -864,15 +861,15 @@ protected:
             // We should really be doing a noteFileRead here but the API is such a pain that we'll do it this way
             IPropertyTree *p = queryExtendedWU(wu)->queryPTree();
             VStringBuffer fileinfo(" <FilesRead>"
-                "  <File name='myfile%02d' useCount='2' cluster = 'mycluster'/>"
+                "  <File name='myfile%02u' useCount='2' cluster = 'mycluster'/>"
                 "  <File name='mysuperfile' useCount='2' cluster = 'mycluster'>"
-                "   <Subfile name='myfile%02d'/>"
+                "   <Subfile name='myfile%02u'/>"
                 "  </File>"
                 " </FilesRead>", i % 10, i % 10);
             p->setPropTree("FilesRead", createPTreeFromXMLString(fileinfo));
             wu->noteFileRead(NULL); // Make sure we notice that it was modified
 
-            VStringBuffer myFileW("myfilewritten%02d", i % 10);
+            VStringBuffer myFileW("myfilewritten%02u", i % 10);
             wu->addFile(myFileW, NULL, i % 3, WUFileStandard, NULL);
         }
         unsigned after = factory->numWorkUnits();
@@ -1424,7 +1421,7 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
-        for (int i = 0; i < testSize; i++)
+        for (unsigned i = 0; i < testSize; i++)
         {
             factory->deleteWorkUnit(wuids.item(i));
         }
@@ -1438,7 +1435,7 @@ protected:
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned start = msTick();
-        int i;
+        unsigned i;
         for (i = 0; i < testSize; i++)
         {
             Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
@@ -1494,7 +1491,7 @@ protected:
             }
             ASSERT(wu->getExceptionCount() == 10);
             Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-            int exNo = 0;
+            unsigned exNo = 0;
             ForEach(*exceptions)
             {
                 IConstWUException &ex = exceptions->query();
@@ -1588,7 +1585,7 @@ protected:
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned start = msTick();
-        int i;
+        unsigned i;
         for (i = 0; i < testSize; i++)
         {
             Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
@@ -1755,7 +1752,7 @@ protected:
             start = msTick();
             StringArray users;
             factory->getUniqueValues(WUSFuser, "WUTest", users);
-            int expected = testSize < 50 ? testSize : 50;
+            unsigned expected = testSize < 50 ? testSize : 50;
             ASSERT(users.length() == expected);
             ForEachItemIn(idx, users)
             {
@@ -1935,7 +1932,6 @@ protected:
     void testList2()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        bool isDali = streq(factory->queryStoreType(), "Dali");
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         unsigned numIterated = 0;
@@ -1968,7 +1964,6 @@ protected:
     void testListByAppValue()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        bool isDali = streq(factory->queryStoreType(), "Dali");
         unsigned start = msTick();
         unsigned numIterated = 0;
         // Test filter by appValue
@@ -2095,6 +2090,8 @@ protected:
     }
     void testWorkUnitServices()
     {
+ #if 0
+        // These tests are not valid at present, since the C++ structure does not accurately describe the variable layout fields
         class DummyContext: implements ICodeContext
         {
             virtual const char *loadResource(unsigned id) { throwUnexpected(); }
@@ -2212,8 +2209,6 @@ protected:
 
         } ctx;
 
- #if 0
-        // These tests are not valid at present, since the C++ structure does not accurately describe the variable layout fields
         size32_t lenResult;
         void * result;
         wsWorkunitList(&ctx, lenResult, result, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL);
@@ -2304,7 +2299,8 @@ protected:
         }
         virtual void noteException(IConstWUException & exception) override
         {
-            noteException(exception);
+            SCMStringBuffer s;
+            DBGLOG("  Exception: %s", exception.getExceptionMessage(s).str());
         }
     };
 
