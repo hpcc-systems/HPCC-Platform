@@ -593,7 +593,7 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     const unsigned __int64 blockedCycles = queryBlockedCycles();
     if (processCycles < blockedCycles)
     {
-        IWARNLOG("CSlaveActivity::queryLocalCycles - processCycles %" I64F "u < blockedCycles %" I64F "u", processCycles, blockedCycles);
+        ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < blocked %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(blockedCycles));
         return 0;
     }
     return processCycles-blockedCycles;
