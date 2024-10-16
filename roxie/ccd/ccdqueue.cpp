@@ -2199,7 +2199,10 @@ public:
 
     void append(ISerializedRoxieQueryPacket *packet, unsigned expires)
     {
-        // Goes on the end. But percolate the expiry time backwards
+        // Insert in the list at the appropriate point that the list stays in expiry order
+        // With a single buddy this is usually on the end, but with multiple buddies we will be inserting at various points.
+        // Should we consider a queue per buddy?
+        
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
         packet->noteQueued(0);
         DelayedPacketEntry *newEntry = new DelayedPacketEntry(packet, expires);
@@ -2208,6 +2211,8 @@ public:
             StringBuffer s;
             DBGLOG("Adding delayed packet %s expires in %u ms", packet->queryHeader().toString(s).str(), expires - msTick());
         }
+#if 0
+// old code assumed only one buddy
         newEntry->prev = tail;
         if (tail)
         {
@@ -2223,6 +2228,41 @@ public:
         else
             head = newEntry;
         tail = newEntry;
+#else
+        if (tail)
+        {
+            DelayedPacketEntry *last = nullptr;
+            DelayedPacketEntry *finger = tail;
+            while (finger != nullptr)
+            {
+                if ((int) (finger->waitExpires - expires) <= 0)
+                    break;
+                last = finger;
+                finger = finger->prev;
+            }
+            if (last)
+                last->prev = newEntry;
+            else
+                tail = newEntry;
+            newEntry->next = last;
+            newEntry->prev = finger;
+            if (finger)
+                finger->next = newEntry;
+            else
+                head = newEntry;
+        }
+        else
+        {
+            head = newEntry;
+            tail = newEntry;
+        }
+#endif
+        numEntries++;
+        if (numEntries > maxNumEntries)
+        {
+            maxNumEntries = numEntries;
+            DBGLOG("WorkerUdpReader: Max IBYTI queue length is now %u", numEntries);
+        }
     }
 
     // Move any that we are done waiting for our buddy onto the active queue
@@ -2288,11 +2328,13 @@ private:
         if (goer==tail)
             tail = goer->prev;
         delete goer;
+        numEntries--;
     }
 
     DelayedPacketEntry *head = nullptr;
     DelayedPacketEntry *tail = nullptr;
-
+    unsigned numEntries = 0;
+    unsigned maxNumEntries = 0;
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -2398,7 +2440,7 @@ protected:
     DelayedPacketQueueManager delayed;
 #endif
 
-    class WorkerUdpTracker : public TimeDivisionTracker<12, false>
+    class WorkerUdpTracker : public TimeDivisionTracker<13, false>
     {
     public:
         enum
@@ -2408,6 +2450,7 @@ protected:
             allocating,
             processing,
             pushing,
+            deferring,
             checkingRunning,
             checkingExpired,
             decoding,
@@ -2417,13 +2460,14 @@ protected:
             getTimeout
         };
 
-        WorkerUdpTracker(const char *name, unsigned reportIntervalSeconds) : TimeDivisionTracker<12, false>(name, reportIntervalSeconds)
+        WorkerUdpTracker(const char *name, unsigned reportIntervalSeconds) : TimeDivisionTracker<13, false>(name, reportIntervalSeconds)
         {
             stateNames[other] = "other";
             stateNames[waiting] = "waiting";
             stateNames[allocating] = "allocating";
             stateNames[processing] = "processing";
             stateNames[pushing] = "pushing";
+            stateNames[deferring] = "deferring";
             stateNames[checkingRunning] = "checking running";
             stateNames[checkingExpired] = "checking expiry";
             stateNames[decoding] = "decoding";
@@ -2454,7 +2498,7 @@ protected:
     } readThread;
 
 public:
-    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), timeTracker("WorkerUdpReader", 60), readThread(*this)
+    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), timeTracker("WorkerUdpReader", 5), readThread(*this)
     {
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
@@ -2818,17 +2862,22 @@ public:
                                 delay += getIbytiDelay(header.subChannels[subChannel]);
                         }
                         if (delay)
+                        {
+                            division.switchState(WorkerUdpTracker::deferring);
                             delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
+                        }
                         else
 #endif
+                        {
+                            division.switchState(WorkerUdpTracker::pushing);
                             queue.enqueueUnique(packet.getClear(), mySubchannel, 0);
+                        }
                     }
                 }
                 else // first time (not a retry).
                 {
                     division.switchState(WorkerUdpTracker::creatingPacket);
                     Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
-                    division.switchState(WorkerUdpTracker::pushing);
 #ifdef NEW_IBYTI
                     unsigned delay = 0;
                     if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
@@ -2837,10 +2886,16 @@ public:
                             delay += getIbytiDelay(header.subChannels[subChannel]);
                     }
                     if (delay)
+                    {
+                        division.switchState(WorkerUdpTracker::deferring);
                         delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
+                    }
                     else
 #endif
+                    {
+                        division.switchState(WorkerUdpTracker::pushing);
                         queue.enqueue(packet.getClear(), 0);
+                    }
                 }
             }
         }
