@@ -4036,27 +4036,16 @@ void EspServInfo::write_esp_binding_ipp()
 
     //
     // Create scaled histogram metric member variables enabled methods
-    // Only output the ifdef if needed
-    bool needIfDef = true;
+    // Always output, even if they are never initialised to prevent problems
+    // where the header is included with inconsistent #defines
     for (mthi = methods; mthi != NULL; mthi = mthi->next)
     {
         if (mthi->isExecutionProfilingEnabled())
         {
-            if (needIfDef)
-            {
-                outf("#ifdef ESP_SERVICE_%s\n", name_);
-                needIfDef = false;
-            }
             outs("\tstd::shared_ptr<hpccMetrics::ScaledHistogramMetric> ");
             outs(mthi->getExecutionProfilingMetricVariableName());
             outs(";\n");
         }
-    }
-
-    // If false, then ifdef was output, close it
-    if (!needIfDef)
-    {
-        outf("#endif\n");
     }
 
     outs("};\n\n");
