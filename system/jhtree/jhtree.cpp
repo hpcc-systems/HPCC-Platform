@@ -840,7 +840,7 @@ class CNodeMRUCache
     }
 
 public:
-    CNodeMRUCache(CacheType cacheType=CacheBranch)
+    CNodeMRUCache(CacheType cacheType)
     {
         StringBuffer name, desc;
         const char *typeText = cacheTypeText[cacheType];
@@ -914,7 +914,7 @@ protected:
 class CNodeCache : public CInterface
 {
 private:
-    CNodeMRUCache cache[CacheMax];
+    CNodeMRUCache cache[CacheMax] = { CacheBranch, CacheLeaf, CacheBlob };
     std::vector<std::shared_ptr<hpccMetrics::IMetric>> metrics;
 public:
     CNodeCache(size32_t maxNodeMem, size32_t maxLeaveMem, size32_t maxBlobMem)
