@@ -1308,3 +1308,11 @@ export function wuidToTime(wuid: string): string {
 export function wuidToDateTime(wuid: string): Date {
     return new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
 }
+
+export function removeAllExcept(arr: any, keysToKeep: string[]): void {
+    for (const key of Object.keys(arr)) {
+        if (keysToKeep.indexOf(key) < 0) {
+            delete arr[key];
+        }
+    }
+}

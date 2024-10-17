@@ -2,13 +2,15 @@ import * as React from "react";
 import { Octokit } from "octokit";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
-import { Topology, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
+import { LogaccessService, Topology, WsLogaccess, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
 import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
 import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
 import { Palette } from "@hpcc-js/common";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
+
+export const service = new LogaccessService({ baseUrl: "" });
 
 declare const dojoConfig;
 
@@ -205,4 +207,21 @@ export function useModernMode(): {
     }, [modernMode, sessionStore, userStore]);
 
     return { modernMode, setModernMode };
-} 
+}
+
+export function useLogAccessInfo(): {
+    managerType: string;
+    columns: WsLogaccess.Column[]
+} {
+    const [managerType, setManagerType] = React.useState("");
+    const [columns, setColumns] = React.useState<WsLogaccess.Column[]>();
+
+    React.useEffect(() => {
+        service.GetLogAccessInfo({}).then(response => {
+            setManagerType(response.RemoteLogManagerType ?? "");
+            setColumns(response?.Columns?.Column);
+        });
+    }, []);
+
+    return { managerType, columns };
+}
