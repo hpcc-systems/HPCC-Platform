@@ -118,6 +118,19 @@ inline unsigned groupDistance(IGroup *grp1,IGroup *grp2)
     return grp1->distance(grp2);
 }
 
+inline StringBuffer &appendEnsurePathSepChar(StringBuffer &dest, StringBuffer &newPart, char psc)
+{
+    addPathSepChar(dest, psc);
+    if (newPart.length() > 0)
+    {
+        if (isPathSepChar(newPart.charAt(0)))
+            dest.append(newPart.str()+1);
+        else
+            dest.append(newPart);
+    }
+    return dest;
+}
+
 
 static StringBuffer &normalizeFormat(StringBuffer &in)
 {
@@ -4474,7 +4487,8 @@ public:
         if (isPathSepChar(newPath.charAt(newPath.length()-1)))
             newPath.setLength(newPath.length()-1);
         newPath.remove(0, myBase.length());
-        newdir.append(baseDir).append(newPath);
+        newdir.append(baseDir);
+        appendEnsurePathSepChar(newdir, newPath, psc);
         StringBuffer fullname;
         CIArrayOf<CIStringArray> newNames;
         unsigned i;
@@ -4493,7 +4507,8 @@ public:
 
                 StringBuffer copyDir(baseDir);
                 adjustClusterDir(i, copy, copyDir);
-                fullname.clear().append(copyDir).append(newPath);
+                fullname.clear().append(copyDir);
+                appendEnsurePathSepChar(fullname, newPath, psc);
                 newNames.item(i).append(fullname);
             }
         }

@@ -1,10 +1,10 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { GetLogsExRequest, LogaccessService, TargetAudience, LogType } from "@hpcc-js/comms";
+import { GetLogsExRequest, LogaccessService, LogType, TargetAudience, WsLogaccess } from "@hpcc-js/comms";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { logColor, timestampToDate, wuidToDate, wuidToTime } from "src/Utility";
-import { useLoggingEngine } from "../hooks/platform";
+import { logColor, removeAllExcept, wuidToDate, wuidToTime } from "src/Utility";
+import { useLogAccessInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -94,6 +94,8 @@ const levelMap = (level) => {
     }
 };
 
+const columnOrder: string[] = [WsLogaccess.LogColumnType.timestamp, WsLogaccess.LogColumnType.message];
+
 export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
     filter = defaultFilter,
@@ -111,49 +113,48 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     const now = React.useMemo(() => new Date(), []);
 
-    const loggingEngine = useLoggingEngine();
+    const { columns: logColumns } = useLogAccessInfo();
 
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
-        let retVal = {
-            timestamp: {
-                label: nlsHPCC.TimeStamp, width: 140, sortable: false,
-                formatter: ts => {
-                    if (ts) {
-                        if (ts.indexOf(":") < 0) {
-                            return timestampToDate(ts).toISOString();
-                        }
-                        return new Date(ts).toISOString();
-                    }
-                },
-            },
+        // we've defined the columnOrder array above to ensure specific columns will
+        // appear on the left-most side of the grid, eg timestamps and log messages
+        const cols = logColumns?.sort((a, b) => {
+            const logTypeA = columnOrder.indexOf(a.LogType);
+            const logTypeB = columnOrder.indexOf(b.LogType);
+
+            if (logTypeA >= 0) {
+                if (logTypeB >= 0) { return logTypeA - logTypeB; }
+                return -1;
+            } else if (logTypeB >= 0) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        const retVal = {
+            timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, width: 600, sortable: false, },
+            components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
+            instance: { label: nlsHPCC.PodName, width: 150, sortable: false },
+            audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
+            class: {
+                label: nlsHPCC.Class, width: 40, sortable: false,
+                formatter: level => {
+                    const colors = logColor(levelMap(level));
+                    const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
+                    return <span style={styles}>{level}</span>;
+                }
+            },
+            workunits: { label: nlsHPCC.JobID, width: 50, sortable: false, hidden: wuid !== undefined, },
+            processid: { label: nlsHPCC.ProcessID, width: 75, sortable: false, },
+            logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
+            threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
         };
-        if (loggingEngine === "grafanacurl") {
-            retVal = Object.assign(retVal, {
-                pod: { label: nlsHPCC.PodName, width: 150, sortable: false },
-            });
-        } else {
-            retVal = Object.assign(retVal, {
-                instance: { label: nlsHPCC.PodName, width: 150, sortable: false },
-                components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
-                audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
-                class: {
-                    label: nlsHPCC.Class, width: 40, sortable: false,
-                    formatter: level => {
-                        const colors = logColor(levelMap(level));
-                        const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
-                        return <span style={styles}>{level}</span>;
-                    }
-                },
-                workunits: { label: nlsHPCC.JobID, width: 50, sortable: false, hidden: wuid !== undefined, },
-                processid: { label: nlsHPCC.ProcessID, width: 75, sortable: false, },
-                logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
-                threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
-            });
-        }
+        const colTypes = cols?.map(c => c.LogType.toString()) ?? [];
+        removeAllExcept(retVal, colTypes);
         return retVal;
-    }, [loggingEngine, wuid]);
+    }, [logColumns, wuid]);
 
     const copyButtons = useCopyButtons(columns, selection, "logaccess");
 
@@ -218,8 +219,10 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                 delete retVal.jobId;
             }
         }
+        const colTypes = logColumns?.map(c => c.LogType.toString()) ?? [];
+        removeAllExcept(retVal, colTypes);
         return retVal;
-    }, [filter, wuid]);
+    }, [filter, logColumns, wuid]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
