@@ -215,7 +215,7 @@ protected:
     // fileStats is in this base class as it used by multiple derived classes (both slave and master) but not all.
     // (Having it in the base class aids setup and resizing.)
     mutable std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
-
+    mutable bool hasNegativeLocalExecute = false;
 protected:
     unsigned __int64 queryLocalCycles() const;
     bool ensureStartFTLookAhead(unsigned index);

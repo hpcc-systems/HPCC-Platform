@@ -466,6 +466,8 @@ void CSlaveActivity::startInput(unsigned index, const char *extra)
 
 void CSlaveActivity::stop()
 {
+    if (hasNegativeLocalExecute)
+        throw makeStringExceptionV(-1, "CSlaveActivity::stopAllInputs - localExecuteTime a%u: process < input", queryActivityId());
     if (input)
         stopInput(0);
     dataLinkStop();
@@ -589,9 +591,12 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     unsigned __int64 processCycles = queryTotalCycles() + queryLookAheadCycles();
     if (processCycles < inputCycles) // not sure how/if possible, but guard against
     {
-        ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < input %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(inputCycles));
+        //throw makeStringExceptionV(-1, "CSlaveActivity::queryLocalCycles a%u- process %" I64F "uns < input %" I64F "uns", queryActivityId(), cycle_to_nanosec(processCycles), cycle_to_nanosec(inputCycles));
+        hasNegativeLocalExecute = true;
+        //ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < input %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(inputCycles));
         return 0;
     }
+    hasNegativeLocalExecute = false;
     processCycles -= inputCycles;
     const unsigned __int64 blockedCycles = queryBlockedCycles();
     if (processCycles < blockedCycles)
