@@ -2837,20 +2837,14 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
     try
     {
         //Move the atomic increments out of the critical section - they can be relatively expensive
-        if (likely(alreadyExists))
+        if (likely(ctx))
         {
-            if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-        }
-        else
-        {
-            if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
+            if (unlikely(alreadyExists))
+                ctx->noteStatistic(hitStatId[cacheType], 1);
+            else
+                ctx->noteStatistic(addStatId[cacheType], 1);
         }
 
-        //The common case is that this flag has already been set (by a previous add).
-        if (likely(ownedCacheEntry->isReady()))
-            return ownedCacheEntry->getNode();
-
-        //Shame that the hash code is recalculated - it might be possible to remove this.
         cycle_t startCycles = get_cycles_now();
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles;
