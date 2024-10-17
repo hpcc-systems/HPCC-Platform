@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { GetLogsExRequest, LogaccessService, LogType, TargetAudience, WsLogaccess } from "@hpcc-js/comms";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { logColor, removeAllExcept, wuidToDate, wuidToTime } from "src/Utility";
+import { formatDateString, logColor, removeAllExcept, timestampToDate, wuidToDate, wuidToTime } from "src/Utility";
 import { useLogAccessInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -132,7 +132,17 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
             }
         });
         const retVal = {
-            timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
+            timestamp: {
+                label: nlsHPCC.TimeStamp, width: 140, sortable: false,
+                formatter: ts => {
+                    if (ts) {
+                        if (ts.indexOf(":") < 0) {
+                            return timestampToDate(ts).toISOString();
+                        }
+                        return formatDateString(ts);
+                    }
+                },
+            },
             message: { label: nlsHPCC.Message, width: 600, sortable: false, },
             components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
             audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
