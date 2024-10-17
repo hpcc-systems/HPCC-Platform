@@ -47,6 +47,7 @@ esp:
 - name: eclwatch
   traceFlags:
     traceLevel: 2
+    traceSecMgr: true
 ```
 
 ## Cluster Overrides
@@ -61,7 +62,7 @@ The previous YAML example may be reproduced in XML with the following:
 
 ```xml
 <EspProcess ...>
-  <traceFlags traceLevel="2" />
+  <traceFlags traceLevel="2" traceSecMgr="1"/>
   ...
 <EspProcess>
 ```

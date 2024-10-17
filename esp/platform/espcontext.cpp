@@ -28,6 +28,7 @@
 #include "espsecurecontext.hpp"
 #include "ldapsecurity.ipp"
 #include "dasds.hpp"
+#include "secmanagertracedecorator.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -50,6 +51,7 @@ private:
     Owned<ISecUser> m_user;
     Owned<ISecResourceList> m_resources;
     Owned<ISecManager> m_secmgr;
+    Owned<ISecManager> m_tracingSecMgrDecorator;
     Owned<IAuthMap> m_feature_authmap;
     Owned<ISecPropertyList> m_sec_settings;
 
@@ -290,13 +292,29 @@ public:
 
     virtual void setSecManger(ISecManager* mgr)
     {
+        setSecManager(mgr, nullptr);
+    }
+
+    virtual void setSecManager(ISecManager* mgr, ISecManager* tracingSecMgrDecorator) override
+    {
         m_secmgr.setown(mgr);
-        m_SecurityHandler.setSecManger(mgr);
+        if (!mgr)
+            m_tracingSecMgrDecorator.clear();
+        else if (!tracingSecMgrDecorator)
+            m_tracingSecMgrDecorator.setown(new CSecManagerTraceDecorator(*mgr));
+        else
+            m_tracingSecMgrDecorator.set(tracingSecMgrDecorator);
+        m_SecurityHandler.setSecManager(mgr, tracingSecMgrDecorator);
     }
 
     virtual ISecManager* querySecManager()
     {
         return m_secmgr.get();
+    }
+
+    virtual ISecManager* queryTracingSecManager() override
+    {
+        return m_tracingSecMgrDecorator.get();
     }
 
     virtual void setBindingValue(void * value)

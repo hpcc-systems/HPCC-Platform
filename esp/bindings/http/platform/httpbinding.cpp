@@ -406,6 +406,9 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     //This is a Pluggable Security Manager
                     setBndCfgServiceType(tree, procname, bnd_cfg);
                     m_secmgr.setown(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
+                    if (!m_secmgr)
+                        throw makeStringException(-1, "error loading pluggable security manager");
+                    m_tracingSecMgrDecorator.setown(new CSecManagerTraceDecorator(*m_secmgr));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
                     m_setting_authmap.setown(m_secmgr->createSettingMap(authcfg));
@@ -434,6 +437,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         {
                             throw MakeStringException(-1, "error generating SecManager");
                         }
+                        m_tracingSecMgrDecorator.setown(new CSecManagerTraceDecorator(*m_secmgr));;
 
                         StringBuffer basednbuf;
                         authcfg->getProp("@resourcesBasedn", basednbuf);
@@ -449,6 +453,9 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     else if(stricmp(m_authmethod.str(), "Local") == 0)
                     {
                         m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
+                        if (m_secmgr.get() == NULL)
+                            throw MakeStringException(-1, "error loading local security manager");
+                        m_tracingSecMgrDecorator.setown(new CSecManagerTraceDecorator(*m_secmgr));
                         m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     }
                     IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
@@ -847,7 +854,7 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
 {
     IEspContext* ctx = request->queryContext();
 
-    ctx->setSecManger(m_secmgr.getLink());
+    ctx->setSecManager(m_secmgr.getLink(), m_tracingSecMgrDecorator.get());
     ctx->setFeatureAuthMap(m_feature_authmap.getLink());
 
     StringBuffer userid, password,realm,peer;
@@ -972,7 +979,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         return false;
     }
 
-    bool authenticated = CSecManagerTraceDecorator(*m_secmgr).authorize(*user, rlist, ctx->querySecureContext());
+    bool authenticated = m_tracingSecMgrDecorator->authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
         VStringBuffer err("User %s : ", user->getName());
@@ -1029,7 +1036,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(securitySettings == NULL)
         return authorized;
 
-    CSecManagerTraceDecorator(*m_secmgr).updateSettings(*user,securitySettings, ctx->querySecureContext());
+    m_tracingSecMgrDecorator->updateSettings(*user,securitySettings, ctx->querySecureContext());
 
     ctx->addTraceSummaryTimeStamp(LogMin, "basicAuth", TXSUMMARY_GRP_CORE);
     return authorized;

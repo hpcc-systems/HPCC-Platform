@@ -23,53 +23,10 @@
 #include "jtrace.hpp"
 
 /**
- * @brief Templated utility class to decorate an object with additional functionality.
- *
- * A decorator implements the same named interface as the objects it decorates. This class extends
- * the interface, leaving implementation to subclasses. This class requires the decorated object to
- * implement a named interface, even if only IInterface.
- *
- * In the ideal situation, the decorated object's interface is described completely by a named
- * interface. By implementing the same interface, a decorator is interchangeable with the object
- * it decoratos.
- *
- * In less than ideal situations, the decorated object's interface is an extension of a named
- * interface. The decorator extends the extends the named interface, with subclasses required to
- * implement both the named interface and all extensions. The decorator should then be
- * interchangeable with its decorated object as a templated argument, but not be cast to the
- * decorated type.
- *
- * The less ideal scenario is suported by two template parameters. The ideal situation requires
- * only the first.
- * - decorated_t is the type of the object to be decorated. If the the decorated object conforms
- *   to an interface, use of the interface is preferred.
- * - secorated_interface_t is the interface implemented by the decorated object. If not the same
- *   as decorated_t, it is assumed to be a base of that type.
- *
- * Consider the example of ISecManager, generally, and the special case of CLdapSecManager. For
- * most security managers, both template parameters may be ISecManager. CLdapSecManager is an
- * exception because it exposes additional interfaces not included in ISecManager or any other
- * interface. In this case, decorated_t should be CLdapSecManager and decorated_interface_t should
- * be ISecManager.
- */
-template <typename decorated_t, typename decorated_interface_t = decorated_t>
-class TDecorator : public CInterfaceOf<decorated_interface_t>
-{
-protected:
-    Linked<decorated_t> decorated;
-
-public:
-    TDecorator(decorated_t &_decorated) : decorated(&_decorated) {}
-    virtual ~TDecorator() {}
-    decorated_t *queryDecorated() { return decorated.get(); }
-    decorated_t *getDecorated() { return decorated.getLink(); }
-};
-
-/**
  * @brief Macro used start tracing a block of code in the security manager decorator.
  *
  * Create a new named internal span and enter a try block. Used with END_SEC_MANAGER_TRACE_BLOCK,
- * provides consistent timing and exception handling for the inned code block.
+ * provides consistent timing and exception handling for the inner code block.
  *
  * Some security manager requests include outgoing remote calls, but the ESP does not assume
  * which requests are remote. Managers making remote calls may considier creating client spans
@@ -122,11 +79,9 @@ public:
  * - If nothing else changes, create a subclasses of TSecManagerTraceDecorator, with template
  *   parameters CLdapSecManager and ISecManager, to decorate the LDAP-specific interfaces.
  */
-template <typename secmgr_t = ISecManager, typename secmgr_interface_t = ISecManager>
-class TSecManagerTraceDecorator : public TDecorator<secmgr_t, secmgr_interface_t>
+template <typename secmgr_t = ISecManager>
+class TSecManagerTraceDecorator : public CInterfaceOf<ISecManager>
 {
-    using TDecorator<secmgr_t, secmgr_interface_t>::decorated;
-
 public:
     virtual SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override
     {
@@ -359,17 +314,12 @@ public:
     }
 
 protected:
-    SecFeatureSet implemented = 0; /// The decorated manager instance's implemented feature set.
-    bool tracing = true; /// Flag indicating if tracing is enabled.
+    Linked<secmgr_t> decorated;
+    bool tracing = queryTraceManager().isTracingEnabled();
 
 public:
     TSecManagerTraceDecorator(secmgr_t &_decorated)
-        : TDecorator<secmgr_t, secmgr_interface_t>(_decorated)
-        , implemented(_decorated.queryFeatures(SecFeatureSupportLevel::SFSL_Implemented))
-        , tracing(queryTraceManager().isTracingEnabled() && doTrace(traceSecMgr))
-    {
-    }
-    virtual ~TSecManagerTraceDecorator()
+        : decorated(&_decorated)
     {
     }
 
@@ -684,7 +634,7 @@ protected:
      */
     inline bool doTraceFeature(SecFeatureBit feature) const
     {
-        return (tracing && (implemented & feature) != 0);
+        return (tracing && doTrace(traceSecMgr) && decorated->checkImplementedFeatures(feature));
     }
 };
 

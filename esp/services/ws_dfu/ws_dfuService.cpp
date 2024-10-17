@@ -2021,7 +2021,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
             StringBuffer scopes;
             dlfn.getScopes(scopes);
 
-            permissionTemp = CSecManagerTraceDecorator(*secmgr).authorizeFileScope(user, scopes.str());
+            permissionTemp = secmgr->authorizeFileScope(user, scopes.str());
         }
 
         //Descrease the permission whenever a component has a lower permission.
@@ -2034,7 +2034,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
 
 bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, SecAccessFlags& permission)
 {
-    ISecManager* secmgr = context.querySecManager();
+    ISecManager* secmgr = context.queryTracingSecManager();
     if (!secmgr)
     {
         return false;
