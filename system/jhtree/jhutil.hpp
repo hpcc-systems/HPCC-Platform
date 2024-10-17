@@ -81,7 +81,7 @@ public:
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
     }
-    unsigned getKeyHash(KEY & key) const
+    unsigned getKeyHash(const KEY & key) const
     {
         return table.getHashFromFindParam(&key);
     }

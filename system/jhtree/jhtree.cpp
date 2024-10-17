@@ -763,6 +763,7 @@ public:
     }
     void reportEntries(ICacheInfoRecorder &cacheInfo)
     {
+        CriticalBlock block(lock);
         Owned<CNodeMRUSubCache::CMRUIterator> iter = getIterator();
         ForEach(*iter)
         {
@@ -857,12 +858,23 @@ public:
         createCacheMetric(name, desc, StNumCacheEvictions);
     }
 
+    inline unsigned getKeyHash(const CKeyIdAndPos & key)
+    {
+        return cache[0].getKeyHash(key);
+    }
+
     __uint64 getStatisticValue(StatisticKind kind) const
     {
         __uint64 total = 0;
         for (unsigned i =0; i < cacheBuckets; i++)
             total += cache[i].getStatisticValue(kind);
         return total;
+    }
+
+    void reportEntries(ICacheInfoRecorder &cacheInfo)
+    {
+        for (unsigned j = 0; j < cacheBuckets; j++)
+            cache[j].reportEntries(cacheInfo);
     }
 
     size32_t setCacheMem(size32_t newSize)
@@ -943,12 +955,7 @@ public:
         for (unsigned i=0; i < CacheMax; i++)
         {
             out.append(cacheTypeText[i]).append('(');
-            for (unsigned j=0; j < cacheBuckets; j++)
-            {
-                if (j)
-                    out.append(' ');
-                cache[i].cache[j].traceState(out);
-            }
+            cache[i].traceState(out);
             out.append(") ");
         }
     }
@@ -2749,13 +2756,7 @@ extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo)
 void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 {
     for (unsigned i = 0; i < CacheMax; i++)
-    {
-        for (unsigned j = 0; j < cacheBuckets; j++)
-        {
-            CriticalBlock block(cache[i].cache[j].lock);
-            cache[i].cache[j].reportEntries(cacheInfo);
-        }
-    }
+        cache[i].reportEntries(cacheInfo);
 }
 
 //Use a critical section in each node to prevent multiple threads loading the same node at the same time.
@@ -2783,9 +2784,9 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         return keyIndex->loadNode(nullptr, pos, nullptr);
 
     CKeyIdAndPos key(iD, pos);
-    unsigned hashcode = typeCache.cache[0].getKeyHash(key); // more: move getKeyHash into typeCache to clean this up
+    unsigned hashcode = typeCache.getKeyHash(key);
     unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;
-    CNodeMRUSubCache & curCache = cache[cacheType].cache[subCache];
+    CNodeMRUSubCache & curCache = typeCache.cache[subCache];
 
     //Previously, this was implemented as:
     //  Lock, unlock.  Load the page.  Lock, check if it has been added, otherwise add.
