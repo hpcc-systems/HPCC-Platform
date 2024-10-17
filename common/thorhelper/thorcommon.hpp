@@ -325,7 +325,6 @@ public:
         else
             startCycles = 0;
     }
-
     inline ~SimpleActivityTimer()
     {
         if (likely(enabled))

@@ -207,6 +207,7 @@ public:
     }
     void prepareInput()
     {
+        ActivityTimer t(slaveTimerStats, queryTimeActivities());
         // NB: called by 1st output to start()
         CriticalBlock block(prepareInputLock);
         if (!inputPrepared)
@@ -300,7 +301,10 @@ public:
     inline const void *nextRow(unsigned outIdx, rowcount_t current)
     {
         if (1 == activeOutputCount) // will be true, if only 1 input connected, or only 1 input was active (others stopped) when it started reading
+        {
+            ActivityTimer t(slaveTimerStats, queryTimeActivities());
             return inputStream->nextRow();
+        }
         if (recsReady == current && writeAheadException.get())
             throw LINK(writeAheadException);
         return sharedRowStream->queryOutput(outIdx)->nextRow(); // will block until available

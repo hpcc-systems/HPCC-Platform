@@ -1530,6 +1530,7 @@ public:
     }
     virtual void start() override
     {
+        ActivityTimer t(slaveTimerStats, queryTimeActivities());
         joined = 0;
         joinCounter = 0;
         candidateCounter = 0;
