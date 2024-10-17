@@ -221,10 +221,11 @@ struct MultiPacketHeader
 
 class DECL_EXCEPTION CMPException: public IMP_Exception, public CInterface
 {
+    StringAttr msg;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMPException(MessagePassingError err,const SocketEndpoint &ep) : error(err), endpoint(ep) 
+    CMPException(MessagePassingError err,const SocketEndpoint &ep, const char *_msg = nullptr) : error(err), endpoint(ep), msg(_msg)
     {
     }
 
@@ -240,6 +241,8 @@ public:
         // change it from "MP link closed" to something more helpful
         case MPERR_link_closed:                 str.appendf("Unexpected process termination (ep:%s)",endpoint.getEndpointHostText(tmp).str()); break;
         }
+        if (msg.length())
+            str.append(" - ").append(msg);
         return str;
     }
     int             errorCode() const { return error; }
@@ -1813,6 +1816,8 @@ public:
 };
 
 
+static PeriodicTimer periodicTimer(10*60*1000, false); // 10 minutes
+static std::atomic<__uint64> mpProtocolErrors{0};
 // --------------------------------------------------------
 
 class CMPPacketReader: public ISocketSelectNotify, public CInterface
@@ -1847,7 +1852,8 @@ public:
     {
         if (!parent)
             return false;
-        bool gc = false; // if a gc is hit, then will fall through to close socket
+        bool closeSocket = false; // if a graceful close is hit, this will be set and will fall through to close socket
+        bool suppressException = false;
         try
         {
             while (true) // NB: breaks out if blocked (if (remaining) ..)
@@ -1872,7 +1878,7 @@ public:
                 if (!gotPacketHdr)
                 {
                     CCycleTimer timer;
-                    gc = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, timer.remainingMs(60000));
+                    closeSocket = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, timer.remainingMs(60000));
                     remaining -= szRead;
                     activeptr += szRead;
                     if (remaining) // only possible if blocked.
@@ -1882,10 +1888,20 @@ public:
                     if (hdr.version/0x100 != MP_PROTOCOL_VERSION/0x100)
                     {
                         // TBD IPV6 here
+                        mpProtocolErrors++;
                         SocketEndpoint ep;
                         sock->getPeerEndpoint(ep);
-                        IMP_Exception *e=new CMPException(MPERR_protocol_version_mismatch,ep);
-                        throw e;
+                        if (periodicTimer.hasElapsed())
+                        {
+                            VStringBuffer packetHdrBytes("[%" I64F "u incidents to date]. Packet Header: ", mpProtocolErrors.load());
+                            hexdump2string((byte const *)&hdr, sizeof(hdr), packetHdrBytes);
+                            throw new CMPException(MPERR_protocol_version_mismatch, ep, packetHdrBytes.str());
+                        }
+                        else
+                        {
+                            suppressException = true;
+                            throw new CMPException(MPERR_protocol_version_mismatch, ep);
+                        }
                     }
                     hdr.setMessageFields(*activemsg);
     #ifdef _FULLTRACE
@@ -1898,9 +1914,9 @@ public:
                     gotPacketHdr = true;
                 }
 
-                if (!gc && remaining)
+                if (!closeSocket && remaining)
                 {
-                    gc = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, WAIT_FOREVER);
+                    closeSocket = readtmsAllowClose(sock, activeptr, 0, remaining, szRead, WAIT_FOREVER);
                     remaining -= szRead;
                     activeptr += szRead;
                 }
@@ -1939,19 +1955,19 @@ public:
                     }
                 }
                 while (activemsg);
-                if (gc)
+                if (closeSocket)
                     break;
             }
         }
         catch (IException *e)
         {
-            if (e->errorCode()!=JSOCKERR_graceful_close)
-                FLLOG(MCoperatorWarning, e,"MP(Packet Reader)");
+            if (!suppressException && e->errorCode()!=JSOCKERR_graceful_close)
+                FLLOG(MCoperatorWarning, e, "MP(Packet Reader)");
             e->Release();
-            gotPacketHdr = false;
+            closeSocket = true; // NB: this select handler will removed and not be notified again
         }
 
-        if (gc)
+        if (closeSocket)
         {
             // here due to error or graceful close, so close socket (ignore error as may be closed already)
             try
