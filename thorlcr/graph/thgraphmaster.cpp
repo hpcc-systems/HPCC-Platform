@@ -20,10 +20,11 @@
 #include <future>
 #include <vector>
 #include <iterator>
-#include "jprop.hpp"
+#include "jcontainerized.hpp"
 #include "jexcept.hpp"
 #include "jiter.ipp"
 #include "jlzw.hpp"
+#include "jprop.hpp"
 #include "jsocket.hpp"
 #include "jset.hpp"
 #include "jsort.hpp"
@@ -1892,25 +1893,109 @@ bool CJobMaster::go()
             if (flags & SubscribeOptionAction)
             {
                 job.markWuDirty();
-                bool abort = false;
-                bool pause = false;
                 wu.forceReload();
                 WUAction action = wu.getAction();
-                if (action==WUActionPause)
+                if ((WUActionPause==action) || (WUActionPauseNow==action))
                 {
                     // pause after current subgraph
-                    pause = true;
-                }
-                else if (action==WUActionPauseNow)
-                {
-                    // abort current subgraph
-                    abort = true;
-                    pause = true;
-                }
-                if (pause)
-                {
+                    bool abort = (action==WUActionPauseNow); // abort current subgraph
                     PROGLOG("Pausing job%s", abort?" [now]":"");
                     job.pause(abort);
+                }
+                else if (action==WUActionGenerateDebugInfo)
+                {
+                    StringBuffer dir;
+                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
+                    {
+                        if (!isContainerized())
+                        {
+                            appendCurrentDirectory(dir, false);
+                            addPathSepChar(dir);
+                            dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
+                        }
+                        else
+                        {
+                            IWARNLOG("Failed to get debug directory");
+                            return;
+                        }
+                    }
+                    addPathSepChar(dir);
+                    dir.append(job.queryWuid());
+                    if (isContainerized())
+                    {
+                        addPathSepChar(dir);
+                        dir.append(k8s::queryMyJobName());
+                    }
+                    addPathSepChar(dir);
+                    CDateTime now;
+                    now.setNow();
+                    unsigned year, month, day, hour, minute, second, nano;
+                    now.getDate(year, month, day);
+                    now.getTime(hour, minute, second, nano);
+                    VStringBuffer dateStr("%04d%02d%02d-%02d%02d%02d", year, month, day, hour, minute, second);
+                    dir.append(dateStr);
+
+                    auto managerCaptureFunc = [&dir]()
+                    {
+                        return captureDebugInfo(dir, "thormanager", nullptr);
+                    };
+                    std::future<std::vector<std::string>> managerResultsFuture = std::async(std::launch::async, managerCaptureFunc);
+
+                    std::vector<std::string> capturedFiles;
+                    auto responseFunc = [&capturedFiles](unsigned worker, MemoryBuffer &mb)
+                    {
+                        bool res;
+                        mb.read(res);
+                        if (!res)
+                        {
+                            Owned<IException> e = deserializeException(mb);
+                            VStringBuffer msg("Failed to get stack trace from worker %u", worker);
+                            IWARNLOG(e, msg);
+                        }
+                        StringAttr file;
+                        while (true)
+                        {
+                            mb.read(file);
+                            if (file.isEmpty())
+                                break;
+                            capturedFiles.push_back(file.get());
+                        }
+                    };
+                    VStringBuffer cmd("<debuginfo dir=\"%s\"/>", dir.str());
+                    job.issueWorkerDebugCmd(cmd, 0, responseFunc);
+                    std::vector<std::string> managerResults = managerResultsFuture.get();
+                    capturedFiles.insert(capturedFiles.end(), managerResults.begin(), managerResults.end());
+
+                    VStringBuffer description("debuginfo-%s", dateStr.str());
+                    if (isContainerized())
+                    {
+                        VStringBuffer archiveFilename("debuginfo-%s.tar.gz", dateStr.str());
+                        VStringBuffer tarCmd("cd %s && tar -czf %s --exclude=%s --remove-files *", dir.str(), archiveFilename.str(), archiveFilename.str());
+                        if (0 != system(tarCmd))
+                        {
+                            OWARNLOG("Failed to create tarball of debuginfo");
+                            return;
+                        }
+                        Owned<IWorkUnit> lw = &wu.lock();
+                        Owned<IWUQuery> query = lw->updateQuery();
+                        VStringBuffer archiveFilePath("%s/%s", dir.str(), archiveFilename.str());
+                        query->addAssociatedFile(FileTypePostMortem, archiveFilePath, "localhost", description, 0, 0, 0);
+                    }
+                    else
+                    {
+                        Owned<IWorkUnit> lw = &wu.lock();
+                        Owned<IWUQuery> query = lw->updateQuery();
+                        for (auto &file: capturedFiles)
+                        {
+                            RemoteFilename rfn;
+                            rfn.setRemotePath(file.c_str());
+                            StringBuffer localPath;
+                            rfn.getLocalPath(localPath);
+                            StringBuffer host;
+                            rfn.queryEndpoint().getEndpointHostText(host);
+                            query->addAssociatedFile(FileTypeLog, localPath, host, description, 0, 0, 0);
+                        }
+                    }
                 }
             }
         }
@@ -2086,6 +2171,45 @@ void CJobMaster::pause(bool doAbort)
         } abortThread(*this, e);
         saveSpills();
         fatalHandler->inform(e.getClear());
+    }
+}
+
+void CJobMaster::issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc)
+{
+    mptag_t replyTag = createReplyTag();
+    ICommunicator &comm = queryNodeComm();
+    CMessageBuffer mbuf;
+    mbuf.append(DebugRequest);
+    mbuf.append(queryKey());
+    serializeMPtag(mbuf, replyTag);
+    mbuf.append(rawText);
+    rank_t rank = workerNum ? workerNum : RANK_ALL_OTHER; // 0 == all workers
+    if (!comm.send(mbuf, rank, managerWorkerMpTag, MP_ASYNC_SEND))
+    {
+        DBGLOG("Failed to send debug info to slave");
+        throwUnexpected();
+    }
+
+    rank = workerNum ? workerNum : RANK_ALL;
+    unsigned numToRecv = workerNum ? 1 : queryNodes();
+    while (numToRecv)
+    {
+        rank_t sender;
+        mbuf.clear();
+        unsigned recvTimeoutCount = 0;
+        while (!comm.recv(mbuf, rank, replyTag, &sender, SHORTTIMEOUT))
+        {
+            if (queryAborted())
+                return;
+            ++recvTimeoutCount;
+            if (recvTimeoutCount == 10)
+                throw makeStringExceptionV(0, "Timedout waiting for debugcmd response from worker %u", workerNum);
+            IWARNLOG("Waiting for debugcmd response from worker %u", workerNum);
+        }
+        while (mbuf.remaining())
+            responseFunc(sender, mbuf);
+
+        numToRecv--;
     }
 }
 
