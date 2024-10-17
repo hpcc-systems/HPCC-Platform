@@ -2,7 +2,7 @@ import * as React from "react";
 import { Octokit } from "octokit";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
-import { LogaccessService, Topology, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
+import { LogaccessService, Topology, WsLogaccess, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
 import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
 import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
@@ -209,12 +209,19 @@ export function useModernMode(): {
     return { modernMode, setModernMode };
 }
 
-export function useLoggingEngine(): string {
-    const [loggingEngine, setLoggingEngine] = React.useState("");
+export function useLogAccessInfo(): {
+    managerType: string;
+    columns: WsLogaccess.Column[]
+} {
+    const [managerType, setManagerType] = React.useState("");
+    const [columns, setColumns] = React.useState<WsLogaccess.Column[]>();
 
     React.useEffect(() => {
-        service.GetLogAccessInfo({}).then(response => setLoggingEngine(response.RemoteLogManagerType ?? ""));
+        service.GetLogAccessInfo({}).then(response => {
+            setManagerType(response.RemoteLogManagerType ?? "");
+            setColumns(response?.Columns?.Column);
+        });
     }, []);
 
-    return loggingEngine;
+    return { managerType, columns };
 }
