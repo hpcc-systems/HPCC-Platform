@@ -1,9 +1,10 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { GetLogsExRequest, LogaccessService, TargetAudience, LogType } from "@hpcc-js/comms";
+import { GetLogsExRequest, LogaccessService, LogType, TargetAudience, WsLogaccess } from "@hpcc-js/comms";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { logColor, wuidToDate, wuidToTime } from "src/Utility";
+import { logColor, removeAllExcept, wuidToDate, wuidToTime } from "src/Utility";
+import { useLogAccessInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -92,6 +93,8 @@ const levelMap = (level) => {
     }
 };
 
+const columnOrder: string[] = [WsLogaccess.LogColumnType.timestamp, WsLogaccess.LogColumnType.message];
+
 export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
     filter = defaultFilter,
@@ -109,9 +112,26 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     const now = React.useMemo(() => new Date(), []);
 
+    const { columns: logColumns } = useLogAccessInfo();
+
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
-        return {
+        // we've defined the columnOrder array above to ensure specific columns will
+        // appear on the left-most side of the grid, eg timestamps and log messages
+        const cols = logColumns?.sort((a, b) => {
+            const logTypeA = columnOrder.indexOf(a.LogType);
+            const logTypeB = columnOrder.indexOf(b.LogType);
+
+            if (logTypeA >= 0) {
+                if (logTypeB >= 0) { return logTypeA - logTypeB; }
+                return -1;
+            } else if (logTypeB >= 0) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        const retVal = {
             timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, width: 600, sortable: false, },
             components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
@@ -129,7 +149,10 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
             logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
             threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
         };
-    }, [wuid]);
+        const colTypes = cols?.map(c => c.LogType.toString()) ?? [];
+        removeAllExcept(retVal, colTypes);
+        return retVal;
+    }, [logColumns, wuid]);
 
     const copyButtons = useCopyButtons(columns, selection, "logaccess");
 
@@ -194,8 +217,10 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                 delete retVal.jobId;
             }
         }
+        const colTypes = logColumns?.map(c => c.LogType.toString()) ?? [];
+        removeAllExcept(retVal, colTypes);
         return retVal;
-    }, [filter, wuid]);
+    }, [filter, logColumns, wuid]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
