@@ -40,7 +40,7 @@ interface WorkunitDetailsProps {
     parentUrl?: string;
     tab?: string;
     state?: { outputs?: string, metrics?: string, resources?: string, helpers?: string, eclsummary?: string };
-    queryParams?: { outputs?: StringStringMap, inputs?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
+    queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
 }
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
@@ -180,7 +180,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         <div style={{ height: "100%" }}>
             <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
             <DelayLoadedPanel visible={tab === "summary"} size={size}>
-                <WorkunitSummary wuid={wuid} />
+                <WorkunitSummary wuid={wuid} fullscreen={queryParams.summary?.fullscreen !== undefined} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "variables"} size={size}>
                 <Variables wuid={wuid} />
@@ -205,7 +205,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                         <Shimmer />
                     </>
                 }>
-                    <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} selection={state?.metrics} />
+                    <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} selection={state?.metrics} fullscreen={queryParams.metrics?.fullscreen !== undefined} />
                 </React.Suspense>
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "workflows"} size={size}>
