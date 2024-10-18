@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>ZAP Utility</title>
+
+  <bookinfo>
+    <title>ZAP Utility</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para />
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>FooterInfo Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>DateVer Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Copyright Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+        <sect2 id="ZAP">
+          <title>Z.A.P. Utility</title>
+
+          <para>The Zipped Analysis Package (Z.A.P.) button is a utility for
+          collecting system information and encapsulating it into a shareable
+          package. It is a useful tool for reporting errors, inconsistencies,
+          or other unexpected behavior. When there is such an occurrence, this
+          utility packages up information to send for further analysis.</para>
+
+          <figure>
+            <title>Z.A.P. Button</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ00.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>To use the Z.A.P. utility, press the Z.A.P. button on the
+          workunit details page from the appropriate workunit. The button
+          opens the Zipped Analysis Package dialog.</para>
+
+          <figure>
+            <title>The Zipped Analysis Package Dialog</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ01.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Some of the required fields are populated. Fill in the
+          corresponding values under Description, History, and Timings fields.
+          Optionally, you can password protect the ZAP package and choose to
+          include slave logs. Slave logs are not included by default. If there
+          are slave logs, the option to include them is available. You must
+          check that field when available to include the slave logs.</para>
+
+          <para>If your data contains sensitive information, such as
+          personally identifiable information (PII), save the ZAP package,
+          sanitize the data, then email it manually. If appropriate to share
+          your data, you can take advantage of the Send Email field.</para>
+
+          <para>The Send Email field is only available if email is configured
+          for the ESP service in the Configuration Manager. If available,
+          check the Send Email box to email the ZAP report. Only an
+          Administrator can configure the email. The (To) Email Address is
+          also set by the Administrator and can only be changed in the
+          configuration. The (From) Email Address can be set in the
+          Configuration Manager, but can be changed if desired. The Email
+          Subject is required, but the Email Body is optional.</para>
+
+          <para>Press the <emphasis role="bold">Apply </emphasis>button when
+          all the dialog fields are completed. At that point if you checked
+          the Send Email box, the Z.A.P. report gets sent. If email is not
+          configured, the Z.A.P. utility generates a zip file with all the
+          appropriate information for troubleshooting.</para>
+
+          <para>You can find the generated zip file in your browser's
+          designated download directory. You can now manually send this file
+          to the person handling your support request, or you can upload the
+          file into the issue tracking system. Remember, you should only use
+          the email feature if appropriate to share your data.</para>
+        </sect2>
+        </book>
+        
