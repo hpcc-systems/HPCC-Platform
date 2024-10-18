@@ -275,7 +275,7 @@ public:
 
 protected:
     cycle_t timePeriodCycles = 0;
-    cycle_t lastElapsedCycles = 0;
+    std::atomic<cycle_t> lastElapsedCycles{0};
 };
 
 
