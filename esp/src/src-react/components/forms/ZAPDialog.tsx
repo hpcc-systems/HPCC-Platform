@@ -103,7 +103,7 @@ const defaultValues: ZAPDialogValues = {
             StartDate: "",
             EndDate: "",
         },
-        RelativeTimeRangeBuffer: "",
+        RelativeTimeRangeBuffer: "43200",
         LineLimit: "10000",
         LineStartFrom: "0",
         SelectColumnMode: ColumnMode.DEFAULT,
@@ -196,8 +196,11 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     if (key === "AbsoluteTimeRange") {
                         const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate).toISOString() : "";
                         const endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate).toISOString() : "";
-                        formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate);
-                        formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate);
+                        if (startDate && endDate) {
+                            formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate);
+                            formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate);
+                            delete logFilter.RelativeTimeRangeBuffer;
+                        }
                     } else {
                         formData.append(`LogFilter_${key}`, logFilter[key]);
                     }
