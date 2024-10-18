@@ -310,12 +310,14 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         m_isPersistentSocket = false;
         try
         {
+            CCycleTimer timer;
             m_socket = ISocket::connect_timeout(ep, m_connectTimeoutMs);
 
             if(strcmp(m_protocol.get(), "HTTPS") == 0)
             {
                 ISecureSocket* securesocket = m_ssctx->createSecureSocket(m_socket, SSLogNormal, m_host.str());
-                int res = securesocket->secure_connect();
+                unsigned remainingMs = timer.remainingMs(m_connectTimeoutMs);
+                int res = securesocket->secure_connect(remainingMs);
                 if(res < 0)
                 {
                     close();
