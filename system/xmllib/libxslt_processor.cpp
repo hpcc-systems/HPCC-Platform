@@ -729,7 +729,6 @@ CLibXslProcessor::CLibXslProcessor()
 {
     m_cachetimeout = XSLT_DEFAULT_CACHETIMEOUT;
 
-    xmlInitMemory();
     xmlInitParser();
 
     xmlSubstituteEntitiesDefault(1);
@@ -747,7 +746,6 @@ CLibXslProcessor::~CLibXslProcessor()
 {
     xsltCleanupGlobals();
     xmlCleanupParser();
-    xmlCleanupMemory();
 }
 
 static CLibXslProcessor xslProcessor;
