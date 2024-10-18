@@ -1257,6 +1257,14 @@ export function timestampToDate(timestamp: number): Date {
     return new Date(millis);
 }
 
+export function formatDateString(dateStr: string): string {
+    const matches = dateStr.match(/([0-9]{4}(?:-[0-9]{1,2})+)([T\s])((?:[0-9]{1,2}:)+[0-9]{1,2}\.[0-9]{1,3})(Z*)/);
+    if (matches) {
+        return `${matches[1]}T${matches[3]}${matches[4] ? matches[4] : "Z"}`;
+    }
+    return dateStr;
+}
+
 const theme = getTheme();
 const { semanticColors } = theme;
 
