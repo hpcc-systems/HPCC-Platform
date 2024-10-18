@@ -205,14 +205,15 @@ NamedMutex::NamedMutex(const char *name)
         CriticalBlock b(lockPrefixCS);
         if (0 == lockPrefix.length())
         {
-            if (!getConfigurationDirectory(NULL, "lock", NULL, NULL, lockPrefix))
+            if (getConfigurationDirectory(NULL, "lock", NULL, NULL, lockPrefix))
+                addPathSepChar(lockPrefix);
+            else
                 WARNLOG("Failed to get lock directory from environment");
+            lockPrefix.append("JLIBMUTEX_");
         }
-        addPathSepChar(lockPrefix);
-        lockPrefix.append("JLIBMUTEX_");
     }
     StringBuffer tmp(lockPrefix);
-    tmp.append("JLIBMUTEX_").append(name);
+    tmp.append(name);
     mutexfname = tmp.detach();
 }
 
