@@ -599,39 +599,22 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 {
     try
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
-#else
         context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
-        CConstWUClusterInfoArray clusters;
-        getEnvironmentClusterInfo(clusters);
+        Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
 
-        BoolHash uniqueProcesses;
+        BoolHash uniquePlanes;
         Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
-        ForEachItemIn(c, clusters)
+
+        ForEach(*planesIter)
         {
-            IConstWUClusterInfo &cluster = clusters.item(c);
-            switch (cluster.getPlatform())
-            {
-            case ThorLCRCluster:
-                {
-                    const StringArray &primaryThorProcesses = cluster.getPrimaryThorProcesses();
-                    ForEachItemIn(i, primaryThorProcesses)
-                        addUniqueXRefNode(primaryThorProcesses.item(i), uniqueProcesses, xrefNodeTree);
-                }
-                break;
-            case RoxieCluster:
-                SCMStringBuffer roxieProcess;
-                addUniqueXRefNode(cluster.getRoxieProcess(roxieProcess).str(), uniqueProcesses, xrefNodeTree);
-                break;
-            }
+            IPropertyTree &item = planesIter->query();
+
+            addUniqueXRefNode(item.queryProp("@name"), uniquePlanes, xrefNodeTree);
         }
-        addXRefNode("SuperFiles", xrefNodeTree);
 
         StringBuffer buf;
         resp.setDFUXRefListResult(formatResult(context, xrefNodeTree, buf));
-#endif
     }
     catch(IException *e)
     {   
