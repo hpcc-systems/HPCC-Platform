@@ -666,6 +666,7 @@ public:
     }
     virtual void start() override
     {
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CThorNarySlaveActivity::start();
 
         ForEachItemIn(i1, expandedInputs)
@@ -682,6 +683,7 @@ public:
     }
     CATCH_NEXTROW()
     {
+        ActivityTimer s(slaveTimerStats, timeActivities);
         OwnedConstThorRow ret = processor.nextRow();
         if (ret)
         {
@@ -692,6 +694,7 @@ public:
     }
     virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
+        ActivityTimer s(slaveTimerStats, timeActivities);
         try { return nextRowGENoCatch(seek, numFields, wasCompleteMatch, stepExtra); }
         CATCH_NEXTROWX_CATCH;
     }

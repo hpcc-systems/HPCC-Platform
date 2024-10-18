@@ -866,7 +866,6 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(slaveTimerStats, timeActivities);
         stopUnselectedInputs();
         if (queryInput(branch))
         {

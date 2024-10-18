@@ -162,6 +162,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
         ~CPrefetcher() { stop(); }
         PrefetchInfo *pullRecord()
         {
+            LookAheadTimer t(parent.slaveTimerStats, parent.timeActivities);
             OwnedConstThorRow row = parent.inputStream->nextRow();
             if (row)
             {
