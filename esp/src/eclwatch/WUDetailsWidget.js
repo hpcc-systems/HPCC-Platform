@@ -41,6 +41,8 @@ define([
     "dijit/form/TextBox",
     "dijit/Dialog",
     "dijit/form/SimpleTextarea",
+    "dijit/form/DateTextBox",
+    "dijit/form/TimeTextBox",
 
     "hpcc/TableContainer"
 ], function (declare, lang, nlsHPCCMod, dom, domAttr, domClass, topic,
