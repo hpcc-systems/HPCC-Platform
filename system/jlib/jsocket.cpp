@@ -654,7 +654,7 @@ public:
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
     void        shutdownNoThrow(unsigned mode);
 
-    ISocket*    accept(bool allowcancel, SocketEndpoint *peerEp=nullptr);
+    ISocket*    accept(bool allowcancel);
     int         wait_read(unsigned timeout);
     int         logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
@@ -703,7 +703,7 @@ public:
     void        setTraceName();
 
     CSocket(const SocketEndpoint &_ep,SOCKETMODE smode,const char *name);
-    CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned);
+    CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned,SocketEndpoint *_peerEp);
 
     virtual ~CSocket();
 
@@ -1254,7 +1254,7 @@ ErrPortInUse:
 
 
 
-ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
+ISocket* CSocket::accept(bool allowcancel)
 {
     if ((accept_cancel_state!=accept_not_cancelled) && allowcancel) {
         accept_cancel_state=accept_cancelled;
@@ -1334,10 +1334,9 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
         THROWJSOCKTARGETEXCEPTION(JSOCKERR_cancel_accept);
     }
 
-    if (peerEp)
-        getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
-
-    CSocket *ret = new CSocket(newsock,sm_tcp,true);
+    SocketEndpoint peerEp;
+    getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, peerEp);
+    CSocket *ret = new CSocket(newsock,sm_tcp,true,&peerEp);
     ret->checkCfgKeepAlive();
     ret->set_inherit(false);
     ret->set_nonblock(true);
@@ -3023,7 +3022,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
 #endif
 }
 
-CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
+CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned,SocketEndpoint *_peerEp)
 {
     nonblocking = false;
 #ifdef USERECVSEM
@@ -3045,13 +3044,24 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     accept_cancel_state = accept_not_cancelled;
     set_nagle(false);
     //set_linger(DEFAULT_LINGER_TIME); -- experiment with removing this as closesocket should still endevour to send outstanding data
-    char peer[256];
-    hostport = peer_name(peer,sizeof(peer));
-    targetip.ipset(peer);
+    if (_peerEp)
+    {
+        targetip = *_peerEp;
+        hostport = _peerEp->port;
+    }
+    else
+    {
+        char peer[256];
+        hostport = peer_name(peer,sizeof(peer));
+        targetip.ipset(peer);
+    }
     SocketEndpoint ep;
     localPort = getEndpoint(ep).port;
 #ifdef _TRACE
-    setTraceName("A!", peer);
+    StringBuffer tmp;
+    targetip.getIpText(tmp);
+    tmp.append(":").append(hostport);
+    setTraceName("A!", tmp);
 #endif
 }
 
@@ -3148,7 +3158,7 @@ ISocket* ISocket::multicast_connect(const SocketEndpoint &ep, unsigned _ttl)
 
 ISocket* ISocket::attach(int s, bool tcpip)
 {
-    CSocket* sock = new CSocket((SOCKET)s, tcpip?sm_tcp:sm_udp, false);
+    CSocket* sock = new CSocket((SOCKET)s, tcpip?sm_tcp:sm_udp, false, nullptr);
     sock->set_nonblock(true);
     return sock;
 }
