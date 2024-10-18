@@ -539,7 +539,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
     doCreateSearchDocument() := FUNCTION
         projected := TABLE(inputStream, { kind, word, doc, segment, wpos });
         resorted := SORT(projected, kind, word, doc, segment, wpos, LOCAL); // Ensure the ordering is consistent
-        RETURN OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, COMPRESSED);
+        RETURN OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, UNCOMPRESSED); // Do not compress the output, otherwise it skews the timings for stresstext.ecl
     END;
 
     exports := MODULE
