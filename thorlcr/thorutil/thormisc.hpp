@@ -723,4 +723,6 @@ public:
 
 extern graph_decl void saveWuidToFile(const char *wuid);
 
+extern graph_decl std::vector<std::string> captureDebugInfo(const char *dir, const char *prefix, const char *suffix);
+
 #endif

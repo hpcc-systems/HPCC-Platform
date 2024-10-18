@@ -115,7 +115,7 @@ data:
 {{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
             env:
-{{- include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 1) | nindent 12 }}
+{{- include "hpcc.mergeEnvironments" (dict "env" (append (.env | default list) (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_")) "defaultArenas" 1) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -183,7 +183,7 @@ data:
 {{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
             env:
-{{- include "hpcc.mergeEnvironments" (dict "env" .env "defaultArenas" 2) | nindent 12 }}
+{{- include "hpcc.mergeEnvironments" (dict "env" (append (.env | default list) (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_")) "defaultArenas" 2) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -253,7 +253,7 @@ data:
 {{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             env:
-{{- $env := append ($configCtx.me.env | default list) (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum)) }}
+{{- $env := concat ($configCtx.me.env | default list) (list (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_") (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum))) }}
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" $configCtx | nindent 12 }}
             workingDir: /var/lib/HPCCSystems

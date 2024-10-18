@@ -152,7 +152,8 @@ enum WUAction
     WUActionPause = 5,
     WUActionPauseNow = 6,
     WUActionResume = 7,
-    WUActionSize = 8
+    WUActionSize = 8,
+    WUActionGenerateDebugInfo = 9,
 };
 
 
