@@ -9,6 +9,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { pushUrl, replaceUrl } from "../util/history";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { PublishQueryForm } from "./forms/PublishQuery";
@@ -26,10 +27,12 @@ interface MessageBarContent {
 
 interface WorkunitSummaryProps {
     wuid: string;
+    fullscreen?: boolean;
 }
 
 export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
-    wuid
+    wuid,
+    fullscreen = false
 }) => {
 
     const [workunit, , , , refresh] = useWorkunit(wuid, true);
@@ -171,6 +174,13 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
     ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
+            onClick: () => pushUrl(`/workunits/${wuid}${fullscreen ? "" : "?fullscreen"}`)
+        }
+    ], [fullscreen, wuid]);
+
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
     }, [workunit?.ServiceNames?.Item]);
@@ -190,68 +200,70 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, 0) || 0;
     }, [exceptions]);
 
-    return <>
-        <ReflexContainer orientation="horizontal">
-            <ReflexElement>
-                <div className="pane-content">
-                    <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
-                        <Sticky stickyPosition={StickyPositionType.Header}>
-                            <CommandBar items={buttons} />
-                            {messageBarContent &&
-                                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
-                                    {messageBarContent.message}
-                                </MessageBar>
-                            }
-                        </Sticky>
-                        <Sticky stickyPosition={StickyPositionType.Header}>
-                            <WorkunitPersona wuid={wuid} />
-                            <div style={{ width: "512px", height: "64px", float: "right" }}>
-                                <WUStatus wuid={wuid}></WUStatus>
-                            </div>
-                        </Sticky>
-                        <TableGroup fields={{
-                            "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
-                            "action": { label: nlsHPCC.Action, type: "string", value: workunit?.ActionEx, readonly: true },
-                            "state": { label: nlsHPCC.State, type: "string", value: workunit?.State + (workunit?.StateEx ? ` (${workunit.StateEx})` : ""), readonly: true },
-                            "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
-                            "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
-                            "description": { label: nlsHPCC.Description, type: "string", value: description },
-                            "potentialSavings": { label: nlsHPCC.PotentialSavings, type: "string", value: `${formatCost(potentialSavings)} (${totalCosts > 0 ? Math.round((potentialSavings / totalCosts) * 10000) / 100 : 0}%)`, readonly: true },
-                            "compileCost": { label: nlsHPCC.CompileCost, type: "string", value: `${formatCost(workunit?.CompileCost)}`, readonly: true },
-                            "executeCost": { label: nlsHPCC.ExecuteCost, type: "string", value: `${formatCost(workunit?.ExecuteCost)}`, readonly: true },
-                            "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost)}`, readonly: true },
-                            "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
-                            "cluster": { label: nlsHPCC.Cluster, type: "string", value: workunit?.Cluster, readonly: true },
-                            "totalClusterTime": { label: nlsHPCC.TotalClusterTime, type: "string", value: workunit?.TotalClusterTime ? workunit?.TotalClusterTime : "0.00", readonly: true },
-                            "abortedBy": { label: nlsHPCC.AbortedBy, type: "string", value: workunit?.AbortBy, readonly: true },
-                            "abortedTime": { label: nlsHPCC.AbortedTime, type: "string", value: workunit?.AbortTime, readonly: true },
-                            "ServiceNamesCustom": { label: nlsHPCC.Services, type: "string", value: serviceNames, readonly: true, multiline: true },
-                        }} onChange={(id, value) => {
-                            switch (id) {
-                                case "jobname":
-                                    setJobname(value);
-                                    break;
-                                case "description":
-                                    setDescription(value);
-                                    break;
-                                case "protected":
-                                    setProtected(value);
-                                    break;
-                                default:
-                                    logger.debug(`${id}:  ${value}`);
-                            }
-                        }} />
-                    </ScrollablePane>
-                </div>
-            </ReflexElement>
-            <ReflexSplitter />
-            <ReflexElement>
-                <InfoGrid wuid={wuid}></InfoGrid>
-            </ReflexElement>
-        </ReflexContainer>
-        <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
-        <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
-        <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
-        <DeleteConfirm />
-    </>;
+    return <HolyGrail fullscreen={fullscreen}
+        main={<>
+            <ReflexContainer orientation="horizontal">
+                <ReflexElement>
+                    <div className="pane-content">
+                        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
+                            <Sticky stickyPosition={StickyPositionType.Header}>
+                                <CommandBar items={buttons} farItems={rightButtons} />
+                                {messageBarContent &&
+                                    <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
+                                        {messageBarContent.message}
+                                    </MessageBar>
+                                }
+                            </Sticky>
+                            <Sticky stickyPosition={StickyPositionType.Header}>
+                                <WorkunitPersona wuid={wuid} />
+                                <div style={{ width: "512px", height: "64px", float: "right" }}>
+                                    <WUStatus wuid={wuid}></WUStatus>
+                                </div>
+                            </Sticky>
+                            <TableGroup fields={{
+                                "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
+                                "action": { label: nlsHPCC.Action, type: "string", value: workunit?.ActionEx, readonly: true },
+                                "state": { label: nlsHPCC.State, type: "string", value: workunit?.State + (workunit?.StateEx ? ` (${workunit.StateEx})` : ""), readonly: true },
+                                "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
+                                "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
+                                "description": { label: nlsHPCC.Description, type: "string", value: description },
+                                "potentialSavings": { label: nlsHPCC.PotentialSavings, type: "string", value: `${formatCost(potentialSavings)} (${totalCosts > 0 ? Math.round((potentialSavings / totalCosts) * 10000) / 100 : 0}%)`, readonly: true },
+                                "compileCost": { label: nlsHPCC.CompileCost, type: "string", value: `${formatCost(workunit?.CompileCost)}`, readonly: true },
+                                "executeCost": { label: nlsHPCC.ExecuteCost, type: "string", value: `${formatCost(workunit?.ExecuteCost)}`, readonly: true },
+                                "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost)}`, readonly: true },
+                                "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
+                                "cluster": { label: nlsHPCC.Cluster, type: "string", value: workunit?.Cluster, readonly: true },
+                                "totalClusterTime": { label: nlsHPCC.TotalClusterTime, type: "string", value: workunit?.TotalClusterTime ? workunit?.TotalClusterTime : "0.00", readonly: true },
+                                "abortedBy": { label: nlsHPCC.AbortedBy, type: "string", value: workunit?.AbortBy, readonly: true },
+                                "abortedTime": { label: nlsHPCC.AbortedTime, type: "string", value: workunit?.AbortTime, readonly: true },
+                                "ServiceNamesCustom": { label: nlsHPCC.Services, type: "string", value: serviceNames, readonly: true, multiline: true },
+                            }} onChange={(id, value) => {
+                                switch (id) {
+                                    case "jobname":
+                                        setJobname(value);
+                                        break;
+                                    case "description":
+                                        setDescription(value);
+                                        break;
+                                    case "protected":
+                                        setProtected(value);
+                                        break;
+                                    default:
+                                        logger.debug(`${id}:  ${value}`);
+                                }
+                            }} />
+                        </ScrollablePane>
+                    </div>
+                </ReflexElement>
+                <ReflexSplitter />
+                <ReflexElement>
+                    <InfoGrid wuid={wuid}></InfoGrid>
+                </ReflexElement>
+            </ReflexContainer>
+            <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
+            <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
+            <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+            <DeleteConfirm />
+        </>}
+    />;
 };
