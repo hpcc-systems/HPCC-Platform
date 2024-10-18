@@ -2055,7 +2055,7 @@ void CFileIO::setSize(offset_t pos)
 
 //-- Unix implementation ----------------------------------------------------
 
-static void doSync(int fd, bool dataOnly)
+static void doSync(const CFileIO &fileIO, int fd, bool dataOnly)
 {
 #ifdef F_FULLFSYNC
     // No EIO type retry available
@@ -2066,25 +2066,25 @@ static void doSync(int fd, bool dataOnly)
     if (ret == 0)
     {
         if (timer.elapsedMs() >= 10000)
-            IWARNLOG("doSync: slow success: took %u ms", timer.elapsedMs());
+            IWARNLOG("doSync(%s): slow success: took %u ms", fileIO.querySafeFilename(), timer.elapsedMs());
     }
     else
     {
         int err = errno;
         printStackReport();
-        Owned<IException> e = makeErrnoExceptionV(err, "doSync: failed after %u ms", timer.elapsedMs());
+        Owned<IException> e = makeErrnoExceptionV(err, "doSync(%s): failed after %u ms", fileIO.querySafeFilename(), timer.elapsedMs());
         OWARNLOG(e);
         throw e.getClear();
     }
 #endif
 }
 
-static void syncFileData(int fd, bool notReadOnly, IFEflags extraFlags, bool wait_previous=false)
+static void syncFileData(const CFileIO &fileIO, int fd, bool notReadOnly, IFEflags extraFlags, bool wait_previous=false)
 {
     if (notReadOnly)
     {
         if (extraFlags & IFEsync)
-            doSync(fd, true);
+            doSync(fileIO, fd, true);
 #if defined(__linux__)
         else if (extraFlags & IFEnocache)
         {
@@ -2176,9 +2176,9 @@ void CFileIO::close()
         DBGLOG("CFileIO::close(%d), extraFlags = %d", tmpHandle, extraFlags);
 #endif
         if (extraFlags & (IFEnocache | IFEsync))
-            syncFileData(tmpHandle, openmode!=IFOread, extraFlags, false);
+            syncFileData(*this, tmpHandle, openmode!=IFOread, extraFlags, false);
         else if (extraFlags & IFEsyncAtClose)
-            doSync(tmpHandle, false);
+            doSync(*this, tmpHandle, false);
 
         if (::close(tmpHandle) < 0)
             throw makeErrnoExceptionV(errno, "CFileIO::close for file '%s'", querySafeFilename());
@@ -2192,7 +2192,7 @@ void CFileIO::flush()
 
     CriticalBlock procedure(cs);
 
-    syncFileData(file, true, extraFlags, false);
+    syncFileData(*this, file, true, extraFlags, false);
 }
 
 
@@ -2229,7 +2229,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
         if (unflushedReadBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
             unflushedReadBytes.store(0);
-            syncFileData(file, false, extraFlags, false);
+            syncFileData(*this, file, false, extraFlags, false);
         }
     }
     return ret;
@@ -2259,7 +2259,7 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         {
             unflushedWriteBytes.store(0);
             // request to write-out dirty pages
-            syncFileData(file, true, extraFlags, true);
+            syncFileData(*this, file, true, extraFlags, true);
         }
     }
     return ret;
