@@ -609,10 +609,10 @@ protected:
     enum { ss_open, ss_shutdown, ss_close, ss_pre_open } state;
     T_SOCKET        sock;
 //    char*           hostname;   // host address
-    unsigned short  hostport;   // host port
+    unsigned short  hostport;   // host port (NB: this is the peer port if an attached socket)
     unsigned short  localPort;
     SOCKETMODE      sockmode;
-    IpAddress       targetip;
+    IpAddress       targetip;   // NB: this is peer if an attached socket
     SocketEndpoint  returnep;   // set by set_return_addr
 
     MCASTREQ    *   mcastreq;
@@ -1472,16 +1472,8 @@ SocketEndpoint &CSocket::getPeerEndpoint(SocketEndpoint &ep)
     if (sockmode==sm_udp_server) { // udp server
         ep.set(returnep);
     }   
-    else {
-        DEFINE_SOCKADDR(u);
-        socklen_t ul = sizeof(u);       
-        if (::getpeername(sock,&u.sa, &ul)<0) {         
-            DBGLOG("getpeername failed %d",SOCKETERRNO());
-            ep.set(NULL, 0);
-        }
-        else
-            getSockAddrEndpoint(u,ul,ep);
-    }
+    else
+        ep.set(hostport, targetip); // NB: if this is an attached socket, targetip/hostpost are the peer
     return ep;
 }
 
