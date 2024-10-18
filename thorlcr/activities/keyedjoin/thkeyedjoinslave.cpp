@@ -829,6 +829,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         Semaphore sem;
         CriticalSection crit;
         bool enabled = true;
+        CSlaveActivity &activity;
 
         void unblock()
         {
@@ -848,10 +849,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
         }
     public:
-        CLimiter()
+        CLimiter(CSlaveActivity &_activity) : activity(_activity)
         {
         }
-        CLimiter(unsigned _max, unsigned _leewayPercent=0)
+        CLimiter(CSlaveActivity &_activity, unsigned _max, unsigned _leewayPercent=0): activity(_activity)
         {
             _set(_max, _leewayPercent);
         }
@@ -894,7 +895,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         void inc()
         {
             while (incNonBlocking())
+            {
+                BlockedActivityTimer t(activity.getTotalCyclesRef(), activity.queryTimeActivities());
                 sem.wait();
+            }
         }
         void dec()
         {
@@ -907,6 +911,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         void block()
         {
+            BlockedActivityTimer t(activity.getTotalCyclesRef(), activity.queryTimeActivities());
             sem.wait();
         }
         void disable()
@@ -2965,7 +2970,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this)
+    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this), lookupThreadLimiter(*this), fetchThreadLimiter(*this), pendingKeyLookupLimiter(*this), doneListLimiter(*this)
     {
         helper = static_cast <IHThorKeyedJoinArg *> (queryHelper());
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
