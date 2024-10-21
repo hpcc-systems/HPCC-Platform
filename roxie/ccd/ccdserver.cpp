@@ -26480,9 +26480,13 @@ public:
         indexReadInput = NULL;
         rootIndex = NULL;
         atmostsTriggered = 0;
-        // Allocate blocks of rows (if fixed size) to reduce overhead and potential contention between threads
+        // Allocate blocks of CJoinGroup objects to reduce overhead and potential contention between threads
         unsigned allocatorFlags = roxiemem::RHFblocked;
         joinGroupAllocator.setown(ctx->queryRowManager().createFixedRowHeap(sizeof(CJoinGroup), activityId, allocatorFlags));
+
+        //Output rows are only created on a single thread, so it is safe to use a blocked allocator - reducing contention
+        //and even if no contention it reduces the critical section overhead.
+        rowAllocator = createRowAllocatorEx(meta.queryOriginal(), roxiemem::RHFblocked);
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
     }
 
@@ -26574,6 +26578,8 @@ public:
     {
         CRoxieServerActivity::reset();
         joinGroupAllocator->emptyCache();
+        if (rowAllocator)
+            rowAllocator->emptyCache();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
