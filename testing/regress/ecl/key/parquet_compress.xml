@@ -1,0 +1,44 @@
+<Dataset name='BooleanData'>
+ <Row><testid>0</testid><testname>aaa</testname><value>true</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='IntegerData'>
+ <Row><testid>0</testid><testname>min</testname><value>-9223372036854775808</value></Row>
+ <Row><testid>1</testid><testname>max</testname><value>9223372036854775807</value></Row>
+</Dataset>
+<Dataset name='RealData'>
+ <Row><testid>0</testid><testname>min</testname><value>2.225073858507201e-308</value></Row>
+ <Row><testid>1</testid><testname>max</testname><value>1.797693134862316e+308</value></Row>
+</Dataset>
+<Dataset name='DecimalData'>
+ <Row><testid>0</testid><testname>max</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>min</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='StringData'>
+ <Row><testid>0</testid><testname>emp</testname><value></value></Row>
+ <Row><testid>1</testid><testname>lon</testname><value>This is a long string to test the maximum length of a STRING field in HPCC</value></Row>
+</Dataset>
+<Dataset name='QStringData'>
+ <Row><testid>0</testid><testname>quo</testname><value>STRING WITH &quot;QUOTES&quot; AND SPACES  </value></Row>
+ <Row><testid>1</testid><testname>spe</testname><value>STRING WITH   NEWLINE AND   TAB</value></Row>
+</Dataset>
+<Dataset name='UnicodeData'>
+ <Row><testid>0</testid><testname>mix</testname><value>ASCII and Unicode こんにちは</value></Row>
+ <Row><testid>1</testid><testname>emo</testname><value>Emoji test: 🚀🌟💬😊</value></Row>
+</Dataset>
+<Dataset name='UTF8Data'>
+ <Row><testid>0</testid><testname>chi</testname><value>中文测试</value></Row>
+ <Row><testid>1</testid><testname>mix</testname><value>Mix of scripts: АБВ αβγ こんにちは</value></Row>
+</Dataset>
+<Dataset name='DataData'>
+ <Row><testid>0</testid><testname>bin</testname><value>0123456789ABCDEF</value></Row>
+ <Row><testid>1</testid><testname>all</testname><value>00FF</value></Row>
+</Dataset>
+<Dataset name='VarstringData'>
+ <Row><testid>0</testid><testname>sho</testname><value>Short</value></Row>
+ <Row><testid>1</testid><testname>lon</testname><value>This is a longer varstring to test variable-length behavior</value></Row>
+</Dataset>
+<Dataset name='VarunicodeData'>
+ <Row><testid>0</testid><testname>asc</testname><value>ASCII only</value></Row>
+ <Row><testid>1</testid><testname>mix</testname><value>Mixed scripts: Latin, Кириллица, 日本語</value></Row>
+</Dataset>

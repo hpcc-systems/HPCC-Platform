@@ -1,0 +1,7 @@
+
+<Result>
+<Dataset name='ReadData'>
+ <Row><name>Alice</name><salary>50000.5</salary><id>1</id></Row>
+ <Row><name>Bob</name><salary>60000.75</salary><id>2</id></Row>
+</Dataset>
+</Result>

@@ -1,0 +1,69 @@
+<Dataset name=RealTestResult>
+ <Row><RealTestResult>Pass</RealTestResult></Row>
+</Dataset>
+<Dataset name=BooleanTest>
+ <Row><BooleanTest>Pass</BooleanTest></Row>
+</Dataset>
+<Dataset name=IntegerTest>
+ <Row><IntegerTest>Pass</IntegerTest></Row>
+</Dataset>
+<Dataset name=UnsignedTest>
+ <Row><UnsignedTest>Pass</UnsignedTest></Row>
+</Dataset>
+<Dataset name=RealTest>
+ <Row><RealTest>Pass</RealTest></Row>
+</Dataset>
+<Dataset name=DecimalTest>
+ <Row><DecimalTest>Pass</DecimalTest></Row>
+</Dataset>
+<Dataset name=StringTest>
+ <Row><StringTest>Pass</StringTest></Row>
+</Dataset>
+<Dataset name=DataAsStringTest>
+ <Row><DataAsStringTest>Pass</DataAsStringTest></Row>
+</Dataset>
+<Dataset name=VarStringTest>
+ <Row><VarStringTest>Pass</VarStringTest></Row>
+</Dataset>
+<Dataset name=QStringTest>
+ <Row><QStringTest>Pass</QStringTest></Row>
+</Dataset>
+<Dataset name=UTF8Test>
+ <Row><UTF8Test>Pass</UTF8Test></Row>
+</Dataset>
+<Dataset name=UnicodeTest>
+ <Row><UnicodeTest>Pass</UnicodeTest></Row>
+</Dataset>
+<Dataset name=SetOfIntegerTest>
+ <Row><SetOfIntegerTest>Pass</SetOfIntegerTest></Row>
+</Dataset>
+<Dataset name=Real8Test>
+ <Row><Real8Test>Pass</Real8Test></Row>
+</Dataset>
+<Dataset name=SetOfStringTest>
+ <Row><SetOfStringTest>Pass</SetOfStringTest></Row>
+</Dataset>
+<Dataset name=SetOfUnicodeTest>
+ <Row><SetOfUnicodeTest>Pass</SetOfUnicodeTest></Row>
+</Dataset>
+<Dataset name=IntegerSizesTest>
+ <Row><IntegerSizesTest>Pass</IntegerSizesTest></Row>
+</Dataset>
+<Dataset name=UnsignedSizesTest>
+ <Row><UnsignedSizesTest>Pass</UnsignedSizesTest></Row>
+</Dataset>
+<Dataset name=Real4Test>
+ <Row><Real4Test>Pass</Real4Test></Row>
+</Dataset>
+<Dataset name=Integer1Test>
+ <Row><Integer1Test>Pass</Integer1Test></Row>
+</Dataset>
+<Dataset name=FixedSizeBinaryTest>
+ <Row><FixedSizeBinaryTest>Pass</FixedSizeBinaryTest></Row>
+</Dataset>
+<Dataset name=LargeBinaryTest>
+ <Row><LargeBinaryTest>Pass</LargeBinaryTest></Row>
+</Dataset>
+<Dataset name=LargeListTest>
+ <Row><LargeListTest>Pass</LargeListTest></Row>
+</Dataset>
