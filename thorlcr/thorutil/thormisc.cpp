@@ -29,6 +29,8 @@
 #include "jsocket.hpp"
 #include "jmutex.hpp"
 
+#include "jhtree.hpp"
+
 #include "commonext.hpp"
 #include "dadfs.hpp"
 #include "dasds.hpp"
@@ -1714,4 +1716,36 @@ void saveWuidToFile(const char *wuid)
         throw makeStringException(0, "Failed to create file 'wuid' to store current workunit for post mortem script");
     wuidFileIO->write(0, strlen(wuid), wuid);
     wuidFileIO->close();
+}
+
+bool hasTLK(IDistributedFile &file, CActivityBase *activity)
+{
+    unsigned np = file.numParts();
+    if (np<=1) // NB: a better test would be to only continue if this is a width that is +1 of group it's based on, but not worth checking
+        return false;
+    IDistributedFilePart &part = file.queryPart(np-1);
+    bool keyHasTlk = strisame("topLevelKey", part.queryAttributes().queryProp("@kind"));
+    if (!keyHasTlk)
+    {
+        // See HPCC-32845 - check if TLK flag is missing from TLK part
+        // It is very likely the last part should be a TLK. Even a local key (>1 parts) has a TLK by default (see buildLocalTlks)
+        RemoteFilename rfn;
+        part.getFilename(rfn);
+        StringBuffer filename;
+        rfn.getPath(filename);
+        Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, 0);
+        dbgassertex(index);
+        if (index->isTopLevelKey())
+        {
+            if (activity)
+            {
+                Owned<IException> e = MakeActivityException(activity, 0, "TLK file part of file %s is missing kind=\"topLevelKey\" flag. The meta data should be fixed!", file.queryLogicalName());
+                reportExceptionToWorkunitCheckIgnore(activity->queryJob().queryWorkUnit(), e, SeverityWarning);
+                StringBuffer errMsg;
+                UWARNLOG("%s", e->errorMessage(errMsg).str());
+            }
+            keyHasTlk = true;
+        }
+    }
+    return keyHasTlk;
 }
