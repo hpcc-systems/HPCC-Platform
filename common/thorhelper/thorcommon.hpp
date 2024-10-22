@@ -315,7 +315,7 @@ class SimpleActivityTimer
     cycle_t startCycles;
     cycle_t &accumulator;
 protected:
-    bool enabled;
+    mutable bool enabled;
 public:
     inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
     : accumulator(_accumulator), enabled(_enabled)
