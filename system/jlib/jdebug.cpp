@@ -502,8 +502,8 @@ public:
     unsigned getCount() const { return count; }
 
     StringAttr  scope;
-    __int64 totalcycles;
-    __int64 maxcycles;
+    cycle_t totalcycles;
+    cycle_t maxcycles;
     unsigned count;
 };
 
