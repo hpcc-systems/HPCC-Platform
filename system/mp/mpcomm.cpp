@@ -221,7 +221,6 @@ struct MultiPacketHeader
 
 class DECL_EXCEPTION CMPException: public IMP_Exception, public CInterface
 {
-    StringAttr msg;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -254,6 +253,7 @@ public:
 private:
     MessagePassingError error;
     SocketEndpoint endpoint;
+    StringAttr msg;
 };
 
 
