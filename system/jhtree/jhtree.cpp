@@ -2839,6 +2839,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         //Move the atomic increments out of the critical section - they can be relatively expensive
         if (likely(ctx))
         {
+            //It is most likely that an item has been added - because if the entry already exists
+            //it will only reach this point if another thread has not already loaded the node.
             if (unlikely(alreadyExists))
                 ctx->noteStatistic(hitStatId[cacheType], 1);
             else
