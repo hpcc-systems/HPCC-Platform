@@ -112,20 +112,21 @@ class CKeyedJoinMaster : public CMasterActivity
             unsigned numParts = fileDesc->numParts();
             unsigned nextGroupStartPos = 0;
 
+            IDistributedFile *subFile = file;
             for (unsigned p=0; p<numParts; p++)
             {
                 IPartDescriptor *part = fileDesc->queryPart(p);
-                const char *kind = isIndexWithTlk ? part->queryProperties().queryProp("@kind") : nullptr;
-                if (!kind || !strsame("topLevelKey", kind))
+                unsigned partIdx = part->queryPartIndex();
+                unsigned subFileNum = NotFound;
+                unsigned subPartIdx = partIdx;
+                if (superFileDesc)
                 {
-                    unsigned partIdx = part->queryPartIndex();
-                    unsigned subfile = NotFound;
-                    unsigned subPartIdx = partIdx;
-                    if (superFileDesc)
-                    {
-                        superFileDesc->mapSubPart(partIdx, subfile, subPartIdx);
-                        partIdx = superWidth*subfile+subPartIdx;
-                    }
+                    superFileDesc->mapSubPart(partIdx, subFileNum, subPartIdx);
+                    partIdx = superWidth*subFileNum+subPartIdx;
+                    subFile = &super->querySubFile(subFileNum, true);
+                }
+                if (!isIndexWithTlk || (1 == numParts) || (subPartIdx < (subFile->numParts()-1)) || !hasTLK(*subFile, nullptr))
+                {
                     if (activity.local)
                     {
                         if (activity.queryContainer().queryLocalData())
@@ -234,7 +235,7 @@ class CKeyedJoinMaster : public CMasterActivity
                                 slaveParts.push_back(p);
                         }
                         if (superFileDesc)
-                            partIdx = superWidth*subfile+subPartIdx;
+                            partIdx = superWidth*subFileNum+subPartIdx;
                         partsByPartIdx.push_back(partIdx);
                         assertex(partIdx < totalParts);
                         partToSlave[partIdx] = mappedPos;
@@ -387,10 +388,7 @@ public:
                     ForEach(*iter)
                     {
                         IDistributedFile &f = iter->query();
-                        unsigned np = f.numParts()-1;
-                        IDistributedFilePart &part = f.queryPart(np);
-                        const char *kind = part.queryAttributes().queryProp("@kind");
-                        bool hasTlk = NULL != kind && 0 == stricmp("topLevelKey", kind); // if last part not tlk, then deemed local (might be singlePartKey)
+                        bool hasTlk = hasTLK(f, this);
                         if (first)
                         {
                             first = false;
@@ -419,8 +417,7 @@ public:
                     totalIndexParts = indexFile->numParts();
                     if (totalIndexParts)
                     {
-                        const char *kind = indexFile->queryPart(indexFile->numParts()-1).queryAttributes().queryProp("@kind");
-                        keyHasTlk = NULL != kind && 0 == stricmp("topLevelKey", kind);
+                        keyHasTlk = hasTLK(*indexFile, this);
                         if (keyHasTlk)
                             --totalIndexParts;
                     }
