@@ -50,6 +50,31 @@ typedef unsigned long   bucket_t;
 typedef __int64 lbucket_t;
 
 
+static std::atomic<bool> disableZeroSizeCompressedFiles{false};
+static std::atomic<bool> initialisedCompressionOptions{false};
+
+static bool allowZeroSizeCompressedFiles()
+{
+    if (!initialisedCompressionOptions)
+    {
+        // NB: potentially could be >1 thread here, but that's ok.
+        try
+        {
+            Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+            Owned<IPropertyTree> config = getComponentConfigSP();
+            disableZeroSizeCompressedFiles = config->getPropBool("expert/@disableZeroSizeCompressedFiles", globalConfig->getPropBool("expert/@disableZeroSizeCompressedFiles", disableZeroSizeCompressedFiles));
+        }
+        catch (IException *e) // handle cases where config. not available
+        {
+            EXCLOG(e, "allowZeroSizeCompressedFiles");
+            e->Release();
+        }
+        initialisedCompressionOptions = true;
+    }
+    return !disableZeroSizeCompressedFiles.load();
+}
+
+
 //#define STATS
 //#define TEST
 #ifdef _DEBUG
@@ -2042,7 +2067,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
     Owned<IExpander> expander;
     MemoryAttr compressedInputBlock;
     unsigned compMethod;
-    offset_t lastFlushPos = (offset_t)-1;
+    offset_t lastFlushPos = 0;
     offset_t nextExpansionPos = (offset_t)-1;
     offset_t startBlockPos = (offset_t)-1;
     size32_t fullBlockSize = 0;
@@ -2466,20 +2491,29 @@ public:
                 overflow.clear();
                 throw MakeStringException(-1,"Partial row written at end of file %d of %d",ol,trailer.recordSize);
             }
-            flush();
-            trailer.datacrc = trailer.crc;
-            if (setcrc) {
-                indexbuf.append(sizeof(trailer)-sizeof(trailer.crc),&trailer);
-                trailer.crc = crc32((const char *)indexbuf.toByteArray(),
-                                indexbuf.length(),trailer.crc);
-                indexbuf.append(trailer.crc);
+
+            //Avoid writing out a header/footer if the file is empty
+            if ((trailer.expandedSize != 0) || !allowZeroSizeCompressedFiles())
+            {
+                //Backward compatibility - force a single index entry, even if the file is empty
+                if (trailer.expandedSize == 0)
+                    lastFlushPos = (offset_t)-1;
+                flush();
+                trailer.datacrc = trailer.crc;
+                if (setcrc) {
+                    indexbuf.append(sizeof(trailer)-sizeof(trailer.crc),&trailer);
+                    trailer.crc = crc32((const char *)indexbuf.toByteArray(),
+                                    indexbuf.length(),trailer.crc);
+                    indexbuf.append(trailer.crc);
+                }
+                else {
+                    trailer.datacrc = 0;
+                    trailer.crc = ~0U;
+                    indexbuf.append(sizeof(trailer),&trailer);
+                }
+                checkedwrite(trailer.indexPos,indexbuf.length(),indexbuf.toByteArray());
             }
-            else {
-                trailer.datacrc = 0;
-                trailer.crc = ~0U;
-                indexbuf.append(sizeof(trailer),&trailer);
-            }
-            checkedwrite(trailer.indexPos,indexbuf.length(),indexbuf.toByteArray());
+
             indexbuf.clear();
             if (fileio)
                 fileio->close();

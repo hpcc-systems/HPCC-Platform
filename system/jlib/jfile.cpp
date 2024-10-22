@@ -782,7 +782,7 @@ static void initRenameRetrySettings()
     }
     catch (IException *e) // handle cases where config. not available
     {
-        EXCLOG(e, "doRename");
+        EXCLOG(e, "initRenameRetrySettings");
         e->Release();
         renameRetries = 0;
         manualRenameChk = false;
