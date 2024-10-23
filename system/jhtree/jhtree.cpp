@@ -1805,6 +1805,11 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
 {
     nodeKey = from.nodeKey;
     node.set(from.node);
+    for (unsigned i = 0; i < maxParentNodes; i++)
+    {
+        parents[i].set(from.parents[i]);
+        parentNodeKeys[i] = from.parentNodeKeys[i];
+    }
     unsigned keySize = key.keySize();
     recordBuffer = (char *) malloc(keySize);  // MORE - would be nice to know real max - is it stored in metadata?
     memcpy(recordBuffer, from.recordBuffer, key.keyedSize());  // Just make keyed portion valid initially
@@ -1824,6 +1829,7 @@ void CKeyCursor::reset()
 {
     node.clear();
     matched = false;
+    clearParentNodes();
     eof = key.bloomFilterReject(*filter) || !filter->canMatch();
     if (!eof)
         setLow(0);
@@ -1840,6 +1846,7 @@ bool CKeyCursor::_next(IContextLogger *ctx)
     if (!node)
     {
         node.setown(key.locateFirstLeafNode(ctx));
+        clearParentNodes();  // MORE - could do better, but may not be a lot of point?
         nodeKey = 0;
         return node && node->isKeyAt(nodeKey);
     }
@@ -1857,9 +1864,33 @@ bool CKeyCursor::_next(IContextLogger *ctx)
                 if (node != NULL)
                 {
                     nodeKey = 0;
+                    // Update the nodekey indexes of any parent nodes that are still relevant, and clear any that are not
+                    unsigned depth = key.getBranchDepth();
+                    while (depth)
+                    {
+                        depth--;
+                        if (depth < maxParentNodes && parents[depth])
+                        {
+                            unsigned numParentKeys = parents[depth]->getNumKeys();
+                            unsigned parentNodeKey = parentNodeKeys[depth];
+                            if (parentNodeKey < numParentKeys-1)
+                            {
+                                parentNodeKeys[depth] = parentNodeKey+1;
+                                break;
+                            }
+                            parents[depth].clear();
+                        }
+                        else
+                        {
+                            // We can't tell which parent node info is correct. Clear them all.
+                            clearParentNodes();
+                            break;
+                        }
+                    }
                     return node->isKeyAt(0);
                 }
             }
+            clearParentNodes();
             return false;
         }
         else
@@ -1915,6 +1946,7 @@ bool CKeyCursor::_last(IContextLogger *ctx)
 {
     fullBufferValid = false;
     node.setown(key.locateLastLeafNode(ctx));
+    clearParentNodes();   // Could in theory do better but unlikely to be any point
     if (node)
     {
         nodeKey = node->getNumKeys()-1;
@@ -1940,12 +1972,43 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
         {   
             int rc = node->compareValueAt(recordBuffer, ++nodeKey);
             if (rc <= 0)
-                return true; 
+            {
+                return true;
+            }
             if (nodeKey < numKeys-1)
             {
                 rc = node->compareValueAt(recordBuffer, numKeys-1);
                 if (rc <= 0)
+                {
                     lwm = nodeKey+1;
+                }
+            }
+        }
+    }
+    if (!lwm)
+    {
+        while (depth)
+        {
+            depth--;
+            if (depth < maxParentNodes)
+            {
+                const CJHSearchNode *startnode = parents[depth];
+                if (startnode)
+                {
+                    unsigned numParentKeys = startnode->getNumKeys();
+                    unsigned parentNodeKey = parentNodeKeys[depth];
+                    if (parentNodeKey < numParentKeys-1)
+                    {   
+                        int rc = startnode->compareValueAt(recordBuffer, numParentKeys-1);
+                        if (rc <= 0)
+                        {
+                            lwm = parentNodeKey;
+                            node.set(startnode);
+                            break;
+                        }
+                    }
+                    parents[depth].clear();
+                }
             }
         }
     }
@@ -1978,6 +2041,12 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
             if (a<node->getNumKeys())
             {
                 offset_t npos = node->getFPosAt(a);
+                if (depth < maxParentNodes)
+                {
+                    parentNodeKeys[depth] = a;
+                    parents[depth].swap(node);
+                }
+                lwm = 0;
                 depth++;
                 NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
                 node.setown(getCursorNode(npos, type, ctx));
@@ -2020,6 +2089,33 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
     }
     if (!lwm)
     {
+        while (depth)
+        {
+            depth--;
+            if (depth < maxParentNodes)
+            {
+                const CJHSearchNode *startnode = parents[depth];
+                if (startnode)
+                {
+                    unsigned numParentKeys = startnode->getNumKeys();
+                    unsigned parentNodeKey = parentNodeKeys[depth];
+                    if (parentNodeKey < numParentKeys-1)
+                    {   
+                        int rc = startnode->compareValueAt(recordBuffer, numParentKeys-1);
+                        if (rc < 0)
+                        {
+                            lwm = parentNodeKey;
+                            node.set(startnode);
+                            break;
+                        }
+                    }
+                    parents[depth].clear();
+                }
+            }
+        }
+    }
+    if (!lwm)
+    {
         node.set(key.rootNode);
         depth = 0;
     }
@@ -2052,12 +2148,27 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
             if (a==node->getNumKeys())
                 a--;   // value being looked for is off the end of the index.
             offset_t npos = node->getFPosAt(a);
+            if (depth < maxParentNodes)
+            {
+                parentNodeKeys[depth] = a;
+                parents[depth].swap(node);
+            }
+            lwm = 0;
             depth++;
             NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
             node.setown(getCursorNode(npos, type, ctx));
             if (!node)
                 throw MakeStringException(0, "Invalid key %s: child node pointer should never be NULL", key.name.get());
         }
+    }
+}
+
+void CKeyCursor::clearParentNodes()
+{
+    for (unsigned i = 0; i < maxParentNodes; i++)
+    {
+        parents[i].clear();
+        parentNodeKeys[i] = 0;
     }
 }
 
@@ -2086,6 +2197,7 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx)
 {
     mb.read(eof);
     node.clear();
+    clearParentNodes();   // we don't serialize parent node info
     if (!eof)
     {
         mb.read(matched);
