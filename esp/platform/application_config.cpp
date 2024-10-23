@@ -436,6 +436,16 @@ void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLd
     }
 }
 
+void copyTraceFlags(IPropertyTree *legacyEsp, IPropertyTree *appEsp)
+{
+    IPropertyTree *traceFlags = appEsp->queryPropTree("traceFlags");
+    if (traceFlags)
+    {
+        IPropertyTree *legacyTraceFlags = legacyEsp->addPropTree("TraceFlags");
+        copyAttributes(legacyTraceFlags, traceFlags);
+    }
+}
+
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[])
 {
     Owned<IPropertyTree> appEspConfig = loadApplicationConfig(application, argv);
@@ -468,5 +478,7 @@ IPropertyTree *buildApplicationLegacyConfig(const char *application, const char*
     IPropertyTree *legacyDirectories = legacy->queryPropTree("Software/Directories");
     IPropertyTree *appDirectories = appEspConfig->queryPropTree("directories");
     copyDirectories(legacyDirectories, appDirectories);
+
+    copyTraceFlags(legacyEsp, appEspConfig);
     return legacy.getClear();
 }
