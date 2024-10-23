@@ -201,10 +201,13 @@ public:
 class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>, implements INodeLoader
 {
 protected:
+    static constexpr unsigned maxParentNodes = 4;
     CKeyIndex &key;
     const IIndexFilterList *filter;
     char *recordBuffer = nullptr;
     Owned<const CJHSearchNode> node;
+    Owned<const CJHSearchNode> parents[maxParentNodes];
+    unsigned int parentNodeKeys[maxParentNodes] = {0};
     unsigned int nodeKey;
     
     mutable bool fullBufferValid = false;
@@ -267,6 +270,7 @@ protected:
     // if _lookup returns true, recordBuffer will contain keyed portion of result
     bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, IContextLogger *ctx);
 
+    void clearParentNodes();
 
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, IContextLogger *ctx);
 
