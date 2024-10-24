@@ -165,7 +165,7 @@ class AllGlobals (gdb.Command):
         ignoreVars = set(['statsMetaData', 'roAttributes', 'roAttributeValues', 'RandomMain'])
         ignorematch = re.compile(" StatisticsMapping ")
         varmatch = re.compile("[^a-zA-Z_0-9:]([a-zA-Z_][a-z0-9_A-Z:]*)(\\[.*])?;$")
-        goodfilematch = re.compile("^File /hpcc-dev/HPCC-Platform/(.*[.]cpp):$")
+        goodfilematch = re.compile("^File /.*/HPCC-Platform/(.*[.]cpp):$")
         filematch = re.compile("^File (.*):$")
         infile = None
         file_written = False

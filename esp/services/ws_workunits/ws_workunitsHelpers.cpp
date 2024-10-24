@@ -2704,7 +2704,8 @@ bool WsWuInfo::validateWUAssociatedFile(const char* file, WUFileType type)
             //which contains Post Mortem files.
             Owned<IFile> postMortemFile = createIFile(name.str());
             validatePostMortemFile(postMortemFile, file, validated);
-            return validated;
+            if (validated)
+                return true;
         }
 
         if (strieq(file, name.str()))
