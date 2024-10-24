@@ -15,7 +15,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
-import { pushUrl } from "../util/history";
+import { pushUrl as _pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
@@ -45,6 +45,7 @@ interface MetricsProps {
     queryId?: string;
     parentUrl?: string;
     selection?: string;
+    fullscreen?: boolean;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
@@ -52,7 +53,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     querySet = "",
     queryId = "",
     parentUrl = `/workunits/${wuid}/metrics`,
-    selection
+    selection,
+    fullscreen = false
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
@@ -63,7 +65,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
-    const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [hotspots, setHotspots] = React.useState<string>("");
     const [lineage, setLineage] = React.useState<IScope[]>([]);
     const [selectedLineage, setSelectedLineage] = React.useState<IScope>();
@@ -96,10 +97,24 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }).catch(err => logger.error(err));
     }, [wuid]);
 
+    const pushUrl = React.useCallback((selection?: string, fullscreen?: boolean) => {
+        const selectionStr = selection?.length ? `/${selection}` : "";
+        const fullscreenStr = fullscreen ? "?fullscreen" : "";
+        _pushUrl(`${parentUrl}${selectionStr}${fullscreenStr}`);
+    }, [parentUrl]);
+
+    const pushSelectionUrl = React.useCallback((selection: string) => {
+        pushUrl(selection, fullscreen);
+    }, [fullscreen, pushUrl]);
+
+    const pushFullscreenUrl = React.useCallback((fullscreen: boolean) => {
+        pushUrl(selection, fullscreen);
+    }, [pushUrl, selection]);
+
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");
-        pushUrl(`${parentUrl}/${selection}`);
-    }, [parentUrl, selection]);
+        pushSelectionUrl(selection);
+    }, [pushSelectionUrl, selection]);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelineNoFetch()
@@ -114,11 +129,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     timeline.selection([]);
                     setSelectedMetricsSource("scopesTable");
                     setScopeFilter(`name:${row[7].__hpcc_id}`);
-                    pushUrl(`${parentUrl}/${row[7].id}`);
+                    pushSelectionUrl(row[7].id);
                 }
             }, true)
             ;
-    }, [parentUrl, timeline]);
+    }, [pushSelectionUrl, timeline]);
 
     React.useEffect(() => {
         if (view.showTimeline) {
@@ -142,10 +157,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             .on("selectionChanged", () => {
                 const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
                 setSelectedMetricsSource("metricGraphWidget");
-                pushUrl(`${parentUrl}/${selection.join(",")}`);
+                pushSelectionUrl(selection.join(","));
             }, true)
             ;
-    }, [metricGraph, metricGraphWidget, parentUrl]);
+    }, [metricGraph, metricGraphWidget, pushSelectionUrl]);
 
     React.useEffect(() => {
         metricGraph.load(metrics);
@@ -301,8 +316,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, selection: IScope[]) => {
         setSelectedMetricsSource(source);
-        pushUrl(`${parentUrl}/${selection.map(row => row.__lparam?.id ?? row.id).join(",")}`);
-    }, [parentUrl]);
+        pushSelectionUrl(selection.map(row => row.__lparam?.id ?? row.id).join(","));
+    }, [pushSelectionUrl]);
 
     const scopesTable = useConst(() => new ScopesTable()
         .multiSelect(true)
@@ -520,9 +535,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
-            onClick: () => setFullscreen(!fullscreen)
+            onClick: () => pushFullscreenUrl(!fullscreen)
         }
-    ], [dot, formatColumns, fullscreen, metrics, wuid]);
+    ], [dot, formatColumns, fullscreen, metrics, pushFullscreenUrl, wuid]);
 
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);

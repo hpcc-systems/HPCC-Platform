@@ -25,7 +25,7 @@ const workunitsChildren: Route[] = [
     },
     {
         path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} />;
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} queryParams={{ summary: parseSearch(ctx.search) as any }} />;
         })
     },
     {
