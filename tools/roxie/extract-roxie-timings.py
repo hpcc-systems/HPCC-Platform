@@ -23,6 +23,7 @@ import csv
 import sys
 import re
 import argparse
+import datetime
 
 def calculateDerivedStats(curRow):
 
@@ -30,6 +31,11 @@ def calculateDerivedStats(curRow):
     numBranchAdds = float(curRow.get("NumNodeCacheAdds", 0.0))
     numBranchFetches = float(curRow.get("NumNodeDiskFetches", 0.0))
     timeBranchFetches = float(curRow.get("TimeNodeFetch", 0.0))
+    timeBranchRead = float(curRow.get("TimeNodeRead", 0.0))
+    timeBranchLoad = float(curRow.get("TimeNodeLoad", 0.0))
+    timeBranchDecompress = timeBranchLoad - timeBranchRead
+    avgTimeBranchDecompress = 0 if numBranchAdds == 0 else timeBranchDecompress / numBranchAdds
+
     if numBranchHits + numBranchAdds:
         curRow["%BranchMiss"] = 100*numBranchAdds/(numBranchAdds+numBranchHits)
 
@@ -37,20 +43,68 @@ def calculateDerivedStats(curRow):
     numLeafAdds = float(curRow.get("NumLeafCacheAdds", 0.0))
     numLeafFetches = float(curRow.get("NumLeafDiskFetches", 0.0))
     timeLeafFetches = float(curRow.get("TimeLeafFetch", 0.0))
+    timeLeafRead = float(curRow.get("TimeLeafRead", 0.0))
+    timeLeafLoad = float(curRow.get("TimeLeafLoad", 0.0))
+    timeLeafDecompress = timeLeafLoad - timeLeafRead
+    avgTimeLeafDecompress = 0 if numLeafAdds == 0 else timeLeafDecompress / numLeafAdds
+
+    timeLocalExecute = float(curRow.get("TimeLocalExecute", 0.0))
+    timeAgentWait = float(curRow.get("TimeAgentWait", 0.0))
+    timeAgentProcess = float(curRow.get("TimeAgentProcess", 0.0))
+    timeSoapcall = float(curRow.get("TimeSoapcall", 0.0))
+
+    timeLocalCpu = timeLocalExecute - timeAgentWait - timeSoapcall
+    timeRemoteCpu = timeAgentProcess - timeLeafRead - timeBranchRead
+    workerCpuLoad = timeRemoteCpu / timeAgentProcess if timeAgentProcess else 0
+
     if numLeafHits + numLeafAdds:
         curRow["%LeafMiss"] = 100*numLeafAdds/(numLeafAdds+numLeafHits)
 
     if numBranchAdds:
         curRow["%BranchFetch"] = 100*(numBranchFetches)/(numBranchAdds)
+        curRow["TimeBranchDecompress"] = timeBranchDecompress
+        curRow["AvgTimeBranchDecompress"] = avgTimeBranchDecompress
 
     if numLeafAdds:
         curRow["%LeafFetch"] = 100*(numLeafFetches)/(numLeafAdds)
+        curRow["TimeLeafDecompress"] = timeLeafDecompress
+        curRow["AvgTimeLeafDecompress"] = avgTimeLeafDecompress
 
     if numBranchFetches:
         curRow["AvgTimeBranchFetch"] = timeBranchFetches/(numBranchFetches)
 
     if numLeafFetches:
         curRow["AvgTimeLeafFetch"] = timeLeafFetches/(numLeafFetches)
+
+    curRow["WorkerCpuLoad"] = workerCpuLoad
+    curRow["TimeLocalCpu"] = timeLocalCpu
+    curRow["TimeRemoteCpu"] = timeRemoteCpu
+
+def calculateSummaryStats(curRow, numCpus, numRows):
+
+    curRow["summary"] = "summary"
+
+    timeLocalCpu = float(curRow.get("TimeLocalCpu", 0.0))
+    timeRemoteCpu = float(curRow.get("TimeRemoteCpu", 0.0))
+    timeTotalCpu = timeLocalCpu + timeRemoteCpu
+    workerCpuLoad = float(curRow.get("WorkerCpuLoad", 0.0))
+
+    timeQueryResponseSeconds = float(curRow.get("elapsed", 0.0)) / 1000
+    avgTimeQueryResponseSeconds = timeQueryResponseSeconds / numRows if numRows else 0
+
+    perCpuTransactionsPerSecond = 1000 * numRows / timeTotalCpu if timeTotalCpu else 0
+    maxTransactionsPerSecond = numCpus * perCpuTransactionsPerSecond
+    maxWorkerThreads = numCpus / workerCpuLoad if workerCpuLoad else 0
+    maxFarmers = maxTransactionsPerSecond * avgTimeQueryResponseSeconds
+
+    curRow["perCpuTransactionsPerSecond"] = perCpuTransactionsPerSecond  # recorded but not reported
+    curRow["MaxTransactionsPerSecond"] = maxTransactionsPerSecond
+    curRow["MaxWorkerThreads"] = maxWorkerThreads
+    curRow["MaxFarmers"] = maxFarmers
+
+    #Expected cpu load for 10 transactions per second per node
+    if perCpuTransactionsPerSecond:
+        curRow["ExpectedCpuLoad10"] = 10 / perCpuTransactionsPerSecond
 
 def printRow(curRow):
 
@@ -85,12 +139,14 @@ if __name__ == "__main__":
     parser.add_argument("--all", "-a", help="Combine all services into a single result", action='store_true')
     parser.add_argument("--nosummary", "-n", help="Avoid including a summary", action='store_true')
     parser.add_argument("--summaryonly", "-s", help="Only generate a summary", action='store_true')
-    parser.add_argument("--ignorecase", "-i", help="Use case-insensitve query names", action='store_true')
+    parser.add_argument("--ignorecase", "-i", help="Use case-insensitive query names", action='store_true')
+    parser.add_argument("--cpu", "-c", type=int, default=8, help="Number of CPUs to use (default: 8)")
     args = parser.parse_args()
     combineServices = args.all
     suppressDetails = args.summaryonly
     reportSummary = not args.nosummary or args.summaryonly
     ignoreQueryCase = args.ignorecase
+    cpus = args.cpu
 
     csv.field_size_limit(0x100000)
     with open(args.filename, encoding='latin1') as csv_file:
@@ -130,8 +186,14 @@ if __name__ == "__main__":
                         curRow["time"] = row[i+1]
                         break
 
+                if minTimeStamp == '' or timestamp < minTimeStamp:
+                    minTimeStamp = timestamp
+                if maxTimeStamp == '' or timestamp > maxTimeStamp:
+                    maxTimeStamp = timestamp
+
                 nesting = list()
                 prefix = ''
+                suppress = 0
                 for cur in mapping:
                     if "=" in cur:
                         equals = cur.index('=')
@@ -140,9 +202,22 @@ if __name__ == "__main__":
                         if value == '{':
                             nesting.append(prefix)
                             prefix += name + '.'
+                        elif value[0] == '[':
+                            suppress += 1
+                            continue;
+                        elif value[-1] == ']':
+                            suppress -= 1
+                            continue;
+                        elif name in ("priority", "WhenFirstRow","NumAllocations"):
+                            continue
                         else:
+                            if suppress > 0:
+                                continue
                             allStats[name] = 1
                             castValue = -1
+                            #Remove any trailing comma that should not be present
+                            if value[-1] == ',':
+                                value = value[0:-1]
 
                             #Apply  any scaling to the values
                             matchHMS = hourMinuteSecondPattern.match(value)
@@ -176,7 +251,7 @@ if __name__ == "__main__":
                                     curRow[name] = castValue
                             else:
                                 curRow[name] = value
-                    elif '}' == cur:
+                    elif '}' == cur[0]:
                         prefix = nesting.pop()
 
                 if combineServices:
@@ -193,6 +268,29 @@ if __name__ == "__main__":
     allStats["%LeafFetch"] = 1
     allStats["AvgTimeBranchFetch"] = 1
     allStats["AvgTimeLeafFetch"] = 1
+    allStats["TimeBranchDecompress"] = 1
+    allStats["AvgTimeBranchDecompress"] = 1
+    allStats["TimeLeafDecompress"] = 1
+    allStats["AvgTimeLeafDecompress"] = 1
+    allStats["WorkerCpuLoad"] = 1
+    allStats["TimeLocalCpu"] = 1
+    allStats["TimeRemoteCpu"] = 1
+    allStats['  '] = 1
+    allStats['cpus='+str(cpus)] = 1
+    allStats["MaxTransactionsPerSecond"] = 1
+    allStats["MaxWorkerThreads"] = 1
+    allStats["MaxFarmers"] = 1
+    allStats["ExpectedCpuLoad10"] = 1
+
+    elapsed = 0
+    try:
+        minTime = datetime.datetime.strptime(minTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
+        maxTime = datetime.datetime.strptime(maxTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
+        elapsed = (maxTime - minTime).seconds
+        print(f"Time range: ['{minTimeStamp}'..'{maxTimeStamp}'] = {elapsed}s")
+
+    except:
+        pass
 
     # Create a string containing all the stats that were found in the file.
     headings =  'id'
@@ -205,6 +303,7 @@ if __name__ == "__main__":
         # Calculate some derived statistics.
         for curRow in allRows:
             calculateDerivedStats(curRow)
+            calculateSummaryStats(curRow, cpus, 1)
 
         # MORE: Min and max for the derived statistics are not correct
 
@@ -233,6 +332,7 @@ if __name__ == "__main__":
                             else:
                                 totalRow[name] = value
             calculateDerivedStats(totalRow)
+            calculateSummaryStats(totalRow, cpus, len(allRows))
 
             # Average for all queries - should possibly also report average when stats are actually supplied
             numRows = len(allRows)
@@ -268,4 +368,13 @@ if __name__ == "__main__":
             for centile in centiles:
                 printRow(centileRows[centile])
 
+            print()
+            #These stats are only really revelant if it is including all the transactions from all services
+            #they may need rethinking a little.
+            if elapsed and numRows > 1:
+                perCpuTransactionsPerSecond = totalRow["perCpuTransactionsPerSecond"]
+                #elapsed is time from end of 1st transaction to end of last transaction - so subtract 1 from number of rows
+                actualTransationsPerSecond = (numRows - 1) / elapsed
+                expectedCpuLoad = actualTransationsPerSecond / perCpuTransactionsPerSecond if perCpuTransactionsPerSecond else 0
+                print(f"Transactions: Throughput={actualTransationsPerSecond}/s Time={1/actualTransationsPerSecond}s  ExpectedCpuLoad={expectedCpuLoad}")
             print()
