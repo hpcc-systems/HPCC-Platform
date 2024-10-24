@@ -271,7 +271,8 @@ protected:
     void savePartition();
     void setCopyCompressedRaw();
     void setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy = (unsigned)-1);
-    void updateTargetProperties();
+    cost_type updateTargetProperties();
+    cost_type updateSourceProperties();
     bool usePullOperation() const;
     bool usePushOperation() const;
     bool usePushWholeOperation() const;
