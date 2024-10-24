@@ -537,7 +537,6 @@ class CMPConnectThread: public Thread
         {
             CConnectSelectHandler &selectHandler;
             Owned<ISocket> sock;
-            SocketEndpoint peerEP;
             StringBuffer peerHostText, peerEndpointText;
             ConnectHdr hdr;
             cycle_t createTime = 0;
@@ -545,11 +544,13 @@ class CMPConnectThread: public Thread
             CriticalSection crit;
             bool closedOrHandled = false;
         public:
-            CSocketHandler(CConnectSelectHandler &_selectHandler, ISocket *_sock, const SocketEndpoint &_peerEP) : selectHandler(_selectHandler), sock(_sock), peerEP(_peerEP)
+            CSocketHandler(CConnectSelectHandler &_selectHandler, ISocket *_sock) : selectHandler(_selectHandler), sock(_sock)
             {
                 createTime = get_cycles_now();
+                SocketEndpoint peerEP;
+                sock->getPeerEndpoint(peerEP);
                 peerEP.getHostText(peerHostText); // always used by handleAcceptedSocket
-                peerEndpointText.append(peerEndpointText); // only used if tracing an error
+                peerEndpointText.append(peerHostText); // only used if tracing an error
                 if (peerEP.port)
                     peerEndpointText.append(':').append(peerEP.port);
             }
@@ -692,7 +693,7 @@ class CMPConnectThread: public Thread
             maintenanceSem.signal();
             maintenanceThread.join();
         }
-        void add(ISocket *sock, const SocketEndpoint &peerEP)
+        void add(ISocket *sock)
         {
             while (true)
             {
@@ -707,7 +708,7 @@ class CMPConnectThread: public Thread
                 MilliSleep(1000);
             }
 
-            Owned<CSocketHandler> socketHandler = new CSocketHandler(*this, LINK(sock), peerEP);
+            Owned<CSocketHandler> socketHandler = new CSocketHandler(*this, LINK(sock));
 
             size_t numHandlers;
             {
@@ -2569,10 +2570,9 @@ int CMPConnectThread::run()
     while (running)
     {
         Owned<ISocket> sock;
-        SocketEndpoint peerEP;
         try
         {
-            sock.setown(listensock->accept(true, &peerEP));
+            sock.setown(listensock->accept(true));
         }
         catch (IException *e)
         {
@@ -2611,7 +2611,7 @@ int CMPConnectThread::run()
             // After that, the socket will be removed from the connectSelectHamndler,
             // a CMPChannel will be estalbished, and the socket will be added to the MP CMPPacketReader select handler.
             // See handleAcceptedSocket.
-            connectSelectHandler.add(sock, peerEP);
+            connectSelectHandler.add(sock);
         }
         else
         {

@@ -347,7 +347,7 @@ private:
     virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER) override { UNIMPLEMENTED; }
 
     virtual size32_t get_max_send_size() override { UNIMPLEMENTED; }
-    virtual ISocket* accept(bool allowcancel=false, SocketEndpoint *peerEp = nullptr) override { UNIMPLEMENTED; }
+    virtual ISocket* accept(bool allowcancel=false) override { UNIMPLEMENTED; }
     virtual int logPollError(unsigned revents, const char *rwstr) override { UNIMPLEMENTED; }
     virtual int wait_read(unsigned timeout) override { UNIMPLEMENTED; }
     virtual int wait_write(unsigned timeout) override { UNIMPLEMENTED; }
