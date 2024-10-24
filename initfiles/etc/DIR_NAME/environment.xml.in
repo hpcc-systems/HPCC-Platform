@@ -21,7 +21,21 @@
  </Hardware>
  <Software>
   <Globals noCommon="true"
-           maxConnections="-1"/>
+           maxConnections="-1">
+           <StoragePlaneList name="StoragePlaneList">
+            <StoragePlane name="storagePlane"
+                          storageClass="blob"
+                          storageSize="1Gi"
+                          prefix="/var/lib/HPCCSystems/hpcc-data"
+                          category="data"
+                          account="adminAccount"
+                          secret="admin">
+                          <storageapi type="azureblob"
+                                      storageAccountName="admin"
+                                      resource_group_name="sandbox"/>
+            </StoragePlane>
+           </StoragePlaneList>
+  </Globals>
   <DropZone build="_"
             buildSet="DropZone"
             description="DropZone process"

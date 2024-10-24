@@ -20,6 +20,20 @@
         storageWrites="0.0038"/>
  </Hardware>
  <Software>
+  <Globals noCommon="true"
+           maxConnections="-1">
+           <StoragePlane name="storagePlane"
+                          storageClass="blob"
+                          storageSize="1Gi"
+                          prefix="/var/lib/HPCCSystems/hpcc-data"
+                          category="data"
+                          account="adminAccount"
+                          secret="admin">
+                          <storageapi type="azureblob"
+                                      storageAccountName="admin"
+                                      resource_group_name="sandbox"/>
+            </StoragePlane>
+  </Globals>
   <DropZone build="_"
             buildSet="DropZone"
             computer="localhost"

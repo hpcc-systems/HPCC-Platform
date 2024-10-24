@@ -49,6 +49,7 @@ using namespace std::chrono;
  * an IFileIO.  E.g., append blobs
  */
 constexpr const char * azureFilePrefix = "azure:";
+constexpr const char * azureBlobPrefix = "azureblob:";  // Syntax azureblob:storageplane[/device]/apth
 #ifdef TEST_AZURE_PAGING
 constexpr offset_t azureReadRequestSize = 50;
 #else
@@ -58,16 +59,33 @@ constexpr offset_t azureReadRequestSize = 0x400000;  // Default to requesting 4M
 //---------------------------------------------------------------------------------------------------------------------
 
 class AzureFile;
-class AzureFileReadIO : implements CInterfaceOf<IFileIO>
+
+//The base class for AzureFileIO.  This class performs NO caching of the data - to avoid problems with
+//copying the data too many times.  It is the responsibility of the caller to implement a cache if necessary.
+class AzureFileIO : implements CInterfaceOf<IFileIO>
 {
 public:
-    AzureFileReadIO(AzureFile * _file, const FileIOStats & _stats);
+    AzureFileIO(AzureFile * _file, const FileIOStats & _stats);
+    AzureFileIO(AzureFile * _file) : file(_file) {}
 
     virtual size32_t read(offset_t pos, size32_t len, void * data) override;
     virtual offset_t size() override;
     virtual void close() override
     {
     }
+
+    unsigned __int64 getStatistic(StatisticKind kind) override;
+
+protected:
+    Linked<AzureFile> file;
+    FileIOStats stats;
+};
+
+
+class AzureFileReadIO : public AzureFileIO
+{
+public:
+    AzureFileReadIO(AzureFile * _file, const FileIOStats & _stats);
 
     // Write methods not implemented - this is a read-only file
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override
@@ -85,42 +103,21 @@ public:
     virtual void flush() override
     {
     }
-    unsigned __int64 getStatistic(StatisticKind kind) override;
-
-protected:
-    size_t extractDataFromResult(size_t offset, size_t length, void * target);
-
-protected:
-    Linked<AzureFile> file;
-    CriticalSection cs;
-    offset_t startResultOffset = 0;
-    offset_t endResultOffset = 0;
-    MemoryBuffer contents;
-    FileIOStats stats;
 };
 
 
-class AzureFileWriteIO : implements CInterfaceOf<IFileIO>
+class AzureFileWriteIO : public AzureFileIO
 {
 public:
     AzureFileWriteIO(AzureFile * _file);
     virtual void beforeDispose() override;
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data) override
-    {
-        throwUnexpected();
-    }
-
     virtual offset_t size() override;
     virtual void setSize(offset_t size) override;
     virtual void flush() override;
 
-    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
-
 protected:
-    Linked<AzureFile> file;
     CriticalSection cs;
-    FileIOStats stats;
     offset_t offset = 0;
 };
 
@@ -146,11 +143,8 @@ public:
 };
 
 
-class AzureFile : implements CInterfaceOf<IFile>
+class AzureFile final : implements CInterfaceOf<IFile>
 {
-    friend class AzureFileReadIO;
-    friend class AzureFileAppendBlobWriteIO;
-    friend class AzureFileBlockBlobWriteIO;
 public:
     AzureFile(const char *_azureFileName);
     virtual bool exists() override
@@ -252,27 +246,33 @@ public:
     virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureFile::copyTo"); }
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED_X("AzureFile::openMemoryMapped"); }
 
-protected:
-    std::shared_ptr<StorageSharedKeyCredential> getCredentials() const;
-    std::string getBlobUrl() const;
-    std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
-    template<typename T> std::shared_ptr<T> getClient() const;
+//Helper functions for the azureFileIO classes
+    offset_t read(offset_t pos, size32_t len, void * data, FileIOStats & stats);
+
     void createAppendBlob();
     void appendToAppendBlob(size32_t len, const void * data);
     void createBlockBlob();
     void appendToBlockBlob(size32_t len, const void * data);
 
-    offset_t readBlock(MemoryBuffer & contents, FileIOStats & stats, offset_t from = 0, offset_t length = unknownFileSize);
+protected:
+    std::shared_ptr<StorageSharedKeyCredential> getCredentials() const;
+    std::string getBlobUrl() const;
+    std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
+    template<typename T> std::shared_ptr<T> getClient() const;
+
+
     void ensureMetaData();
     void gatherMetaData();
     IFileIO * createFileReadIO();
     IFileIO * createFileWriteIO();
     void setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn);
+
 protected:
     StringBuffer fullName;
     StringAttr accountName;
     StringAttr accountKey;
     StringAttr containerName;
+    StringBuffer secretName;
     StringAttr blobName;
     offset_t fileSize = unknownFileSize;
     bool haveMeta = false;
@@ -287,108 +287,47 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-AzureFileReadIO::AzureFileReadIO(AzureFile * _file, const FileIOStats & _firstStats)
+AzureFileIO::AzureFileIO(AzureFile * _file, const FileIOStats & _firstStats)
 : file(_file), stats(_firstStats)
 {
-    startResultOffset = 0;
-    endResultOffset = 0;
 }
 
-size32_t AzureFileReadIO::read(offset_t pos, size32_t len, void * data)
+
+size32_t AzureFileIO::read(offset_t pos, size32_t len, void * data)
 {
-    if (pos > file->fileSize)
+    offset_t fileSize = file->size();
+    if (pos > fileSize)
         return 0;
-    if (pos + len > file->fileSize)
-        len = file->fileSize - pos;
+    if (pos + len > fileSize)
+        len = fileSize - pos;
     if (len == 0)
         return 0;
 
-    size32_t sizeRead = 0;
-    offset_t lastOffset = pos + len;
-
-    // MORE: Do we ever read file IO from more than one thread?  I'm not convinced we do, and the critical blocks waste space and slow it down.
-    //It might be worth revisiting (although I'm not sure what effect stranding has)
-    CriticalBlock block(cs);
-    for(;;)
-    {
-        //Check if part of the request can be fulfilled from the current read block
-        if (pos >= startResultOffset && pos < endResultOffset)
-        {
-            size_t copySize = ((lastOffset > endResultOffset) ? endResultOffset : lastOffset) - pos;
-            size_t extractedSize = extractDataFromResult((pos - startResultOffset), copySize, data);
-            assertex(copySize == extractedSize);
-            pos += copySize;
-            len -= copySize;
-            data = (byte *)data + copySize;
-            sizeRead += copySize;
-            if (len == 0)
-                return sizeRead;
-        }
-
-#ifdef TEST_AZURE_PAGING
-        offset_t readSize = azureReadRequestSize;
-#else
-        offset_t readSize = (len > azureReadRequestSize) ? len : azureReadRequestSize;
-#endif
-
-        offset_t contentSize = file->readBlock(contents, stats, pos, readSize);
-        //If the results are inconsistent then do not loop forever
-        if (contentSize == 0)
-            return sizeRead;
-
-        startResultOffset = pos;
-        endResultOffset = pos + contentSize;
-    }
+    return file->read(pos, len, data, stats);
 }
 
-offset_t AzureFileReadIO::size()
+offset_t AzureFileIO::size()
 {
     return file->size();
 }
 
-size_t AzureFileReadIO::extractDataFromResult(size_t offset, size_t length, void * target)
-{
-    if (offset>=contents.length())
-        return 0;
-    const byte * base = (byte *)(contents.bufferBase())+offset;
-    unsigned len = std::min(length, contents.length()-offset);
-    memcpy(target, base, len);
-    return len;
-}
-
-unsigned __int64 AzureFileReadIO::getStatistic(StatisticKind kind)
+unsigned __int64 AzureFileIO::getStatistic(StatisticKind kind)
 {
     return stats.getStatistic(kind);
 }
 
-unsigned __int64 FileIOStats::getStatistic(StatisticKind kind)
+//---------------------------------------------------------------------------------------------------------------------
+
+
+AzureFileReadIO::AzureFileReadIO(AzureFile * _file, const FileIOStats & _firstStats)
+: AzureFileIO(_file, _firstStats)
 {
-    switch (kind)
-    {
-    case StCycleDiskReadIOCycles:
-        return ioReadCycles.load();
-    case StCycleDiskWriteIOCycles:
-        return ioWriteCycles.load();
-    case StTimeDiskReadIO:
-        return cycle_to_nanosec(ioReadCycles.load());
-    case StTimeDiskWriteIO:
-        return cycle_to_nanosec(ioWriteCycles.load());
-    case StSizeDiskRead:
-        return ioReadBytes.load();
-    case StSizeDiskWrite:
-        return ioWriteBytes.load();
-    case StNumDiskReads:
-        return ioReads.load();
-    case StNumDiskWrites:
-        return ioWrites.load();
-    }
-    return 0;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
 AzureFileWriteIO::AzureFileWriteIO(AzureFile * _file)
-: file(_file)
+: AzureFileIO(_file)
 {
 }
 
@@ -417,16 +356,11 @@ void AzureFileWriteIO::flush()
 {
 }
 
-unsigned __int64 AzureFileWriteIO::getStatistic(StatisticKind kind)
-{
-    return stats.getStatistic(kind);
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 AzureFileAppendBlobWriteIO::AzureFileAppendBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
 {
-    file->createAppendBlob();
+    file->createBlockBlob();
 }
 
 void AzureFileAppendBlobWriteIO::close()
@@ -501,45 +435,6 @@ static bool isBase64Char(char c)
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '+') || (c == '/') || (c == '=');
 }
 
-static std::shared_ptr<StorageSharedKeyCredential> getCredentials(const char * accountName, const char * key)
-{
-    //MORE: The client should be cached and shared between different file access - implement when secret storage is added.
-    StringBuffer keyTemp;
-    if (!accountName)
-        accountName = getenv("AZURE_ACCOUNT_NAME");
-    if (!key)
-    {
-        key = getenv("AZURE_ACCOUNT_KEY");
-        if (!key)
-        {
-            StringBuffer secretName;
-            secretName.append("azure-").append(accountName);
-            getSecretValue(keyTemp, "storage", secretName, "key", true);
-            //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
-            size32_t len = keyTemp.length();
-            for (;;)
-            {
-                if (!len)
-                    break;
-                if (isBase64Char(keyTemp.charAt(len-1)))
-                    break;
-                len--;
-            }
-            keyTemp.setLength(len);
-            key = keyTemp.str();
-        }
-    }
-    try
-    {
-        return std::make_shared<StorageSharedKeyCredential>(accountName, key);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-}
-
 static std::string getContainerUrl(const char *account, const char * container)
 {
     std::string url("https://");
@@ -554,59 +449,156 @@ static std::string getBlobUrl(const char *account, const char * container, const
 
 AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 {
-    const char * filename = fullName + strlen(azureFilePrefix);
-    if (filename[0] != '/' || filename[1] != '/')
-        throw makeStringException(99, "// missing from azure: file reference");
-
-    //Allow the access key to be provided after the // before a @  i.e. azure://<account>:<access-key>@...
-    filename += 2;
-
-    //Allow the account and key to be quoted so that it can support slashes within the access key (since they are part of base64 encoding)
-    //e.g. i.e. azure://'<account>:<access-key>'@...
-    StringBuffer accessExtra;
-    if (filename[0] == '"' || filename[0] == '\'')
+    if (startsWith(fullName, azureBlobPrefix))
     {
-        const char * endQuote = strchr(filename + 1, filename[0]);
-        if (!endQuote)
-            throw makeStringException(99, "access key is missing terminating quote");
-        accessExtra.append(endQuote - (filename + 1), filename + 1);
-        filename = endQuote+1;
-        if (*filename != '@')
-            throw makeStringException(99, "missing @ following quoted access key");
-        filename++;
-    }
+        //format is azureblob:plane[/device]/path
+        const char * filename = fullName + strlen(azureBlobPrefix);
+        const char * slash = strchr(filename, '/');
+        if (!slash)
+            throw makeStringException(99, "Missing / in azureblob: file reference");
 
-    const char * at = strchr(filename, '@');
-    const char * slash = strchr(filename, '/');
-    assertex(slash);  // could probably relax this....
+        StringBuffer planeName(slash-filename, filename);
+        Owned<IPropertyTree> plane = getStoragePlane(planeName);
+        if (!plane)
+            throw makeStringExceptionV(99, "Unknown storage plane %s", planeName.str());
 
-    //Possibly pedantic - only spot @s before the first leading /
-    if (at && (!slash || at < slash))
-    {
-        accessExtra.append(at - filename, filename);
-        filename = at+1;
-    }
+        const char * api = plane->queryProp("storageapi/@type");
+        if (!api)
+            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
 
-    if (accessExtra)
-    {
-        const char * colon = strchr(accessExtra, ':');
-        if (colon)
+        constexpr size_t lenPrefix = strlen(azureBlobPrefix);
+        if ((strncmp(api, azureBlobPrefix, lenPrefix-1) != 0))
+            throw makeStringExceptionV(99, "Storage api for plane %s is not azureblob", planeName.str());
+
+        unsigned numDevices = plane->getPropInt("@numDevices", 1);
+        if (numDevices != 1)
         {
-            accountName.set(accessExtra, colon-accessExtra);
-            accountKey.set(colon+1);
+            if (slash[1] != 'd')
+                throw makeStringExceptionV(99, "Expected a device number in the filename %s", fullName.str());
+
+            char * endDevice = nullptr;
+            unsigned device = strtod(slash+2, &endDevice);
+            if ((device == 0) || (device > numDevices))
+                throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
+
+            if (!endDevice || (*endDevice != '/'))
+                throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
+
+            VStringBuffer childPath("containers[%d]", device-1);
+            IPropertyTree * deviceInfo = plane->queryPropTree(childPath);
+            if (deviceInfo)
+            {
+                accountName.set(deviceInfo->queryProp("@account"));
+                secretName.set(deviceInfo->queryProp("@secret"));
+            }
+
+            //If device-specific information is not provided all defaults come from the storage plane
+            if (!accountName)
+                accountName.set(plane->queryProp("@account"));
+            if (!secretName)
+                secretName.set(plane->queryProp("@secret"));
+
+            filename = endDevice+1;
         }
         else
-            accountName.set(accessExtra); // Key is retrieved from the secrets
-    }
+        {
+            accountName.set(plane->queryProp("@account"));
+            secretName.set(plane->queryProp("@secret"));
+            filename = slash+1;
+        }
 
-    containerName.set(filename, slash-filename);
-    blobName.set(slash+1);
+        if (isEmptyString(accountName) || isEmptyString(secretName))
+            throw makeStringExceptionV(99, "Missing container or secret name for plane %s", planeName.str());
+
+        //I am not at all sure we need to split this apart, only to join in back together again.
+        slash = strchr(filename, '/');
+        assertex(slash);  // could probably relax this....
+        containerName.set(filename, slash-filename);
+        blobName.set(slash+1);
+    }
+    else if (startsWith(fullName, azureFilePrefix))
+    {
+        const char * filename = fullName + strlen(azureFilePrefix);
+        if (filename[0] != '/' || filename[1] != '/')
+            throw makeStringException(99, "// missing from azure: file reference");
+
+        //Allow the access key to be provided after the // before a @  i.e. azure://<account>:<access-key>@...
+        filename += 2;
+
+        //Allow the account and key to be quoted so that it can support slashes within the access key (since they are part of base64 encoding)
+        //e.g. i.e. azure://'<account>:<access-key>'@...
+        StringBuffer accessExtra;
+        if (filename[0] == '"' || filename[0] == '\'')
+        {
+            const char * endQuote = strchr(filename + 1, filename[0]);
+            if (!endQuote)
+                throw makeStringException(99, "access key is missing terminating quote");
+            accessExtra.append(endQuote - (filename + 1), filename + 1);
+            filename = endQuote+1;
+            if (*filename != '@')
+                throw makeStringException(99, "missing @ following quoted access key");
+            filename++;
+        }
+
+        const char * at = strchr(filename, '@');
+        const char * slash = strchr(filename, '/');
+        assertex(slash);  // could probably relax this....
+
+        //Possibly pedantic - only spot @s before the first leading /
+        if (at && (!slash || at < slash))
+        {
+            accessExtra.append(at - filename, filename);
+            filename = at+1;
+        }
+
+        if (accessExtra)
+        {
+            const char * colon = strchr(accessExtra, ':');
+            if (colon)
+            {
+                accountName.set(accessExtra, colon-accessExtra);
+                secretName.set(colon+1);
+            }
+            else
+            {
+                accountName.set(accessExtra); // Key is retrieved from the secrets
+                secretName.set("azure-").append(accountName);
+            }
+        }
+        containerName.set(filename, slash-filename);
+        blobName.set(slash+1);
+    }
+    else
+        throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
+
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureFile::getCredentials() const
 {
-    return ::getCredentials(accountName, accountKey);
+    StringBuffer key;
+    getSecretValue(key, "storage", secretName, "key", true);
+    //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
+    size32_t len = key.length();
+    for (;;)
+    {
+        if (!len)
+            break;
+        if (isBase64Char(key.charAt(len-1)))
+            break;
+        len--;
+    }
+    key.setLength(len);
+
+    try
+    {
+        return std::make_shared<StorageSharedKeyCredential>(accountName.str(), key.str());
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
 }
 
 std::string AzureFile::getBlobUrl() const
@@ -731,21 +723,20 @@ bool AzureFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateT
     return false;
 }
 
-offset_t AzureFile::readBlock(MemoryBuffer & contents, FileIOStats & stats, offset_t from, offset_t length)
+offset_t AzureFile::read(offset_t pos, size32_t len, void * data, FileIOStats & stats)
 {
     CCycleTimer timer;
     auto blockBlobClient = getClient<BlockBlobClient>();
 
     Azure::Storage::Blobs::DownloadBlobToOptions options;
     options.Range = Azure::Core::Http::HttpRange();
-    options.Range.Value().Offset = from;
-    options.Range.Value().Length = length;
-    contents.ensureCapacity(length);
-    uint8_t * buffer = reinterpret_cast<uint8_t*>(contents.bufferBase());
+    options.Range.Value().Offset = pos;
+    options.Range.Value().Length = len;
+    uint8_t * buffer = reinterpret_cast<uint8_t*>(data);
     long int sizeRead = 0;
     try
     {
-        Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, length, options);
+        Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
         Azure::Core::Http::HttpRange range = result.Value.ContentRange;
         if (range.Length.HasValue())
             sizeRead = range.Length.Value();
@@ -1106,6 +1097,8 @@ public:
 protected:
     static bool isAzureFileName(const char *fileName)
     {
+        if (startsWith(fileName, azureBlobPrefix))
+            return true;
         if (!startsWith(fileName, azureFilePrefix))
             return false;
         const char * filename = fileName + strlen(azureFilePrefix);

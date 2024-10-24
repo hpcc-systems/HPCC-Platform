@@ -709,7 +709,6 @@
                   }
                 },
                 "additionalProperties": false,
-                "required": [ "name" ]
               }
             }
           },

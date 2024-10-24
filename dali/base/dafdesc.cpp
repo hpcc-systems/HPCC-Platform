@@ -3699,12 +3699,20 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
             if (cur.groupType == grp_thor)
                 cur.createStoragePlane(storage, 1);
         }
-
-        //Uncomment the following to trace the values that been generated
-        //printYAML(storage);
     }
-#endif
 
+    // Add groups defined in environment.xml
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    Owned<IPropertyTreeIterator> storagePlanes = env->getElements("Software/Globals/StoragePlaneList/StoragePlane[@name='*']");
+    ForEach(*storagePlanes)
+    {
+        IPropertyTree & storagePlane = storagePlanes->query();
+        IPropertyTree * plane = storage->addPropTree("planes", LINK(&storagePlane));
+    }
+
+    //Uncomment the following to trace the values that been generated
+        //printYAML(storage);
+#endif
 
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups();
