@@ -315,7 +315,7 @@ class SimpleActivityTimer
     cycle_t startCycles;
     cycle_t &accumulator;
 protected:
-    mutable bool enabled;
+    const bool enabled;
 public:
     inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
     : accumulator(_accumulator), enabled(_enabled)
@@ -328,16 +328,11 @@ public:
 
     inline ~SimpleActivityTimer()
     {
-        leave();
-    }
-    inline void leave()
-    {
         if (likely(enabled))
         {
             cycle_t nowCycles = get_cycles_now();
             cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator += elapsedCycles;
-            enabled = false;
         }
     }
 };

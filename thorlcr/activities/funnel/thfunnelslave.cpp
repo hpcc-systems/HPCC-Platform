@@ -89,13 +89,15 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
                 while (!stopping)
                 {
                     numRows = 0;
-                    for (;numRows < chunkSize; numRows++)
                     {
                         LookAheadTimer timer(funnel.activity.getActivityTimerAccumulator(), funnel.activity.queryTimeActivities());
-                        const void * row = inputStream->ungroupedNextRow();
-                        if (!row)
-                            break;
-                        rows[numRows] = row;
+                        for (;numRows < chunkSize; numRows++)
+                        {
+                            const void * row = inputStream->ungroupedNextRow();
+                            if (!row)
+                                break;
+                            rows[numRows] = row;
+                        }
                     }
 
                     if (numRows == 0) break;
@@ -201,7 +203,6 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         if (waitForSpace)
         {
             CriticalBlock b(writerCrit);
-            BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
             fullSem.wait(); // block pushers on crit
         }
     }
@@ -297,9 +298,7 @@ public:
     {
         if (exception)
             throw exception.getClear();
-        BlockedActivityTimer timer(activity.getActivityTimerAccumulator(), activity.queryTimeActivities());
         OwnedConstThorRow row = rows.dequeue();
-        timer.leave();
         if (!row) {
             rows.stop();
             return NULL;
@@ -384,7 +383,8 @@ public:
             {
                 try
                 {
-                    LookAheadTimer timer(slaveTimerStats, timeActivities);
+                    // n.b. i>0 is started asynchronously, so track look ahead time
+                    LookAheadTimer timer(slaveTimerStats, (i==0) ? false : timeActivities);
                     startInput(i);
                 }
                 catch (CATCHALL)
