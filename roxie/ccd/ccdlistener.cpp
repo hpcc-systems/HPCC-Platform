@@ -967,7 +967,7 @@ StringBuffer & ContextLogger::getStats(StringBuffer &s) const
             ids.append(slowestActivityIds[i]);
             formatStatistic(times, cycle_to_nanosec(slowestActivityTimes[i]), SMeasureTimeNs);
         }
-        s.appendf(", slowestActivities={ ids=[%s] times=[%s] }", ids.str(), times.str());
+        s.appendf(" slowestActivities={ ids=[%s] times=[%s] }", ids.str(), times.str());
     }
     return s;
 }
