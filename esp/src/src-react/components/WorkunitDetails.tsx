@@ -115,9 +115,6 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         hasLogAccess().then(response => {
             setLogsDisabled(!response);
             return response;
-        }).catch(err => {
-            logger.warning(err);
-            setLogsDisabled(true);
         });
     }, [wuid], [queryParams]);
 

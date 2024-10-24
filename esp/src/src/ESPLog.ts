@@ -1,4 +1,4 @@
-import { LogaccessService, LogLine, GetLogsExRequest, WsLogaccess } from "@hpcc-js/comms";
+import { LogaccessService, LogLine, GetLogsExRequest, WsLogaccess, Exceptions } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
 import { Paged } from "./store/Paged";
@@ -8,8 +8,12 @@ const logger = scopedLogger("src/ESPLog.ts");
 
 export const service = new LogaccessService({ baseUrl: "" });
 
-let g_logAccessInfo: Promise<WsLogaccess.GetLogAccessInfoResponse>;
-export function GetLogAccessInfo(): Promise<WsLogaccess.GetLogAccessInfoResponse> {
+function isExceptionResponse(response: WsLogaccess.GetLogAccessInfoResponse | { Exceptions?: Exceptions }): response is { Exceptions?: Exceptions } {
+    return (response as { Exceptions?: Exceptions }).Exceptions !== undefined;
+}
+
+let g_logAccessInfo: Promise<WsLogaccess.GetLogAccessInfoResponse | { Exceptions?: Exceptions }>;
+export function GetLogAccessInfo(): Promise<WsLogaccess.GetLogAccessInfoResponse | { Exceptions?: Exceptions }> {
     if (!g_logAccessInfo) {
         g_logAccessInfo = service.GetLogAccessInfo({});
     }
@@ -41,8 +45,16 @@ export function CreateLogsQueryStore<T extends GetLogsExRequest>(): LogsQuerySto
 
 export function hasLogAccess(): Promise<boolean> {
     return GetLogAccessInfo().then(response => {
-        return response.RemoteLogManagerConnectionString !== null || response.RemoteLogManagerType !== null;
+        if (isExceptionResponse(response)) {
+            const err = response.Exceptions.Exception[0].Message;
+            logger.error(err);
+            return false;
+        } else {
+            response = response as WsLogaccess.GetLogAccessInfoResponse;
+            return response?.RemoteLogManagerConnectionString !== null || response?.RemoteLogManagerType !== null;
+        }
     }).catch(e => {
+        logger.error(e);
         return false;
     });
 }
