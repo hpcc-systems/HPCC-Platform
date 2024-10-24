@@ -299,8 +299,6 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     React.useEffect(() => {
         hasLogAccess().then(response => {
             setLogsDisabled(!response);
-        }).catch(() => {
-            setLogsDisabled(true);
         });
     }, []);
     const linkStyle = React.useCallback((disabled) => {

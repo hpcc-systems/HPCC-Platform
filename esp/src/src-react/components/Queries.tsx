@@ -134,7 +134,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 width: 16,
                 sortable: false,
                 formatter: (mixed, row) => {
-                    const mixedStates = row.Clusters.ClusterQueryState[0]?.MixedNodeStates ?? false;
+                    const mixedStates = row?.Clusters?.ClusterQueryState[0]?.MixedNodeStates ?? false;
                     if (mixedStates === true) {
                         return <Icon iconName="Error" />;
                     }
