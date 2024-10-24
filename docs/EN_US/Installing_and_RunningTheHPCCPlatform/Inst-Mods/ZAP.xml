@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1>
+  <title>ZAP Utility</title>
+
+  <sect2 id="ZAP">
+    <title>Z.A.P. Utility</title>
+
+    <para>The Zipped Analysis Package (Z.A.P.) button is a utility for
+    collecting system information and encapsulating it into a shareable
+    package. It is a useful tool for reporting errors, inconsistencies, or
+    other unexpected behavior. When there is such an occurrence, this utility
+    packages up information to send for further analysis.</para>
+
+    <figure>
+      <title>Z.A.P. Button</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/ECLWAZ00.jpg"/>
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para>To use the Z.A.P. utility, press the Z.A.P. button on the workunit
+    details page from the appropriate workunit. The button opens the Zipped
+    Analysis Package dialog.</para>
+
+    <para>Some of the required fields are populated. Fill in the corresponding
+    values under Description, History, and the other fields. Optionally, you
+    can password protect the ZAP package and choose to include worker logs.
+    Worker logs are not included by default. If there are worker logs, the
+    option to include them is available. You must check that field when
+    available to include the worker logs.</para>
+
+    <para>If your data contains sensitive information, such as personally
+    identifiable information (PII), save the ZAP package, sanitize the data,
+    then email it manually. If appropriate to share your data, you can take
+    advantage of the Send Email field.</para>
+
+    <para>The Send Email field is only available if email is configured for
+    the ESP service in the Configuration Manager. If available, check the Send
+    Email box to email the ZAP report. Only an Administrator can configure the
+    email. The (To) Email Address is also set by the Administrator and can
+    only be changed in the configuration. The (From) Email Address can be set
+    in the Configuration Manager, but can be changed if desired. The Email
+    Subject is required, but the Email Body is optional.</para>
+
+    <para>Press the <emphasis role="bold">Apply </emphasis>button when all the
+    dialog fields are completed. At that point if you checked the Send Email
+    box, the Z.A.P. report gets sent. If email is not configured, the Z.A.P.
+    utility generates a zip file with all the appropriate information for
+    troubleshooting.</para>
+
+    <para>You can find the generated zip file in your browser's designated
+    download directory. You can now manually send this file to the person
+    handling your support request, or you can upload the file into the issue
+    tracking system. Remember, you should only use the email feature if
+    appropriate to share your data.</para>
+  </sect2>
+</sect1>
+

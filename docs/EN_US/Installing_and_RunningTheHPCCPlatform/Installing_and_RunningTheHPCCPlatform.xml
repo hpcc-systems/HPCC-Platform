@@ -1967,6 +1967,9 @@ init_start_thor--></property></para>
       </itemizedlist>
 
       <para><?hard-pagebreak ?></para>
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ZAP.xml"
+                xpointer="xpointer(//*[@id='ZAP'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="hpcc-init">
