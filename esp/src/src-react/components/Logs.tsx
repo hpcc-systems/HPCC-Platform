@@ -228,7 +228,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
             }
         }
         const colTypes = logColumns?.map(c => c.LogType.toString()) ?? [];
-        removeAllExcept(retVal, colTypes);
+        removeAllExcept(retVal, [...colTypes, "LogLineLimit", "StartDate", "EndDate"]);
         return retVal;
     }, [filter, logColumns, wuid]);
 
