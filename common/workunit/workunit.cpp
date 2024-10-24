@@ -3687,7 +3687,8 @@ EnumMapping priorityClasses[] = {
 
 const char * getWorkunitStateStr(WUState state)
 {
-    dbgassertex(state < WUStateSize);
+    if (state >= WUStateSize)
+        return "unknown workunit state";
     return states[state].str; // MORE - should be using getEnumText, or need to take steps to ensure values remain contiguous and in order.
 }
 
@@ -14572,11 +14573,22 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         }
     }
 
+    // NB: check for expected success state (WUStateWait). If any other state, abort.
     {
         Owned<IWorkUnit> w = &workunit.lock();
         WUState state = w->getState();
-        if (WUStateFailed == state)
-            throw makeStringException(0, "Workunit failed");
+        if (WUStateWait != state) // expected state from successful Thor run from above
+        {
+            switch (state)
+            {
+                case WUStateAborting:
+                    throw new WorkflowException(0, "Workunit abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+                case WUStateFailed:
+                    throw makeStringException(0, "Workunit failed");
+                default:
+                    throw makeStringExceptionV(0, "Workunit failed. Unexpected state: %s", getWorkunitStateStr(state));
+            }
+        }
         w->setState(WUStateRunning);
     }
 #else
