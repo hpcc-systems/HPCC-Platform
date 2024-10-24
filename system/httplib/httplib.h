@@ -546,17 +546,17 @@ using SocketOptions = std::function<void(socket_t sock)>;
 inline void default_socket_options(socket_t sock) {
   int yes = 1;
 #ifdef _WIN32
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char *>(&yes),
-             sizeof(yes));
-  setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
-             reinterpret_cast<char *>(&yes), sizeof(yes));
+  (void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char *>(&yes),
+                   sizeof(yes));
+  (void)setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+                   reinterpret_cast<char *>(&yes), sizeof(yes));
 #else
 #ifdef SO_REUSEPORT
   (void)setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<void *>(&yes),
-             sizeof(yes));
+                   sizeof(yes));
 #else
   (void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&yes),
-             sizeof(yes));
+                   sizeof(yes));
 #endif
 #endif
 }
@@ -1858,7 +1858,7 @@ socket_t create_socket(const char *host, int port, int socket_flags,
     if (tcp_nodelay) {
       int yes = 1;
       (void)setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char *>(&yes),
-                 sizeof(yes));
+                       sizeof(yes));
     }
 
     if (socket_options) { socket_options(sock); }
@@ -1866,7 +1866,7 @@ socket_t create_socket(const char *host, int port, int socket_flags,
     if (rp->ai_family == AF_INET6) {
       int no = 0;
       (void)setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<char *>(&no),
-                 sizeof(no));
+                       sizeof(no));
     }
 
     // bind or connect
@@ -5586,16 +5586,16 @@ inline SSLSocketStream::SSLSocketStream(socket_t sock, SSL *ssl,
     tv.tv_sec = static_cast<long>(read_timeout_sec);
     tv.tv_usec = static_cast<decltype(tv.tv_usec)>(read_timeout_usec);
 
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char *>(&tv),
-               sizeof(tv));
+    (void)setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char *>(&tv),
+                     sizeof(tv));
   }
   {
     timeval tv;
     tv.tv_sec = static_cast<long>(write_timeout_sec);
     tv.tv_usec = static_cast<decltype(tv.tv_usec)>(write_timeout_usec);
 
-    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char *>(&tv),
-               sizeof(tv));
+    (void)setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char *>(&tv),
+                     sizeof(tv));
   }
 }
 
