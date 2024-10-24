@@ -3282,6 +3282,33 @@ public:
         setAccessedTime(dt);
     }
 
+    virtual void addNumDiskRead(stat_type numReads) override
+    {
+        if (!logicalName.isForeign() && numReads)
+        {
+            CFileAttrLock attrLock;
+            if (conn)
+                lockFileAttrLock(attrLock);
+
+            stat_type prevNumReads = queryAttributes().getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            queryAttributes().setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + numReads);
+        }
+    }
+
+    virtual void addReadCost(stat_type readCost) override
+    {
+        if (!logicalName.isForeign() && readCost)
+        {
+            CFileAttrLock attrLock;
+            if (conn)
+                lockFileAttrLock(attrLock);
+            IPropertyTree &attrs = queryAttributes();
+            cost_type legacyReadCost = getLegacyReadCost(attrs, this);
+            cost_type prevReadCost = attrs.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
+            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + readCost);
+        }
+    }
+
     virtual void addAttrValue(const char *attr, unsigned __int64 value) override
     {
         if (0==value)

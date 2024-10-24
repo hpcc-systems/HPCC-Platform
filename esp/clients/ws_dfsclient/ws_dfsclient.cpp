@@ -263,6 +263,14 @@ public:
     {
         legacyDFSFile->setAccessed();
     }
+    virtual void addNumDiskRead(stat_type numReads) override
+    {
+        legacyDFSFile->addNumDiskRead(numReads);
+    }
+    virtual void addReadCost(stat_type numReads) override
+    {
+        legacyDFSFile->addReadCost(numReads);
+    }
     virtual void addAttrValue(const char *attr, unsigned __int64 value) override
     {
         legacyDFSFile->addAttrValue(attr, value);
