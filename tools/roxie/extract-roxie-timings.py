@@ -23,6 +23,7 @@ import csv
 import sys
 import re
 import argparse
+import datetime
 
 def calculateDerivedStats(curRow):
 
@@ -91,18 +92,19 @@ def calculateSummaryStats(curRow, numCpus, numRows):
     timeQueryResponseSeconds = float(curRow.get("elapsed", 0.0)) / 1000
     avgTimeQueryResponseSeconds = timeQueryResponseSeconds / numRows if numRows else 0
 
-    maxPerCpuTransactionsPerSecond = 1000 * numRows / timeTotalCpu if timeTotalCpu else 0
-    maxTransactionsPerSecond = numCpus * maxPerCpuTransactionsPerSecond
+    perCpuTransactionsPerSecond = 1000 * numRows / timeTotalCpu if timeTotalCpu else 0
+    maxTransactionsPerSecond = numCpus * perCpuTransactionsPerSecond
     maxWorkerThreads = numCpus / workerCpuLoad if workerCpuLoad else 0
     maxFarmers = maxTransactionsPerSecond * avgTimeQueryResponseSeconds
 
+    curRow["perCpuTransactionsPerSecond"] = perCpuTransactionsPerSecond  # recorded but not reported
     curRow["MaxTransactionsPerSecond"] = maxTransactionsPerSecond
     curRow["MaxWorkerThreads"] = maxWorkerThreads
     curRow["MaxFarmers"] = maxFarmers
 
     #Expected cpu load for 10 transactions per second per node
-    if maxPerCpuTransactionsPerSecond:
-        curRow["ExpectedCpuLoad10"] = 10 / maxPerCpuTransactionsPerSecond
+    if perCpuTransactionsPerSecond:
+        curRow["ExpectedCpuLoad10"] = 10 / perCpuTransactionsPerSecond
 
 def printRow(curRow):
 
@@ -183,6 +185,11 @@ if __name__ == "__main__":
                         timestamp = row[i] + ' ' + row[i+1]
                         curRow["time"] = row[i+1]
                         break
+
+                if minTimeStamp == '' or timestamp < minTimeStamp:
+                    minTimeStamp = timestamp
+                if maxTimeStamp == '' or timestamp > maxTimeStamp:
+                    maxTimeStamp = timestamp
 
                 nesting = list()
                 prefix = ''
@@ -275,6 +282,16 @@ if __name__ == "__main__":
     allStats["MaxFarmers"] = 1
     allStats["ExpectedCpuLoad10"] = 1
 
+    elapsed = 0
+    try:
+        minTime = datetime.datetime.strptime(minTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
+        maxTime = datetime.datetime.strptime(maxTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
+        elapsed = (maxTime - minTime).seconds
+        print(f"Time range: ['{minTimeStamp}'..'{maxTimeStamp}'] = {elapsed}s")
+
+    except:
+        pass
+
     # Create a string containing all the stats that were found in the file.
     headings =  'id'
     for statName in allStats:
@@ -351,4 +368,13 @@ if __name__ == "__main__":
             for centile in centiles:
                 printRow(centileRows[centile])
 
+            print()
+            #These stats are only really revelant if it is including all the transactions from all services
+            #they may need rethinking a little.
+            if elapsed and numRows > 1:
+                perCpuTransactionsPerSecond = totalRow["perCpuTransactionsPerSecond"]
+                #elapsed is time from end of 1st transaction to end of last transaction - so subtract 1 from number of rows
+                actualTransationsPerSecond = (numRows - 1) / elapsed
+                expectedCpuLoad = actualTransationsPerSecond / perCpuTransactionsPerSecond if perCpuTransactionsPerSecond else 0
+                print(f"Transactions: Throughput={actualTransationsPerSecond}/s Time={1/actualTransationsPerSecond}s  ExpectedCpuLoad={expectedCpuLoad}")
             print()
