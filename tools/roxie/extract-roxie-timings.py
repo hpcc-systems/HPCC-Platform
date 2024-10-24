@@ -54,7 +54,7 @@ def calculateDerivedStats(curRow):
 
     timeLocalCpu = timeLocalExecute - timeAgentWait - timeSoapcall
     timeRemoteCpu = timeAgentProcess - timeLeafRead - timeBranchRead
-    workerCpuLoad = timeRemoteCpu / timeAgentProcess
+    workerCpuLoad = timeRemoteCpu / timeAgentProcess if timeAgentProcess else 0
 
     if numLeafHits + numLeafAdds:
         curRow["%LeafMiss"] = 100*numLeafAdds/(numLeafAdds+numLeafHits)
@@ -85,18 +85,24 @@ def calculateSummaryStats(curRow, numCpus, numRows):
 
     timeLocalCpu = float(curRow.get("TimeLocalCpu", 0.0))
     timeRemoteCpu = float(curRow.get("TimeRemoteCpu", 0.0))
+    timeTotalCpu = timeLocalCpu + timeRemoteCpu
     workerCpuLoad = float(curRow.get("WorkerCpuLoad", 0.0))
 
     timeQueryResponseSeconds = float(curRow.get("elapsed", 0.0)) / 1000
     avgTimeQueryResponseSeconds = timeQueryResponseSeconds / numRows if numRows else 0
 
-    maxTransactionsPerSecond = numCpus * 1000 * numRows / (timeLocalCpu + timeRemoteCpu)
-    maxWorkerThreads = numCpus / workerCpuLoad
+    maxPerCpuTransactionsPerSecond = 1000 * numRows / timeTotalCpu if timeTotalCpu else 0
+    maxTransactionsPerSecond = numCpus * maxPerCpuTransactionsPerSecond
+    maxWorkerThreads = numCpus / workerCpuLoad if workerCpuLoad else 0
     maxFarmers = maxTransactionsPerSecond * avgTimeQueryResponseSeconds
 
     curRow["MaxTransactionsPerSecond"] = maxTransactionsPerSecond
     curRow["MaxWorkerThreads"] = maxWorkerThreads
     curRow["MaxFarmers"] = maxFarmers
+
+    #Expected cpu load for 10 transactions per second per node
+    if maxPerCpuTransactionsPerSecond:
+        curRow["ExpectedCpuLoad10"] = 10 / maxPerCpuTransactionsPerSecond
 
 def printRow(curRow):
 
@@ -202,6 +208,9 @@ if __name__ == "__main__":
                                 continue
                             allStats[name] = 1
                             castValue = -1
+                            #Remove any trailing comma that should not be present
+                            if value[-1] == ',':
+                                value = value[0:-1]
 
                             #Apply  any scaling to the values
                             matchHMS = hourMinuteSecondPattern.match(value)
@@ -235,7 +244,7 @@ if __name__ == "__main__":
                                     curRow[name] = castValue
                             else:
                                 curRow[name] = value
-                    elif '}' == cur:
+                    elif '}' == cur[0]:
                         prefix = nesting.pop()
 
                 if combineServices:
@@ -264,6 +273,7 @@ if __name__ == "__main__":
     allStats["MaxTransactionsPerSecond"] = 1
     allStats["MaxWorkerThreads"] = 1
     allStats["MaxFarmers"] = 1
+    allStats["ExpectedCpuLoad10"] = 1
 
     # Create a string containing all the stats that were found in the file.
     headings =  'id'
