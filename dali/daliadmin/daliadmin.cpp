@@ -93,6 +93,7 @@ void usage(const char *exe)
   printf("Other dali server and misc commands:\n");
   printf("  auditlog <fromdate> <todate> <match>\n");
   printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
+  printf("  cleanjobqueues [dryrun]\n");
   printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
   printf("  coalesce                        -- force transaction coalesce\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
@@ -575,6 +576,11 @@ int main(int argc, const char* argv[])
                                 reconstruct = false;
                         }
                         removeOrphanedGlobalVariables(dryrun, reconstruct);
+                    }
+                    else if (strieq(cmd, "cleanjobqueues"))
+                    {
+                        bool dryRun = np>0 && strieq("dryrun", params.item(1));
+                        cleanJobQueues(dryRun);
                     }
                     else if (strieq(cmd, "remotetest"))
                         remoteTest(params.item(1), true);
