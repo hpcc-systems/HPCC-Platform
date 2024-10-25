@@ -223,6 +223,9 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
+# ensure httplib uses poll rather than select - otherwise it fail if too many sockets have been opened.
+ADD_DEFINITIONS( -DCPPHTTPLIB_USE_POLL )
+
 ADD_DEFINITIONS( -D_USRDLL -DJLIB_EXPORTS )
 HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 

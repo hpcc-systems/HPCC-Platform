@@ -30,6 +30,9 @@ include_directories(
         ${HPCC_SOURCE_DIR}/system/httplib
 )
 
+# ensure httplib uses poll rather than select - otherwise it fail if too many sockets have been opened.
+ADD_DEFINITIONS( -DCPPHTTPLIB_USE_POLL )
+
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 ADD_DEFINITIONS(  -DPROMETHEUSSINK_EXPORTS )
 HPCC_ADD_LIBRARY( hpccmetrics_prometheussink SHARED ${srcs} )
