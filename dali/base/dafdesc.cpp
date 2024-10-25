@@ -3498,6 +3498,11 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
 
 void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
 {
+    // Check that storage plane does not already have a definition
+    VStringBuffer xpath("planes[@name='%s']", name.str());
+    if (storage->hasProp(xpath))
+        return;
+
     IPropertyTree * plane = storage->addPropTree("planes");
     StringBuffer mirrorname;
     const char * planeName = name;
@@ -3538,6 +3543,8 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
 
     const char * category = (dropZoneIndex != 0) ? "lz" : "data";
     plane->setProp("@category", category);
+
+    plane->setPropBool("@fromGroup", true);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
@@ -3652,8 +3659,12 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
         storage.set(globalConfig->addPropTree("storage"));
 
 #ifndef _CONTAINERIZED
-    if (createPlanesFromGroups && !storage->hasProp("planes"))
+    if (createPlanesFromGroups)
     {
+        // Remove old planes created from groups
+        while (storage->removeProp("planes[@fromGroup='1']"));
+        storage->removeProp("hostGroups"); // generateHosts will recreate host groups for all planes
+
         GroupInfoArray allGroups;
         unsigned numDropZones = 0;
 
@@ -3704,7 +3715,6 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
         //printYAML(storage);
     }
 #endif
-
 
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups();
