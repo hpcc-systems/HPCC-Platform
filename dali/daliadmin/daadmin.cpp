@@ -3385,4 +3385,43 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
     }
 }
 
+void cleanJobQueues(bool dryRun)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/JobQueues", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+    if (!conn)
+    {
+        WARNLOG("Failed to connect to /JobQueues");
+        return;
+    }
+    Owned<IPropertyTreeIterator> queueIter = conn->queryRoot()->getElements("Queue");
+    ForEach(*queueIter)
+    {
+        IPropertyTree &queue = queueIter->query();
+        const char *name = queue.queryProp("@name");
+        if (isEmptyString(name)) // should not be blank, but guard
+            continue;
+        PROGLOG("Processing queue: %s", name);
+        VStringBuffer queuePath("/JobQueues/Queue[@name=\"%s\"]", name);
+        Owned<IRemoteConnection> queueConn = querySDS().connect(queuePath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        IPropertyTree *queueRoot = queueConn->queryRoot();
+
+        Owned<IPropertyTreeIterator> clientIter = queueRoot->getElements("Client");
+        std::vector<IPropertyTree *> toRemove;
+        ForEach (*clientIter)
+        {
+            IPropertyTree &client = clientIter->query();
+            if (client.getPropInt("@connected") == 0)
+                toRemove.push_back(&client);
+        }
+        if (!dryRun)
+        {
+            for (auto &client: toRemove)
+                queue.removeTree(client);
+        }
+        PROGLOG("Job queue '%s': %s %u stale client entries", name, dryRun ? "dryrun, there are" : "removed", (unsigned)toRemove.size());
+        queueConn->commit();
+        queueConn.clear();
+    }
+}
+
 } // namespace daadmin
