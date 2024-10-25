@@ -913,6 +913,26 @@ void testEncodeCSVColumn()
         source.set("abbabab");
         source.replaceString("ab", "xxx");
         CPPUNIT_ASSERT_EQUAL_STR("xxxbxxxxxx", source.str());
+
+        // Search string has same length as source string and matches
+        source.set("ababab");
+        source.replaceString("ababab", "xxxxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxxxxx", source.str());
+
+        // Search string has same length as source string and replace is smaller than source
+        source.set("ababab");
+        source.replaceString("ababab", "xxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxx", source.str());
+
+        // Search string has same length as source string and replace is larger than source
+        source.set("ababab");
+        source.replaceString("ababab", "xxxxxxxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxxxxxxxx", source.str());
+
+        // Search string has same length as source string and does not match
+        source.set("ababab");
+        source.replaceString("ababac", "xxxxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("ababab", source.str());
     }
 };
 

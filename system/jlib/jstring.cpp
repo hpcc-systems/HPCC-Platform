@@ -935,13 +935,10 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 }
 
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
-StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
+bool replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr, bool avoidCopyIfUnmatched)
 {
     if (lenOldStr && lenSource >= lenOldStr)
     {
-        // Avoid allocating an unnecessarly large buffer and match the source string
-        result.ensureCapacity(lenSource);
-
         size_t offset = 0;
         size_t lastCopied = 0;
         size_t maxOffset = lenSource - lenOldStr + 1;
@@ -951,6 +948,10 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
             if (unlikely(source[offset] == firstChar)
                 && unlikely((lenOldStr == 1) || memcmp(source + offset, oldStr, lenOldStr)==0))
             {
+                // Wait to allocate memory until a match is found
+                if (!lastCopied)
+                    result.ensureCapacity(lenSource); // Avoid allocating an unnecessarly large buffer and match the source string
+
                 // If lastCopied matches the offset nothing is appended, but we can avoid a test for offset == lastCopied
                 result.append(offset - lastCopied, source + lastCopied);
                 result.append(lenNewStr, newStr);
@@ -960,13 +961,16 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
             else
                 offset++;
         }
-        // Append the remaining characters
-        result.append(lenSource - lastCopied, source + lastCopied);
+
+        if (lastCopied || !avoidCopyIfUnmatched)
+            result.append(lenSource - lastCopied, source + lastCopied); // Append the remaining characters
+
+        return lastCopied != 0;
     }
-    else
+    else if (!avoidCopyIfUnmatched)
         result.append(lenSource, source); // Search string does not fit in source or is empty
 
-    return result;
+    return false;
 }
 
 StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool exceptions, IVariableSubstitutionHelper *helper, const char* delim, const char* term)
@@ -1056,13 +1060,16 @@ StringBuffer &replaceStringNoCase(StringBuffer & result, size_t lenSource, const
 // this method will replace all occurrences of "oldStr" with "newStr"
 StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
 {
-    if (curLen)
+    if (curLen && oldStr)
     {
+        size_t oldlen = strlen(oldStr);
+        if (oldlen > curLen)
+            return *this;
+
         StringBuffer temp;
-        size_t oldlen = oldStr ? strlen(oldStr) : 0;
         size_t newlen = newStr ? strlen(newStr) : 0;
-        ::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
-        swapWith(temp);
+        if (::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr, true))
+            swapWith(temp);
     }
     return *this;
 }
