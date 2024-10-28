@@ -1,0 +1,60 @@
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+#!/usr/bin/env python3
+
+import os
+import configparser
+from cryptography.fernet import Fernet
+import argparse
+
+parser = argparse.ArgumentParser(
+  description='Encrypt password using Fernet symmetric encryption',
+  prog='encrypt.py',
+  epilog='Example: python3 encrypt.py <option> <password>'
+)
+
+parser.add_argument('password', help='Password to encrypt')
+parser.add_argument('-k', '--key_file', help='Path to key file', required=False)
+parser.add_argument('-c', '--config_file', help='Path to configuration file', required=False)
+parser.add_argument('-o', '--output_file', help='Path to output file', required=False, default='password.enc')
+args = parser.parse_args()
+
+# Read the configuration file
+config = configparser.ConfigParser()
+if args.config_file:
+  config_file = args.config_file
+else:
+  config_file = os.path.join('/etc/hpccsystems', 'fetch_assets.ini')
+if not config.read(config_file):
+  print(f"Configuration file not found: {config_file}")
+  exit(1)
+
+if args.key_file:
+  encryption_key = args.key_file
+else:
+  encryption_key = config.get('security', 'key_path')
+
+# Read the encryption key and load cipher suite
+with open(encryption_key, 'rb') as key_file:
+  key = key_file.read()
+cipher_suite = Fernet(key)
+
+# Encrypt the password
+encrypt_password = cipher_suite.encrypt(args.password.encode())
+with open(args.output_file, 'wb') as output:
+  output.write(encrypt_password)
+ 
