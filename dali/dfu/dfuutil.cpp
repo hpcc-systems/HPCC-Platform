@@ -530,13 +530,18 @@ public:
         if (iskey&&!cluster2.isEmpty())
             dstfdesc->addCluster(cluster2,grp2,spec2);
 
-        for (unsigned pn=0; pn<numParts; pn++) {
-            offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
+        for (unsigned pn=0; pn<numParts; pn++)
+        {
+            IPropertyTree &srcProps = srcfdesc->queryPart(pn)->queryProperties();
+            IPropertyTree &dstProps = dstfdesc->queryPart(pn)->queryProperties();
+            offset_t sz = srcProps.getPropInt64("@size",-1);
             if (sz!=(offset_t)-1)
-                dstfdesc->queryPart(pn)->queryProperties().setPropInt64("@size",sz);
+                dstProps.setPropInt64("@size",sz);
             StringBuffer dates;
-            if (srcfdesc->queryPart(pn)->queryProperties().getProp("@modified",dates))
-                dstfdesc->queryPart(pn)->queryProperties().setProp("@modified",dates.str());
+            if (srcProps.getProp("@modified",dates))
+                dstProps.setProp("@modified",dates.str());
+            if (srcProps.hasProp("@kind"))
+                dstProps.setProp("@kind", srcProps.queryProp("@kind"));
         }
 
         if (!copyphysical) //cloneFrom tells roxie where to copy from.. it's unnecessary if we already did the copy
