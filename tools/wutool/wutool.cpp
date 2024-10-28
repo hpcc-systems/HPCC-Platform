@@ -37,9 +37,9 @@
 #include "eclrtl.hpp"
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
+static unsigned testSize = 1000;
 #endif
 
-static unsigned testSize = 1000;
 
 void usage(const char * action = nullptr)
 {
