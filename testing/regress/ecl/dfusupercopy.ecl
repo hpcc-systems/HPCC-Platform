@@ -31,6 +31,8 @@ ds1 := DATASET([{'Ned'},{'Robert'}, {'Jaime'}, {'Catelyn'}, {'Cersei'}, {'Daener
 ds2 := DATASET([{'Sansa'}, {'Arya'}, {'Robb'}, {'Theon'}, {'Bran'}, {'Joffrey'}, {'Hound'}, {'Tyrion'}], layout_user, DISTRIBUTED);
 ds3 := DATASET([{'Arya'}, {'Robb'}, {'Theon'}, {'Bran'}, {'Joffrey'}, {'Hound'}, {'Tyrion'}], layout_user, DISTRIBUTED);
 
+dsSuperData := DATASET(prefix+'superdata', layout_user, FLAT);
+
 SEQUENTIAL(
     OUTPUT(ds1, , prefix + 'subdata1', OVERWRITE),
     OUTPUT(ds2, , prefix + 'subdata2', OVERWRITE),
@@ -42,6 +44,7 @@ SEQUENTIAL(
     FileServices.AddSuperFile(prefix + 'superdata', prefix + 'subdata3'),
     FileServices.FinishSuperFileTransaction(),
     FileServices.Copy(sourceLogicalName := prefix + 'superdata', destinationGroup := '', destinationLogicalName := prefix + 'super_copy', ALLOWOVERWRITE := true),
+    OUTPUT(SORT(dsSuperData, user), NAMED('superdata')),
     FileServices.DeleteLogicalFile(prefix + 'super_copy', true),
     FileServices.DeleteLogicalFile(prefix + 'superdata', true),
     FileServices.DeleteLogicalFile(prefix + 'subdata1', true),
