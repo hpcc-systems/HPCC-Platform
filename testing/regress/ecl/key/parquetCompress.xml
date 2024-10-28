@@ -19,8 +19,9 @@
  <Row><testid>1</testid><testname>lon</testname><value>This is a long string to test the maximum length of a STRING field in HPCC</value></Row>
 </Dataset>
 <Dataset name='QStringData'>
- <Row><testid>0</testid><testname>quo</testname><value>STRING WITH &quot;QUOTES&quot; AND SPACES  </value></Row>
- <Row><testid>1</testid><testname>spe</testname><value>STRING WITH   NEWLINE AND   TAB</value></Row>
+ <Row><testid>0</testid><testname>quo</testname><value>String with &quot;quotes&quot; and spaces  </value></Row>
+ <Row><testid>1</testid><testname>spe</testname><value>String with 
+ newline and 	 tab</value></Row>
 </Dataset>
 <Dataset name='UnicodeData'>
  <Row><testid>0</testid><testname>mix</testname><value>ASCII and Unicode こんにちは</value></Row>
