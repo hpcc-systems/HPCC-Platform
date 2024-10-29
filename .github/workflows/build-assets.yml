@@ -704,7 +704,7 @@ jobs:
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-2022-logs
           path: ./ECLIDE/build/**/*.log
