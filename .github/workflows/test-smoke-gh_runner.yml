@@ -132,7 +132,7 @@ jobs:
 
       - name: regression-run-logs-artifact
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-smoke-${{ inputs.asset-name }}-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
           path: |
