@@ -38,5 +38,9 @@ protected:
 protected:
     StringBuffer indexName;
     bool ignoreZeroMetrics = false;
-    StringBuffer elasticHost;
+    StringBuffer elasticHostUrl;
+    StringBuffer countMetricSuffix;
+    StringBuffer gaugeMetricSuffix;
+    StringBuffer histogramMetricSuffix;
+    bool configurationValid = false;
 };

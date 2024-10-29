@@ -177,3 +177,114 @@ HPCC metrics can be easily routed to Azure Insights for application level monito
       11/5/2021, 9:02:00.000 PM	prometheus	esp_requests_active	0	{"app":"eclservices","namespace":"default","pod_name":"eclservices-778477d679-vgpj2"}
       11/5/2021, 9:02:00.000 PM	prometheus	esp_requests_active	3	{"app":"eclservices","namespace":"default","pod_name":"eclservices-778477d679-vgpj2"}
       ```
+###  ElasticSearch Support
+HPCC metrics can be routed to ElasticSearch for advanced metrics processing and 
+alerting. This process involves two requirements: enabling the ElasticSearch metric 
+sink, and configuring the index in ElasticSearch to receive the metrics.
+
+Since the metrics configuration is common across all HPCC components, the ElasticSearch
+sink will report metrics from all components to the same index. Therefore, the
+index must be configured to receive metrics from all components. 
+
+#### Index Configuration
+The index must be created in ElasticSearch before metrics can be reported to it. The name is passed
+to the sink as a configuration setting. The index must be created with the following settings:
+
+##### Dynamic Mapping
+The index must be created with dynamic mapping enabled. Dynamic mapping allows framework metric 
+data types to be stored in the index in their native types. Without dynamic mapping, the ElasticSearch
+default mapping does not properly map value to unsigned 64-bit integers. 
+
+To create an index with dynamic mapping, use the following object when creating the index:
+```code json
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "hpcc_metric_count_to_unsigned_long": {
+          "match": "*_count",
+          "mapping": {
+            "type": "unsigned_long"
+          }
+        }
+      },
+      {
+        "hpcc_metric_gauge_to_unsigned_long": {
+          "match": "*_gauge",
+          "mapping": {
+            "type": "unsigned_long"
+          }
+        }
+      },
+      {
+        "hpcc_metric_histogram_to_histogram": {
+          "match": "*_histogram",
+          "mapping": {
+            "type": "histogram"
+          }
+        }
+      }
+    ]
+  }
+}  
+```
+
+Note that there may be other means for adding the required dynamic mapping to the index. 
+
+The _match_ values above are representative of typical values. The actual values may
+vary depending on the cluster configuration and shared use of the index across multiple clusters.
+In all cases, the configuration of the sink must match that of the dynamic mappings in the index.
+
+#### Enabling ElasticSearch Metrics Sink for Kubernetes
+To enable reporting of metrics to ElasticSearch, add the metric configuration settings to 
+the helm chart. 
+
+The provided HPCC helm chart provides all global settings from its values.yml file to all components. 
+To enable metrics reporting, either include the metrics configuration as a permanent part of 
+your HPCC helm chart values.yml file, or add it as command line settings at chart installation. 
+To enable the ElasticSearch sink on the command line, use the following to add the ElasticSearch 
+settings:
+
+```code
+helm install mycluster ./hpcc -f <path>/elasticsearch_metrics.yml
+```
+An example _yml_ file can be found in the repository at helm/examples/metrics/elasticsearch_metrics.yml.
+Make a copy and modify as needed for your installation.
+
+##### Configuration Settings
+The ElasticSearch sink defines the following settings:
+
+* hostProtocol - The protocol used to connect to the ElasticSearch server. (default: https)
+* hostName - The host name or IP address of the ElasticSearch server. (required)
+* hostPort - The port number of the ElasticSearch server. (default: 9200)
+* indexName - The name of the index to which metrics are reported. (required)
+* countMetricSuffix - The suffix used to identify count metrics. (default: count)
+* gaugeMetricSuffix - The suffix used to identify gauge metrics. (default: gauge)
+* histogramMetricSuffix - The suffix used to identify histogram metrics. (default: histogram)
+
+Standard periodic metric sink settings are also available.
+
+#### Enabling ElasticSearch Metrics Sink for Bare Metal
+To enable reporting of metrics to ElasticSearch, add the metric configuration settings to
+the environment configuration file (enviroment.xml). These settings must be added manually
+since there is no support in the config manager.
+
+Add the following to the environment configuration file (note only the required
+settings are shown):
+
+```code xml
+
+<Environment>
+    <Software>
+        <metrics name="mymetricsconfig">
+            <sinks name="myelasticsink" type="elastic">
+                <settings period="30" ignoreZeroMetrics="1">
+                    <host name="<hostname>" port="<port>" protocol="http|htps"/>
+                    <index name="<index>"/> 
+                <settings/>
+            </sinks>
+        </metrics>
+    </Software>
+</Environment>
+```
+See section above for additional settings that can be added to the ElasticSearch sink.

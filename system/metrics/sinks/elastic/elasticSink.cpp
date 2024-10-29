@@ -12,7 +12,6 @@
 ############################################################################## */
 
 #include "elasticSink.hpp"
-
 #include "nlohmann/json.hpp"
 
 //including cpp-httplib single header file REST client
@@ -43,8 +42,66 @@ ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSet
     PeriodicMetricSink(name, "elastic", pSettingsTree)
 {
     ignoreZeroMetrics = pSettingsTree->getPropBool("@ignoreZeroMetrics", true);
-    pSettingsTree->getProp("@elasticHost", elasticHost);
-    pSettingsTree->getProp("@indexName", indexName);
+
+    StringBuffer hostName;
+    StringBuffer hostProtocol;
+    StringBuffer hostPort;
+
+    Owned<IPropertyTree> pHostConfigTree = pSettingsTree->getPropTree("host");
+    if (pHostConfigTree)
+    {
+        pHostConfigTree->getProp("@name", hostName);
+
+        if (!pHostConfigTree->getProp("@protocol", hostProtocol))
+        {
+            hostProtocol.append("https");
+        }
+
+        if (!pHostConfigTree->getProp("@port", hostPort))
+        {
+            hostPort.append("9200");
+        }
+    }
+
+    if (!hostName.isEmpty() && !hostPort.isEmpty() && !hostProtocol.isEmpty())
+    {
+        elasticHostUrl.append(hostProtocol).append("://").append(hostName).append(":").append(hostPort);
+    }
+    else
+    {
+        WARNLOG("ElasticMetricSink: Host configuration missing or invalid");
+    }
+
+    Owned<IPropertyTree> pIndexConfigTree = pSettingsTree->getPropTree("index");
+    if (pIndexConfigTree)
+    {
+        pSettingsTree->getProp("@name", indexName);
+    }
+
+    if (indexName.isEmpty())
+    {
+        WARNLOG("ElasticMetricSink: Index configuration missing or invalid");
+    }
+
+
+    // Both a host url and an index name are required
+    configurationValid = !elasticHostUrl.isEmpty() && !indexName.isEmpty();
+
+    // Initialize standard suffixes
+    if (!pSettingsTree->getProp("@countMetricSuffix", countMetricSuffix))
+    {
+        countMetricSuffix.append("count");
+    }
+
+    if (!pSettingsTree->getProp("@gaugeMetricSuffix", gaugeMetricSuffix))
+    {
+        gaugeMetricSuffix.append("gauge");
+    }
+
+    if (!pSettingsTree->getProp("@histogramMetricSuffix", histogramMetricSuffix))
+    {
+        histogramMetricSuffix.append("histogram");
+    }
 }
 
 
@@ -62,6 +119,6 @@ void ElasticMetricSink::doCollection()
 
 void ElasticMetricSink::collectingHasStopped()
 {
-    ;
+
 }
 
