@@ -26,6 +26,7 @@
 #include "thorport.hpp"
 #include "thbufdef.hpp"
 #include "thexception.hpp"
+#include "thormisc.hpp"
 
 #define NUMINPARALLEL 16
 
@@ -115,7 +116,7 @@ public:
         checkFormatCrc(this, file, helper->getFormatCrc(), nullptr, helper->getFormatCrc(), nullptr, true);
         Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
-        if (!tlkDesc->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", tlkDesc->queryProperties().queryProp("@kind")))
+        if (!hasTLK(*file, this))
             throw MakeActivityException(this, 0, "Cannot distribute using a non-distributed key: '%s'", scoped.str());
         unsigned location;
         OwnedIFile iFile;

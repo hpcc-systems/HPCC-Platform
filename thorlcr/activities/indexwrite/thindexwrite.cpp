@@ -159,9 +159,9 @@ public:
             checkFormatCrc(this, _f, helper->getFormatCrc(), nullptr, helper->getFormatCrc(), nullptr, true);
             IDistributedFile *f = _f->querySuperFile();
             if (!f) f = _f;
-            Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
-            if (!existingTlk->queryAttributes().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryAttributes().queryProp("@kind")))
+            if (!hasTLK(*f, this))
                 throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fileName.get(), diName.get());
+            Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
             IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
             IPropertyTree &props = tlkDesc->queryProperties();
             if (existingTlk->queryAttributes().hasProp("@size"))
