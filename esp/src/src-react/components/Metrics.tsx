@@ -15,7 +15,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
-import { pushUrl as _pushUrl } from "../util/history";
+import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
@@ -45,7 +45,6 @@ interface MetricsProps {
     queryId?: string;
     parentUrl?: string;
     selection?: string;
-    fullscreen?: boolean;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
@@ -53,8 +52,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     querySet = "",
     queryId = "",
     parentUrl = `/workunits/${wuid}/metrics`,
-    selection,
-    fullscreen = false
+    selection
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
@@ -97,19 +95,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }).catch(err => logger.error(err));
     }, [wuid]);
 
-    const pushUrl = React.useCallback((selection?: string, fullscreen?: boolean) => {
-        const selectionStr = selection?.length ? `/${selection}` : "";
-        const fullscreenStr = fullscreen ? "?fullscreen" : "";
-        _pushUrl(`${parentUrl}${selectionStr}${fullscreenStr}`);
-    }, [parentUrl]);
-
     const pushSelectionUrl = React.useCallback((selection: string) => {
-        pushUrl(selection, fullscreen);
-    }, [fullscreen, pushUrl]);
-
-    const pushFullscreenUrl = React.useCallback((fullscreen: boolean) => {
-        pushUrl(selection, fullscreen);
-    }, [pushUrl, selection]);
+        const selectionStr = selection?.length ? `/${selection}` : "";
+        pushUrl(`${parentUrl}${selectionStr}`);
+    }, [parentUrl]);
 
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");
@@ -532,18 +521,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 }]
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
-            onClick: () => pushFullscreenUrl(!fullscreen)
-        }
-    ], [dot, formatColumns, fullscreen, metrics, pushFullscreenUrl, wuid]);
+    ], [dot, formatColumns, metrics, wuid]);
 
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);
     }, []);
 
-    return <HolyGrail fullscreen={fullscreen}
+    return <HolyGrail
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
             <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={!view.showTimeline} />

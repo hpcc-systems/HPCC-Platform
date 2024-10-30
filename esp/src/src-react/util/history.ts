@@ -3,8 +3,9 @@ import { parse, ParsedQuery, pick, stringify } from "query-string";
 import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { QuerySortItem } from "src/store/Store";
+import { ParamValue, SearchParams } from "./hashUrl";
 
-const logger = scopedLogger("../util/history.ts");
+const logger = scopedLogger("src-react/util/history.ts");
 
 let g_router: UniversalRouter;
 
@@ -79,6 +80,17 @@ export function updatePage(pageNum: string) {
     updateParam("pageNum", pageNum);
 }
 
+export function parseFullscreen(_: string): boolean {
+    const searchParams = new SearchParams(_);
+    return searchParams.fullscreen();
+}
+
+export function updateFullscreen(fullscreen: boolean) {
+    const searchParams = new SearchParams(hashHistory.location.search);
+    searchParams.fullscreen(fullscreen);
+    updateSearch(searchParams);
+}
+
 interface HistoryLocation {
     pathname: string;
     search: string;
@@ -148,6 +160,8 @@ class History<S extends object = object> {
     }
 
     push(to: { pathname?: string, search?: string }) {
+        to.pathname = to.pathname ?? this.location.pathname;
+        to.search = to.search ?? this.location.search;
         const newHash = this.fixHash(`${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`);
         if (window.location.hash !== newHash) {
             globalHistory.pushState(undefined, "", newHash);
@@ -209,8 +223,8 @@ export function pushSearch(_: object) {
     });
 }
 
-export function updateSearch(_: object) {
-    const search = stringify(_ as any);
+export function updateSearch(searchParams: SearchParams) {
+    const search = searchParams.serialize();
     hashHistory.replace({
         search: search ? "?" + search : ""
     });
@@ -259,14 +273,10 @@ export function pushParams(search: { [key: string]: string | string[] | number |
     pushSearch(calcParams(search, keepEmpty));
 }
 
-export function updateParam(key: string, val?: string | string[] | number | boolean) {
-    const params = parseQuery(hashHistory.location.search);
-    if (val === undefined) {
-        delete params[key];
-    } else {
-        params[key] = val;
-    }
-    updateSearch(params);
+export function updateParam(key: string, val?: ParamValue) {
+    const searchParams = new SearchParams(hashHistory.location.search);
+    searchParams.param(key, val);
+    updateSearch(searchParams);
 }
 
 export function updateState(key: string, val?: string | string[] | number | boolean) {
