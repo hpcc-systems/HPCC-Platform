@@ -1535,8 +1535,11 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
 
             updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse", StTimeElapsed, NULL, parseTimeNs);
             stat_type sourceDownloadTime = localRepositoryManager.getStatistic(StTimeElapsed);
+            stat_type sourceDownloadBlockedTime = localRepositoryManager.getStatistic(StTimeBlocked);
             if (sourceDownloadTime)
                 updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse:>download", StTimeElapsed, NULL, sourceDownloadTime);
+            if (sourceDownloadBlockedTime)
+                updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse:>download", StTimeBlocked, NULL, sourceDownloadBlockedTime);
 
             if (optExtraStats)
             {
