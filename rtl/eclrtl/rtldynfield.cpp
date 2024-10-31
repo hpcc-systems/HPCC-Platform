@@ -1690,6 +1690,7 @@ private:
                         {
                             const RtlRecord *subDest = destRecInfo.queryNested(idx);
                             const RtlRecord *subSrc = sourceRecInfo.queryNested(info.matchIdx);
+                            assertex(subSrc);
                             info.subTrans = new GeneralRecordTranslator(*subDest, *subSrc, binarySource);
                             if (!info.subTrans->needsTranslate())
                             {
