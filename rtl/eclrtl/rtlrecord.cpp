@@ -292,6 +292,12 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
         const RtlTypeInfo *curType = queryType(i);
         if (!curType->isFixedSize() || (fields[i]->flags & RFTMinifblock))
             numVarFields++;
+        if (curType->isBlob())
+        {
+            curType = curType->queryChildType();
+            if (unlikely(!curType))
+                throwUnexpectedX("Blob type has no child type");
+        }
         if (curType->getType()==type_table || curType->getType()==type_record || curType->getType()==type_dictionary)
             numTables++;
     }
@@ -331,6 +337,8 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
             curVariable++;
             fixedOffset = 0;
         }
+        if (curType->isBlob())
+            curType = curType->queryChildType();
         switch (curType->getType())
         {
         case type_table:

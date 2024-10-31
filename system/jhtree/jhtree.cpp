@@ -3636,7 +3636,7 @@ protected:
     {
         const char *json = variable ?
                 "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
-                "  \"ty2\": { \"fieldType\": 15, \"length\": 8 }, "
+                "  \"ty2\": { \"fieldType\": 15, \"length\": 8, \"child\": \"ty1\" }, "
                 " \"fieldType\": 13, \"length\": 10, "
                 " \"fields\": [ "
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
@@ -3816,13 +3816,22 @@ protected:
 
     void testKeys()
     {
-        ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
-        for (bool var : { true, false })
-            for (bool trail : { false, true })
-                for (bool noseek : { false, true })
-                    for (bool quick : { true, false })
-                        for (const char * compression : { (const char *)nullptr, "POC", "inplace" })
-                            testKeys(var, trail, noseek, quick, compression);
+        try
+        {
+            ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
+            for (bool var : { true, false })
+                for (bool trail : { false, true })
+                    for (bool noseek : { false, true })
+                        for (bool quick : { true, false })
+                            for (const char * compression : { (const char *)nullptr, "POC", "inplace" })
+                                testKeys(var, trail, noseek, quick, compression);
+        }
+        catch (IException * e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            CPPUNIT_ASSERT_MESSAGE(s.str(), false);
+        }
     }
 };
 
