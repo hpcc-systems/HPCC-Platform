@@ -2912,7 +2912,7 @@ public:
         if (history)
             queryAttributes().removeTree(history);
     }
-    void lockFileAttrLock(CFileAttrLock & attrLock)
+    virtual void lockFileAttrLock(CFileAttrLock & attrLock)
     {
         if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"))
         {
@@ -6480,6 +6480,19 @@ public:
     {
         CriticalBlock block (sect);
         return new cSubFileIterator(subfiles,supersub);
+    }
+
+    virtual void lockFileAttrLock(CFileAttrLock & attrLock) override
+    {
+        if (!attrLock.init(logicalName, DXB_SuperFile, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"))
+        {
+            // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
+            verifyex(attrLock.init(logicalName, DXB_SuperFile, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"));
+            attrLock.commit();
+            conn->commit();
+            conn->reload();
+            root.setown(conn->getRoot());
+        }
     }
 
     void updateFileAttrs()
