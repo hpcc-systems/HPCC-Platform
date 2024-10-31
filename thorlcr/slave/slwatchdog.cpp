@@ -141,10 +141,8 @@ public:
             DBGLOG("Stopped watchdog");
         }
     }
-    virtual void debugRequest(MemoryBuffer &msg, const char *request) const override
+    virtual void debugRequest(MemoryBuffer &msg, const IPropertyTree *req) const override
     {
-        Owned<IPTree> req = createPTreeFromXMLString(request);
-
         StringBuffer edgeString;
         req->getProp("@edgeId", edgeString);
 

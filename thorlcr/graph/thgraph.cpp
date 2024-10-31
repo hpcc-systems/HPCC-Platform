@@ -2810,16 +2810,6 @@ void CJobBase::startJob()
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
     PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
-    if (getOptBool("dumpStacks")) // mainly as an example of printAllStacks() usage
-    {
-        StringBuffer output;
-        if (getAllStacks(output))
-        {
-            IERRLOG("%s", output.str());
-        }
-        else
-            IWARNLOG("Failed to capture process stacks: %s", output.str());
-    }
 
     // NB: these defaults match defaults in jfile rename retry mechanism
     constexpr unsigned defaultNumRenameRetries = 4;

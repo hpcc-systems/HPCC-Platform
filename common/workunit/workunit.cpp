@@ -3673,6 +3673,7 @@ EnumMapping actions[] = {
    { WUActionPause, "pause" },
    { WUActionPauseNow, "pausenow" },
    { WUActionResume, "resume" },
+   { WUActionGenerateDebugInfo, "debuginfo" },
    { WUActionSize, NULL },
 };
 

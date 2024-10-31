@@ -180,6 +180,7 @@ public:
     void saveSpills();
     bool go();
     void pause(bool abort);
+    void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc);
 
     virtual IConstWorkUnit &queryWorkUnit() const
     {

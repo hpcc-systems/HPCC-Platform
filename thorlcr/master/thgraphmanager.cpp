@@ -246,41 +246,21 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             FlushingStringBuffer response(&ssock, false, MarkupFmt_XML, false, false, queryDummyContextLogger());
             response.startDataset("Debug", NULL, (unsigned) -1);
 
-            if (strncmp(command,"print", 5) == 0)
+            if (strieq(command, "print"))
             {
                 const char *edgeId = queryXml->queryProp("@edgeId");
                 if (!edgeId) throw MakeStringException(5300, "Debug command requires edgeId");
-
-                ICommunicator &comm = job->queryNodeComm();
-                CMessageBuffer mbuf;
-                mbuf.append(DebugRequest);
-                mbuf.append(job->queryKey());
-                mptag_t replyTag = createReplyTag();
-                serializeMPtag(mbuf, replyTag);
-                mbuf.append(rawText);
-                if (!comm.send(mbuf, RANK_ALL_OTHER, managerWorkerMpTag, MP_ASYNC_SEND))
-                {
-                    DBGLOG("Failed to send debug info to slave");
-                    throwUnexpected();
-                }
-                unsigned nodes = job->queryNodes();
                 response.appendf("<print graphId='%s' edgeId='%s'>", graphId, edgeId);
-                while (nodes)
+                auto responseFunc = [&response](unsigned worker, MemoryBuffer &mb)
                 {
-                    rank_t sender;
-                    mbuf.clear();
-                    comm.recv(mbuf, RANK_ALL, replyTag, &sender, 10000);
-                    while (mbuf.remaining())
-                    {
-                        StringAttr row;
-                        mbuf.read(row);
-                        response.append(row);
-                    }
-                    nodes--;
-                }
+                    StringAttr row;
+                    mb.read(row);
+                    response.append(row);
+                };
+                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc);
                 response.append("</print>");
             }
-            else if (strncmp(command,"quit", 4) == 0)
+            else if (strieq(command, "quit"))
             {
                 DBGLOG("ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
@@ -288,7 +268,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 response.appendf("<quit state='quit'/>");
             }
             else
-                throw MakeStringException(5300, "Command not supported by Thor");
+                throw makeStringExceptionV(5300, "Command '%s' not supported by Thor", command);
 
             response.flush(true);
         }

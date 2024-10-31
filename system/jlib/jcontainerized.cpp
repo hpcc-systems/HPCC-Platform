@@ -20,7 +20,7 @@
 
 namespace k8s {
 
-static StringBuffer myPodName, myContainerName;
+static StringBuffer myPodName, myContainerName, myJobName;
 
 const char *queryMyPodName()
 {
@@ -30,6 +30,11 @@ const char *queryMyPodName()
 const char *queryMyContainerName()
 {
     return myContainerName;
+}
+
+const char *queryMyJobName()
+{
+    return myJobName;
 }
 
 KeepJobs translateKeepJobs(const char *keepJob)
@@ -508,6 +513,9 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         getEnvVar("MY_CONTAINER_NAME", myContainerName.clear());
         if (myContainerName.isEmpty())
             myContainerName.set(myPodName); // if identical (standard case), not set by templates
+        getEnvVar("MY_JOB_NAME", myJobName.clear()); // only k8s jobs will have this set
+        if (myJobName.isEmpty())
+            myJobName.set(myPodName); // if no explicit job name (not a k8s job) then use pod name
     };
     if (isContainerized())
         podInfoInitCBId = installConfigUpdateHook(updateFunc, true);

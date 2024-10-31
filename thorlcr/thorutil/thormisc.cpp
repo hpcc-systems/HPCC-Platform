@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
+
 #ifndef _WIN32
 #include <sys/types.h>
 #include <dirent.h>
@@ -1668,4 +1670,50 @@ void saveWuidToFile(const char *wuid)
         throw makeStringException(0, "Failed to create file 'wuid' to store current workunit for post mortem script");
     wuidFileIO->write(0, strlen(wuid), wuid);
     wuidFileIO->close();
+}
+
+std::vector<std::string> captureDebugInfo(const char *_dir, const char *prefix, const char *suffix)
+{
+    if (!recursiveCreateDirectory(_dir))
+    {
+        IWARNLOG("Failed to create debug directory: %s", _dir);
+        return {};
+    }
+
+    StringBuffer dir(_dir);
+    addPathSepChar(dir);
+
+    // utility function to build filename based on prefix, suffix, and extension
+    auto getFilename = [&](StringBuffer &result, const char *name, const char *ext) -> StringBuffer &
+    {
+        result.append(dir);
+        if (!isEmptyString(prefix))
+        {
+            result.append(prefix);
+            result.append('_');
+        }
+        result.append(name);
+        if (!isEmptyString(suffix))
+        {
+            result.append('_');
+            result.append(suffix);
+        }
+        if (!isEmptyString(ext))
+        {
+            result.append('.');
+            result.append(ext);
+        }
+        return result;
+    };
+    StringBuffer stacksFName;
+    getFilename(stacksFName, "stacks", "txt");
+    StringBuffer gdbCmd;
+    getDebuggerGetStacksCmd(gdbCmd);
+    gdbCmd.append(" > ").append(stacksFName);
+    if (0 != system(gdbCmd.str()))
+    {
+        OWARNLOG("Failed to run gdb to capture stack info. Cmd = %s", gdbCmd.str());
+        return { };
+    }
+    return { stacksFName.str() }; // JCSMORE capture/return other files
 }

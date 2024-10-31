@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jlzw.hpp"
 #include "jhtree.hpp"
 #include "rmtfile.hpp"
@@ -1888,7 +1889,47 @@ double CJobSlave::getWorkUnitValueReal(const char *prop, double defVal) const
 
 void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
 {
-    if (watchdog) watchdog->debugRequest(msg, request);
+    Owned<IPropertyTree> req = createPTreeFromXMLString(request);
+    const char *command = req->queryName();
+
+    if (strieq(command, "print"))
+    {
+        if (watchdog) watchdog->debugRequest(msg, req);
+    }
+    else if (strieq(command, "debuginfo"))
+    {
+        try
+        {
+            StringBuffer dir;
+            if (!req->getProp("@dir", dir))
+                throw makeStringException(0, "deguginfo command missing 'dir' attribute");
+            // NB: stacks are for all channels, but file naming is based on 1st channel
+            rank_t myRank = queryJobChannel(0).queryMyRank();
+            StringBuffer suffix;
+            suffix.append((unsigned)myRank);
+
+            std::vector<std::string> capturedFiles = captureDebugInfo(dir, "thorworker", suffix);
+            msg.append(true);
+            // this info is not really needed by containerized, where all files will be on same mount point
+            for (auto &file : capturedFiles)
+            {
+                RemoteFilename rfn;
+                rfn.setLocalPath(file.c_str());
+                StringBuffer fullPath;
+                rfn.getRemotePath(fullPath);
+                msg.append(fullPath.str());
+            }
+            msg.append("");
+        }
+        catch (IException *e)
+        {
+            msg.append(false);
+            serializeException(e, msg);
+            e->Release();
+        }
+    }
+    else
+        throw makeStringExceptionV(5300, "Command '%s' not supported by Thor", command);
 }
 
 IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
