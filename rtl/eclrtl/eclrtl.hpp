@@ -88,9 +88,9 @@ interface IStrRegExprFindInstance
 interface ICompiledStrRegExpr
 {
     virtual void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
-    virtual void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
     virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
+    virtual void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual void replaceTimed(ISectionTimer * timer, size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual IStrRegExprFindInstance * findTimed(ISectionTimer * timer, const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
@@ -107,9 +107,9 @@ interface IUStrRegExprFindInstance
 interface ICompiledUStrRegExpr
 {
     virtual void replace(size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
-    virtual void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const = 0;
     virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
+    virtual void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual void replaceTimed(ISectionTimer * timer, size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual IUStrRegExprFindInstance * findTimed(ISectionTimer * timer, const UChar * str, size32_t from, size32_t len) const = 0;
