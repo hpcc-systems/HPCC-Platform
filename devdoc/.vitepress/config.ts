@@ -10,7 +10,7 @@ export default async () => {
         description: 'The HPCC-Platform from hpccsystems is an open source system for big data analysis. It uses a single language, platform and architecture to process data efficiently and fast.',
         base: '/HPCC-Platform/',
         srcDir: '..',
-        srcExclude: ["build-*/**", "build/**", "dockerfiles/**", "docs/**", "esp/**", "helm/**", "initfiles/**", "plugins/**", "vcpkg/**"],
+        srcExclude: ["build-*/**", "build/**", "docs/**", "esp/**",  "initfiles/**", "plugins/**", "vcpkg/**"],
         ignoreDeadLinks: true,
 
         themeConfig: {
