@@ -47,6 +47,7 @@ public:
     offset_t *partitionpos;
     size32_t chunkmaxsize;
     unsigned width;
+    unsigned rwFlags = 0x0; // flags for streams (e.g. compression flags)
 
     class cRemoteStream : implements IRowStream, public CSimpleInterface
     {
@@ -220,7 +221,7 @@ public:
 
         CThorKeyArray partition(*this, queryRowInterfaces(this),helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
         partition.deserialize(mb,false);
-        partition.calcPositions(tmpfile,sample);
+        partition.calcPositions(tmpfile, sample, rwFlags);
         partitionpos = new offset_t[width];
         unsigned i;
         for (i=0;i<width;i++) {
@@ -270,6 +271,19 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         masterMpTag = container.queryJobChannel().deserializeMPTag(data);
+        rwFlags = DEFAULT_RWFLAGS;
+        if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+        {
+            StringBuffer compType;
+            getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            unsigned spillCompInfo = 0x0;
+            setCompFlag(compType, spillCompInfo);
+            if (spillCompInfo)
+            {
+                rwFlags |= rw_compress;
+                rwFlags |= spillCompInfo;
+            }
+        }
     }
 
     void abort()
@@ -322,7 +336,7 @@ public:
         StringBuffer tmpname;
         GetTempFilePath(tmpname,"merge");
         tmpfile.setown(createIFile(tmpname.str()));
-        Owned<IRowWriter> writer =  createRowWriter(tmpfile, this);
+        Owned<IRowWriter> writer =  createRowWriter(tmpfile, this, rwFlags);
         CThorKeyArray sample(*this, this, helper->querySerialize(), helper->queryCompare(), helper->queryCompareKey(), helper->queryCompareRowKey());
         sample.setSampling(MERGE_TRANSFER_BUFFER_SIZE);
         ActPrintLog("MERGE: start gather");
@@ -366,7 +380,7 @@ public:
         offset_t end = partitionpos[idx];
         if (pos>=end)
             return 0;
-        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, queryRowInterfaces(this), pos, end); // this is not good
+        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, queryRowInterfaces(this), pos, end, (unsigned __int64)-1, rwFlags); // this is not good
         offset_t so = rs->getOffset();
         size32_t len = 0;
         size32_t chunksize = chunkmaxsize;
