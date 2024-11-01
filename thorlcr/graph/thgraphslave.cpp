@@ -732,6 +732,7 @@ void CThorStrandedActivity::strandedStop()
 //For some reason gcc doesn't let you specify a function as pure virtual and define it at the same time.
 void CThorStrandedActivity::start()
 {
+    SimpleActivityTimer t(startCycles, timeActivities);
     CSlaveActivity::start();
     startJunction(splitter);
     onStartStrands();
@@ -855,7 +856,7 @@ IStrandJunction *CThorStrandedActivity::getOutputStreams(CActivityBase &ctx, uns
 
 unsigned __int64 CThorStrandedActivity::queryTotalCycles() const
 {
-    unsigned __int64 total = 0;;
+    unsigned __int64 total = startCycles;
     ForEachItemIn(i, strands)
     {
         CThorStrandProcessor &strand = strands.item(i);
