@@ -221,7 +221,7 @@ public:
     //
     // This method is called by server to accept client connection
     //
-    virtual ISocket* accept(bool allowcancel=false, SocketEndpoint *peerEp=nullptr) // not needed for UDP
+    virtual ISocket* accept(bool allowcancel=false) // not needed for UDP
     {
         throw MakeStringException(-1, "CSecureSocket::accept: not implemented");
     }
