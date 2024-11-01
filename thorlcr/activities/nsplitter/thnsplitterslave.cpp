@@ -224,7 +224,10 @@ public:
                 assertex(((unsigned)-1) != connectedOutputCount);
                 activeOutputCount = connectedOutputCount;
 
-                PARENT::start();
+                {
+                    ActivityTimer t(slaveTimerStats, queryTimeActivities());
+                    PARENT::start();
+                }
                 initMetaInfo(cachedMetaInfo);
                 cachedMetaInfo.suppressLookAhead = spill; // only suppress downstream lookaheads if this is a spilling splitter
 
@@ -306,6 +309,7 @@ public:
     }
     inline const void *nextRow(unsigned outIdx, rowcount_t current)
     {
+        ActivityTimer t(slaveTimerStats, queryTimeActivities());
         if (1 == activeOutputCount) // will be true, if only 1 input connected, or only 1 input was active (others stopped) when it started reading
             return inputStream->nextRow();
         if (recsReady == current && writeAheadException.get())
