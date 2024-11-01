@@ -309,7 +309,8 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     {
         ScopeDumper dumper;
         WuScopeFilter filter;
-        filter.addFilter(args.item(0));
+        ForEachItemIn(i, args)
+            filter.addFilter(args.item(i));
         if (!filter.outputDefined())
             filter.addOutputProperties(PTall);
         filter.finishedFilter();
