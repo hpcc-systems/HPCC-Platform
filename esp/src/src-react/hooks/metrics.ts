@@ -5,6 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { singletonHook } from "react-singleton-hook";
 import { userKeyValStore } from "src/KeyValStore";
 import { DockPanelLayout } from "../layouts/DockPanel";
+import { singletonDebounce } from "../util/throttle";
 import { useWorkunit } from "./workunit";
 import { useQuery } from "./query";
 import { useCounter } from "./util";
@@ -214,6 +215,8 @@ function useMetricsViewsImpl(): useMetricsViewsResult {
 
 export const useMetricsViews = singletonHook(defaultState, useMetricsViewsImpl);
 
+let wuDetailsMetaResponse: Promise<WsWorkunits.WUDetailsMetaResponse>;
+
 export function useMetricMeta(): [string[], string[]] {
 
     const service = useConst(() => new WorkunitsService({ baseUrl: "" }));
@@ -221,7 +224,10 @@ export function useMetricMeta(): [string[], string[]] {
     const [properties, setProperties] = React.useState<string[]>([]);
 
     React.useEffect(() => {
-        service?.WUDetailsMeta({}).then(response => {
+        if (!wuDetailsMetaResponse && service) {
+            wuDetailsMetaResponse = service.WUDetailsMeta({});
+        }
+        wuDetailsMetaResponse?.then(response => {
             setScopeTypes(response?.ScopeTypes?.ScopeType || []);
             setProperties((response?.Properties?.Property.map(p => p.Name) || []).sort());
         });
@@ -274,45 +280,48 @@ export function useWorkunitMetrics(
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        setStatus(FetchStatus.STARTED);
-        workunit?.fetchDetailsNormalized({
-            ScopeFilter: scopeFilter,
-            NestedFilter: nestedFilter,
-            PropertiesToReturn: {
-                AllScopes: true,
-                AllAttributes: true,
-                AllProperties: true,
-                AllNotes: true,
-                AllStatistics: true,
-                AllHints: true
-            },
-            ScopeOptions: {
-                IncludeId: true,
-                IncludeScope: true,
-                IncludeScopeType: true,
-                IncludeMatchedScopesInResults: true
-            },
-            PropertyOptions: {
-                IncludeName: true,
-                IncludeRawValue: true,
-                IncludeFormatted: true,
-                IncludeMeasure: true,
-                IncludeCreator: false,
-                IncludeCreatorType: false
-            }
-        }).then(response => {
-            setData(response?.data);
-            setColumns(response?.columns);
-            setActivities(response?.meta?.Activities?.Activity || []);
-            setProperties(response?.meta?.Properties?.Property || []);
-            setMeasures(response?.meta?.Measures?.Measure || []);
-            setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
-        }).catch(e => {
-            logger.error(e);
-        }).finally(() => {
-            setStatus(FetchStatus.COMPLETE);
-        });
-    }, [workunit, state, count, scopeFilter, nestedFilter]);
+        if (wuid && workunit) {
+            const fetchDetailsNormalized = singletonDebounce(workunit, "fetchDetailsNormalized");
+            setStatus(FetchStatus.STARTED);
+            fetchDetailsNormalized({
+                ScopeFilter: scopeFilter,
+                NestedFilter: nestedFilter,
+                PropertiesToReturn: {
+                    AllScopes: true,
+                    AllAttributes: true,
+                    AllProperties: true,
+                    AllNotes: true,
+                    AllStatistics: true,
+                    AllHints: true
+                },
+                ScopeOptions: {
+                    IncludeId: true,
+                    IncludeScope: true,
+                    IncludeScopeType: true,
+                    IncludeMatchedScopesInResults: true
+                },
+                PropertyOptions: {
+                    IncludeName: true,
+                    IncludeRawValue: true,
+                    IncludeFormatted: true,
+                    IncludeMeasure: true,
+                    IncludeCreator: false,
+                    IncludeCreatorType: false
+                }
+            }).then(response => {
+                setData(response?.data);
+                setColumns(response?.columns);
+                setActivities(response?.meta?.Activities?.Activity || []);
+                setProperties(response?.meta?.Properties?.Property || []);
+                setMeasures(response?.meta?.Measures?.Measure || []);
+                setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
+            }).catch(e => {
+                logger.error(e);
+            }).finally(() => {
+                setStatus(FetchStatus.COMPLETE);
+            });
+        }
+    }, [workunit, state, count, scopeFilter, nestedFilter, wuid]);
 
     return { metrics: data, columns, activities, properties, measures, scopeTypes, status, refresh: increment };
 }
@@ -335,45 +344,48 @@ export function useQueryMetrics(
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        setStatus(FetchStatus.STARTED);
-        query?.fetchDetailsNormalized({
-            ScopeFilter: scopeFilter,
-            NestedFilter: nestedFilter,
-            PropertiesToReturn: {
-                AllScopes: true,
-                AllAttributes: true,
-                AllProperties: true,
-                AllNotes: true,
-                AllStatistics: true,
-                AllHints: true
-            },
-            ScopeOptions: {
-                IncludeId: true,
-                IncludeScope: true,
-                IncludeScopeType: true,
-                IncludeMatchedScopesInResults: true
-            },
-            PropertyOptions: {
-                IncludeName: true,
-                IncludeRawValue: true,
-                IncludeFormatted: true,
-                IncludeMeasure: true,
-                IncludeCreator: false,
-                IncludeCreatorType: false
-            }
-        }).then(response => {
-            setData(response?.data);
-            setColumns(response?.columns);
-            setActivities(response?.meta?.Activities?.Activity || []);
-            setProperties(response?.meta?.Properties?.Property || []);
-            setMeasures(response?.meta?.Measures?.Measure || []);
-            setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
-        }).catch(e => {
-            logger.error(e);
-        }).finally(() => {
-            setStatus(FetchStatus.COMPLETE);
-        });
-    }, [query, state, count, scopeFilter, nestedFilter]);
+        if (querySet && queryId && query) {
+            const fetchDetailsNormalized = singletonDebounce(query, "fetchDetailsNormalized");
+            setStatus(FetchStatus.STARTED);
+            fetchDetailsNormalized({
+                ScopeFilter: scopeFilter,
+                NestedFilter: nestedFilter,
+                PropertiesToReturn: {
+                    AllScopes: true,
+                    AllAttributes: true,
+                    AllProperties: true,
+                    AllNotes: true,
+                    AllStatistics: true,
+                    AllHints: true
+                },
+                ScopeOptions: {
+                    IncludeId: true,
+                    IncludeScope: true,
+                    IncludeScopeType: true,
+                    IncludeMatchedScopesInResults: true
+                },
+                PropertyOptions: {
+                    IncludeName: true,
+                    IncludeRawValue: true,
+                    IncludeFormatted: true,
+                    IncludeMeasure: true,
+                    IncludeCreator: false,
+                    IncludeCreatorType: false
+                }
+            }).then(response => {
+                setData(response?.data);
+                setColumns(response?.columns);
+                setActivities(response?.meta?.Activities?.Activity || []);
+                setProperties(response?.meta?.Properties?.Property || []);
+                setMeasures(response?.meta?.Measures?.Measure || []);
+                setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
+            }).catch(e => {
+                logger.error(e);
+            }).finally(() => {
+                setStatus(FetchStatus.COMPLETE);
+            });
+        }
+    }, [query, state, count, scopeFilter, nestedFilter, querySet, queryId]);
 
     return { metrics: data, columns, activities, properties, measures, scopeTypes, status, refresh: increment };
 }
@@ -385,7 +397,8 @@ export function useWUQueryMetrics(
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
-    const wuMetrics = useWorkunitMetrics(wuid, scopeFilter, nestedFilter);
-    const queryMetrics = useQueryMetrics(querySet, queryId, scopeFilter, nestedFilter);
-    return querySet && queryId ? { ...queryMetrics } : { ...wuMetrics };
+    const isQuery = querySet && queryId;
+    const wuMetrics = useWorkunitMetrics(isQuery ? "" : wuid, scopeFilter, nestedFilter);
+    const queryMetrics = useQueryMetrics(isQuery ? querySet : "", isQuery ? queryId : "", scopeFilter, nestedFilter);
+    return isQuery ? { ...queryMetrics } : { ...wuMetrics };
 }
