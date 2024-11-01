@@ -56,6 +56,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     selection,
     fullscreen = false
 }) => {
+    if (querySet && queryId) {
+        wuid = "";
+    }
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
