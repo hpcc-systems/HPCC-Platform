@@ -676,6 +676,8 @@ unsigned __int64 EclRepositoryManager::getStatistic(StatisticKind kind) const
     {
     case StTimeElapsed:
         return cycle_to_nanosec(gitDownloadCycles);
+    case StTimeBlocked:
+        return cycle_to_nanosec(gitDownloadBlockedCycles);
     }
     return 0;
 }
@@ -823,7 +825,12 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
     bool alreadyExists = false;
+
+    CCycleTimer gitDownloadTimer;
     Owned<IInterface> gitUpdateLock(getGitUpdateLock(repoPath));
+    cycle_t blockedCycles = gitDownloadTimer.elapsedCycles();
+    gitDownloadBlockedCycles += blockedCycles;
+
     if (checkDirExists(repoPath))
     {
         if (options.cleanRepos)
@@ -853,7 +860,6 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
 
     bool ok = false;
     Owned<IError> error;
-    CCycleTimer gitDownloadTimer;
     if (alreadyExists)
     {
         if (options.updateRepos)
@@ -890,7 +896,8 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     //this could become a read/write lock if that proved to be an issue.
     gitUpdateLock.clear();
 
-    gitDownloadCycles += gitDownloadTimer.elapsedCycles();
+    gitDownloadCycles += (gitDownloadTimer.elapsedCycles() - blockedCycles);
+
     if (error)
     {
         if (errorReceiver)

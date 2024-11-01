@@ -2278,6 +2278,7 @@ class CRemoteIndexReadActivity : public CRemoteIndexBaseActivity
 
     Owned<const IDynamicTransform> translator;
     unsigned __int64 chooseN = 0;
+    bool cleanupBlobs = false;
 public:
     CRemoteIndexReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
@@ -2316,6 +2317,12 @@ public:
                         }
                         dbgassertex(retSz);
 
+                        if (cleanupBlobs)
+                        {
+                            keyManager->releaseBlobs();
+                            cleanupBlobs = false;
+                        }
+
                         const void *ret = outBuilder.getSelf();
                         outBuilder.finishRow(retSz);
                         ++processed;
@@ -2349,6 +2356,13 @@ public:
     virtual StringBuffer &getInfoStr(StringBuffer &out) const override
     {
         return out.appendf("indexread[%s]", fileName.get());
+    }
+
+    virtual const byte * lookupBlob(unsigned __int64 id) override
+    {
+        size32_t dummy;
+        cleanupBlobs = true;
+        return (byte *) keyManager->loadBlob(id, dummy, nullptr);
     }
 };
 

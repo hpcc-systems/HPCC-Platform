@@ -71,10 +71,7 @@ public:
 
         originalDesc.setown(originalIndexFile->getFileDescriptor());
         newIndexDesc.setown(newIndexFile->getFileDescriptor());
-        Owned<IPartDescriptor> tlkDesc = originalDesc->getPart(originalDesc->numParts()-1);
-        const char *kind = tlkDesc->queryProperties().queryProp("@kind");
-        local = NULL == kind || 0 != stricmp("topLevelKey", kind);
-
+        local = !hasTLK(*originalIndexFile, this);
         if (!local)
             width--; // 1 part == No n distributed / Monolithic key
         if (width > container.queryJob().querySlaves())

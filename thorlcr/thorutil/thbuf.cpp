@@ -1302,6 +1302,10 @@ public:
     {
         return rows.get(r);
     }
+    inline bool isFull() const
+    {
+        return rows.isFull();
+    }
 };
 
 class Chunk : public CInterface
@@ -1493,8 +1497,7 @@ protected:
                 }
             }
             rowsRead++;
-            const void *retrow = rowSet->getRow(row++);
-            return retrow;
+            return rowSet->getRow(row++);
         }
         virtual void stop()
         {
@@ -1723,7 +1726,8 @@ public:
         unsigned len=rowSize(row);
         CriticalBlock b(crit);
         bool paged = false;
-        if (totalOutChunkSize >= minChunkSize) // chunks required to be at least minChunkSize
+        // NB: The isFull condition ensures that we never expand inMemRows, which would cause a race with readers reading same set
+        if (totalOutChunkSize >= minChunkSize || inMemRows->isFull()) // chunks required to be at least minChunkSize, or if hits max capacity
         {
             unsigned reader=anyReaderBehind();
             if (NotFound != reader)

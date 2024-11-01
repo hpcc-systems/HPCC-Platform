@@ -114,7 +114,7 @@ public:
     void deserialize(MemoryBuffer &mb,bool append);
     void sort();
     void createSortedPartition(unsigned pn);
-    void calcPositions(IFile *file,CThorKeyArray &sample);
+    void calcPositions(IFile *file, CThorKeyArray &sample, unsigned rwFlags);
     void setSampling(size32_t _maxsamplesize, unsigned _divisor=0);
     int keyCompare(unsigned a,unsigned b);
     offset_t getFixedFilePos(unsigned i);

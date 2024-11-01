@@ -625,9 +625,7 @@ protected:
             break;
         }
         StringBuffer helperName;
-        node.getProp("att[@name=\"helper\"]/@value", helperName);
-        if (!helperName.length())
-            helperName.append("fAc").append(id);
+        helperName.append("fAc").append(id);
         HelperFactory *helperFactory = dll->getFactory(helperName);
         if (!helperFactory)
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal error: helper function %s not exported", helperName.str());
@@ -2002,9 +2000,7 @@ class CAgentQueryFactory : public CQueryFactory
             else
             {
                 StringBuffer helperName;
-                node.getProp("att[@name=\"helper\"]/@value", helperName);
-                if (!helperName.length())
-                    helperName.append("fAc").append(node.getPropInt("@id", 0));
+                helperName.append("fAc").append(node.getPropInt("@id", 0));
                 HelperFactory *helperFactory = dll->getFactory(helperName.str());
                 if (!helperFactory)
                     throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal error: helper function %s not exported", helperName.str());

@@ -327,7 +327,8 @@ public:
             if (!resize(numRows+1))
                 return false;
         }
-        rows[numRows++] = row;
+        rows[numRows] = row;
+        numRows++;
         return true;
     }
     bool binaryInsert(const void *row, ICompare &compare, bool dropLast=false); // NB: takes ownership on success
@@ -356,6 +357,7 @@ public:
     }
     inline rowidx_t ordinality() const { return numRows; }
     inline rowidx_t queryMaxRows() const { return maxRows; }
+    inline bool isFull() const { return numRows >= maxRows; }
 
     inline const void **getRowArray() { return rows; }
     void swap(CThorExpandingRowArray &src);
