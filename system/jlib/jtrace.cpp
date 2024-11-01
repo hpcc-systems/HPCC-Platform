@@ -165,7 +165,14 @@ static const char * spanKindToString(opentelemetry::trace::SpanKind spanKind)
 class JLogSpanExporter final : public opentelemetry::sdk::trace::SpanExporter
 {
 public:
-    JLogSpanExporter(SpanLogFlags spanLogFlags) : logFlags(spanLogFlags), shutDown(false) {}
+    JLogSpanExporter(SpanLogFlags spanLogFlags, const IPropertyTree * config) :
+        logFlags(spanLogFlags), shutDown(false)
+    {
+        if (config)
+        {
+            debugDelayMs = config->getPropInt("debug/@delayMs", 0); // An option to allow this exporter to model slow behaviour
+        }
+    }
 
     /**
     * @return Returns a unique pointer to an empty recordable object
@@ -254,6 +261,11 @@ public:
                     out.append(" }");
                     LOG(MCmonitorEvent, "%s",out.str());
                 }
+            }
+            if (debugDelayMs)
+            {
+                LOG(MCdebugInfo, "Delaying for %dms after exporting %u items", debugDelayMs, (unsigned)recordables.size());
+                MilliSleep(debugDelayMs);
             }
             return opentelemetry::sdk::common::ExportResult::kSuccess;
         }
@@ -416,6 +428,7 @@ public:
 private:
     SpanLogFlags logFlags = SpanLogFlags::LogNone;
     std::atomic_bool shutDown;
+    unsigned debugDelayMs = 0;
 };
 
 /*#ifdef _USE_CPPUNIT
@@ -436,10 +449,10 @@ public:
     /**
     * Create a JLogSpanExporter.
     */
-    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create(SpanLogFlags logFlags)
+    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create(SpanLogFlags logFlags, const IPropertyTree * config)
     {
         return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(
-            new JLogSpanExporter(logFlags));
+            new JLogSpanExporter(logFlags, config));
     }
 };
 
@@ -1280,9 +1293,10 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             if (logFlags == SpanLogFlags::LogNone)
                 logFlags = DEFAULT_SPAN_LOG_FLAGS;
 
+
             shouldBatch = false;
             LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
-            return JLogSpanExporterFactory::Create(logFlags);
+            return JLogSpanExporterFactory::Create(logFlags, exportConfig);
         }
         else
             LOG(MCoperatorWarning, "Tracing exporter type not supported: '%s'", exportType.str());
@@ -1362,7 +1376,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     if (enableDefaultLogExporter)
     {
         //Simple option to create logging to the log file - primarily to aid developers.
-        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);
+        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS, nullptr);
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
