@@ -105,6 +105,7 @@ private:
     IArrayOf<IEclRepository> overrideSources;   // -D options
     IArrayOf<IEclRepository> allSources;        // also includes -D options
     cycle_t gitDownloadCycles = 0;
+    cycle_t gitDownloadBlockedCycles = 0;
 
     //Include all options in a nested struct to make it easy to ensure they are cloned
     struct {
