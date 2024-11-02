@@ -196,7 +196,6 @@ class graphslave_decl CSlaveActivity : public CActivityBase, public CEdgeProgres
 {
     mutable MemoryBuffer *data;
     mutable CriticalSection crit;
-
 protected:
     CThorInputArray inputs;
     IPointerArrayOf<IThorDataLink> outputs;
@@ -216,7 +215,7 @@ protected:
     // fileStats is in this base class as it used by multiple derived classes (both slave and master) but not all.
     // (Having it in the base class aids setup and resizing.)
     mutable std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
-
+    mutable bool hasNegativeLocalExecute = false;
 protected:
     unsigned __int64 queryLocalCycles() const;
     bool ensureStartFTLookAhead(unsigned index);
@@ -475,6 +474,7 @@ class graphslave_decl CThorStrandedActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 protected:
+    cycle_t startTime = 0;
     CThorStrandOptions strandOptions;
     IArrayOf<CThorStrandProcessor> strands;
     Owned<IStrandBranch> branch;

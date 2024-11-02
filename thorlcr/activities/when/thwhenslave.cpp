@@ -108,6 +108,12 @@ public:
         info.fastThrough = false;
         calcMetaInfoSize(info, queryInput(0));
     }
+    // IThorDataLink
+    virtual void start() override
+    {
+        ActivityTimer t(slaveTimerStats, queryTimeActivities());
+        PARENT::start();
+    }
 };
 
 ////////////////////
