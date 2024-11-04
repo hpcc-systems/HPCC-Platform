@@ -1064,6 +1064,7 @@ export = {
         Text: "Text",
         Tree: "Tree",
         Type: "Type",
+        UnavailableInContainerized: "This is unavailable in a containerized environment.",
         Unbound: "unbound",
         undefined: "undefined",
         Unknown: "Unknown",
