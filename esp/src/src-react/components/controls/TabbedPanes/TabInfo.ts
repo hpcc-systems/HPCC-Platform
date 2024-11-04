@@ -6,5 +6,6 @@ export interface TabInfo {
     label: string;
     count?: string | number;
     disabled?: boolean;
+    tooltipText?: string;
     __state?: any;
 }
