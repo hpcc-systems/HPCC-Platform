@@ -1244,7 +1244,7 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
     }
 
     DEFINE_SOCKADDR(peerSockAddr);      // used if peerIp
-    socklen_t peerSockAddrLen = sizeof(peerSockAddr);
+    socklen_t peerSockAddrLen = sizeof(peerSockAddr.sa);
 
     T_SOCKET newsock;
     for (;;) {
