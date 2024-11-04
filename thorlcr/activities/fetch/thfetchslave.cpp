@@ -80,7 +80,7 @@ protected:
     bool abortSoon;
     mptag_t tag;
     Owned<IRowStream> keyOutStream;
-    CActivityBase &owner;
+    CSlaveActivity &owner;
     Linked<IThorRowInterfaces> keyRowIf, fetchRowIf;
     StringAttr logicalFilename;
 
@@ -124,7 +124,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CFetchStream(CActivityBase &_owner, IThorRowInterfaces *_keyRowIf, IThorRowInterfaces *_fetchRowIf, bool &_abortSoon, const char *_logicalFilename, CPartDescriptorArray &_parts, unsigned _offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *_iFetchHandler, mptag_t _tag, IExpander *_eexp)
+    CFetchStream(CSlaveActivity &_owner, IThorRowInterfaces *_keyRowIf, IThorRowInterfaces *_fetchRowIf, bool &_abortSoon, const char *_logicalFilename, CPartDescriptorArray &_parts, unsigned _offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *_iFetchHandler, mptag_t _tag, IExpander *_eexp)
         : owner(_owner), keyRowIf(_keyRowIf), fetchRowIf(_fetchRowIf), abortSoon(_abortSoon), logicalFilename(_logicalFilename),
           iFetchHandler(_iFetchHandler), offsetCount(_offsetCount), tag(_tag), eexp(_eexp)
     {
@@ -220,7 +220,11 @@ public:
 
         for (;;)
         {
-            OwnedConstThorRow keyRec = keyOutStream->nextRow(); // is this right?
+            OwnedConstThorRow keyRec;
+            {
+                LookAheadTimer t(owner.getActivityTimerAccumulator(), owner.queryTimeActivities());
+                keyRec.setown(keyOutStream->nextRow()); // is this right?
+            }
             if (!keyRec)
                 break;
 
