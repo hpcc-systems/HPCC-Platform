@@ -21,11 +21,14 @@
 //version multiPart=true
 //version multiPart=true,useLocal=true
 //version multiPart=true,useTranslation=true
+//version multiPart=false,conditional=true,nothor,nohthor
+//version multiPart=true,conditional=true,nothor,nohthor
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, true);
 useTranslation := #IFDEFINED(root.useTranslation, false);
+conditional := #IFDEFINED(root.conditional, false);
 
 //--- end of version configuration ---
 
@@ -52,4 +55,12 @@ inDs := DATASET([
     ], inRecord);
 
 
-output(JOIN(inDs, Files.DG_IntIndex, KEYED(RIGHT.DG_parentId = (integer)LEFT.s.v AND RIGHT.DG_parentId = LEFT.i.v)));
+#if (conditional)
+trueValue := true : stored('trueValue');
+indexAlias := INDEX(Files.DG_IntIndex, 'indexAlias', OPT);
+joinIndex := IF(trueValue, Files.DG_IntIndex, indexAlias);
+#else
+joinIndex := Files.DG_IntIndex;
+#end
+
+output(JOIN(inDs, joinIndex, KEYED(RIGHT.DG_parentId = (integer)LEFT.s.v AND RIGHT.DG_parentId = LEFT.i.v)));
