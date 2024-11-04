@@ -297,7 +297,6 @@ public:
     }
     const void *getNextRow(bool stopping)
     {
-        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!abortSoon && !eof)
         {
             unsigned emptyIterations = 0;
@@ -439,6 +438,7 @@ public:
     }
     CATCH_NEXTROW()
     {
+        ActivityTimer t(slaveTimerStats, timeActivities);
         return nextRowFeeder->nextRow();
     }
     virtual void stop() override
