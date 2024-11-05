@@ -39,6 +39,7 @@ interface IFetchStream : extends IInterface
     virtual void abort() = 0;
     virtual void getStats(CRuntimeStatisticCollection & stats) const = 0;
     virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned fileTableStart) const = 0;
+    virtual unsigned __int64 queryLookAheadCycles() const = 0;
 };
 
 IFetchStream *createFetchStream(CSlaveActivity &owner, IThorRowInterfaces *keyRowIf, IThorRowInterfaces *fetchRowIf, bool &abortSoon, const char *logicalFilename, CPartDescriptorArray &parts, unsigned offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *iFetchHandler, mptag_t tag, IExpander *eexp=NULL);

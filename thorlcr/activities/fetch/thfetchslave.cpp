@@ -188,7 +188,12 @@ public:
         if (distributor)
             distributor->abort();
     }
-
+    virtual unsigned __int64 queryLookAheadCycles() const override
+    {
+        if (distributor)
+            return distributor->queryLookAheadCycles();
+        return 0;
+    }
     // IStopInput
     virtual void stopInput()
     {
@@ -404,6 +409,15 @@ public:
     {
     }
 
+    virtual unsigned __int64 queryLookAheadCycles() const override
+    {
+        CriticalBlock b(fetchStreamCS);
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
+        if (fetchStream)
+            lookAheadCycles += fetchStream->queryLookAheadCycles();
+        return lookAheadCycles;
+    }
+
 // IThorDataLink impl.
     virtual void start() override
     {
@@ -515,6 +529,8 @@ public:
         OwnedRoxieString fileName = fetchBaseHelper->getFileName();
         {
             CriticalBlock b(fetchStreamCS);
+            if (fetchStream)
+                slaveTimerStats.lookAheadCycles += fetchStream->queryLookAheadCycles();
             fetchStream.setown(createFetchStream(*this, keyInIf, rowIf, abortSoon, fileName, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp));
         }
         fetchStreamOut = fetchStream->queryOutput();
