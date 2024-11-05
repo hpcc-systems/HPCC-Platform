@@ -304,12 +304,16 @@ public:
             {
                 while (!abortSoon)
                 {
-                    OwnedConstThorRow ret = (void *)curInput->nextRow();
-                    if (!ret)
+                    OwnedConstThorRow ret;
                     {
-                        ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                        LookAheadTimer t(slaveTimerStats, timeActivities);
+                        ret.setown(curInput->nextRow());
                         if (!ret)
-                            break;
+                        {
+                            ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                            if (!ret)
+                                break;
+                        }
                     }
 
                     if (finishedLooping || 
