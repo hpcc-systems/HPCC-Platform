@@ -1159,6 +1159,13 @@ public:
         merging = false;
         appendOutputLinked(this);
     }
+    virtual unsigned __int64 queryLookAheadCycles() const
+    {
+        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        if (distributor)
+            lookAheadCycles += distributor->queryLookAheadCycles();
+        return lookAheadCycles;
+    }
 // IHThorGroupAggregateCallback
     virtual void processRow(const void *next)
     {
