@@ -92,6 +92,11 @@ public:
                 abortSoon = true;
         }
     }
+    virtual void start() override
+    {
+        ActivityTimer s(slaveTimerStats, timeActivities);
+        PARENT::start();
+    }
     virtual bool isGrouped() const override { return input->isGrouped(); }
     CATCH_NEXTROW()
     {
