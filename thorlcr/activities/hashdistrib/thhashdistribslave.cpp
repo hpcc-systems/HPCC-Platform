@@ -505,6 +505,7 @@ protected:
         RelaxedAtomic<stat_type> numLocalRows {0};
         RelaxedAtomic<stat_type> numRemoteRows {0};
         RelaxedAtomic<size_t> sizeRemoteWrite {0};
+        RelaxedAtomic<cycle_t> lookAheadCycles {0};
 
         void init()
         {
@@ -859,10 +860,19 @@ protected:
                     }
                     if (aborted)
                         break;
-                    const void *row = input->ungroupedNextRow();
+                    const void *row;
+                    if (owner.activity->queryTimeActivities())
+                    {
+                        CCycleTimer rowTimer;
+                        row = input->ungroupedNextRow();
+                        lookAheadCycles.fastAdd(rowTimer.elapsedCycles());
+                    }
+                    else
+                    {
+                        row = input->ungroupedNextRow();
+                    }
                     if (!row)
                         break;
-
                     CTarget *target = nullptr;
                     if (owner.isAll)
                         target = targets.item(0);
@@ -946,6 +956,10 @@ protected:
             stats.setStatistic(StNumLocalRows, numLocalRows.load());
             stats.setStatistic(StNumRemoteRows, numRemoteRows.load());
             stats.setStatistic(StSizeRemoteWrite, sizeRemoteWrite.load());
+        }
+        virtual unsigned __int64 queryLookAheadCycles() const
+        {
+            return lookAheadCycles.load();
         }
     // IThreadFactory impl.
         virtual IPooledThread *createNew()
@@ -1257,6 +1271,17 @@ public:
         ihash = NULL;
         iCompare = NULL;
     }
+    virtual void mergeStats(CRuntimeStatisticCollection &stats) const
+    {
+        sender.mergeStats(stats);
+        CriticalBlock block(critPiperd);
+        if (piperd)
+            mergeRemappedStats(stats, piperd, diskToTempStatsMap);
+    }
+    virtual unsigned __int64 queryLookAheadCycles() const
+    {
+        return sender.queryLookAheadCycles();
+    }
     virtual void abort()
     {
         if (!aborted)
@@ -1451,13 +1476,6 @@ public:
     virtual void stopRecv() = 0;
     virtual bool sendBlock(unsigned i,CMessageBuffer &mb) = 0;
 
-    virtual void mergeStats(CRuntimeStatisticCollection &stats) const
-    {
-        sender.mergeStats(stats);
-        CriticalBlock block(critPiperd);
-        if (piperd)
-            mergeRemappedStats(stats, piperd, diskToTempStatsMap);
-    }
     // IExceptionHandler impl.
     virtual bool fireException(IException *e)
     {
@@ -4103,6 +4121,15 @@ public:
             activeStats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
         }
     }
+    virtual unsigned __int64 queryLookAheadCycles() const
+    {
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
+        if (lhsDistributor)
+            lookAheadCycles += lhsDistributor->queryLookAheadCycles();
+        if (rhsDistributor)
+            lookAheadCycles += rhsDistributor->queryLookAheadCycles();
+        return lookAheadCycles;
+    }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -4583,6 +4610,13 @@ public:
         initMetaInfo(info);
         info.canStall = true;
         // maybe more?
+    }
+    virtual unsigned __int64 queryLookAheadCycles() const
+    {
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
+        if (distributor)
+            lookAheadCycles += distributor->queryLookAheadCycles();
+        return lookAheadCycles;
     }
 // IHThorRowAggregator impl
     virtual size32_t clearAggregate(ARowBuilder & rowBuilder) override { return helper->clearAggregate(rowBuilder); }
