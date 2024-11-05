@@ -588,11 +588,14 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
         }
     }
     unsigned __int64 processCycles = queryTotalCycles() + queryLookAheadCycles();
-    if (processCycles < inputCycles) // not sure how/if possible, but guard against
+    if (processCycles < inputCycles && slaveTimerStats.queryNumActiveTimers()==0) // not sure how/if possible, but guard against
+    {
+        ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < inputCycles %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(inputCycles));
         return 0;
+    }
     processCycles -= inputCycles;
     const unsigned __int64 blockedCycles = queryBlockedCycles();
-    if (processCycles < blockedCycles)
+    if (processCycles < blockedCycles && slaveTimerStats.queryNumActiveTimers()==0)
     {
         ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < blocked %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(blockedCycles));
         return 0;

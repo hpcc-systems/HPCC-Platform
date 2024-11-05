@@ -246,12 +246,13 @@ public:
     cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
     cycle_t blockedCycles;  // Time spent blocked
     cycle_t lookAheadCycles;  // Time spent by lookahead thread
-
+    unsigned activeActivityTimers = 0; // Number of active activity timers
     // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
     // Return the total amount of time (in nanoseconds) spent in the first call of this activity (first entry to first exit)
     inline unsigned __int64 latency() const { return cycle_to_nanosec(latencyCycles()); }
     inline cycle_t latencyCycles() const { return firstExitCycles-startCycles; }
+    inline unsigned queryNumActiveTimers() const { return activeActivityTimers; }
 
     void addStatistics(IStatisticGatherer & builder) const;
     void addStatistics(CRuntimeStatisticCollection & merged) const;
@@ -291,6 +292,7 @@ public:
                 accumulator.startCycles = startCycles;
                 accumulator.firstRow = getTimeStampNowValue();
             }
+            ++accumulator.activeActivityTimers;
         }
         else
             startCycles = 0;
@@ -306,6 +308,7 @@ public:
             accumulator.totalCycles += elapsedCycles;
             if (unlikely(isFirstRow))
                 accumulator.firstExitCycles = nowCycles;
+            --accumulator.activeActivityTimers;
         }
     }
 };
