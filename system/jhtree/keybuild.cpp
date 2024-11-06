@@ -560,7 +560,7 @@ protected:
         if (keyHdr->getHdrStruct()->blobHead == 0)
             keyHdr->getHdrStruct()->blobHead = nextPos;         
         CBlobWriteNode *prevBlobNode = activeBlobNode;
-        activeBlobNode = new CBlobWriteNode(nextPos, keyHdr);
+        activeBlobNode = indexCompressor->createBlobWriteNode(nextPos, keyHdr);
         nextPos += keyHdr->getNodeSize();
         if (prevBlobNode)
         {

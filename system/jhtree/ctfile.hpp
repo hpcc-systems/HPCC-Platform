@@ -456,7 +456,7 @@ public:
 
 class jhtree_decl CLegacyWriteNode : public CWriteNode
 {
-private:
+protected:
     KeyCompressor lzwcomp;
     unsigned keyLen = 0;
     char *lastKeyValue = nullptr;
@@ -478,7 +478,7 @@ class jhtree_decl CBlobWriteNode : public CWriteNodeBase
     KeyCompressor lzwcomp;
     static unsigned __int64 makeBlobId(offset_t nodepos, unsigned offset);
 public:
-    CBlobWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
+    CBlobWriteNode(offset_t _fpos, CKeyHdr *keyHdr, bool lz4);
     ~CBlobWriteNode();
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
@@ -512,6 +512,7 @@ interface IIndexCompressor : public IInterface
 {
     virtual const char *queryName() const = 0;
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
+    virtual CWriteNode *createBlobNode(offset_t _fpos, CKeyHdr *_keyHdr) const = 0;
     virtual offset_t queryBranchMemorySize() const = 0;
     virtual offset_t queryLeafMemorySize() const = 0;
 };

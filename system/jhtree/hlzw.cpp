@@ -182,7 +182,7 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
     unsigned originalOffset = curOffset;
     comp->startblock(); // start transaction
     char zero = 0;
-    while (curOffset & 0xf)
+    while (curOffset & 0xf) // We only have 16 bits to store the blob offset in the blobId, so we 16-byte align them which gives us another 8 bits
     {
         if (comp->write(&zero,sizeof(zero))!=sizeof(zero)) {
             close();
@@ -202,7 +202,7 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
     curOffset += sizeof(datalength);
 
     unsigned written = 0;
-    while (written < datalength && curOffset < 0x100000)
+    while (written < datalength && curOffset < 0x100000)  // curOffset must not go over 24 bits (see above)
     {
         if (comp->write(data,sizeof(*data))!=sizeof(*data))
         {

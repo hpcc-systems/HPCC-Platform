@@ -1340,6 +1340,8 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
                 return new CJHInplaceLeafNode();
             if (nodeHdr.nodeType == NodeBranch)
                 return new CJHInplaceBranchNode();
+            if (nodeHdr.nodeType == NodeBlob)
+                return new CJHTreeBlobNode();
             UNIMPLEMENTED;
         default:
             throwUnexpected();

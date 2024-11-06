@@ -475,7 +475,7 @@ size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, cha
 
 //=========================================================================================================
 
-CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
+CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool) : CWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.nodeType = NodeBlob;
     lzwcomp.openBlob(keyPtr, maxBytes);
