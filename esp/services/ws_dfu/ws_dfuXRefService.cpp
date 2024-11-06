@@ -606,15 +606,13 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
         Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
-
-        BoolHash uniquePlanes;
         Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
 
         ForEach(*planesIter)
         {
             IPropertyTree &item = planesIter->query();
 
-            addUniqueXRefNode(item.queryProp("@name"), uniquePlanes, xrefNodeTree);
+            addXRefNode(item.queryProp("@name"), xrefNodeTree);
         }
 
         StringBuffer buf;
