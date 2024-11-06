@@ -508,8 +508,11 @@ sasha:
     #disabled: true
     #switchMinTime: 1
     #queues: "*"
-  
+
   xref: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 1
+    #user: sasha
 
 dfuserver:
 - name: dfuserver
