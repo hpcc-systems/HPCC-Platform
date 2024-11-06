@@ -59,6 +59,9 @@ public:
     virtual bool isInputOrdered(bool consumerOrdered) const override;
     virtual void setOutputStream(unsigned index, IEngineRowStream *stream) override;
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
+    // queryTotalCycles is used by downstream activities for the purpose of calculating local execute time.
+    // queryTotalCycles should include all time taken in start() and nextRow() methods.
+    // n.b. This totalCycles are not actually reported - it is only used by downstream activities.
     virtual unsigned __int64 queryTotalCycles() const override { return COutputTiming::queryTotalCycles(); }
     virtual unsigned __int64 queryEndCycles() const override { return COutputTiming::queryEndCycles(); }
     virtual unsigned __int64 queryBlockedCycles() const { return COutputTiming::queryBlockedCycles(); }
@@ -78,6 +81,13 @@ public:
 //
 // NSplitterSlaveActivity
 //
+// Note regarding NSplitterSlaveActivity::COutputTiming methods:
+// - queryTotalCycles in NSplitterSlaveActivity is not used by downstream
+//   activities (like they are in other activities).  Downstream activities
+//   use CSplitterOutput::queryTotalCycles for the purposes of calculating
+//   local execute time
+// - totalCycles in this class is reported as the activity's StTotalExecuteTime
+//   and it is used to calculate & report the StLocalExecuteTime.
 
 class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBufferCallback
 {
@@ -219,15 +229,13 @@ public:
         if (!inputPrepared)
         {
             inputPrepared = true;
+            ActivityTimer t(slaveTimerStats, queryTimeActivities());
             try
             {
                 assertex(((unsigned)-1) != connectedOutputCount);
                 activeOutputCount = connectedOutputCount;
 
-                {
-                    ActivityTimer t(slaveTimerStats, queryTimeActivities());
-                    PARENT::start();
-                }
+                PARENT::start();
                 initMetaInfo(cachedMetaInfo);
                 cachedMetaInfo.suppressLookAhead = spill; // only suppress downstream lookaheads if this is a spilling splitter
 
