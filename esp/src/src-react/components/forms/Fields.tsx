@@ -831,7 +831,7 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
         setOptions([{ key: "", text: "" }, ...options]);
     }, [cloudContainerNames]);
 
-    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
+    return <ComboBox {...props} allowFreeform={true} multiSelect autoComplete={"on"} options={options} />;
 };
 
 const states = Object.keys(States).map(s => States[s]);
