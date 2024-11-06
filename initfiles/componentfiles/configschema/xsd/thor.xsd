@@ -175,8 +175,6 @@
                               hpcc:tooltip="Port increment between slaves on same node"/>
                 <xs:attribute name="multiThorMemoryThreshold" type="xs:nonNegativeInteger" hpcc:displayName="Multi Thor Memory Threshold(MB)"
                               hpcc:tooltip="Memory usage (in MB) beneath which multiple Thors will run in parallel. Leave blank if no limit"/>
-                <xs:attribute name="multiThorPriorityLock" type="xs:boolean" hpcc:displayName="Mult Thor Priority Lock" hpcc:presetValue="false"
-                              hpcc:tooltip="If set true, prevents lower priority jobs starting on a multithor"/>
                 <xs:attribute name="multiThorExclusionLockName" type="xs:string" hpcc:displayName="Multi Thor Exclusion Lock Name"
                               hpcc:tooltip="Prevents other thors (on any queue) sharing the same multiThorExclusionLockName name from running jobs at the same time"/>
                 <!--todo seems this needs to be true for multinode, what does that mean? (see old xsd and search for autogendefaultformultinode) -->

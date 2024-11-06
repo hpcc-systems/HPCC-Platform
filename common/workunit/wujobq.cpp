@@ -179,18 +179,6 @@ public:
         enqueuedt.setString(dts.str());
     }
 
-
-
-    IJobQueueItem* clone()
-    {
-        IJobQueueItem* ret = new CJobQueueItem(wu);
-        ret->setPriority(priority);
-        ret->setPriority(port);
-        ret->setEndpoint(ep);
-        ret->setSessionId(sessid);
-        return ret;
-    }
-
     void setPriority(int _priority)
     {
         priority = _priority;
@@ -1276,13 +1264,6 @@ public:
     }
 
 
-    IJobQueueItem *prioDequeue(int minprio,unsigned timeout=INFINITE) // minprio == MAX_INT - used cache priority
-    {
-        return dodequeue(minprio,timeout);
-    }
-
-
-
     void placeonqueue(sQueueData &qd, IJobQueueItem *qitem,unsigned idx) // takes ownership of qitem
     {
         Owned<IJobQueueItem> qi = qitem;
@@ -1445,31 +1426,12 @@ public:
         return dotake(qd,wuid,false);
     }
 
-    unsigned takeItems(sQueueData &qd,CJobQueueContents &dest)
-    {
-        Cconnlockblock block(this,true);
-        unsigned ret = copyItemsImpl(qd,dest);
-        clear(qd);
-        return ret;
-    }
-
-    void enqueueItems(sQueueData &qd,CJobQueueContents &items)
-    {
-        unsigned n=items.ordinality();
-        if (n) {
-            Cconnlockblock block(this,true);
-            for (unsigned i=0;i<n;i++)
-                enqueue(qd,items.item(i).clone());
-        }
-    }
-
     void enqueueBefore(IJobQueueItem *qitem,const char *wuid)
     {
         Cconnlockblock block(this,true);
         sQueueData *qd = qdata->next?findQD(wuid):qdata;
         enqueueBefore(*qd,qitem,wuid);
     }
-
 
     void enqueueAfter(IJobQueueItem *qitem,const char *wuid)
     {
@@ -1739,24 +1701,6 @@ public:
         }
         return NULL;
     }
-    unsigned takeItems(CJobQueueContents &dest)
-    {
-        assertex(qdata);
-        if (!qdata->next)
-            return takeItems(*qdata,dest);
-        Cconnlockblock block(this,true);
-        unsigned ret = 0;
-        ForEachQueue(qd) {
-            ret += copyItemsImpl(*qd,dest);
-            clear(*qd);
-        }
-        return ret;
-    }
-    void enqueueItems(CJobQueueContents &items)
-    {  // enqueues to firs sub-queue (not sure that useful)
-        assertex(qdata);
-        return enqueueItems(*qdata,items);
-    }
 
     void clear()
     {
@@ -1798,27 +1742,23 @@ public:
         return initiateconv.getClear();
     }
 
-    IConversation *acceptConversation(IJobQueueItem *&retitem, unsigned prioritytransitiondelay,IDynamicPriority *maxp)
+    IConversation *acceptConversation(IJobQueueItem *&retitem, unsigned prioritytransitiondelay)
     {
         CriticalBlock block(crit);
         retitem = NULL;
         assertex(connected); // must be connected
-        int curmp = maxp?maxp->get():0;
-        int nextmp = curmp;
         for (;;) {
             bool timedout = false;
             Owned<IJobQueueItem> item;
             {
                 CriticalUnblock unblock(crit);
                 // this is a bit complicated with multi-thor
-                if (prioritytransitiondelay||maxp) {
-                    item.setown(dodequeue((std::max(curmp,nextmp)/10)*10, // round down to multiple of 10
-                        prioritytransitiondelay?prioritytransitiondelay:60000,prioritytransitiondelay>0,&timedout));
-                                                            // if dynamic priority check every minute
-                    if (!prioritytransitiondelay) {
-                        curmp = nextmp; // using max above is a bit devious to allow transition
-                        nextmp = maxp->get();
-                    }
+                if (prioritytransitiondelay)
+                {
+                    int minprio = 0;
+                    unsigned timeout = prioritytransitiondelay;
+                    bool usePrevPrio = true;
+                    item.setown(dodequeue(minprio, timeout, usePrevPrio, &timedout));
                 }
                 else
                     item.setown(dequeue(INFINITE));

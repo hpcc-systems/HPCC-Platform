@@ -22,6 +22,34 @@
 #include "jsocket.hpp"
 #include "dasess.hpp"
 
+/*
+ * The job queues have the following semantics.
+ *
+ * Items are queued with a given priority, at a given offset
+ * If no position is given, then the insertion position in the queue is determined by finding the first item with a lower priority
+ * If a position is given, then the priority may be adjusted to ensure it is consistent with the items before it and after it in the queue
+ *
+ * When an item is dequeued, the head of the queue is removed.
+ *
+ * There is an option in acceptConversation(), currently used in thor, to wait for up to 30 seconds if the priority at the header of the queue is lower
+ * than the last item dequeued from that queue.  I think this is to ensure that high priority workunits get precedence even if there
+ * are short pauses between graphs.  However, this will prevent all thor instances for the same queue from dequeuing for that period.
+ *
+ * NOTE: If this logic is included I think this should really be the priority of the last item THIS thor dequeued.
+ *
+ *
+ * We want to add the following semantics:
+ *
+ * When a server requests to dequeue an item it can pass a worker priority.
+ * - If there is an item on the queue, then dequeue it
+ * - Otherwise record the worker priority in the Client information.  (If there are multiple threads do they have to have the same priority??)
+ * - When an item is received, the WAITING worker with the highest priority gets to process it.
+ *
+ * Problems:
+ *   Multiple threads from a single client
+ *   Ensuring there are no race conditions
+ *
+ */
 interface IJobQueueItem: extends serializable
 {
     virtual const char *queryWUID()=0;
@@ -32,8 +60,7 @@ interface IJobQueueItem: extends serializable
 
     virtual unsigned getPort()=0;                   // conversation port (not used for DFU server)
     virtual bool equals(IJobQueueItem *other)=0;
-    virtual IJobQueueItem* clone()=0;
-    
+
     virtual void setPriority(int priority)=0;
     virtual void setOwner(const char *owner)=0;
     virtual void setEndpoint(const SocketEndpoint &ep)=0;  
@@ -57,11 +84,6 @@ class WORKUNIT_API CJobQueueContents: public IArrayOf<IJobQueueItem>
 {  // used as a 'snapshot' of queue items
 public:
     IJobQueueIterator *getIterator(); // only valid during lifetime of CJobQueueContents    
-};
-
-interface IDynamicPriority
-{
-    virtual int get()=0;
 };
 
 interface IJobQueueConst: extends IInterface
@@ -98,7 +120,6 @@ interface IJobQueue: extends IJobQueueConst
     virtual void connect(bool validateitemsessions)=0;     // must be called before dequeueing
                                                                 // validateitemsessions ensures that all queue items have running session
     virtual IJobQueueItem *dequeue(unsigned timeout=INFINITE)=0;
-    virtual IJobQueueItem *prioDequeue(int minprio,unsigned timeout=INFINITE)=0;
     virtual void disconnect()=0;    // signal no longer wil be dequeing (optional - done automatically on release)
     virtual void getStats(unsigned &connected,unsigned &waiting, unsigned &enqueued)=0; // this not quick as validates clients still running
     virtual bool waitStatsChange(unsigned timeout)=0;
@@ -106,8 +127,6 @@ interface IJobQueue: extends IJobQueueConst
 
 //manipulation
     virtual IJobQueueItem *take(const char *wuid)=0; // finds and removes
-    virtual unsigned takeItems(CJobQueueContents &dest)=0;   // takes items and clears queue
-    virtual void enqueueItems(CJobQueueContents &items)=0;   // enqueues to first sub-queue 
     virtual bool moveBefore(const char *wuid,const char *nextwuid)=0;
     virtual bool moveAfter(const char *wuid,const char *prevwuid)=0;
     virtual bool moveToHead(const char *wuid)=0;
@@ -130,7 +149,7 @@ interface IJobQueue: extends IJobQueueConst
 
 // conversations:
     virtual IConversation *initiateConversation(IJobQueueItem *item)=0; // does enqueue - take ownership of item
-    virtual IConversation *acceptConversation(IJobQueueItem *&item,unsigned prioritytransitiondelay=0,IDynamicPriority *maxp=NULL)=0;  
+    virtual IConversation *acceptConversation(IJobQueueItem *&item,unsigned prioritytransitiondelay=0)=0;
                                                                         // does dequeue - returns queue item dequeued
     virtual void cancelInitiateConversation()=0;                        // cancels initiateConversation in progress
     virtual bool cancelInitiateConversation(const char *wuid)=0;        // cancels remote initiate

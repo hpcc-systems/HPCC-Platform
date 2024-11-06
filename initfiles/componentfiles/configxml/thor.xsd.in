@@ -491,13 +491,6 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="multiThorPriorityLock" type="xs:boolean" use="optional" default="false">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>If set true, prevents lower priority jobs starting on a multithor</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="multiThorExclusionLockName" type="xs:string" use="optional">
         <xs:annotation>
           <xs:appinfo>

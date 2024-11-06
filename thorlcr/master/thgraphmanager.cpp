@@ -475,47 +475,6 @@ public:
     void stop() { sem.signal(); }
 };
 
-static int getRunningMaxPriority(const char *qname)
-{
-    int maxpriority = 0; // ignore neg
-    try {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
-        if (conn.get())
-        {
-            Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server"));
-            ForEach(*it) {
-                StringBuffer instance;
-                if(it->query().hasProp("@queue"))
-                {
-                    const char* queue=it->query().queryProp("@queue");
-                    if(queue&&(strcmp(queue,qname)==0)) {
-                        Owned<IPropertyTreeIterator> wuids = it->query().getElements("WorkUnit");
-                        ForEach(*wuids) {
-                            IPropertyTree &wu = wuids->query();
-                            const char* wuid=wu.queryProp(NULL);
-                            if (wuid&&*wuid) {
-                                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
-                                if (workunit) {
-                                    int priority = workunit->getPriorityValue();
-                                    if (priority>maxpriority)
-                                        maxpriority = priority;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    catch (IException *e)
-    {
-        IERRLOG(e,"getRunningMaxPriority");
-        e->Release();
-    }
-    return maxpriority;
-}
-
 bool CJobManager::fireException(IException *e)
 {
     IArrayOf<CJobMaster> jobList;
@@ -596,23 +555,6 @@ void CJobManager::run()
 #endif
 
     jobq.setown(createJobQueue(queueName.get()));
-    struct cdynprio: public IDynamicPriority
-    {
-        const char *qn;
-        int get()
-        {
-            int p = getRunningMaxPriority(qn);
-            if (p)
-                PROGLOG("Dynamic Min priority = %d",p);
-            return p;
-        }
-    } *dp = NULL;
-
-    if (globals->getPropBool("@multiThorPriorityLock")) {
-        PROGLOG("multiThorPriorityLock enabled");
-        dp = new cdynprio;
-        dp->qn = queueName.get();
-    }
 
     PROGLOG("verifying mp connection to all slaves");
     Owned<IMPServer> mpServer = getMPServer();
@@ -666,13 +608,8 @@ void CJobManager::run()
     {
         if (exclusiveLockName.length())
         {
-            if (globals->getPropBool("@multiThorPriorityLock"))
-                FLLOG(MCoperatorWarning, "multiThorPriorityLock cannot be used in conjunction with multiThorExclusionLockName");
-            else
-            {
-                PROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
-                exclLockDaliMutex.setown(createDaliMutex(exclusiveLockName.str()));
-            }
+            PROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
+            exclLockDaliMutex.setown(createDaliMutex(exclusiveLockName.str()));
         }
     }
     bool jobQConnected = false;
@@ -792,7 +729,7 @@ void CJobManager::run()
                     jobQConnected = true;
                 }
                 IJobQueueItem *_item;
-                conversation.setown(jobq->acceptConversation(_item,30*1000,dp));    // 30s priority transition delay
+                conversation.setown(jobq->acceptConversation(_item,30*1000));    // 30s priority transition delay
                 item.setown(_item);
             }
         }
@@ -875,7 +812,6 @@ void CJobManager::run()
         // reset for next job
         setProcessAborted(false);
     }
-    delete dp;
     jobq.clear();
 }
 
