@@ -35,7 +35,7 @@ public:
     }
     STRAND_CATCH_NEXTROW()
     {
-        LookAheadTimer t(parent.slaveTimerStats, timeActivities);
+        LookAheadTimer t(slaveTimerStats, timeActivities);
         for (;;)
         {
             if (parent.queryAbortSoon())
