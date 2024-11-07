@@ -997,7 +997,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
             }
 
             if (dirPerPart&&dirPerPart!=pn)
-                throw MakeStringException(-1, "dir-per-part # does not match part # of file");
+                throw makeStringException(-1, "dir-per-part # does not match part # of file");
 
             if (pn&&(memicmp(s,"_of_",4)==0)) {
                 unsigned mn = 0;
