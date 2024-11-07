@@ -658,6 +658,15 @@ struct CLogicalNameEntry: public CInterface
         dirpartmask.set(tmp.str());
         replicateOffset = file.getPropInt("@replicateOffset",1);
         lfnHash = file.getPropInt("@lfnHash");
+        plane.setown(getDataStoragePlane(grpname, true));
+        if (!plane)
+            manager.error(_lname, "Plane definition \"%s\" is missing for File", grpname.str());
+        prefix = plane->queryPrefix();
+        if (prefix.isEmpty())
+            manager.error(_lname, "Prefix definition for plane \"%s\" is missing for File", grpname.str());
+        // Get dir-per-part # from file metadata or storage plane info
+        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(file.getPropInt("Attr/@flags"));
+        dirPerPart = FileDescriptorFlags::none != (flags & FileDescriptorFlags::dirperpart) ? true : max>1?plane->queryDirPerPart():false;
     }
     ~CLogicalNameEntry()
     {
@@ -760,40 +769,9 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
-    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn, IPropertyTree &file)
+    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn)
     {
-        partNo--;
-        StringBuffer partName;
-        if (pmask.isEmpty())
-        {
-            pmask.set("!ERROR!._$P$_of_$N$");
-            IERRLOG("No partmask for CLogicalNameEntry::constructPartFilename");
-        }
-        expandMask(partName, pmask, partNo, max);
-
-        // Get stripeNum from storage plane
-        Owned<IStoragePlane> plane = getDataStoragePlane(grpname, true);
-        const char * prefix = plane->queryPrefix();
-        unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
-
-        // Get dir-per-part # from file metadata or storage plan info
-        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(file.getPropInt("Attr/@flags"));
-        bool dirPerPart = FileDescriptorFlags::none != (flags & FileDescriptorFlags::dirperpart) ? true : max>1?plane->queryDirPerPart():false;
-
-        StringBuffer fullname;
-        makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
-
-        ClusterPartDiskMapSpec mspec;
-        mspec.replicateOffset = replicateOffset;
-        unsigned n;
-        unsigned d;
-        mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
-        setReplicateFilename(fullname, d);
-        SocketEndpoint ep;
-        if (grp)
-            ep = grp->queryNode(n).endpoint();
-        rfn.setPath(ep, fullname.toLowerCase().str());
-        return rfn;
+        return ::constructPartFilename(grp, partNo, copy, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, plane, rfn);
     }
 
     void resolve(CFileEntry *entry);
@@ -832,8 +810,11 @@ struct CLogicalNameEntry: public CInterface
     bool grouped;
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
+    bool dirPerPart;
     int replicateOffset;
     unsigned lfnHash;
+    StringAttr prefix;
+    Owned<IStoragePlane> plane;
 };
 
 
@@ -1608,7 +1589,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    lnentry->constructPartFilename(partno, replicate, rfn, file);
+                    lnentry->constructPartFilename(partno, replicate, rfn);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
@@ -2724,9 +2705,18 @@ public:
 
                 const char *storagePlaneName = clusters[i]; // clusters holds a list of storage plane names
                 Owned<IPropertyTree> storagePlane = getStoragePlane(storagePlaneName);
-                storageDir[0] = storagePlane->queryProp("@prefix");
+                if (!storagePlane)
+                {
+                    error("XREF", "Could not find storage plane definition for %s", storagePlaneName);
+                    return NULL;
+                }
                 Owned<IGroup> g = queryNamedGroupStore().lookup(storagePlaneName);
-
+                if (!g)
+                {
+                    error("XREF", "Could not find cluster group for storage plane %s", storagePlaneName);
+                    return NULL;
+                }
+                storageDir[0] = storagePlane->queryProp("@prefix");
                 loadFromDFS(*this, g, 1, storageDir, storagePlaneName);
                 xrefRemoteDirectories(g, 1, storageDir, numthreads);
             }

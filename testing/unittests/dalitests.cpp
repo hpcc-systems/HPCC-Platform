@@ -478,7 +478,8 @@ public:
         RemoteFilename rfn;
         for (unsigned i=0;i<3;i++)
             for (unsigned ic=0;ic<mspec.defaultCopies;ic++) {
-                constructPartFilename(grp,i+1,3,(i==1)?"test.txt":NULL,"test._$P$_of_$N$","/c$/thordata/test",ic,mspec,rfn);
+                // Add tests for constructPartFilename
+                deprecatedConstructPartFilename(grp,i+1,3,(i==1)?"test.txt":NULL,"test._$P$_of_$N$","/c$/thordata/test",ic,mspec,rfn);
                 StringBuffer tmp;
                 printf("%d,%d: %s\n",i,ic,rfn.getRemotePath(tmp).str());
             }
