@@ -92,7 +92,7 @@ ESPStruct [nil_remove] LogColumn
     ESPenum LogColumnValueType ColumnType;
 };
 
-ESPResponse GetLogAccessInfoResponse
+ESPResponse [exceptions_inline] GetLogAccessInfoResponse
 {
     [min_ver("1.04")] ESParray<ESPstruct LogColumn, Column> Columns;
     string RemoteLogManagerType;
@@ -222,7 +222,7 @@ ESPRequest GetLogsRequest
     [min_ver("1.03")] ESParray<ESPstruct SortCondition> SortBy;
 };
 
-ESPResponse GetLogsResponse
+ESPResponse [exceptions_inline] GetLogsResponse
 {
     string LogLines;
     [min_ver("1.02")] unsigned int LogLineCount;
