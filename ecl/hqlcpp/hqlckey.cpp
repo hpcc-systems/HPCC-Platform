@@ -303,9 +303,22 @@ IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
     }
 }
 
+IHqlExpression * queryBaseIndexForKeyedJoin(IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_if)
+    {
+        IHqlExpression * left = queryBaseIndexForKeyedJoin(expr->queryChild(1));
+        IHqlExpression * right = queryBaseIndexForKeyedJoin(expr->queryChild(2));
+        if (left && right)
+            return left;
+        return nullptr;
+    }
+    return queryPhysicalRootTable(expr);
+}
+
 IHqlExpression * KeyedJoinInfo::createKeyFromComplexKey(IHqlExpression * expr)
 {
-    IHqlExpression * base = queryPhysicalRootTable(expr);
+    IHqlExpression * base = queryBaseIndexForKeyedJoin(expr);
     if (!base)
     {
         translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(expr->getOperator()));
@@ -1232,7 +1245,7 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     buildFilenameFunction(instance, instance.startctx, WaIndexname, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0;
-    LinkedHqlExpr indexExpr = info->queryOriginalKey();
+    LinkedHqlExpr indexExpr = info->queryKey();
     OwnedHqlExpr serializedRecord;
     unsigned numPayload = numPayloadFields(indexExpr);
     if (numPayload)
