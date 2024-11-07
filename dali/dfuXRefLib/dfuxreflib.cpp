@@ -960,7 +960,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
             ForEach(*planesIter)
             {
                 const IPropertyTree &plane = planesIter->query();
-                if (startsWithIgnoreCase(mname.str(), plane.queryProp("@prefix")))
+                if (startsWith(mname.str(), plane.queryProp("@prefix")))
                 {
                     if (plane.getPropInt("@numDevices") > 1)
                     {
