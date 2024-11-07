@@ -273,6 +273,36 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     return rfn;
 }
 
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,IStoragePlane *plane,RemoteFilename &rfn)
+{
+    partNo--;
+    StringBuffer partName;
+    if (!pmask)
+    {
+        pmask = "!ERROR!._$P$_of_$N$";
+        IERRLOG("No partmask for constructPartFilename");
+    }
+    expandMask(partName, pmask, partNo, max);
+
+    // Get stripeNum from storage plane
+    unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
+
+    StringBuffer fullname;
+    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
+
+    ClusterPartDiskMapSpec mspec;
+    mspec.replicateOffset = replicateOffset;
+    unsigned n;
+    unsigned d;
+    mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
+    setReplicateFilename(fullname, d);
+    SocketEndpoint ep;
+    if (grp)
+        ep = grp->queryNode(n).endpoint();
+    rfn.setPath(ep, fullname.toLowerCase().str());
+    return rfn;
+}
+
 inline void LOGPTREE(const char *title,IPropertyTree *pt)
 {
     StringBuffer buf;

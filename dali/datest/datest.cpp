@@ -80,7 +80,8 @@ static void addTestFile(const char *name,unsigned n)
     StringBuffer path;
     for (unsigned m=0; m<n; m++) {
         RemoteFilename rfn;
-        constructPartFilename(group,m+1,n,NULL,partmask.str(),dir.str(),false,1,rfn);
+        // Add tests for constructPartFilename
+        deprecatedConstructPartFilename(group,m+1,n,NULL,partmask.str(),dir.str(),false,1,rfn);
         rfn.getLocalPath(path.clear());
         Owned<IPropertyTree> pp = createPTree("Part");
         pp->setPropInt64("@size",1234*(m+1));
