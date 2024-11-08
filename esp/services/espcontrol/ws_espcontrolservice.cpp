@@ -189,7 +189,7 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
@@ -220,7 +220,7 @@ bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingS
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
@@ -264,7 +264,7 @@ bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryReque
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
@@ -305,7 +305,7 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
@@ -349,7 +349,7 @@ bool CWSESPControlEx::onCleanSession(IEspContext& context, IEspCleanSessionReque
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
@@ -384,7 +384,7 @@ bool CWSESPControlEx::onSetSessionTimeout(IEspContext& context, IEspSetSessionTi
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
