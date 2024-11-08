@@ -1,5 +1,5 @@
 /*##############################################################################
-    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
@@ -17,6 +17,22 @@
 #include "jmetrics.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
+
+//including cpp-httplib single header file REST client
+//  doesn't work with format-nonliteral as an error
+//
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
+#undef INVALID_SOCKET
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "httplib.h"
+
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef ELASTICSINK_EXPORTS
 #define ELASTICSINK_API DECL_EXPORT
@@ -36,6 +52,10 @@ protected:
     virtual void doCollection() override;
     bool getHostConfig(const IPropertyTree *pSettingsTree);
     bool getIndexConfig(const IPropertyTree *pSettingsTree);
+    bool getDynamicMappingSuffixesFromIndex(const IPropertyTree *pIndexConfigTree);
+    static bool convertPatternToSuffix(const char *pattern, StringBuffer &suffix);
+    bool validateIndex();
+    void intializeElasticClient();
 
 protected:
     StringBuffer indexName;
@@ -49,4 +69,6 @@ protected:
     StringBuffer gaugeMetricSuffix;
     StringBuffer histogramMetricSuffix;
     bool configurationValid = false;
+    std::shared_ptr<httplib::Client> pClient;
+    httplib::Headers elasticHeaders;
 };
