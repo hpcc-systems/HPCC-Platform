@@ -894,17 +894,17 @@ constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
 extern da_decl void configurePreferredPlanes();
-inline bool hasReadWriteCostFields(const IPropertyTree & fileAttr)
-{
-    return fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)) || fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost));
-}
 
+// Legacy read cost calculation
+// Note: this only returns legacy read cost if DFUQRFreadCost has not been set.
+// This means that once DFUQRFreadCost has been updated with legacy read cost,
+// it will no longer return the legacy read cost.
 template<typename Source>
 inline cost_type getLegacyReadCost(const IPropertyTree & fileAttr, Source source)
 {
     // Legacy files do not have @readCost attribute, so calculate from numDiskRead
     // NB: Costs of index reading can not be reliably estimated based on 'numDiskReads'
-    if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads))
+    if (!fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads))
         && !isFileKey(fileAttr))
     {
         stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
@@ -913,11 +913,16 @@ inline cost_type getLegacyReadCost(const IPropertyTree & fileAttr, Source source
     else
         return 0;
 }
+
+// Legacy write cost calculation
+// Note: this only returns legacy write cost if DFUQRFwriteCost has not been set.
+// This means that once DFUQRFwriteCost has been updated with legacy write cost,
+// it will no longer return the legacy write cost.
 template<typename Source>
 inline cost_type getLegacyWriteCost(const IPropertyTree & fileAttr, Source source)
 {
     // Legacy files do not have @writeCost attribute, so calculate from numDiskWrites
-    if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
+    if (!fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
     {
         stat_type prevDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
         return calcFileAccessCost(source, prevDiskWrites, 0);

@@ -672,14 +672,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
 
         if (updateFileProps)
         {
-            cost_type legacyReadCost = 0;
-            // Legacy files will not have the readCost stored as an attribute
-            if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
-            {
-                // Legacy file: calculate readCost using prev disk reads and new disk reads
-                stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-                legacyReadCost = calcFileAccessCost(clusterName, 0, prevDiskReads);
-            }
+            cost_type legacyReadCost = getLegacyReadCost(fileAttr, clusterName.str());
             file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
             file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
         }

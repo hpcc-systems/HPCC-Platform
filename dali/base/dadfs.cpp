@@ -4990,43 +4990,46 @@ public:
         double fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
         double sizeGB = getDiskSize(true, false) / ((double)1024 * 1024 * 1024);
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        bool doLegacyAccessCostCalc = false;
+        bool doLegacyCostCalc = false;
         __int64 numDiskWrites = 0, numDiskReads = 0;
+        cost_type readCost = 0, writeCost = 0;
         if (attrs)
         {
-            if (hasReadWriteCostFields(*attrs))
+            if (!attrs->hasProp(getDFUQResultFieldName(DFUQRFreadCost))&& !isFileKey(*attrs))
             {
-                // Newer files have readCost and writeCost attributes
-                accessCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost)) + attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
+                numDiskReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
+                doLegacyCostCalc = true;
             }
             else
+                readCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
+
+            if (!attrs->hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
             {
-                // Costs need to be calculated from numDiskReads and numDiskWrites for legacy files
                 numDiskWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
-                doLegacyAccessCostCalc = true;
-                // NB: Costs of index reading can not be reliably estimated based on 'numDiskReads'
-                if (!isFileKey(*attrs))
-                    numDiskReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
+                doLegacyCostCalc = true;
             }
+            else
+                writeCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
         }
+        accessCost = readCost + writeCost; // access cost excluding legacy costs (to be added below)
         if (isEmptyString(cluster))
         {
             StringArray clusterNames;
             unsigned countClusters = getClusterNames(clusterNames);
             for (unsigned i = 0; i < countClusters; i++)
                 atRestCost += calcFileAtRestCost(clusterNames[i], sizeGB, fileAgeDays);
-            if (countClusters && doLegacyAccessCostCalc)
+            if (countClusters && doLegacyCostCalc)
             {
                 // NB: numDiskReads/numDiskWrites are stored at the file level, not per cluster.
                 // So cannot calculate accessCost per cluster, assume cost is based on 1st.
-                accessCost = calcFileAccessCost(clusterNames[0], numDiskWrites, numDiskReads);
+                accessCost += calcFileAccessCost(clusterNames[0], numDiskWrites, numDiskReads);
             }
         }
         else
         {
             atRestCost += calcFileAtRestCost(cluster, sizeGB, fileAgeDays);
-            if (doLegacyAccessCostCalc)
-                accessCost = calcFileAccessCost(cluster, numDiskWrites, numDiskReads);
+            if (doLegacyCostCalc)
+                accessCost += calcFileAccessCost(cluster, numDiskWrites, numDiskReads);
         }
     }
 };
@@ -13457,21 +13460,21 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             file->setPropInt64(getDFUQResultFieldName(DFUQRFatRestCost), atRestCost);
 
             // Dyamically calc and set the access cost field and for legacy files set read/write cost fields
-            cost_type accessCost = 0;
-            if (hasReadWriteCostFields(*file))
+            cost_type readCost = file->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
+            if (!readCost)
             {
-                accessCost = file->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost)) + file->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
+                readCost = getLegacyReadCost(*file, nodeGroup);
+                file->setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
             }
-            else // Calc access cost from numDiskRead & numDiskWrites for Legacy files
+
+            cost_type writeCost = file->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
+            if (!writeCost)
             {
-                cost_type legacyReadCost = getLegacyReadCost(*file, nodeGroup);
-                file->setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost);
-
-                cost_type legacyWriteCost = getLegacyWriteCost(*file, nodeGroup);
-                file->setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), legacyWriteCost);
-
-                accessCost = legacyReadCost + legacyWriteCost;
+                cost_type writeCost = getLegacyWriteCost(*file, nodeGroup);
+                file->setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
             }
+            cost_type accessCost = readCost + writeCost;
+
             file->setPropInt64(getDFUQResultFieldName(DFUQRFaccessCost), accessCost);
 
             // Dymically calc and set the total cost field
