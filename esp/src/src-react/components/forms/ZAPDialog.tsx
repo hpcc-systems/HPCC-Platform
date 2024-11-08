@@ -196,11 +196,12 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }
                 for (const key in logFilter) {
                     if (key === "AbsoluteTimeRange") {
-                        const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate).toISOString() : "";
-                        const endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate).toISOString() : "";
-                        if (startDate && endDate) {
-                            formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate);
-                            formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate);
+                        const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate) : null;
+                        let endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate) : null;
+                        if (startDate) {
+                            endDate = endDate === null ? new Date(startDate.getTime() + (8 * 3600 * 1000)) : endDate;
+                            formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate.toISOString());
+                            formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate.toISOString());
                             delete logFilter.RelativeTimeRangeBuffer;
                         }
                     } else {

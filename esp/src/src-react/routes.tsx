@@ -547,7 +547,7 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: [],
-        path: "/log", action: () => import("./components/LogViewer").then(_ => <_.LogViewer />)
+        path: "/log", action: (ctx) => import("./components/LogViewer").then(_ => <_.LogViewer sort={parseSort(ctx.search)} />)
     },
     //  Other
     {

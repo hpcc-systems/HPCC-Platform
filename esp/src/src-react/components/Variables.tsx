@@ -2,24 +2,25 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useWorkunitVariables } from "../hooks/workunit";
+import { Variable } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
 interface VariablesProps {
-    wuid: string;
+    variables: Variable[];
+    refreshData: () => void;
     sort?: QuerySortItem;
 }
 
 const defaultSort = { attribute: "Wuid", descending: true };
 
 export const Variables: React.FunctionComponent<VariablesProps> = ({
-    wuid,
+    variables,
+    refreshData,
     sort = defaultSort
 }) => {
 
-    const [variables, , , refreshData] = useWorkunitVariables(wuid);
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,

@@ -161,7 +161,9 @@ define([
         formatLogFilterDateTime: function (dateField, timeField, dateTimeField) {
             if (dateField.value.toString() !== "Invalid Date") {
                 const d = new Date(dateField.value);
-                const date = `${d.getFullYear()}-${(d.getMonth() < 9 ? "0" : "") + parseInt(d.getMonth() + 1, 10)}-${d.getDate()}`;
+                const month = d.getMonth() + 1;
+                const day = d.getDate();
+                const date = `${d.getFullYear()}-${(month < 9 ? "0" : "") + month}-${(day < 9 ? "0" : "") + day}`;
                 const time = timeField.value.toString().replace(/.*1970\s(\S+).*/, "$1");
                 dateTimeField.value = `${date}T${time}.000Z`;
             }
