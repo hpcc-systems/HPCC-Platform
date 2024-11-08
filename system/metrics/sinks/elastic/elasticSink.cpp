@@ -16,21 +16,6 @@
 #include "jsecrets.hpp"
 #include "jencrypt.hpp"
 
-//including cpp-httplib single header file REST client
-//  doesn't work with format-nonliteral as an error
-//
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-#endif
-
-#undef INVALID_SOCKET
-#include "httplib.h"
-
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
 using namespace hpccMetrics;
 
 extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
@@ -51,6 +36,10 @@ ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSet
     {
         configurationValid = true;
         PROGLOG("ElasticMetricSink: Loaded and configured");
+    }
+    else
+    {
+        WARNLOG("ElasticMetricSink: Unable to complete initialization, sink not collecting");
     }
 }
 
@@ -89,7 +78,7 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
     pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
 
     // Get authentication settings, if present
-    Owned<IPropertyTree> pAuthConfigTree = pSettingsTree->getPropTree("authentication");
+    Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
     if (!pAuthConfigTree)
         return true;
 
@@ -143,6 +132,12 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
             decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
         }
     }
+
+    // Read optional timeout values
+    connectTimeout = pHostConfigTree->getPropInt("@connectionTimeout", connectTimeout);
+    readTimeout = pHostConfigTree->getPropInt("@readTimeout", readTimeout);
+    writeTimeout = pHostConfigTree->getPropInt("@writeTimeout", writeTimeout);
+
     return true;
 }
 
@@ -162,23 +157,164 @@ bool ElasticMetricSink::getIndexConfig(const IPropertyTree *pSettingsTree)
         return false;
     }
 
-    // Initialize standard suffixes
-    if (!pIndexConfigTree->getProp("@countMetricSuffix", countMetricSuffix))
-        countMetricSuffix.append("count");
+    intializeElasticClient();
 
-    if (!pSettingsTree->getProp("@gaugeMetricSuffix", gaugeMetricSuffix))
-        gaugeMetricSuffix.append("gauge");
+    if (!validateIndex())
+        return false;
 
-    if (!pSettingsTree->getProp("@histogramMetricSuffix", histogramMetricSuffix))
-        histogramMetricSuffix.append("histogram");
+    return getDynamicMappingSuffixesFromIndex(pIndexConfigTree);
+}
 
-    return true;
+
+bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *pIndexConfigTree)
+{
+    StringBuffer countSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@countSuffixMappingName", countSuffixMappingName))
+        countSuffixMappingName.append("hpcc_metrics_count_suffix");
+
+    StringBuffer gaugeSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@gaugeSuffixMappingName", gaugeSuffixMappingName))
+        gaugeSuffixMappingName.append("hpcc_metrics_gauge_suffix");
+
+    StringBuffer histogramSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@histogramSuffixMappingName", histogramSuffixMappingName))
+        histogramSuffixMappingName.append("hpcc_metrics_histogram_suffix");
+
+    std::string endpoint;
+    endpoint.append("/").append(indexName.str()).append("/_mapping");
+    httplib::Result res = pClient->Get(endpoint.c_str(), elasticHeaders);
+
+    if (res == nullptr)
+    {
+        httplib::Error err = res.error();
+        WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s', httplib Error = %d", elasticHostUrl.str(), err);
+        return false;
+    }
+
+    if (res->status != 200)
+    {
+        WARNLOG("ElasticMetricSink: Error response status = %d, unable to retrieve mapping for index '%s'", res->status, indexName.str());
+        return false;
+    }
+
+    nlohmann::json data = nlohmann::json::parse(res->body);
+
+    auto indexConfig = data[indexName.str()];
+    if (indexConfig.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Unable to load configuration for Index '%s'", indexName.str());
+        return false;
+    }
+
+    auto mappings = indexConfig["mappings"];
+    if (mappings.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Required 'mappings' section does not exist in Index '%s'", indexName.str());
+        return false;
+    }
+
+    auto dynamicTemplates = mappings["dynamic_templates"];
+    if (dynamicTemplates.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Required 'dynamic_templates' section does not exist in Index '%s'", indexName.str());
+        return false;
+    }
+
+    // validate type is as expected from the data
+    if (dynamicTemplates.is_array())
+    {
+        for (auto & dynamicTemplate : dynamicTemplates.items())
+        {
+            auto mappingObject = dynamicTemplate.value().get<nlohmann::json::object_t>();
+
+            for (const auto& it: mappingObject)
+            {
+                auto const &mappingName = it.first;
+                auto kvPairs = it.second;
+                auto const &matchValue = kvPairs["match"];
+                if (mappingName == countSuffixMappingName.str())
+                {
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), countMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid count suffix pattern");
+                        return false;
+                    }
+                }
+                else if (mappingName == histogramSuffixMappingName.str())
+                {
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), histogramMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid histogram suffix pattern");
+                        return false;
+                    }
+                }
+                else if (mappingName == gaugeSuffixMappingName.str())
+                {
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), gaugeMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid gauge suffix pattern");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // If no gauge suffix pattern configured, use the count suffix pattern
+        if (gaugeMetricSuffix.isEmpty())
+            gaugeMetricSuffix.append(countMetricSuffix);
+
+        // All three must be configured
+        return !countMetricSuffix.isEmpty() && !gaugeMetricSuffix.isEmpty() && !histogramMetricSuffix.isEmpty();
+    }
+    return false;
+}
+
+
+bool ElasticMetricSink::convertPatternToSuffix(const char *pattern, StringBuffer &suffix)
+{
+    if (pattern && (strlen(pattern) > 2) && pattern[0] == '*')
+    {
+        suffix.append(pattern + 1);
+        return true;
+    }
+    return false;
+}
+
+
+void ElasticMetricSink::intializeElasticClient()
+{
+    elasticHeaders = {
+            {"Content-Type", "application/json"},
+            {"Accept",       "application/json"}
+    };
+
+    // Add authorization header if needed
+    if (streq(authenticationType, "basic"))
+    {
+        StringBuffer token;
+        StringBuffer usernamePassword;
+        usernamePassword.append(username).append(":").append(password);
+        JBASE64_Encode(usernamePassword.str(), usernamePassword.length(), token, false);
+        StringBuffer basicAuth;
+        basicAuth.append("Basic ").append(token);
+        elasticHeaders.insert({"Authorization", basicAuth.str()});
+    }
+
+    pClient = std::make_shared<httplib::Client>(elasticHostUrl.str());
+
+    // Add cert path if needed
+    if (!certificateFilePath.isEmpty())
+        pClient->set_ca_cert_path(certificateFilePath.str());
+
+    pClient->set_connection_timeout(connectTimeout);
+    pClient->set_read_timeout(readTimeout);
+    pClient->set_write_timeout(writeTimeout);
 }
 
 
 bool ElasticMetricSink::prepareToStartCollecting()
 {
-    return false;
+    return configurationValid;
 }
 
 
@@ -193,3 +329,24 @@ void ElasticMetricSink::collectingHasStopped()
 
 }
 
+
+bool ElasticMetricSink::validateIndex()
+{
+    std::string endpoint;
+    endpoint.append("/").append(indexName.str());
+    auto res = pClient->Get(endpoint.c_str(), elasticHeaders);
+
+    if (res == nullptr)
+    {
+        httplib::Error err = res.error();
+        WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
+        return false;
+    }
+
+    else if (res->status != 200)
+    {
+        WARNLOG("ElasticMetricSink: Error response status = %d accessing Index '%s'", res->status, indexName.str());
+        return false;
+    }
+    return true;
+}
