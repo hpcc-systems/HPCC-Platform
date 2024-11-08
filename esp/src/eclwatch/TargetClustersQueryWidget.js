@@ -2,6 +2,7 @@ define([
     "dojo/_base/declare",
     "src/nlsHPCC",
     "dojo/topic",
+    "dojo/dom-construct",
 
     "dijit/registry",
 
@@ -20,7 +21,7 @@ define([
     "hpcc/IFrameWidget",
 
     "dijit/Dialog",
-], function (declare, nlsHPCCMod, topic,
+], function (declare, nlsHPCCMod, topic, domConstruct,
     registry,
     tree, selector,
     GridDetailsWidget, PreflightDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, DelayLoadWidget, ESPUtil, MachineInformationWidget, IFrameWidget) {
@@ -61,9 +62,15 @@ define([
                 if (currSel.id === this.id + "_Grid") {
                     this.refreshGrid();
                 } else if (currSel.id === this.legacyTargetClustersIframeWidget.id && !this.legacyTargetClustersIframeWidget.initalized) {
-                    this.legacyTargetClustersIframeWidget.init({
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"
-                    });
+                    if (!dojoConfig.isContainer) {
+                        this.legacyTargetClustersIframeWidget.init({
+                            src: ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"
+                        });
+                    } else {
+                        const unavailMsg = domConstruct.create("div", { style: { margin: "5px" } });
+                        unavailMsg.innerText = this.i18n.UnavailableInContainerized;
+                        this.legacyTargetClustersIframeWidget.contentPane.set("content", unavailMsg);
+                    }
                 } else if (currSel.params.newPreflight || currSel.params.Usergenerated) { //prevents loop of pfTab.init above
                     currSel.init(currSel.params);
                 }
@@ -88,6 +95,10 @@ define([
                 style: "border: 0; width: 100%; height: 100%"
             });
             this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "last");
+            if (dojoConfig.isContainer) {
+                const legacyTab = registry.byId(this.id + "_LegacyTargetClustersIframeWidget");
+                legacyTab.set("disabled", true);
+            }
             this.machineFilter.disable();
         },
 

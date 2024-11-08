@@ -138,7 +138,11 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                 formatter: ts => {
                     if (ts) {
                         if (ts.indexOf(":") < 0) {
-                            return timestampToDate(ts).toISOString();
+                            const date = timestampToDate(ts);
+                            if (!isNaN(date.getTime())) {
+                                return date.toISOString();
+                            }
+                            return ts;
                         }
                         return formatDateString(ts);
                     }
