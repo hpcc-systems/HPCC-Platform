@@ -943,61 +943,65 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     replicate = setReplicateDir(name,nonrepdir,false);
     if (replicate) 
         name = nonrepdir.str();
+
+    Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
+    ForEach(*planesIter)
+    {
+        const IPropertyTree &plane = planesIter->query();
+        const char *prefix = plane.queryProp("@prefix");
+        if (startsWith(name, prefix))
+        {
+            mname.ensureCapacity(strlen(name));
+            mname.append(prefix).append(PATHSEPCHAR);
+            name += strlen(prefix) + 1;
+            if (plane.getPropInt("@numDevices") > 1)
+            {
+                if (*name&&*name!='d')
+                    throw makeStringExceptionV(-1, "numDevices>1 but no stripe sub-directory in file %s", mname.append(name).str());
+                name++;
+                while (*name&&isdigit(*name))
+                    name++;
+                mname.append("d$P$");
+            }
+            break;
+        }
+    }
+
+    if (mname.isEmpty())
+        throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", name);
+
     num = 0;
     max = 0;
     unsigned dirPerPart = 0;
+    const char * cur = name;
     for (;;) {
-        char c=*name;
+        char c=*cur;
         if (!c)
             break;
-        if ((c=='d')&&(isdigit(name[1])))
-        {
-            // Checks that the prefix matches and numDevices > 1 to see if d[0-9]+ is a stripe number
-            mname.append(c);
-            name++;
-
-            Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
-            ForEach(*planesIter)
-            {
-                const IPropertyTree &plane = planesIter->query();
-                if (startsWith(mname.str(), plane.queryProp("@prefix")))
-                {
-                    if (plane.getPropInt("@numDevices") > 1)
-                    {
-                        while (*name&&isdigit(*name))
-                            name++;
-                        mname.append("$P$");
-                    }
-                    break;
-                }
-            }
-            c = *name;
-        }
-        if ((c=='/')&&(isdigit(name[1])))
-        {
-            mname.append(c);
-            name++;
-
-            // Get dir-per-part #
-            while (*name&&isdigit(*name))
-            {
-                dirPerPart = dirPerPart*10+(*name-'0');
-                name++;
-            }
-
-            c=*name;
-            mname.append("$P$");
-        }
-        if ((c=='.')&&(name[1]=='_')) {
+        if ((c=='.')&&(cur[1]=='_')) {
             unsigned pn = 0;
-            const char *s = name+2;
+            const char *s = cur+2;
             while (*s&&isdigit(*s)) {
                 pn = pn*10+(*s-'0');
                 s++;
             }
 
-            if (dirPerPart&&dirPerPart!=pn)
-                throw makeStringException(-1, "dir-per-part # does not match part # of file");
+            // Check for dir-per-part number
+            const char *tailSlash = cur;
+            while (*tailSlash&&*tailSlash!='/')
+                tailSlash--;
+            const char *d = tailSlash;
+            for (int i=1;*(--d)&&isdigit(*d);i++)
+                dirPerPart = dirPerPart+(*d-'0')*i;
+            if (*d&&*d=='/')
+            {
+                if (dirPerPart!=pn)
+                    throw makeStringException(-1, "dir-per-part # does not match part # of file");
+
+                mname.append((d+1)-name, name).append("$P$").append(cur-tailSlash, tailSlash);
+            }
+            else
+                mname.append(cur-name,name);
 
             if (pn&&(memicmp(s,"_of_",4)==0)) {
                 unsigned mn = 0;
@@ -1016,8 +1020,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                 }
             }
         }
-        mname.append(c);
-        name++;
+        cur++;
     }
     return false;
 }           
