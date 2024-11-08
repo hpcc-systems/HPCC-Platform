@@ -769,9 +769,9 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
-    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn)
+    RemoteFilename &constructPartFilename(unsigned partNo, bool replicate, RemoteFilename &rfn)
     {
-        return ::constructPartFilename(grp, partNo, copy, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, plane, rfn);
+        return ::constructPartFilename(grp, partNo, replicate?1:0, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, plane, rfn);
     }
 
     void resolve(CFileEntry *entry);
@@ -939,10 +939,14 @@ static void constructPartname(const char *filename,unsigned n, StringBuffer &pn,
 static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
 {
     // takes filename and creates mask filename with $P$ extension
-    StringBuffer nonrepdir;
-    replicate = setReplicateDir(name,nonrepdir,false);
-    if (replicate) 
-        name = nonrepdir.str();
+    if (!isContainerized())
+    {
+        // Replicate dir is not supported in containerized environment
+        StringBuffer nonrepdir;
+        replicate = setReplicateDir(name,nonrepdir,false);
+        if (replicate)
+            name = nonrepdir.str();
+    }
 
     Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
     ForEach(*planesIter)
@@ -1643,6 +1647,11 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     else {
                         if (lnentry->outsidenodes.find(rep)==NotFound)
                             lnentry->outsidenodes.append(rep);
+                    }
+                    if (isContainerized())
+                    {
+                        UWARNLOG("Replication not supported in containerized version");
+                        break;
                     }
                     if (replicate)
                         break;
@@ -2773,12 +2782,11 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
 #endif
     // assume all nodes same OS
     Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-#ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
-#else
-    if (group)
+    if (isContainerized())
+        WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
+    else if (group)
         islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-#endif
+
     dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
     dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
     numdirs = 2;
