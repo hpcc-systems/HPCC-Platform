@@ -1204,7 +1204,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         bool isSuperUser = true;
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
             isSuperUser =  false;
 #endif
@@ -1839,7 +1839,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
     try
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);

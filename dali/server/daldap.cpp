@@ -229,7 +229,7 @@ public:
 
         if (!authenticated)
         {
-            CLdapSecManager* ldapSecMgr = dynamic_cast<CLdapSecManager*>(ldapsecurity.get());
+            ILdapSecManager* ldapSecMgr = dynamic_cast<ILdapSecManager*>(ldapsecurity.get());
             if (!ldapSecMgr || !ldapSecMgr->isSuperUser(user))
             {
                 DBGLOG("LDAP: EnableScopeScans caller %s must be an LDAP HPCC Admin", username.str());

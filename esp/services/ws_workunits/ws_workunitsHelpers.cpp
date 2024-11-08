@@ -3709,7 +3709,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
 
 #ifndef _NO_LDAP
-    CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+    ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
 
     // View Scope is checked only when LDAP secmgr is available AND checkViewPermissions config is also enabled.
     // Otherwise, the view permission check is skipped, and WU is submitted as normal.

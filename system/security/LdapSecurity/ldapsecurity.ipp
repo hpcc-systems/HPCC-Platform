@@ -304,7 +304,64 @@ public:
     }
 };
 
-class LDAPSECURITY_API CLdapSecManager : implements ISecManager, public CInterface
+interface ILdapSecManager : extends ISecManager
+{
+    // Ensure reused names overload instead of hide base names.
+    using ISecManager::addUser;
+    using ISecManager::authorizeEx;
+    using ISecManager::getAllUsers;
+    using ISecManager::updateUserPassword;
+
+    virtual bool authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames) = 0;
+    virtual void searchUsers(const char* searchstr, IUserArray& users) = 0;
+    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
+    virtual void getAllUsers(IUserArray& users) = 0;
+    virtual bool updateUser(const char* type, ISecUser& user) = 0;
+    virtual bool updateUserPassword(const char* username, const char* newPassword) = 0;
+    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources) = 0;
+    virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char* basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
+    virtual ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
+        ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
+    virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;
+    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
+    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
+    virtual void getGroups(const char* username, StringArray & groups) = 0;
+    virtual bool changePermission(CPermissionAction& action) = 0;
+    virtual void changeUserGroup(const char* action, const char* username, const char* groupname) = 0;
+    virtual void changeGroupMember(const char* action, const char* groupdn, const char* userdn) = 0;
+    virtual bool deleteUser(ISecUser* user) = 0;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn) = 0;
+    virtual void deleteGroup(const char* groupname) = 0;
+    virtual void getGroupMembers(const char* groupname, StringArray & users) = 0;
+    virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication) = 0;
+    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication) = 0;
+    virtual void normalizeDn(const char* dn, StringBuffer& ndn) = 0;
+    virtual bool isSuperUser(ISecUser* user) = 0;
+    virtual ILdapConfig* queryConfig() = 0;
+    virtual int countResources(const char* basedn, const char* searchstr, int limit) = 0;
+    virtual int countUsers(const char* searchstr, int limit) = 0;
+    virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL) = 0;
+    virtual LdapServerType getLdapServerType() = 0;
+    virtual const char* getPasswordStorageScheme() = 0;
+    virtual bool getCheckViewPermissions() = 0;
+    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) = 0;
+    virtual bool organizationalUnitExists(const char * ou) const = 0;
+    virtual bool addUser(ISecUser & user, const char* basedn) = 0;
+    virtual void createView(const char * viewName, const char * viewDescription) = 0;
+    virtual void deleteView(const char * viewName) = 0;
+    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions, StringArray & viewManagedBy) = 0;
+    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual bool userInView(const char * user, const char* viewName) = 0;
+};
+
+class LDAPSECURITY_API CLdapSecManager : implements ILdapSecManager, public CInterface
 {
 private:
     Owned<ILdapClient> m_ldap_client;
@@ -358,58 +415,58 @@ public:
     ISecUser * lookupUser(unsigned uid, IEspSecureContext* secureContext = nullptr) override;
     ISecUser * findUser(const char * username, IEspSecureContext* secureContext = nullptr) override;
     ISecUserIterator * getAllUsers(IEspSecureContext* secureContext = nullptr) override;
-    virtual void searchUsers(const char* searchstr, IUserArray& users);
-    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
-    virtual void getAllUsers(IUserArray& users);
+    virtual void searchUsers(const char* searchstr, IUserArray& users) override;
+    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) override;
+    virtual void getAllUsers(IUserArray& users) override;
     void setExtraParam(const char * name, const char * value, IEspSecureContext* secureContext = nullptr) override;
     IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override;
     IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override;
     IAuthMap * createSettingMap(struct IPropertyTree *, IEspSecureContext* secureContext = nullptr) override {return 0;}
     bool updateSettings(ISecUser & User,ISecPropertyList * settings, IEspSecureContext* secureContext = nullptr) override {return false;}
     bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = nullptr, IEspSecureContext* secureContext = nullptr) override;
-    virtual bool updateUser(const char* type, ISecUser& user);
-    virtual bool updateUserPassword(const char* username, const char* newPassword);
+    virtual bool updateUser(const char* type, ISecUser& user) override;
+    virtual bool updateUserPassword(const char* username, const char* newPassword) override;
     bool initUser(ISecUser& user, IEspSecureContext* secureContext = nullptr) override {return false;}
 
     bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources, IEspSecureContext* secureContext = nullptr) override;
-    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources);
+    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources) ;
     virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char* basedn, const char* resourceName, unsigned extraNameFilter,
-        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) ;
     virtual ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
-        ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
+        ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) override;
     void cacheSwitch(SecResourceType rtype, bool on, IEspSecureContext* secureContext = nullptr) override;
 
-    virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
+    virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) override;
     void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, IEspSecureContext* secureContext = nullptr) override;
-    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
-    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
-    virtual void getGroups(const char* username, StringArray & groups);
-    virtual bool changePermission(CPermissionAction& action);
-    virtual void changeUserGroup(const char* action, const char* username, const char* groupname);
-    virtual void changeGroupMember(const char* action, const char* groupdn, const char* userdn);
-    virtual bool deleteUser(ISecUser* user);
-    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc);
-    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn);
-    virtual void deleteGroup(const char* groupname);
-    virtual void getGroupMembers(const char* groupname, StringArray & users);
+    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) override;
+    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) override;
+    virtual void getGroups(const char* username, StringArray & groups) override;
+    virtual bool changePermission(CPermissionAction& action) override;
+    virtual void changeUserGroup(const char* action, const char* username, const char* groupname) override;
+    virtual void changeGroupMember(const char* action, const char* groupdn, const char* userdn) override;
+    virtual bool deleteUser(ISecUser* user) override;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) override;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn) override;
+    virtual void deleteGroup(const char* groupname) override;
+    virtual void getGroupMembers(const char* groupname, StringArray & users) override;
     void deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
     void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
     void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
 
-    virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication);
-    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication);
+    virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication) override;
+    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication) override;
 
-    virtual void normalizeDn(const char* dn, StringBuffer& ndn);
-    virtual bool isSuperUser(ISecUser* user);
-    virtual ILdapConfig* queryConfig();
+    virtual void normalizeDn(const char* dn, StringBuffer& ndn) override;
+    virtual bool isSuperUser(ISecUser* user) override;
+    virtual ILdapConfig* queryConfig() override;
 
-    virtual int countResources(const char* basedn, const char* searchstr, int limit);
-    virtual int countUsers(const char* searchstr, int limit);
+    virtual int countResources(const char* basedn, const char* searchstr, int limit) override;
+    virtual int countUsers(const char* searchstr, int limit) override;
     bool authTypeRequired(SecResourceType rtype, IEspSecureContext* secureContext = nullptr) override {return true;};
 
-    virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL);
+    virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL) override;
     
-    virtual LdapServerType getLdapServerType() 
+    virtual LdapServerType getLdapServerType() override
     { 
         if(m_ldap_client) 
             return m_ldap_client->getServerType();
@@ -417,7 +474,7 @@ public:
             return ACTIVE_DIRECTORY;
     }
 
-    virtual const char* getPasswordStorageScheme()
+    virtual const char* getPasswordStorageScheme() override
     {
         if(m_ldap_client) 
             return m_ldap_client->getPasswordStorageScheme();
@@ -435,7 +492,7 @@ public:
         return m_passwordExpirationWarningDays;
     }
 
-    virtual bool getCheckViewPermissions()
+    virtual bool getCheckViewPermissions() override
     {
         return m_checkViewPermissions;
     }
@@ -449,23 +506,23 @@ public:
     bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override;
     bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override;
     bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override { return false; }
-    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description);
-    virtual bool organizationalUnitExists(const char * ou) const;
-    virtual bool addUser(ISecUser & user, const char* basedn);
+    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) override;
+    virtual bool organizationalUnitExists(const char * ou) const override;
+    virtual bool addUser(ISecUser & user, const char* basedn) override;
     
     //Data View related interfaces
-    virtual void createView(const char * viewName, const char * viewDescription);
-    virtual void deleteView(const char * viewName);
-    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions, StringArray & viewManagedBy);
+    virtual void createView(const char * viewName, const char * viewDescription) override;
+    virtual void deleteView(const char * viewName) override;
+    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions, StringArray & viewManagedBy) override;
 
-    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns);
-    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns);
-    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns) override;
+    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns) override;
+    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns) override;
 
-    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
-    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
-    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
-    virtual bool userInView(const char * user, const char* viewName);
+    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) override;
+    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) override;
+    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) override;
+    virtual bool userInView(const char * user, const char* viewName) override;
 };
 
 #ifdef _MSC_VER
