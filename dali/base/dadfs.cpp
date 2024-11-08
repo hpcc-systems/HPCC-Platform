@@ -277,16 +277,21 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
     StringBuffer fullname;
     makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
-    ClusterPartDiskMapSpec mspec;
-    mspec.replicateOffset = replicateOffset;
-    unsigned n;
-    unsigned d;
-    mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
-    setReplicateFilename(fullname, d);
+    unsigned n = 0;
+    if (!isContainerized())
+    {
+        ClusterPartDiskMapSpec mspec;
+        mspec.replicateOffset = replicateOffset;
+        unsigned d;
+        mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
+        setReplicateFilename(fullname, d);
+    }
+
     SocketEndpoint ep;
     if (grp)
         ep = grp->queryNode(n).endpoint();
     rfn.setPath(ep, fullname.toLowerCase().str());
+
     return rfn;
 }
 
