@@ -8547,12 +8547,7 @@ void CHThorDiskReadBaseActivity::closepart()
                         dFile = &(super->querySubFile(subfile, true));
                     }
                 }
-                IPropertyTree & fileAttr = dFile->queryAttributes();
-                cost_type legacyReadCost = getLegacyReadCost(fileAttr, dFile);
-                cost_type curReadCost = calcFileAccessCost(dFile, 0, curDiskReads);
-
-                dFile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
-                dFile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
+                updateCostAndNumReads(dFile, curDiskReads);
             }
             numDiskReads += curDiskReads;
         }

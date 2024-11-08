@@ -3851,10 +3851,10 @@ cost_type FileSprayer::updateSourceProperties()
     // Update file readCost and numReads in file properties and do the same for subfiles
     if (distributedSource)
     {
-        cost_type totalReadCost = 0;
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         if (superSrc && superSrc->numSubFiles() > 0)
         {
+            cost_type totalReadCost = 0;
             Owned<IFileDescriptor> fDesc = superSrc->getFileDescriptor();
             ISuperFileDescriptor *superFDesc = fDesc->querySuperFileDescriptor();
             ForEachItemIn(idx, partition)
@@ -3876,11 +3876,7 @@ cost_type FileSprayer::updateSourceProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    cost_type curReadCost = calcFileAccessCost(subfile, 0, curProgress.numReads);
-                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curProgress.numReads);
-                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
-                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
-                    totalReadCost += curReadCost;
+                    totalReadCost += updateCostAndNumReads(subfile, curProgress.numReads);
                 }
                 else
                 {
@@ -3888,15 +3884,12 @@ cost_type FileSprayer::updateSourceProperties()
                     totalReadCost += calcFileAccessCost(distributedSource, 0, curProgress.numReads);
                 }
             }
+            return updateCostAndNumReads(distributedSource, totalNumReads, totalReadCost);
         }
         else
         {
-            totalReadCost = calcFileAccessCost(distributedSource, 0, totalNumReads);
+            return updateCostAndNumReads(distributedSource, totalNumReads);
         }
-        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), totalNumReads);
-        cost_type legacyReadCost = getLegacyReadCost(distributedSource->queryAttributes(), distributedSource);
-        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + totalReadCost);
-        return totalReadCost;  // return the total cost of this file operation (exclude previous and legacy read costs)
     }
     return 0;
 }
