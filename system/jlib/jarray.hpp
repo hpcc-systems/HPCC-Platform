@@ -21,6 +21,7 @@
 #define JARRAY_HPP
 
 #include <new>
+#include <utility>
 
 #include "platform.h"
 #include "jiface.hpp"
@@ -281,6 +282,18 @@ public:
         if (!nodestruct) SELF::destruct(pos);
         SELF::_move( pos, pos + 1, ( SELF::used - pos ) );
     }
+    //Remove the element at pos and move the last element to pos - to avoid moving all elements
+    void removeAndSwapLast(aindex_t pos, bool nodestruct = false)
+    {
+        assertex(pos < SELF::used);
+        SELF::used --;
+        if (!nodestruct) SELF::destruct(pos);
+        if (pos != SELF::used)
+        {
+            MEMBER * head = (MEMBER *)SELF::_head;
+            head[pos] = std::move(head[SELF::used]);
+        }
+    }   
     void removen(aindex_t pos, aindex_t num, bool nodestruct = false)
     {
         assertex(pos + num <= SELF::used);
