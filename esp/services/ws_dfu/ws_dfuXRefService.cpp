@@ -117,6 +117,10 @@ void CWsDfuXRefEx::init(IPropertyTree *cfg, const char *process, const char *ser
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
 
+#ifndef _CONTAINERIZED
+    initBareMetalRoxieTargets(roxieConnMap);
+#endif
+
     XRefNodeManager.setown(CreateXRefNodeFactory());
 
     //Start out builder thread......
@@ -750,19 +754,24 @@ void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const c
 void CWsDfuXRefEx::getRoxieFiles(const char *process, bool checkPackageMaps, MapStringTo<bool> &usedFileMap)
 {
     SocketEndpointArray servers;
+    Owned<IPropertyTree> controlXrefInfo;
 #ifdef _CONTAINERIZED
     StringBuffer epStr;
     getService(epStr, process, true);
     SocketEndpoint ep(epStr);
     servers.append(ep);
-#else
-    getRoxieProcessServers(process, servers);
     if (!servers.length())
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_CLUSTER_INFO, "process cluster, not found.");
+    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), ROXIECONNECTIONTIMEOUT);
+    controlXrefInfo.setown(sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT));
+#else
+    ISmartSocketFactory *conn = roxieConnMap.getValue(process);
+    if (!conn)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "Connection info for '%s' process cluster not found.", process ? process : "(null)");
+
+    controlXrefInfo.setown(sendRoxieControlQuery(conn, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT, ROXIECONNECTIONTIMEOUT));
 #endif
 
-    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), ROXIECONNECTIONTIMEOUT);
-    Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT);
     if (!controlXrefInfo)
         throw MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "roxie cluster, not responding.");
     Owned<IPropertyTreeIterator> roxieFiles = controlXrefInfo->getElements("//File");
