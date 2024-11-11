@@ -79,6 +79,7 @@ public:
     }
     virtual void start() override
     {
+        ActivityTimer t(slaveTimerStats, timeActivities);
         //Cannot call base base start because that will error if > 1 input
         startAllInputs();
         dataLinkStart();
