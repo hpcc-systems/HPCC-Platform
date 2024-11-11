@@ -997,6 +997,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(CacheHits), "The number of times an item was retrieved from a cache" },
     { NUMSTAT(CacheAdds), "The number of times an item was added to a cache" },
     { PEAKNUMSTAT(PeakCacheObjects), "High water mark for number of objects in a cache"},
+    { NUMSTAT(CacheDuplicates), "The number of times an item was added to a cache by two threads at the same time" },
+    { NUMSTAT(CacheEvictions), "The number of times an item was evicted from a cache" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
