@@ -251,10 +251,22 @@ public:
     }
     void informEos(unsigned input)
     {
-        CriticalBlock b(crit);
-        eoss++;
-        if (eoss == inputHandlers.ordinality())
-            rows.enqueue(NULL);
+        unsigned numToSignal = 0;
+        {
+            CriticalBlock b(crit);
+            eoss++;
+            if (eoss == inputHandlers.ordinality())
+                rows.enqueue(NULL);
+            // If the row sizes are very large then it is possible that other threads are waiting
+            // signal one of them that it can continue - because this thread will add no more records (HPCC-32759)
+            if (waiting && (totSize <= FUNNEL_MIN_BUFF_SIZE))
+            {
+                numToSignal = 1;
+                waiting--;
+            }
+        }
+        if (numToSignal)
+            fullSem.signal(numToSignal);
     }
     void abort()
     {

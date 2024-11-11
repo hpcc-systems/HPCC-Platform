@@ -6,6 +6,8 @@ import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
+import { SearchParams } from "../util/hashUrl";
+import { hashHistory } from "../util/history";
 
 function canShowContent(type: string) {
     switch (type) {
@@ -135,8 +137,11 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 formatter: (Type, row) => {
                     const target = getTarget(row.id, row);
                     if (target) {
+                        const searchParams = new SearchParams(hashHistory.location.search);
+                        searchParams.param("mode", encodeURIComponent(target.sourceMode));
+                        searchParams.param("src", encodeURIComponent(target.url));
                         const linkText = Type.replace("Slave", "Worker") + (row?.Description ? " (" + row.Description + ")" : "");
-                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${encodeURIComponent(target.sourceMode)}&src=${encodeURIComponent(target.url)}`}>{linkText}</Link>;
+                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?${searchParams.serialize()}`}>{linkText}</Link>;
                     }
                     return Type;
                 }

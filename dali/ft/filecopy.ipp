@@ -222,7 +222,7 @@ protected:
     void addTarget(unsigned idx, INode * node);
     void afterGatherFileSizes();
     void afterTransfer();
-    bool allowSplit();
+    bool allowSplit() const;
     void analyseFileHeaders(bool setcurheadersize);
     void assignPartitionFilenames();
     void beforeTransfer();
@@ -271,7 +271,8 @@ protected:
     void savePartition();
     void setCopyCompressedRaw();
     void setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy = (unsigned)-1);
-    void updateTargetProperties();
+    cost_type updateTargetProperties();
+    cost_type updateSourceProperties();
     bool usePullOperation() const;
     bool usePushOperation() const;
     bool usePushWholeOperation() const;
@@ -307,6 +308,8 @@ protected:
     Linked<IDistributedFile> distributedTarget;
     Linked<IDistributedFile> distributedSource;
     TargetLocationArray     targets;
+    StringBuffer            targetPlane;
+    bool targetSupportsConcurrentWrite = true; // if false, will prevent multiple writers to same target file (e.g. not supported by Azure Blob storage)
     FileFormat              srcFormat;
     FileFormat              tgtFormat;
     Owned<IDFPartFilter>    filter;

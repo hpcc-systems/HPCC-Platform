@@ -362,8 +362,12 @@ protected:
             unsigned checksum;
             serializedCreate.read(checksum);
             OwnedRoxieString fname(queryDynamicFileName());
-            varFileInfo.setown(queryAgentDynamicFileCache()->lookupDynamicFile(logctx, fname, cacheDate, checksum, &packet->queryHeader(), isOpt, true));
-            setVariableFileInfo();
+            if (fname)
+            {
+                //fname may not be set if the index is being provided by another activity
+                varFileInfo.setown(queryAgentDynamicFileCache()->lookupDynamicFile(logctx, fname, cacheDate, checksum, &packet->queryHeader(), isOpt, true));
+                setVariableFileInfo();
+            }
         }
     }
 

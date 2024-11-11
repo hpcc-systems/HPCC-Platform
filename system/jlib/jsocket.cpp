@@ -4337,7 +4337,7 @@ struct SelectItem
     T_SOCKET handle;
     ISocketSelectNotify *nfy;
     byte mode;
-    bool del; // only used in select handler method
+    bool del;
     bool operator == (const SelectItem & other) const { return sock == other.sock; }
 };
 
@@ -4416,13 +4416,12 @@ protected:
     Semaphore ticksem;
     std::atomic_uint tickwait;
     unsigned offset;
-    bool selectvarschange;
+    std::atomic<bool> selectvarschange;
     unsigned waitingchange;
     Semaphore waitingchangesem;
     int validateselecterror;
     unsigned validateerrcount;
     const char *selecttrace;
-    unsigned basesize;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
     T_SOCKET dummysock[2];
 #else
@@ -4557,6 +4556,7 @@ public:
 class CSocketSelectThread: public CSocketBaseThread
 {
     SelectItemArray items;
+    unsigned basesize;
 
     void opendummy()
     {
@@ -4719,9 +4719,10 @@ public:
 
     Owned<IException> termexcept;
 
+    // JCSMORE: this is very similar to the version in CSocketEpollThread. Could be commoned if items used common structure.
     void updateItems()
     {
-        // must be in CriticalBlock block(sect); 
+        // must be in CriticalBlock block(sect);
         unsigned n = items.ordinality();
 #ifdef _WIN32
         bool hashupdateneeded = (n!=basesize); // additions all come at end
@@ -4761,6 +4762,7 @@ public:
         basesize = n;
     }
 
+    // JCSMORE: this is very similar to the version in CSocketEpollThread. Could be commoned if items used common structure.
     bool checkSocks()
     {
         bool ret = false;
@@ -4808,9 +4810,12 @@ public:
         unsigned n=0;
         ForEachItemIn(i,items) {
             SelectItem &si = items.element(i);
-            if (!si.del) {
-                if (si.sock==sock) {
+            if (!si.del)
+            {
+                if (si.sock==sock)
+                {
                     si.del = true;
+                    break;
                 }
                 else 
                     n++;
@@ -5192,6 +5197,7 @@ public:
 #ifdef _HAS_EPOLL_SUPPORT
 # define SOCK_ADDED   0x1
 # define SOCK_REMOVED 0x2
+# define SOCK_FAILED  0x4
 class CSocketEpollThread: public CSocketBaseThread
 {
     int epfd;
@@ -5223,15 +5229,51 @@ class CSocketEpollThread: public CSocketBaseThread
         }
     }
 
+    // JCSMORE: this is very similar to the version in CSocketSelectThread. Could be commoned if items used common structure.
+    void updateItems()
+    {
+        // must be in CriticalBlock block(sect);
+        unsigned n = items.ordinality();
+        for (unsigned i=0;i<n;)
+        {
+            SelectItem *si = items.element(i);
+            if (si->del)
+            {
+                // Release/dtors should not throw but leaving try/catch here until all paths checked
+                try
+                {
+#ifdef SOCKTRACE
+                    PROGLOG("CSocketSelectThread::updateItems release %d",si.handle);
+#endif
+                    si->nfy->Release();
+                    si->sock->Release();
+                    delete si;
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e,"CSocketSelectThread::updateItems");
+                    e->Release();
+                }
+                n--;
+                if (i < n)
+                    items.swap(i, n);
+                items.remove(n);
+            }
+            else
+                i++;
+        }
+    }
+
     void opendummy()
     {
         CriticalBlock block(sect);
         if (!dummysockopen)
         {
+            // NB: not notified when triggered, because explicitly spotted and handled before tonotify loop
             sidummy = new SelectItem;
             sidummy->sock = nullptr;
             sidummy->nfy = nullptr;
-            sidummy->del = true;  // so its not added to tonotify ...
+            sidummy->del = false;
             sidummy->mode = 0;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             if(pipe(dummysock))
@@ -5291,32 +5333,32 @@ class CSocketEpollThread: public CSocketBaseThread
         }
     }
 
-    void delSelItem(SelectItem *si)
-    {
-        epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-        // Release/dtors should not throw but leaving try/catch here until all paths checked
-        try
-        {
-            si->nfy->Release();
-            si->sock->Release();
-            delete si;
-        }
-        catch (IException *e)
-        {
-            EXCLOG(e,"CSocketEpollThread::delSelItem()");
-            e->Release();
-        }
-    }
+    // void delSelItem(SelectItem *si)
+    // {
+    //     epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+    //     // Release/dtors should not throw but leaving try/catch here until all paths checked
+    //     try
+    //     {
+    //         si->nfy->Release();
+    //         si->sock->Release();
+    //         delete si;
+    //     }
+    //     catch (IException *e)
+    //     {
+    //         EXCLOG(e,"CSocketEpollThread::delSelItem()");
+    //         e->Release();
+    //     }
+    // }
 
-    void delSelItemPos(SelectItem *si, unsigned pos)
-    {
-        unsigned last = items.ordinality();
-        delSelItem(si);
-        last--;
-        if (pos < last)
-            items.swap(pos, last);
-        items.remove(last);
-    }
+    // void delSelItemPos(SelectItem *si, unsigned pos)
+    // {
+    //     unsigned last = items.ordinality();
+    //     delSelItem(si);
+    //     last--;
+    //     if (pos < last)
+    //         items.swap(pos, last);
+    //     items.remove(last);
+    // }
 
 public:
     CSocketEpollThread(const char *trc, unsigned _hdlPerThrd)
@@ -5367,9 +5409,21 @@ public:
         closedummy();
         ForEachItemIn(i, items)
         {
-            SelectItem *si = items.element(i);
-            delSelItem(si);
+            // Release/dtors should not throw but leaving try/catch here until all paths checked
+            try
+            {
+                SelectItem *si = items.element(i);
+                si->nfy->Release();
+                si->sock->Release();
+                delete si;
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e,"~CSocketSelectThread");
+                e->Release();
+            }
         }
+
         if (epfd >= 0)
         {
 # ifdef EPOLLTRACE
@@ -5383,52 +5437,52 @@ public:
 
     Owned<IException> termexcept;
 
+    // JCSMORE: this is very similar to the version in CSocketSelectThread. Could be commoned if items used common structure.
     bool checkSocks()
     {
         bool ret = false;
-        // must be holding CriticalBlock (sect)
-        unsigned n = items.ordinality();
-        for (unsigned i=0;i<n;)
+        ForEachItemIn(i, items)
         {
-            SelectItem *si = items.element(i);
-            if (!sockOk(si->handle))
+            SelectItem &si = *items.element(i);
+            if (si.del)
+                ret = true; // maybe that bad one
+            else if (!sockOk(si.handle))
             {
-                delSelItemPos(si, i);
-                n--;
+                si.del = true;
                 ret = true;
             }
-            else
-                i++;
         }
         return ret;
     }
 
-    bool removeSock(ISocket *sock)
-    {
-        // must be holding CriticalBlock (sect)
-        unsigned n = items.ordinality();
-        for (unsigned i=0;i<n;)
-        {
-            SelectItem *si = items.element(i);
-            if (si->sock==sock)
-            {
-                delSelItemPos(si, i);
-                n--;
-                return true;
-            }
-            else
-                i++;
-        }
-        return false;
-    }
+    // bool removeSock(ISocket *sock)
+    // {
+    //     // must be holding CriticalBlock (sect)
+    //     unsigned n = items.ordinality();
+    //     for (unsigned i=0;i<n;)
+    //     {
+    //         SelectItem *si = items.element(i);
+    //         if (si->sock==sock)
+    //         {
+    //             delSelItemPos(si, i);
+    //             n--;
+    //             return true;
+    //         }
+    //         else
+    //             i++;
+    //     }
+    //     return false;
+    // }
 
     bool remove(ISocket *sock)
     {
-        CriticalBlock block(sect);
         if (terminating)
-            return false;
-        if (sock==NULL)
-        { // wait until no changes outstanding
+            return true; // pretend is, to short-circuit caller
+        CriticalBlock block(sect);
+
+        // JCS - I can't see when sock can be null
+        if (sock==NULL) // wait until no changes outstanding
+        {
             while (selectvarschange)
             {
                 waitingchange++;
@@ -5437,33 +5491,59 @@ public:
             }
             return true;
         }
-        if (removeSock(sock))
+
+        ForEachItemIn(i, items)
         {
-            selectvarschange = true;
-            // NB: could set terminating here if no more hdls on
-            // this thread and at least one other thread is present
-            triggerselect();
-            return true;
+            SelectItem *si = items.element(i);
+            if (!si->del && (si->sock==sock))
+            {
+                // epoll_wait (in the CSocketEpollThread thread) may have pending events on socket this is about to remove
+                // so we must not remove the SelectItem here, just mark it as deleted (deletion performed in updateEpollVars)
+                epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+                si->del = true;
+                selectvarschange = true;
+                triggerselect();
+                // JCSMORE see comment in CSocketEpollThread::run re. need for CS.
+                // I think the array could be manipulated here, as long as the SelectItem isn't deleted.
+                // It may also be more efficient if it used a double linked list to remove items.
+                return true;
+            }
         }
         return false;
     }
 
-    unsigned add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
+    unsigned add(ISocket *sock, unsigned mode, ISocketSelectNotify *nfy)
     {
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
             IWARNLOG("EPOLL: adding fd but sock or nfy is NULL or mode is empty");
             dbgassertex(false);
-            return 0;
+            return SOCK_FAILED;
         }
         CriticalBlock block(sect);
         if (terminating)
-            return 0;
+            return SOCK_FAILED;
+
+        // JCSMORE may be more efficient to use a double linked list to avoid this scan (and array/expansion)
         unsigned rm = 0;
-        if (removeSock(sock))
-            rm = SOCK_REMOVED;
-        unsigned n = items.ordinality();
+        unsigned n=0;
+        ForEachItemIn(i, items)
+        {
+            SelectItem &si = *items.element(i);
+            if (!si.del)
+            {
+                if (si.sock==sock)
+                {
+                    si.del = true;
+                    rm = SOCK_REMOVED;
+                    break;
+                }
+                else
+                    n++;
+            }
+        }
+
         // new handler thread
         if (n >= hdlPerThrd)
             return (0|rm);
@@ -5481,6 +5561,7 @@ public:
             ep_mode |= EPOLLOUT;
         if (mode & SELECTMODE_EXCEPT)
             ep_mode |= EPOLLPRI;
+        // JCSMORE - we are in a CS, but it is thread-safe to epoll_wait concurrently with epoll_op
         epoll_op(epfd, EPOLL_CTL_ADD, sn, ep_mode);
         selectvarschange = true;
         triggerselect();
@@ -5512,6 +5593,7 @@ public:
 #ifndef _USE_PIPE_FOR_SELECT_TRIGGER
         opendummy();
 #endif
+        updateItems();
         ni = items.ordinality();
         validateselecterror = 0;
     }
@@ -5581,6 +5663,11 @@ public:
                     totnum++;
                     SelectItemArray tonotify;
                     {
+                        // JCSMORE - I don't think this CS is needed.
+                        // It is in the CSocketSelectThread version because the items array needs protecting)
+                        // But in the epoll version, we reference the SelectItem pointers only, the items array isn't referenced,
+                        // and epoll_op's are thread-safe. But we must ensure the SelectItem's are only deleted by this thread,
+                        // since even if in a mutex, pending events may referene them.
                         CriticalBlock block(sect);
 
                         // retrieve events, without waiting, while holding CS ...
@@ -5590,20 +5677,26 @@ public:
                         {
                             int tfd = -1;
                             SelectItem *epsi = (SelectItem *)epevents[j].data.ptr;
-                            if (epsi)
+                            if (epsi && !epsi->del) // NB: could receive an event for a pending deleted item
                                 tfd = epsi->handle;
 # ifdef EPOLLTRACE
                             DBGLOG("EPOLL: j = %d, fd = %d, emask = %u", j, tfd, epevents[j].events);
 # endif
                             if (tfd >= 0)
                             {
-# ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-                                if ( (dummysockopen) && (tfd == dummysock[0]) )
+                                if (dummysockopen)
                                 {
-                                    resettrigger();
-                                    continue;
-                                }
+# ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+                                    if (tfd == dummysock[0])
+                                    {
+                                        resettrigger();
+                                        continue;
+                                    }
+#else
+                                    // would still need to resettrigger and ignore dummysock (but subtly different code)
+                                    throwUnimplemented();
 # endif
+                                }
                                 unsigned int ep_mode = 0;
                                 if (epevents[j].events & (EPOLLINX | EPOLLHUP | EPOLLERR))
                                     ep_mode |= SELECTMODE_READ;
@@ -5636,6 +5729,7 @@ public:
                         const SelectItem &si = tonotify.item(j);
                         try
                         {
+                            // is it worth checking si.del again? we can't guarantee that this is a socket that has been marked deleted.
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
                         catch (IException *e)
@@ -5746,7 +5840,9 @@ public:
             if (!(addrm & SOCK_ADDED))
             {
                 addrm |= threads.item(i).add(sock,mode,nfy);
-                if (addrm & (SOCK_ADDED | SOCK_REMOVED))
+                // if both added and removed, we're done
+                if (((addrm & (SOCK_ADDED | SOCK_REMOVED)) == (SOCK_ADDED | SOCK_REMOVED)) ||
+                    (addrm & SOCK_FAILED))
                     return;
             }
             else if (!(addrm & SOCK_REMOVED))
@@ -6556,15 +6652,19 @@ StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
         return item(0).getEndpointHostText(text);
     byte lastip[4];
     const SocketEndpoint &first = item(0);
-    bool lastis4 = first.getNetAddress(sizeof(lastip),&lastip)==sizeof(lastip);
-    unsigned short lastport = first.port;
     first.getHostText(text);
+    bool lastis4 = false;
+    if (!first.queryHostname())
+        lastis4 = first.getNetAddress(sizeof(lastip),&lastip)==sizeof(lastip);
+    unsigned short lastport = first.port;
     unsigned rep=0;
     unsigned range=0;
     for (unsigned i=1;i<count;i++) {
         byte ip[4];
         const SocketEndpoint &ep = item(i);
-        bool is4 = ep.getNetAddress(sizeof(ip),&ip)==sizeof(ip);
+        bool is4 = false;
+        if (!ep.queryHostname())
+            is4 = ep.getNetAddress(sizeof(ip),&ip)==sizeof(ip);
         if (!lastis4||!is4) {
             flushText(text,lastport,rep,range);
             text.append(',');

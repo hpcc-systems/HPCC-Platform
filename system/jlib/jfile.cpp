@@ -1868,38 +1868,7 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 
 //---------------------------------------------------------------------------
 
-static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
-{
-    "blockedFileIOKB",
-    "blockedRandomIOKB",
-    "fileSyncWriteClose"
-};
-
-static constexpr bool defaultGlobalFileSyncWriteCloseEnabled = false;
-static bool globalFileSyncWriteCloseEnabled = defaultGlobalFileSyncWriteCloseEnabled;
-static std::atomic<bool> globalFileSyncWriteCloseConfigured{false};
-static CriticalSection globalFileSyncCS;
-static bool getGlobalFileSyncWriteCloseEnabled()
-{
-    if (!globalFileSyncWriteCloseConfigured)
-    {
-        CriticalBlock b(globalFileSyncCS);
-        if (!globalFileSyncWriteCloseConfigured)
-        {
-            Owned<IPropertyTree> global = getGlobalConfig();
-            Owned<IPropertyTree> config = getComponentConfig();
-            std::string propName = "expert/@" + std::string(planeAttributeTypeStrings[FileSyncWriteClose]);
-            if (config->hasProp(propName.c_str()))
-                globalFileSyncWriteCloseEnabled = config->getPropBool(propName.c_str());
-            else if (global->hasProp(propName.c_str()))
-                globalFileSyncWriteCloseEnabled = global->getPropBool(propName.c_str());
-            // else leave at default
-            globalFileSyncWriteCloseConfigured = true;
-        }
-    }
-    return globalFileSyncWriteCloseEnabled;
-}
-
+static std::atomic<bool> defaultFileSyncWriteCloseEnabled = false; // NB: set/updated by config updateFunc
 
 extern jlib_decl IFileIO *createIFileIO(IFile * creator,HANDLE handle,IFOmode openmode,IFEflags extraFlags)
 {
@@ -2128,7 +2097,7 @@ CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _s
         if ('/' == filePath[0]) // only for absolute paths
         {
             unsigned __int64 value;
-            if (findPlaneAttrFromPath(filePath, FileSyncWriteClose, getGlobalFileSyncWriteCloseEnabled() ? 1 : 0, value)) // NB: returns only if plane found
+            if (findPlaneAttrFromPath(filePath, FileSyncWriteClose, defaultFileSyncWriteCloseEnabled ? 1 : 0, value)) // NB: returns only if plane found
             {
                 if (value) // true or false
                     extraFlags = static_cast<IFEflags>(extraFlags | IFEsyncAtClose);
@@ -7928,6 +7897,23 @@ bool hasGenericFiletypeName(const char * name)
 // Cache/update plane attributes settings
 static unsigned jFileHookId = 0;
 
+
+// Declare the array with an anonymous struct
+enum PlaneAttrType { boolean, integer };
+struct PlaneAttributeInfo
+{
+    PlaneAttrType type;
+    size32_t scale;
+    bool isExpert;
+    const char *name;
+};
+static const std::array<PlaneAttributeInfo, PlaneAttributeCount> planeAttributeInfo = {{
+    { PlaneAttrType::integer, 1024, false, "blockedFileIOKB" },   // enum PlaneAttributeType::BlockedSequentialIO    {0}
+    { PlaneAttrType::integer, 1024, false, "blockedRandomIOKB" }, // enum PlaneAttributeType::blockedRandomIOKB      {1}
+    { PlaneAttrType::boolean, 0, true, "fileSyncWriteClose" },    // enum PlaneAttributeType::fileSyncWriteClose     {2}
+    { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" } // enum PlaneAttributeType::concurrentWriteSupport {3}
+}};
+
 // {prefix, {key1: value1, key2: value2, ...}}
 typedef std::pair<std::string, std::array<unsigned __int64, PlaneAttributeCount>> PlaneAttributesMapElement;
 
@@ -7947,22 +7933,51 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             PlaneAttributesMapElement &element = planeAttributesMap[plane.queryProp("@name")];
             element.first = plane.queryProp("@prefix");
             auto &values = element.second;
-            unsigned __int64 value;
-            value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str(), unsetPlaneAttrValue);
-            values[BlockedSequentialIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
-            value = plane.getPropInt64(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str(), unsetPlaneAttrValue);
-            values[BlockedRandomIO] = (unsetPlaneAttrValue != value) ? value * 1024 : value;
-
-            // plane expert settings
-            std::string propName = "expert/@" + std::string(planeAttributeTypeStrings[FileSyncWriteClose]);
-            if (plane.hasProp(propName.c_str()))
-                values[FileSyncWriteClose] = plane.getPropBool(propName.c_str()) ? 1 : 0;
-            else
+            for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
             {
-                // temporary (check legacy fileSyncMaxRetrySecs too), purely for short term backward compatibility (see HPCC-xxxx)
-                unsigned __int64 v = plane.getPropInt64("expert/@fileSyncMaxRetrySecs", unsetPlaneAttrValue);
-                // NB: fileSyncMaxRetrySecs==0 is treated as set/enabled
-                values[FileSyncWriteClose] = v != unsetPlaneAttrValue ? 1 : 0;
+                const PlaneAttributeInfo &attrInfo = planeAttributeInfo[propNum];
+                std::string prop;
+                if (attrInfo.isExpert)
+                    prop += "expert/";
+                prop += "@" + std::string(attrInfo.name);
+                switch (attrInfo.type)
+                {
+                    case PlaneAttrType::integer:
+                    {
+                        unsigned __int64 value = plane.getPropInt64(prop.c_str(), unsetPlaneAttrValue);
+                        if (unsetPlaneAttrValue != value)
+                        {
+                            if (attrInfo.scale)
+                            {
+                                dbgassertex(PlaneAttrType::integer == attrInfo.type);
+                                value *= attrInfo.scale;
+                            }
+                        }
+                        values[propNum] = value;
+                        break;
+                    }
+                    case PlaneAttrType::boolean:
+                    {
+                        unsigned __int64 value;
+                        if (plane.hasProp(prop.c_str()))
+                            value = plane.getPropBool(prop.c_str()) ? 1 : 0;
+                        else if (FileSyncWriteClose == propNum) // temporary (if FileSyncWriteClose and unset, check legacy fileSyncMaxRetrySecs), purely for short term backward compatibility (see HPCC-32757)
+                        {
+                            unsigned __int64 v = plane.getPropInt64("expert/@fileSyncMaxRetrySecs", unsetPlaneAttrValue);
+                            // NB: fileSyncMaxRetrySecs==0 is treated as set/enabled
+                            if (unsetPlaneAttrValue != v)
+                                value = 1;
+                            else
+                                value = unsetPlaneAttrValue;
+                        }
+                        else
+                            value = unsetPlaneAttrValue;
+                        values[propNum] = value;
+                        break;
+                    }
+                    default:
+                        throwUnexpected();
+                }
             }
         }
 
@@ -7970,15 +7985,23 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         expertEnableIFileFlagsMask = IFEnone;
         expertDisableIFileFlagsMask = IFEnone;
 
+        Owned<IPropertyTree> componentConfig = getComponentConfig();
+        Owned<IPropertyTree> globalConfig = getGlobalConfig();
         StringBuffer fileFlagsStr;
-        if (getComponentConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr) || getGlobalConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr))
+        if (componentConfig->getProp("expert/@enableIFileMask", fileFlagsStr) || globalConfig->getProp("expert/@enableIFileMask", fileFlagsStr))
             expertEnableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
 
-        if (getComponentConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || getGlobalConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr))
+        if (componentConfig->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || globalConfig->getProp("expert/@disableIFileMask", fileFlagsStr))
             expertDisableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
 
-        // clear for getGlobalFileSyncWriteCloseEnabled() to re-evaluate
-        globalFileSyncWriteCloseConfigured = false;
+        std::string propName = "expert/@" + std::string(planeAttributeInfo[FileSyncWriteClose].name);
+        if (componentConfig->hasProp(propName.c_str()))
+            defaultFileSyncWriteCloseEnabled = componentConfig->getPropBool(propName.c_str());
+        else
+        {
+            if (globalConfig->hasProp(propName.c_str()))
+                defaultFileSyncWriteCloseEnabled = globalConfig->getPropBool(propName.c_str());
+        }
     };
     jFileHookId = installConfigUpdateHook(updateFunc, true);
 
@@ -7993,7 +8016,7 @@ MODULE_EXIT()
 const char *getPlaneAttributeString(PlaneAttributeType attr)
 {
     assertex(attr < PlaneAttributeCount);
-    return planeAttributeTypeStrings[attr];
+    return planeAttributeInfo[attr].name;
 }
 
 unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue)
@@ -8063,5 +8086,11 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
 
 bool getFileSyncWriteCloseEnabled(const char *planeName)
 {
-    return 0 != getPlaneAttributeValue(planeName, FileSyncWriteClose, defaultGlobalFileSyncWriteCloseEnabled ? 1 : 0);
+    return 0 != getPlaneAttributeValue(planeName, FileSyncWriteClose, defaultFileSyncWriteCloseEnabled ? 1 : 0);
+}
+
+static constexpr bool defaultConcurrentWriteSupport = isContainerized() ? false : true;
+bool getConcurrentWriteSupported(const char *planeName)
+{
+    return 0 != getPlaneAttributeValue(planeName, ConcurrentWriteSupport, defaultConcurrentWriteSupport ? 1 : 0);
 }

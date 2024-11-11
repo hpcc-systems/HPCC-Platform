@@ -886,7 +886,7 @@ void FileSprayer::afterTransfer()
     }
 }
 
-bool FileSprayer::allowSplit()
+bool FileSprayer::allowSplit() const
 {
     return !(options->getPropBool(ANnosplit) || options->getPropBool(ANnosplit2) || options->queryProp(ANprefix));
 }
@@ -1592,12 +1592,31 @@ void FileSprayer::commonUpSlaves()
             cur.whichSlave = 0;
     }
 
-    if (options->getPropBool(ANnocommon, true) || pushWhole)
+    if (pushWhole)
         return;
+
+    // noCommon is defaulted to on for non-containerized (revisit!)
+    bool noCommon = options->getPropBool(ANnocommon, !isContainerized());
+    if (noCommon)
+    {
+        if (!isContainerized())
+            return;
+        IWARNLOG("Ignoring noCommon option in containerized mode");
+    }
 
     //First work out which are the same slaves, and then map the partition.
     //Previously it was n^2 in partition, which is fine until you spray 100K files.
     unsigned numSlaves = pull ? targets.ordinality() : sources.ordinality();
+    bool commonByIp = !isContainerized();
+
+    offset_t totalSourceFileSize = 0;
+    offset_t threshold = 0x8000 * numSlaves;
+    ForEachItemIn(i, sources)
+    {
+        const FilePartInfo & cur = sources.item(i);
+        totalSourceFileSize += copyCompressed ? cur.psize : cur.size;
+    }
+
     unsigned * slaveMapping = new unsigned [numSlaves];
     for (unsigned i = 0; i < numSlaves; i++)
         slaveMapping[i] = i;
@@ -1609,7 +1628,12 @@ void FileSprayer::commonUpSlaves()
             TargetLocation & cur = targets.item(i1);
             for (unsigned i2 = 0; i2 < i1; i2++)
             {
-                if (targets.item(i2).filename.queryIP().ipequals(cur.filename.queryIP()))
+                bool match = false;
+                if (commonByIp)
+                    match = targets.item(i2).filename.queryIP().ipequals(cur.filename.queryIP());
+                else if (!targetSupportsConcurrentWrite || totalSourceFileSize < threshold)
+                    match = targets.item(i2).filename.equals(cur.filename);
+                if (match)
                 {
                     slaveMapping[i1] = i2;
                     break;
@@ -1617,14 +1641,19 @@ void FileSprayer::commonUpSlaves()
             }
         }
     }
-    else
+    else // push
     {
         for (unsigned i1 = 1; i1 < numSlaves; i1++)
         {
             FilePartInfo & cur = sources.item(i1);
             for (unsigned i2 = 0; i2 < i1; i2++)
             {
-                if (sources.item(i2).filename.queryIP().ipequals(cur.filename.queryIP()))
+                bool match = false;
+                if (commonByIp) // match by IP
+                    match = sources.item(i2).filename.queryIP().ipequals(cur.filename.queryIP());
+                else if (totalSourceFileSize < threshold)
+                    match = sources.item(i2).filename.equals(cur.filename);
+                if (match)
                 {
                     slaveMapping[i1] = i2;
                     break;
@@ -1632,7 +1661,6 @@ void FileSprayer::commonUpSlaves()
             }
         }
     }
-
 
     for (unsigned i3 = 0; i3 < max; i3++)
     {
@@ -2493,7 +2521,6 @@ void FileSprayer::insertHeaders()
     }
 }
 
-
 bool FileSprayer::needToCalcOutput()
 {
     return !usePullOperation() || options->getPropBool(ANverify);
@@ -2607,6 +2634,7 @@ void FileSprayer::pullParts()
         transferSlaves.append(next);
     }
 
+    // NB: not all transferServers will be used, depending on mapping of whichSlave
     ForEachItemIn(idx3, partition)
     {
         PartitionPoint & cur = partition.item(idx3);
@@ -2662,6 +2690,7 @@ void FileSprayer::pushParts()
         transferSlaves.append(next);
     }
 
+    // NB: not all transferServers will be used, depending on mapping of whichSlave
     ForEachItemIn(idx3, partition)
     {
         PartitionPoint & cur = partition.item(idx3);
@@ -3048,6 +3077,7 @@ void FileSprayer::setTarget(IDistributedFile * target)
         TargetLocation & next = * new TargetLocation(curPart->getFilename(rfn,copy), idx);
         targets.append(next);
     }
+    target->getClusterGroupName(0, targetPlane.clear());
 
     checkSprayOptions();
 }
@@ -3069,6 +3099,7 @@ void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
         target->getFilename(idx, copy, filename);
         targets.append(*new TargetLocation(filename, idx));
     }
+    target->getClusterGroupName(0, targetPlane.clear());
 
     checkSprayOptions();
 }
@@ -3281,6 +3312,8 @@ void FileSprayer::spray()
         return;
     }
 
+    targetSupportsConcurrentWrite = getConcurrentWriteSupported(targetPlane);
+
     checkFormats();
     checkForOverlap();
 
@@ -3396,7 +3429,9 @@ void FileSprayer::spray()
 
     //If got here then we have succeeded
     //Note: On failure, costs will not be updated.  Future: would be useful to have a way to update costs on failure.
-    updateTargetProperties();
+    cost_type totalWriteCost = updateTargetProperties();
+    cost_type totalReadCost = updateSourceProperties();
+    progressReport->setFileAccessCost(totalReadCost+totalWriteCost);
 
     StringBuffer copyEventText;     // [logical-source] > [logical-target]
     if (distributedSource)
@@ -3446,13 +3481,13 @@ bool FileSprayer::isSameSizeHeaderFooter()
     return retVal;
 }
 
-void FileSprayer::updateTargetProperties()
+cost_type FileSprayer::updateTargetProperties()
 {
     TimeSection timer("FileSprayer::updateTargetProperties() time");
     Owned<IException> error;
-    cost_type totalWriteCost = 0;
     if (distributedTarget)
     {
+        cost_type totalWriteCost = 0;
         StringBuffer failedParts;
         CRC32Merger partCRC;
         offset_t partLength = 0;
@@ -3803,12 +3838,20 @@ void FileSprayer::updateTargetProperties()
         int expireDays = options->getPropInt("@expireDays", -1);
         if (expireDays != -1)
             curProps.setPropInt("@expireDays", expireDays);
+        return totalWriteCost;
     }
+    if (error)
+        throw error.getClear();
+    return 0;
+}
+
+cost_type FileSprayer::updateSourceProperties()
+{
+    TimeSection timer("FileSprayer::updateSourceProperties() time");
     // Update file readCost and numReads in file properties and do the same for subfiles
-    // Update totalReadCost
-    cost_type totalReadCost = 0;
     if (distributedSource)
     {
+        cost_type totalReadCost = 0;
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         if (superSrc && superSrc->numSubFiles() > 0)
         {
@@ -3833,14 +3876,10 @@ void FileSprayer::updateTargetProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    DistributedFilePropertyLock lock(subfile);
-                    IPropertyTree &subFileProps = lock.queryAttributes();
-                    stat_type prevNumReads = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
-                    cost_type prevReadCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
                     cost_type curReadCost = calcFileAccessCost(subfile, 0, curProgress.numReads);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + curProgress.numReads);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + curReadCost);
+                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curProgress.numReads);
+                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
+                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
                     totalReadCost += curReadCost;
                 }
                 else
@@ -3854,19 +3893,13 @@ void FileSprayer::updateTargetProperties()
         {
             totalReadCost = calcFileAccessCost(distributedSource, 0, totalNumReads);
         }
-        DistributedFilePropertyLock lock(distributedSource);
-        IPropertyTree &curProps = lock.queryAttributes();
-        stat_type prevNumReads = curProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-        cost_type legacyReadCost = getLegacyReadCost(curProps, distributedSource);
-        cost_type prevReadCost = curProps.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + totalNumReads);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + totalReadCost);
+        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), totalNumReads);
+        cost_type legacyReadCost = getLegacyReadCost(distributedSource->queryAttributes(), distributedSource);
+        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + totalReadCost);
+        return totalReadCost;  // return the total cost of this file operation (exclude previous and legacy read costs)
     }
-    progressReport->setFileAccessCost(totalReadCost+totalWriteCost);
-    if (error)
-        throw error.getClear();
+    return 0;
 }
-
 
 void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
                                           bool isDistributedSource)
@@ -3984,10 +4017,44 @@ bool FileSprayer::calcUsePull() const
         LOG(MCdebugInfo, "Use pull since explicitly specified");
         return true;
     }
-    if (options->getPropBool(ANpush, false))
+
+    bool pushRequested = options->getPropBool(ANpush);
+    if (!targetSupportsConcurrentWrite) // NB: default for containerized is false
     {
+        if (!pushRequested)
+            return true;
+        if (!usePushWholeOperation())
+        {
+            if (targets.ordinality() <= sources.ordinality())
+            {
+                // NB: this is being calculated before partitioning has occurred
+                // It can be refactored so that it decides after partitioning, and only has to force pull
+                // if multiple partitions write to same target file.
+                LOG(MCdebugInfo, "Use pull operation because target doesn't support concurrent write");
+                return true;
+            }
+            // else targets > sources
+
+            // if push requested and N:M and no split, then throw an error unless expert option allows
+            if (!copySource) // 1:1 partitioning if copySource==true
+            {
+                if ((sources.ordinality() > 1) && (targets.ordinality() > 1) && !allowSplit())
+                {
+                    if (!getComponentConfigSP()->getPropBool("expert/@allowPushNoSplit"))
+                        throw makeStringExceptionV(0, "Pushing to multiple targets with no split is not supported to this target plane (%s)", targetPlane.str());
+                }
+            }
+        }
         LOG(MCdebugInfo, "Use push since explicitly specified");
         return false;
+    }
+    else // ! targetSupportsConcurrentWrite 
+    {
+        if (pushRequested)
+        {
+            LOG(MCdebugInfo, "Use push since explicitly specified");
+            return false;
+        }
     }
 
     ForEachItemIn(idx2, sources)
