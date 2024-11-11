@@ -2439,6 +2439,16 @@ private:
                 defaultWarnTimeLimit[2] = control->getPropInt("@limit", 0);
                 topology->setPropInt("@defaultSLAPriorityTimeWarning", defaultWarnTimeLimit[2]);
             }
+            else if (stricmp(queryName, "control:defaultBGPriorityTimeLimit")==0)
+            {
+                defaultTimeLimit[3] = control->getPropInt("@limit", 0);
+                topology->setPropInt("@defaultBGPriorityTimeLimit", defaultTimeLimit[3]);
+            }
+            else if (stricmp(queryName, "control:defaultBGPriorityTimeWarning")==0)
+            {
+                defaultWarnTimeLimit[3] = control->getPropInt("@limit", 0);
+                topology->setPropInt("@defaultBGPriorityTimeWarning", defaultWarnTimeLimit[3]);
+            }
             else if (stricmp(queryName, "control:deleteUnneededPhysicalFiles")==0)
             {
                 UNIMPLEMENTED;
