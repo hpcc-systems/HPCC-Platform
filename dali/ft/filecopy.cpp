@@ -3396,7 +3396,9 @@ void FileSprayer::spray()
 
     //If got here then we have succeeded
     //Note: On failure, costs will not be updated.  Future: would be useful to have a way to update costs on failure.
-    updateTargetProperties();
+    cost_type totalWriteCost = updateTargetProperties();
+    cost_type totalReadCost = updateSourceProperties();
+    progressReport->setFileAccessCost(totalReadCost+totalWriteCost);
 
     StringBuffer copyEventText;     // [logical-source] > [logical-target]
     if (distributedSource)
@@ -3446,13 +3448,13 @@ bool FileSprayer::isSameSizeHeaderFooter()
     return retVal;
 }
 
-void FileSprayer::updateTargetProperties()
+cost_type FileSprayer::updateTargetProperties()
 {
     TimeSection timer("FileSprayer::updateTargetProperties() time");
     Owned<IException> error;
-    cost_type totalWriteCost = 0;
     if (distributedTarget)
     {
+        cost_type totalWriteCost = 0;
         StringBuffer failedParts;
         CRC32Merger partCRC;
         offset_t partLength = 0;
@@ -3803,12 +3805,20 @@ void FileSprayer::updateTargetProperties()
         int expireDays = options->getPropInt("@expireDays", -1);
         if (expireDays != -1)
             curProps.setPropInt("@expireDays", expireDays);
+        return totalWriteCost;
     }
+    if (error)
+        throw error.getClear();
+    return 0;
+}
+
+cost_type FileSprayer::updateSourceProperties()
+{
+    TimeSection timer("FileSprayer::updateSourceProperties() time");
     // Update file readCost and numReads in file properties and do the same for subfiles
-    // Update totalReadCost
-    cost_type totalReadCost = 0;
     if (distributedSource)
     {
+        cost_type totalReadCost = 0;
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         if (superSrc && superSrc->numSubFiles() > 0)
         {
@@ -3833,14 +3843,10 @@ void FileSprayer::updateTargetProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    DistributedFilePropertyLock lock(subfile);
-                    IPropertyTree &subFileProps = lock.queryAttributes();
-                    stat_type prevNumReads = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
-                    cost_type prevReadCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
                     cost_type curReadCost = calcFileAccessCost(subfile, 0, curProgress.numReads);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + curProgress.numReads);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + curReadCost);
+                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curProgress.numReads);
+                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
+                    subfile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
                     totalReadCost += curReadCost;
                 }
                 else
@@ -3854,19 +3860,13 @@ void FileSprayer::updateTargetProperties()
         {
             totalReadCost = calcFileAccessCost(distributedSource, 0, totalNumReads);
         }
-        DistributedFilePropertyLock lock(distributedSource);
-        IPropertyTree &curProps = lock.queryAttributes();
-        stat_type prevNumReads = curProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-        cost_type legacyReadCost = getLegacyReadCost(curProps, distributedSource);
-        cost_type prevReadCost = curProps.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + totalNumReads);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + totalReadCost);
+        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), totalNumReads);
+        cost_type legacyReadCost = getLegacyReadCost(distributedSource->queryAttributes(), distributedSource);
+        distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + totalReadCost);
+        return totalReadCost;  // return the total cost of this file operation (exclude previous and legacy read costs)
     }
-    progressReport->setFileAccessCost(totalReadCost+totalWriteCost);
-    if (error)
-        throw error.getClear();
+    return 0;
 }
-
 
 void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
                                           bool isDistributedSource)
