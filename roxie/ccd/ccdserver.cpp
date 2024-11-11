@@ -4557,8 +4557,9 @@ public:
             //       But this could still cause too many reply packets on the fastlane
             //       (higher priority output Q), which may cause the activities on the 
             //       low priority output Q to not get service on time.
+            unsigned pmask = p->queryHeader().activityId & ROXIE_PRIORITY_MASK;
             if ((colocalArg == 0) &&     // not a child query activity??
-                    (p->queryHeader().activityId & (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY)) && 
+                    (pmask && (pmask != ROXIE_PRIORITY_MASK)) &&
                     (p->queryHeader().overflowSequence == 0) &&
                     (p->queryHeader().continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)==0)
                 p->queryHeader().retries |= ROXIE_FASTLANE;

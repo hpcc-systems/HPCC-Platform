@@ -78,6 +78,7 @@ void setMulticastEndpoints(unsigned numChannels);
 #define ROXIE_SLA_PRIORITY 0x40000000    // mask in activityId indicating it goes SLA priority queue
 #define ROXIE_HIGH_PRIORITY 0x80000000   // mask in activityId indicating it goes on the fast queue
 #define ROXIE_LOW_PRIORITY 0x00000000    // mask in activityId indicating it goes on the slow queue (= default)
+// background priority queue is when both ROXIE_SLA_PRIORITY and ROXIE_HIGH_PRIORITY are set
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
 
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
@@ -332,8 +333,8 @@ extern unsigned memoryStatsInterval;
 extern unsigned pingInterval;
 extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
-extern unsigned defaultTimeLimit[3];
-extern unsigned defaultWarnTimeLimit[3];
+extern unsigned defaultTimeLimit[4];
+extern unsigned defaultWarnTimeLimit[4];
 extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;

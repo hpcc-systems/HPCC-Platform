@@ -1239,11 +1239,12 @@ class RoxieWorkUnitWorker : public RoxieQueryWorker
 {
     void noteQuery(bool failed, unsigned elapsedTime, unsigned priority)
     {
-        switch(priority)
+        switch((int)priority)
         {
         case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
         case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
         case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+        case -1: bgQueryStats.noteQuery(failed, elapsedTime); break;
         }
         combinedQueryStats.noteQuery(failed, elapsedTime);
     }
@@ -1355,11 +1356,12 @@ public:
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
             priority = queryFactory->queryOptions().priority;
-            switch (priority)
+            switch ((int)priority)
             {
             case 0: loQueryStats.noteActive(); break;
             case 1: hiQueryStats.noteActive(); break;
             case 2: slaQueryStats.noteActive(); break;
+            case -1: bgQueryStats.noteActive(); break;
             }
             combinedQueryStats.noteActive();
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
@@ -1524,11 +1526,12 @@ public:
     virtual void noteQueryActive()
     {
         unsigned priority = getQueryPriority();
-        switch (priority)
+        switch ((int)priority)
         {
         case 0: loQueryStats.noteActive(); break;
         case 1: hiQueryStats.noteActive(); break;
         case 2: slaQueryStats.noteActive(); break;
+        case -1: bgQueryStats.noteActive(); break;
         }
         unknownQueryStats.noteComplete();
         combinedQueryStats.noteActive();
@@ -1677,11 +1680,12 @@ public:
         }
         else
         {
-            switch(getQueryPriority())
+            switch((int)getQueryPriority())
             {
             case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
             case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
             case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+            case -1: bgQueryStats.noteQuery(failed, elapsedTime); break;
             default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
             }
             combinedQueryStats.noteQuery(failed, elapsedTime);
