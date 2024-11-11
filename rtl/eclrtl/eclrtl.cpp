@@ -6066,7 +6066,7 @@ void rtlAddExceptionTag(StringBuffer & errorText, const char * tag, const char *
 void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search)
 {
     StringBuffer result;
-    ::replaceString(result, rtlUtf8Size(scriptChars, script), script, rtlUtf8Size(searchChars, search), search, rtlUtf8Size(outFieldsChars, outFields), outFields);
+    ::replaceString(result, rtlUtf8Size(scriptChars, script), script, rtlUtf8Size(searchChars, search), search, rtlUtf8Size(outFieldsChars, outFields), outFields, false);
     __lenResult = result.lengthUtf8();
     __result = result.detach();
 }
