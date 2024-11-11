@@ -486,7 +486,7 @@ private:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-
+using namespace opentelemetry::v1::context::propagation;
 class CTraceManager : implements ITraceManager, public CInterface
 {
 private:
@@ -534,6 +534,12 @@ public:
 };
 
 static Singleton<CTraceManager> theTraceManager;
+
+// thePropagator can be used be regardless of whether tracing is enabled or not.
+// Can be used to inject context into or extract it from carriers that travel in-band
+// across process boundaries. Encoding is expected to conform to the HTTP Header Field semantics.
+// Reference this propagator rather than fetching globalpropagator
+static nostd::shared_ptr<TextMapPropagator> thePropagator = nostd::shared_ptr<TextMapPropagator>(new opentelemetry::trace::propagation::HttpTraceContext());
 
 //What is the global trace manager?  Only valid to call within this module from spans
 //Which can only be created if the trace manager has been initialized
@@ -636,13 +642,11 @@ public:
     {
         assertex(carrier);
 
-        auto propagator = opentelemetry::context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
-
         opentelemetry::context::Context emptyCtx;
         auto spanCtx = SetSpan(emptyCtx, span);
 
         //and have the propagator inject the ctx into carrier
-        propagator->Inject(*carrier, spanCtx);
+        thePropagator->Inject(*carrier, spanCtx);
 
         if (!isEmptyString(queryGlobalId()))
             carrier->Set(kGlobalIdHttpHeaderName, queryGlobalId());
@@ -1055,18 +1059,16 @@ private:
                 hpccCallerId.set(httpHeaders->queryProp(kLegacyCallerIdHttpHeaderName));
 
             const CHPCCHttpTextMapCarrier carrier(httpHeaders);
-            auto globalPropegator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
             //avoiding getCurrent: https://github.com/open-telemetry/opentelemetry-cpp/issues/1467
             opentelemetry::context::Context empty;
             auto wrappedSpanCtx = SetSpan(empty, span);
-            opentelemetry::v1::context::Context runtimeCtx = globalPropegator->Extract(carrier, wrappedSpanCtx);
+            opentelemetry::v1::context::Context runtimeCtx = thePropagator->Extract(carrier, wrappedSpanCtx);
             opentelemetry::v1::nostd::shared_ptr<opentelemetry::v1::trace::Span> remoteParentSpan = opentelemetry::trace::GetSpan(runtimeCtx);
 
             if (remoteParentSpan != nullptr && remoteParentSpan->GetContext().IsValid())
             {
                 remoteParentSpanCtx = remoteParentSpan->GetContext();
                 opts.parent = remoteParentSpanCtx;
-
             }
         }
     }
@@ -1446,15 +1448,6 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
             optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
             optAlwaysCreateTraceIds = traceConfig->getPropBool("@alwaysCreateTraceIds", optAlwaysCreateTraceIds);
         }
-
-        // The global propagator should be set regardless of whether tracing is enabled or not.
-        // Injects Context into and extracts it from carriers that travel in-band
-        // across process boundaries. Encoding is expected to conform to the HTTP
-        // Header Field semantics.
-        // Values are often encoded as RPC/HTTP request headers.
-        opentelemetry::context::propagation::GlobalTextMapPropagator::SetGlobalPropagator(
-            opentelemetry::nostd::shared_ptr<opentelemetry::context::propagation::TextMapPropagator>(
-                new opentelemetry::trace::propagation::HttpTraceContext()));
 
     }
     catch (IException * e)
