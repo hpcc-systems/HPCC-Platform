@@ -4324,10 +4324,10 @@ StringBuffer &getSocketStatisticsString(JSocketStatistics &stats,StringBuffer &s
 struct SelectItem
 {
     ISocket *sock;
-    T_SOCKET handle;
     ISocketSelectNotify *nfy;
+    T_SOCKET handle;
     byte mode;
-    bool del; // only used in select handler method
+    bool del;
     bool operator == (const SelectItem & other) const { return sock == other.sock; }
 };
 
@@ -4419,13 +4419,179 @@ protected:
     T_SOCKET dummysock; 
 #endif
     bool dummysockopen;
+    SelectItemArrayP items;
+
 
     CSocketBaseThread(const char *trc) : Thread("CSocketBaseThread"), tickwait(0)
     {
+#ifdef _WIN32
+        inithash();
+#endif
     }
 
     ~CSocketBaseThread()
     {
+        closeDummyPipe();
+        ForEachItemIn(i, items)
+        {
+            // Release/dtors should not throw but leaving try/catch here until all paths checked
+            try
+            {
+                SelectItem *si = items.element(i);
+                si->nfy->Release();
+                si->sock->Release();
+                delete si;
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e,"~CSocketSelectThread");
+                e->Release();
+            }
+        }
+    }
+
+    void openDummyPipe()
+    {
+        if (dummysockopen)
+            return;
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+        if (pipe(dummysock))
+        {
+            IWARNLOG("CSocketSelectThread: create pipe failed %d",SOCKETERRNO());
+            return;
+        }
+        for (unsigned i=0;i<2;i++) {
+            int flags = fcntl(dummysock[i], F_GETFL, 0);
+            if (flags!=-1) {
+                flags |= O_NONBLOCK;
+                fcntl(dummysock[i], F_SETFL, flags);
+            }
+            flags = fcntl(dummysock[i], F_GETFD, 0);
+            if (flags!=-1) {
+                flags |=  FD_CLOEXEC;
+                fcntl(dummysock[i], F_SETFD, flags);
+            }
+        }
+#else
+        if (IP6preferred)
+            dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
+        else
+            dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
+#endif
+        dummysockopen = true;
+    }
+
+    void closeDummyPipe()
+    {
+        if (dummysockopen)
+            return;
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+#ifdef SOCKTRACE
+        PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+#endif
+        ::close(dummysock[0]);
+        ::close(dummysock[1]);
+#else
+#ifdef _WIN32
+        ::closesocket(dummysock);
+#else
+        ::close(dummysock);
+#endif
+#endif
+        dummysockopen = false;
+    }
+
+
+#ifdef _WIN32
+#define HASHTABSIZE 256
+#define HASHNULL (HASHTABSIZE-1)
+#define HASHTABMASK (HASHTABSIZE-1)
+    byte hashtab[HASHTABSIZE];
+#define HASHSOCKET(s) ((((unsigned)s)>>2)&HASHTABMASK)      // with some knowledge of windows handles
+
+    void inithash()
+    {
+        memset(&hashtab,HASHNULL,sizeof(hashtab));
+        assertex(FD_SETSIZE<255);
+    }
+
+    void reinithash()
+    { // done this way because index of items changes and hash table not that big
+        inithash();
+        assertex(items.ordinality()<HASHTABSIZE-1);
+        ForEachItemIn(i,items) {
+            unsigned h = HASHSOCKET(items.item(i)->handle);
+            for (;;) {
+                if (hashtab[h]==HASHNULL) {
+                    hashtab[h] = (byte)i;
+                    break;
+                }
+                if (++h==HASHTABSIZE)
+                    h = 0;
+            }
+        }
+    }
+#endif
+
+    void updateItems()
+    {
+        // must be in CriticalBlock block(sect);
+        unsigned n = items.ordinality();
+#ifdef _WIN32
+        bool hashupdateneeded = (n!=basesize); // additions all come at end
+#endif
+        while (n)
+        {
+            SelectItem *si = items.element(n);
+            if (si->del)
+            {
+                // Release/dtors should not throw but leaving try/catch here until all paths checked
+                try
+                {
+#ifdef SOCKTRACE
+                    PROGLOG("CSocketSelectThread::updateItems release %d",si.handle);
+#endif
+                    si->nfy->Release();
+                    si->sock->Release();
+                    delete si;
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e,"CSocketSelectThread::updateItems");
+                    e->Release();
+                }
+                items.remove(n);
+#ifdef _WIN32
+                hashupdateneeded = true;
+#endif
+            }
+        }
+        assertex(n<=XFD_SETSIZE-1);
+#ifdef _WIN32
+        if (hashupdateneeded)
+            reinithash();
+#endif
+        basesize = n;
+    }
+
+    bool checkSocks()
+    {
+        bool ret = false;
+        // must be holding CriticalBlock (sect)
+        ForEachItemIn(i, items)
+        {
+            SelectItem *si = items.element(i);
+            if (si->del)
+                ret = true; // maybe that bad one
+            else if (!sockOk(si->handle))
+            {
+                si->del = true;
+                ret = true;
+            }
+            else
+                i++;
+        }
+        return ret;
     }
 
 public:
@@ -4452,6 +4618,43 @@ public:
         char c;
         while((::read(dummysock[0], &c, sizeof(c))) == sizeof(c));
 #endif
+    }
+
+    virtual void removeItem(SelectItem *item)
+    {
+        item->del = true;
+        selectvarschange = true;
+        triggerselect();
+    }
+
+    bool remove(ISocket *sock)
+    {
+        if (terminating)
+            return true; // pretend is, to short-circuit caller
+        CriticalBlock block(sect);
+
+        // JCS - I can't see when sock can be null
+        if (sock==NULL) // wait until no changes outstanding
+        {
+            while (selectvarschange)
+            {
+                waitingchange++;
+                CriticalUnblock unblock(sect);
+                waitingchangesem.wait();
+            }
+            return true;
+        }
+
+        ForEachItemIn(i, items)
+        {
+            SelectItem *si = items.element(i);
+            if (!si->del && (si->sock==sock))
+            {
+                removeItem(si);
+                return true;
+            }
+        }
+        return false;
     }
 
     void stop(bool wait)
@@ -4546,101 +4749,32 @@ public:
 
 class CSocketSelectThread: public CSocketBaseThread
 {
-    SelectItemArray items;
-
     void opendummy()
     {
         CriticalBlock block(sect);
-        if (!dummysockopen) { 
+        if (dummysockopen)
+            return;
+        openDummyPipe();
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-            if(pipe(dummysock)) {
-                IWARNLOG("CSocketSelectThread: create pipe failed %d",SOCKETERRNO());
-                return;
-            }
-            for (unsigned i=0;i<2;i++) {
-                int flags = fcntl(dummysock[i], F_GETFL, 0);
-                if (flags!=-1) {
-                    flags |= O_NONBLOCK;
-                    fcntl(dummysock[i], F_SETFL, flags);
-                }
-                flags = fcntl(dummysock[i], F_GETFD, 0);
-                if (flags!=-1) {
-                    flags |=  FD_CLOEXEC;
-                    fcntl(dummysock[i], F_SETFD, flags);
-                }
-            }
-            CHECKSOCKRANGE(dummysock[0]);
+        CHECKSOCKRANGE(dummysock[0]);
 #else
-            if (IP6preferred)
-                dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
-            else
-                dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
-            CHECKSOCKRANGE(dummysock);
+        CHECKSOCKRANGE(dummysock);
 #endif
-            dummysockopen = true;
-        }
-
-
     }
 
-    void closedummy()
+    virtual void closedummy() override
     {
         CriticalBlock block(sect);
-        if (dummysockopen) { 
-#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-#ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
-#endif
-            ::close(dummysock[0]);
-            ::close(dummysock[1]);
-#else
-#ifdef _WIN32
-            ::closesocket(dummysock);
-#else
-            ::close(dummysock);
-#endif
-#endif
-            dummysockopen = false;
-        }
+        closeDummyPipe();
     }
-
 
 #ifdef _WIN32
-#define HASHTABSIZE 256
-#define HASHNULL (HASHTABSIZE-1)
-#define HASHTABMASK (HASHTABSIZE-1)
-    byte hashtab[HASHTABSIZE];
-#define HASHSOCKET(s) ((((unsigned)s)>>2)&HASHTABMASK)      // with some knowledge of windows handles
-
-    void inithash()
-    {
-        memset(&hashtab,HASHNULL,sizeof(hashtab));
-        assertex(FD_SETSIZE<255);
-    }
-
-    void reinithash()
-    { // done this way because index of items changes and hash table not that big
-        inithash();
-        assertex(items.ordinality()<HASHTABSIZE-1);
-        ForEachItemIn(i,items) {
-            unsigned h = HASHSOCKET(items.item(i).handle);
-            for (;;) {
-                if (hashtab[h]==HASHNULL) {
-                    hashtab[h] = (byte)i;
-                    break;
-                }
-                if (++h==HASHTABSIZE)
-                    h = 0;
-            }
-        }
-    }
-
     inline SelectItem &findhash(T_SOCKET handle)
     {
         unsigned h = HASHSOCKET(handle);
         unsigned sh = h;
         for (;;) {
-            SelectItem &i=items.element(hashtab[h]);
+            SelectItem &i=*items.element(hashtab[h]);
             if (i.handle==handle) 
                 return i;
             if (++h==HASHTABSIZE)
@@ -4648,7 +4782,6 @@ class CSocketSelectThread: public CSocketBaseThread
             assertex(h!=sh);
         }
     }
-
     inline void processfds(T_FD_SET &s,byte mode,SelectItemArray &tonotify)
     {
         for (;;) {
@@ -4669,8 +4802,8 @@ class CSocketSelectThread: public CSocketBaseThread
             }
         }   
     }
+#endif
 
-#endif 
 public:
     CSocketSelectThread(const char *trc)
         : CSocketBaseThread("CSocketSelectThread")
@@ -4685,136 +4818,40 @@ public:
         offset = 0;
         selecttrace = trc;
         basesize = 0;
-#ifdef _WIN32
-        inithash();
-#endif      
     }
 
     ~CSocketSelectThread()
     {
         closedummy();
-        ForEachItemIn(i,items) {
-            // Release/dtors should not throw but leaving try/catch here until all paths checked
-            try {
-                SelectItem &si = items.element(i);
-                si.nfy->Release();
-                si.sock->Release();
-            }
-            catch (IException *e) {
-                EXCLOG(e,"~CSocketSelectThread");
-                e->Release();
-            }
-        }
     }
 
     Owned<IException> termexcept;
-
-    void updateItems()
-    {
-        // must be in CriticalBlock block(sect); 
-        unsigned n = items.ordinality();
-#ifdef _WIN32
-        bool hashupdateneeded = (n!=basesize); // additions all come at end
-#endif
-        for (unsigned i=0;i<n;) {
-            SelectItem &si = items.element(i);
-            if (si.del) {
-                // Release/dtors should not throw but leaving try/catch here until all paths checked
-                try {
-#ifdef SOCKTRACE
-                    PROGLOG("CSocketSelectThread::updateItems release %d",si.handle);
-#endif
-                    si.nfy->Release();
-                    si.sock->Release();
-                }
-                catch (IException *e) {
-                    EXCLOG(e,"CSocketSelectThread::updateItems");
-                    e->Release();
-                }
-                // NOTE: si is a reference, put last item into remove slot
-                n--;
-                if (i<n) 
-                    si = items.item(n);
-                items.remove(n);
-#ifdef _WIN32
-                hashupdateneeded = true;
-#endif
-            }
-            else
-                i++;
-        }
-        assertex(n<=XFD_SETSIZE-1);
-#ifdef _WIN32
-        if (hashupdateneeded)
-            reinithash();
-#endif
-        basesize = n;
-    }
-
-    bool checkSocks()
-    {
-        bool ret = false;
-        ForEachItemIn(i,items) {
-            SelectItem &si = items.element(i);
-            if (si.del)
-                ret = true; // maybe that bad one
-            else  if (!sockOk(si.handle)) {
-                si.del = true;
-                ret = true;
-            }
-        }
-        return ret;
-    }
-
-    bool remove(ISocket *sock)
-    {
-        if (terminating)
-            return false;
-        CriticalBlock block(sect);
-        if (sock==NULL) { // wait until no changes outstanding
-            while (selectvarschange) {
-                waitingchange++;
-                CriticalUnblock unblock(sect);
-                waitingchangesem.wait();
-            }
-            return true;
-        }
-        ForEachItemIn(i,items) {
-            SelectItem &si = items.element(i);
-            if (!si.del&&(si.sock==sock)) {
-                si.del = true;
-                selectvarschange = true;
-                triggerselect();
-                return true;
-            }
-        }
-        return false;
-    }
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         // maybe check once to prevent 1st delay? TBD
         CriticalBlock block(sect);
         unsigned n=0;
-        ForEachItemIn(i,items) {
-            SelectItem &si = items.element(i);
-            if (!si.del) {
-                if (si.sock==sock) {
+        ForEachItemIn(i,items)
+        {
+            SelectItem &si = *items.element(i);
+            if (!si.del)
+            {
+                if (si.sock==sock)
                     si.del = true;
-                }
-                else 
+                else
                     n++;
             }
         }
         if (n>=XFD_SETSIZE-1)   // leave 1 spare
             return false;
-        SelectItem sn;
-        sn.nfy = LINK(nfy);
-        sn.sock = LINK(sock);
-        sn.mode = (byte)mode;
-        sn.handle = (T_SOCKET)sock->OShandle();
-        CHECKSOCKRANGE(sn.handle);
-        sn.del = false;
+        SelectItem *sn = new SelectItem;
+        sn->nfy = LINK(nfy);
+        sn->sock = LINK(sock);
+        sn->mode = (byte)mode;
+        sn->handle = (T_SOCKET)sock->OShandle();
+        CHECKSOCKRANGE(sn->handle);
+        sn->del = false;
         items.append(sn);
         selectvarschange = true;        
         triggerselect();
@@ -4860,7 +4897,7 @@ public:
             offset = 0;
         unsigned j = offset;
         ForEachItemIn(i, items) {
-            SelectItem &si = items.element(j);
+            SelectItem &si = *items.element(j);
             j++;
             if (j==ni)
                 j = 0;
@@ -4977,9 +5014,6 @@ public:
                         if (isex) 
                             processfds(es,SELECTMODE_EXCEPT,tonotify);
 #else
-                        unsigned i;
-                        SelectItem *si = items.getArray(offset);
-                        SelectItem *sie = items.getArray(ni-1)+1;
                         bool r = isrd;
                         bool w = iswr;
                         bool e = isex;
@@ -4990,8 +5024,10 @@ public:
                             --n;
                         }           
 #endif
-                        for (i=0;(n>0)&&(i<ni);i++)
+                        unsigned currentItem = offset;
+                        for (unsigned i=0;(n>0)&&(i<ni);i++)
                         {
+                            SelectItem *si = items.item(currentItem);
                             unsigned addMode = 0;
                             if (r&&findfds(rs,si->handle,r))
                             {
@@ -5019,9 +5055,9 @@ public:
                                 itm.sock->Link();
                                 itm.mode = addMode;
                             }
-                            si++;
-                            if (si==sie)
-                                si = items.getArray();
+                            ++currentItem;
+                            if (currentItem == items.ordinality())
+                                currentItem = 0;
                         }
 #endif
                     }
@@ -5130,11 +5166,16 @@ public:
         CriticalBlock block(sect);
         if (stopped)
             return;
-        for (;;) {
+        for (;;)
+        {
             bool added=false;
-            ForEachItemIn(i,threads) {
+            ForEachItemIn(i,threads)
+            {
                 if (added)
-                    threads.item(i).remove(sock);
+                {
+                    if (threads.item(i).remove(sock))
+                        break;
+                }
                 else
                     added = threads.item(i).add(sock,mode,nfy);
             }
@@ -5180,13 +5221,10 @@ public:
 };
 
 #ifdef _HAS_EPOLL_SUPPORT
-# define SOCK_ADDED   0x1
-# define SOCK_REMOVED 0x2
 class CSocketEpollThread: public CSocketBaseThread
 {
     int epfd;
     SelectItem *sidummy;
-    SelectItemArrayP items;
     struct epoll_event *epevents;
     unsigned hdlPerThrd;
 
@@ -5216,96 +5254,45 @@ class CSocketEpollThread: public CSocketBaseThread
     void opendummy()
     {
         CriticalBlock block(sect);
-        if (!dummysockopen)
-        {
-            sidummy = new SelectItem;
-            sidummy->sock = nullptr;
-            sidummy->nfy = nullptr;
-            sidummy->del = true;  // so its not added to tonotify ...
-            sidummy->mode = 0;
+        if (dummysockopen)
+            return;
+        openDummyPipe();
+        // NB: not notified when triggered, because explicitly spotted and handled before tonotify loop
+        sidummy = new SelectItem;
+        sidummy->sock = nullptr;
+        sidummy->nfy = nullptr;
+        sidummy->del = false;
+        sidummy->mode = 0;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-            if(pipe(dummysock))
-            {
-                IWARNLOG("CSocketEpollThread: create pipe failed %d",SOCKETERRNO());
-                return;
-            }
-            for (unsigned i=0;i<2;i++)
-            {
-                int flags = fcntl(dummysock[i], F_GETFL, 0);
-                if (flags!=-1)
-                {
-                    flags |= O_NONBLOCK;
-                    fcntl(dummysock[i], F_SETFL, flags);
-                }
-                flags = fcntl(dummysock[i], F_GETFD, 0);
-                if (flags!=-1)
-                {
-                    flags |=  FD_CLOEXEC;
-                    fcntl(dummysock[i], F_SETFD, flags);
-                }
-            }
-            sidummy->handle = dummysock[0];
-            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, EPOLLINX);
+        sidummy->handle = dummysock[0];
+        epoll_op(epfd, EPOLL_CTL_ADD, sidummy, EPOLLINX);
 #else
-            if (IP6preferred)
-                dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
-            else
-                dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
-            // added EPOLLIN and EPOLLRDHUP also because cannot find anywhere MSG_OOB is sent
-            // added here to match existing select() code above which sets
-            // the except fd_set mask.
-            sidummy->handle = dummysock;
-            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, (EPOLLINX | EPOLLPRI));
+        if (IP6preferred)
+            dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
+        else
+            dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
+        // added EPOLLIN and EPOLLRDHUP also because cannot find anywhere MSG_OOB is sent
+        // added here to match existing select() code above which sets
+        // the except fd_set mask.
+        sidummy->handle = dummysock;
+        epoll_op(epfd, EPOLL_CTL_ADD, sidummy, (EPOLLINX | EPOLLPRI));
 #endif
-            dummysockopen = true;
-        }
     }
 
-    void closedummy()
+    virtual void closedummy() override
     {
         CriticalBlock block(sect);
         if (dummysockopen)
         {
             epoll_op(epfd, EPOLL_CTL_DEL, sidummy, 0);
-#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-#ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
-#endif
-            ::close(dummysock[0]);
-            ::close(dummysock[1]);
-#else
-            ::close(dummysock);
-#endif
-            delete sidummy;
-            dummysockopen = false;
+            closeDummyPipe();
         }
     }
 
-    void delSelItem(SelectItem *si)
+    virtual void removeItem(SelectItem *item) override
     {
-        epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-        // Release/dtors should not throw but leaving try/catch here until all paths checked
-        try
-        {
-            si->nfy->Release();
-            si->sock->Release();
-            delete si;
-        }
-        catch (IException *e)
-        {
-            EXCLOG(e,"CSocketEpollThread::delSelItem()");
-            e->Release();
-        }
-    }
-
-    void delSelItemPos(SelectItem *si, unsigned pos)
-    {
-        unsigned last = items.ordinality();
-        delSelItem(si);
-        last--;
-        if (pos < last)
-            items.swap(pos, last);
-        items.remove(last);
+        epoll_op(epfd, EPOLL_CTL_DEL, item, 0);
+        CSocketBaseThread::removeItem(item);
     }
 
 public:
@@ -5355,11 +5342,7 @@ public:
     ~CSocketEpollThread()
     {
         closedummy();
-        ForEachItemIn(i, items)
-        {
-            SelectItem *si = items.element(i);
-            delSelItem(si);
-        }
+
         if (epfd >= 0)
         {
 # ifdef EPOLLTRACE
@@ -5373,72 +5356,7 @@ public:
 
     Owned<IException> termexcept;
 
-    bool checkSocks()
-    {
-        bool ret = false;
-        // must be holding CriticalBlock (sect)
-        unsigned n = items.ordinality();
-        for (unsigned i=0;i<n;)
-        {
-            SelectItem *si = items.element(i);
-            if (!sockOk(si->handle))
-            {
-                delSelItemPos(si, i);
-                n--;
-                ret = true;
-            }
-            else
-                i++;
-        }
-        return ret;
-    }
-
-    bool removeSock(ISocket *sock)
-    {
-        // must be holding CriticalBlock (sect)
-        unsigned n = items.ordinality();
-        for (unsigned i=0;i<n;)
-        {
-            SelectItem *si = items.element(i);
-            if (si->sock==sock)
-            {
-                delSelItemPos(si, i);
-                n--;
-                return true;
-            }
-            else
-                i++;
-        }
-        return false;
-    }
-
-    bool remove(ISocket *sock)
-    {
-        CriticalBlock block(sect);
-        if (terminating)
-            return false;
-        if (sock==NULL)
-        { // wait until no changes outstanding
-            while (selectvarschange)
-            {
-                waitingchange++;
-                CriticalUnblock unblock(sect);
-                waitingchangesem.wait();
-            }
-            return true;
-        }
-        if (removeSock(sock))
-        {
-            selectvarschange = true;
-            // NB: could set terminating here if no more hdls on
-            // this thread and at least one other thread is present
-            triggerselect();
-            return true;
-        }
-        return false;
-    }
-
-    unsigned add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
+    bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
@@ -5449,14 +5367,24 @@ public:
         }
         CriticalBlock block(sect);
         if (terminating)
-            return 0;
-        unsigned rm = 0;
-        if (removeSock(sock))
-            rm = SOCK_REMOVED;
-        unsigned n = items.ordinality();
+            return true; // pretend is, to short-circuit caller
+
+        unsigned n=0;
+        ForEachItemIn(i, items)
+        {
+            SelectItem &si = *items.element(i);
+            if (!si.del)
+            {
+                if (si.sock==sock)
+                    si.del = true;
+                else 
+                    n++;
+            }
+        }
+
         // new handler thread
         if (n >= hdlPerThrd)
-            return (0|rm);
+            return false;
         SelectItem *sn = new SelectItem;
         sn->nfy = LINK(nfy);
         sn->sock = LINK(sock);
@@ -5471,10 +5399,11 @@ public:
             ep_mode |= EPOLLOUT;
         if (mode & SELECTMODE_EXCEPT)
             ep_mode |= EPOLLPRI;
+        // JCSMORE - we are in a CS, but it is thread-safe to epoll_wait concurrently with epoll_op
         epoll_op(epfd, EPOLL_CTL_ADD, sn, ep_mode);
         selectvarschange = true;
         triggerselect();
-        return (SOCK_ADDED|rm);
+        return true;
     }
 
     void updateEpollVars(unsigned &ni)
@@ -5502,6 +5431,7 @@ public:
 #ifndef _USE_PIPE_FOR_SELECT_TRIGGER
         opendummy();
 #endif
+        updateItems();
         ni = items.ordinality();
         validateselecterror = 0;
     }
@@ -5730,22 +5660,18 @@ public:
         // seem not as important, but we are still serializing on
         // nfy events and spreading those over threads may help,
         // especially with SSL as avail_read() could block more.
-        unsigned addrm = 0;
+        bool added=false;
         ForEachItemIn(i,threads)
         {
-            if (!(addrm & SOCK_ADDED))
-            {
-                addrm |= threads.item(i).add(sock,mode,nfy);
-                if (addrm & (SOCK_ADDED | SOCK_REMOVED))
-                    return;
-            }
-            else if (!(addrm & SOCK_REMOVED))
+            if (added) // may have been added to a previous thread before, check and remove.
             {
                 if (threads.item(i).remove(sock))
-                    return;
+                    break;
             }
+            else
+                added = threads.item(i).add(sock,mode,nfy);
         }
-        if (addrm & SOCK_ADDED)
+        if (added)
             return;
 
         CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
