@@ -205,7 +205,7 @@ static __int64 numScaleTicks;
 static bool useRDTSC = _USE_RDTSC;
 static double cycleToNanoScale; 
 
-static void calibrate_timing()
+static bool calibrate_timing()
 {
 #ifndef _AMD64_
     if (useRDTSC) 
@@ -234,7 +234,7 @@ static void calibrate_timing()
             if (numPerUS>0)
             {
                 cycleToNanoScale = 1000.0 / numPerUS;
-                return;
+                return true;
             }
         }
         DBGLOG("calibrate_timing failed using RDTSC");
@@ -257,6 +257,7 @@ static void calibrate_timing()
     cycle_t a2 = getTSC();
     numCyclesNTicks = (a2 - a1);
     cycleToNanoScale = ((double)numScaleTicks * 1000000000.0) / ((double)numCyclesNTicks * ticksPerSec);
+    return true;
 }
 
 __int64 cycle_to_nanosec(cycle_t cycles)
@@ -304,7 +305,7 @@ static double cycleToNanoScale;
 static double cycleToMicroScale;
 static double cycleToMilliScale;
 
-void calibrate_timing()
+static bool calibrate_timing()
 {
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
@@ -347,7 +348,7 @@ void calibrate_timing()
                 cycleToNanoScale = 1000.0 / numPerUS;
                 cycleToMicroScale = 1.0 / numPerUS;
                 cycleToMilliScale = 0.001 / numPerUS;
-                return;
+                return true;
             }
         }
         IERRLOG("calibrate_timing failed using RDTSC");
@@ -364,6 +365,7 @@ void calibrate_timing()
     cycleToMicroScale = cycleToNanoScale/1000.0;
     cycleToMilliScale = cycleToNanoScale/1000000.0;
 #endif
+    return true;
 }
 
 
@@ -647,14 +649,7 @@ ITimeReporter * queryActiveTimer()
 
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
 
-cycle_t oneSecInCycles;
-MODULE_INIT(INIT_PRIORITY_JDEBUG1)
-{
-    // perform v. early in process startup, ideally this would grab process exclusively for the 2 100ths of a sec it performs calc.
-    calibrate_timing();
-    oneSecInCycles = nanosec_to_cycle(1000000000);
-    return 1;
-}
+cycle_t oneSecInCycles = calibrate_timing() ?  nanosec_to_cycle(1000000000) : 0;
 
 MODULE_INIT(INIT_PRIORITY_JDEBUG2)
 {
