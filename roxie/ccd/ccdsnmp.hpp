@@ -82,6 +82,7 @@ extern RoxieQueryStats unknownQueryStats;
 extern RoxieQueryStats loQueryStats;
 extern RoxieQueryStats hiQueryStats;
 extern RoxieQueryStats slaQueryStats;
+extern RoxieQueryStats bgQueryStats;
 extern RoxieQueryStats combinedQueryStats;
 
 interface IRoxieMetricsManager : extends IInterface

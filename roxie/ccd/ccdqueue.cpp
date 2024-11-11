@@ -162,6 +162,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
         case ROXIE_SLA_PRIORITY: ret.append("SLA"); break;
         case ROXIE_HIGH_PRIORITY: ret.append("HIGH"); break;
         case ROXIE_LOW_PRIORITY: ret.append("LOW"); break;
+        case ROXIE_SLA_PRIORITY + ROXIE_HIGH_PRIORITY: ret.append("BG"); break;
         default: ret.append("???"); break;
     }
     ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
@@ -1166,11 +1167,14 @@ class RoxieQueue : public CInterface, implements IThreadFactory
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieQueue(unsigned _headRegionSize, unsigned _numWorkers)
+    RoxieQueue(unsigned _headRegionSize, unsigned _numWorkers, const char *qname=nullptr)
     {
         headRegionSize = _headRegionSize;
         numWorkers = _numWorkers;
-        workers.setown(createThreadPool("RoxieWorkers", this, false, nullptr, numWorkers));
+        StringBuffer tname("RoxieWorkers");
+        if (qname && *qname)
+            tname.appendf(" (%s)", qname);
+        workers.setown(createThreadPool(tname.str(), this, false, nullptr, numWorkers));
         started = 0;
         idle = 0;
         if (IBYTIbufferSize)
@@ -1904,12 +1908,13 @@ protected:
     RoxieQueue slaQueue;
     RoxieQueue hiQueue;
     RoxieQueue loQueue;
+    RoxieQueue bgQueue;
     unsigned numWorkers;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers, "SLA"), hiQueue(headRegionSize, _numWorkers, "HIGH"), loQueue(headRegionSize, _numWorkers, "LOW"), bgQueue(headRegionSize, _numWorkers/2 + 1, "BG"), numWorkers(_numWorkers)
     {
     }
 
@@ -1923,6 +1928,7 @@ public:
         slaQueue.setHeadRegionSize(newSize);
         hiQueue.setHeadRegionSize(newSize);
         loQueue.setHeadRegionSize(newSize);
+        bgQueue.setHeadRegionSize(newSize);
     }
 
     virtual void start() 
@@ -1930,6 +1936,7 @@ public:
         loQueue.start();
         hiQueue.start();
         slaQueue.start();
+        bgQueue.start();
     }
 
     virtual void stop() 
@@ -1937,6 +1944,7 @@ public:
         loQueue.stopAll();
         hiQueue.stopAll();
         slaQueue.stopAll();
+        bgQueue.stopAll();
     }
 
     virtual void join()  
@@ -1944,6 +1952,7 @@ public:
         loQueue.join();
         hiQueue.join();
         slaQueue.join();
+        bgQueue.join();
     }
 
     IArrayOf<CallbackEntry> callbacks;
@@ -2254,7 +2263,7 @@ public:
     }
 
     // Move any that we are done waiting for our buddy onto the active queue
-    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue, RoxieQueue &bgQueue)
     {
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
         DelayedPacketEntry *finger = head;
@@ -2270,12 +2279,13 @@ public:
                     DBGLOG("No IBYTI received in time for delayed packet %s - enqueuing", header.toString(s).str());
                 }
                 unsigned __int64 IBYTIdelay = nsTick()-packet->queryEnqueuedTimeStamp();
-                if (header.activityId & ROXIE_SLA_PRIORITY)
-                    slaQueue.enqueue(packet, IBYTIdelay);
-                else if (header.activityId & ROXIE_HIGH_PRIORITY)
-                    hiQueue.enqueue(packet, IBYTIdelay);
-                else
-                    loQueue.enqueue(packet, IBYTIdelay);
+                switch(header.activityId & ROXIE_PRIORITY_MASK)
+                {
+                    case ROXIE_SLA_PRIORITY: slaQueue.enqueue(packet, IBYTIdelay); break;
+                    case ROXIE_HIGH_PRIORITY: hiQueue.enqueue(packet, IBYTIdelay); break;
+                    case ROXIE_LOW_PRIORITY: loQueue.enqueue(packet, IBYTIdelay); break;
+                    default: bgQueue.enqueue(packet, IBYTIdelay); break;
+                }
                 for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
                 {
                     if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
@@ -2354,11 +2364,11 @@ public:
         }
         return min;
     }
-    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue, RoxieQueue &bgQueue)
     {
         for (unsigned queue = 0; queue <= maxSeen; queue++)
         {
-            queues[queue].checkExpired(now, slaQueue, hiQueue, loQueue);
+            queues[queue].checkExpired(now, slaQueue, hiQueue, loQueue, bgQueue);
         }
     }
 private:
@@ -2398,11 +2408,11 @@ public:
         }
         return ret;
     }
-    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue, RoxieQueue &bgQueue)
     {
         ForEachItemIn(idx, channels)
         {
-            channels.item(idx).checkExpired(now, slaQueue, hiQueue, loQueue);
+            channels.item(idx).checkExpired(now, slaQueue, hiQueue, loQueue, bgQueue);
         }
     }
 private:
@@ -2894,12 +2904,13 @@ public:
                     StringBuffer s;
                     DBGLOG("Read roxie packet: %s", header.toString(s).str());
                 }
-                if (header.activityId & ROXIE_SLA_PRIORITY)
-                    processMessage(mb, header, slaQueue);
-                else if (header.activityId & ROXIE_HIGH_PRIORITY)
-                    processMessage(mb, header, hiQueue);
-                else
-                    processMessage(mb, header, loQueue);
+                switch(header.activityId & ROXIE_PRIORITY_MASK)
+                {
+                    case ROXIE_SLA_PRIORITY: processMessage(mb, header, slaQueue); break;
+                    case ROXIE_HIGH_PRIORITY: processMessage(mb, header, hiQueue); break;
+                    case ROXIE_LOW_PRIORITY: processMessage(mb, header, loQueue); break;
+                    default: processMessage(mb, header, bgQueue); break;
+                }
             }
             catch (IException *E)
             {
@@ -2938,7 +2949,7 @@ public:
                 }
             }
 #ifdef NEW_IBYTI
-            delayed.checkExpired(msTick(), slaQueue, hiQueue, loQueue);
+            delayed.checkExpired(msTick(), slaQueue, hiQueue, loQueue, bgQueue);
 #endif
         }
         return 0;
@@ -3708,13 +3719,13 @@ public:
                 return; // No point sending the retry in localAgent mode
             }
             RoxieQueue *targetQueue;
-            if (header.activityId & ROXIE_SLA_PRIORITY)
-                targetQueue = &slaQueue;
-            else if (header.activityId & ROXIE_HIGH_PRIORITY)
-                targetQueue = &hiQueue;
-            else
-                targetQueue = &loQueue;
-
+            switch(header.activityId & ROXIE_PRIORITY_MASK)
+            {
+                case ROXIE_SLA_PRIORITY: targetQueue = &slaQueue; break;
+                case ROXIE_HIGH_PRIORITY: targetQueue = &hiQueue; break;
+                case ROXIE_LOW_PRIORITY: targetQueue = &loQueue; break;
+                default: targetQueue = &bgQueue; break;
+            }
             Owned<ISerializedRoxieQueryPacket> serialized = packet->serialize();
             if (header.channel)
             {
