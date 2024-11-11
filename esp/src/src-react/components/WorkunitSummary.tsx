@@ -57,13 +57,11 @@ interface MessageBarContent {
 interface WorkunitSummaryProps {
     wuid: string;
     otTraceParent?: string;
-    fullscreen?: boolean;
 }
 
 export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     wuid,
-    otTraceParent = "",
-    fullscreen = false
+    otTraceParent = ""
 }) => {
 
     const [workunit, , , , refresh] = useWorkunit(wuid, true);
@@ -220,13 +218,6 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
     ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, otTraceParent, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
-            onClick: () => pushUrl(`/workunits/${wuid}${fullscreen ? "" : "?fullscreen"}`)
-        }
-    ], [fullscreen, wuid]);
-
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
     }, [workunit?.ServiceNames?.Item]);
@@ -246,14 +237,14 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, 0) || 0;
     }, [exceptions]);
 
-    return <HolyGrail fullscreen={fullscreen}
+    return <HolyGrail
         main={<>
             <ReflexContainer orientation="horizontal">
                 <ReflexElement>
                     <div className="pane-content">
                         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                             <Sticky stickyPosition={StickyPositionType.Header}>
-                                <CommandBar items={buttons} farItems={rightButtons} />
+                                <CommandBar items={buttons} />
                                 {messageBarContent &&
                                     <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
                                         {messageBarContent.message}
