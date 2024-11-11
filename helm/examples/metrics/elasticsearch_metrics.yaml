@@ -1,17 +1,24 @@
 #
 # Defines an elastic sink for reporting metrics to an ElasticSearch instance
 # Settings:
-#   type                                - sink type (must be elastic for ElasticSearch support)
-#   name                                - name for the sink instance
-#   settings.countMetricSuffix          - suffix for count metrics (default: count)
-#   settings.gaugeMetricSuffix          - suffix for gauge metrics (default: gauge)
-#   settings.histogramMetricSuffix      - suffix for histogram metrics (default: histogram)
-#   settings.host                       - ElasticSearch host settings
-#   settings.host.protocol               - protocol to use, http or https (default)
-#   settings.host.name                   - host name
-#   settings.host.port                   - port number (default 9200)
-#   settings.index                       - ElasticSearch index settings
-#   settings.index.name                  - index name
+#   type                                  - sink type (must be elastic for ElasticSearch support)
+#   name                                  - name for the sink instance
+#   settings.countMetricSuffix            - suffix for count metrics (default: count)
+#   settings.gaugeMetricSuffix            - suffix for gauge metrics (default: gauge)
+#   settings.histogramMetricSuffix        - suffix for histogram metrics (default: histogram)
+#   settings.host                         - ElasticSearch host settings
+#   settings.host.protocol                - protocol to use, http or https (default)
+#   settings.host.domain                  - host domain
+#   settings.host.certificateFilePath     - path to certificate file (optional)
+#   settings.host.port                    - port number (default 9200)
+#   settings.host.authentication          - authentication settings if authentication is enabled (optional)
+#   settings.host.authentication.type     - authentication type (determines remaining settings) (only 'basic' is supported)
+#   settings.host.authentication.username - username for basic authentication (if not stored in a secret)
+#   settings.host.authentication.password - encrypted password for basic authentication (if not stored in a secret)
+#   settings.host.authentication.credentialsSecret  - name of secret containing username and password for basic authentication
+#   settings.host.authentication.credentialsVaultId - optional vault id for secret containing username password for basic authentication
+#   settings.index                        - ElasticSearch index settings
+#   settings.index.name                   - index name
 #
 # If not overridden, the following suffixes are used by default:
 #   countMetricSuffix: count
@@ -29,8 +36,14 @@ global:
         histogramMetricSuffix: histogram
         host:
           protocol: https
-          name: hostname
+          domain: domain
           port: 9200
+          certificateFilePath: "path/to/cert"
+          authentication:
+            type: basic
+            username: username
+            password: password
+            credentialsSecret: secretName
+            credentialsVaultId: vaultId
         index:
           name: hpccmetrics
-
