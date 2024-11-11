@@ -886,7 +886,7 @@ void FileSprayer::afterTransfer()
     }
 }
 
-bool FileSprayer::allowSplit()
+bool FileSprayer::allowSplit() const
 {
     return !(options->getPropBool(ANnosplit) || options->getPropBool(ANnosplit2) || options->queryProp(ANprefix));
 }
@@ -1592,12 +1592,31 @@ void FileSprayer::commonUpSlaves()
             cur.whichSlave = 0;
     }
 
-    if (options->getPropBool(ANnocommon, true) || pushWhole)
+    if (pushWhole)
         return;
+
+    // noCommon is defaulted to on for non-containerized (revisit!)
+    bool noCommon = options->getPropBool(ANnocommon, !isContainerized());
+    if (noCommon)
+    {
+        if (!isContainerized())
+            return;
+        IWARNLOG("Ignoring noCommon option in containerized mode");
+    }
 
     //First work out which are the same slaves, and then map the partition.
     //Previously it was n^2 in partition, which is fine until you spray 100K files.
     unsigned numSlaves = pull ? targets.ordinality() : sources.ordinality();
+    bool commonByIp = !isContainerized();
+
+    offset_t totalSourceFileSize = 0;
+    offset_t threshold = 0x8000 * numSlaves;
+    ForEachItemIn(i, sources)
+    {
+        const FilePartInfo & cur = sources.item(i);
+        totalSourceFileSize += copyCompressed ? cur.psize : cur.size;
+    }
+
     unsigned * slaveMapping = new unsigned [numSlaves];
     for (unsigned i = 0; i < numSlaves; i++)
         slaveMapping[i] = i;
@@ -1609,7 +1628,12 @@ void FileSprayer::commonUpSlaves()
             TargetLocation & cur = targets.item(i1);
             for (unsigned i2 = 0; i2 < i1; i2++)
             {
-                if (targets.item(i2).filename.queryIP().ipequals(cur.filename.queryIP()))
+                bool match = false;
+                if (commonByIp)
+                    match = targets.item(i2).filename.queryIP().ipequals(cur.filename.queryIP());
+                else if (!targetSupportsConcurrentWrite || totalSourceFileSize < threshold)
+                    match = targets.item(i2).filename.equals(cur.filename);
+                if (match)
                 {
                     slaveMapping[i1] = i2;
                     break;
@@ -1617,14 +1641,19 @@ void FileSprayer::commonUpSlaves()
             }
         }
     }
-    else
+    else // push
     {
         for (unsigned i1 = 1; i1 < numSlaves; i1++)
         {
             FilePartInfo & cur = sources.item(i1);
             for (unsigned i2 = 0; i2 < i1; i2++)
             {
-                if (sources.item(i2).filename.queryIP().ipequals(cur.filename.queryIP()))
+                bool match = false;
+                if (commonByIp) // match by IP
+                    match = sources.item(i2).filename.queryIP().ipequals(cur.filename.queryIP());
+                else if (totalSourceFileSize < threshold)
+                    match = sources.item(i2).filename.equals(cur.filename);
+                if (match)
                 {
                     slaveMapping[i1] = i2;
                     break;
@@ -1632,7 +1661,6 @@ void FileSprayer::commonUpSlaves()
             }
         }
     }
-
 
     for (unsigned i3 = 0; i3 < max; i3++)
     {
@@ -2493,7 +2521,6 @@ void FileSprayer::insertHeaders()
     }
 }
 
-
 bool FileSprayer::needToCalcOutput()
 {
     return !usePullOperation() || options->getPropBool(ANverify);
@@ -2607,6 +2634,7 @@ void FileSprayer::pullParts()
         transferSlaves.append(next);
     }
 
+    // NB: not all transferServers will be used, depending on mapping of whichSlave
     ForEachItemIn(idx3, partition)
     {
         PartitionPoint & cur = partition.item(idx3);
@@ -2662,6 +2690,7 @@ void FileSprayer::pushParts()
         transferSlaves.append(next);
     }
 
+    // NB: not all transferServers will be used, depending on mapping of whichSlave
     ForEachItemIn(idx3, partition)
     {
         PartitionPoint & cur = partition.item(idx3);
@@ -3048,6 +3077,7 @@ void FileSprayer::setTarget(IDistributedFile * target)
         TargetLocation & next = * new TargetLocation(curPart->getFilename(rfn,copy), idx);
         targets.append(next);
     }
+    target->getClusterGroupName(0, targetPlane.clear());
 
     checkSprayOptions();
 }
@@ -3069,6 +3099,7 @@ void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
         target->getFilename(idx, copy, filename);
         targets.append(*new TargetLocation(filename, idx));
     }
+    target->getClusterGroupName(0, targetPlane.clear());
 
     checkSprayOptions();
 }
@@ -3280,6 +3311,8 @@ void FileSprayer::spray()
         LOG(MCdebugInfo, "Command completed successfully in previous invocation");
         return;
     }
+
+    targetSupportsConcurrentWrite = getConcurrentWriteSupported(targetPlane);
 
     checkFormats();
     checkForOverlap();
@@ -3984,10 +4017,44 @@ bool FileSprayer::calcUsePull() const
         LOG(MCdebugInfo, "Use pull since explicitly specified");
         return true;
     }
-    if (options->getPropBool(ANpush, false))
+
+    bool pushRequested = options->getPropBool(ANpush);
+    if (!targetSupportsConcurrentWrite) // NB: default for containerized is false
     {
+        if (!pushRequested)
+            return true;
+        if (!usePushWholeOperation())
+        {
+            if (targets.ordinality() <= sources.ordinality())
+            {
+                // NB: this is being calculated before partitioning has occurred
+                // It can be refactored so that it decides after partitioning, and only has to force pull
+                // if multiple partitions write to same target file.
+                LOG(MCdebugInfo, "Use pull operation because target doesn't support concurrent write");
+                return true;
+            }
+            // else targets > sources
+
+            // if push requested and N:M and no split, then throw an error unless expert option allows
+            if (!copySource) // 1:1 partitioning if copySource==true
+            {
+                if ((sources.ordinality() > 1) && (targets.ordinality() > 1) && !allowSplit())
+                {
+                    if (!getComponentConfigSP()->getPropBool("expert/@allowPushNoSplit"))
+                        throw makeStringExceptionV(0, "Pushing to multiple targets with no split is not supported to this target plane (%s)", targetPlane.str());
+                }
+            }
+        }
         LOG(MCdebugInfo, "Use push since explicitly specified");
         return false;
+    }
+    else // ! targetSupportsConcurrentWrite 
+    {
+        if (pushRequested)
+        {
+            LOG(MCdebugInfo, "Use push since explicitly specified");
+            return false;
+        }
     }
 
     ForEachItemIn(idx2, sources)

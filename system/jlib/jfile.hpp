@@ -744,11 +744,12 @@ extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
 extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
 
 extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);
-enum PlaneAttributeType
+enum PlaneAttributeType // remember to update planeAttributeInfo in jfile.cpp
 {
     BlockedSequentialIO,
     BlockedRandomIO,
     FileSyncWriteClose,
+    ConcurrentWriteSupport,
     PlaneAttributeCount
 };
 extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
@@ -759,6 +760,7 @@ extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttribute
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl bool getFileSyncWriteCloseEnabled(const char *planeName);
+extern jlib_decl bool getConcurrentWriteSupported(const char *planeName);
 
 //---- Pluggable file type related functions ----------------------------------------------
 
