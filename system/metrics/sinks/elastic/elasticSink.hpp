@@ -34,11 +34,17 @@ protected:
     virtual void prepareToStartCollecting() override;
     virtual void collectingHasStopped() override;
     virtual void doCollection() override;
+    bool getHostConfig(const IPropertyTree *pSettingsTree);
+    bool getIndexConfig(const IPropertyTree *pSettingsTree);
 
 protected:
     StringBuffer indexName;
     bool ignoreZeroMetrics = false;
     StringBuffer elasticHostUrl;
+    StringBuffer certificateFilePath;
+    StringBuffer authenticationType;
+    StringBuffer username;
+    StringBuffer password;
     StringBuffer countMetricSuffix;
     StringBuffer gaugeMetricSuffix;
     StringBuffer histogramMetricSuffix;
