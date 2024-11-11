@@ -2,6 +2,7 @@ define([
     "dojo/_base/declare",
     "src/nlsHPCC",
     "dojo/topic",
+    "dojo/dom-construct",
 
     "dijit/registry",
 
@@ -20,7 +21,7 @@ define([
     "hpcc/IFrameWidget",
 
     "dijit/Dialog",
-], function (declare, nlsHPCCMod, topic,
+], function (declare, nlsHPCCMod, topic, domConstruct,
     registry,
     tree, selector,
     GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, MachineInformationWidget, IFrameWidget) {
@@ -50,6 +51,10 @@ define([
                 style: "border: 0; width: 100%; height: 100%"
             });
             this.legacyClustersProcessesIframeWidget.placeAt(this._tabContainer, "last");
+            if (dojoConfig.isContainer) {
+                const legacyTab = registry.byId(this.id + "_LegacyClustersProcessesIframeWidget");
+                legacyTab.set("disabled", true);
+            }
         },
 
         init: function (params) {
@@ -85,9 +90,15 @@ define([
                 if (currSel.id === this.id + "_Grid") {
                     this.refreshGrid();
                 } else if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
-                    this.legacyClustersProcessesIframeWidget.init({
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"
-                    });
+                    if (!dojoConfig.isContainer) {
+                        this.legacyClustersProcessesIframeWidget.init({
+                            src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"
+                        });
+                    } else {
+                        const unavailMsg = domConstruct.create("div", { style: { margin: "5px" } });
+                        unavailMsg.innerText = this.i18n.UnavailableInContainerized;
+                        this.legacyClustersProcessesIframeWidget.contentPane.set("content", unavailMsg);
+                    }
                 } else {
                     currSel.init(currSel.params);
                 }

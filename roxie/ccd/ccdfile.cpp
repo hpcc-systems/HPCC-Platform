@@ -3576,6 +3576,7 @@ public:
 
     virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) override
     {
+        assertex(lfn);
         if (doTrace(traceRoxieFiles))
         {
             StringBuffer s;

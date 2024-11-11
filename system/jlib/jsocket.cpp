@@ -6642,15 +6642,19 @@ StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
         return item(0).getEndpointHostText(text);
     byte lastip[4];
     const SocketEndpoint &first = item(0);
-    bool lastis4 = first.getNetAddress(sizeof(lastip),&lastip)==sizeof(lastip);
-    unsigned short lastport = first.port;
     first.getHostText(text);
+    bool lastis4 = false;
+    if (!first.queryHostname())
+        lastis4 = first.getNetAddress(sizeof(lastip),&lastip)==sizeof(lastip);
+    unsigned short lastport = first.port;
     unsigned rep=0;
     unsigned range=0;
     for (unsigned i=1;i<count;i++) {
         byte ip[4];
         const SocketEndpoint &ep = item(i);
-        bool is4 = ep.getNetAddress(sizeof(ip),&ip)==sizeof(ip);
+        bool is4 = false;
+        if (!ep.queryHostname())
+            is4 = ep.getNetAddress(sizeof(ip),&ip)==sizeof(ip);
         if (!lastis4||!is4) {
             flushText(text,lastport,rep,range);
             text.append(',');

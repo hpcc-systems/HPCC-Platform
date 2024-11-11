@@ -4,6 +4,7 @@ define([
     "dojo/_base/array",
     "dojo/dom-class",
     "dojo/topic",
+    "dojo/dom-construct",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -21,7 +22,7 @@ define([
     "hpcc/PreflightDetailsWidget",
     "hpcc/MachineInformationWidget",
     "hpcc/IFrameWidget"
-], function (declare, nlsHPCCMod, arrayUtil, domClass, topic,
+], function (declare, nlsHPCCMod, arrayUtil, domClass, topic, domConstruct,
     registry, Dialog,
     tree, selector,
     GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, MachineInformationWidget, IFrameWidget) {
@@ -71,9 +72,15 @@ define([
                 if (currSel.id === this.id + "_Grid") {
                     this.refreshGrid();
                 } else if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
-                    this.systemServersQueryWidgetIframeWidget.init({
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"
-                    });
+                    if (!dojoConfig.isContainer) {
+                        this.systemServersQueryWidgetIframeWidget.init({
+                            src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"
+                        });
+                    } else {
+                        const unavailMsg = domConstruct.create("div", { style: { margin: "5px" } });
+                        unavailMsg.innerText = this.i18n.UnavailableInContainerized;
+                        this.systemServersQueryWidgetIframeWidget.contentPane.set("content", unavailMsg);
+                    }
                 } else {
                     currSel.init(currSel.params);
                 }
@@ -139,6 +146,10 @@ define([
                 style: "border: 0; width: 100%; height: 100%"
             });
             this.systemServersQueryWidgetIframeWidget.placeAt(this._tabContainer, "last");
+            if (dojoConfig.isContainer) {
+                const legacyTab = registry.byId(this.id + "_SystemServersQueryWidgetIframeWidget");
+                legacyTab.set("disabled", true);
+            }
         },
 
         createGrid: function (domID) {

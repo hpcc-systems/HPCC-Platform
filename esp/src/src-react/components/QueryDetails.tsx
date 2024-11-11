@@ -2,7 +2,8 @@ import * as React from "react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as ESPQuery from "src/ESPQuery";
-import { pushUrl } from "../util/history";
+import { pushUrl, updateFullscreen } from "../util/history";
+import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
 import { QueryErrors } from "./QueryErrors";
 import { QueryLibrariesUsed } from "./QueryLibrariesUsed";
 import { QueryLogicalFiles } from "./QueryLogicalFiles";
@@ -18,6 +19,7 @@ interface QueryDetailsProps {
     querySet: string;
     queryId: string;
     tab?: string;
+    fullscreen?: boolean;
     state?: { metricsTab?: string, metricsState?: string, testTab?: string };
     queryParams?: { metricsSelection?: string };
 }
@@ -26,6 +28,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     querySet,
     queryId,
     tab = "summary",
+    fullscreen = false,
     state = {},
     queryParams = {}
 }) => {
@@ -63,7 +66,8 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                 pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/${tab.id}`);
                 break;
         }
-    }, [queryId, querySet, state.testTab]);
+        updateFullscreen(fullscreen);
+    }, [fullscreen, queryId, querySet, state.testTab]);
 
     const tabs = React.useMemo((): TabInfo[] => {
         return [{
@@ -100,36 +104,40 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
         }];
     }, [libsUsedCount, logicalFileCount, superFileCount, wuid]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
-        <div style={{ height: "100%" }}>
-            <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
-            <DelayLoadedPanel visible={tab === "summary"} size={size}>
-                <QuerySummary queryId={queryId} querySet={querySet} isSuspended={suspended} isActivated={activated} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "errors"} size={size}>
-                <QueryErrors queryId={queryId} querySet={querySet} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "logicalFiles"} size={size}>
-                <QueryLogicalFiles queryId={queryId} querySet={querySet} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "superfiles"} size={size}>
-                <QuerySuperFiles queryId={queryId} querySet={querySet} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "librariesUsed"} size={size}>
-                <QueryLibrariesUsed queryId={queryId} querySet={querySet} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "summaryStatistics"} size={size}>
-                <QuerySummaryStats queryId={queryId} querySet={querySet} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "metrics"} size={size}>
-                <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={state.metricsTab} selection={queryParams.metricsSelection} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "resources"} size={size}>
-                <Resources wuid={wuid} />
-            </DelayLoadedPanel>
-            <DelayLoadedPanel visible={tab === "testPages"} size={size}>
-                <QueryTests queryId={queryId} querySet={querySet} tab={state.testTab} />
-            </DelayLoadedPanel>
-        </div>
-    }</SizeMe>;
+    return <FullscreenFrame fullscreen={fullscreen}>
+        <SizeMe monitorHeight>{({ size }) =>
+            <div style={{ height: "100%" }}>
+                <FullscreenStack fullscreen={fullscreen}>
+                    <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
+                </FullscreenStack>
+                <DelayLoadedPanel visible={tab === "summary"} size={size}>
+                    <QuerySummary queryId={queryId} querySet={querySet} isSuspended={suspended} isActivated={activated} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "errors"} size={size}>
+                    <QueryErrors queryId={queryId} querySet={querySet} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "logicalFiles"} size={size}>
+                    <QueryLogicalFiles queryId={queryId} querySet={querySet} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "superfiles"} size={size}>
+                    <QuerySuperFiles queryId={queryId} querySet={querySet} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "librariesUsed"} size={size}>
+                    <QueryLibrariesUsed queryId={queryId} querySet={querySet} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "summaryStatistics"} size={size}>
+                    <QuerySummaryStats queryId={queryId} querySet={querySet} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "metrics"} size={size}>
+                    <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={state.metricsTab} selection={queryParams.metricsSelection} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "resources"} size={size}>
+                    <Resources wuid={wuid} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "testPages"} size={size}>
+                    <QueryTests queryId={queryId} querySet={querySet} tab={state.testTab} />
+                </DelayLoadedPanel>
+            </div>
+        }</SizeMe>
+    </FullscreenFrame>;
 };

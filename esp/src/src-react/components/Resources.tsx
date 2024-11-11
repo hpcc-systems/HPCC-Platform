@@ -3,7 +3,8 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useWorkunitResources } from "../hooks/workunit";
-import { updateParam } from "../util/history";
+import { hashHistory, updateParam } from "../util/history";
+import { SearchParams } from "../util/hashUrl";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
@@ -22,7 +23,9 @@ interface ResourcesProps {
 const defaultSort = { attribute: "Wuid", descending: true };
 
 function formatUrl(wuid: string, url: string) {
-    return `#/workunits/${wuid}/resources/content?url=/WsWorkunits/${url}`;
+    const searchParams = new SearchParams(hashHistory.location.search);
+    searchParams.param("url", `/WsWorkunits/${url}`);
+    return `#/workunits/${wuid}/resources/content?${searchParams.serialize()}`;
 }
 
 export const Resources: React.FunctionComponent<ResourcesProps> = ({
@@ -48,6 +51,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             },
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
+                width: 800,
                 formatter: (url, row) => {
                     return <Link href={formatUrl(wuid, row.URL)}>{url}</Link>;
                 }
