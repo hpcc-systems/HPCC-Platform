@@ -1445,11 +1445,17 @@ public:
     }
     HTHELPER *queryTable() { return table; }
     IBitSet *queryRhsChannelStopSet() { dbgassertex(0 == queryJobChannelNumber()); return rhsChannelStop; }
-    void startLeftInput()
+    void startLeftInput(bool async=false)
     {
         try
         {
-            startInput(0);
+            if (async)
+            {
+                LookAheadTimer t(slaveTimerStats, timeActivities);
+                startInput(0);
+            }
+            else
+                startInput(0);
             if (ensureStartFTLookAhead(0))
                 setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, this), false);
             left.set(inputStream); // can be replaced by loader stream
@@ -1530,6 +1536,7 @@ public:
     }
     virtual void start() override
     {
+        ActivityTimer s(slaveTimerStats, timeActivities);
         joined = 0;
         joinCounter = 0;
         candidateCounter = 0;
@@ -1562,7 +1569,7 @@ public:
         }
         else
         {
-            CAsyncCallStart asyncLeftStart(std::bind(&CInMemJoinBase::startLeftInput, this));
+            CAsyncCallStart asyncLeftStart(std::bind(&CInMemJoinBase::startLeftInput, this, true));
             try
             {
                 startInput(1);
