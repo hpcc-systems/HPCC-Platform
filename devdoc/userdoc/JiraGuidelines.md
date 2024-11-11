@@ -3,13 +3,13 @@
 This is a guide to the type of information that is desired in JIRA tickets.
 
 # For bugs / improvement requests on any existing features or docs: 
-   - Provide a screenshot when it’s applicable.  Not just of the offending line or excerpt, but of the entire application window.
-      - This is especially true for issues related to ECL Watch.
+   - User-Interface Issues:
+      - Provide a screenshot when it’s applicable.  Not just of the offending line or excerpt, but of the entire application window.
+      - URL to environment.
+      - URL to workunit.
+   - Which browser and its version.
    - Provide a zap file if there is one.
    - Build version of the environment you're using.
-   - URL to environment.
-   - URL to workunit.
-   - Which browser and its version.
    - Steps for reproducing.
       - Laid out in an easy to understand format.  
       - Either a numbered set of steps or even something simple as:
@@ -24,8 +24,8 @@ This is a guide to the type of information that is desired in JIRA tickets.
          - Virtual Box
    - Steps taken to install the platform if this is related to installation and init.
    - If this is a bare-metal build, where did you get your package and what is the md5sum of this package?
-   - Include stack traces and a copy of the core file if possible.
-      - It could be that the core file is too big to be uploaded so either a link to core file would suffice.
+   - Include stack traces if possible.
+      - Core files can potentially contain PII so refrain from including these in the ticket.
    - Ensure that there's no Personally Identifiable Information in the ticket.
 
 # For new features, the reporter should provide in detail:
