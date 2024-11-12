@@ -11,8 +11,6 @@
     limitations under the License.
 ############################################################################## */
 
-//class=parquet
-
 IMPORT Std;
 IMPORT Parquet;
 
@@ -28,26 +26,24 @@ stringData := DATASET([
     {'Parquet', 'I/O', 'Test Data 3'}
 ], layout);
 
-dropzoneDirectory := Std.File.GetDefaultDropZone();
-parquetFilePath := dropzoneDirectory + '/regress/string_test.parquet';
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+parquetFilePath := basePath + 'stringData.parquet';
 
 ParquetIO.Write(stringData, parquetFilePath, TRUE);
-
 parquetString := ParquetIO.Read(layout, parquetFilePath);
 
 layout compareTransform(layout original, layout fromParquet) := TRANSFORM
-    SELF.s1 := IF(original.s1 = fromParquet.s1, '', 'Mismatch in s1');
-    SELF.s2 := IF(original.s2 = fromParquet.s2, '', 'Mismatch in s2');
-    SELF.s3 := IF(original.s3 = fromParquet.s3, '', 'Mismatch in s3');
+    // Show the actual data instead of empty strings for matches
+    SELF.s1 := original.s1 + IF(original.s1 = fromParquet.s1, '', ' (Mismatch)');
+    SELF.s2 := original.s2 + IF(original.s2 = fromParquet.s2, '', ' (Mismatch)');
+    SELF.s3 := original.s3 + IF(original.s3 = fromParquet.s3, '', ' (Mismatch)');
 END;
 
 result := JOIN(stringData, parquetString,
                LEFT.s1 = RIGHT.s1 AND LEFT.s2 = RIGHT.s2 AND LEFT.s3 = RIGHT.s3,
                compareTransform(LEFT, RIGHT),
-               FULL OUTER);
+               ALL);
 
 OUTPUT(result, NAMED('ComparisonResult'));
-
-mismatchCount := COUNT(result(s1 != '' OR s2 != '' OR s3 != ''));
+mismatchCount := COUNT(result(s1 != '' OR s2 != '' OR s3 != '')); 
 OUTPUT(IF(mismatchCount = 0, 'All records match', 'Mismatches found'), NAMED('TestResult'));
-

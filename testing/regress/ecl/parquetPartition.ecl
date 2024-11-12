@@ -34,29 +34,28 @@ smallData := DATASET([
 overwriteOption := TRUE;
 rowSize := 1024;  // Increased buffer size
 
-// Define base path
-basePath := Std.File.GetDefaultDropZone() + 'regress/parquet/';
+// Define base path (without 'file://' prefix)
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
 
-// Define partition keys as string arrays
-hivePartitionKey := ['city'];
-dirPartitionKey := ['age'];
+// Define partition keys as a semicolon-separated string with all keys
+partitionKeys := 'id';
 
-// Write out the dataset with Hive partitioning on CITY
+// Write out the dataset with Hive partitioning on all keys
 ParquetIO.HivePartition.Write(
     smallData,
-    basePath + 'hive_partitioned/',
-    hivePartitionKey,
     rowSize,
-    overwriteOption
+    basePath + 'hive_partitioned/',
+    overwriteOption,
+    partitionKeys
 );
 
-// Write out the dataset with Directory partitioning on AGE
+// Write out the dataset with Directory partitioning on all keys
 ParquetIO.DirectoryPartition.Write(
     smallData,
-    basePath + 'dir_partitioned/',
-    dirPartitionKey,
     rowSize,
-    overwriteOption
+    basePath + 'dir_partitioned/',
+    overwriteOption,
+    partitionKeys
 );
 
 // Define file paths for partitioned datasets
@@ -65,7 +64,7 @@ dirFilePath := basePath + 'dir_partitioned/';
 
 // Read back the partitioned data
 readBackHiveData := ParquetIO.HivePartition.Read(datasetRecordLayout, hiveFilePath);
-readBackDirData := ParquetIO.DirectoryPartition.Read(datasetRecordLayout, dirFilePath, TRUE);
+readBackDirData := ParquetIO.DirectoryPartition.Read(datasetRecordLayout, dirFilePath, partitionKeys);
 
 // Output the entire dataset for verification
 OUTPUT(readBackHiveData, NAMED('HivePartitionedSampleData'));

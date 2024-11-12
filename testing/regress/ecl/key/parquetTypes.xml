@@ -1,11 +1,18 @@
-<Dataset name='RealTestResult'>
- <Row><RealTestResult>Pass</RealTestResult></Row>
-</Dataset>
 <Dataset name='BooleanTest'>
  <Row><BooleanTest>Pass</BooleanTest></Row>
 </Dataset>
 <Dataset name='IntegerTest'>
- <Row><IntegerTest>Pass</IntegerTest></Row>
+ <Row><testid>10</testid><testname>min</testname><isequal>true</isequal></Row>
+ <Row><testid>11</testid><testname>max</testname><isequal>true</isequal></Row>
+ <Row><testid>12</testid><testname>afa</testname><isequal>true</isequal></Row>
+ <Row><testid>13</testid><testname>afb</testname><isequal>true</isequal></Row>
+ <Row><testid>14</testid><testname>afc</testname><isequal>true</isequal></Row>
+ <Row><testid>15</testid><testname>afp</testname><isequal>true</isequal></Row>
+ <Row><testid>16</testid><testname>afq</testname><isequal>true</isequal></Row>
+ <Row><testid>17</testid><testname>afr</testname><isequal>true</isequal></Row>
+ <Row><testid>110</testid><testname>acg</testname><isequal>true</isequal></Row>
+ <Row><testid>113</testid><testname>acj</testname><isequal>true</isequal></Row>
+ <Row><testid>114</testid><testname>ack</testname><isequal>true</isequal></Row>
 </Dataset>
 <Dataset name='UnsignedTest'>
  <Row><UnsignedTest>Pass</UnsignedTest></Row>
@@ -34,36 +41,12 @@
 <Dataset name='UnicodeTest'>
  <Row><UnicodeTest>Pass</UnicodeTest></Row>
 </Dataset>
-<Dataset name='SetOfIntegerTest'>
- <Row><SetOfIntegerTest>Pass</SetOfIntegerTest></Row>
-</Dataset>
-<Dataset name='Real8Test'>
- <Row><Real8Test>Pass</Real8Test></Row>
-</Dataset>
-<Dataset name='SetOfStringTest'>
- <Row><SetOfStringTest>Pass</SetOfStringTest></Row>
-</Dataset>
 <Dataset name='SetOfUnicodeTest'>
  <Row><SetOfUnicodeTest>Pass</SetOfUnicodeTest></Row>
-</Dataset>
-<Dataset name='IntegerSizesTest'>
- <Row><IntegerSizesTest>Pass</IntegerSizesTest></Row>
-</Dataset>
-<Dataset name='UnsignedSizesTest'>
- <Row><UnsignedSizesTest>Pass</UnsignedSizesTest></Row>
-</Dataset>
-<Dataset name='Real4Test'>
- <Row><Real4Test>Pass</Real4Test></Row>
-</Dataset>
-<Dataset name='Integer1Test'>
- <Row><Integer1Test>Pass</Integer1Test></Row>
 </Dataset>
 <Dataset name='FixedSizeBinaryTest'>
  <Row><FixedSizeBinaryTest>Pass</FixedSizeBinaryTest></Row>
 </Dataset>
 <Dataset name='LargeBinaryTest'>
  <Row><LargeBinaryTest>Pass</LargeBinaryTest></Row>
-</Dataset>
-<Dataset name='LargeListTest'>
- <Row><LargeListTest>Pass</LargeListTest></Row>
 </Dataset>

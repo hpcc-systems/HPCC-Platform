@@ -23,4 +23,7 @@ END;
 
 EMPTY_PARQUET := DATASET([], RECORDDEF);
 
-OUTPUT(EMPTY_PARQUET, NAMED('EmptyResult'));
+ParquetIO.Write(EMPTY_PARQUET, '/regress/parquet/empty_test.parquet', TRUE);
+
+read_data := ParquetIO.Read(RECORDDEF, '/regress/parquet/empty_test.parquet');
+OUTPUT(read_data);

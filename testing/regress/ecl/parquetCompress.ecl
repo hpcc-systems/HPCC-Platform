@@ -11,13 +11,14 @@
     limitations under the License.
 ############################################################################## */
 
-//class=parquet
+//class=notit
 //version compressionType='UNCOMPRESSED'
 //version compressionType='Snappy'
 //version compressionType='GZip'
 //version compressionType='Brotli'
 //version compressionType='LZ4'
 //version compressionType='ZSTD'
+
 
 IMPORT Std;
 IMPORT Parquet;
