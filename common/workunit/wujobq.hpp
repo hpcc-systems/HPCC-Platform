@@ -121,6 +121,7 @@ interface IJobQueue: extends IJobQueueConst
                                                                 // validateitemsessions ensures that all queue items have running session
     virtual IJobQueueItem *dequeue(unsigned timeout=INFINITE)=0;
     virtual IJobQueueItem *dequeue(int minPrio, unsigned timeout, unsigned prioritytransitiondelay)=0;
+    virtual IJobQueueItem *dequeuePriority(unsigned __int64 priority, unsigned timeout=INFINITE)=0;
     virtual void disconnect()=0;    // signal no longer wil be dequeing (optional - done automatically on release)
     virtual void getStats(unsigned &connected,unsigned &waiting, unsigned &enqueued)=0; // this not quick as validates clients still running
     virtual bool waitStatsChange(unsigned timeout)=0;
