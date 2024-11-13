@@ -25,6 +25,7 @@
 
 #include "jmisc.hpp"
 #include "hlzw.h"
+#include "jlz4.hpp"
 
 #include "ctfile.hpp"
 #include "jstats.h"
@@ -369,8 +370,10 @@ const void *CPOCWriteNode::getLastKeyValue() const
 
 //=========================================================================================================
 
-CLegacyWriteNode::CLegacyWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) : CWriteNode(_fpos, _keyHdr, isLeafNode)
+CLegacyWriteNode::CLegacyWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode, bool LZ4) : CWriteNode(_fpos, _keyHdr, isLeafNode)
 {
+    if (LZ4)
+        hdr.compressionType = LZ4Compression;
     keyLen = keyHdr->getMaxKeyLength();
     if (!isLeafNode)
     {
@@ -399,7 +402,7 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     if (isLeaf() && (keyType & HTREE_COMPRESSED_KEY))
     {
         if (0 == hdr.numKeys)
-            lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, keyHdr->isVariable(), (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY);
+            lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, keyHdr->isVariable(), (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY, hdr.compressionType==LZ4Compression);
         if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize))
         {
             lzwcomp.close();
@@ -475,10 +478,12 @@ size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, cha
 
 //=========================================================================================================
 
-CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool) : CWriteNodeBase(_fpos, _keyHdr)
+CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool useLZ4) : CWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.nodeType = NodeBlob;
-    lzwcomp.openBlob(keyPtr, maxBytes);
+    if (useLZ4)
+        hdr.compressionType = LZ4Compression;
+    lzwcomp.openBlob(keyPtr, maxBytes, useLZ4);
 }
 
 CBlobWriteNode::~CBlobWriteNode()
@@ -638,9 +643,13 @@ void *CJHTreeNode::allocMem(size32_t len)
     return ret;
 }
 
-char *CJHTreeNode::expandData(const void *src,size32_t &retsize)
+char *CJHTreeNode::expandData(const void *src, size32_t &retsize)
 {
-    Owned<IExpander> exp = createLZWExpander(true);
+    Owned<IExpander> exp;
+    if (hdr.compressionType==LegacyCompression)
+        exp.setown(createLZWExpander(true));
+    else
+        exp.setown(createLZ4Expander());
     int len=exp->init(src);
     if (len==0)
     {

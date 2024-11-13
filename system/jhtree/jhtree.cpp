@@ -1305,7 +1305,7 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
 
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
-    if (nodeHdr.compressionType == LegacyCompression)
+    if (nodeHdr.compressionType == LegacyCompression || nodeHdr.compressionType == LZ4Compression)
     {
         switch(nodeHdr.nodeType)
         {
@@ -1340,8 +1340,6 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
                 return new CJHInplaceLeafNode();
             if (nodeHdr.nodeType == NodeBranch)
                 return new CJHInplaceBranchNode();
-            if (nodeHdr.nodeType == NodeBlob)
-                return new CJHTreeBlobNode();
             UNIMPLEMENTED;
         default:
             throwUnexpected();

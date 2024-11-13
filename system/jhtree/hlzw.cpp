@@ -32,6 +32,7 @@
 
 #include "jmisc.hpp"
 #include "hlzw.h"
+#include "jlz4.hpp"
 
 KeyCompressor::~KeyCompressor()
 {
@@ -43,7 +44,7 @@ KeyCompressor::~KeyCompressor()
     }
 }
 
-void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompression)
+void KeyCompressor::open(void *blk,int blksize, bool _isVariable, bool rowcompression, bool LZ4)
 {
     isVariable = _isVariable;
     isBlob = false;
@@ -56,6 +57,8 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
         else
             comp = createRDiffCompressor();
     }
+    else if (LZ4)
+        comp = createLZ4Compressor(nullptr, false);
     else
         comp = createLZWCompressor(true);
     comp->open(blk,blksize);
@@ -74,15 +77,21 @@ void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHa
     fixedRowSize = _fixedRowSize;
 }
 
-void KeyCompressor::openBlob(void *blk,int blksize)
+void KeyCompressor::openBlob(void *blk,int blksize, bool LZ4)
 {
     isVariable = false;
     isBlob = true;
     curOffset = 0;
     ::Release(comp);
     comp = NULL;
-    comp = createLZWCompressor(true);
-    comp->open(blk,blksize);
+    comp = LZ4 ? createLZ4Compressor(nullptr, false) : createLZWCompressor(true);
+    if (!comp->supportsIncrementalCompression())
+    {
+        bufp = blk;
+        bufl = blksize;
+    }
+    else
+        comp->open(blk,blksize);
     method = comp->getCompressionMethod();
 }
 
@@ -177,52 +186,88 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
     assert(datalength);
     if (!comp)
         return 0;
-
-
-    unsigned originalOffset = curOffset;
-    comp->startblock(); // start transaction
-    char zero = 0;
-    while (curOffset & 0xf) // We only have 16 bits to store the blob offset in the blobId, so we 16-byte align them which gives us another 8 bits
+    if (comp->supportsIncrementalCompression())
     {
-        if (comp->write(&zero,sizeof(zero))!=sizeof(zero)) {
+        unsigned originalOffset = curOffset;
+        comp->startblock(); // start transaction
+        char zero = 0;
+        while (curOffset & 0xf) // We only have 16 bits to store the blob offset in the blobId, so we 16-byte align them which gives us another 8 bits
+        {
+            if (comp->write(&zero,sizeof(zero))!=sizeof(zero)) {
+                close();
+                curOffset = originalOffset;
+                return 0;
+            }
+            curOffset++;
+        }
+
+        unsigned rdatalength = datalength;
+        _WINREV(rdatalength);
+        if (comp->write(&rdatalength, sizeof(rdatalength))!=sizeof(rdatalength)) {
             close();
             curOffset = originalOffset;
             return 0;
         }
-        curOffset++;
-    }
+        curOffset += sizeof(datalength);
 
-    unsigned rdatalength = datalength;
-    _WINREV(rdatalength);
-    if (comp->write(&rdatalength, sizeof(rdatalength))!=sizeof(rdatalength)) {
-        close();
-        curOffset = originalOffset;
-        return 0;
-    }
-    curOffset += sizeof(datalength);
-
-    unsigned written = 0;
-    while (written < datalength && curOffset < 0x100000)  // curOffset must not go over 24 bits (see above)
-    {
-        if (comp->write(data,sizeof(*data))!=sizeof(*data))
+        unsigned written = 0;
+        while (written < datalength && curOffset < 0x100000)  // curOffset must not go over 24 bits (see above)
         {
-            if (!written)
+            if (comp->write(data,sizeof(*data))!=sizeof(*data))
             {
-                close();
-                curOffset = originalOffset;
-                return 0; // only room to put the length - don't!
+                if (!written)
+                {
+                    close();
+                    curOffset = originalOffset;
+                    return 0; // only room to put the length - don't!
+                }
+                break;
             }
-            break;
+            curOffset++;
+            written++;
+            data++;
+            comp->startblock();
         }
-        curOffset++;
-        written++;
-        data++;
-        comp->startblock();
+        comp->commitblock();
+        if (written != datalength)
+            close();
+        return written;
     }
-    comp->commitblock();
-    if (written != datalength)
-        close();
-    return written;
+    else
+    {
+        assertex(uncompressed.length() == curOffset);
+        unsigned originalOffset = curOffset;
+        char zero = 0;
+        while (curOffset & 0xf) // We only have 16 bits to store the blob offset in the blobId, so we 16-byte align them which gives us another 8 bits
+        {
+            uncompressed.append(zero);
+            curOffset++;
+        }
+        unsigned rdatalength = datalength;
+        _WINREV(rdatalength);
+        uncompressed.append(rdatalength);
+        unsigned written = 0;
+        while (datalength && curOffset < 0x100000)  // curOffset must not go over 24 bits (see above)
+        {
+            unsigned bytesnow = datalength > 128 ? 128 : datalength;
+            uncompressed.append(bytesnow, data);
+            comp->Release(); comp = createLZ4Compressor(nullptr, false);
+            size32_t compressed = comp->compressBlock(bufl, bufp, uncompressed.length(), uncompressed.toByteArray());
+            if (!compressed)
+            {
+                uncompressed.setLength(originalOffset);
+                curOffset = originalOffset;
+                break;   
+            }
+            bufl = compressed;
+            written += bytesnow;
+            data += bytesnow;
+            curOffset = uncompressed.length();
+            originalOffset = curOffset;
+            datalength -= bytesnow;
+        }
+        return written;
+    }
 }
 
 
@@ -233,10 +278,14 @@ bool KeyCompressor::adjustLimit(size32_t newLimit)
 
 void KeyCompressor::close()
 { // gets called either when write failed or explicitly by client
-    if (comp!=NULL) {
-        comp->close();
-        bufp = comp->bufptr();
-        bufl = comp->buflen();
+    if (comp!=NULL) 
+    {
+        if (comp->supportsIncrementalCompression())
+        {
+            comp->close();
+            bufp = comp->bufptr();
+            bufl = comp->buflen();
+        }
         comp->Release();
         comp = NULL;
     }

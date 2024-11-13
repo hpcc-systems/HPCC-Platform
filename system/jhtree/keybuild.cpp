@@ -83,7 +83,11 @@ class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
         if (isLeafNode)
             return new CPOCWriteNode(_fpos, _keyHdr, isLeafNode);
         else
-            return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+            return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode, false);
+    }
+    virtual CBlobWriteNode *createBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) const override
+    {
+        return new CBlobWriteNode(_fpos, _keyHdr, false);
     }
     virtual offset_t queryBranchMemorySize() const override
     {
@@ -100,7 +104,11 @@ class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
     virtual const char *queryName() const override { return "Legacy"; }
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
     {
-        return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+        return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode, false);
+    }
+    virtual CBlobWriteNode *createBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) const override
+    {
+        return new CBlobWriteNode(_fpos, _keyHdr, false);
     }
     virtual offset_t queryBranchMemorySize() const override
     {

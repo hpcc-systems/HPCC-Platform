@@ -121,6 +121,7 @@ enum CompressionType : byte
     // Additional compression formats can be added here...
     SplitPayload = 1,         // A proof-of-concept using separate compression blocks for keyed fields vs payload
     InplaceCompression = 2,
+    LZ4Compression = 3,       // Legacy formats, just different compressor
 };
 
 //#pragma pack(1)
@@ -250,7 +251,7 @@ protected:
     size32_t expandedSize = 0;
     char *keyBuf = nullptr;
 
-    static char *expandData(const void *src,size32_t &retsize);
+    char *expandData(const void *src,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
 
@@ -464,7 +465,7 @@ protected:
 
     size32_t compressValue(const char *keyData, size32_t size, char *result);
 public:
-    CLegacyWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode);
+    CLegacyWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode, bool useLZ4);
     ~CLegacyWriteNode();
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
@@ -512,7 +513,7 @@ interface IIndexCompressor : public IInterface
 {
     virtual const char *queryName() const = 0;
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
-    virtual CWriteNode *createBlobNode(offset_t _fpos, CKeyHdr *_keyHdr) const = 0;
+    virtual CBlobWriteNode *createBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) const = 0;
     virtual offset_t queryBranchMemorySize() const = 0;
     virtual offset_t queryLeafMemorySize() const = 0;
 };
