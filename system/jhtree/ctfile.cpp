@@ -1283,7 +1283,7 @@ size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
 
 size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
 {
-    unsigned sizeHere = getTotalBlobSize(offset);
+    unsigned sizeHere = getTotalBlobSize(offset);  // Reads a reversed length - NOT the total size when called from within a single chunk. Bad name
     offset += sizeof(unsigned);
     if (sizeHere > expandedSize - offset)
         sizeHere = expandedSize - offset;
