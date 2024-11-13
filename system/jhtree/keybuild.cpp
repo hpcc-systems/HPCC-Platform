@@ -599,6 +599,7 @@ protected:
         }
         while (size)
         {
+            // Can this ever be reached?
             newBlobNode();
             unsigned __int64 chunkhead = activeBlobNode->add(ptr, size);
             assertex(chunkhead);

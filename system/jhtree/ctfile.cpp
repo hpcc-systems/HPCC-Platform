@@ -1272,7 +1272,7 @@ void CJHTreeBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos
     keyBuf = expandData(data, expandedSize);
 }
 
-size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
+size32_t CJHTreeBlobNode::getBlobSizeRemaining(unsigned offset) const
 {
     assertex(offset < expandedSize);
     unsigned datalen;
@@ -1283,10 +1283,9 @@ size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
 
 size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
 {
-    unsigned sizeHere = getTotalBlobSize(offset);  // Reads a reversed length - NOT the total size when called from within a single chunk. Bad name
+    unsigned blobDataRemaining = getBlobSizeRemaining(offset);  // Read the length field
     offset += sizeof(unsigned);
-    if (sizeHere > expandedSize - offset)
-        sizeHere = expandedSize - offset;
+    unsigned sizeHere = (blobDataRemaining > expandedSize - offset) ? expandedSize - offset : blobDataRemaining;
     memcpy(dst, keyBuf+offset, sizeHere);
     return sizeHere;
 }

@@ -384,7 +384,7 @@ public:
     ~CJHTreeBlobNode ();
 
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
-    size32_t getTotalBlobSize(unsigned offset) const;
+    size32_t getBlobSizeRemaining(unsigned offset) const;
     size32_t getBlobData(unsigned offset, void *dst) const;
 };
 

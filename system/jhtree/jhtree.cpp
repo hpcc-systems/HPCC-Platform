@@ -1487,7 +1487,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
     Owned<const CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx);
-    size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
+    size32_t sizeRemaining = blobNode->getBlobSizeRemaining(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
     byte *finger = ret;
