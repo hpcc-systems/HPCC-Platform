@@ -1610,7 +1610,7 @@ void FileSprayer::commonUpSlaves()
     bool commonByIp = !isContainerized();
 
     offset_t totalSourceFileSize = 0;
-    offset_t threshold = 0x8000 * numSlaves;
+    offset_t threshold = (offset_t)0x8000 * numSlaves;
     ForEachItemIn(i, sources)
     {
         const FilePartInfo & cur = sources.item(i);
