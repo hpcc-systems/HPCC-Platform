@@ -1530,6 +1530,11 @@ public:
         return options;
     }
 
+    virtual unsigned queryElapsedMs() const
+    {
+        return elapsedTimer.elapsedMs();
+    }
+
     const char *queryAuthToken()
     {
         return authToken.str();

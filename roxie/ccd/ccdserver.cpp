@@ -316,6 +316,10 @@ public:
     {
         return ctx->queryOptions();
     }
+    virtual unsigned queryElapsedMs() const override
+    {
+        return ctx->queryElapsedMs();
+    }
     virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) override
     {
         ctx->addAgentsReplyLen(len, duplicates, resends);
@@ -4557,9 +4561,38 @@ public:
             //       But this could still cause too many reply packets on the fastlane
             //       (higher priority output Q), which may cause the activities on the 
             //       low priority output Q to not get service on time.
+
+            int origPriority = (int)ctx->queryOptions().priority;
+            int dynPriority = ctx->queryOptions().dynPriority;
+            if (dynPriority < origPriority)
+            {
+                unsigned newPri = ROXIE_SLA_PRIORITY + ROXIE_HIGH_PRIORITY;
+                switch (dynPriority)
+                {
+                    case 1:
+                        newPri = ROXIE_HIGH_PRIORITY;
+                        break;
+                    case 0:
+                        newPri = ROXIE_LOW_PRIORITY;
+                        break;
+                }
+                p->queryHeader().activityId &= ~ROXIE_PRIORITY_MASK;
+                p->queryHeader().activityId |= newPri;
+            }
+
+            // TODO: perhaps check elapsed every Nth msg ?
+            if ( (dynPriorityAdjustTime > 0) && (origPriority == 0) && (dynPriority == 0) &&
+                 (ctx->queryElapsedMs() > dynPriorityAdjustTime) )
+            {
+                ctx->queryOptions().dynPriority = -1;
+                UWARNLOG("WARNING: %d msec dynamic adjustment threshold reached, shifting query to BG queue", dynPriorityAdjustTime);
+                p->queryHeader().activityId |= (ROXIE_SLA_PRIORITY + ROXIE_HIGH_PRIORITY);
+                // TODO: what to do about still running activities' continuation/ack priorities ?
+            }
+
             unsigned pmask = p->queryHeader().activityId & ROXIE_PRIORITY_MASK;
             if ((colocalArg == 0) &&     // not a child query activity??
-                    (pmask && (pmask != ROXIE_PRIORITY_MASK)) &&
+                    (pmask && (pmask != (ROXIE_SLA_PRIORITY + ROXIE_HIGH_PRIORITY))) &&
                     (p->queryHeader().overflowSequence == 0) &&
                     (p->queryHeader().continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)==0)
                 p->queryHeader().retries |= ROXIE_FASTLANE;
@@ -5014,7 +5047,18 @@ public:
         mu.clear();
         SimpleActivityTimer t(unpackerWaitCycles, timeActivities);
         unsigned ctxTraceLevel = activity.queryLogCtx().queryTraceLevel();
-        unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
+
+        unsigned timeout = lowTimeout;
+        switch (activity.queryContext()->queryOptions().dynPriority)
+        {
+            case 2:
+                timeout = slaTimeout;
+                break;
+            case 1:
+                timeout = highTimeout;
+                break;
+        }
+
         unsigned checkInterval = activity.queryContext()->checkInterval();
         if (checkInterval > timeout)
             checkInterval = timeout;

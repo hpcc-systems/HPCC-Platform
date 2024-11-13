@@ -80,8 +80,8 @@ public:
     void setFromContext(const IPropertyTree *ctx);
     void setFromAgentLoggingFlags(unsigned loggingFlags);
 
-
     unsigned priority;
+    mutable int dynPriority;
     unsigned timeLimit;
     unsigned warnTimeLimit;
     unsigned traceLimit;

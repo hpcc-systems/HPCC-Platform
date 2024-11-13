@@ -319,6 +319,7 @@ protected:
 QueryOptions::QueryOptions()
 {
     priority = 0;
+    dynPriority = 0;
     timeLimit = defaultTimeLimit[0];
     warnTimeLimit = defaultWarnTimeLimit[0];
 
@@ -358,6 +359,7 @@ QueryOptions::QueryOptions()
 QueryOptions::QueryOptions(const QueryOptions &other)
 {
     priority = other.priority;
+    dynPriority = other.dynPriority;
     timeLimit = other.timeLimit;
     warnTimeLimit = other.warnTimeLimit;
 
@@ -400,10 +402,12 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(priority, wu, "priority");
     if (stateInfo)
         updateFromContext(priority, stateInfo, "@priority");
+    dynPriority = priority;
     if ((int)priority < 0)
     {
-        timeLimit = defaultTimeLimit[3];
-        warnTimeLimit = defaultWarnTimeLimit[3];
+        // use LOW queue time limits ...
+        timeLimit = defaultTimeLimit[0];
+        warnTimeLimit = defaultWarnTimeLimit[0];
     }
     else
     {
@@ -494,6 +498,31 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
     if (ctx)
     {
         // Note: priority cannot be set at context level
+        // b/c this is after activities have been created, but we could
+        // dynamically adj priority in the header activityId before sending
+        int tmpPriority;
+        updateFromContext(tmpPriority, ctx, "@priority", "_Priority");
+        if (tmpPriority > 1)
+            tmpPriority = 1;
+        if (tmpPriority < -1)
+            tmpPriority = -1;
+
+        if (tmpPriority < (int)priority)
+        {
+            dynPriority = tmpPriority;
+            if (dynPriority < 0)
+            {
+                // use LOW queue time limits ...
+                timeLimit = defaultTimeLimit[0];
+                warnTimeLimit = defaultWarnTimeLimit[0];
+            }
+            else
+            {
+                timeLimit = defaultTimeLimit[dynPriority];
+                warnTimeLimit = defaultWarnTimeLimit[dynPriority];
+            }
+        }
+
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
         updateFromContextM(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");

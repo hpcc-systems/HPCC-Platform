@@ -75,6 +75,7 @@ unsigned numRequestArrayThreads = 5;
 bool blockedLocalAgent = true;
 bool acknowledgeAllRequests = true;
 unsigned packetAcknowledgeTimeout = 100;
+unsigned dynPriorityAdjustTime = 0;   // default off (0)
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
@@ -164,8 +165,8 @@ int backgroundCopyPrio = 0;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
-unsigned defaultTimeLimit[4] = {0, 0, 0, 0};
-unsigned defaultWarnTimeLimit[4] = {0, 5000, 5000, 10000};
+unsigned defaultTimeLimit[3] = {0, 0, 0};
+unsigned defaultWarnTimeLimit[3] = {0, 5000, 5000};
 unsigned defaultThorConnectTimeout;
 
 unsigned defaultParallelJoinPreload = 0;
@@ -1007,6 +1008,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 0);
         packetAcknowledgeTimeout = topology->getPropInt("@packetAcknowledgeTimeout", packetAcknowledgeTimeout);
+        dynPriorityAdjustTime = topology->getPropInt("@dynPriorityAdjustTime", 0);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));
@@ -1169,11 +1171,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         defaultTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeLimit", 0);
         defaultTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeLimit", 0);
         defaultTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeLimit", 0);
-        defaultTimeLimit[3] = (unsigned) topology->getPropInt64("@defaultBGPriorityTimeLimit", 0);
         defaultWarnTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeWarning", 0);
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
-        defaultWarnTimeLimit[3] = (unsigned) topology->getPropInt64("@defaultBGPriorityTimeWarning", 0);
         defaultThorConnectTimeout = (unsigned) topology->getPropInt64("@defaultThorConnectTimeout", 60);
         continuationCompressThreshold = (unsigned) topology->getPropInt64("@continuationCompressThreshold", 1024);
 

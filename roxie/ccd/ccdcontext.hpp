@@ -54,6 +54,7 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
     virtual const QueryOptions &queryOptions() const = 0;
+    virtual unsigned queryElapsedMs() const = 0;
     virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) = 0;
     virtual const char *queryAuthToken() = 0;
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser) = 0;
