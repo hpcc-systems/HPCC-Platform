@@ -318,7 +318,8 @@ protected:
 
 QueryOptions::QueryOptions()
 {
-    priority = 0;
+    priority = QUERY_LOW_PRIORITY_VALUE;
+    dynPriority = QUERY_LOW_PRIORITY_VALUE;
     timeLimit = defaultTimeLimit[0];
     warnTimeLimit = defaultWarnTimeLimit[0];
 
@@ -358,6 +359,7 @@ QueryOptions::QueryOptions()
 QueryOptions::QueryOptions(const QueryOptions &other)
 {
     priority = other.priority;
+    dynPriority = other.dynPriority.load();
     timeLimit = other.timeLimit;
     warnTimeLimit = other.warnTimeLimit;
 
@@ -394,13 +396,10 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     numWorkflowThreads = other.numWorkflowThreads;
 }
 
-void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
+void QueryOptions::updateDynPriority(int _priority)
 {
-    // calculate priority before others since it affects the defaults of others
-    updateFromWorkUnit(priority, wu, "priority");
-    if (stateInfo)
-        updateFromContext(priority, stateInfo, "@priority");
-    if ((int)priority < 0)
+    dynPriority = _priority;
+    if (dynPriority < QUERY_LOW_PRIORITY_VALUE)
     {
         // use LOW queue time limits ...
         timeLimit = defaultTimeLimit[0];
@@ -408,9 +407,20 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     }
     else
     {
-        timeLimit = defaultTimeLimit[priority];
-        warnTimeLimit = defaultWarnTimeLimit[priority];
+        timeLimit = defaultTimeLimit[_priority];
+        warnTimeLimit = defaultWarnTimeLimit[_priority];
     }
+}
+
+void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
+{
+    // calculate priority before others since it affects the defaults of others
+    updateFromWorkUnit(priority, wu, "priority");
+    if (stateInfo)
+        updateFromContext(priority, stateInfo, "@priority");
+
+    updateDynPriority((int)priority);
+
     updateFromWorkUnit(timeLimit, wu, "timeLimit");
     updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
     updateFromWorkUnitM(memoryLimit, wu, "memoryLimit");
@@ -495,6 +505,20 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
     if (ctx)
     {
         // Note: priority cannot be set at context level
+        // b/c this is after activities have been created, but we could
+        // dynamically adj priority in the header activityId before sending
+        int tmpPriority = (int)priority;
+        updateFromContext(tmpPriority, ctx, "@priority", "_Priority");
+
+        if (tmpPriority > queryMaxPriorityValue)
+            tmpPriority = queryMaxPriorityValue;
+        if (tmpPriority < queryMinPriorityValue)
+            tmpPriority = queryMinPriorityValue;
+
+        // only adjust lower ...
+        if (tmpPriority < (int)priority)
+            updateDynPriority(tmpPriority);
+
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
         updateFromContextM(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
@@ -624,15 +648,9 @@ protected:
 
         if (isSuspended)
             return createRoxieServerDummyActivityFactory(id, subgraphId, *this, NULL, TAKnone, node, false); // Is there actually any point?
-        switch (options.priority)
-        {
-        case 1:
-            rid |= ROXIE_HIGH_PRIORITY;
-            break;
-        case 2:
-            rid |= ROXIE_SLA_PRIORITY;
-            break;
-        }
+
+        rid |= getPriorityMask(options.priority);
+
         StringBuffer helperName;
         helperName.append("fAc").append(id);
         HelperFactory *helperFactory = dll->getFactory(helperName);

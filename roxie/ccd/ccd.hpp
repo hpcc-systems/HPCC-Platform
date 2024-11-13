@@ -82,6 +82,13 @@ void setMulticastEndpoints(unsigned numChannels);
 #define ROXIE_BG_PRIORITY 0xc0000000     // mask in activityId indicating it goes on the bg queue
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
 
+#define QUERY_BG_PRIORITY_VALUE  -1
+#define QUERY_LOW_PRIORITY_VALUE  0
+#define QUERY_HIGH_PRIORITY_VALUE 1
+#define QUERY_SLA_PRIORITY_VALUE  2
+static constexpr int queryMinPriorityValue = QUERY_BG_PRIORITY_VALUE;
+static constexpr int queryMaxPriorityValue = QUERY_SLA_PRIORITY_VALUE;
+
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
 
 // Status information returned in the activityId field of the header:
@@ -305,6 +312,7 @@ extern StringArray allQuerySetNames;
 extern bool blockedLocalAgent;
 extern bool acknowledgeAllRequests;
 extern unsigned packetAcknowledgeTimeout;
+extern cycle_t dynPriorityAdjustCycles;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
@@ -334,8 +342,8 @@ extern unsigned memoryStatsInterval;
 extern unsigned pingInterval;
 extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
-extern unsigned defaultTimeLimit[4];
-extern unsigned defaultWarnTimeLimit[4];
+extern unsigned defaultTimeLimit[3];
+extern unsigned defaultWarnTimeLimit[3];
 extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
@@ -483,6 +491,8 @@ inline unsigned getBondedChannel(unsigned partNo)
 {
     return ((partNo - 1) % numChannels) + 1;
 }
+
+extern unsigned getPriorityMask(int priority);
 
 extern void FatalError(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 extern unsigned getNextInstanceId();
