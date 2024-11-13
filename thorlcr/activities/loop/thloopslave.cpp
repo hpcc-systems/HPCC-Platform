@@ -306,13 +306,27 @@ public:
                 {
                     OwnedConstThorRow ret;
                     {
-                        LookAheadTimer t(slaveTimerStats, timeActivities);
-                        ret.setown(curInput->nextRow());
-                        if (!ret)
+                        if (loopCounter==1)
                         {
-                            ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                            // the time used in first iteration is lookahead time
+                            LookAheadTimer t(slaveTimerStats, timeActivities);
+                            ret.setown(curInput->nextRow());
                             if (!ret)
-                                break;
+                            {
+                                ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                                if (!ret)
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            ret.setown(curInput->nextRow());
+                            if (!ret)
+                            {
+                                ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                                if (!ret)
+                                    break;
+                            }
                         }
                     }
 
