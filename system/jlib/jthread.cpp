@@ -995,6 +995,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     unsigned stacksize;
     unsigned timeoutOnRelease;
     unsigned traceStartDelayPeriod = 0;
+    int niceValue = 0;
     unsigned startsInPeriod = 0;
     cycle_t startDelayInPeriod = 0;
     CCycleTimer overAllTimer;
@@ -1114,6 +1115,8 @@ public:
         CPooledThreadWrapper &ret = *new CPooledThreadWrapper(*this,newid,factory->createNew());
         if (stacksize)
             ret.setStackSize(stacksize);
+        if (niceValue)
+            ret.setNice(niceValue);
         ret.start(false);
         threadwrappers.append(ret);
         return ret;
@@ -1280,6 +1283,10 @@ public:
     void setStartDelayTracing(unsigned secs)
     {
         traceStartDelayPeriod = secs;
+    }
+    void setNiceValue(int value)
+    {
+        niceValue = value;
     }
     bool waitAvailable(unsigned timeout)
     {
