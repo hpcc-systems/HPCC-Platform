@@ -245,6 +245,27 @@ extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_ty
     return writeCost;
 }
 
+
+extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type numDiskReads, cost_type curReadCost)
+{
+    const IPropertyTree & fileAttr = file->queryAttributes();
+
+    if (!curReadCost)
+        curReadCost = calcFileAccessCost(file, 0, numDiskReads);
+    cost_type legacyReadCost = 0;
+    if (!fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
+    {
+        if (!isFileKey(fileAttr))
+        {
+            stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            legacyReadCost = calcFileAccessCost(file, 0, prevDiskReads);
+        }
+    }
+    file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
+    file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), numDiskReads);
+    return curReadCost;
+}
+
 // JCSMORE - I suspect this function should be removed/deprecated. It does not deal with dirPerPart or striping.
 // makePhysicalPartName supports both, but does not deal with groups/endpoints)
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
@@ -4990,47 +5011,23 @@ public:
         double fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
         double sizeGB = getDiskSize(true, false) / ((double)1024 * 1024 * 1024);
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        bool doLegacyCostCalc = false;
-        __int64 numDiskWrites = 0, numDiskReads = 0;
-        cost_type readCost = 0, writeCost = 0;
-        if (attrs)
-        {
-            if (!attrs->hasProp(getDFUQResultFieldName(DFUQRFreadCost))&& !isFileKey(*attrs))
-            {
-                numDiskReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
-                doLegacyCostCalc = true;
-            }
-            else
-                readCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
 
-            if (!attrs->hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
-            {
-                numDiskWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
-                doLegacyCostCalc = true;
-            }
-            else
-                writeCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
-        }
-        accessCost = readCost + writeCost; // access cost excluding legacy costs (to be added below)
         if (isEmptyString(cluster))
         {
             StringArray clusterNames;
             unsigned countClusters = getClusterNames(clusterNames);
+            atRestCost = 0;
             for (unsigned i = 0; i < countClusters; i++)
                 atRestCost += calcFileAtRestCost(clusterNames[i], sizeGB, fileAgeDays);
-            if (countClusters && doLegacyCostCalc)
-            {
-                // NB: numDiskReads/numDiskWrites are stored at the file level, not per cluster.
-                // So cannot calculate accessCost per cluster, assume cost is based on 1st.
-                accessCost += calcFileAccessCost(clusterNames[0], numDiskWrites, numDiskReads);
-            }
+            if (countClusters)
+                cluster = clusterNames[0];
         }
         else
         {
-            atRestCost += calcFileAtRestCost(cluster, sizeGB, fileAgeDays);
-            if (doLegacyCostCalc)
-                accessCost += calcFileAccessCost(cluster, numDiskWrites, numDiskReads);
+            atRestCost = calcFileAtRestCost(cluster, sizeGB, fileAgeDays);
         }
+        if (attrs)
+            accessCost = getReadCost(*attrs, cluster) + getWriteCost(*attrs, cluster);
     }
 };
 
@@ -13459,25 +13456,10 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             cost_type atRestCost = calcFileAtRestCost(nodeGroup, sizeGB, fileAgeDays);
             file->setPropInt64(getDFUQResultFieldName(DFUQRFatRestCost), atRestCost);
 
-            // Dyamically calc and set the access cost field and for legacy files set read/write cost fields
-            cost_type readCost = file->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
-            if (!readCost)
-            {
-                readCost = getLegacyReadCost(*file, nodeGroup);
-                file->setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
-            }
-
-            cost_type writeCost = file->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
-            if (!writeCost)
-            {
-                cost_type writeCost = getLegacyWriteCost(*file, nodeGroup);
-                file->setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
-            }
+            cost_type readCost = getReadCost(*file, nodeGroup, true);
+            cost_type writeCost = getWriteCost(*file, nodeGroup, true);
             cost_type accessCost = readCost + writeCost;
-
             file->setPropInt64(getDFUQResultFieldName(DFUQRFaccessCost), accessCost);
-
-            // Dymically calc and set the total cost field
             file->setPropInt64(getDFUQResultFieldName(DFUQRFcost), atRestCost + accessCost);
         }
 
