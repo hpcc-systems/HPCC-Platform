@@ -620,15 +620,22 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.ComponentsFilter"
                 render={({
-                    field: { onChange, name: fieldName }
+                    field: { onChange, name: fieldName, value }
                 }) => <CloudContainerNameField
                         name={fieldName}
-                        onChange={(_evt, option, _idx, value) => {
-                            if (option?.key) {
-                                onChange(option.key);
+                        selectedKey={value}
+                        onChange={(_evt, option, _idx, _value) => {
+                            const selectedKeys = value ? [...value] : [];
+                            const selected = option?.key ?? _value;
+                            const index = selectedKeys.indexOf(selected.toString());
+
+                            if (index === -1) {
+                                selectedKeys.push(selected.toString());
                             } else {
-                                onChange(value);
+                                selectedKeys.splice(index, 1);
                             }
+
+                            onChange(selectedKeys);
                         }}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
