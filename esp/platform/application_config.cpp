@@ -64,7 +64,7 @@ IPropertyTree *loadApplicationConfig(const char *application, const char* argv[]
         appendPTreeFromYamlFile(defaultConfig, application_dir->query().queryFilename(), true);
 
     //apply provided config to the application
-    Owned<IPropertyTree> config = loadConfiguration(defaultConfig, argv, "esp", "ESP", nullptr, nullptr);
+    Owned<IPropertyTree> config = loadConfiguration(defaultConfig, nullptr, argv, "esp", "ESP", nullptr, nullptr);
 
     return config.getClear();
 }
