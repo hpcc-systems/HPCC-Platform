@@ -360,7 +360,7 @@ void AzureFileWriteIO::flush()
 
 AzureFileAppendBlobWriteIO::AzureFileAppendBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
 {
-    file->createBlockBlob();
+    file->createAppendBlob();
 }
 
 void AzureFileAppendBlobWriteIO::close()
@@ -404,7 +404,7 @@ size32_t AzureFileAppendBlobWriteIO::write(offset_t pos, size32_t len, const voi
 
 AzureFileBlockBlobWriteIO::AzureFileBlockBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
 {
-    file->createAppendBlob();
+    file->createBlockBlob();
 }
 
 void AzureFileBlockBlobWriteIO::close()
@@ -459,12 +459,15 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 
         StringBuffer planeName(slash-filename, filename);
         Owned<IPropertyTree> plane = getStoragePlane(planeName);
+        if (!plane)
+            throw makeStringExceptionV(99, "Unknown storage plane %s", planeName.str());
+
         const char * api = plane->queryProp("storageapi/@type");
         if (!api)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
 
-        constexpr size_t lenPrefix = strlen(azureBlobPrefix);
-        if ((strncmp(api, azureBlobPrefix, lenPrefix-1) != 0) || api[lenPrefix-1] != ':')
+        StringBuffer azureBlobAPI(strlen(azureBlobPrefix) - 1, azureBlobPrefix);
+        if (!strieq(api, azureBlobAPI.str()))
             throw makeStringExceptionV(99, "Storage api for plane %s is not azureblob", planeName.str());
 
         unsigned numDevices = plane->getPropInt("@numDevices", 1);
@@ -624,8 +627,8 @@ bool AzureFile::createDirectory()
     {
         Azure::Response<Models::CreateBlobContainerResult> result = blobContainerClient->CreateIfNotExists();
         if (result.Value.Created==false)
-            OERRLOG("Azure create container: container not created");
-        return result.Value.Created;
+            DBGLOG("AzureFile::createDirectory: container not created because it already exists");
+        return true;
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
@@ -1096,7 +1099,7 @@ protected:
     {
         if (startsWith(fileName, azureBlobPrefix))
             return true;
-        if (startsWith(fileName, azureFilePrefix))
+        if (!startsWith(fileName, azureFilePrefix))
             return false;
         const char * filename = fileName + strlen(azureFilePrefix);
         const char * slash = strchr(filename, '/');
