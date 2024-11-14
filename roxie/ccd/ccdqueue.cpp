@@ -1936,7 +1936,7 @@ public:
         loQueue.start();
         hiQueue.start();
         slaQueue.start();
-        bgQueue.start();
+        bgQueue.start(); // consider nice(+3) BG threads
     }
 
     virtual void stop() 

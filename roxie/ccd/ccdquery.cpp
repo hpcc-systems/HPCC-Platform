@@ -402,8 +402,9 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
         updateFromContext(priority, stateInfo, "@priority");
     if ((int)priority < 0)
     {
-        timeLimit = defaultTimeLimit[3];
-        warnTimeLimit = defaultWarnTimeLimit[3];
+        // use LOW queue time limits ...
+        timeLimit = defaultTimeLimit[0];
+        warnTimeLimit = defaultWarnTimeLimit[0];
     }
     else
     {
