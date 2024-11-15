@@ -8696,13 +8696,13 @@ static void holdLoop()
 }
 #endif
 
-static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute);
+static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute);
 
 class CConfigUpdater : public CInterface
 {
     StringAttr absoluteConfigFilename;
     StringAttr configFilename;
-    Linked<IPropertyTree> componentDefault;
+    Linked<IPropertyTree> componentDefault, globalDefault;
     StringArray args;
     StringAttr componentTag, envPrefix, legacyFilename;
     IPropertyTree * (*mapper)(IPropertyTree *);
@@ -8721,11 +8721,12 @@ public:
     {
         return args.ordinality(); // NB: null terminated, so always >=1 if initialized
     }
-    void init(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
+    void init(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, IPropertyTree *_globalDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
     {
         dbgassertex(!isInitialized());
         absoluteConfigFilename.set(_absoluteConfigFilename);
         componentDefault.set(_componentDefault);
+        globalDefault.set(_globalDefault);
         componentTag.set(_componentTag);
         envPrefix.set(_envPrefix);
         legacyFilename.set(_legacyFilename);
@@ -8761,7 +8762,7 @@ public:
 #endif
             if (changed)
             {
-                auto result = doLoadConfiguration(componentDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+                auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
 
                 // NB: block calls to get*Config*() until callbacks notified and new swapped in
                 CriticalBlock b(configCS);
@@ -8913,10 +8914,10 @@ void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhen
 }
 
 
-static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
+static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
 {
     Owned<IPropertyTree> newComponentConfig = createPTreeFromIPT(componentDefault);
-    Owned<IPropertyTree> newGlobalConfig;
+    Linked<IPropertyTree> newGlobalConfig = globalDefault ? createPTreeFromIPT(globalDefault) : nullptr;
     StringBuffer absConfigFilename;
     const char * optConfig = nullptr;
     bool outputConfig = false;
@@ -8979,6 +8980,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     }
     absConfigFilename.append(config);
 
+    Owned<IPropertyTree> configGlobal;
     Owned<IPropertyTree> delta;
     if (optConfig)
     {
@@ -8989,7 +8991,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
         if (!isEmptyString(optConfig))
         {
             delta.setown(loadConfiguration(absConfigFilename, componentTag, true, altNameAttribute));
-            newGlobalConfig.setown(loadConfiguration(absConfigFilename, "global", false, altNameAttribute));
+            configGlobal.setown(loadConfiguration(absConfigFilename, "global", false, altNameAttribute));
         }
     }
     else
@@ -8997,11 +8999,19 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
         if (legacyFilename && checkFileExists(legacyFilename))
         {
             delta.setown(createPTreeFromXMLFile(legacyFilename, ipt_caseInsensitive));
-            newGlobalConfig.set(delta->queryPropTree("global"));
+            configGlobal.set(delta->queryPropTree("global"));
         }
 
         if (delta && mapper)
             delta.setown(mapper(delta));
+    }
+
+    if (configGlobal)
+    {
+        if (newGlobalConfig)
+            mergeConfiguration(*newGlobalConfig, *configGlobal);
+        else
+            newGlobalConfig.setown(configGlobal.getClear());
     }
 
     if (delta)
@@ -9046,13 +9056,13 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     return std::make_tuple(std::string(absConfigFilename.str()), newComponentConfig.getClear(), newGlobalConfig.getClear());
 }
 
-jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
+jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
 {
     assertex(configFileUpdater); // NB: loadConfiguration should always be called after configFileUpdater is initialized
     if (configFileUpdater->isInitialized())
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
 
-    auto result = doLoadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+    auto result = doLoadConfiguration(componentDefault, globalDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
 
     componentConfiguration.setown(std::get<1>(result));
     globalConfiguration.setown(std::get<2>(result));
@@ -9072,7 +9082,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
      * installed config hooks to be called when an environment change is detected e.g when pushed to Dali)
      */
 
-    configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+    configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, globalDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
         configFileUpdater->startMonitoring();
 
@@ -9086,17 +9096,19 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
 
     Owned<IPropertyTree> componentDefault;
+    Owned<IPropertyTree> defaultGlobalConfig;
     if (defaultYaml)
     {
         Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
         componentDefault.set(defaultConfig->queryPropTree(componentTag));
         if (!componentDefault)
             throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+        defaultGlobalConfig.set(defaultConfig->queryPropTree("global"));
     }
     else
         componentDefault.setown(createPTree(componentTag));
 
-    return loadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute, monitor);
+    return loadConfiguration(componentDefault, defaultGlobalConfig, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute, monitor);
 }
 
 void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig)

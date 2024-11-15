@@ -407,7 +407,7 @@ int main( int argc, const char *argv[]  )
 #ifdef _CONTAINERIZED
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #else
-        globals.setown(loadConfiguration(globals, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
+        globals.setown(loadConfiguration(globals, nullptr, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #endif
 
         // NB: the thor configuration is serialized from the manager and only available after RegisterSelf
