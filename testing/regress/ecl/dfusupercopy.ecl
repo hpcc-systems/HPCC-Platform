@@ -31,7 +31,13 @@ ds1 := DATASET([{'Ned'},{'Robert'}, {'Jaime'}, {'Catelyn'}, {'Cersei'}, {'Daener
 ds2 := DATASET([{'Sansa'}, {'Arya'}, {'Robb'}, {'Theon'}, {'Bran'}, {'Joffrey'}, {'Hound'}, {'Tyrion'}], layout_user, DISTRIBUTED);
 ds3 := DATASET([{'Arya'}, {'Robb'}, {'Theon'}, {'Bran'}, {'Joffrey'}, {'Hound'}, {'Tyrion'}], layout_user, DISTRIBUTED);
 
-dsSuperData := DATASET(prefix+'superdata', layout_user, FLAT);
+dsSuperSource := DATASET(prefix+'superdata', layout_user, FLAT);
+dsSuperTarget := DATASET(prefix+'super_copy', layout_user, FLAT);
+
+checkRecords := COUNT(COMBINE(dsSuperSource, dsSuperTarget,
+                      TRANSFORM(layout_user,
+                              SELF.USER := IF(LEFT.USER=RIGHT.USER, LEFT.USER, ERROR('records do not match'))),
+                      LOCAL, STABLE));
 
 SEQUENTIAL(
     OUTPUT(ds1, , prefix + 'subdata1', OVERWRITE),
@@ -44,7 +50,7 @@ SEQUENTIAL(
     FileServices.AddSuperFile(prefix + 'superdata', prefix + 'subdata3'),
     FileServices.FinishSuperFileTransaction(),
     FileServices.Copy(sourceLogicalName := prefix + 'superdata', destinationGroup := '', destinationLogicalName := prefix + 'super_copy', ALLOWOVERWRITE := true),
-    OUTPUT(SORT(dsSuperData, user), NAMED('superdata')),
+    checkRecords,
     FileServices.DeleteLogicalFile(prefix + 'super_copy', true),
     FileServices.DeleteLogicalFile(prefix + 'superdata', true),
     FileServices.DeleteLogicalFile(prefix + 'subdata1', true),
