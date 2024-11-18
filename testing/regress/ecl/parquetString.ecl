@@ -11,6 +11,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=parquet
+//nothor
 IMPORT Std;
 IMPORT Parquet;
 

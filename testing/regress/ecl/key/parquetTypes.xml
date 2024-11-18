@@ -2,17 +2,7 @@
  <Row><BooleanTest>Pass</BooleanTest></Row>
 </Dataset>
 <Dataset name='IntegerTest'>
- <Row><testid>10</testid><testname>min</testname><isequal>true</isequal></Row>
- <Row><testid>11</testid><testname>max</testname><isequal>true</isequal></Row>
- <Row><testid>12</testid><testname>afa</testname><isequal>true</isequal></Row>
- <Row><testid>13</testid><testname>afb</testname><isequal>true</isequal></Row>
- <Row><testid>14</testid><testname>afc</testname><isequal>true</isequal></Row>
- <Row><testid>15</testid><testname>afp</testname><isequal>true</isequal></Row>
- <Row><testid>16</testid><testname>afq</testname><isequal>true</isequal></Row>
- <Row><testid>17</testid><testname>afr</testname><isequal>true</isequal></Row>
- <Row><testid>110</testid><testname>acg</testname><isequal>true</isequal></Row>
- <Row><testid>113</testid><testname>acj</testname><isequal>true</isequal></Row>
- <Row><testid>114</testid><testname>ack</testname><isequal>true</isequal></Row>
+ <Row><IntegerTest>Pass</IntegerTest></Row>
 </Dataset>
 <Dataset name='UnsignedTest'>
  <Row><UnsignedTest>Pass</UnsignedTest></Row>
@@ -40,13 +30,4 @@
 </Dataset>
 <Dataset name='UnicodeTest'>
  <Row><UnicodeTest>Pass</UnicodeTest></Row>
-</Dataset>
-<Dataset name='SetOfUnicodeTest'>
- <Row><SetOfUnicodeTest>Pass</SetOfUnicodeTest></Row>
-</Dataset>
-<Dataset name='FixedSizeBinaryTest'>
- <Row><FixedSizeBinaryTest>Pass</FixedSizeBinaryTest></Row>
-</Dataset>
-<Dataset name='LargeBinaryTest'>
- <Row><LargeBinaryTest>Pass</LargeBinaryTest></Row>
 </Dataset>

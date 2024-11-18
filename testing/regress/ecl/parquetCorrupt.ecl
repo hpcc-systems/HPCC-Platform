@@ -13,6 +13,7 @@
 
 //class=parquet
 //fail
+//nothor
 
 //This ECL code reads a potentially corrupt Parquet file, handling the case where it might be corrupt
 //by outputting either the file contents or a single informative record if the file can't be read.

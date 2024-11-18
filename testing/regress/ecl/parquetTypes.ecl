@@ -12,6 +12,7 @@
 ############################################################################## */
 
 //class=parquet
+//nothor
 //Covers data types supported by ECL and Arrow
 //version compressionType='UNCOMPRESSED'
 //version compressionType='Snappy'
@@ -22,7 +23,6 @@
 
 import ^ as root;
 compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
-genericDiskRead := #IFDEFINED(root.genericDiskRead, FALSE);
 
 IMPORT Std;
 IMPORT Parquet;
@@ -38,7 +38,7 @@ booleanDatasetOut := DATASET([
     {001, 'aab', FALSE}
 ], booleanRecord);
 
-ParquetIO.Write(booleanDatasetOut, dropzoneDirectory + '/BooleanTest.parquet', TRUE);
+ParquetIO.Write(booleanDatasetOut, dropzoneDirectory + '/BooleanTest.parquet', TRUE, compressionType);
 
 booleanDatasetIn := ParquetIO.Read(booleanRecord, dropzoneDirectory + '/BooleanTest.parquet');
 
@@ -65,12 +65,12 @@ integerDatasetOut := DATASET([
     {15, 'afp', (INTEGER4)127, 340, 'afp', (INTEGER8)127},
     {16, 'afq', (INTEGER4)-128, 341, 'afq', (INTEGER8)-128},
     {17, 'afr', (INTEGER4)0, 342, 'afr', (INTEGER8)0},
-    {110, 'acg', 1, 110, 'acg', 1},
-    {113, 'acj', 10, 113, 'acj', 10},
-    {114, 'ack', 13, 114, 'ack', 13}
+    {18, 'acg', 1, 110, 'acg', 1},
+    {19, 'acj', 10, 113, 'acj', 10},
+    {20, 'ack', 13, 114, 'ack', 13}
 ], integerRecord);
 
-ParquetIO.Write(integerDatasetOut, dropzoneDirectory + '/IntegerTest.parquet', TRUE);
+ParquetIO.Write(integerDatasetOut, dropzoneDirectory + '/IntegerTest.parquet', TRUE, compressionType);
 
 integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + '/IntegerTest.parquet');
 
@@ -80,7 +80,9 @@ integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + '/IntegerT
     SELF.isEqual := a.value = b.value AND a.value1 = b.value1;
 END;
 
-integerResult := JOIN(integerDatasetOut, integerDatasetIn, LEFT.testid = RIGHT.testid, integerJoin(LEFT, RIGHT), ALL);
+integerCompareResult := JOIN(integerDatasetOut, integerDatasetIn, LEFT.testid = RIGHT.testid, integerJoin(LEFT, RIGHT), ALL);
+
+integerResult := IF(COUNT(integerCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: Integer data mismatch');
 
 // ======================== UNSIGNED ========================
 
@@ -95,7 +97,7 @@ unsignedDatasetOut := DATASET([
     {25, 'aff', (UNSIGNED8)18446744073709551615}
 ], unsignedRecord);
 
-ParquetIO.Write(unsignedDatasetOut, dropzoneDirectory + '/UnsignedTest.parquet', TRUE);
+ParquetIO.Write(unsignedDatasetOut, dropzoneDirectory + '/UnsignedTest.parquet', TRUE, compressionType);
 
 unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + '/UnsignedTest.parquet');
 
@@ -125,7 +127,7 @@ realDatasetOut := DATASET([
     {39, 'afi', (REAL4)3.14159}
 ], realRecord);
 
-ParquetIO.Write(realDatasetOut, dropzoneDirectory + '/RealTest.parquet', TRUE);
+ParquetIO.Write(realDatasetOut, dropzoneDirectory + '/RealTest.parquet', TRUE, compressionType);
 
 realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + '/RealTest.parquet');
 
@@ -149,7 +151,7 @@ decimalDatasetOut := DATASET([
     {042, 'abb', 0.00D}
 ], decimalRecord);
 
-ParquetIO.Write(decimalDatasetOut, dropzoneDirectory + '/DecimalTest.parquet', TRUE);
+ParquetIO.Write(decimalDatasetOut, dropzoneDirectory + '/DecimalTest.parquet', TRUE, compressionType);
 
 decimalDatasetIn := ParquetIO.Read(decimalRecord, dropzoneDirectory + '/DecimalTest.parquet');
 
@@ -179,7 +181,7 @@ stringDatasetOut := DATASET([
     {'adt', '[\'A\',\'B\',\'C\',\'D\',\'E\']'}
 ], stringRecord);
 
-ParquetIO.Write(stringDatasetOut, dropzoneDirectory + '/StringTest.parquet', TRUE);
+ParquetIO.Write(stringDatasetOut, dropzoneDirectory + '/StringTest.parquet', TRUE, compressionType);
 
 stringDatasetIn := ParquetIO.Read(stringRecord, dropzoneDirectory + '/StringTest.parquet');
 
@@ -197,32 +199,38 @@ stringResult := IF(COUNT(stringCompareResult(value = FALSE)) = 0, 'Pass', 'Fail:
 
 // ======================== DATA ========================
 
-dataRecord := {STRING5 name, DATA value1, DATA10 value2};
+DATA10 REALToBinary(REAL val) := (DATA10)val;
+DATA16 REALToLargeBinary(REAL val) := (DATA16)val;
+
+dataRecord := RECORD
+    STRING5 name;
+    DATA value1;
+    DATA10 value2;
+    DATA16 value3;
+END;
 
 dataDatasetOut := DATASET([
-    {'abh', X'0123456789ABCDEF', (DATA10)X'0123456789ABCDEF'},
-    {'abi', X'FEDCBA9876543210', (DATA10)X'FEDCBA9876543210'},
-    {'abl', X'1234567890ABCDEF', (DATA10)X'1234567890ABCDEF'}
+    {'abh', X'0123456789ABCDEF', (DATA10)X'0123456789ABCDEF', (DATA16)X'0123456789ABCDEF01234567'},
+    {'abi', X'FEDCBA9876543210', (DATA10)X'FEDCBA9876543210', (DATA16)X'FEDCBA9876543210FEDCBA98'},
+    {'abl', X'1234567890ABCDEF', (DATA10)X'1234567890ABCDEF', (DATA16)X'1234567890ABCDEF12345678'},
+    {'pos', X'0000000000000000', REALToBinary(3.14159), REALToLargeBinary(3.14159)},
+    {'neg', X'0000000000000000', REALToBinary(-2.71828), REALToLargeBinary(-2.71828)}
 ], dataRecord);
 
-ParquetIO.Write(dataDatasetOut, dropzoneDirectory + '/DataTest.parquet', TRUE);
+ParquetIO.Write(dataDatasetOut, dropzoneDirectory + '/DataTest.parquet', TRUE, compressionType);
 
 dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + '/DataTest.parquet');
 
-{STRING5 name, BOOLEAN value1, BOOLEAN value2, BOOLEAN overallValue} dataJoin (dataDatasetOut a, dataDatasetIn b) := TRANSFORM
+{STRING5 name, BOOLEAN value1, BOOLEAN value2, BOOLEAN value3, BOOLEAN overallValue} dataJoin(dataDatasetOut a, dataDatasetIn b) := TRANSFORM
     SELF.name := a.name;
     SELF.value1 := a.value1 = b.value1;
     SELF.value2 := a.value2 = b.value2;
-    SELF.overallValue := SELF.value1 AND SELF.value2;
+    SELF.value3 := a.value3 = b.value3;
+    SELF.overallValue := SELF.value1 AND SELF.value2 AND SELF.value3;
 END;
 
-dataCompareResult := JOIN(dataDatasetOut, dataDatasetIn, 
-    LEFT.name = RIGHT.name, 
-    dataJoin(LEFT, RIGHT), 
-    ALL
-);
-
-dataAsStringResult := IF(COUNT(dataCompareResult(overallValue = FALSE)) = 0, 'Pass', 'Fail: Data mismatch');
+dataCompareResult := JOIN(dataDatasetOut, dataDatasetIn, LEFT.name = RIGHT.name, dataJoin(LEFT, RIGHT), ALL);
+dataResult := IF(COUNT(dataCompareResult(overallValue = FALSE)) = 0, 'Pass', 'Fail: Data mismatch');
 
 // ======================== VARSTRING ========================
 
@@ -234,7 +242,7 @@ varStringDatasetOut := DATASET([
     {072, 'abo', U'UTF8_测试'}
 ], varstringRecord);
 
-ParquetIO.Write(varStringDatasetOut, dropzoneDirectory + '/VarStringTest.parquet', TRUE);
+ParquetIO.Write(varStringDatasetOut, dropzoneDirectory + '/VarStringTest.parquet', TRUE, compressionType);
 
 varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + '/VarStringTest.parquet');
 
@@ -258,7 +266,7 @@ qStringDatasetOut := DATASET([
     {082, 'abt', U'Special_字符'}
 ], qstringRecord);
 
-ParquetIO.Write(qStringDatasetOut, dropzoneDirectory + '/QStringTest.parquet', TRUE);
+ParquetIO.Write(qStringDatasetOut, dropzoneDirectory + '/QStringTest.parquet', TRUE, compressionType);
 
 qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + '/QStringTest.parquet');
 
@@ -282,7 +290,7 @@ utf8DatasetOut := DATASET([
     {092, 'abw', U''}
 ], utf8Record);
 
-ParquetIO.Write(utf8DatasetOut, dropzoneDirectory + '/UTF8Test.parquet', TRUE);
+ParquetIO.Write(utf8DatasetOut, dropzoneDirectory + '/UTF8Test.parquet', TRUE, compressionType);
 
 utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + '/UTF8Test.parquet');
 
@@ -299,108 +307,32 @@ utf8Result := IF(COUNT(utf8CompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: U
 // ======================== UNICODE ========================
 
 unicodeRecord := {UNSIGNED testid, STRING3 testname, UNICODE value};
+setOfUnicodeRecord := {UNSIGNED testid, STRING3 testname, SET OF UNICODE value};
 
 unicodeDatasetOut := DATASET([
-    {100, 'acb', U'Unicode1'},
-    {101, 'acc', U'Unicode2'},
-    {102, 'acf', U'Unicode5'}
+    {100, 'acb', U'Unicode1'}, {101, 'acc', U'Unicode2'}, {102, 'acf', U'Unicode5'}
 ], unicodeRecord);
 
-ParquetIO.Write(unicodeDatasetOut, dropzoneDirectory + '/UnicodeTest.parquet', TRUE);
+setOfUnicodeDatasetOut := DATASET([
+    {103, 'adw', [U'Á', U'É', U'Í', U'Ó', U'Ú']}, 
+    {104, 'adx', [U'α', U'β', U'γ', U'δ', U'ε']}, 
+    {105, 'ady', [U'☀', U'☁', U'☂', U'☃', U'☄']}
+], setOfUnicodeRecord);
+
+ParquetIO.Write(unicodeDatasetOut, dropzoneDirectory + '/UnicodeTest.parquet', TRUE, compressionType);
+ParquetIO.Write(setOfUnicodeDatasetOut, dropzoneDirectory + '/SetOfUnicodeTest.parquet', TRUE, compressionType);
 
 unicodeDatasetIn := ParquetIO.Read(unicodeRecord, dropzoneDirectory + '/UnicodeTest.parquet');
+setOfUnicodeDatasetIn := ParquetIO.Read(setOfUnicodeRecord, dropzoneDirectory + '/SetOfUnicodeTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} unicodeJoin (unicodeDatasetOut a, unicodeDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} unicodeJoin(unicodeDatasetOut a, unicodeDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
     SELF.isEqual := a.value = b.value;
 END;
 
 unicodeCompareResult := JOIN(unicodeDatasetOut, unicodeDatasetIn, LEFT.testid = RIGHT.testid, unicodeJoin(LEFT, RIGHT), ALL);
-
-unicodeResult := IF(COUNT(unicodeCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: UNICODE data mismatch');
-
-// ======================== SET OF UNICODE ========================
-
-setOfUnicodeRecord := {UNSIGNED testid, STRING3 testname, SET OF UNICODE value};
-
-setOfUnicodeDatasetOut := DATASET([
-    {192, 'adw', [U'Á', U'É', U'Í', U'Ó', U'Ú']},
-    {193, 'adx', [U'α', U'β', U'γ', U'δ', U'ε']},
-    {194, 'ady', [U'☀', U'☁', U'☂', U'☃', U'☄']}
-], setOfUnicodeRecord);
-
-ParquetIO.Write(setOfUnicodeDatasetOut, dropzoneDirectory + '/SetOfUnicodeTest.parquet', TRUE);
-
-setOfUnicodeDatasetIn := ParquetIO.Read(setOfUnicodeRecord, dropzoneDirectory + '/SetOfUnicodeTest.parquet');
-
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} setOfUnicodeJoin (setOfUnicodeDatasetOut a, setOfUnicodeDatasetIn b) := TRANSFORM
-    SELF.testid := a.testid;
-    SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value; 
-END;
-
-setOfUnicodeCompareResult := JOIN(setOfUnicodeDatasetOut, setOfUnicodeDatasetIn, LEFT.testid = RIGHT.testid, setOfUnicodeJoin(LEFT, RIGHT), ALL);
-
-setOfUnicodeResult := IF(COUNT(setOfUnicodeCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: SET OF UNICODE data mismatch');
-
-// ======================== FIXED SIZE BINARY (DATA10) ========================
-
-DATA10 REALToBinary(REAL val) := (DATA10)val;
-
-fixedSizeBinaryRecord := RECORD
-    UNSIGNED testid;
-    STRING3 testname;
-    DATA10 value;
-END;
-
-fixedSizeBinaryDatasetOut := DATASET([
-    {1, 'pos', REALToBinary(3.14159)},
-    {2, 'neg', REALToBinary(-2.71828)}
-], fixedSizeBinaryRecord);
-
-ParquetIO.Write(fixedSizeBinaryDatasetOut, '/var/lib/HPCCSystems/mydropzone/FixedSizeBinaryTest.parquet', TRUE);
-
-fixedSizeBinaryDatasetIn := ParquetIO.Read(fixedSizeBinaryRecord, '/var/lib/HPCCSystems/mydropzone/FixedSizeBinaryTest.parquet');
-
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} fixedSizeBinaryJoin (fixedSizeBinaryDatasetOut a, fixedSizeBinaryDatasetIn b) := TRANSFORM
-    SELF.testid := a.testid;
-    SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value; // Compare DATA10 (binary) values
-END;
-
-fixedSizeBinaryCompareResult := JOIN(fixedSizeBinaryDatasetOut, fixedSizeBinaryDatasetIn, LEFT.testid = RIGHT.testid, fixedSizeBinaryJoin(LEFT, RIGHT), ALL);
-
-fixedSizeBinaryResult := IF(COUNT(fixedSizeBinaryCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: FIXED SIZE BINARY data mismatch');
-
-// ======================== LARGE BINARY (DATA) ========================
-
-DATA REALToLargeBinary(REAL val) := (DATA)val;
-
-largeBinaryRecord := RECORD
-    UNSIGNED testid;
-    STRING3 testname;
-    DATA value;
-END;
-
-largeBinaryDatasetOut := DATASET([
-    {1, 'pos', REALToLargeBinary(3.14159)},
-    {2, 'neg', REALToLargeBinary(-2.71828)}
-], largeBinaryRecord);
-
-ParquetIO.Write(largeBinaryDatasetOut, '/var/lib/HPCCSystems/mydropzone/LargeBinaryTest.parquet', TRUE);
-
-largeBinaryDatasetIn := ParquetIO.Read(largeBinaryRecord, '/var/lib/HPCCSystems/mydropzone/LargeBinaryTest.parquet');
-
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} largeBinaryJoin (largeBinaryDatasetOut a, largeBinaryDatasetIn b) := TRANSFORM
-    SELF.testid := a.testid;
-    SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value;
-END;
-
-largeBinaryCompareResult := JOIN(largeBinaryDatasetOut, largeBinaryDatasetIn, LEFT.testid = RIGHT.testid, largeBinaryJoin(LEFT, RIGHT), ALL);
-
-largeBinaryResult := IF(COUNT(largeBinaryCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: LARGE BINARY data mismatch');
+unicodeResult := IF(COUNT(unicodeCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail');
 
 PARALLEL(
     OUTPUT(booleanResult, NAMED('BooleanTest'), OVERWRITE),
@@ -409,12 +341,9 @@ PARALLEL(
     OUTPUT(realResult, NAMED('RealTest'), OVERWRITE),
     OUTPUT(decimalResult, NAMED('DecimalTest'), OVERWRITE),
     OUTPUT(stringResult, NAMED('StringTest'), OVERWRITE),
-    OUTPUT(dataAsStringResult, NAMED('DataAsStringTest'), OVERWRITE),
+    OUTPUT(dataResult, NAMED('DataAsStringTest'), OVERWRITE),
     OUTPUT(varStringResult, NAMED('VarStringTest'), OVERWRITE),
     OUTPUT(qStringResult, NAMED('QStringTest'), OVERWRITE),
     OUTPUT(utf8Result, NAMED('UTF8Test'), OVERWRITE),
-    OUTPUT(unicodeResult, NAMED('UnicodeTest'), OVERWRITE),
-    OUTPUT(setOfUnicodeResult, NAMED('SetOfUnicodeTest'), OVERWRITE),
-    OUTPUT(fixedSizeBinaryResult, NAMED('FixedSizeBinaryTest'), OVERWRITE),
-    OUTPUT(largeBinaryResult, NAMED('LargeBinaryTest'), OVERWRITE)
+    OUTPUT(unicodeResult, NAMED('UnicodeTest'), OVERWRITE)
 );

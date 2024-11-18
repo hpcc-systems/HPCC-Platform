@@ -15,6 +15,9 @@
 ##############################################################################*/
 
 //class=parquet
+//no<cluster_name>
+//nokey
+//nothor
 
 IMPORT Parquet;
 

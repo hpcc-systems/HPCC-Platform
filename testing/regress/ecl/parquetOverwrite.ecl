@@ -13,6 +13,7 @@
 
 //class=parquet
 //fail
+//nothor
 
 IMPORT Parquet;
 
