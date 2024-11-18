@@ -906,7 +906,7 @@ public:
         }
     }
     CNodeMRUSubCache cache[cacheBuckets];
-    bool enabled;
+    bool enabled = false;
 protected:
     std::vector<std::shared_ptr<IMetric>> metrics;
 };
