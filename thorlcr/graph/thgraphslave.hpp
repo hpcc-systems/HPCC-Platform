@@ -481,6 +481,7 @@ protected:
     Owned<IStrandJunction> splitter;
     Owned<IStrandJunction> sourceJunction; // A junction applied to the output of a source activity
     std::atomic<unsigned> active;
+    unsigned __int64 startCycles = 0;
 protected:
     void onStartStrands();
 public:
