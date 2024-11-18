@@ -44,6 +44,8 @@
 #define WAIT_FOREVER                 ((unsigned)-1)
 #endif
 
+#define DEFAULT_CONNECT_TIME    (100*1000)      // for connect_wait
+
 enum JSOCKET_ERROR_CODES {
         JSOCKERR_ok                    = 0, 
         JSOCKERR_not_opened            = -1,    // accept,name,peer_name,read,write

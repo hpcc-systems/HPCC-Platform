@@ -291,11 +291,11 @@ public:
         Owned<ISecureSocket> ssock;
         try
         {
-            ssock.setown(secureContext->createSecureSocket(base));
             int loglevel = SSLogMin;
             if (doTrace(traceSockets))
                 loglevel = SSLogMax;
-            int status = ssock->secure_accept(loglevel);
+            ssock.setown(secureContext->createSecureSocket(base, loglevel));
+            int status = ssock->secure_accept();
             if (status < 0)
             {
                 // secure_accept may also DBGLOG() errors ...
