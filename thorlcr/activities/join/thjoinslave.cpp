@@ -265,8 +265,8 @@ public:
     {
         try
         {
+            LookAheadTimer t(slaveTimerStats, timeActivities);
             startInput(secondaryInputIndex);
-
             if (ensureStartFTLookAhead(secondaryInputIndex))
             {
                 IThorDataLink *secondaryInput = queryInput(secondaryInputIndex);
