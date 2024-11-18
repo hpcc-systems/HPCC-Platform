@@ -855,7 +855,7 @@ IStrandJunction *CThorStrandedActivity::getOutputStreams(CActivityBase &ctx, uns
 
 unsigned __int64 CThorStrandedActivity::queryTotalCycles() const
 {
-    unsigned __int64 total = 0;;
+    unsigned __int64 total = 0;
     ForEachItemIn(i, strands)
     {
         CThorStrandProcessor &strand = strands.item(i);
@@ -864,6 +864,16 @@ unsigned __int64 CThorStrandedActivity::queryTotalCycles() const
     return total;
 }
 
+unsigned __int64 CThorStrandedActivity::queryLookAheadCycles() const
+{
+    unsigned __int64 total = 0;;
+    ForEachItemIn(i, strands)
+    {
+        CThorStrandProcessor &strand = strands.item(i);
+        total += strand.queryLookAheadCycles();
+    }
+    return total;
+}
 void CThorStrandedActivity::dataLinkSerialize(MemoryBuffer &mb) const
 {
     mb.append(getProgressCount());

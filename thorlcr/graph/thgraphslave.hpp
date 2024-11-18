@@ -508,6 +508,7 @@ public:
 // IThorDataLink
     virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override;
+    virtual unsigned __int64 queryLookAheadCycles() const override;
     virtual void dataLinkSerialize(MemoryBuffer &mb) const override;
     virtual rowcount_t getProgressCount() const override;
 };
