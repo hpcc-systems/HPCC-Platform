@@ -47,14 +47,14 @@ export function hasLogAccess(): Promise<boolean> {
     return GetLogAccessInfo().then(response => {
         if (isExceptionResponse(response)) {
             const err = response.Exceptions.Exception[0].Message;
-            logger.error(err);
+            logger.info(err);
             return false;
         } else {
             response = response as WsLogaccess.GetLogAccessInfoResponse;
             return response?.RemoteLogManagerConnectionString !== null || response?.RemoteLogManagerType !== null;
         }
     }).catch(e => {
-        logger.error(e);
+        logger.info(e);
         return false;
     });
 }
