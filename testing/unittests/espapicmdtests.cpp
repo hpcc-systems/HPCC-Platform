@@ -258,9 +258,6 @@ class EspApiCmdTest : public CppUnit::TestFixture
             sasha(createIFile("/tmp/hpcctest/sasha.xml"))
         {
             try{
-                InitModuleObjects();
-                queryStderrLogMsgHandler()->setMessageFields(0);
-                queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
                 dir->createDirectory();
 
                 Owned<IFileIO> ioCommon = common->open(IFOcreate);
@@ -317,7 +314,7 @@ protected:
         "/tmp/hpcctest/common.xml\n"
         "/tmp/hpcctest/store.xml\n";
 
-        for(Owned<IFile>& myfile: env.files)
+        for(Owned<IFile>& myfile: queryEnvironment().files)
         {
             fileStr.append(myfile->queryFilename());
             fileStr.append("\n");
@@ -333,7 +330,7 @@ protected:
         string refStr =
         "WSSasha\n"
         "wsstore\n";
-        vector<const char*> services = env.esdlDefObj.getAllServices();
+        vector<const char*> services = queryEnvironment().esdlDefObj.getAllServices();
         for(const char* service : services)
         {
             serviceStr.append(service);
@@ -351,7 +348,7 @@ protected:
         ostringstream oss;
         string res;
 
-        env.esdlDefObj.describeAllServices(oss);
+        queryEnvironment().esdlDefObj.describeAllServices(oss);
         res = oss.str();
 
         sortAndWriteBack(res);
@@ -368,7 +365,7 @@ protected:
         "Ping\n"
         "RestoreWU\n";
 
-        vector<const char*> methods = env.esdlDefObj.getAllMethods();
+        vector<const char*> methods = queryEnvironment().esdlDefObj.getAllMethods();
         for(const char* &method:methods)
         {
             methodStr.append(method);
@@ -388,7 +385,7 @@ protected:
         ostringstream oss;
         string res;
 
-        env.esdlDefObj.describeAllMethods("WSSasha",oss);
+        queryEnvironment().esdlDefObj.describeAllMethods("WSSasha",oss);
         res = oss.str();
 
         sortAndWriteBack(res);
@@ -399,22 +396,22 @@ protected:
     }
     void testCheckValidService()
     {
-        bool validCheck = env.esdlDefObj.checkValidService("WSSasha");
-        bool invalidCheck = env.esdlDefObj.checkValidService("InvalidService");
+        bool validCheck = queryEnvironment().esdlDefObj.checkValidService("WSSasha");
+        bool invalidCheck = queryEnvironment().esdlDefObj.checkValidService("InvalidService");
         CPPUNIT_ASSERT_EQUAL(validCheck, true);
         CPPUNIT_ASSERT_EQUAL(invalidCheck, false);
     }
     void testCheckValidMethod()
     {
-        bool validCheck = env.esdlDefObj.checkValidMethod("GetVersion", "WSSasha");
-        bool invalidCheck = env.esdlDefObj.checkValidMethod("InvalidMethod", "WSSasha");
+        bool validCheck = queryEnvironment().esdlDefObj.checkValidMethod("GetVersion", "WSSasha");
+        bool invalidCheck = queryEnvironment().esdlDefObj.checkValidMethod("InvalidMethod", "WSSasha");
         CPPUNIT_ASSERT_EQUAL(validCheck, true);
         CPPUNIT_ASSERT_EQUAL(invalidCheck, false);
 
     }
     void testDescribe()
     {
-        env.esdlDefObj.loadAllMethods("wsstore");
+        queryEnvironment().esdlDefObj.loadAllMethods("wsstore");
         string refString =
         "ListStoresRequest\n"
         "string NameFilter\n"
@@ -438,19 +435,19 @@ protected:
 
         ostringstream oss;
         string res;
-        env.esdlDefObj.describe("wsstore","ListStores", oss);
+        queryEnvironment().esdlDefObj.describe("wsstore","ListStores", oss);
         res = oss.str();
 
         oss.str("");
         oss.clear();
         string invalidServiceRes;
-        env.esdlDefObj.describe("bad_name","ListStores", oss);
+        queryEnvironment().esdlDefObj.describe("bad_name","ListStores", oss);
         invalidServiceRes = oss.str();
 
         oss.str("");
         oss.clear();
         string invalidMethodRes;
-        env.esdlDefObj.describe("wsstore","bad_name", oss);
+        queryEnvironment().esdlDefObj.describe("wsstore","bad_name", oss);
         invalidMethodRes = oss.str();
 
         CPPUNIT_ASSERT_EQUAL(refString, res);
@@ -459,7 +456,12 @@ protected:
     }
 
 private:
-    static Environment env;
+    Environment & queryEnvironment()
+    {
+        //Avoid creating this object until it is first used - otherwise any calls to the logging will crash
+        static Environment env;
+        return env;
+    }
 
     void sortAndWriteBack(string& input)
     {
@@ -484,8 +486,6 @@ private:
         }
     }
 };
-
-EspApiCmdTest::Environment EspApiCmdTest::env;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( EspApiCmdTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EspApiCmdTest, "EspApiCmdTest" );
