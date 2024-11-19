@@ -395,7 +395,6 @@ protected:
     }
 public:
     sQueueData *qdata;
-    Semaphore notifysem;
     CriticalSection crit;
 
     IMPLEMENT_IINTERFACE;
@@ -801,32 +800,31 @@ public:
     bool cancelwaiting = false;
     bool validateitemsessions = false;
 
-    class csubs: implements ISDSSubscription, public CInterface
+    class QueueChangeSubscription : implements ISDSSubscription, public CInterface
     {
-        CJobQueue *parent;
+    public:
+        //If this semaphone is in the CJobQueue class then there is a race condition
+        //A callback may be at this point while the CJobQueue is deleted - causing it to signal
+        //a deleted semaphore
+        Semaphore notifysem;
     public:
         IMPLEMENT_IINTERFACE;
-        csubs(CJobQueue *_parent)
-        {
-            parent = _parent;
-        }
+
         void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
         {
-            //There is a race condition - a callback may be at this point while the CJobQueue is deleted.
-            //Adding a critical section in parent makes it much more likely to be hit.
-            //Ultimately the semaphore should be moved to this class instead
-            //CriticalBlock block(parent->crit);
-            parent->notifysem.signal();
+            notifysem.signal();
         }
     };
 
-    Owned<csubs> subs;
+    //This must be an owned pointer, rather than a member, to avoid it being deleted while the notify()
+    //callback is being called.
+    Owned<QueueChangeSubscription> notifySubscription;
 
     IMPLEMENT_IINTERFACE_USING(CJobQueueBase);
 
     CJobQueue(const char *_qname) : CJobQueueBase(_qname)
     {
-        subs.setown(new csubs(this));
+        notifySubscription.setown(new QueueChangeSubscription);
         activeq = qdata;
         sessionid = myProcessSession();
         validateitemsessions = false;
@@ -1044,7 +1042,7 @@ public:
             }
             StringBuffer path;
             path.appendf("/JobQueues/Queue[@name=\"%s\"]/Edition",qd->qname.get());
-            qd->subscriberid = querySDS().subscribe(path.str(), *subs, false);
+            qd->subscriberid = querySDS().subscribe(path.str(), *notifySubscription, false);
         }
     }
 
@@ -1055,7 +1053,7 @@ public:
             if (!qd->subscriberid) {
                 StringBuffer path;
                 path.appendf("/JobQueues/Queue[@name=\"%s\"]/Edition",qd->qname.get());
-                qd->subscriberid = querySDS().subscribe(path.str(), *subs, false);
+                qd->subscriberid = querySDS().subscribe(path.str(), *notifySubscription, false);
             }
             unsigned e = (unsigned)qd->root->getPropInt("Edition", 1);
             if (e!=qd->lastWaitEdition) {
@@ -1297,7 +1295,7 @@ public:
             // check every 5 mins independant of notify (in case subscription lost for some reason)
             if (to>timeout)
                 to = timeout;
-            notifysem.wait(to);
+            notifySubscription->notifysem.wait(to);
             if (timeout!=(unsigned)INFINITE) {
                 t = msTick()-t;
                 if (t<timeout)
@@ -1878,7 +1876,7 @@ public:
     {
         CriticalBlock block(crit);
         dequeuestop = true;
-        notifysem.signal();
+        notifySubscription->notifysem.signal();
     }
 
     bool cancelInitiateConversation(sQueueData &qd,const char *wuid)
@@ -1915,7 +1913,7 @@ public:
                 if (haschanged())
                     return true;
             }
-            if (!notifysem.wait(timeout))
+            if (!notifySubscription->notifysem.wait(timeout))
                 break;
         }
         return false;
@@ -1924,7 +1922,7 @@ public:
     {
         CriticalBlock block(crit);
         cancelwaiting = true;
-        notifysem.signal();
+        notifySubscription->notifysem.signal();
     }
 
     virtual void enqueue(IJobQueueItem *qitem)
