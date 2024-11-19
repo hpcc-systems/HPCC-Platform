@@ -60,7 +60,6 @@ namespace nsSSLServices
 
 void failOpenSSLError(const std::string& context)
 {
-    size_t errCode = 0;
     char   buffer[120];
 
     ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
@@ -77,7 +76,7 @@ void failOpenSSLError(const std::string& context)
 int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *pPassPhraseMB)
 {
     size32_t len = ((MemoryBuffer*)pPassPhraseMB)->length();
-    if (passPhraseBufSize >= len)
+    if (((size32_t)passPhraseBufSize) >= len)
     {
         memcpy(passPhraseBuf, ((MemoryBuffer*)pPassPhraseMB)->bufferBase(), len);
         return len;
@@ -141,8 +140,8 @@ public:
     void clear() {cache.clear();}
 
 private:
-    size32_t hits;
-    size32_t misses;
+    unsigned hits;
+    unsigned misses;
     std::string cacheName;
     std::list<std::tuple<std::string, const T *>> cache;
 
@@ -153,7 +152,6 @@ private:
 template <>
 void AlgorithmCache<EVP_CIPHER>::setCacheName() {cacheName = "CIPHER";}
 
-
 template <>
 void AlgorithmCache<EVP_MD>::setCacheName() {cacheName = "DIGEST";}
 
@@ -162,6 +160,8 @@ const EVP_CIPHER * AlgorithmCache<EVP_CIPHER>::getObjectByName(const char * name
 
 template <>
 const EVP_MD * AlgorithmCache<EVP_MD>::getObjectByName(const char * name) { return EVP_get_digestbyname(name); }
+
+typedef std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> UniquePKey;
 
 // PEM Public/Private keys require parsing from a string
 // Store the hash of the original string and parsed key
@@ -204,7 +204,8 @@ public:
 
         if (pkey)
         {
-            cache.emplace_front(hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)), std::move(std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(pkey, EVP_PKEY_free)));
+            unsigned PkeyHash = hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0));
+            cache.emplace_front(PkeyHash, std::move(UniquePKey(pkey, EVP_PKEY_free)));
             if (cache.size() > SSLSERVICES_MAX_CACHE_SIZE)
                 cache.pop_back();
         }
@@ -219,9 +220,9 @@ public:
     void printStatistics() {DBGLOG("SSLSERVICES PKEY CACHE STATS: HITS = %d, MISSES = %d", hits, misses);}
 
 private:
-    size32_t hits;
-    size32_t misses;
-    std::list<std::tuple<size32_t, std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>>> cache;
+    unsigned hits;
+    unsigned misses;
+    std::list<std::tuple<unsigned, UniquePKey>> cache;
 };
 
 
@@ -234,7 +235,7 @@ static thread_local AlgorithmCache<EVP_MD> digestCache;
 using namespace nsSSLServices;
 
 //--------------------------------------------------------------------------
-// Advertised Entry Posize32_t Functions
+// Advertised Entry Point Functions
 //--------------------------------------------------------------------------
 
 SSLSERVICES_API void SSLSERVICES_CALL digestAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
@@ -398,17 +399,17 @@ SSLSERVICES_API void SSLSERVICES_CALL cipherEncrypt(ICodeContext *ctx, size32_t 
 
         try
         {
-            size32_t len = 0;
+            int len = 0;
             size32_t ciphertextLen = 0;
 
             if (EVP_EncryptInit_ex(encryptCtx, cipher, nullptr, static_cast<byte *>(key.bufferBase()),static_cast<byte *>(iv.bufferBase())) != 1)
                 failOpenSSLError("EVP_EncryptInit_ex");
 
-            if (EVP_EncryptUpdate(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), reinterpret_cast<int *>(&len), static_cast<const byte *>(_plaintext), len_plaintext) != 1)
+            if (EVP_EncryptUpdate(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), &len, static_cast<const byte *>(_plaintext), len_plaintext) != 1)
                 failOpenSSLError("EVP_EncryptUpdate");
             ciphertextLen = len;
 
-            if (EVP_EncryptFinal_ex(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
+            if (EVP_EncryptFinal_ex(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, &len) != 1)
                 failOpenSSLError("EVP_EncryptFinal_ex");
             ciphertextLen += len;
             __lenResult = ciphertextLen;
@@ -473,17 +474,17 @@ SSLSERVICES_API void SSLSERVICES_CALL cipherDecrypt(ICodeContext *ctx, size32_t 
 
         try
         {
-            size32_t len = 0;
+            int len = 0;
             size32_t plaintextLen = 0;
 
             if (EVP_DecryptInit_ex(decryptCtx, cipher, nullptr, static_cast<byte *>(key.bufferBase()), static_cast<byte *>(iv.bufferBase())) != 1)
                 failOpenSSLError("EVP_DecryptInit_ex");
 
-            if (EVP_DecryptUpdate(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), reinterpret_cast<int *>(&len), static_cast<const byte *>(_ciphertext), len_ciphertext) != 1)
+            if (EVP_DecryptUpdate(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), &len, static_cast<const byte *>(_ciphertext), len_ciphertext) != 1)
                 failOpenSSLError("EVP_DecryptUpdate");
             plaintextLen = len;
 
-            if (EVP_DecryptFinal_ex(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
+            if (EVP_DecryptFinal_ex(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, &len) != 1)
                 failOpenSSLError("EVP_DecryptFinal_ex");
             plaintextLen += len;
             __lenResult = plaintextLen;
@@ -559,13 +560,13 @@ SSLSERVICES_API void SSLSERVICES_CALL pkRSASeal(ICodeContext *ctx, size32_t & __
                 failOpenSSLError("EVP_SealInit");
 
             // Update the envelope (encrypt the plaintext)
-            size32_t len = 0;
-            if (EVP_SealUpdate(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()), reinterpret_cast<int *>(&len), reinterpret_cast<const byte *>(_plaintext), len_plaintext) != 1)
+            int len = 0;
+            if (EVP_SealUpdate(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()), &len, reinterpret_cast<const byte *>(_plaintext), len_plaintext) != 1)
                 failOpenSSLError("EVP_SealUpdate");
             ciphertextLen = len;
 
             // Finalize the envelope's ciphertext
-            if (EVP_SealFinal(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
+            if (EVP_SealFinal(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()) + len, &len) != 1)
                 failOpenSSLError("EVP_SealFinal");
             ciphertextLen += len;
 
@@ -603,6 +604,8 @@ SSLSERVICES_API void SSLSERVICES_CALL pkRSASeal(ICodeContext *ctx, size32_t & __
         {
             if (encryptCtx)
                 EVP_CIPHER_CTX_free(encryptCtx);
+            for (size_t i = 0; i < publicKeys.size(); i++)
+                delete [] encryptedKeys[i];
             delete [] encryptedKeys;
             __lenResult = 0;
             rtlFree(__result);
@@ -684,12 +687,12 @@ SSLSERVICES_API void SSLSERVICES_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & 
             size32_t plaintextLen = newCipherTextLen;
             plaintext.ensureCapacity(plaintextLen);
 
-            size32_t len = 0;
-            if (EVP_OpenUpdate(decryptCtx, static_cast<byte *>(plaintext.bufferBase()), reinterpret_cast<int *>(&len), newCipherText, newCipherTextLen) != 1)
+            int len = 0;
+            if (EVP_OpenUpdate(decryptCtx, static_cast<byte *>(plaintext.bufferBase()), &len, newCipherText, newCipherTextLen) != 1)
                 failOpenSSLError("EVP_OpenUpdate");
             plaintextLen = len;
 
-            if (EVP_OpenFinal(decryptCtx, static_cast<byte *>(plaintext.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
+            if (EVP_OpenFinal(decryptCtx, static_cast<byte *>(plaintext.bufferBase()) + len, &len) != 1)
                 failOpenSSLError("EVP_OpenFinal");
             plaintextLen += len;
 
