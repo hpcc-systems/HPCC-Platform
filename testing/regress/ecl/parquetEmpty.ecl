@@ -14,17 +14,22 @@
 //class=parquet
 //nothor
 
-IMPORT Parquet, Std.Uni;
+IMPORT Std;
+IMPORT Parquet;
 
 RECORDDEF := RECORD
     UNSIGNED4 index;
-    STRING name;
     STRING director;
 END;
 
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+filePath := basePath + 'empty_test.parquet';
+
 EMPTY_PARQUET := DATASET([], RECORDDEF);
 
-ParquetIO.Write(EMPTY_PARQUET, '/regress/parquet/empty_test.parquet', TRUE);
+ParquetIO.Write(EMPTY_PARQUET, filePath, TRUE);
 
-read_data := ParquetIO.Read(RECORDDEF, '/regress/parquet/empty_test.parquet');
+read_data := ParquetIO.Read(RECORDDEF, filePath);
+
 OUTPUT(read_data);
+

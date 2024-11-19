@@ -18,15 +18,16 @@
 //This ECL code reads a potentially corrupt Parquet file, handling the case where it might be corrupt
 //by outputting either the file contents or a single informative record if the file can't be read.
 
-IMPORT Parquet, Std.Uni;
+IMPORT Std;
+IMPORT Parquet;
 
-RECORDDEF:= RECORD
+RECORDDEF := RECORD
     UNSIGNED4 index;
     STRING name;
     STRING director;
 END;
 
-filePath2 := '/var/lib/HPCCSystems/mydropzone/corrupt.parquet';
+filePath2 := Std.File.GetDefaultDropZone() + '/corrupt.parquet';
 
 CORRUPT_PARQUET := ParquetIO.Read(RECORDDEF, filePath2);
 

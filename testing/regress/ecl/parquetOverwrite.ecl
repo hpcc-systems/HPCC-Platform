@@ -15,10 +15,14 @@
 //fail
 //nothor
 
+IMPORT Std;
 IMPORT Parquet;
 
 SingleRowDataset := DATASET([{1, 'SingleRow', TRUE}], {UNSIGNED id, STRING name, BOOLEAN flag});
 
-writeParquetFile := ParquetIO.write(SingleRowDataset, '/var/lib/HPCCSystems/mydropzone/SingleRowTest.parquet');
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+FilePath := basePath + 'SingleRowTest.parquet';
+
+writeParquetFile := ParquetIO.write(SingleRowDataset, FilePath);
 
 SEQUENTIAL(writeParquetFile, writeParquetFile);

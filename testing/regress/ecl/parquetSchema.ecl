@@ -36,7 +36,8 @@ testData := DATASET([
     { 2, 'Bob', 60000.75 }
 ], Layout1);
 
-filePath := '/var/lib/HPCCSystems/mydropzone/reorder_test.parquet';
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+FilePath := basePath + 'reorder_test.parquet';
 
 // Write using Layout1
 ParquetIO.Write(testData, filePath, TRUE);

@@ -19,6 +19,7 @@
 //nokey
 //nothor
 
+IMPORT Std;
 IMPORT Parquet;
 
 recordLayout := RECORD
@@ -28,9 +29,10 @@ recordLayout := RECORD
     STRING isactive;
 END;
 
-// Paths to the files
-singleFilePath := '/var/lib/HPCCSystems/mydropzone/single.parquet';
-multiFilePath := '/var/lib/HPCCSystems/mydropzone/multi.parquet';
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+
+singleFilePath := basePath + 'single.parquet';
+multiFilePath := basePath + 'multi.parquet';
 
 // Reading the single and multi-part files
 singleDataset := ParquetIO.Read(recordLayout, singleFilePath);
