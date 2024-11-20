@@ -1081,6 +1081,151 @@ bool AzureLogAnalyticsCurlClient::processSearchJsonResp(LogQueryResultDetails & 
     return true;
 }
 
+bool AzureLogAnalyticsCurlClient::healthReport(StringBuffer & report, LogAccessHealthReportOptions options)
+{
+    try
+    {
+        report.appendf("\"ConnectionInfo\": { \"TargetALAWorkspaceID\": \"%s\" ", m_logAnalyticsWorkspaceID.str());
+        report.appendf(", \"TargetALATenantID\": \"%s\"", m_aadTenantID.str());
+        report.appendf(", \"TargetALAClientID\": \"%s\"", m_aadClientID.str());
+        report.appendf(", \"TargetALASecret\": \"%sempty\"", m_aadClientSecret.length()==0 ? "" : "not ");
+        report.appendf(", \"TargetsContainerLogV2\": \"%s\"", targetIsContainerLogV2 ? "true" : "false");
+        report.appendf(", \"ComponentsQueryJoins\": \"%sabled\"", m_disableComponentNameJoins ? "dis" : "en");
+        report.appendf(", \"BlobModeUnstructuredLogData\": \"%sabled\"", m_blobMode ? "en" : "dis");
+        report.append( "}"); //close conninfo
+
+        report.append(", \"ConfigurationInfo\": { ");
+
+        if (m_pluginCfg)
+        {
+            StringBuffer configJSON;
+            toJSON(m_pluginCfg, configJSON, 0);
+            report.appendf("\"ConfigurationTree\": %s", configJSON.str()); //json encode
+        }
+        else
+        {
+            report.append("\"Error\": \"Configuration tree is empty!!!\"");
+        }
+        report.append(" }"); // close config info
+
+        report.append(", \"Internals\": { ");
+        if (options.IncludeServerInternals)
+        {
+            report.appendf("\"Plugin\": { \"LogMaps\": {");
+            report.appendf("\"Global\": { \"ColName\": \"%s\", \"Source\": \"%s\", \"TimeStampCol\": \"%s\"}", m_globalSearchColName.str(), m_globalIndexSearchPattern.str(), m_globalIndexTimestampField.str()); 
+            report.appendf(", \"Workunits\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_workunitSearchColName.str(), m_workunitIndexSearchPattern.str());
+            report.appendf(", \"Components\": { \"ColName\": \"%s\", \"Source\": \"%s\", \"LookupKey\": \"%s\", \"TimeStampCol\": \"%s\"}", m_componentsSearchColName.str(), m_componentsIndexSearchPattern.str(), m_componentsLookupKeyColumn.str(), m_componentsTimestampField.str());
+            report.appendf(", \"Audience\": { \"ColName\": \"%s\", \"Source\": \"%s\" }", m_audienceSearchColName.str(), m_audienceIndexSearchPattern.str());
+            report.appendf(", \"Class\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_classSearchColName.str(), m_classIndexSearchPattern.str());
+            report.appendf(", \"Instance\": { \"ColName\": \"%s\", \"Source\": \"%s\", \"LookupKey\": \"%s\"}", m_instanceSearchColName.str(), m_instanceIndexSearchPattern.str(), m_instanceLookupKeyColumn.str());
+            report.appendf(", \"Pod\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_podSearchColName.str(), m_podIndexSearchPattern.str());
+            report.appendf(", \"TraceID\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_traceSearchColName.str(), m_traceIndexSearchPattern.str());
+            report.appendf(", \"SpanID\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_spanSearchColName.str(), m_spanIndexSearchPattern.str());
+            report.appendf(", \"Host\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_hostSearchColName.str(), m_hostIndexSearchPattern.str());
+            report.append(" }"); //close logmaps
+            report.append(" }"); //close plugin
+        }
+
+        if (options.IncludeServerInternals)
+        {
+            report.append(", \"Server\": { }");
+        }
+
+        report.append(" }"); //close internals
+        if (options.IncludeSampleQuery)
+        {
+            report.append(", \"SampleTokenRequest\": { ");
+            try
+            {
+                
+                StringBuffer token;
+                requestLogAnalyticsAccessToken(token, m_aadClientID, m_aadClientSecret, m_aadTenantID); //throws if issues encountered
+
+                if (token.isEmpty())
+                    report.append("\"Error\": \"Empty token received\"");
+
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Error\": \"Exception while requesting token (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Error\": \"Unknown exception while requesting token\"");
+            }
+            report.append(" }"); //close sample token request
+
+            report.append(", \"SampleQuery\": { ");
+            try
+            {
+                report.appendf("\"Query\": { \"LogFormat\": \"JSON\",");
+                LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_json;
+                LogAccessConditions queryOptions;
+
+                report.appendf("\"Filter\": {\"type\": \"byWildcard\", \"value\": \"*\" },");
+                queryOptions.setFilter(getWildCardLogAccessFilter("*"));
+
+                struct LogAccessTimeRange range;
+                CDateTime endtt;
+                endtt.setNow();
+                range.setEnd(endtt);
+                StringBuffer endstr;
+                endtt.getString(endstr);
+
+                CDateTime startt;
+                startt.setNow();
+                startt.adjustTimeSecs(-60); //an hour ago
+                range.setStart(startt);
+
+                StringBuffer startstr;
+                startt.getString(startstr);
+                report.appendf("\"TimeRange\": {\"Start\": \"%s\", \"End\": \"%s\" },", startstr.str(), endstr.str());
+
+                queryOptions.setTimeRange(range);
+                queryOptions.setLimit(5);
+                report.appendf("\"Limit\": \"5\" }, ");
+
+                StringBuffer queryString, queryIndex;
+                populateKQLQueryString(queryString, queryIndex, queryOptions);
+                
+                StringBuffer encodedValue;
+                encodeJSON(encodedValue, queryString.str());
+
+                report.appendf("\"KQLQuery\": \"%s\", ", encodedValue.str());
+                report.appendf("\"QueryIndex\": \"%s\", ", queryIndex.str());
+
+                StringBuffer logs;
+                LogQueryResultDetails  resultDetails;
+                fetchLog(resultDetails, queryOptions, logs, outputFormat);
+                report.appendf("\"ResultCount\": \"%d\", ", resultDetails.totalReceived);
+                report.appendf("\"Results\": %s", logs.str());
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Error\": \"Exception while executing sample ALA query (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Error\": \"Unknown exception while executing sample ALA query\"");
+            }
+            report.append(" }"); //close sample query
+        }
+    }
+    catch(...)
+    {
+        report.append("\"Error\": \"Encountered unexpected exception during health report\"");
+        return false;
+    }
+
+    return true;
+}
+
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     StringBuffer token;

@@ -1500,8 +1500,43 @@ enum LogAccessMappedField
     LOGACCESS_MAPPEDFIELD_host,
     LOGACCESS_MAPPEDFIELD_traceid,
     LOGACCESS_MAPPEDFIELD_spanid,
+    LOGACCESS_MAPPEDFIELD_global,
+    LOGACCESS_MAPPEDFIELD_container,
+    LOGACCESS_MAPPEDFIELD_message,
     LOGACCESS_MAPPEDFIELD_unmapped
 };
+
+inline const char * MappedFieldTypeToString(LogAccessMappedField mappedField)
+{
+    if (mappedField == LOGACCESS_MAPPEDFIELD_timestamp)
+        return "timestamp";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_jobid)
+        return "jobid";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_component)
+        return "component";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_class)
+        return "class";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_audience)
+        return "audience";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_instance)
+        return "instance";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_pod)
+        return "pod";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_host)
+        return "host";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_traceid)
+        return "traceID";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_spanid)
+        return "spanID";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_global)
+        return "global";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_container)
+        return "container";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_message)
+        return "message";
+    else
+        return "UNKNOWNFIELDTYPE";
+}
 
 enum SortByDirection
 {
@@ -1675,6 +1710,106 @@ struct LogQueryResultDetails
     unsigned int totalReceived;
     unsigned int totalAvailable;
 };
+/*
+typedef enum
+{
+    LOGACCESS_STATUS_unknown,
+    LOGACCESS_STATUS_ok,
+    LOGACCESS_STATUS_fail
+} LogAccessHealthStatus;
+
+struct LogAccessConnectionDetails
+{
+    StringAttr connectionString;
+    StringAttr connectionInfo;
+    StringAttr connectionStatus;
+    StringAttr sampleQueryStatus;
+
+    void toJSON(StringBuffer & out)
+    {
+    }
+};
+
+struct LogAccessConfigLogMap
+{
+    LogAccessMappedField logFieldType;
+    StringAttr fieldName;
+    StringAttr sourceName;
+    LogAccessConfigLogMap(LogAccessMappedField type, const char * name, const char * source)
+    {
+        logFieldType = type;
+        fieldName.set(name);
+        sourceName.set(source);
+    }
+
+    void toJSON(StringBuffer & out)
+    {
+        out.appendf("\"%s\": { \"ColName\": \"%s\", \"Source\": \"%s\" }", MappedFieldTypeToString(logFieldType), fieldName.str(), sourceName.str());
+    }
+};
+
+struct LogAccessConfigDetails
+{
+    StringAttr connectionInfo;
+    StringArray logMaps;
+    //IArrayOf<LogAccessConfigLogMap> logMaps;
+
+    void appendLogMap(LogAccessConfigLogMap logMap)
+    {
+        StringBuffer logMapJson;
+        logMap.toJSON(logMapJson);
+        logMaps.append(logMapJson.str());
+        //logMaps.append(logMap);
+    }
+
+    void toJSON(StringBuffer & out)
+    {
+        out.appendf("\"ConfigInfo\": { \"LogMaps\": {");
+
+        ForEachItemIn(i, logMaps)
+            //logMaps.item(i).toJSON(out);
+            out.append(logMaps.item(i));
+
+        //close out the logmaps
+        out.append(" }");
+        //close out the ConfigInfo
+        out.append(" }");
+    }
+};
+
+struct LogAccessHealthReportDetails
+{
+    LogAccessConnectionDetails connectionInfo;
+    LogAccessConfigDetails configInfo;
+    StringBuffer JsonMessages;
+
+    void appendLogMap(LogAccessConfigLogMap logMap)
+    {
+        configInfo.appendLogMap(logMap);
+    }
+
+    void toJSON(StringBuffer & out)
+    {
+        StringBuffer scratch;
+
+        out.append("{ \"Connection\": ");
+        connectionInfo.toJSON(scratch);
+        out.append(scratch.str());
+
+        out.append(", \"ConfigInfo\": ");
+        configInfo.toJSON(scratch.clear());
+        out.append(scratch.str());
+
+        out.appendf(", \"Messages\": \"%s\"", JsonMessages.str());
+    }
+};
+*/
+struct LogAccessHealthReportOptions
+{
+    bool IncludeServerInternals = true;
+    bool IncludePluginInternals = true;
+    bool IncludeSampleQuery = true;
+};
 
 // Log Access Interface - Provides filtered access to persistent logging - independent of the log storage mechanism
 //                      -- Declares method to retrieve log entries based on options set
@@ -1690,6 +1825,8 @@ interface IRemoteLogAccess : extends IInterface
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
     virtual bool supportsResultPaging() const = 0;
+    //virtual bool healthReport(StringBuffer & messages, LogAccessHealthReportDetails & report) = 0;
+    virtual bool healthReport(StringBuffer & report, LogAccessHealthReportOptions options) = 0;
 };
 
 // Helper functions to construct log access filters
@@ -1714,7 +1851,7 @@ extern jlib_decl bool fetchLog(LogQueryResultDetails & resultDetails, StringBuff
 extern jlib_decl bool fetchJobIDLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
-extern jlib_decl bool  fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
+extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
 #endif
