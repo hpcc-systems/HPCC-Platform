@@ -23,6 +23,7 @@ class wuTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( wuTests );
         CPPUNIT_TEST(testLooksLikeAWuid);
+        CPPUNIT_TEST(testWuidPattern);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -73,6 +74,11 @@ public:
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("W12345678-12345", 'W'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("W12345678-123456-", 'W'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("*", 'W'));
+    }
+
+    void testWuidPattern()
+    {
+        CPPUNIT_ASSERT_MESSAGE("wuidPattern should pass", looksLikeAWuid(WuidPattern(" \t\rw12345678-123456 \t\r"), 'W'));
     }
 };
 
