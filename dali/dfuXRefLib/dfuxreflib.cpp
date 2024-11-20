@@ -939,10 +939,11 @@ static void constructPartname(const char *filename,unsigned n, StringBuffer &pn,
 static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
 {
     // takes filename and creates mask filename with $P$ extension
+    const char *filename = name;
+    StringBuffer nonrepdir;
     if (!isContainerized())
     {
         // Replicate dir is not supported in containerized environment
-        StringBuffer nonrepdir;
         replicate = setReplicateDir(name,nonrepdir,false);
         if (replicate)
             name = nonrepdir.str();
@@ -953,15 +954,16 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     {
         const IPropertyTree &plane = planesIter->query();
         const char *prefix = plane.queryProp("@prefix");
-        if (startsWith(name, prefix))
+        size_t prefixLen = strlen(prefix);
+        if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
         {
             mname.ensureCapacity(strlen(name));
             mname.append(prefix).append(PATHSEPCHAR);
-            name += strlen(prefix) + 1;
+            name += prefixLen + 1;
             if (plane.getPropInt("@numDevices") > 1)
             {
                 if (*name&&*name!='d')
-                    throw makeStringExceptionV(-1, "numDevices>1 but no stripe sub-directory in file %s", mname.append(name).str());
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 name++;
                 while (*name&&isdigit(*name))
                     name++;
@@ -972,7 +974,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     }
 
     if (mname.isEmpty())
-        throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", name);
+        throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", filename);
 
     num = 0;
     max = 0;
@@ -994,13 +996,13 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
             const char *tailSlash = cur;
             while (*tailSlash&&*tailSlash!='/')
                 tailSlash--;
-            const char *d = tailSlash;
-            for (int i=1;*(--d)&&isdigit(*d);i++)
-                dirPerPart = dirPerPart+(*d-'0')*i;
+            const char *d = tailSlash-1;
+            for (int i=1;*(d)&&isdigit(*d);i*=10,d--)
+                dirPerPart += (*d-'0')*i;
             if (*d&&*d=='/')
             {
                 if (dirPerPart!=pn)
-                    throw makeStringException(-1, "dir-per-part # does not match part # of file");
+                    throw makeStringExceptionV(-1, "Dir-per-part # does not match part # of file %s", filename);
 
                 mname.append((d+1)-name, name).append("$P$").append(cur-tailSlash, tailSlash);
             }
@@ -1027,11 +1029,12 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         cur++;
     }
     return false;
-}           
+}
 
-        
-
-
+extern DFUXREFLIB_API bool testParseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
+{
+    return parseFileName(name,mname,num,max,replicate);
+}
 
 class COrphanEntry: public CInterface
 {
