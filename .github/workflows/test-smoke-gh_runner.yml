@@ -53,13 +53,13 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Download Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
 
       - name: Download Support Files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-support-files
           path: ${{ inputs.asset-name }}-support-files
@@ -132,7 +132,7 @@ jobs:
 
       - name: regression-run-logs-artifact
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-smoke-${{ inputs.asset-name }}-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
           path: |
