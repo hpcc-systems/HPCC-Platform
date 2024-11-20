@@ -924,10 +924,9 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
     {
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
-        StringBuffer wuidStr(req.getWuid());
-        const char* wuid = wuidStr.trim().str();
-        if (wuid && *wuid && looksLikeAWuid(wuid, 'D'))
-            return getOneDFUWorkunit(context, wuid, resp);
+        WuidPattern wuidPattern(req.getWuid());
+        if (!wuidPattern.isEmpty() && looksLikeAWuid(wuidPattern, 'D'))
+            return getOneDFUWorkunit(context, wuidPattern, resp);
 
         double version = context.getClientVersion();
         if (version > 1.02)
@@ -1055,11 +1054,11 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                 filterbuf.append("");
         }
 
-        if(wuid && *wuid)
+        if(!isEmptyString(wuidPattern))
         {
             filters[filterCount] = DFUsf_wildwuid;
             filterCount++;
-            filterbuf.append(wuid);
+            filterbuf.append(wuidPattern);
         }
 
         if(clusterName && *clusterName)

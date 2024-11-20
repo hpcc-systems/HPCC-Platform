@@ -14985,3 +14985,12 @@ void recordTraceDebugOptions(IWorkUnit * target, const IProperties * source)
         }
     }
 }
+
+WuidPattern::WuidPattern(const char* _pattern)
+    : pattern(_pattern)
+{
+    if (!pattern.isEmpty())
+        pattern.trim();
+    if (!pattern.isEmpty() && islower(pattern.charAt(0)))
+        pattern.setCharAt(0, toupper(pattern.charAt(0)));
+}
