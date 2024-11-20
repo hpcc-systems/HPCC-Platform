@@ -37,6 +37,8 @@
 
 #include "rtlformat.hpp"
 
+#include "dfuxreflib.hpp"
+
 #include "jptree.hpp"
 #include "wsdfuaccess.hpp"
 
@@ -78,6 +80,7 @@ static void addTestFile(const char *name,unsigned n)
     StringBuffer partmask;
     getPartMask(partmask,name,n);
     StringBuffer path;
+    IStoragePlane *plane = getDataStoragePlane("mystorageplane", true);
     for (unsigned m=0; m<n; m++) {
         RemoteFilename rfn;
         constructPartFilename(group,m+1,1,n,0,0,false,"",dir.str(),partmask.str(),0,rfn);
@@ -3317,11 +3320,82 @@ void testlockprop(const char *lfn)
     printf("done\n");
 }
 
+void TestParseFileName()
+{
+    StringBuffer mname;
+    unsigned num;
+    unsigned max;
+    bool replicate;
+
+    // Standard file name with multiple parts
+    assertex(testParseFileName("/var/lib/HPCCSystems/hpcc-data/test/myname._1_of_3", mname.clear(), num, max, replicate));
+    assertex(strcmp(mname.str(), "/var/lib/HPCCSystems/hpcc-data/test/myname._$P$_of_3")==0);
+    assertex(num==1);
+    assertex(max==3);
+    assertex(replicate==true);
+
+    // Standard file name with multiple parts is striped across directories, storage plane has numDevices set for it
+    assertex(testParseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._10_of_30", mname.clear(), num, max, replicate));
+    assertex(strcmp(mname.str(), "/var/lib/HPCCSystems/hpcc-data-two/d$P$/test/myname._$P$_of_30")==0);
+    assertex(num==10);
+    assertex(max==30);
+    assertex(replicate==true);
+
+    // Standard file name with multiple parts is striped across directories and each part has its own directory, storage plane has numDevices set for it
+    assertex(testParseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._42_of_100", mname.clear(), num, max, replicate));
+    assertex(strcmp(mname.str(), "/var/lib/HPCCSystems/hpcc-data-two/d$P$/test/$P$/myname._$P$_of_100")==0);
+    assertex(num==42);
+    assertex(max==100);
+    assertex(replicate==true);
+
+    // Test a longer part number
+    assertex(testParseFileName("/var/lib/HPCCSystems/hpcc-data-two/d110/test/12345/myname._12345_of_100000", mname.clear(), num, max, replicate));
+    assertex(strcmp(mname.str(), "/var/lib/HPCCSystems/hpcc-data-two/d$P$/test/$P$/myname._$P$_of_100000")==0);
+    assertex(num==12345);
+    assertex(max==100000);
+    assertex(replicate==true);
+
+    // A file without a storage plane throws an exception
+    try {
+        testParseFileName("/test/myname._1_of_3", mname.clear(), num, max, replicate);
+        assertex(false);
+    } catch (IException *e) {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        e->Release();
+        assertex(strcmp(msg.str(), "Could not find matching prefix in plane definition for file /test/myname._1_of_3")==0);
+    }
+
+    // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+    try {
+        testParseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100", mname.clear(), num, max, replicate);
+        assertex(false);
+    } catch (IException *e) {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        e->Release();
+        assertex(strcmp(msg.str(), "In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100")==0);
+    }
+
+    // A file where the dir-per-part number does not match the part number
+    try {
+        testParseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100", mname.clear(), num, max, replicate);
+        assertex(false);
+    } catch (IException *e) {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        e->Release();
+        assertex(strcmp(msg.str(), "Dir-per-part # does not match part # of file /var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100")==0);
+    }
+
+    printf("All parseFileName tests passed\n");
+}
+
 void usage(const char *error=NULL)
 {
     if (error) printf("%s\n", error);
     printf("usage: DATEST <server_ip:port>* [/test <name> [<test params...>] [/NITER <iterations>]\n");
-    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE | NODESUBS | DFUSTREAMREAD | DFUSTREAMWRITE | DFUSTREAMCOPY\n");
+    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE | NODESUBS | DFUSTREAMREAD | DFUSTREAMWRITE | DFUSTREAMCOPY | PARSEFILENAME\n");
     printf("eg:  datest . /test QTEST put          -- one coven server running locally, running qtest with param \"put\"\n");
     printf("     datest eq0001016 eq0001017        -- two coven servers, use default test %s\n", DEFAULT_TEST);
 }
@@ -3336,6 +3410,10 @@ int main(int argc, char* argv[])
     EnableSEHtoExceptionMapping();
 
     try {
+        //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
+        Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, (const char **)argv, "datest", nullptr, nullptr, nullptr, nullptr, false);
+        initializeStorageGroups(true);
+
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
         StringBuffer lf;
@@ -3475,6 +3553,7 @@ int main(int argc, char* argv[])
                 case 10: TestSubLocks(); break;
                 case 11: TestSDS3(group); break;
                 case 12: TestNodeSubs(); break;
+                case 13: TestParseFileName(); break;
                 }
             }
             else if (TEST("DFS"))
@@ -3529,6 +3608,8 @@ int main(int argc, char* argv[])
                 testDfuStreamWrite(testParams.ordinality() ? testParams.item(0) : nullptr);
             else if (TEST("DFUSTREAMCOPY"))
                 testDfuStreamCopy(testParams.ordinality() ? testParams.item(0) : nullptr);
+            else if (TEST("PARSEFILENAME"))
+                TestParseFileName();
 //          else if (TEST("DALILOG"))
 //              testDaliLog(testParams.ordinality()&&0!=atoi(testParams.item(0)));
             else
