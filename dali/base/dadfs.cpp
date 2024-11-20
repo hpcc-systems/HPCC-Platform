@@ -277,13 +277,15 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
 {
     partNo--;
     StringBuffer partName;
-    if (!pmask)
+    if (!lname||!*lname)
     {
-        pmask = "!ERROR!._$P$_of_$N$";
-        IERRLOG("No partmask for constructPartFilename");
+        if (!pmask)
+        {
+            pmask = "!ERROR!._$P$_of_$N$";
+            IERRLOG("No partmask for constructPartFilename");
+        }
+        lname = expandMask(partName, pmask, partNo, max);
     }
-    expandMask(partName, pmask, partNo, max);
-
     // Get stripeNum from storage plane
     unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
 
