@@ -1690,6 +1690,7 @@ interface IRemoteLogAccess : extends IInterface
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
     virtual bool supportsResultPaging() const = 0;
+    virtual bool healthReport(StringArray & messages) = 0;
 };
 
 // Helper functions to construct log access filters
@@ -1714,7 +1715,7 @@ extern jlib_decl bool fetchLog(LogQueryResultDetails & resultDetails, StringBuff
 extern jlib_decl bool fetchJobIDLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
-extern jlib_decl bool  fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
+extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
 #endif
