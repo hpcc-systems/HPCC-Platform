@@ -385,3 +385,55 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
 
     return true;
 }
+
+bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp)
+{
+    IEspLogAccessStatus * status = createLogAccessStatus("","");
+
+    StringBuffer report;
+    LogAccessHealthReportDetails reportDetails;
+    LogAccessHealthReportOptions options;
+    options.IncludeConfiguration = req.getIncludeConfiguration();
+    options.IncludeDebugReport = req.getIncludeDebugReport();
+    options.IncludeSampleQuery = req.getIncludeSampleQuery();
+
+    if (!queryRemoteLogAccessor())
+    {
+        status->setCode("Fail");
+        status->setMessages("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
+    }
+    else
+    {
+        IEspLogAccessDebugReport * debugReport = createLogAccessDebugReport();
+        queryRemoteLogAccessor()->healthReport(options, reportDetails);
+        status->setCode(LogAccessHealthStatusToString(reportDetails.status.getCode()));
+        StringBuffer encapsulatedMessages;
+        encapsulatedMessages.append("{ ");
+        reportDetails.status.toJSONMessageList(encapsulatedMessages);
+        encapsulatedMessages.append(" }");
+        status->setMessages(encapsulatedMessages.str());
+
+        if (options.IncludeConfiguration)
+        {
+            resp.setConfiguration(reportDetails.Configuration.str());
+            DBGLOG("WsLogAccessHealth: configuration: %s", reportDetails.Configuration.str());
+        }
+
+        if (options.IncludeSampleQuery)
+        {
+            debugReport->setSampleQueryReport(reportDetails.DebugReport.SampleQueryReport.str());
+        }
+
+        if (options.IncludeDebugReport)
+        {
+            debugReport->setPluginDebugReport(reportDetails.DebugReport.PluginDebugReport.str());
+            debugReport->setServerDebugReport(reportDetails.DebugReport.ServerDebugReport.str());
+        }
+
+        resp.setDebugReport(*debugReport);
+    }
+
+    resp.setStatus(*status);
+
+    return true;
+}

@@ -254,13 +254,273 @@ const IPropertyTree * ElasticStackLogAccess::getIndexSearchStatus(const char * i
 
     VStringBuffer indexsearch("_cat/indices/%s?format=JSON", indexpattern);
     return performAndLogESRequest(Client::HTTPMethod::GET, indexsearch.str(), "", "List of available indexes");
-
 }
 
 const IPropertyTree * ElasticStackLogAccess::getESStatus()
 {
     return performAndLogESRequest(Client::HTTPMethod::GET, "_cluster/health", "", "Target cluster health");
 }
+
+ void ElasticStackLogAccess::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
+ {
+    LogAccessHealthStatus status = LOGACCESS_STATUS_success;
+    try
+    {
+        {
+            StringBuffer configuration;
+            if (m_pluginCfg)
+            {
+                if (options.IncludeConfiguration)
+                    toJSON(m_pluginCfg, configuration, 0, JSON_Format);
+            }
+            else
+            {
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+                status.appendJSONListMessage("Elastic Pluging Configuration tree is empty!!!");
+            }
+
+            report.Configuration.set(configuration.str()); //will be empty if !options.IncludeConfiguration
+        }
+
+        if (m_esConnectionStr.length() == 0)
+        {
+            status.appendJSONListMessage("Connection String to target Elastic instance is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_fail);
+        }
+
+        {
+            StringBuffer debugReport;
+            debugReport.set("{ \"ConnectionInfo\": {");
+            appendJSONStringValue(debugReport, "ConnectionString", m_esConnectionStr.str(), true);
+            debugReport.append( "}"); //close conninfo
+
+            debugReport.appendf(", \"LogMaps\": {");
+            debugReport.appendf("\"Global\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_globalSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_globalIndexSearchPattern.str(), true);
+            appendJSONStringValue(debugReport, "TimeStampCol", m_globalIndexTimestampField.str(), true);
+            debugReport.append(" }"); // end Global
+            debugReport.appendf(", \"Components\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_componentsSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_componentsIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end Components
+            debugReport.appendf(", \"Workunits\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_workunitSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_workunitIndexSearchPattern.str(), true);
+            debugReport.append(" }"); // end Workunits
+            debugReport.appendf(", \"Audience\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_audienceSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_audienceIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end Audience
+            debugReport.appendf(", \"Class\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_classSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_classIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end Class
+            debugReport.appendf(", \"Instance\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_instanceSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_instanceIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end Instance
+            debugReport.appendf(", \"Pod\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_podSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_podIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end Pod
+            debugReport.appendf(", \"TraceID\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_traceSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_traceIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end TraceID
+            debugReport.appendf(", \"SpanID\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_spanSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_spanIndexSearchPattern.str(), true);
+            debugReport.appendf(" }"); // end SpanID
+            debugReport.appendf(", \"Host\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_hostSearchColName.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_hostIndexSearchPattern.str(), true);
+            debugReport.append(" }"); // end Host
+            debugReport.append(" }"); //close logmaps
+
+            debugReport.append(" }"); //close debugreport
+
+            if (options.IncludeDebugReport)
+                report.DebugReport.PluginDebugReport.set(debugReport);
+
+            debugReport.set("{ \"AvailableIndices\": "); //start server debugreport and availableindices
+            try
+            {
+                const IPropertyTree * is =  getIndexSearchStatus(m_globalIndexSearchPattern);
+                if (is)
+                {
+                    toJSON(is, debugReport); //returns json array 
+                }
+                else
+                {
+                    debugReport.append("\"Unable to fetch Available Indices for Global Index Pattern\"");
+                    status.appendJSONListMessage("Could not populate Available Indices for Global Index Pattern");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                }
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception fetching available ES indices (");
+                description.append(e->errorCode()).append(") - ");
+                e->errorMessage(description);
+                e->Release();
+                debugReport.append("\"Unable to fetch Available Indices\"");
+                status.appendJSONListMessage(description.str());
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unable to fetch Available Indices\"");
+                status.appendJSONListMessage("Unknown exception while fetching available ES indices");
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+            }
+
+            debugReport.append(", \"TimestampField\": ");
+            try
+            {
+                const IPropertyTree * ts = getTimestampTypeFormat(m_globalIndexSearchPattern, m_globalIndexTimestampField);
+                if (ts)
+                {
+                    toJSON(ts, debugReport);
+                }
+                else
+                {
+                    debugReport.appendf("\"Could not populate ES timestamp format for IndexPattern %s\"", m_globalIndexSearchPattern.str());
+                    status.appendJSONListMessage("Could not populate Available Indices for Global Index Pattern");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                }
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("\"Exception fetching target ES timestamp format (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                debugReport.appendf("\"%s\"", description.str());
+                status.appendJSONListMessage(description.str());
+                e->Release();
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unknown exception while fetching target ES timestamp format\"");
+                status.appendJSONListMessage("Unknown exception while fetching target ES timestamp format");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+
+            debugReport.append(", \"ESStatus\": ");
+            try
+            {
+                StringBuffer out;
+                const IPropertyTree * esStatus = getESStatus();
+                if (esStatus)
+                {
+                    toJSON(esStatus, debugReport); //extract esstatus info to set status green/yellow/red?
+                }
+                else
+                {
+                    status.appendJSONListMessage("Could not populate ES Status");
+                    debugReport.append("\"Could not populate ES Status\"");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                }
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                debugReport.appendf("\"Exception fetching ES Status (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+                status.appendJSONListMessage(description.str());
+            }
+            catch(...)
+            {
+                status.appendJSONListMessage("Unknown exception while fetching ES Status");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+
+            debugReport.append(" } "); //close Server
+
+            if (options.IncludeDebugReport)
+                report.DebugReport.ServerDebugReport.set(debugReport);
+        }
+
+        {
+            StringBuffer sampleQuery;
+            sampleQuery.append("{ \"Query\": { ");
+            try
+            {
+                appendJSONStringValue(sampleQuery, "LogFormat", "JSON", false);
+                LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_json;
+                LogAccessConditions queryOptions;
+                sampleQuery.appendf(", \"Filter\": { ");
+                appendJSONStringValue(sampleQuery, "type", "byComponent", false);
+                appendJSONStringValue(sampleQuery, "value", "eclwatch", false);
+                queryOptions.setFilter(getComponentLogAccessFilter("eclwatch"));
+
+                struct LogAccessTimeRange range;
+                CDateTime endtt;
+                endtt.setNow();
+                range.setEnd(endtt);
+                StringBuffer endstr;
+                endtt.getString(endstr, true); //local time!
+
+                CDateTime startt;
+                startt.setNow();
+                startt.adjustTimeSecs(-60); //an hour ago
+                range.setStart(startt);
+
+                StringBuffer startstr;
+                startt.getString(startstr, true); //local time!
+                sampleQuery.append(", \"TimeRange\": { ");
+                appendJSONStringValue(sampleQuery, "Start", startstr.str(), false);
+                appendJSONStringValue(sampleQuery, "End", endstr.str(), false);
+                sampleQuery.append(" }, "); //end TimeRange
+                queryOptions.setTimeRange(range);
+                queryOptions.setLimit(5);
+                appendJSONStringValue(sampleQuery, "Limit", "5", false);
+                sampleQuery.append(" }, ");//end filter
+
+                StringBuffer logs;
+                LogQueryResultDetails  resultDetails;
+                fetchLog(resultDetails, queryOptions, logs, outputFormat);
+                appendJSONValue(sampleQuery, "ResultCount", resultDetails.totalReceived);
+
+                if (resultDetails.totalReceived == 0)
+                {
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                    status.appendJSONListMessage("Sample query returned zero log records!");
+                }
+
+                sampleQuery.appendf(", \"Results\": %s", logs.str());
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception while executing sample query (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                appendJSONStringValue(sampleQuery, "Results", description.str(), true);
+                status.appendJSONListMessage(description.str());
+                e->Release();
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            catch(...)
+            {
+                appendJSONStringValue(sampleQuery, "Results", "Unknown exception while executing samplequery", false);
+                status.appendJSONListMessage("Unknown exception while executing samplequery");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            sampleQuery.append(" }}"); //close query, and top level json container
+
+            if (options.IncludeSampleQuery)
+                report.DebugReport.SampleQueryReport.set(sampleQuery);
+        }
+    }
+    catch(...)
+    {
+        status.escalateStatusCode(LOGACCESS_STATUS_fail);
+        status.appendJSONListMessage("Encountered unexpected exception during health report");
+    }
+
+    report.status = status;
+ }
 
 /*
  * Transform iterator of hits/fields to back-end agnostic response
