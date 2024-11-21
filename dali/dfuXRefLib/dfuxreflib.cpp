@@ -658,7 +658,7 @@ struct CLogicalNameEntry: public CInterface
         dirpartmask.set(tmp.str());
         replicateOffset = file.getPropInt("@replicateOffset",1);
         lfnHash = file.getPropInt("@lfnHash");
-        plane.setown(getDataStoragePlane(grpname, true));
+        plane.setown(getDataStoragePlane(grpname, false));
         if (!plane)
             manager.error(_lname, "Plane definition \"%s\" is missing for File", grpname.str());
         prefix = plane->queryPrefix();
