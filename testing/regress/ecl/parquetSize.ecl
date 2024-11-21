@@ -15,8 +15,9 @@
 ##############################################################################*/
 
 //class=parquet
-//no<cluster_name>
-//skip
+//nothor
+//noroxie
+//nohthor
 
 IMPORT Std;
 IMPORT Parquet;
