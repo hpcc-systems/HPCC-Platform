@@ -279,6 +279,8 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
     StringBuffer fullname;
     makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
+    // revisit: constructPartFilename should be refactored not to deal with replicate directories, by pre-determining the alternate prefix if copy>0
+    // If copy>0 it could do calPartLocation, find the replicate plane, get it's prefix, and pass to makePhysicalPartName
     unsigned n = 0;
     if (!isContainerized())
     {
