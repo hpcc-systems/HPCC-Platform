@@ -12,19 +12,18 @@
 ############################################################################## */
 
 //class=parquet
+//nothor
 //fail
 
 IMPORT Std;
 IMPORT Parquet;
 
-// Original layout
 Layout1 := RECORD
     INTEGER id;
     STRING name;
     REAL salary;
 END;
 
-// Reordered layout
 Layout2 := RECORD
     STRING name;
     REAL salary;
@@ -39,10 +38,8 @@ testData := DATASET([
 basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
 FilePath := basePath + 'reorder_test.parquet';
 
-// Write using Layout1
 ParquetIO.Write(testData, filePath, TRUE);
 
-// Read using Layout2
 readData := ParquetIO.Read(Layout2, filePath);
 
 OUTPUT(readData, NAMED('ReadData'));

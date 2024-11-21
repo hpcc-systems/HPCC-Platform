@@ -16,8 +16,7 @@
 
 //class=parquet
 //no<cluster_name>
-//nokey
-//nothor
+//skip
 
 IMPORT Std;
 IMPORT Parquet;

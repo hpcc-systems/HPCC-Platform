@@ -14,39 +14,38 @@
 //class=parquet
 //nothor
 
-IMPORT Std;
+IMPORT Std; 
 IMPORT Parquet;
 
-layout := RECORD
-    STRING10 s1;
-    STRING20 s2;
-    STRING30 s3;
+layout := RECORD 
+   STRING10 s1;
+   STRING20 s2;
+   STRING30 s3; 
 END;
 
 stringData := DATASET([
-    {'Hello', 'World', 'Test Data 1'},
-    {'HPCC', 'Systems', 'Test Data 2'},
-    {'Parquet', 'I/O', 'Test Data 3'}
+   {'Hello', 'World', 'Test Data 1'},
+   {'HPCC', 'Systems', 'Test Data 2'},
+   {'Parquet', 'I/O', 'Test Data 3'} 
 ], layout);
 
-basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/'; 
 parquetFilePath := basePath + 'stringData.parquet';
 
-ParquetIO.Write(stringData, parquetFilePath, TRUE);
+ParquetIO.Write(stringData, parquetFilePath, TRUE); 
 parquetString := ParquetIO.Read(layout, parquetFilePath);
 
-layout compareTransform(layout original, layout fromParquet) := TRANSFORM
-    // Show the actual data instead of empty strings for matches
-    SELF.s1 := original.s1 + IF(original.s1 = fromParquet.s1, '', ' (Mismatch)');
-    SELF.s2 := original.s2 + IF(original.s2 = fromParquet.s2, '', ' (Mismatch)');
-    SELF.s3 := original.s3 + IF(original.s3 = fromParquet.s3, '', ' (Mismatch)');
-END;
-
 result := JOIN(stringData, parquetString,
-               LEFT.s1 = RIGHT.s1 AND LEFT.s2 = RIGHT.s2 AND LEFT.s3 = RIGHT.s3,
-               compareTransform(LEFT, RIGHT),
-               ALL);
+              LEFT.s1 = RIGHT.s1 AND 
+              LEFT.s2 = RIGHT.s2 AND 
+              LEFT.s3 = RIGHT.s3,
+              TRANSFORM(layout, 
+                  SELF := LEFT
+              ),
+              ALL);
 
-OUTPUT(result, NAMED('ComparisonResult'));
-mismatchCount := COUNT(result(s1 != '' OR s2 != '' OR s3 != '')); 
+OUTPUT(result, NAMED('ComparisonResult')); 
+
+mismatchCount := COUNT(stringData) - COUNT(result);
+
 OUTPUT(IF(mismatchCount = 0, 'All records match', 'Mismatches found'), NAMED('TestResult'));
