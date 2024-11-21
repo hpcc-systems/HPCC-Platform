@@ -14500,6 +14500,11 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     // NB: check for expected success state (WUStateWait). If any other state, abort.
     {
         Owned<IWorkUnit> w = &workunit.lock();
+        //If the thor instance crashed, make sure that the workunit is no longer associated with it - otherwise a
+        //failure clause that causes a graph to run can abort because the instances has stopped.
+        if (w->getEngineSession() > 0)
+            w->setEngineSession(-1);
+
         WUState state = w->getState();
         if (WUStateWait != state) // expected state from successful Thor run from above
         {
