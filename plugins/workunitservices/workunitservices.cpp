@@ -90,6 +90,8 @@ static const char * EclDefinition =
                             " unsigned4 col;"
                             " string16  source;"
                             " string20  time;"
+                            " unsigned4 priority;"
+                            " real8     cost;"
                             " string      message{maxlength(1024)};"
                         " end;\n"
 "export WsFileRead := record "
@@ -599,6 +601,8 @@ WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __le
             fixedAppend(mb, 16, s.str(), s.length());
             e.getTimeStamp(s);
             fixedAppend(mb, 20, s.str(), s.length());
+            mb.append((unsigned) e.getPriority());
+            mb.append((double) e.getCost());
             e.getExceptionMessage(s);
             varAppendMax(mb, 1024, s.str(), s.length());
         }
