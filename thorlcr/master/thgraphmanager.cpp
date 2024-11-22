@@ -1474,8 +1474,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         Owned<IConstWorkUnit> workunit;
                         factory.setown(getWorkUnitFactory());
                         workunit.setown(factory->openWorkUnit(currentWuid));
-                        SessionId agentSessionID = workunit->getAgentSession();
-                        if (agentSessionID <= 0)
+                        SessionId agentSessionID = workunit ? workunit->getAgentSession() : 0;
+                        if (!workunit)
+                        {
+                            WARNLOG("Discarding job with missing workunit wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
+                            currentWuid.clear();
+                        }
+                        else if (agentSessionID <= 0)
                         {
                             WARNLOG("Discarding job with invalid sessionID: wuid=%s, graph=%s (sessionID=%" I64F "d)", currentWuid.str(), currentGraphName.str(), agentSessionID);
                             currentWuid.clear();
@@ -1525,8 +1530,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             }
                         }
                     }
-                    currentGraphName.clear();
 
+                    currentGraphName.clear();
                     if (lingerPeriod)
                     {
                         PROGLOG("Lingering time left: %.2f", ((float)lingerPeriod)/1000);
@@ -1546,15 +1551,27 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                 break; // timeout/abort
                             // else - reject/ignore duff message.
                         }
-                        if (0 == currentGraphName.length()) // only ever true if !multiJobLinger
+
+                        // The following is true if no workunit/graph have been received
+                        // MORE: I think it should also be executed if lingerPeriod is 0
+                        if (0 == currentGraphName.length())
                         {
-                            // De-register the idle lingering entry.
-                            Owned<IWorkUnitFactory> factory;
-                            Owned<IConstWorkUnit> workunit;
-                            factory.setown(getWorkUnitFactory());
-                            workunit.setown(factory->openWorkUnit(currentWuid));
-                            Owned<IWorkUnit> w = &workunit->lock();
-                            w->setDebugValue(instance, "0", true);
+                            if (!multiJobLinger)
+                            {
+                                // De-register the idle lingering entry.
+                                Owned<IWorkUnitFactory> factory;
+                                Owned<IConstWorkUnit> workunit;
+                                factory.setown(getWorkUnitFactory());
+                                workunit.setown(factory->openWorkUnit(currentWuid));
+                                //Unlikely, but the workunit could have been deleted while we were lingering
+                                //currentWuid can also be blank if the workunit this started for died before thor started
+                                //processing the graph.  This test covers both (unlikely) situations.
+                                if (workunit)
+                                {
+                                    Owned<IWorkUnit> w = &workunit->lock();
+                                    w->setDebugValue(instance, "0", true);
+                                }
+                            }
                             break;
                         }
                     }

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack, TooltipHost } from "@fluentui/react";
 import { Label, Spinner, ToggleButton } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
@@ -543,7 +543,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                             header={<Stack horizontal>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
                                 <Stack.Item grow>
-                                    <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                    <TooltipHost content={nlsHPCC.FilterMetricsTooltip}>
+                                        <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                    </TooltipHost>
                                 </Stack.Item>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
                             </Stack>}
