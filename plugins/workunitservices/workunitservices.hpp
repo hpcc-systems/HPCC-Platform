@@ -66,7 +66,8 @@ WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitList( ICodeContext *ct
 WORKUNITSERVICES_API char * wsWUIDonDate(unsigned year,unsigned month,unsigned day,unsigned hour,unsigned minute);
 WORKUNITSERVICES_API char * wsWUIDdaysAgo(unsigned daysago);
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitTimeStamps( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
-WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitMessages( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
+WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitMessages( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid);
+WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitMessages_v2( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid);
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitTimings( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );

@@ -90,7 +90,19 @@ static const char * EclDefinition =
                             " unsigned4 col;"
                             " string16  source;"
                             " string20  time;"
-                            " string      message{maxlength(1024)};"
+                            " string    message{maxlength(1024)};"
+                        " end;\n"
+"export WsMessage_v2 := record "
+                            " unsigned4 severity;"
+                            " integer4  code;"
+                            " string32  location;"
+                            " unsigned4 row;"
+                            " unsigned4 col;"
+                            " string16  source;"
+                            " string20  time;"
+                            " unsigned4 priority;"
+                            " real8     cost;"
+                            " string    message{maxlength(1024)};"
                         " end;\n"
 "export WsFileRead := record "
                             " string name{maxlength(256)};"
@@ -143,7 +155,7 @@ static const char * EclDefinition =
 "  varstring WUIDonDate(unsigned4 year,unsigned4 month,unsigned4 day,unsigned4 hour, unsigned4 minute) : entrypoint='wsWUIDonDate'; \n"
 "  varstring WUIDdaysAgo(unsigned4  daysago) : entrypoint='wsWUIDdaysAgo'; \n"
 "  dataset(WsTimeStamp) WorkunitTimeStamps(const varstring wuid) : context,entrypoint='wsWorkunitTimeStamps'; \n"
-"  dataset(WsMessage) WorkunitMessages(const varstring wuid) : context,entrypoint='wsWorkunitMessages'; \n"
+"  dataset(WsMessage_v2) WorkunitMessages(const varstring wuid) : context,entrypoint='wsWorkunitMessages_v2'; \n"
 "  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : context,entrypoint='wsWorkunitFilesRead'; \n"
 "  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : context,entrypoint='wsWorkunitFilesWritten'; \n"
 "  dataset(WsTiming) WorkunitTimings(const varstring wuid) : context,entrypoint='wsWorkunitTimings'; \n"
@@ -578,7 +590,7 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
     __result = mb.detach();
 }
 
-WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
+void wsWorkunitMessagesImpl( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid, bool returnCosts)
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
@@ -599,12 +611,28 @@ WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __le
             fixedAppend(mb, 16, s.str(), s.length());
             e.getTimeStamp(s);
             fixedAppend(mb, 20, s.str(), s.length());
+            if (returnCosts)
+            {
+                mb.append((unsigned) e.getPriority());
+                mb.append((double) e.getCost());
+            }
             e.getExceptionMessage(s);
             varAppendMax(mb, 1024, s.str(), s.length());
         }
     }
     __lenResult = mb.length();
     __result = mb.detach();
+}
+
+
+WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid)
+{
+    wsWorkunitMessagesImpl(ctx, __lenResult, __result, wuid, false);
+}
+
+WORKUNITSERVICES_API void wsWorkunitMessages_v2( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid)
+{
+    wsWorkunitMessagesImpl(ctx, __lenResult, __result, wuid, true);
 }
 
 WORKUNITSERVICES_API void wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
