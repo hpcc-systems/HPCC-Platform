@@ -67,7 +67,7 @@
 #
 #########################################################
 
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.22.1...3.28.3)
 
 set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(${HPCC_SOURCE_DIR}/version.cmake)
