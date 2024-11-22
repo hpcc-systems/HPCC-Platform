@@ -190,7 +190,7 @@ stringDatasetIn := ParquetIO.Read(stringRecord, dropzoneDirectory + '/StringTest
     SELF.value := a.value = b.value;
 END;
 
-stringCompareResult := JOIN(stringDatasetOut, stringDatasetIn, 
+stringCompareResult := JOIN(stringDatasetOut, stringDatasetIn,
     LEFT.name = RIGHT.name,
     stringJoin(LEFT, RIGHT),
     ALL);
@@ -314,8 +314,8 @@ unicodeDatasetOut := DATASET([
 ], unicodeRecord);
 
 setOfUnicodeDatasetOut := DATASET([
-    {103, 'adw', [U'Á', U'É', U'Í', U'Ó', U'Ú']}, 
-    {104, 'adx', [U'α', U'β', U'γ', U'δ', U'ε']}, 
+    {103, 'adw', [U'Á', U'É', U'Í', U'Ó', U'Ú']},
+    {104, 'adx', [U'α', U'β', U'γ', U'δ', U'ε']},
     {105, 'ady', [U'☀', U'☁', U'☂', U'☃', U'☄']}
 ], setOfUnicodeRecord);
 

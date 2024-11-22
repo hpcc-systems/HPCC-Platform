@@ -11,41 +11,38 @@
     limitations under the License.
 ############################################################################## */
 
-//class=parquet
-//nothor
-
-IMPORT Std; 
+//class=parquet //nothor
+IMPORT Std;
 IMPORT Parquet;
 
-layout := RECORD 
-   STRING10 s1;
-   STRING20 s2;
-   STRING30 s3; 
+layout := RECORD
+    STRING10 s1;
+    STRING20 s2;
+    STRING30 s3;
 END;
 
 stringData := DATASET([
-   {'Hello', 'World', 'Test Data 1'},
-   {'HPCC', 'Systems', 'Test Data 2'},
-   {'Parquet', 'I/O', 'Test Data 3'} 
+    {'Hello', 'World', 'Test Data 1'},
+    {'HPCC', 'Systems', 'Test Data 2'},
+    {'Parquet', 'I/O', 'Test Data 3'}
 ], layout);
 
-basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/'; 
+basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
 parquetFilePath := basePath + 'stringData.parquet';
 
-ParquetIO.Write(stringData, parquetFilePath, TRUE); 
+ParquetIO.Write(stringData, parquetFilePath, TRUE);
 parquetString := ParquetIO.Read(layout, parquetFilePath);
 
 result := JOIN(stringData, parquetString,
-              LEFT.s1 = RIGHT.s1 AND 
-              LEFT.s2 = RIGHT.s2 AND 
-              LEFT.s3 = RIGHT.s3,
-              TRANSFORM(layout, 
-                  SELF := LEFT
+              TRIM(LEFT.s1) = TRIM(RIGHT.s1) AND 
+              TRIM(LEFT.s2) = TRIM(RIGHT.s2) AND 
+              TRIM(LEFT.s3) = TRIM(RIGHT.s3),
+              TRANSFORM(layout,
+                   SELF := LEFT
               ),
               ALL);
 
-OUTPUT(result, NAMED('ComparisonResult')); 
+OUTPUT(result, NAMED('ComparisonResult'));
 
 mismatchCount := COUNT(stringData) - COUNT(result);
-
 OUTPUT(IF(mismatchCount = 0, 'All records match', 'Mismatches found'), NAMED('TestResult'));
