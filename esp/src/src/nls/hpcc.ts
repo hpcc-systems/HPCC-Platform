@@ -353,6 +353,7 @@ export = {
         FileUploadStillInProgress: "File upload still in progress",
         Filter: "Filter",
         FilterDetails: "Filter Details",
+        FilterMetricsTooltip: "This will filter based upon the \"Scope\" column by default. To filter on any other column, use the column name as a prefix to your search, eg: \"Filename:spill\"",
         FilterSet: "Filter Set",
         Find: "Find",
         Finished: "Finished",
