@@ -185,7 +185,7 @@ jobs:
         if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests_result
           path: |
             ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
             /home/runner/HPCCSystems-regression/log/*.json
