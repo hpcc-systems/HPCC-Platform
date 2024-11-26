@@ -338,7 +338,7 @@ interface IPipeProcess: extends IInterface
     virtual void closeInput() = 0;                                  // indicate finished input to pipe
     virtual void closeOutput() = 0;                                 // indicate finished reading from pipe (generally called automatically)
     virtual void closeError() = 0;                                  // indicate finished reading from pipe stderr
-    virtual void abort() = 0;
+    virtual void abort(bool gracefull) = 0;                         // graceful=true allows the child process to clean up.
     virtual void notifyTerminated(HANDLE pid,unsigned retcode) = 0; // internal
     virtual HANDLE getProcessHandle() = 0;                          // used to auto kill
     virtual void setenv(const char *var, const char *value) = 0;  // Set a value to be passed in the called process environment
