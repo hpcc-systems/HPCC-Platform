@@ -147,6 +147,8 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
           export PATH=$PATH:$JAVA_HOME/bin
 
+          # To-Do: Need to find a solution to install same version of chrome and chromedriver
+          # The chrome stable current is 128
           #wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           #sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
           sudo apt-get remove -y google-chrome-stable
