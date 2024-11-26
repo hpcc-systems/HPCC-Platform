@@ -149,8 +149,9 @@ jobs:
 
           #wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           #sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          sudo apt-get remove -y google-chrome-stable
           wget http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_126.0.6478.182-1_amd64.deb
-          sudo apt-get install -y ./google-chrome-stable_126.0.6478.182-1_amd64.deb
+          sudo apt-get install -y --allow-downgrades ./google-chrome-stable_126.0.6478.182-1_amd64.deb
 
           wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
