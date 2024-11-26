@@ -1635,7 +1635,7 @@ public:
        {
          retcode = 5;
          errbuf.clear().append("Invalid or missing key passphrase. ");
-         pipe->abort();
+         pipe->abort(false);
          return retcode;
        }
 
