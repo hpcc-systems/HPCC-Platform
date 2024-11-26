@@ -146,8 +146,12 @@ jobs:
           sudo update-alternatives --set javac /usr/lib/jvm/java-21-openjdk-amd64/bin/javac
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
           export PATH=$PATH:$JAVA_HOME/bin
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+
+          #wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          #sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          wget http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_126.0.6478.182-1_amd64.deb
+          sudo apt-get install -y ./google-chrome-stable_126.0.6478.182-1_amd64.deb
+
           wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
           sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
