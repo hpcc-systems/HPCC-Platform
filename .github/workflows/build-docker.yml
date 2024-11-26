@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: |
@@ -168,7 +168,7 @@ jobs:
 
       - name: Upload Support Files
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-support-files
           path: |
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload ECL Watch UI Test Files
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
           path: |
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-logs
           path: ${{ github.workspace }}/build/**/*.log

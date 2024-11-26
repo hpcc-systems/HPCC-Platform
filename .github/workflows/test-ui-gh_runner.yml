@@ -34,7 +34,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Download UI Test Files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
           path: ${{ inputs.asset-name }}-ecl_watch_ui_tests
@@ -74,7 +74,7 @@ jobs:
 
       - name: Download Package
         if: steps.check.outputs.runtests
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
@@ -183,7 +183,7 @@ jobs:
 
       - name: Upload ECL Watch UI Test Logs To Artifact
         if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
           path: |

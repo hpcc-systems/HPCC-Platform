@@ -1515,8 +1515,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             }
                         }
                     }
-                    currentGraphName.clear();
 
+                    currentGraphName.clear();
                     if (lingerPeriod)
                     {
                         unsigned lingerRemaining;
@@ -1538,15 +1538,26 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             // else - reject/ignore duff message.
                         } while (!lingerTimer.timedout(&lingerRemaining));
 
-                        if (0 == currentGraphName.length()) // only ever true if !multiJobLinger
+                        // The following is true if no workunit/graph have been received
+                        // MORE: I think it should also be executed if lingerPeriod is 0
+                        if (0 == currentGraphName.length())
                         {
-                            // De-register the idle lingering entry.
-                            Owned<IWorkUnitFactory> factory;
-                            Owned<IConstWorkUnit> workunit;
-                            factory.setown(getWorkUnitFactory());
-                            workunit.setown(factory->openWorkUnit(currentWuid));
-                            Owned<IWorkUnit> w = &workunit->lock();
-                            w->setDebugValue(instance, "0", true);
+                            if (!multiJobLinger)
+                            {
+                                // De-register the idle lingering entry.
+                                Owned<IWorkUnitFactory> factory;
+                                Owned<IConstWorkUnit> workunit;
+                                factory.setown(getWorkUnitFactory());
+                                workunit.setown(factory->openWorkUnit(currentWuid));
+                                //Unlikely, but the workunit could have been deleted while we were lingering
+                                //currentWuid can also be blank if the workunit this started for died before thor started
+                                //processing the graph.  This test covers both (unlikely) situations.
+                                if (workunit)
+                                {
+                                    Owned<IWorkUnit> w = &workunit->lock();
+                                    w->setDebugValue(instance, "0", true);
+                                }
+                            }
                             break;
                         }
                     }
