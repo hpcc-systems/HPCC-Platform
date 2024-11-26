@@ -106,7 +106,7 @@ The steps in the workflow run on the specified operating system, with Ubuntu-22.
 This step enables us to download the ready-to-install HPCC Platform's artifact built on the latest commit.
   ```yaml
       - name: Download Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
