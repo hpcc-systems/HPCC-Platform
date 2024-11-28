@@ -90,6 +90,32 @@ enum MDFSRequestKind
     MDFS_MAX
 };
 
+
+//--------------------------------------------------------------------------------------------------------------------
+
+static unsigned dadfsHookId = 0;
+static bool expertVerifyWriteSyncSizes = false;
+
+//Add any code for caching global configuration here...
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        Owned<IPropertyTree> componentConfig = getComponentConfig();
+        Owned<IPropertyTree> globalConfig = getGlobalConfig();
+        expertVerifyWriteSyncSizes = componentConfig->getPropBool("expert/@verifyWriteSyncSizes", globalConfig->getPropBool("expert/@verifyWriteSyncSizes", false));
+    };
+    dadfsHookId = installConfigUpdateHook(updateFunc, true);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    removeConfigUpdateHook(dadfsHookId);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
 // Mutex for physical operations (remove/rename)
 static CriticalSection physicalChange;
 
@@ -3813,11 +3839,31 @@ public:
                 if (unlikely(elapsedMs < marginMs))
                 {
                     LOG(MCuserProgress, "Delaying access to %s on %s for %ums to ensure write sync", queryLogicalName(), name, (unsigned)(marginMs - elapsedMs));
+                    if (expertVerifyWriteSyncSizes)
+                        checkSizeConsistency("Before write sync delay");
                     MilliSleep(marginMs - elapsedMs);
+                    if (expertVerifyWriteSyncSizes)
+                        checkSizeConsistency("After write sync delay");
                     now = 0; // re-evaluate now - unlikely to actually happen
                 }
             }
         }
+    }
+
+    void checkSizeConsistency(const char * when)
+    {
+        auto checkPartSize = [this,when](unsigned idx) -> void
+        {
+            IDistributedFilePart &part = queryPart(idx);
+            offset_t size = part.getDiskSize(false, false);
+            if (size != (offset_t)-1)
+            {
+                offset_t physicalSize = part.getDiskSize(true, true);
+                if (size != physicalSize)
+                    OWARNLOG("%s: Part %d of file %s is inconsistent: logical size = %" I64F "d, physical size = %" I64F "d", when, idx, queryLogicalName(), size, physicalSize);
+            }
+        };
+        asyncFor(numParts(), checkPartSize);
     }
 
     bool hasDirPerPart() const
