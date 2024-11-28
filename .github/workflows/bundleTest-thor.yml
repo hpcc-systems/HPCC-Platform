@@ -50,7 +50,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Download Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
@@ -268,7 +268,7 @@ jobs:
 
       - name: ml-thor-test-logs-artifact
         if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-name }}-bundle-test-logs
           path: |
