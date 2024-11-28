@@ -81,7 +81,6 @@ std::atomic<unsigned __int64> leafSearchCycles{0};
 
 static cycle_t traceCacheLockingFrequency{0};
 static cycle_t traceNodeLoadFrequency{0};
-static cycle_t traceCacheLockingThreshold{0};
 static cycle_t traceNodeLoadThreshold{0};
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
@@ -90,7 +89,6 @@ MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
     fetchThresholdCycles = nanosec_to_cycle(defaultFetchThresholdNs);
     traceCacheLockingFrequency = millisec_to_cycle(60000);          // Report locking delays at most once per minute
     traceNodeLoadFrequency = millisec_to_cycle(60000);              // Report slow loads at most once per minute
-    traceCacheLockingThreshold = millisec_to_cycle(50);             // Report locks that take > 50ms
     traceNodeLoadThreshold = millisec_to_cycle(20);                 // Report node loads that take > 5ms
     return 1;
 }
@@ -2610,8 +2608,6 @@ void setIndexWarningThresholds(IPropertyTree * options)
         traceCacheLockingFrequency = nanosec_to_cycle(options->getPropInt64("@traceCacheLockingFrequencyNs"));
     if (options->hasProp("@traceNodeLoadFrequencyNs"))
         traceNodeLoadFrequency = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadFrequencyNs"));
-    if (options->hasProp("@traceCacheLockingThresholdNs"))
-        traceCacheLockingThreshold = nanosec_to_cycle(options->getPropInt64("@traceCacheLockingThresholdNs"));
     if (options->hasProp("@traceNodeLoadThresholdNs"))
         traceNodeLoadThreshold = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadThresholdNs"));
 }
@@ -2640,12 +2636,46 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 static std::atomic<cycle_t> lastLockingReportCycles{0};
 static std::atomic<cycle_t> lastLoadReportCycles{0};
 
+//Keep track of the total time that is taken to resolve a node from the cache - including loading it from disk.
+class NodeCacheLookupTimer
+{
+public:
+    inline NodeCacheLookupTimer(IContextLogger * _ctx) : ctx(_ctx)
+    {
+        if (ctx)
+            startCycles = get_cycles_now();
+    }
+    inline ~NodeCacheLookupTimer()
+    {
+        if (ctx)
+            ctx->noteStatistic(StCycleIndexCacheBlockedCycles, get_cycles_now() - startCycles);
+    }
+
+    //Call this function to avoid the destructor having to call get_cycles_now()
+    void noteComplete(cycle_t now)
+    {
+        if (ctx)
+        {
+            ctx->noteStatistic(StCycleIndexCacheBlockedCycles, now - startCycles);
+            // prevent double recording the time - compiler will likely optimize away the destructor
+            ctx = nullptr;
+        }
+    }
+
+private:
+    IContextLogger * ctx;
+    cycle_t startCycles = 0;
+};
+
 const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
     if (!pos)
         return NULL;
+
+    //Time how long it takes to resolve an item in the node cache, and record it as the blocked time.
+    NodeCacheLookupTimer lookupTimer(ctx);
 
     // No benefit in caching the following, especially since they will evict useful pages
     if ((type == NodeMeta) || (type == NodeBloom))
@@ -2718,12 +2748,13 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
             if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
         }
 
+        cycle_t startCycles = get_cycles_now();
+        lookupTimer.noteComplete(startCycles);
+
         //The common case is that this flag has already been set (by a previous add).
         if (likely(ownedCacheEntry->isReady()))
             return ownedCacheEntry->getNode();
 
-        //Shame that the hash code is recalculated - it might be possible to remove this.
-        cycle_t startCycles = get_cycles_now();
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles;
 
@@ -2755,15 +2786,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
             }
         }
         cycle_t endLoadCycles = get_cycles_now();
-        cycle_t lockingCycles = startLoadCycles - startCycles;
-        if (lockingCycles > traceCacheLockingThreshold)
-        {
-            if ((endLoadCycles - lastLockingReportCycles) >= traceCacheLockingFrequency)
-            {
-                lastLockingReportCycles = endLoadCycles;
-                WARNLOG("CNodeCache::getNode lock(%s) took %lluns", cacheTypeText[cacheType], cycle_to_nanosec(lockingCycles));
-            }
-        }
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
         if (actualLoadCycles > traceNodeLoadThreshold)
         {
@@ -2779,7 +2801,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         {
             ctx->noteStatistic(loadStatId[cacheType], endLoadCycles - startCycles);
             ctx->noteStatistic(readStatId[cacheType], fetchCycles);
-            ctx->noteStatistic(StCycleIndexCacheBlockedCycles, lockingCycles);
             if (fetchCycles >= fetchThresholdCycles)
             {
                 ctx->noteStatistic(fetchStatId[cacheType], 1);
