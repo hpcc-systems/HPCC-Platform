@@ -310,9 +310,16 @@ IHqlExpression * queryBaseIndexForKeyedJoin(IHqlExpression * expr)
         IHqlExpression * left = queryBaseIndexForKeyedJoin(expr->queryChild(1));
         IHqlExpression * right = queryBaseIndexForKeyedJoin(expr->queryChild(2));
         if (left && right)
-            return left;
+        {
+            //IF (cond, index) and IF(cond, null, index) should be allowed, and will return the index
+            if (left->getOperator() != no_null)
+                return left;
+            return right;
+        }
         return nullptr;
     }
+    if (expr->getOperator() == no_null)
+        return expr;
     return queryPhysicalRootTable(expr);
 }
 
