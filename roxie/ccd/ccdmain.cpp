@@ -75,6 +75,7 @@ unsigned numRequestArrayThreads = 5;
 bool blockedLocalAgent = true;
 bool acknowledgeAllRequests = true;
 unsigned packetAcknowledgeTimeout = 100;
+unsigned dynPriorityAdjustTime = 0;   // default off (0)
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
@@ -1007,6 +1008,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 0);
         packetAcknowledgeTimeout = topology->getPropInt("@packetAcknowledgeTimeout", packetAcknowledgeTimeout);
+        dynPriorityAdjustTime = topology->getPropInt("@dynPriorityAdjustTime", 0);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));
