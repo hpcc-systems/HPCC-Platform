@@ -1,5 +1,5 @@
 [submodule "esp/src/dgrid"]
-	path = esp/src/dgrid
+	path = esp/src/packages/legacy/dgrid
 	url = https://github.com/hpcc-systems/dgrid.git
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c

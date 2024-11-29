@@ -58,22 +58,22 @@ function getConfig(env) {
         packages: [
             {
                 name: "dojo",
-                location: baseUrl + "/node_modules/dojo",
+                location: env.dojoRoot + "/dojo",
                 lib: "."
             },
             {
                 name: "dijit",
-                location: baseUrl + "/node_modules/dijit",
+                location: env.dojoRoot + "/dijit",
                 lib: "."
             },
             {
                 name: "dojox",
-                location: baseUrl + "/node_modules/dojox",
+                location: env.dojoRoot + "/dojox",
                 lib: "."
             },
             {
                 name: "dijit-themes",
-                location: baseUrl + "/node_modules/dijit-themes",
+                location: env.dojoRoot + "/dijit-themes",
                 lib: "."
             },
             {
@@ -82,13 +82,18 @@ function getConfig(env) {
                 lib: "."
             },
             {
+                name: "dstore",
+                location: env.dojoRoot + "/dojo-dstore",
+                lib: "."
+            },
+            {
                 name: "xstyle",
-                location: baseUrl + "/xstyle",
+                location: env.dojoRoot + "/xstyle",
                 lib: "."
             },
             {
                 name: "put-selector",
-                location: baseUrl + "/put-selector",
+                location: env.dojoRoot + "/put-selector",
                 lib: "."
             }
         ]

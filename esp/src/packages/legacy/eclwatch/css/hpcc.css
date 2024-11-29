@@ -1595,7 +1595,7 @@ table.miniSelect span {
 }
 
 .dojoxUpgradeBarCloseIcon {
-    background: url("../../node_modules/dijit/themes/tundra/images/tabClose.png") no-repeat right top;
+    background: url("../../../../node_modules/dijit/themes/tundra/images/tabClose.png") no-repeat right top;
     position: absolute;
     vertical-align: middle;
     right: 5px;
@@ -1606,15 +1606,15 @@ table.miniSelect span {
 }
 
 .dj_ie6 .dojoxUpgradeBarCloseIcon {
-    background: url("../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
+    background: url("../../../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
 }
 
 .dojoxUpgradeBarCloseIcon-hover {
-    background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.png") no-repeat right top;
+    background: url("../../../../node_modules/dijit/themes/tundra/images/tabCloseHover.png") no-repeat right top;
 }
 
 .dj_ie6 .dojoxUpgradeBarCloseIcon-hover {
-    background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
+    background: url("../../../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
 }
 
 .dojoxTreeMap {

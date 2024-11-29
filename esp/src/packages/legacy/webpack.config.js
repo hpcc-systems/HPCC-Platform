@@ -36,7 +36,7 @@ module.exports = function (env) {
         new DojoWebpackPlugin({
             loaderConfig: require("./eclwatch/dojoConfig"),
             environment: { dojoRoot: "build/dist" },
-            buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
+            buildEnvironment: { dojoRoot: "../../node_modules" }, // used at build time
             locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
         }),
 
@@ -88,7 +88,7 @@ module.exports = function (env) {
         },
         resolve: {
             alias: {
-                "@hpcc-js/wasm/dist/duckdb": path.resolve(__dirname, "node_modules/@hpcc-js/wasm/dist/duckdb.js"),
+                "@hpcc-js/wasm/dist/duckdb": path.resolve(__dirname, "../../node_modules/@hpcc-js/wasm/dist/duckdb.js"),
             },
             fallback: {
                 "@hpcc-js/wasm": [
@@ -102,7 +102,7 @@ module.exports = function (env) {
         },
         plugins: plugins,
         resolveLoader: {
-            modules: ["node_modules"]
+            modules: ["../../node_modules"]
         },
 
         target: "web",
