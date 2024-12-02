@@ -34,7 +34,7 @@ public:
     ~FileMetricSink() override = default;
 
 protected:
-    virtual void prepareToStartCollecting() override;
+    virtual bool prepareToStartCollecting() override;
     virtual void collectingHasStopped() override;
     void doCollection() override;
     virtual void writeReportHeaderToFile() const;

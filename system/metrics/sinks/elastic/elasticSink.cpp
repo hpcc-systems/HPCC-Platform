@@ -105,9 +105,9 @@ ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSet
 }
 
 
-void ElasticMetricSink::prepareToStartCollecting()
+bool ElasticMetricSink::prepareToStartCollecting()
 {
-
+    return false;
 }
 
 
