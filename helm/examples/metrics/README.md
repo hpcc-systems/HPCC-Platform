@@ -265,10 +265,11 @@ The host settings define the ElasticSearch server to which metrics are reported.
 
 **Authentication**
 
-A child of the host configuration where authentication settings are defined. The settings are:
+Optional child of the host configuration where authentication settings are defined. If missing, 
+no authentication is used. If defined, the settings are:
 
-* type - Authentication type used to connect to the ElasticSearch server. Value defines the remaining settings.
-The allowed values are (optional)
+* type - Required Authentication type used to connect to the ElasticSearch server. Value defines the 
+remaining settings. The allowed values are:
   * basic - Basic authentication is used.
 * credentialsSecret - The name of the secret containing the credentials used to authenticate to 
 the ElasticSearch server. (optional, valid for Kubernetes only)
