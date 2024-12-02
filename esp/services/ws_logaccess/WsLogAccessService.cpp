@@ -385,3 +385,29 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
 
     return true;
 }
+
+bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp)
+{
+    StringArray testMessages;
+    bool success = true;
+    if (!queryRemoteLogAccessor())
+    {
+        testMessages.append("LogAccess plugin not available, review logAccess configuration!");
+        success = false;
+    }
+    else
+    {
+        try
+        {
+            queryRemoteLogAccessor()->healthReport(testMessages);
+        }
+        catch(...)
+        {
+            testMessages.append("Encountered unknown exception while performing connectivity test");
+        }
+    }
+
+    resp.setMessages(testMessages);
+
+    return success;
+}

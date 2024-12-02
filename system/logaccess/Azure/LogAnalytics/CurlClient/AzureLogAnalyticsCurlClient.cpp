@@ -1081,6 +1081,107 @@ bool AzureLogAnalyticsCurlClient::processSearchJsonResp(LogQueryResultDetails & 
     return true;
 }
 
+bool AzureLogAnalyticsCurlClient::healthReport(StringArray & messages)
+{
+    try
+    {
+        StringBuffer scratch;
+        scratch.setf("Target Azure Log Analytics workspace ID: '%s'", m_logAnalyticsWorkspaceID.str());
+        messages.append(scratch.str());
+
+        scratch.setf("Target Azure Log Analytics tenant ID: '%s'", m_aadTenantID.str());
+        messages.append(scratch.str());
+
+        scratch.setf("Target Azure Log Analytics client ID: '%s'", m_aadClientID.str());
+        messages.append(scratch.str());
+
+        scratch.setf("Target Azure Log Analytics secret is%s empty", m_aadClientSecret.length()==0 ? "" : " not");
+        messages.append(scratch.str());
+
+        scratch.setf("Targets ContainerLogV%c", targetIsContainerLogV2 ? '2' : '1');
+        messages.append(scratch.str());
+
+        scratch.setf("Components query joins %senabled", m_disableComponentNameJoins ? "not " : "");
+        messages.append(scratch.str());
+
+        if (m_pluginCfg)
+        {
+            StringBuffer configXML;
+            toXML(m_pluginCfg, configXML);
+
+            scratch.setf("Configuration tree: '%s'", configXML.str());
+            messages.append(scratch.str());
+        }
+        else
+        {
+            messages.append("Configuration tree is empty!!!");
+        }
+
+        scratch.set("LogMaps:");
+        scratch.appendf("\n\tGlobal column: '%s', index pattern: '%s', timestamp column: '%s'", m_globalSearchColName.str(), m_globalIndexSearchPattern.str(), m_globalIndexTimestampField.str()); 
+        scratch.appendf("\n\tWorkunits column: '%s', index pattern: '%s'", m_workunitSearchColName.str(), m_workunitIndexSearchPattern.str());
+        scratch.appendf("\n\tComponents column: '%s', index pattern: '%s'", m_componentsSearchColName.str(), m_componentsIndexSearchPattern.str());
+        scratch.appendf("\n\tAudience column: '%s', index pattern: '%s'", m_audienceSearchColName.str(), m_audienceIndexSearchPattern.str());
+        scratch.appendf("\n\tLog Class column: '%s', index pattern: '%s'", m_classSearchColName.str(), m_classIndexSearchPattern.str());
+        scratch.appendf("\n\tInstance column: '%s', index pattern: '%s'", m_instanceSearchColName.str(), m_instanceIndexSearchPattern.str());
+        scratch.appendf("\n\tPod column: '%s', index pattern: '%s'", m_podSearchColName.str(), m_podIndexSearchPattern.str());
+        scratch.appendf("\n\tTraceID column: '%s', index pattern: '%s'", m_traceSearchColName.str(), m_traceIndexSearchPattern.str());
+        scratch.appendf("\n\tSpanID column: '%s', index pattern: '%s'", m_spanSearchColName.str(), m_spanIndexSearchPattern.str());
+        scratch.appendf("\n\tHost column: '%s', index pattern: '%s'", m_hostSearchColName.str(), m_hostIndexSearchPattern.str());
+        messages.append(scratch.str());
+
+        try
+        {
+            LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_xml;
+            LogAccessConditions queryOptions;
+
+            queryOptions.setFilter(getComponentLogAccessFilter(""));
+
+            struct LogAccessTimeRange range;
+            CDateTime endtt;
+            endtt.setNow();
+            range.setEnd(endtt);
+
+            CDateTime startt;
+            startt.setNow();
+            startt.adjustTimeSecs(-60); //an hour ago
+            range.setStart(startt);
+
+            StringBuffer startstr;
+            startt.getString(startstr);
+
+            queryOptions.setTimeRange(range);
+            queryOptions.setLimit(100);
+
+            StringBuffer logs;
+            LogQueryResultDetails  resultDetails;
+            fetchLog(resultDetails, queryOptions, logs, outputFormat);
+            scratch.setf("Sample ALA query resulted in %d log records.", resultDetails.totalReceived);
+            messages.append(scratch.str());
+            messages.append(logs.str());
+        }
+        catch(IException * e)
+        {
+            StringBuffer description;
+            e->errorMessage(description);
+            scratch.setf("Exception while executing sample Grafana/Loki query (%d) - %s", e->errorCode(), description.str());
+            messages.append(scratch.str());
+            e->Release();
+        }
+        catch(...)
+        {
+            messages.append("Unknown exception while executing sample Grafana/Loki query");
+        }
+    }
+    catch(...)
+    {
+        messages.append("Encountered unexpected exception during health report");
+        return false;
+    }
+
+    return true;
+}
+
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     StringBuffer token;

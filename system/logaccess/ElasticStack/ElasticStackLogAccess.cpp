@@ -262,6 +262,164 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
     return performAndLogESRequest(Client::HTTPMethod::GET, "_cluster/health", "", "Target cluster health");
 }
 
+ bool ElasticStackLogAccess::healthReport(StringArray & messages)
+ {
+    try
+    {
+        StringBuffer scratch;
+        scratch.setf("Connection string: '%s'", m_esConnectionStr.str());
+        messages.append(scratch.str());
+
+        if (m_pluginCfg)
+        {
+            StringBuffer configXML;
+            toXML(m_pluginCfg, configXML);
+
+            scratch.setf("Configuration tree: '%s'", configXML.str());
+            messages.append(scratch.str());
+        }
+        else
+        {
+            messages.append("Configuration tree is empty!!!");
+        }
+
+        scratch.set("LogMaps:");
+        scratch.appendf("\n\tGlobal column: '%s', index pattern: '%s', timestamp column: '%s'", m_globalSearchColName.str(), m_globalIndexSearchPattern.str(), m_globalIndexTimestampField.str()); 
+        scratch.appendf("\n\tWorkunits column: '%s', index pattern: '%s'", m_workunitSearchColName.str(), m_workunitIndexSearchPattern.str());
+        scratch.appendf("\n\tComponents column: '%s', index pattern: '%s'", m_componentsSearchColName.str(), m_componentsIndexSearchPattern.str());
+        scratch.appendf("\n\tAudience column: '%s', index pattern: '%s'", m_audienceSearchColName.str(), m_audienceIndexSearchPattern.str());
+        scratch.appendf("\n\tLog Class column: '%s', index pattern: '%s'", m_classSearchColName.str(), m_classIndexSearchPattern.str());
+        scratch.appendf("\n\tInstance column: '%s', index pattern: '%s'", m_instanceSearchColName.str(), m_instanceIndexSearchPattern.str());
+        scratch.appendf("\n\tPod column: '%s', index pattern: '%s'", m_podSearchColName.str(), m_podIndexSearchPattern.str());
+        scratch.appendf("\n\tTraceID column: '%s', index pattern: '%s'", m_traceSearchColName.str(), m_traceIndexSearchPattern.str());
+        scratch.appendf("\n\tSpanID column: '%s', index pattern: '%s'", m_spanSearchColName.str(), m_spanIndexSearchPattern.str());
+        scratch.appendf("\n\tHost column: '%s', index pattern: '%s'", m_hostSearchColName.str(), m_hostIndexSearchPattern.str());
+        messages.append(scratch.str());
+
+        try
+        {
+            StringBuffer out;
+            const IPropertyTree * status = getESStatus();
+            if (status)
+            {
+                toXML(status, out);
+                scratch.setf("\n\tES Status: '%s'", out.str());
+                messages.append(scratch.str());
+            }
+        }
+        catch(IException * e)
+        {
+            StringBuffer description;
+            e->errorMessage(description);
+            scratch.setf("\n\tException fetching ES Status (%d) - %s", e->errorCode(), description.str());
+            messages.append(description.str());
+            e->Release();
+        }
+        catch(...)
+        {
+            messages.append("\n\tUnknown exception while fetching ES Status");
+        }
+
+        try
+        {
+            StringBuffer out;
+            const IPropertyTree * is =  getIndexSearchStatus(m_globalIndexSearchPattern);
+            if (is)
+            {
+                toXML(is, out.clear());
+                scratch.setf("ES available indices: '%s'", out.str());
+                messages.append(scratch.str());
+            }
+        }
+        catch(IException * e)
+        {
+            StringBuffer description;
+            e->errorMessage(description);
+            scratch.setf("\n\tException fetching available ES indices (%d) - %s", e->errorCode(), description.str());
+            messages.append(description.str());
+            e->Release();
+        }
+        catch(...)
+        {
+            messages.append("\n\tUnknown exception while fetching available ES indices");
+        }
+
+        try
+        {
+            StringBuffer out;
+            const IPropertyTree * ts = getTimestampTypeFormat(m_globalIndexSearchPattern, m_globalIndexTimestampField);
+            if (ts)
+            {
+                toXML(ts, out.clear());
+                scratch.setf("ES timestamp field '%s' format for index '%s': '%s'", m_globalIndexTimestampField.str(), m_globalIndexSearchPattern.str(), out.str());
+                messages.append(scratch.str());
+            }
+        }
+        catch(IException * e)
+        {
+            StringBuffer description;
+            e->errorMessage(description);
+            scratch.setf("\n\tException fetching target ES timestamp format (%d) - %s", e->errorCode(), description.str());
+            messages.append(description.str());
+            e->Release();
+        }
+        catch(...)
+        {
+            messages.append("\n\tUnknown exception while fetching target ES timestamp format");
+        }
+
+        try
+        {
+            LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_xml;
+            LogAccessConditions queryOptions;
+
+            queryOptions.setFilter(getComponentLogAccessFilter("eclwatch"));
+
+            struct LogAccessTimeRange range;
+            CDateTime endtt;
+            endtt.setNow();
+            range.setEnd(endtt);
+
+            CDateTime startt;
+            startt.setNow();
+            startt.adjustTimeSecs(-60); //an hour ago
+            range.setStart(startt);
+
+            StringBuffer startstr;
+            startt.getString(startstr);
+
+            queryOptions.setTimeRange(range);
+            queryOptions.setLimit(100);
+
+            StringBuffer logs;
+            LogQueryResultDetails  resultDetails;
+            fetchLog(resultDetails, queryOptions, logs, outputFormat);
+            scratch.setf("Sample ALA query resulted in %d log records.", resultDetails.totalReceived);
+            messages.append(scratch.str());
+            messages.append(logs.str());
+        }
+        catch(IException * e)
+        {
+            StringBuffer description;
+            e->errorMessage(description);
+            scratch.setf("Exception while executing sample Grafana/Loki query (%d) - %s", e->errorCode(), description.str());
+            messages.append(scratch.str());
+            e->Release();
+        }
+        catch(...)
+        {
+            messages.append("Unknown exception while executing sample Grafana/Loki query");
+        }
+    }
+    catch(...)
+    {
+        messages.append("Encountered unexpected exception during health report");
+        return false;
+    }
+
+    return true;
+ }
+
 /*
  * Transform iterator of hits/fields to back-end agnostic response
  *
