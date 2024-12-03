@@ -160,7 +160,7 @@ extern jlib_decl size32_t checked_pread(const char * filename, int file, void *b
                     readNow = 0;
                     break;
                 }
-                throw makeErrnoExceptionV(errno, "checked_pread for file '%s'", filename);
+                throw makeErrnoExceptionV(errno, "checked_pread for file '%s' @%lld", filename, pos);
             }
         }
         else if (!readNow)
