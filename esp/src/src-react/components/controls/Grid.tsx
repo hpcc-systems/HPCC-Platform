@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, Sticky } from "@fluentui/react";
+import { DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, ShimmeredDetailsList, Sticky } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -227,6 +227,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [items, setItems] = React.useState<any[]>([]);
+    const [loaded, setLoaded] = React.useState(false);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
     const selectionHandler = useConst(() => {
@@ -257,6 +258,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         });
         storeQuery.then(items => {
             const selectedIndices = selectionHandler.getSelectedIndices();
+            setLoaded(true);
             setItems(items);
             selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
         });
@@ -319,8 +321,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
 
     return <div style={{ position: "relative", height: "100%" }}>
         <ScrollablePane>
-            <DetailsList
+            <ShimmeredDetailsList
                 compact={true}
+                enableShimmer={!loaded}
                 items={items}
                 columns={fluentColumns}
                 layoutMode={DetailsListLayoutMode.fixedColumns}
