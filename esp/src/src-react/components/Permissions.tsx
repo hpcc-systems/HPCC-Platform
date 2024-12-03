@@ -9,6 +9,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
 import { DojoGrid, selector, tree } from "./DojoGrid";
 import { AddPermissionForm } from "./forms/AddPermission";
+import { CheckPermissionsForm } from "./forms/CheckPermissions";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 
@@ -35,6 +36,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     const [selection, setSelection] = React.useState([]);
 
     const [showAddPermission, setShowAddPermission] = React.useState(false);
+    const [showCheckFilePermissions, setShowCheckFilePermissions] = React.useState(false);
     const [scopeScansEnabled, setScopeScansEnabled] = React.useState(false);
     const [modulesDn, setModulesDn] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -203,7 +205,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                     { key: "fileScopeDefaults", text: nlsHPCC.FileScopeDefaultPermissions, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/File%20Scopes`), disabled: !uiState.fileScope },
                     { key: "workunitScopeDefaults", text: nlsHPCC.WorkUnitScopeDefaultPermissions, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/Workunit%20Scopes`), disabled: !uiState.workunitScope },
                     { key: "physicalFiles", text: nlsHPCC.PhysicalFiles, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/file/File%20Scopes`), disabled: !uiState.fileScope },
-                    { key: "checkFilePermissions", text: nlsHPCC.CheckFilePermissions, disabled: !uiState.fileScope },
+                    { key: "checkFilePermissions", text: nlsHPCC.CheckFilePermissions, onClick: () => setShowCheckFilePermissions(true), disabled: !uiState.fileScope },
                     { key: "codeGenerator", text: nlsHPCC.CodeGenerator, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/${modulesDn}`), disabled: !uiState.repositoryModule },
                 ],
             },
@@ -223,6 +225,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         <ClearPermissionsConfirm />
         <EnableScopesConfirm />
         <DisableScopesConfirm />
+        <CheckPermissionsForm showForm={showCheckFilePermissions} setShowForm={setShowCheckFilePermissions} refreshGrid={() => refreshTable()} />
         <AddPermissionForm showForm={showAddPermission} setShowForm={setShowAddPermission} refreshGrid={refreshTable} />
     </>;
 

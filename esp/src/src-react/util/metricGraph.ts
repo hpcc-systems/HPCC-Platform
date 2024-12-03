@@ -217,7 +217,10 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     vertexLabel(v: IScope, options: MetricsView): string {
-        return v.type === "activity" ? format(options.activityTpl, v) : v.Label || v.id;
+        return v.type === "activity" ? format(options.activityTpl, v) :
+            v.type === "function" ? v.id + "()" :
+                v.type === "operation" && v.id.charAt(0) === ">" ? v.id.substring(1) :
+                    v.Label || v.id;
     }
 
     vertexStatus(v: IScope): ScopeStatus {
