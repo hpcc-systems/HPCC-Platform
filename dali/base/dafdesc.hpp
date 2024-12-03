@@ -177,6 +177,9 @@ interface IPartDescriptor: extends IInterface
     virtual const char *queryOverrideName() = 0;                                        // for non-standard files
     virtual unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL)=0;      // map copy number to cluster (and optionally replicate number)
     virtual IReplicatedFile *getReplicatedFile()=0;
+
+    virtual offset_t getFileSize(bool allowphysical,bool forcephysical)=0; // gets the part filesize (NB this will be the *expanded* size)
+    virtual offset_t getDiskSize(bool allowphysical,bool forcephysical)=0; // gets the part size on disk (NB this will be the compressed size)
 };
 typedef IArrayOf<IPartDescriptor> CPartDescriptorArray;
 typedef IIteratorOf<IPartDescriptor> IPartDescriptorIterator;

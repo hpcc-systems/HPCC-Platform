@@ -665,6 +665,10 @@ public:
     virtual IFileDescriptor &querySelf() = 0;
     virtual unsigned copyClusterNum(unsigned partidx, unsigned copy,unsigned *replicate=NULL) = 0;
 
+    IPropertyTree & queryAttributes() const
+    {
+        return *attr;
+    }
 };
 
 class CPartDescriptor : implements IPartDescriptor
@@ -818,6 +822,74 @@ public:
     {
         return ismulti;
     }
+
+    IPropertyTree & queryAttributes() const
+    {
+        return *props;
+    }
+
+    offset_t getFileSize(bool allowphysical,bool forcephysical)
+    {
+        offset_t ret = (offset_t)((forcephysical&&allowphysical)?-1:queryAttributes().getPropInt64("@size", -1));
+        if (allowphysical&&(ret==(offset_t)-1))
+            ret = getSize(true);
+        return ret;
+    }
+
+    offset_t getDiskSize(bool allowphysical,bool forcephysical)
+    {
+        if (!::isCompressed(parent.queryAttributes()))
+            return getFileSize(allowphysical, forcephysical);
+
+        if (forcephysical && allowphysical)
+            return getSize(false); // i.e. only if force, because all compressed should have @compressedSize attribute
+
+        // NB: compressSize is disk size
+        return queryAttributes().getPropInt64("@compressedSize", -1);
+    }
+
+    offset_t getSize(bool checkCompressed)
+    {
+        offset_t ret = (offset_t)-1;
+        StringBuffer firstname;
+        bool compressed = ::isCompressed(parent.queryAttributes());
+        unsigned nc=parent.numCopies(partIndex);
+        for (unsigned copy=0;copy<nc;copy++)
+        {
+            RemoteFilename rfn;
+            try
+            {
+                Owned<IFile> partfile = createIFile(getFilename(copy, rfn));
+                if (checkCompressed && compressed)
+                {
+                    Owned<IFileIO> partFileIO = partfile->open(IFOread);
+                    if (partFileIO)
+                    {
+                        Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partFileIO);
+                        if (compressedIO)
+                            ret = compressedIO->size();
+                        else
+                            throw makeStringExceptionV(DFSERR_PhysicalCompressedPartInvalid, "Compressed part is not in the valid format: %s", partfile->queryFilename());
+                    }
+                }
+                else
+                    ret = partfile->size();
+                if (ret!=(offset_t)-1)
+                    return ret;
+            }
+            catch (IException *e)
+            {
+                StringBuffer s("CDistributedFilePart::getSize ");
+                rfn.getRemotePath(s);
+                EXCLOG(e, s.str());
+                e->Release();
+            }
+            if (copy==0)
+                rfn.getRemotePath(firstname);
+        }
+        throw makeStringExceptionV(DFSERR_CannotFindPartFileSize, "Cannot find physical file size for %s", firstname.str());;
+    }
+
 
     RemoteMultiFilename &getMultiFilename(unsigned copy, RemoteMultiFilename &rmfn)
     {
