@@ -7911,7 +7911,8 @@ static const std::array<PlaneAttributeInfo, PlaneAttributeCount> planeAttributeI
     { PlaneAttrType::integer, 1024, false, "blockedFileIOKB" },   // enum PlaneAttributeType::BlockedSequentialIO    {0}
     { PlaneAttrType::integer, 1024, false, "blockedRandomIOKB" }, // enum PlaneAttributeType::blockedRandomIOKB      {1}
     { PlaneAttrType::boolean, 0, true, "fileSyncWriteClose" },    // enum PlaneAttributeType::fileSyncWriteClose     {2}
-    { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" } // enum PlaneAttributeType::concurrentWriteSupport {3}
+    { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" },// enum PlaneAttributeType::concurrentWriteSupport {3}
+    { PlaneAttrType::integer, 1, false, "writeSyncMarginMs" },    // enum PlaneAttributeType::WriteSyncMarginMs      {4}
 }};
 
 // {prefix, {key1: value1, key2: value2, ...}}
@@ -8087,6 +8088,12 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
 bool getFileSyncWriteCloseEnabled(const char *planeName)
 {
     return 0 != getPlaneAttributeValue(planeName, FileSyncWriteClose, defaultFileSyncWriteCloseEnabled ? 1 : 0);
+}
+
+unsigned getWriteSyncMarginMs(const char * planeName)
+{
+    constexpr unsigned dft = 0;
+    return (unsigned)getPlaneAttributeValue(planeName, WriteSyncMarginMs, dft);
 }
 
 static constexpr bool defaultConcurrentWriteSupport = isContainerized() ? false : true;
