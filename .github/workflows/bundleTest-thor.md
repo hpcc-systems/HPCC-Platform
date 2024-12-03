@@ -102,7 +102,7 @@ The steps in the workflow run on the specified operating system, with Ubuntu-22.
 This step enables us to download the ready-to-install HPCC Platform's artifact built on the latest commit.
   ```yaml
       - name: Download Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
@@ -348,7 +348,7 @@ If any logs, ZAP reports, or .trace files are generated, they are uploaded as ar
   ```yaml
     - name: ml-thor-test-logs-artifact
       if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.asset-name }}-bundle-test-logs
         path: |
@@ -356,3 +356,4 @@ If any logs, ZAP reports, or .trace files are generated, they are uploaded as ar
           /home/runner/HPCCSystems-regression/zap/*
         if-no-files-found: ignore
   ```
+
