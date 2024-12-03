@@ -603,6 +603,11 @@
             "eclwatchVisible": {
               "type": "boolean"
             },
+            "writeSyncMarginMs": {
+              "description": "Time that is required to elapse between writing a file and all read copies to be consistently updated",
+              "type": "integer",
+              "default": 0
+            },
             "components": {},
             "prefix": {},
             "subPath": {},

@@ -1049,16 +1049,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         list(INSERT ARGS 3 ${ARGV1}_deps)
         if (WIN32)
           install(RUNTIME_DEPENDENCY_SET ${ARGV1}_deps
-            DESTINATION ${EXEC_DIR} 
             PRE_EXCLUDE_REGEXES "api-ms-win-.*\.dll"
             POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}.*"
             POST_EXCLUDE_REGEXES ".*"
+            DESTINATION ${EXEC_DIR} 
           )
         else()
           install(RUNTIME_DEPENDENCY_SET ${ARGV1}_deps
-            DESTINATION ${LIB_DIR} 
             POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
             POST_EXCLUDE_REGEXES ".*"
+            DESTINATION ${LIB_DIR} 
           )
         endif()
       endif()

@@ -3779,6 +3779,47 @@ public:
         clusters.kill();
     }
 
+    //Ensure that enough time has passed from when the file was last modified for reads to be consistent
+    //Important for blob storage or remote, geographically synchronized storage
+    void checkWriteSync()
+    {
+        time_t modifiedTime = 0;
+        time_t now = 0;
+
+        Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
+        ForEach(*iter)
+        {
+            const char * name = iter->query().queryProp("@name");
+            unsigned marginMs = getWriteSyncMarginMs(name);
+            if (marginMs)
+            {
+                if (0 == modifiedTime)
+                {
+                    CDateTime modified;
+                    if (!getModificationTime(modified))
+                        return;
+                    modifiedTime = modified.getSimple();
+                }
+
+                if (0 == now)
+                    now = time(&now);
+
+                //Round the elapsed time down - so that a change on the last ms of one time period does not count as a whole second of elapsed time
+                //This could be avoided if the modified time was more granular
+                unsigned __int64 elapsedMs = (now - modifiedTime) * 1000;
+                if (elapsedMs >= 1000)
+                    elapsedMs -= 999;
+
+                if (unlikely(elapsedMs < marginMs))
+                {
+                    LOG(MCuserProgress, "Delaying access to %s on %s for %ums to ensure write sync", queryLogicalName(), name, (unsigned)(marginMs - elapsedMs));
+                    MilliSleep(marginMs - elapsedMs);
+                    now = 0; // re-evaluate now - unlikely to actually happen
+                }
+            }
+        }
+    }
+
     bool hasDirPerPart() const
     {
         return FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart);
@@ -8299,6 +8340,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                     }
                     CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,accessMode,user);  // found
                     ret->setSuperOwnerLock(superOwnerLock.detach());
+                    ret->checkWriteSync();
                     return ret;
                 }
                 // now super file
