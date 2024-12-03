@@ -146,13 +146,18 @@ jobs:
           sudo update-alternatives --set javac /usr/lib/jvm/java-21-openjdk-amd64/bin/javac
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
           export PATH=$PATH:$JAVA_HOME/bin
+
+          # Install Chrome browser
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
+
+          # Install Chrome Driver
+          wget https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
           sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
+
           wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
           wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.17.0/jackson-annotations-2.17.0.jar
           wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.17.0/jackson-core-2.17.0.jar
@@ -185,7 +190,7 @@ jobs:
         if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests_logs
           path: |
             ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
             /home/runner/HPCCSystems-regression/log/*.json
