@@ -3909,6 +3909,8 @@ protected:
         virtual const char *queryOverrideName() { UNIMPLEMENTED; }
         virtual unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL) { UNIMPLEMENTED; }
         virtual IReplicatedFile *getReplicatedFile() { UNIMPLEMENTED; }
+        virtual offset_t getFileSize(bool allowphysical,bool forcephysical) { UNIMPLEMENTED; }
+        virtual offset_t getDiskSize(bool allowphysical,bool forcephysical) { UNIMPLEMENTED; }
     };
 
     void testCopy()
