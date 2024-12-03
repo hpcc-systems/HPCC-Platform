@@ -90,3 +90,30 @@ its own cache.  Threads/channels within a process share that process's cache.
 Optional list of bash commands to execute within an init container in pods that use this plane.
 This can be used to validate that the plane is healthy, e.g. that it is mounted as expected.
 If the script returns a non-zero result, the init container and therefore the pod will fail.
+
+## blockedFileIOKB (unsigned)
+
+The optimal size to read and write sequential file io (e.g. for Azure Blob storage set to 4096)
+
+## blockedRandomIOKB (unsigned)
+
+The optimal size of random file io reads (e.g. index lookups).
+
+## fileSyncWriteClose (boolean)
+
+Perform a fsync ahead of file close operations.
+Default: false
+
+## concurrentWriteSupport (boolean)
+
+Plane supports concurrent writing to a single physical file.
+Default: false
+
+## writeSyncMarginMs (unsigned)
+
+Minimum time period between the publication of a logical file and when it can
+be read. This setting will introduce a delay if a read operation is within this
+margin period.
+Should be set on planes backed by storage types that do not guarantee files are
+ready to be read by any other consumer immediately, e.g. Azure Blob storage.
+Default: 0
