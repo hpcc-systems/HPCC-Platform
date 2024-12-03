@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CustomConfig">
   <title>Configurações Personalizadas</title>
@@ -581,7 +581,7 @@ helm upgrade mycluster hpcc/hpcc -f nothor.yaml</programlisting>
         </listitem>
 
         <listitem>
-          <para>No bloco <emphasis role="bold">eclagent</emphasis>, delete
+          <para>No bloco <emphasis role="bold">eclagent</emphasis>, exclua
           todo o bloco <emphasis role="bold">name:
           roxie-workunit</emphasis>.</para>
 
@@ -920,15 +920,24 @@ thor: []
     configuração de nuvem em que algum planejamento e configuração podem
     ajudar a reduzir as despesas.</para>
 
-    <para>Duas novas colunas foram adicionadas à página de workunits no ECL
-    Watch. As colunas podem ser classificadas por qualquer coluna de custo,
-    assim como as outras colunas no ECL Watch, clicando no topo da
-    coluna.</para>
+    <para>Novas colunas foram adicionadas às páginas de workunits e arquivos
+    lógicos no ECL Watch. Essas colunas podem ser ordenadas por custo, assim
+    como as outras colunas no ECL Watch, clicando no topo da de cada uma. Além
+    disso, os custos das operações de arquivos executadas por workunits são
+    fornecidos nas métricas da workunit.</para>
+
+    <para>À medida que o rastreamento de custos amadurece, os cálculos de
+    custos também melhoram significativamente, proporcionando um rastreamento
+    de custos mais preciso. Por exemplo, dados que foram acessados a partir do
+    cache de página não incorrem em nenhum custo de acesso a arquivos. O
+    rastreamento de custos do HPCC Systems agora detecta dados que foram
+    retornados do cache de página e ajusta os cálculos de custos de forma
+    apropriada, resultando em cálculos de custos mais precisos.</para>
 
     <sect2 id="TypesOfCosts">
       <title>Tipos de custos</title>
 
-      <para>Existem três tipos de custos que são rastreados.</para>
+      <para>Existem uma série de tipos de custos que são rastreados.</para>
 
       <para><itemizedlist>
           <listitem>
@@ -936,11 +945,15 @@ thor: []
           </listitem>
 
           <listitem>
-            <para>Custos de Armazenamento</para>
+            <para>Custos de Compilação</para>
           </listitem>
 
           <listitem>
             <para>Custo de Acesso a Arquivo</para>
+          </listitem>
+
+          <listitem>
+            <para>Custo do Arquivo em Repouso</para>
           </listitem>
         </itemizedlist></para>
 
@@ -1020,12 +1033,22 @@ thor: []
         </sect4>
       </sect3>
 
-      <sect3 id="StorageCOsts">
-        <title>Custo de armazenamento</title>
+      <sect3 id="Compile_Costs">
+        <title>Custos de Compilação</title>
 
-        <para>Esse é o custo de hospedar os dados no plano de armazenamento.
-        Não inclui os custos das operações de dados, como custos de leitura ou
-        gravação.</para>
+        <para>Os custos de compilação são os custos de compilar o código ECL.
+        O custo de compilar o código ECL está incluído como uma coluna na
+        lista de workunit. Na página de resumo da workunit, há um campo de
+        custo de compilação.</para>
+      </sect3>
+
+      <sect3 id="StorageCOsts">
+        <title>Custos de armazenamento</title>
+
+        <para>Este é o custo de hospedar os dados no plano de armazenamento ou
+        o valor do Custo do Arquivo em Repouso e o custo de leitura/escrita no
+        armazenamento é o valor do <emphasis>Custo de Acesso ao
+        Arquivo</emphasis>.</para>
 
         <para><variablelist>
             <varlistentry>
@@ -1040,37 +1063,52 @@ thor: []
             </varlistentry>
           </variablelist></para>
 
-        <para>Os custos de armazenamento não podem ser vistos como um valor
-        separado no ECL Watch. Eles só podem ser visualizados como parte de um
-        campo de custo na página de resumo de um arquivo lógico.</para>
-      </sect3>
+        <para>Para arquivos lógicos, os custos calculados estõa baseados em
+        dois tipos de acesso ao arquivo.</para>
 
-      <sect3 id="FileAccessCosts">
-        <title>Custo de acesso aos arquivos</title>
+        <itemizedlist>
+          <listitem>
+            <para>Custos de Acesso ao arquivo</para>
+          </listitem>
 
-        <para>Os custos de leitura e gravação em arquivos são referidos como
-        custos de acesso a arquivos. Vários planos de armazenamento cobram por
-        operações de dados separadamente. O valor do custo de acesso ao
-        arquivo incluirá o custo de leitura e gravação. Neste momento,
-        quaisquer outros custos relacionados com ações de arquivo (como
-        excluir ou copiar) não serão registrados ou incluídos como parte dos
-        custos.</para>
+          <listitem>
+            <para>Custos de Arquivo em Repouso</para>
+          </listitem>
+        </itemizedlist>
 
-        <para>Na página de resumo Logical File no ECL Watch, o custo de acesso
-        ao arquivo aparece como parte do campo de custo.</para>
+        <sect4 id="FileAccessCosts">
+          <title>Custo de acesso aos arquivos</title>
 
-        <para>As despesas de uma workunit para acessar arquivos lógicos também
-        são incluídas nas estatísticas e atributos da workunit. O custo de
-        leitura/gravação é relatado no registro da atividade e somado nos
-        níveis de graph, subgraph e escopo do fluxo de trabalho.</para>
+          <para>Os custos de leitura e gravação em arquivos são referidos como
+          custos de acesso a arquivos. Vários planos de armazenamento cobram
+          por operações de dados separadamente. O valor do custo de acesso ao
+          arquivo incluirá o custo de leitura e gravação. Neste momento,
+          quaisquer outros custos relacionados com ações de arquivo (como
+          excluir ou copiar) não serão registrados ou incluídos como parte dos
+          custos.</para>
 
-        <para>O custo geral de acesso a arquivos para uma workunit é rastreado
-        e relatado na página de resumo.</para>
+          <para>Os custos incorridos por uma workunit para acessar arquivos
+          lógicos também são registrados nas estatísticas e atributos da
+          workunit. O custo de leitura/escrita é registrado no registro de
+          atividade e acumulado no nível do grafo, do subgrafo e do escopo do
+          fluxo de trabalho. O Rastreamento de Custos detecta dados que foram
+          retornados do cache de página e ajusta os cálculos de custos de
+          forma apropriada para produzir cálculos de custos mais precisos.
+          Esses custos de acesso a arquivos para uma unidade de trabalho são
+          registrados com a workunit e exibidos na página de resumo e nas
+          métricas da workunit.</para>
 
-        <para>Na página de resumo Logical File, você pode ver o novo campo de
-        custo. É o custo total de armazenamento e acesso aos dados.
-        Atualmente, as informações de custo são geradas apenas para jobs Thor
-        e hThor.</para>
+          <sect5 id="FileCostAtRest">
+            <title>Custo do Arquivo em Repouso</title>
+
+            <para>O campo Custo do Arquivo em Repouso é mostrado na página de
+            resumo do Arquivo Lógico. É o custo de armazenar o arquivo sem
+            acessar os dados. Apenas os custos de armazenamento associados à
+            hospedagem do arquivo na nuvem. Este valor foi adicionado para
+            diferenciar melhor entre os custos de armazenamento de
+            arquivos.</para>
+          </sect5>
+        </sect4>
       </sect3>
     </sect2>
 
@@ -1136,8 +1174,6 @@ thor: []
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec align="left" colwidth="122.40pt"/>
-
-            <colspec/>
 
             <tbody>
               <row>
