@@ -1360,9 +1360,10 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             else
             {
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
+                dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
                 bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
                 VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
-                StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false (and lingerPeriod>0)
+                StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false
 
                 // NB: in k8s a Thor instance is explicitly started to run a specific wuid/graph
                 // it will not listen/receive another job/graph until the 1st explicit request the job
@@ -1382,7 +1383,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 }
 
                 StringBuffer currentWfId; // not filled/not used until recvNextGraph() is called.
-                if (!multiJobLinger && lingerPeriod)
+                if (!multiJobLinger)
                 {
                     // We avoid using getEndpointHostText here and get an IP instead, because the client pod communicating directly with this Thor manager,
                     // will not have the ability to resolve this pods hostname.
@@ -1486,7 +1487,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                     jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
 
                                     Owned<IWorkUnit> w = &workunit->lock();
-                                    if (!multiJobLinger && lingerPeriod)
+                                    if (!multiJobLinger)
                                         w->setDebugValue(instance, "1", true);
 
                                     if (jobManager->queryExitException())
@@ -1517,49 +1518,45 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     }
 
                     currentGraphName.clear();
-                    if (lingerPeriod)
+                    unsigned lingerRemaining;
+                    if (lingerTimer.timedout(&lingerRemaining))
+                        break;
+                    PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
+                    StringBuffer nextJob;
+                    do
                     {
-                        unsigned lingerRemaining;
-                        if (lingerTimer.timedout(&lingerRemaining))
-                            break;
-                        PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
-                        StringBuffer nextJob;
-                        do
+                        StringBuffer wuid;
+                        int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName);
+                        if (ret > 0)
                         {
-                            StringBuffer wuid;
-                            int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName);
-                            if (ret > 0)
-                            {
-                                currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
-                                break; // success
-                            }
-                            else if (ret < 0)
-                                break; // timeout/abort
-                            // else - reject/ignore duff message.
-                        } while (!lingerTimer.timedout(&lingerRemaining));
-
-                        // The following is true if no workunit/graph have been received
-                        // MORE: I think it should also be executed if lingerPeriod is 0
-                        if (0 == currentGraphName.length())
-                        {
-                            if (!multiJobLinger)
-                            {
-                                // De-register the idle lingering entry.
-                                Owned<IWorkUnitFactory> factory;
-                                Owned<IConstWorkUnit> workunit;
-                                factory.setown(getWorkUnitFactory());
-                                workunit.setown(factory->openWorkUnit(currentWuid));
-                                //Unlikely, but the workunit could have been deleted while we were lingering
-                                //currentWuid can also be blank if the workunit this started for died before thor started
-                                //processing the graph.  This test covers both (unlikely) situations.
-                                if (workunit)
-                                {
-                                    Owned<IWorkUnit> w = &workunit->lock();
-                                    w->setDebugValue(instance, "0", true);
-                                }
-                            }
-                            break;
+                            currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
+                            break; // success
                         }
+                        else if (ret < 0)
+                            break; // timeout/abort
+                        // else - reject/ignore duff message.
+                    } while (!lingerTimer.timedout(&lingerRemaining));
+
+
+                    if (0 == currentGraphName.length())
+                    {
+                        if (!multiJobLinger)
+                        {
+                            // De-register the idle lingering entry.
+                            Owned<IWorkUnitFactory> factory;
+                            Owned<IConstWorkUnit> workunit;
+                            factory.setown(getWorkUnitFactory());
+                            workunit.setown(factory->openWorkUnit(currentWuid));
+                            //Unlikely, but the workunit could have been deleted while we were lingering
+                            //currentWuid can also be blank if the workunit this started for died before thor started
+                            //processing the graph.  This test covers both (unlikely) situations.
+                            if (workunit)
+                            {
+                                Owned<IWorkUnit> w = &workunit->lock();
+                                w->setDebugValue(instance, "0", true);
+                            }
+                        }
+                        break;
                     }
                 }
                 thorQueue.clear();
