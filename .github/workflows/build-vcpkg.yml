@@ -214,20 +214,20 @@ jobs:
       cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh_runner-macos-13:
+  build-gh_runner-macos-14:
     if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
-      os: macos-13
+      os: macos-14
       build-type: 'Release'
       cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh_runner-macos-12:
+  build-gh_runner-macos-13:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
-      os: macos-12
+      os: macos-13
       build-type: 'Release'
       cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
