@@ -1484,6 +1484,15 @@ StringBuffer &CDfsLogicalFileName::getGroupName(StringBuffer &grp) const
             if (e)
                 grp.append(e-s,s);
         }
+        else
+        {
+            const char *s = skipScope(lfn,PLANE_SCOPE);
+            if (s) {
+                const char *e = strstr(s,"::");
+                if (e)
+                    grp.append(e-s,s);
+            }
+        }
     }
     return grp;
 }
