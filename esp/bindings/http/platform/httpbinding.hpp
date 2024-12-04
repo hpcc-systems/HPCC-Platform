@@ -153,6 +153,7 @@ private:
     StringBuffer            m_filespath;
     StringBuffer            m_wsdlAddress;
     Owned<ISecManager>      m_secmgr;
+    Owned<ISecManager>      m_tracingSecMgrDecorator;
     Owned<IAuthMap>         m_authmap;
     Owned<IAuthMap>         m_feature_authmap;
     Owned<IAuthMap>         m_setting_authmap;
@@ -372,6 +373,7 @@ public:
         return false;
     }
     ISecManager* querySecManager() const { return m_secmgr.get(); }
+    ISecManager* queryTracingSecManager() const { return m_tracingSecMgrDecorator.get(); }
     IAuthMap* queryAuthMAP() const { return m_authmap.get();}
     const char* queryAuthMethod() const { return m_authmethod.str(); }
     void setProcessName(const char* name) { processName.set(name); }

@@ -125,7 +125,9 @@ interface IEspContext : extends IInterface
     virtual void setResources(ISecResourceList * rlist) = 0;
     virtual ISecResourceList * queryResources() = 0;
     virtual void setSecManger(ISecManager * mgr) = 0;
+    virtual void setSecManager(ISecManager * mgr, ISecManager * tracingSecMgrDecoratorDecorator) = 0;
     virtual ISecManager * querySecManager() = 0;
+    virtual ISecManager * queryTracingSecManager() = 0;
     virtual void setContextPath(const char * path) = 0;
     virtual const char * getContextPath() = 0;
     virtual void setBindingValue(void * value) = 0;

@@ -22,6 +22,7 @@
 #include "jliball.hpp"
 #include "esp.hpp"
 #include "soapesp.hpp"
+#include "secmanagertracedecorator.hpp"
 
 class CEspNgContext  : implements IEspContext, public CInterface
 {
@@ -31,6 +32,7 @@ protected:
     
     Owned<ISecUser> secuser;
     Owned<ISecManager> secmgr;
+    Owned<ISecManager> tracingSecMgrDecorator;
     Owned<ISecResourceList> reslist;
     Owned<IAuthMap> authMap;
     Owned<ISecPropertyList> secprops;
@@ -78,7 +80,20 @@ public:
     }
 
 
-    void setSecManger(ISecManager * mgr){secmgr.setown(mgr);}
+    void setSecManger(ISecManager * mgr)
+    {
+        setSecManager(mgr, nullptr);
+    }
+    virtual void setSecManager(ISecManager* mgr, ISecManager * _tracingSecMgrDecorator)
+    {
+        secmgr.setown(mgr);
+        if (!mgr)
+            tracingSecMgrDecorator.clear();
+        else if (!_tracingSecMgrDecorator)
+            tracingSecMgrDecorator.setown(new CSecManagerTraceDecorator(*mgr));
+        else
+            tracingSecMgrDecorator.set(_tracingSecMgrDecorator);
+    }
     ISecManager * querySecManager(){return secmgr.get();}
 
     void setContextPath(const char * path){contextPath.clear().append(path);}

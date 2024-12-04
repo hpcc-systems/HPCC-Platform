@@ -65,6 +65,7 @@
 #include "wsdfuaccess/wsdfuaccess.hpp"
 
 #include "ws_dfuService.hpp"
+#include "secmanagertracedecorator.hpp"
 
 using namespace wsdfuaccess;
 using namespace cryptohelper;
@@ -2033,7 +2034,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
 
 bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, SecAccessFlags& permission)
 {
-    ISecManager* secmgr = context.querySecManager();
+    ISecManager* secmgr = context.queryTracingSecManager();
     if (!secmgr)
     {
         return false;
