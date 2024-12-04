@@ -198,6 +198,7 @@ define([
                 }
                 return (timer.Name !== "Process" &&
                     timer.Name !== "compile" &&
+                    timer.Name !== ">compile" &&
                     timer.Name !== "Total thor time" &&
                     timer.Name !== "Total cluster time" &&
                     timer.Name.indexOf(":TimeElapsed") < 0);
