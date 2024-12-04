@@ -108,7 +108,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return Priority;
                 }
             },
-            Code: { label: nlsHPCC.Code, width: 45, sortable: false },
+            Code: { label: nlsHPCC.Code, width: 45 },
             Message: {
                 label: nlsHPCC.Message,
                 sortable: true,

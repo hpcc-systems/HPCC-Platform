@@ -85,3 +85,13 @@ export function useContainerNames(): [string[], () => void] {
 
     return [containers, refreshData];
 }
+
+export function usePodNames(): [string[], () => void] {
+
+    const [pods, refreshData] = usePods();
+    const podNames = React.useMemo(() => {
+        return pods.map(pod => pod.name);
+    }, [pods]);
+
+    return [podNames, refreshData];
+}

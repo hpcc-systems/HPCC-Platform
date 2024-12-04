@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
-import { useWorkunit } from "../hooks/workunit";
+import { Variable, useWorkunit, useWorkunitVariables } from "../hooks/workunit";
 import { useDeepEffect } from "../hooks/deepHooks";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
@@ -55,6 +55,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
 }) => {
 
     const [workunit] = useWorkunit(wuid, true);
+    const [variables, , , refreshVariables] = useWorkunitVariables(wuid);
+    const [otTraceParent, setOtTraceParent] = React.useState("");
     const [logCount, setLogCount] = React.useState<number | string>("*");
     const [logsDisabled, setLogsDisabled] = React.useState(true);
     const [_nextPrev, setNextPrev] = useNextPrev();
@@ -66,6 +68,11 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         }
         return parseQuery("?" + parentUrlParts[1]);
     }, [parentUrl]);
+
+    React.useEffect(() => {
+        const traceInfo: Variable = variables.filter(v => v.Name === "ottraceparent")[0];
+        setOtTraceParent(traceInfo?.Value ?? "");
+    }, [variables]);
 
     const nextWuid = React.useCallback((wuids: WsWorkunits.ECLWorkunit[]) => {
         let found = false;
@@ -184,10 +191,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
                 </FullscreenStack>
                 <DelayLoadedPanel visible={tab === "summary"} size={size}>
-                    <WorkunitSummary wuid={wuid} />
+                    <WorkunitSummary wuid={wuid} otTraceParent={otTraceParent} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "variables"} size={size}>
-                    <Variables wuid={wuid} />
+                    <Variables variables={variables} refreshData={refreshVariables} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "outputs"} size={size}>
                     {state?.outputs ?
