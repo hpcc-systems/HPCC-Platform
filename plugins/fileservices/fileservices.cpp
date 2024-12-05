@@ -779,7 +779,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayFixed(ICodeContext *ctx,
 
     req->setNoCommon(noCommon);
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
     clientSpan->setSpanAttribute("destinationFilename", logicalName);
     try
     {
@@ -925,7 +925,7 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
         req->setNosplit(true);
     req->setNoCommon(noCommon);
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Variable");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Variable");
     clientSpan->setSpanAttribute("destinationFilename", logicalName);
     try
     {
@@ -1110,7 +1110,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, c
 
     req->setNoCommon(noCommon);
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Xml");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Xml");
     clientSpan->setSpanAttribute("destinationFilename", logicalName);
     try
     {
@@ -1266,7 +1266,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayJson(ICodeContext *ctx, 
             req->setSrcPassword(userPw);
     }
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Json");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Json");
     clientSpan->setSpanAttribute("destinationFilename", logicalName);
     try
     {
@@ -1358,7 +1358,7 @@ static char * implementDespray(ICodeContext *ctx, const char * sourceLogicalName
     if (maxConnections != -1)
         req->setMaxConnections(maxConnections);
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Despray");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Despray");
     clientSpan->setSpanAttribute("sourceFilename", logicalName);
     try
     {
@@ -1457,7 +1457,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
         req->setWrap(true);
     req->setExpireDays(expireDays);
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Copy");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Copy");
     clientSpan->setSpanAttribute("sourceFilename", sourceLogicalName);
     clientSpan->setSpanAttribute("destinationFilename", destinationLogicalName);
     try
@@ -1565,7 +1565,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
 
     req->setSourceLogicalName(logicalName.str());
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Spray Fixed");
     clientSpan->setSpanAttribute("destinationFilename", logicalName);
     try
     {
@@ -2126,7 +2126,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
     if (shotcount == 0)
         shotcount = -1;
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor Logical Filename");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor Logical Filename");
     clientSpan->setSpanAttribute("filename", lfn);
     try
     {
@@ -2167,7 +2167,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
     if (shotcount == 0)
         shotcount = -1;
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor File");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Monitor File");
     clientSpan->setSpanAttribute("filename", filename);
     try
     {
@@ -2503,7 +2503,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
            req->setSrcpassword(userPw);
     }
 
-    OwnedSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Remote Pull");
+    OwnedActiveSpanScope clientSpan = queryThreadedActiveSpan()->createClientSpan("Dfu Remote Pull");
     clientSpan->setSpanAttribute("sourceFilename", sourceLogicalName);
     clientSpan->setSpanAttribute("destinationFilename", destinationLogicalName);
     try
