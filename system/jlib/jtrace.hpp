@@ -159,11 +159,70 @@ interface ISpan : extends IInterface
     virtual const char* queryLocalId() const = 0;
 };
 
+//------------------------------------------------------------------------------
+// ActiveSpanScope vs OwnedActiveSpanScope Usage:
+//------------------------------------------------------------------------------
+// The primary difference between OwnedActiveSpanScope and ActiveSpanScope is that
+// OwnedActiveSpanScope controls the lifetime of its ISpan while ActiveSpanScope
+// does not. In cases where the ISpan will be used from a single thread and within
+// a single scope OwnedActiveSpanScope should be used. For more complicated scenarios,
+// involving multiple threads, time sliced work, etc ActiveSpanScope should be used.
+//------------------------------------------------------------------------------
+
+class ActiveSpanScope
+{
+public:
+    // Captures current threadActiveSpan for prevSpan
+    ActiveSpanScope(ISpan * _ptr);
+    ActiveSpanScope(ISpan * _ptr, ISpan * _prev);
+    
+    ActiveSpanScope(const ActiveSpanScope& rhs) = delete;
+    ~ActiveSpanScope();
+
+    inline ISpan * operator -> () const         { return span; }
+    inline operator ISpan *() const             { return span; }
+
+    inline ActiveSpanScope& operator=(ISpan * ptr) = delete;
+    inline ActiveSpanScope& operator=(const ActiveSpanScope& rhs) = delete;
+
+    inline bool operator == (ISpan * _ptr) const       { return span == _ptr; }
+    inline bool operator != (ISpan * _ptr) const       { return span != _ptr; }
+private:
+    ISpan * span = nullptr;
+    ISpan * prevSpan = nullptr;
+};
+
+class jlib_decl OwnedActiveSpanScope
+{
+public:
+    OwnedActiveSpanScope() = default;
+    OwnedActiveSpanScope(ISpan * _ptr);
+    OwnedActiveSpanScope(const OwnedActiveSpanScope& rhs) = delete;
+    OwnedActiveSpanScope(OwnedActiveSpanScope&& rhs) = default;
+    ~OwnedActiveSpanScope();
+
+    inline OwnedActiveSpanScope& operator=(ISpan * ptr) = delete;
+    inline OwnedActiveSpanScope& operator=(const OwnedActiveSpanScope& rhs) = delete;
+    inline OwnedActiveSpanScope& operator=(OwnedActiveSpanScope&& rhs) = delete;
+
+    inline ISpan * operator -> () const         { return span; }
+    inline operator ISpan *() const             { return span; }
+
+    void clear();
+    ISpan * query() const { return span; }
+    void set(ISpan * _span);
+    void setown(ISpan * _span);
+
+private:
+    Owned<ISpan> span;
+    ISpan * prevSpan = nullptr;
+};
+
 class jlib_decl OwnedSpanScope
 {
 public:
     OwnedSpanScope() = default;
-    OwnedSpanScope(ISpan * _ptr);
+    OwnedSpanScope(ISpan * _ptr) : span(_ptr) {}
     OwnedSpanScope(const OwnedSpanScope& rhs) = delete;
     OwnedSpanScope(OwnedSpanScope&& rhs) = default;
     ~OwnedSpanScope();
@@ -182,7 +241,6 @@ public:
 
 private:
     Owned<ISpan> span;
-    ISpan * prevSpan = nullptr;
 };
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
