@@ -1,0 +1,39 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+// Service definition
+export SSLServices := SERVICE : plugin('sslservices')
+
+    // Hash functions
+    DATASET({STRING name}) digestAvailableAlgorithms() : cpp,action,context,entrypoint='digestAvailableAlgorithms';
+    DATA digestHash(DATA _indata, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='digestHash';
+
+    // Symmetric ciphers
+    DATASET({STRING name}) cipherAvailableAlgorithms() : cpp,action,context,entrypoint='cipherAvailableAlgorithms';
+    UNSIGNED2 cipherIVSize(VARSTRING _algorithm_name) : cpp,action,context,entrypoint='cipherIVSize';
+    DATA cipherEncrypt(DATA _plaintext, VARSTRING _algorithm_name, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherEncrypt';
+    DATA cipherDecrypt(DATA _ciphertext, VARSTRING _algorithm_name, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherDecrypt';
+
+    // Public Key functions
+    DATA pkRSASeal(DATA _plaintext, SET OF STRING _pem_public_keys, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='pkRSASeal';
+    DATA pkRSAUnseal(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='pkRSAUnseal';
+    DATA pkEncrypt(DATA _plaintext, STRING _pem_public_key) : cpp,action,context,entrypoint='pkEncrypt';
+    DATA pkDecrypt(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key) : cpp,action,context,entrypoint='pkDecrypt';
+    DATA pkSign(DATA _plaintext, DATA _passphrase, STRING _pem_private_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='pkSign';
+    BOOLEAN pkVerifySignature(DATA _signature, DATA _signedData, STRING _pem_public_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='pkVerifySignature';
+
+END;
