@@ -148,7 +148,7 @@ public:
     {
         for (auto& c : cache)
         {
-            if (strncmp(std::get<0>(c).c_str(), key, keyLen) == 0)
+            if (hashc(reinterpret_cast<const byte *>(key), keyLen, 0) == std::get<0>(c))
             {
                 hits++;
                 return std::get<1>(c);
@@ -170,7 +170,7 @@ public:
         BIO_free(bio);
         if (pkey)
         {
-            cache.emplace_front(std::string(key, keyLen), pkey);
+            cache.emplace_front(hashc(reinterpret_cast<const byte *>(key), keyLen, 0), pkey);
             if (cache.size() > OPENSSL_MAX_CACHE_SIZE)
             {
                 EVP_PKEY_free(std::get<1>(cache.back()));
@@ -195,7 +195,7 @@ public:
 private:
     int hits;
     int misses;
-    std::list<std::tuple<std::string, EVP_PKEY *>> cache;
+    std::list<std::tuple<unsigned, EVP_PKEY *>> cache;
 };
 
 
