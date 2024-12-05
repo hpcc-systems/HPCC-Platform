@@ -127,7 +127,7 @@ jobs:
       - name: Get content
         working-directory:  /home/runner/HPCCSystems-regression/log
         shell: "bash"
-        run: |
+        run: | 
                 curl localhost:8010/WsWorkunits/WUQuery.json | python3 -m json.tool > workunits.json
                 curl localhost:8010/WsDfu/DFUQuery.json?PageSize=250 | python3 -m json.tool > files.json
                 curl localhost:8010/FileSpray/GetDFUWorkunits.json | python3 -m json.tool > dfu-workunits.json
@@ -148,7 +148,8 @@ jobs:
           export PATH=$PATH:$JAVA_HOME/bin
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
+          #wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
+          wget https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
           sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
@@ -185,7 +186,7 @@ jobs:
         if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests_logs
           path: |
             ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
             /home/runner/HPCCSystems-regression/log/*.json

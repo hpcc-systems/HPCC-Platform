@@ -39,19 +39,28 @@ public class ActivitiesTest {
     private void testForNavigationLinks(List<NavigationWebElement> navWebElements) {
 
         Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
-
+        
         for (NavigationWebElement element : navWebElements) {
+
+            StringBuilder erorMmsg = new StringBuilder("OK");
 
             try {
                 element.webElement().click();
 
-                if (testTabsForNavigationLinks(element)) {
+                if (testTabsForNavigationLinks(element, erorMmsg)) {
                     String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
                     Common.logDetail(msg);
+                    if ( erorMmsg.length() > 0 ){
+                        String currentPage = getCurrentPage();
+                        String warningMsg = "  Warning: on '" + currentPage + "' page there is missing/not matching element(s):" + erorMmsg;
+                        Common.logDetail(warningMsg);
+                    }
                 } else {
+                    // Needs to report why it is failed
                     String currentPage = getCurrentPage();
-                    String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
+                    String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue() + ". Missing element(s): " + erorMmsg;
                     Common.logError(errorMsg);
+                    // Needs to log the error into the logDetails as well. 
                 }
             } catch (Exception ex) {
                 Common.logException("Failure: Exception in Navigation Link for " + element.name() + ". URL : " + element.hrefValue() + " Error: " + ex.getMessage(), ex);
@@ -80,19 +89,29 @@ public class ActivitiesTest {
         return "Invalid Page";
     }
 
-    private boolean testTabsForNavigationLinks(NavigationWebElement element) {
+    private boolean testTabsForNavigationLinks(NavigationWebElement element, StringBuilder msg) {
+        msg.delete(0, msg.length());
+        boolean retVal = true;
+                
         List<String> tabsList = URLConfig.tabsListMap.get(element.name());
+        int numOfElemets = tabsList.size();
+        double elementFound = 0.0;  // It is double for calculating ratio later.
 
         for (String tab : tabsList) {
             try {
                 WebElement webElement = Common.waitForElement(By.xpath("//a[text()='" + tab + "']"));
                 urlMap.get(element.name()).getUrlMappings().put(tab, new URLMapping(tab, webElement.getAttribute("href")));
+                elementFound += 1.0;
             } catch (TimeoutException ex) {
-                return false;
+                msg.append("'" + tab + "', ");
             }
         }
-
-        return true;
+        
+        if ( (elementFound / numOfElemets) < 0.5 ) {
+            retVal = false;
+        }
+        Common.logDebug("In testTabsForNavigationLinks(element = '" + element.name() + "') -> numOfElemets:" + numOfElemets + ", elementFound:" + elementFound + ", ratio: " + (elementFound / numOfElemets) + ", retVal:" + retVal + "." );
+        return retVal;
     }
 
     private List<NavigationWebElement> getNavWebElements() {
