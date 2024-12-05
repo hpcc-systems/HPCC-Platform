@@ -164,10 +164,16 @@ class jlib_decl OwnedSpanScope
 public:
     OwnedSpanScope() = default;
     OwnedSpanScope(ISpan * _ptr);
+    OwnedSpanScope(const OwnedSpanScope& rhs) = delete;
+    OwnedSpanScope(OwnedSpanScope&& rhs) = default;
     ~OwnedSpanScope();
 
     inline ISpan * operator -> () const         { return span; }
     inline operator ISpan *() const             { return span; }
+
+    inline OwnedSpanScope& operator=(ISpan * ptr) = delete;
+    inline OwnedSpanScope& operator=(const OwnedSpanScope& rhs) = delete;
+    inline OwnedSpanScope& operator=(OwnedSpanScope&& rhs) = delete;
 
     void clear();
     ISpan * query() const { return span; }
