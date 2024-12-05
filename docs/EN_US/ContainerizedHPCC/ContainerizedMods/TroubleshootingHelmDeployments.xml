@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="TroubleshootingContainerizedDeployments">
+  <title>Troubleshooting Containerized Deployments</title>
+
+  <sect1 id="introductionTroubleshooting">
+    <title>Introduction</title>
+
+    <para>Helm is a powerful package manager for Kubernetes, simplifying the
+    deployment and management of complex applications. However, even with
+    Helm, deployment issues can arise. This chapter will guide you through
+    common troubleshooting steps for Helm deployments. Command-line tools,
+    such as <emphasis>kubectl</emphasis> and <emphasis>helm</emphasis> are
+    available for both local and cloud deployments.</para>
+  </sect1>
+
+  <sect1 id="UsefulHelmCommands">
+    <title>Useful Helm Commands</title>
+
+    <para>Here are some useful Helm commands for troubleshooting.</para>
+
+    <para><emphasis role="bold">List deployments</emphasis> using this command
+    in a terminal window:</para>
+
+    <para><programlisting>helm list</programlisting></para>
+
+    <para>This returns all installed Helm releases.</para>
+
+    <para>If you have multiple namespaces, use this command:</para>
+
+    <para><programlisting>helm list -A </programlisting></para>
+
+    <para>Returns all installed Helm releases across all namespaces.</para>
+
+    <para><emphasis role="bold">Get the status</emphasis> of a specific
+    release using this command in a terminal window:</para>
+
+    <para><programlisting>helm status &lt;release-name&gt;</programlisting></para>
+
+    <para>This returns the status of a specific release.</para>
+
+    <para><emphasis role="bold">Get the user supplied values</emphasis> for a
+    release using this command in a terminal window:</para>
+
+    <para><programlisting>helm get values &lt;release-name&gt;</programlisting></para>
+
+    <para>By effectively using these Helm commands, you can quickly identify
+    and resolve issues with your Helm deployments. Remember to consult the
+    official Helm documentation for more detailed information and specific use
+    cases.</para>
+  </sect1>
+
+  <sect1 id="checkthestatusofpods">
+    <title>Check the Status of Pods</title>
+
+    <para>Pods are the smallest deployable units of computing that can be
+    created and managed in Kubernetes. Checking the status of pods is a
+    fundamental step in troubleshooting Kubernetes deployments. By monitoring
+    pod status, you can quickly identify and address potential issues,
+    ensuring the health and performance of your applications.  </para>
+
+    <para>The HPCC Systems platform has one or more pods for each component of
+    a deployed system.</para>
+
+    <para>To get a quick overview of pod status, use the following command in
+    a terminal window:</para>
+
+    <para><programlisting>kubectl get pods</programlisting></para>
+
+    <para>This lists all pods in your cluster, along with their status,
+    restart count, and other details.</para>
+
+    <para>If you have deployments to more than one namespace, use this
+    command:</para>
+
+    <para><programlisting>kubectl get pods -A</programlisting></para>
+
+    <para>This lists all pods in all namespaces.</para>
+
+    <para>Each pod should indicate a status of <emphasis
+    role="bold">Running</emphasis> and have a matching number of pods
+    displayed in the <emphasis role="bold">READY</emphasis> column.</para>
+
+    <para>Check the <emphasis role="bold">RESTARTS</emphasis> column, a high
+    number of restarts may indicate issues.</para>
+
+    <sect2 id="IdentifyingIssues" role="brk">
+      <title>Identifying Other Issues and Their Root Cause</title>
+
+      <para><emphasis role="bold">Pending Status:</emphasis> <variablelist>
+          <varlistentry>
+            <term>Insufficient Resources</term>
+
+            <listitem>
+              <para>The pod might be waiting for resources like CPU or memory
+              to become available.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Scheduling Failures</term>
+
+            <listitem>
+              <para>There might be scheduling conflicts or node issues
+              preventing the pod from being scheduled.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+
+      <para><emphasis role="bold">Running Status: </emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>High Restart Count</term>
+
+          <listitem>
+            <para>Frequent restarts could indicate issues with the pod's
+            configuration, image, or underlying infrastructure.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Resource Constraints</term>
+
+          <listitem>
+            <para>The pod might be experiencing resource limitations, leading
+            to performance degradation or crashes.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para><emphasis role="bold">Failed Status: </emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Container Failures</term>
+
+          <listitem>
+            <para>One or more containers within the pod might have failed due
+            to errors or crashes.  </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Termination Signals</term>
+
+          <listitem>
+            <para>The pod might have been intentionally terminated,
+            potentially due to a deployment or scaling operation.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="describe-a-pod" role="brk">
+    <title>Describe a Pod</title>
+
+    <para>Use the <emphasis role="strong">kubectl</emphasis> command-line tool
+    to get detailed information about pods. By describing a pod, you can gain
+    valuable insights into its current state, configuration, and resource
+    utilization.</para>
+
+    <para>To get detailed information about a pod, use the following command
+    in a terminal window:</para>
+
+    <para><programlisting>kubectl describe pod &lt;pod-name&gt;</programlisting></para>
+
+    <para>The output provides detailed information about the pod,
+    including:</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Events</term>
+
+          <listitem>
+            <para>A timeline of events related to the pod's lifecycle. If
+            there are issues with the deployment, they are commonly found in
+            this section.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Containers</term>
+
+          <listitem>
+            <para>Information about the containers running within the
+            pod.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Status</term>
+
+          <listitem>
+            <para>The current status of the pod.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Conditions</term>
+
+          <listitem>
+            <para>The conditions that the pod must meet to be considered
+            running.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>If you have deployments to more than one namespace, use this
+    command:</para>
+
+    <para><programlisting>kubectl describe pod &lt;pod-name&gt;  -A</programlisting></para>
+
+    <para>This describes the pod across all namespaces.</para>
+
+    <para>By carefully analyzing this information, you can:</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Identify and troubleshoot issues</term>
+
+          <listitem>
+            <para>Pinpoint the root cause of problems, such as resource
+            constraints, configuration errors, or network connectivity
+            issues.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Monitor pod health and performance</term>
+
+          <listitem>
+            <para>Track the pod's status, resource usage, and event history to
+            ensure it's operating as expected.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Optimize resource allocation</term>
+
+          <listitem>
+            <para>Adjust resource requests and limits to improve performance
+            and cost-efficiency.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Gain insights into Kubernetes scheduling and resource
+          management</term>
+
+          <listitem>
+            <para>Learn how Kubernetes allocates resources to pods and handles
+            failures.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>By mastering the art of describing pods, you can become a more
+    effective Kubernetes administrator and troubleshoot your deployments with
+    confidence.</para>
+  </sect1>
+
+  <sect1 id="check-the-status-of-services" role="brk">
+    <title>Check the Status of Services</title>
+
+    <para>Services expose applications running on a cluster.</para>
+
+    <para>The <emphasis>kubectl get services</emphasis> command is a powerful
+    tool for troubleshooting Kubernetes deployments. It provides a concise
+    overview of the services running in your cluster, helping you identify
+    potential issues and their root causes.</para>
+
+    <para>To get a quick overview of services status, use the following
+    command in a terminal window:</para>
+
+    <para><programlisting>kubectl get services</programlisting></para>
+
+    <para>This lists all services in your cluster, along with their type,
+    internal and external IP addresses, port, and uptime (Age).</para>
+
+    <para>If you have deployments to more than one namespace, use this
+    command:</para>
+
+    <para><programlisting>kubectl get service -A</programlisting></para>
+
+    <para>This lists all services in all namespaces.</para>
+
+    <para>If a service that should have an external IP listed does not have
+    one displayed, that pod has an issue.</para>
+  </sect1>
+
+  <sect1 id="describe-a-service">
+    <title>Describe a Service</title>
+
+    <para>Use the <emphasis role="strong">kubectl</emphasis> command-line tool
+    to get detailed information about a service. By describing a service in
+    Kubernetes, you can gain valuable insights into its configuration, health,
+    and how it interacts with pods.</para>
+
+    <para>To get detailed information about a service, use the following
+    command in a terminal window:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt;</programlisting></para>
+
+    <para>The output provides detailed information about the service,
+    including the service's IP address, port, selectors, and other
+    details.</para>
+
+    <para>If you have deployments to more than one namespace, use this
+    command:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt;  -A</programlisting></para>
+
+    <para>This describes the service across all namespaces.</para>
+  </sect1>
+
+  <sect1 id="ViewingPodLogs">
+    <title>Viewing Pod Logs</title>
+
+    <para>Viewing pod logs is a crucial step in troubleshooting Helm
+    deployments because it provides real-time insights into the behavior and
+    errors occurring within your application containers. By analyzing these
+    logs, you can quickly identify and address a wide range of issues.</para>
+
+    <para>To view the logs of a specific pod, use the following command in a
+    terminal window:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt;</programlisting></para>
+
+    <para>This returns the entire log for a pod.</para>
+
+    <para>To tail the logs and see real-time output:</para>
+
+    <para><programlisting>kubectl logs -f &lt;pod-name&gt;</programlisting></para>
+
+    <para>If the pod has more than one container, use this command to get logs
+    for a specific container:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt; -c &lt;container-name&gt;</programlisting></para>
+  </sect1>
+
+  <sect1 id="ViewingServiceLogs">
+    <title>Viewing Service Logs</title>
+
+    <para>While services themselves don't produce logs, you can view the logs
+    of the pods that are running the service.</para>
+
+    <para>To do this, you'll need to identify the pods that are selected by
+    the service's selector. You can use the describe command to see the
+    selector:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt; </programlisting></para>
+
+    <para>Once you know the selector, you can list the pods that match
+    it:</para>
+
+    <para><programlisting>kubectl get pods -l &lt;selector-label&gt; </programlisting></para>
+
+    <para>Then, you can view the logs of those pods using the logs
+    command:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt; </programlisting></para>
+  </sect1>
+
+  <sect1 id="EffectiveLogAnalysis">
+    <title>Effective Log Analysis</title>
+
+    <para>Here are some additional tips for effective log analysis for
+    troubleshooting.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Filter and Search Logs</term>
+
+        <listitem>
+          <para>Use <emphasis>kubectl logs</emphasis> options to filter logs
+          by timestamp, container name, or specific keywords to focus on
+          relevant information.</para>
+
+          <para>For example:</para>
+
+          <para><programlisting>kubectl logs &lt;pod-name&gt; --since=10m</programlisting></para>
+
+          <para>Filters logs from a specific time.</para>
+
+          <para>Even though <emphasis>kubectl logs</emphasis> doesn't have a
+          direct keyword search option, you can use tools like
+          <emphasis>grep</emphasis> to filter the output.</para>
+
+          <para>For example:</para>
+
+          <para><programlisting>kubectl logs &lt;pod-name&gt; | grep "TLS"</programlisting></para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Correlate Logs with Metrics</term>
+
+        <listitem>
+          <para>Combine log analysis with monitoring metrics to gain a
+          holistic view of application performance.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Leverage Logging Tools</term>
+
+        <listitem>
+          <para>Consider using advanced logging tools like Elasticsearch,
+          Logstash, and Kibana (ELK Stack) to centralize, aggregate, and
+          analyze logs from multiple pods and services.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Set Appropriate Log Levels</term>
+
+        <listitem>
+          <para>Configure your application to log at the appropriate level of
+          detail, balancing the need for informative logs with the risk of
+          excessive log verbosity. You can then use a filter to show only
+          those log entries that meet the criteria.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Monitor logs in real-time.</term>
+
+        <listitem>
+          <para>Monitoring logs in real-time can be useful to debug ongoing
+          issues. Use the following command:</para>
+
+          <para><programlisting>kubectl logs -f</programlisting></para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </sect1>
+
+  <sect1 id="AdditionalTroubleshootingTips">
+    <title>Additional Troubleshooting Tips</title>
+
+    <para>Here are some additional tips for troubleshooting your
+    deployments.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Check your Helm chart configuration.</term>
+
+        <listitem>
+          <para>Ensure that your Helm chart(s) are configured correctly, with
+          accurate values for images, resources, and environment
+          variables.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Verify Image Availability.</term>
+
+        <listitem>
+          <para>Make sure that the images used in your Helm chart are
+          accessible and can be pulled by Kubernetes.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Inspect Resource Limits and Requests.</term>
+
+        <listitem>
+          <para>Review the resource limits and requests defined for your pods
+          and services. Insufficient resources can lead to performance issues
+          or pod failures.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Examine Kubernetes Logs.</term>
+
+        <listitem>
+          <para>Use the <emphasis>kubectl logs</emphasis> command to view the
+          logs of specific pods and containers. These logs can provide
+          valuable insights into errors and unexpected behavior.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Review Network Connectivity.</term>
+
+        <listitem>
+          <para>Ensure that your Kubernetes cluster has proper network
+          connectivity, both internally and externally. Network issues can
+          prevent pods from communicating with each other or with external
+          services.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Consider Persistent Volume Claims (PVCs).</term>
+
+        <listitem>
+          <para>If your application requires persistent storage, verify that
+          PVCs are provisioned correctly and that the underlying storage is
+          accessible.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>By following these steps and tips, you can effectively troubleshoot
+    your containerized deployments and quickly identify the root cause of
+    issues.</para>
+  </sect1>
+</chapter>
