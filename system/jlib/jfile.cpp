@@ -8022,6 +8022,8 @@ const char *getPlaneAttributeString(PlaneAttributeType attr)
 
 unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue)
 {
+    if (!planeName)
+        return defaultValue;
     assertex(planeAttrType < PlaneAttributeCount);
     CriticalBlock b(planeAttributeMapCrit);
     auto it = planeAttributesMap.find(planeName);

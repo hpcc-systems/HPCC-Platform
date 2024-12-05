@@ -770,6 +770,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
 {
     // if !wait, then we only perform ssl_err checking, we do not wait_read/wait_write or timeout
     int rc = 0;
+    int sockErr = 0;
     switch (ssl_err)
     {
         case SSL_ERROR_ZERO_RETURN:
@@ -791,7 +792,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
         }
         case SSL_ERROR_SYSCALL:
         {
-            int sockErr = SOCKETERRNO();
+            sockErr = SOCKETERRNO();
             if (sockErr == EAGAIN || sockErr == EWOULDBLOCK)
             {
                 if (wait)
@@ -810,7 +811,7 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
             char errbuf[512];
             ERR_error_string_n(ssl_err, errbuf, 512);
             ERR_clear_error();
-            VStringBuffer errmsg("%s error %d - %s", opStr, ssl_err, errbuf);
+            VStringBuffer errmsg("%s error %d (%d) - %s", opStr, ssl_err, sockErr, errbuf);
             if (m_loglevel >= SSLogMax)
                 DBGLOG("Warning: %s", errmsg.str());
             THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
