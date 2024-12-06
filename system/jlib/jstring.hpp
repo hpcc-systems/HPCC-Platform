@@ -641,4 +641,7 @@ extern jlib_decl void processOptionString(const char * options, optionCallback c
 
 extern jlib_decl const char * stristr(const char *haystack, const char *needle);
 
+// For preventing command injection, sanitize the argument to be passed to the system command
+extern jlib_decl StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized);
+
 #endif
