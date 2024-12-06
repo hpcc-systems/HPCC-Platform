@@ -32,6 +32,7 @@
 #include "rmtfile.hpp"
 #include "dautils.hpp"
 #include "jptree.hpp"
+#include "jcontainerized.hpp"
 
 #include "XRefNodeManager.hpp"
 
@@ -606,7 +607,7 @@ public:
 struct CLogicalNameEntry: public CInterface
 {
     CLogicalNameEntry(CXRefManagerBase &_manager, const char *_lname,IPropertyTree &file) // takes ownership of grp
-        : manager(_manager),lname(_lname) 
+        : manager(_manager),lname(_lname)
     {
         replicated = false;
         outsidedir = 0;
@@ -647,7 +648,7 @@ struct CLogicalNameEntry: public CInterface
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
                 const char *dir = file.queryProp("@directory");
-                if (dir&&*dir) 
+                if (dir&&*dir)
                     tmp.append(dir).append(getPathSepChar(dir));
             }
             tmp.append(partmask);
@@ -655,6 +656,17 @@ struct CLogicalNameEntry: public CInterface
         tmp.toLowerCase();
         substnum(tmp,"$n$",max);
         dirpartmask.set(tmp.str());
+        replicateOffset = file.getPropInt("@replicateOffset",1);
+        lfnHash = file.getPropInt("@lfnHash");
+        plane.setown(getDataStoragePlane(grpname, false));
+        if (!plane)
+            manager.error(_lname, "Plane definition \"%s\" is missing for File", grpname.str());
+        prefix = plane->queryPrefix();
+        if (prefix.isEmpty())
+            manager.error(_lname, "Prefix definition for plane \"%s\" is missing for File", grpname.str());
+        // Get dir-per-part # from file metadata or storage plane info
+        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(file.getPropInt("Attr/@flags"));
+        dirPerPart = FileDescriptorFlags::none != (flags & FileDescriptorFlags::dirperpart) ? true : max>1?plane->queryDirPerPart():false;
     }
     ~CLogicalNameEntry()
     {
@@ -757,6 +769,11 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
+    RemoteFilename &constructPartFilename(unsigned partNo, bool replicate, RemoteFilename &rfn)
+    {
+        return ::constructPartFilename(grp, partNo, replicate?1:0, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, plane, rfn);
+    }
+
     void resolve(CFileEntry *entry);
     IPropertyTree *addFileBranch(IPropertyTree *dst,unsigned flags);
 
@@ -793,6 +810,11 @@ struct CLogicalNameEntry: public CInterface
     bool grouped;
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
+    bool dirPerPart;
+    int replicateOffset;
+    unsigned lfnHash;
+    StringAttr prefix;
+    Owned<IStoragePlane> plane;
 };
 
 
@@ -917,23 +939,76 @@ static void constructPartname(const char *filename,unsigned n, StringBuffer &pn,
 static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
 {
     // takes filename and creates mask filename with $P$ extension
+    const char *filename = name;
     StringBuffer nonrepdir;
-    replicate = setReplicateDir(name,nonrepdir,false);
-    if (replicate) 
-        name = nonrepdir.str();
+    if (!isContainerized())
+    {
+        // Replicate dir is not supported in containerized environment
+        replicate = setReplicateDir(name,nonrepdir,false);
+        if (replicate)
+            name = nonrepdir.str();
+    }
+
+    Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
+    ForEach(*planesIter)
+    {
+        const IPropertyTree &plane = planesIter->query();
+        const char *prefix = plane.queryProp("@prefix");
+        size_t prefixLen = strlen(prefix);
+        if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
+        {
+            mname.ensureCapacity(strlen(name));
+            mname.append(prefix).append(PATHSEPCHAR);
+            name += prefixLen + 1;
+            if (plane.getPropInt("@numDevices") > 1)
+            {
+                if (*name&&*name!='d')
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                name++;
+                while (*name&&isdigit(*name))
+                    name++;
+                mname.append("d$P$");
+            }
+            break;
+        }
+    }
+
+    if (mname.isEmpty())
+        throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", filename);
+
     num = 0;
     max = 0;
+    unsigned dirPerPart = 0;
+    const char * cur = name;
     for (;;) {
-        char c=*name;
+        char c=*cur;
         if (!c)
             break;
-        if ((c=='.')&&(name[1]=='_')) {
+        if ((c=='.')&&(cur[1]=='_')) {
             unsigned pn = 0;
-            const char *s = name+2;
+            const char *s = cur+2;
             while (*s&&isdigit(*s)) {
                 pn = pn*10+(*s-'0');
                 s++;
             }
+
+            // Check for dir-per-part number
+            const char *tailSlash = cur;
+            while (*tailSlash&&*tailSlash!='/')
+                tailSlash--;
+            const char *d = tailSlash-1;
+            for (int i=1;*(d)&&isdigit(*d);i*=10,d--)
+                dirPerPart += (*d-'0')*i;
+            if (*d&&*d=='/')
+            {
+                if (dirPerPart!=pn)
+                    throw makeStringExceptionV(-1, "Dir-per-part # does not match part # of file %s", filename);
+
+                mname.append((d+1)-name, name).append("$P$").append(cur-tailSlash, tailSlash);
+            }
+            else
+                mname.append(cur-name,name);
+
             if (pn&&(memicmp(s,"_of_",4)==0)) {
                 unsigned mn = 0;
                 s += 4;
@@ -951,15 +1026,15 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                 }
             }
         }
-        mname.append(c);
-        name++;
+        cur++;
     }
     return false;
-}           
+}
 
-        
-
-
+extern DFUXREFLIB_API bool testParseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
+{
+    return parseFileName(name,mname,num,max,replicate);
+}
 
 class COrphanEntry: public CInterface
 {
@@ -1517,18 +1592,14 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
             }
             else {
                 bool replicate=false;
-                const char *partname = part.queryProp("@name");
-                const char *partmask = file.queryProp("@partmask");
-                const char *partdir = file.queryProp("@directory");
-                int replicateoffset = file.getPropInt("@replicateOffset",1);
                 for (;;) {
-                    RemoteFilename rfn; 
+                    RemoteFilename rfn;
                     IGroup *grp = lnentry->queryGroup();
                     if (!grp) {
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    constructPartFilename(grp,partno,numparts,partname,partmask,partdir,replicate,replicateoffset,rfn);
+                    lnentry->constructPartFilename(partno, replicate, rfn);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
@@ -1544,9 +1615,9 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (dirmatch)                       {
                             rfn.getRemotePath(remotename.clear());
                             remotename.toLowerCase();
-                            
+
                             CFileEntry *entry= new CFileEntry(remotename.str(),lnentry,partno,replicate,part.getPropInt64("@size", -1),part.getPropInt("@rowCompression", 0)!=0,part.getPropInt("@compressedSize", -1));
-                                                        
+
                             CFileEntry *oldentry= manager.filemap.find(remotename.str());
                             if (oldentry)
                             {
@@ -1569,7 +1640,6 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                             else {
                                 manager.filemap.add(*entry);
                             }
-                            
                         }
                         else {
                             lnentry->outsidedir++;
@@ -1581,32 +1651,31 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (lnentry->outsidenodes.find(rep)==NotFound)
                             lnentry->outsidenodes.append(rep);
                     }
+                    if (isContainerized())
+                    {
+                        UWARNLOG("Replication not supported in containerized version");
+                        break;
+                    }
                     if (replicate)
                         break;
                     replicate = true;
-                }               
+                }
             }
         }
 
     } scanner(manager,grp,numdirs,dirbaselist);
-    
+
     manager.log("Loading Files branch from SDS");
 
     Owned<IRemoteConnection> conn = querySDS().connect(SDS_DFS_ROOT,myProcessSession(),RTM_LOCK_READ, INFINITE);
     if (!conn) {
         throw MakeStringException(-1,"Could not connect to Files");
-        
     }
     conn->changeMode(RTM_NONE);
     manager.log("Files loaded, scanning");
     scanner.scan(conn);
     manager.log("Scanning done");
-
 }
-
-
-
-    
 
 class CPhysicalXREF
 {
@@ -1867,7 +1936,11 @@ class CXRefManager: public CXRefManagerBase
                     Owned<IPropertyTree> results;
                     {
                         CriticalUnblock unblock(manager.logsect);
-                        unsigned short port = getDafsPort(node.endpoint(),numfails,&crit);
+                        unsigned short port = 0;
+                        // localhost signifies that this is a locally hosted or mounted storage
+                        // which is standard in the cloud and otherwise needs to be reached via dafilesrv
+                        if (!strieq(msg, "localhost"))
+                            port = getDafsPort(node.endpoint(),numfails,&crit);
                         results.setown(getDirectory(dirlist,&node,port));
                     }
                     manager.log("Crossreferencing %s",msg.str());
@@ -2596,59 +2669,93 @@ public:
         msgcallback.set(_msgcallback);
 
         IPropertyTree *out=NULL;
-        
-        Owned<IGroup> g;
-        unsigned j;
-        if (!nclusters) {
-            error("XREF","No clusters specified\n");
+
+        if (!nclusters)
+        {
+            error("XREF","No storage planes specified\n");
             return NULL;
         }
-        if (!numdirs) {
+        if (!numdirs)
+        {
             error("XREF","No directories specified\n");
             return NULL;
         }
-        for (j=0;j<nclusters;j++) {
-            Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
-            if (!gsub) {
-                error(clusters[j],"Could not find cluster group");
-                return NULL;
-            }
-            if (!g)
-                g.set(gsub.get());
-            else
-                g.setown(g->combine(gsub.get()));
-        }
-        totalSizeOrphans =0;
-        totalNumOrphans = 0;
 
+        totalSizeOrphans = 0;
+        totalNumOrphans = 0;
 
         logicalnamelist.kill();
         dirlist.kill();
         orphanlist.kill();
-        
-        const char* cluster = clusters[0];
-        loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
 
-        xrefRemoteDirectories(g,numdirs,dirbaselist,numthreads);
+        if (!isContainerized())
+        {
+            Owned<IGroup> g;
+            unsigned j;
+
+            for (j=0;j<nclusters;j++)
+            {
+                Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
+                if (!gsub)
+                {
+                    error(clusters[j], "Could not find cluster group");
+                    return NULL;
+                }
+                if (!g)
+                    g.set(gsub.get());
+                else
+                    g.setown(g->combine(gsub.get()));
+            }
+
+            const char* cluster = clusters[0];
+            loadFromDFS(*this, g, numdirs, dirbaselist, cluster);
+            xrefRemoteDirectories(g, numdirs, dirbaselist, numthreads);
+        }
+        else
+        {
+            const char *storageDir[1];
+            for (int i = 0; i < nclusters; i++)
+            {
+                DBGLOG("CONTAINERIZED(CXRefManager::process)");
+
+                const char *storagePlaneName = clusters[i]; // clusters holds a list of storage plane names
+                Owned<IPropertyTree> storagePlane = getStoragePlane(storagePlaneName);
+                if (!storagePlane)
+                {
+                    error("XREF", "Could not find storage plane definition for %s", storagePlaneName);
+                    return NULL;
+                }
+                Owned<IGroup> g = queryNamedGroupStore().lookup(storagePlaneName);
+                if (!g)
+                {
+                    error("XREF", "Could not find cluster group for storage plane %s", storagePlaneName);
+                    return NULL;
+                }
+                storageDir[0] = storagePlane->queryProp("@prefix");
+                loadFromDFS(*this, g, 1, storageDir, storagePlaneName);
+                xrefRemoteDirectories(g, 1, storageDir, numthreads);
+            }
+        }
+
         StringBuffer filename;
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
-        
-        if (flags&PMtextoutput) 
+
+        if (flags&PMtextoutput)
             outputTextReport(filename.str());
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
 
-        if (flags&PMcsvoutput) 
+        if (flags&PMcsvoutput)
             outputCsvReport(filename.str());
 
-        if (flags&PMbackupoutput) 
+        if (flags&PMbackupoutput)
             outputBackupReport();
 
-        if (flags&PMtreeoutput) 
-            out = outputTree(); 
+        if (flags&PMtreeoutput)
+            out = outputTree();
 
         logicalnamemap.kill();
         filemap.kill();
@@ -2678,12 +2785,11 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
 #endif
     // assume all nodes same OS
     Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-#ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
-#else
-    if (group)
+    if (isContainerized())
+        WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
+    else if (group)
         islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-#endif
+
     dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
     dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
     numdirs = 2;
