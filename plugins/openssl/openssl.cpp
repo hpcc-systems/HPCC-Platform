@@ -91,21 +91,21 @@ template <typename T>
 class OpenSSLCache
 {
 public:
-    const T * checkCache(const char * algorithm)
+    const T * checkCache(const char * algorithm_name)
     {
         for (auto& c : cache)
         {
-            if (std::get<0>(c) == algorithm)
+            if (std::get<0>(c) == algorithm_name)
             {
                 hits++;
                 return std::get<1>(c);
             }
         }
         misses++;
-        const T * newObj = getObjectByName(algorithm);
+        const T * newObj = getObjectByName(algorithm_name);
         if (newObj)
         {
-            cache.emplace_front(algorithm, newObj);
+            cache.emplace_front(algorithm_name, newObj);
             if (cache.size() > OPENSSL_MAX_CACHE_SIZE)
                 cache.pop_back();
         }
@@ -262,12 +262,12 @@ OPENSSL_API void OPENSSL_CALL digestAvailableAlgorithms(ICodeContext *ctx, size3
     }
 }
 
-OPENSSL_API void OPENSSL_CALL digestHash(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_indata, const void * _indata, const char * _hash_name)
+OPENSSL_API void OPENSSL_CALL digestHash(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_indata, const void * _indata, const char * _algorithm_name)
 {
-    if (strlen(_hash_name) == 0)
+    if (strlen(_algorithm_name) == 0)
         rtlFail(-1, "No hash digest name provided");
 
-    const EVP_MD * md = digestCache.checkCache(_hash_name);
+    const EVP_MD * md = digestCache.checkCache(_algorithm_name);
 
     EVP_MD_CTX * mdContext = EVP_MD_CTX_new();
     if (!mdContext)
@@ -334,18 +334,18 @@ OPENSSL_API void OPENSSL_CALL cipherAvailableAlgorithms(ICodeContext *ctx, size3
     }
 }
 
-OPENSSL_API uint16_t OPENSSL_CALL cipherIVSize(ICodeContext *ctx, const char * algorithm)
+OPENSSL_API uint16_t OPENSSL_CALL cipherIVSize(ICodeContext *ctx, const char * algorithm_name)
 {
-    if (strlen(algorithm) == 0)
+    if (strlen(algorithm_name) == 0)
         rtlFail(-1, "No algorithm name provided");
 
     // Load the cipher
-    const EVP_CIPHER * cipher = cipherCache.checkCache(algorithm);
+    const EVP_CIPHER * cipher = cipherCache.checkCache(algorithm_name);
 
     return static_cast<uint16_t>(EVP_CIPHER_iv_length(cipher));
 }
 
-OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, const char * _algorithm, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
+OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -354,7 +354,7 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
     bool hasSalt = (len_salt > 0);
 
     // Initial sanity check of our arguments
-    if (strlen(_algorithm) == 0)
+    if (strlen(_algorithm_name) == 0)
         rtlFail(-1, "No algorithm name provided");
     if (len_passphrase == 0)
         rtlFail(-1, "No passphrase provided");
@@ -364,7 +364,7 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
     if (len_plaintext > 0)
     {
         // Load the cipher
-        const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm);
+        const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
         int cipherIVSize = EVP_CIPHER_iv_length(cipher);
         if (hasIV && len_iv != static_cast<size32_t>(cipherIVSize))
@@ -420,7 +420,7 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
     }
 }
 
-OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, const char * _algorithm, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
+OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -429,7 +429,7 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
     bool hasSalt = (len_salt > 0);
 
     // Initial sanity check of our arguments
-    if (strlen(_algorithm) == 0)
+    if (strlen(_algorithm_name) == 0)
         rtlFail(-1, "No algorithm name provided");
     if (len_passphrase == 0)
         rtlFail(-1, "No passphrase provided");
@@ -439,7 +439,7 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
     if (len_ciphertext > 0)
     {
         // Load the cipher
-        const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm);
+        const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
         int cipherIVSize = EVP_CIPHER_iv_length(cipher);
         if (hasIV && len_iv != static_cast<size32_t>(cipherIVSize))
@@ -497,7 +497,7 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
 
 // RSA functions
 
-OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _symmetric_algorithm)
+OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_public_keys == 0)
@@ -525,7 +525,7 @@ OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult,
             }
 
             // Load the cipher
-            const EVP_CIPHER * cipher = cipherCache.checkCache(_symmetric_algorithm);
+            const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
             // Allocate memory for encrypted keys
             size_t keyCount = publicKeys.size();
@@ -615,7 +615,7 @@ OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _symmetric_algorithm)
+OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_private_key == 0)
@@ -634,7 +634,7 @@ OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResul
             EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key, len_passphrase, _passphrase);
 
             // Load the cipher
-            const EVP_CIPHER * cipher = cipherCache.checkCache(_symmetric_algorithm);
+            const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
             // Allocate memory for the symmetric key and IV
             int keyLen = EVP_PKEY_size(privateKey);
@@ -821,7 +821,7 @@ OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResu
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _hash_name)
+OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -835,7 +835,7 @@ OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult,
         if (!mdCtx)
             failOpenSSLError("EVP_MD_CTX_new (rsaSign)");
 
-        const EVP_MD *md = digestCache.checkCache(_hash_name);
+        const EVP_MD *md = digestCache.checkCache(_algorithm_name);
 
         if (EVP_DigestSignInit(mdCtx, nullptr, md, nullptr, privateKey) <= 0)
             failOpenSSLError("EVP_DigestSignInit (rsaSign)");
@@ -873,7 +873,7 @@ OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _hash_name)
+OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -887,7 +887,7 @@ OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len
         if (!mdCtx)
             failOpenSSLError("EVP_MD_CTX_new");
 
-        const EVP_MD *md = digestCache.checkCache(_hash_name);
+        const EVP_MD *md = digestCache.checkCache(_algorithm_name);
 
         if (EVP_DigestVerifyInit(mdCtx, nullptr, md, nullptr, publicKey) <= 0)
             failOpenSSLError("EVP_DigestVerifyInit (rsaVerifySignature)");

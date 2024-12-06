@@ -20,20 +20,20 @@ export OpenSSL := SERVICE : plugin('openssl')
 
     // Hash functions
     DATASET({STRING name}) digestAvailableAlgorithms() : cpp,action,context,entrypoint='digestAvailableAlgorithms';
-    DATA digestHash(DATA _indata, VARSTRING _hash_name) : cpp,action,context,entrypoint='digestHash';
+    DATA digestHash(DATA _indata, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='digestHash';
 
     // Symmetric ciphers
     DATASET({STRING name}) cipherAvailableAlgorithms() : cpp,action,context,entrypoint='cipherAvailableAlgorithms';
-    UNSIGNED2 cipherIVSize(VARSTRING algorithm) : cpp,action,context,entrypoint='cipherIVSize';
-    DATA cipherEncrypt(DATA _plaintext, VARSTRING _algorithm, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherEncrypt';
-    DATA cipherDecrypt(DATA _ciphertext, VARSTRING _algorithm, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherDecrypt';
+    UNSIGNED2 cipherIVSize(VARSTRING _algorithm_name) : cpp,action,context,entrypoint='cipherIVSize';
+    DATA cipherEncrypt(DATA _plaintext, VARSTRING _algorithm_name, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherEncrypt';
+    DATA cipherDecrypt(DATA _ciphertext, VARSTRING _algorithm_name, DATA _passphrase, DATA _iv = (DATA)'', DATA _salt = (DATA)'') : cpp,action,context,entrypoint='cipherDecrypt';
 
     // RSA
-    DATA rsaSeal(DATA _plaintext, SET OF STRING _pem_public_keys, VARSTRING _symmetric_algorithm) : cpp,action,context,entrypoint='rsaSeal';
-    DATA rsaUnseal(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key, VARSTRING _symmetric_algorithm) : cpp,action,context,entrypoint='rsaUnseal';
+    DATA rsaSeal(DATA _plaintext, SET OF STRING _pem_public_keys, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='rsaSeal';
+    DATA rsaUnseal(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='rsaUnseal';
     DATA rsaEncrypt(DATA _plaintext, STRING _pem_public_key) : cpp,action,context,entrypoint='rsaEncrypt';
     DATA rsaDecrypt(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key) : cpp,action,context,entrypoint='rsaDecrypt';
-    DATA rsaSign(DATA _plaintext, DATA _passphrase, STRING _pem_private_key, VARSTRING _hash_name) : cpp,action,context,entrypoint='rsaSign';
-    BOOLEAN rsaVerifySignature(DATA _signature, DATA _signedData, STRING _pem_public_key, VARSTRING _hash_name) : cpp,action,context,entrypoint='rsaVerifySignature';
+    DATA rsaSign(DATA _plaintext, DATA _passphrase, STRING _pem_private_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='rsaSign';
+    BOOLEAN rsaVerifySignature(DATA _signature, DATA _signedData, STRING _pem_public_key, VARSTRING _algorithm_name) : cpp,action,context,entrypoint='rsaVerifySignature';
 
 END;

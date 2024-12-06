@@ -24,9 +24,14 @@ EXPORT Digest := MODULE
     /**
      * Returns a list of the names of the available hash digest algorithms.
      *
+     * This is primarily an introspection/discovery function. Once
+     * you determine the algorithm you want to use, you should hardcode it.
+     *
      * @return  A dataset containing the hash algorithm names.
      *
      * @see     Hash()
+     *          RSA.Sign()
+     *          RSA.VerifySignature()
      */
     EXPORT DATASET({STRING name}) AvailableAlgorithms() := lib_openssl.OpenSSL.digestAvailableAlgorithms();
 
@@ -34,17 +39,17 @@ EXPORT Digest := MODULE
      * Compute the hash of given data according to the named
      * hash algorithm.
      *
-     * @param   indata      The data to hash; REQUIRED
-     * @param   hash_name   The name of the hash algorithm to use;
-     *                      must be one of the values returned from
-     *                      the AvailableAlgorithms() function in
-     *                      this module; cannot be empty; REQUIRED
+     * @param   indata           The data to hash; REQUIRED
+     * @param   algorithm_name   The name of the hash algorithm to use;
+     *                           must be one of the values returned from
+     *                           the AvailableAlgorithms() function in
+     *                           this module; cannot be empty; REQUIRED
      *
      * @return  A DATA value representing the hash value of indata.
      *
      * @see     AvailableAlgorithms()
      */
-    EXPORT DATA Hash(DATA _indata, VARSTRING _hash_name) := lib_openssl.OpenSSL.digesthash(_indata, _hash_name);
+    EXPORT DATA Hash(DATA indata, VARSTRING algorithm_name) := lib_openssl.OpenSSL.digesthash(indata, algorithm_name);
 
 END; // Digest
 
@@ -53,6 +58,9 @@ EXPORT Ciphers := MODULE
     /**
      * Returns a list of the names of the available symmetric
      * cipher algorithms.
+     *
+     * This is primarily an introspection/discovery function. Once
+     * you determine the algorithm you want to use, you should hardcode it.
      *
      * @return  A dataset containing the symmetric cipher algorithm names.
      *
@@ -71,16 +79,16 @@ EXPORT Ciphers := MODULE
      * you determine the proper value for the algorithm you want to
      * use, you should hardcode it.
      *
-     * @param   algorithm   The name of the symmetric cipher to examine;
-     *                      must be one of the values returned from
-     *                      the AvailableAlgorithms() function in
-     *                      this module; cannot be empty; REQUIRED
+     * @param   algorithm_name   The name of the symmetric cipher to examine;
+     *                           must be one of the values returned from
+     *                           the AvailableAlgorithms() function in
+     *                           this module; cannot be empty; REQUIRED
      *
      * @return  The size of the IV used by the given algorithm, in bytes.
      *
      * @see     AvailableAlgorithms()
      */
-    EXPORT UNSIGNED2 IVSize(VARSTRING algorithm) := lib_openssl.OpenSSL.cipherIVSize(algorithm);
+    EXPORT UNSIGNED2 IVSize(VARSTRING algorithm_name) := lib_openssl.OpenSSL.cipherIVSize(algorithm_name);
 
     /**
      * Return the size of the salt used for the given symmetric
@@ -90,16 +98,16 @@ EXPORT Ciphers := MODULE
      * you determine the proper value for the algorithm you want to
      * use, you should hardcode it.
      *
-     * @param   algorithm   The name of the symmetric cipher to examine;
-     *                      must be one of the values returned from
-     *                      the AvailableAlgorithms() function in
-     *                      this module; cannot be empty; REQUIRED
+     * @param   algorithm_name   The name of the symmetric cipher to examine;
+     *                           must be one of the values returned from
+     *                           the AvailableAlgorithms() function in
+     *                           this module; cannot be empty; REQUIRED
      *
      * @return  The size of the salt used by the given algorithm, in bytes.
      *
      * @see     AvailableAlgorithms()
      */
-    EXPORT UNSIGNED2 SaltSize(VARSTRING algorithm) := 8;
+    EXPORT UNSIGNED2 SaltSize(VARSTRING algorithm_name) := 8;
 
     /**
      * Encrypt some plaintext with the given symmetric cipher and a
@@ -109,21 +117,21 @@ EXPORT Ciphers := MODULE
      * If IV or salt values are explicitly provided during encryption then
      * those same values must be provided during decryption.
      *
-     * @param   plaintext   The data to encrypt; REQUIRED
-     * @param   algorithm   The name of the symmetric cipher to use;
-     *                      must be one of the values returned from
-     *                      the AvailableAlgorithms() function in
-     *                      this module; cannot be empty; REQUIRED
-     * @param   iv          The IV to use during encryption; if not set
-     *                      then a random value will be generated; if set,
-     *                      it must be of the expected size for the given
-     *                      algorithm; OPTIONAL, defaults to creating a
-     *                      random value
-     * @param   salt        TCURRENT_OPENSSL_VERSIONencryption; if not set
-     *                      then a random value will be generated; if set,
-     *                      it must be of the expected size for the given
-     *                      algorithm; OPTIONAL, defaults to creating a
-     *                      random value
+     * @param   plaintext       The data to encrypt; REQUIRED
+     * @param   algorithm_name  The name of the symmetric cipher to use;
+     *                          must be one of the values returned from
+     *                          the AvailableAlgorithms() function in
+     *                          this module; cannot be empty; REQUIRED
+     * @param   iv              The IV to use during encryption; if not set
+     *                          then a random value will be generated; if set,
+     *                          it must be of the expected size for the given
+     *                          algorithm; OPTIONAL, defaults to creating a
+     *                          random value
+     * @param   salt            The salt to use during encryption; if not set
+     *                          then a random value will be generated; if set,
+     *                          it must be of the expected size for the given
+     *                          algorithm; OPTIONAL, defaults to creating a
+     *                          random value
      *
      * @return  The ciphertext as a DATA type.
      *
@@ -132,7 +140,7 @@ EXPORT Ciphers := MODULE
      *          SaltSize()
      *          Decrypt()
      */
-    EXPORT DATA Encrypt(DATA plaintext, VARSTRING algorithm, DATA passphrase, DATA iv = (DATA)'', DATA salt = (DATA)'') := lib_openssl.OpenSSL.cipherEncrypt(plaintext, algorithm, passphrase, iv, salt);
+    EXPORT DATA Encrypt(DATA plaintext, VARSTRING algorithm_name, DATA passphrase, DATA iv = (DATA)'', DATA salt = (DATA)'') := lib_openssl.OpenSSL.cipherEncrypt(plaintext, algorithm_name, passphrase, iv, salt);
 
 
     /**
@@ -140,21 +148,21 @@ EXPORT Ciphers := MODULE
      * passphrase. Optionally, you can specify static IV and salt values.
      * The decrypted plaintext is returned as a DATA value.
      *
-     * @param   ciphertext  The data to decrypt; REQUIRED
-     * @param   algorithm   The name of the symmetric cipher to use;
-     *                      must be one of the values returned from
-     *                      the AvailableAlgorithms() function in
-     *                      this module; cannot be empty; REQUIRED
-     * @param   iv          The IV to use during decryption; if not set
-     *                      then a random value will be used; if set,
-     *                      it must be of the expected size for the given
-     *                      algorithm; OPTIONAL, defaults to creating a
-     *                      random value
-     * @param   salt        The salt to use during decryption; if not set
-     *                      then a random value will be used; if set,
-     *                      it must be of the expected size for the given
-     *                      algorithm; OPTIONAL, defaults to creating a
-     *                      random value
+     * @param   ciphertext      The data to decrypt; REQUIRED
+     * @param   algorithm_name  The name of the symmetric cipher to use;
+     *                          must be one of the values returned from
+     *                          the AvailableAlgorithms() function in
+     *                          this module; cannot be empty; REQUIRED
+     * @param   iv              The IV to use during decryption; if not set
+     *                          then a random value will be used; if set,
+     *                          it must be of the expected size for the given
+     *                          algorithm; OPTIONAL, defaults to creating a
+     *                          random value
+     * @param   salt            The salt to use during decryption; if not set
+     *                          then a random value will be used; if set,
+     *                          it must be of the expected size for the given
+     *                          algorithm; OPTIONAL, defaults to creating a
+     *                          random value
      *
      * @return  The plaintext as a DATA type.
      *
@@ -163,7 +171,7 @@ EXPORT Ciphers := MODULE
      *          SaltSize()
      *          Encrypt()
      */
-    EXPORT DATA Decrypt(DATA ciphertext, VARSTRING algorithm, DATA passphrase, DATA iv = (DATA)'', DATA salt = (DATA)'') := lib_openssl.OpenSSL.cipherDecrypt(ciphertext, algorithm, passphrase, iv, salt);
+    EXPORT DATA Decrypt(DATA ciphertext, VARSTRING algorithm_name, DATA passphrase, DATA iv = (DATA)'', DATA salt = (DATA)'') := lib_openssl.OpenSSL.cipherDecrypt(ciphertext, algorithm_name, passphrase, iv, salt);
 END; // Ciphers
 
 EXPORT RSA := MODULE
@@ -192,7 +200,7 @@ EXPORT RSA := MODULE
      *                              more than one public key here, and the resulting
      *                              ciphertext can be decrypted by any one of the
      *                              corresponding private keys; REQUIRED
-     * @param   symmetric_algorithm The name of the symmetric algorithm to use
+     * @param   algorithm_name      The name of the symmetric algorithm to use
      *                              to encrypt the payload; must be one of those
      *                              returned by Ciphers.AvailableAlgorithms();
      *                              OPTIONAL, defaults to aes-256-cbc
@@ -202,7 +210,7 @@ EXPORT RSA := MODULE
      * @see     Unseal()
      *          Ciphers.AvailableAlgorithms()
      */
-    EXPORT DATA Seal(DATA plaintext, SET OF STRING pem_public_keys, VARSTRING symmetric_algorithm = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaSeal(plaintext, pem_public_keys, symmetric_algorithm);
+    EXPORT DATA Seal(DATA plaintext, SET OF STRING pem_public_keys, VARSTRING algorithm_name = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaSeal(plaintext, pem_public_keys, algorithm_name);
 
     /**
      * Decrypts ciphertext previously generated by the Seal() function.
@@ -230,7 +238,7 @@ EXPORT RSA := MODULE
      *                              the private key, an empty string must be
      *                              passed in (e.g. (DATA)''); REQUIRED
      * @param   pem_private_key     An RSA public key in PEM format; REQUIRED
-     * @param   symmetric_algorithm The name of the symmetric algorithm to use
+     * @param   algorithm_name      The name of the symmetric algorithm to use
      *                              to decrypt the payload; must be one of those
      *                              returned by Ciphers.AvailableAlgorithms() and
      *                              it must match the algorithm used to create the
@@ -241,7 +249,7 @@ EXPORT RSA := MODULE
      * @see     Seal()
      *          Ciphers.AvailableAlgorithms()
      */
-    EXPORT DATA Unseal(DATA ciphertext, DATA passphrase, STRING pem_private_key, VARSTRING symmetric_algorithm = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaUnseal(ciphertext, passphrase, pem_private_key, symmetric_algorithm);
+    EXPORT DATA Unseal(DATA ciphertext, DATA passphrase, STRING pem_private_key, VARSTRING algorithm_name = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaUnseal(ciphertext, passphrase, pem_private_key, algorithm_name);
 
     /**
      * This function performs asymmetric encryption. It should be used to
@@ -296,7 +304,7 @@ EXPORT RSA := MODULE
      *                          the private key, an empty string must be
      *                          passed in (e.g. (DATA)''); REQUIRED
      * @param   pem_private_key Private key to use for signing; REQUIRED
-     * @param   hash_name       The name of the hash algorithm to use;
+     * @param   algorithm_name  The name of the hash algorithm to use;
      *                          must be one of the values returned from
      *                          the AvailableAlgorithms() function in
      *                          the Digest module; cannot be empty; REQUIRED
@@ -305,7 +313,7 @@ EXPORT RSA := MODULE
      * @see     Digest.AvailableAlgorithms()
      *          VerifySignature()
      */
-    EXPORT DATA Sign(DATA plaintext, DATA passphrase, STRING pem_private_key, VARSTRING hash_name) := lib_openssl.OpenSSL.rsaSign(plaintext, passphrase, pem_private_key, hash_name);
+    EXPORT DATA Sign(DATA plaintext, DATA passphrase, STRING pem_private_key, VARSTRING algorithm_name) := lib_openssl.OpenSSL.rsaSign(plaintext, passphrase, pem_private_key, algorithm_name);
 
     /**
      * Verify the given digital signature of the given data, using
@@ -323,7 +331,7 @@ EXPORT RSA := MODULE
      * @param   signature      Signature to verify; REQUIRED
      * @param   signedData     Data used to create signature; REQUIRED
      * @param   pem_public_key Public key to use for verification; REQUIRED
-     * @param   hash_name      The name of the hash algorithm to use;
+     * @param   algorithm_name The name of the hash algorithm to use;
      *                         must be one of the values returned from
      *                         the AvailableAlgorithms() function in
      *                         the Digest module; cannot be empty; REQUIRED
@@ -332,7 +340,7 @@ EXPORT RSA := MODULE
      * @see     Digest.AvailableAlgorithms()
      *          Sign()
      */
-    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData, STRING pem_public_key, VARSTRING hash_name) := lib_openssl.OpenSSL.rsaVerifySignature(signature, signedData, pem_public_key, hash_name);
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData, STRING pem_public_key, VARSTRING algorithm_name) := lib_openssl.OpenSSL.rsaVerifySignature(signature, signedData, pem_public_key, algorithm_name);
 
 END; // RSA
 
