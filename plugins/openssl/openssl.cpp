@@ -72,6 +72,19 @@ void failOpenSSLError(const std::string& context)
     rtlFail(-1, desc.c_str());
 }
 
+//called during PEM_read_bio_PrivateKey to set passphrase
+int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *pPassPhraseMB)
+{
+    size32_t len = ((MemoryBuffer*)pPassPhraseMB)->length();
+    if (passPhraseBufSize >= (int)len)
+    {
+        memcpy(passPhraseBuf, ((MemoryBuffer*)pPassPhraseMB)->bufferBase(), len);
+        return len;
+    }
+    PROGLOG("Private Key Passphrase too long (%d bytes), max %d", len, passPhraseBufSize);
+    return 0;
+}
+
 static constexpr int OPENSSL_MAX_CACHE_SIZE = 10;
 static constexpr bool PRINT_STATS = false;
 template <typename T>
@@ -144,11 +157,11 @@ public:
         misses = 0;
     };
 
-    EVP_PKEY * checkCache(size32_t keyLen, const char * key)
+    EVP_PKEY * checkCache(size32_t keyLen, const char * key, size32_t passphraseLen, const void * passphrase)
     {
         for (auto& c : cache)
         {
-            if (hashc(reinterpret_cast<const byte *>(key), keyLen, 0) == std::get<0>(c))
+            if (hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)) == std::get<0>(c))
             {
                 hits++;
                 return std::get<1>(c);
@@ -165,12 +178,16 @@ public:
         if (startsWith(key, "-----BEGIN RSA PUBLIC KEY-----"))
             pkey = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
         else
-            pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
-
+        {
+            MemoryBuffer passphraseMB;
+            passphraseMB.setBuffer(passphraseLen, (void *)passphrase);
+            pkey = PEM_read_bio_PrivateKey(bio, nullptr, passphraseCB, static_cast<void *>(&passphraseMB));
+        }
         BIO_free(bio);
+
         if (pkey)
         {
-            cache.emplace_front(hashc(reinterpret_cast<const byte *>(key), keyLen, 0), pkey);
+            cache.emplace_front(hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)), pkey);
             if (cache.size() > OPENSSL_MAX_CACHE_SIZE)
             {
                 EVP_PKEY_free(std::get<1>(cache.back()));
@@ -503,7 +520,7 @@ OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult,
             {
                 const size32_t keySize = *(reinterpret_cast<const size32_t *>(pubKeyPtr));
                 pubKeyPtr += sizeof(keySize);
-                publicKeys.push_back(pkeyCache.checkCache(keySize, pubKeyPtr));
+                publicKeys.push_back(pkeyCache.checkCache(keySize, pubKeyPtr, 0, nullptr));
                 pubKeyPtr += keySize;
             }
 
@@ -598,7 +615,7 @@ OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_pem_private_key, const char * _pem_private_key, const char * _symmetric_algorithm)
+OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _symmetric_algorithm)
 {
     // Initial sanity check of our arguments
     if (len_pem_private_key == 0)
@@ -614,7 +631,7 @@ OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResul
         try
         {
             // Load the private key
-            EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key);
+            EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key, len_passphrase, _passphrase);
 
             // Load the cipher
             const EVP_CIPHER * cipher = cipherCache.checkCache(_symmetric_algorithm);
@@ -716,7 +733,7 @@ OPENSSL_API void OPENSSL_CALL rsaEncrypt(ICodeContext *ctx, size32_t & __lenResu
         try
         {
             // Load key from buffer
-            EVP_PKEY * publicKey = pkeyCache.checkCache(len_pem_public_key, _pem_public_key);
+            EVP_PKEY * publicKey = pkeyCache.checkCache(len_pem_public_key, _pem_public_key, 0, nullptr);
 
             // Create encryption context
             encryptCtx = EVP_PKEY_CTX_new(publicKey, nullptr);
@@ -752,7 +769,7 @@ OPENSSL_API void OPENSSL_CALL rsaEncrypt(ICodeContext *ctx, size32_t & __lenResu
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_pem_private_key, const char * _pem_private_key)
+OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -768,7 +785,7 @@ OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResu
         try
         {
             // Load key from buffer
-            EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key);
+            EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key, len_passphrase, _passphrase);
 
             // Create decryption context
             decryptCtx = EVP_PKEY_CTX_new(privateKey, nullptr);
@@ -804,14 +821,14 @@ OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResu
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _hash_name)
+OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _hash_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
     try
     {
         // Load the private key from the PEM string
-        EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key);
+        EVP_PKEY * privateKey = pkeyCache.checkCache(len_pem_private_key, _pem_private_key, len_passphrase, _passphrase);
 
         // Create and initialize the message digest context
         mdCtx = EVP_MD_CTX_new();
@@ -856,14 +873,14 @@ OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_passphrase, const void * passphrase, size32_t len_pem_public_key, const char * _pem_public_key, const char * _hash_name)
+OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _hash_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
     try
     {
         // Load the public key from the PEM string
-        EVP_PKEY * publicKey = pkeyCache.checkCache(len_pem_public_key, _pem_public_key);
+        EVP_PKEY * publicKey = pkeyCache.checkCache(len_pem_public_key, _pem_public_key, 0, nullptr);
 
         // Create and initialize the message digest context
         mdCtx = EVP_MD_CTX_new();

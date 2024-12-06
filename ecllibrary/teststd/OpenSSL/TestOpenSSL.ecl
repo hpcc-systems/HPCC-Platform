@@ -92,69 +92,71 @@ EXPORT TestOpenSSL := MODULE
 
     EXPORT STRING RSA_PUBLIC_2 :=
     '-----BEGIN RSA PUBLIC KEY-----' + '\n' +
-    'MIICCgKCAgEAtHYNEH8DswZUtx3Xk90cPCLtf3vl7awjZvI4V/yJkOb5U/sQRgsw' + '\n' +
-    '60F84i8Okg3yBxGIEDiZ/cWKBYfQGsycbm+zljIHh0tt8S7hH9iwFiZB41urPZ4Q' + '\n' +
-    'zSs84h05SZA9nCVPQOpFYi0I8n6QrGf9eokJf/jO/dZcvsIDYqtiLfTYWMLKibrY' + '\n' +
-    'HgP9lIKxJieSmbrX4spYBEf+B9cSQqHBwThAP1mvkIzD2eGuYlQV6hXZb2dSXn8l' + '\n' +
-    'Lakgq06mvkCxYglv6GEHKPrEd6KCZKgBLKZsEabvd5+eWXL4VcaAdXjQgRIa5aV2' + '\n' +
-    'AJCk5V1ClMraJuw1aw62+2GTi7bTum4t+GJQdTfDSYreTBIZLUzHwlRnlbMrsthd' + '\n' +
-    'aVWct3KId2BT/ntqmalBTcu+nK7H3XOEQGrFdQo2tQ459guchYqxk8QFZCVTkNzw' + '\n' +
-    'Ky7SyJV9dqDDUhQQSTvwv42CbwpwbqSynE682h1IQThgk1LuDX/IIQRupIgbyJKo' + '\n' +
-    'WrFYoNalhyoeXCgQT7gH2y5YdeoGf3oN7dn4HUDFdW2FOYPzpsSMLVr1MUhxelJc' + '\n' +
-    'Ru1RUsJDwfkXBUOZM7ChgwGfQYWGjFcEOPK6AbUlSTER2vP3t5R/QPzN6uzih10y' + '\n' +
-    'LFFeUxMuvLnmgpKSU9bVsXbN2D4hmInZW8vDRKugNeTrtaV6KkUus5sCAwEAAQ==' + '\n' +
+    'MIICCgKCAgEA4AhX7olMaerm6IZEQQ3yhb4HWOtbMNuDcr8GEnjvxCP7JubdsJ82' + '\n' +
+    'v9Agft1dmMPpqMrcoH0F06hzyyHBcnyFYAKsBG8v8nNFI9nxD/Yy4V86ROymQP4y' + '\n' +
+    '1OJNXhXQE3vO65lDRm5aru0cVKKymSDhD0lW+fFUYQdKm6U5yanFHFSlDpjs3dUl' + '\n' +
+    'fmXrFkqzmMNs/jfHkxQy10aTcTh0aGucz5mlW/nbOiz9pcQULZU/WFcz+j8/cLr7' + '\n' +
+    'oLUbwz4ZjJ3y+DLhFQF4cCdU9iein80pLwLvKiY6abQ/kBGrXDCHIH0UXQg/pjTF' + '\n' +
+    '+gVXI3phYBq60vbQvzpqdW6lUJov/E6GKc49aDN3Fe8t476Hm1KW2KqO55Ym3WGZ' + '\n' +
+    'q5JS9kNBBqvNQ3ZX4GMxVwJkRBBWViV/wIWQQYbxpoGdqjMosRtJ9+xBJD+W7TB6' + '\n' +
+    '/cokgWz6OtYWKmlAEnGO1e4V6eokAlv5HfQRlQHFSafvpVs0B+CljfAtnxkO+4hy' + '\n' +
+    'CisLsgT5RjheBrIimqPrGXmYsPVR7Kh/zaNUV8MVufqBd49zsVzyGclcLUZ8mTxN' + '\n' +
+    'bly8yoSvoMGZ0P1BgEmhhvfHE/SGkPG0PSBnEKOQmw9gsN3t+dJWi41cSrnMnmmW' + '\n' +
+    'JkTtyrvCsP0csQVBhgzCMoXrIL4Xooiu2qK5pZ3LdMBJPiV7TuVHZakCAwEAAQ==' + '\n' +
     '-----END RSA PUBLIC KEY-----';
     EXPORT STRING RSA_PRIVATE_2 :=
     '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
-    'MIIJKgIBAAKCAgEAtHYNEH8DswZUtx3Xk90cPCLtf3vl7awjZvI4V/yJkOb5U/sQ' + '\n' +
-    'Rgsw60F84i8Okg3yBxGIEDiZ/cWKBYfQGsycbm+zljIHh0tt8S7hH9iwFiZB41ur' + '\n' +
-    'PZ4QzSs84h05SZA9nCVPQOpFYi0I8n6QrGf9eokJf/jO/dZcvsIDYqtiLfTYWMLK' + '\n' +
-    'ibrYHgP9lIKxJieSmbrX4spYBEf+B9cSQqHBwThAP1mvkIzD2eGuYlQV6hXZb2dS' + '\n' +
-    'Xn8lLakgq06mvkCxYglv6GEHKPrEd6KCZKgBLKZsEabvd5+eWXL4VcaAdXjQgRIa' + '\n' +
-    '5aV2AJCk5V1ClMraJuw1aw62+2GTi7bTum4t+GJQdTfDSYreTBIZLUzHwlRnlbMr' + '\n' +
-    'sthdaVWct3KId2BT/ntqmalBTcu+nK7H3XOEQGrFdQo2tQ459guchYqxk8QFZCVT' + '\n' +
-    'kNzwKy7SyJV9dqDDUhQQSTvwv42CbwpwbqSynE682h1IQThgk1LuDX/IIQRupIgb' + '\n' +
-    'yJKoWrFYoNalhyoeXCgQT7gH2y5YdeoGf3oN7dn4HUDFdW2FOYPzpsSMLVr1MUhx' + '\n' +
-    'elJcRu1RUsJDwfkXBUOZM7ChgwGfQYWGjFcEOPK6AbUlSTER2vP3t5R/QPzN6uzi' + '\n' +
-    'h10yLFFeUxMuvLnmgpKSU9bVsXbN2D4hmInZW8vDRKugNeTrtaV6KkUus5sCAwEA' + '\n' +
-    'AQKCAgBv2PcR8Vcun07kS9ewaou0bgV7TSReIaGzjY8EYZ41tCJ2PZaBgzAnr2gi' + '\n' +
-    'm/3Q4lnOrbwCKcKvub5o3RtLcOPHwu2wuoNWBJc4s9CON3Qz1jRiIQ/KWeyZ7SGI' + '\n' +
-    'F4rJIGA/JhSv7ENirPztpyot4SoGx2ae7WwFgdXr2T3V6tkoGKf6o4h6wtZuDBUf' + '\n' +
-    '9bysJDzFkTt68eSJisFUxKUprS30ftO7L/ATjFta8HhvsyP9+NrSJFy1+uHlIf0A' + '\n' +
-    'j/fi1R/b3nOAuJqCeKJKb+uXTVWlAeTbL/cd0k2HrS1jpGs748x/IuSOzvWLNhst' + '\n' +
-    'mZbJt8xr8VzOZMlelsSnBILH+r/8Nk8kNUirZIXvcr3WATffX9K53WJ00rWfoFqy' + '\n' +
-    'D9rIwIANxOtO4k8D10lhG2kGuo/a9HItnSfX9vLDyTj2J2ofYF0zYjTjbE8up2uu' + '\n' +
-    'bZw/2c49eA6Pao8W1Y1+Jxw0Ck6EOc0RH0ET5NKUMb/wGye3+8kQDOie4CzMMIKF' + '\n' +
-    '5gt7Qe2PCHhQe9sR54i5pgirdPB0bZf49VJS3iVIVxUQysvRMFTfEU+euGGDywH5' + '\n' +
-    'UudBKCGPUKWa4J6wr1mWCZLmeeZG8Gtk7KYk9l7XnUZ2E2UqnpyS/+iI36m3lY78' + '\n' +
-    '3oSomSQ2og9CAD3igx1bcdOwzsXQjdQgo8kj9acnP911H6QUGQKCAQEA6O9VebYI' + '\n' +
-    'ULlFbaraTz5K/1o5TC7qbC5fEK4p/TR0dusYAXSVpYCuvA+bX9tD8jN2GY7UjFh3' + '\n' +
-    'YdBJtk5LBp5Hvh4sB6BD/niww3on/23UxS67z3BqzAhM27fulx6+YppERcrMHnj4' + '\n' +
-    'CMYLBY5of+O2WJE9ovToxgM6YUAw75xabstZq1MPYsNhxEL+h8inlRQjS90ru83u' + '\n' +
-    'j1wf2y5LriX20MhSYbmgNlT+H1zWokvRYfozqi6bAEv0HZIdq2zq+bv4fDgyqR4S' + '\n' +
-    'ua07aqkFe6DDU7H6bvJjngavPkA44mOTmn9QurI/gi7YQlQ1Xmt4bNVW9rikYxFx' + '\n' +
-    'pa3ri0Ic0DTSxwKCAQEAxlSPVmiPildrsRwXVlB4G/7MQ52vAo7PcTEqw7Tm1rlj' + '\n' +
-    'LvyAjcosyHIGt5am6CL+SRayv3FDn9QV8zjKoDU2PRi6CFVTlHP3y/4RbHq6Kn/W' + '\n' +
-    'aAtPdwH4ddo8DWF2b6VVRCLv5ic3jWGj0rOWiOpT2NBTSc+Hl2DsxpCVtrZglfu4' + '\n' +
-    'g9cHWFbvi0gC0JbpvTuhfOc9pSOklllpcjusQGbBUbYI/omEGyHMO6AxjGyPcQwl' + '\n' +
-    'WfuH8RULTsAb3AKZzXyVDN6I60yMddgIuunl6SBaAKsKGIjElaOhiGCyo0mH3NZt' + '\n' +
-    'q78A8O2yMVS+jZu6CR8F3JtCLorfjpN9tcdB4ViEjQKCAQEAveAKPvJhiNvdem3h' + '\n' +
-    'EuNmYwx61F0R/ik2mPQ/igUuQpmUsesE6SoiRW47a0Hi+xVz2ZWSMO0UM4mD7LWZ' + '\n' +
-    'dsWjGZiir3y2sEJVZKK44//1ht53fbrXc4X4kMo4FLuc2eeCa5nKFbTqCszUwyy4' + '\n' +
-    'hjdqtnt+UM1uyapr9kZLHabIGLRuXbeRPSKjGUa7EJhB8sW9l+Or+KT/J6Ei3pm4' + '\n' +
-    'WzbbIImKjdqwfFl/5LTayOUgwssfPkRLWUyQq2ImCUz5paTSAwAUW8MF5JEPc/xf' + '\n' +
-    'Wc1MK3dS+wleprwwMYBMXk5pTXEmr2kJV+czpa3a6yKTwbON9gPBDHh1uWYyMQwt' + '\n' +
-    'TJMilQKCAQEAhiKCnwowqnvdlfdNwU7DLQvy0ng++RflLMT4C0y6ItdXQVv9BeiK' + '\n' +
-    'yTZ1XI1DbRTdrkjvs5LDDcG+5rSuNhRHDqM+joxG7sxP92NqHVgTuNKlC9E6eV6X' + '\n' +
-    'z/09SD92fqPvOxn17k7vv2seBU74rLju5GBhNDZrmfIvsUvwNZa7VDTe4iv4B8Mk' + '\n' +
-    'V6roXHL0usstuPAcPSgSFK18J4o8QYI9lSnsg1o2QrNlEZ6SZEq36NkyGd2IX4DA' + '\n' +
-    'GQ7MyMvpgZSUqhOHvrwS81Cc9u1iVX1P4cvMFDPL4Pi+MyJTLyR4At/zZIjV9hyM' + '\n' +
-    'u9h42AVOmQSmTkGjTR8Xe7I8/0g4QlQ/sQKCAQEAzrFLS4CrRxPwhqEWzB+ZEqF3' + '\n' +
-    '7pVj7fGtwee4A1ojgXB8Rg2uwKBVOi0xfy2dKj7YH8wQtC8AlDoHFPAPfvewdK7J' + '\n' +
-    'og/x9oE65TPdRyd0b/NW0WyqlI5kYSSM5RB17rSntfLN1oiqITXroNVtmAnpztgU' + '\n' +
-    'qyqdsdR27HCzkNU3K4Vtz3LMMfpi6cBfR67ZymgyobLUsdl68wqIA0FxGF8wkgbR' + '\n' +
-    'BbNa1V0SKndjzdLVl9dZb+RWESPwqs5BN85H2Z3d0VOS69BvEO0g9tYhCusqdjeR' + '\n' +
-    'u/Q5ndMSutBcgtETumjqYAvNSIkKl2ltUXCkXMMBr6/hBPke0FgMUY/1OYWGTw==' + '\n' +
+    'Proc-Type: 4,ENCRYPTED' + '\n' +
+    'DEK-Info: AES-128-CBC,48EDA073E8D55C8DF0D7FF600AB45FC1' + '\n' +    '\n' +
+    'PglNT4F3s7EVIvB+DcYhgopIoxGv//UTOttFbql0mp3ZoJBSPOtZVGTUJo9KM9PI' + '\n' +
+    'oyi9dEk+eOP6IWJogJRZZP5AvOZsannrt6xnbi/KTf9T9HSyx32QYOklj74zkUHD' + '\n' +
+    '/hTKeC3T1/G4fIXwTmqUsIHN2T5HA0vN7K/jMiqG+s9B/TtzNmdH31Wg3AvLSscR' + '\n' +
+    '8x/a0dQCEsOyT3ovz4CeK+u1nKioXlq3UZi7toYju2XBuB1Y+4ZkKiVB/zba405J' + '\n' +
+    'gpbEmWl0VEtuxQ5+UftxH/jAzKg3hC7UaNr5AAvb5yjD2rW35kNy91jVpSmmZ6ZR' + '\n' +
+    'eoL5x1DXAIrxm0Q2AdEHZWUl83Xyb7NlUASqOKmIjpALudj7Y8i01NOBVAigJpHR' + '\n' +
+    '7fnlMuPj5/gVEevjA+oJ1eyVEt7MfoUU1Vchkx2Pif2fIKCF8EUvZrhsomanXnG+' + '\n' +
+    'mzrOOecvHulPbP6aMwYjn94plMNxuAkzJqo58YIRT9xNz/iEUQnwNUD0ZHBf1L8b' + '\n' +
+    'EvQH0kBkdvGKWFQbfqP9qduADFN7LdRuAi1WqSSbubecrdz6QzSJnu43kG9mbRCa' + '\n' +
+    '6WVeLVFddSYG0BwogbSt74ToRFiPfUhxhIlgtHvutwdFkM5SsaPsf6740ynUPZ7z' + '\n' +
+    'hswc1q66Yv1YRxepS8O3Iz7x0V4qMUaXtzBM8x0MYnMPRrYCW9f2X0qXwjkTGRXq' + '\n' +
+    'jZCUNCLT5pgvREK6t8HuzMbBkLW4aXzJrwsEmxwnVWx0pE5xACH8yReQHt29Nx60' + '\n' +
+    'YnbHKQu+mLru/DTgMpI9PJinh8Xi6Sg0Mt0Io0tSNL9H5dy0hHG2q/pb62+3un7P' + '\n' +
+    'rlByhQFkq8apVGzu9qoaXiJ2ppoXfQH3zQbweQqrdZIxbyJnza7wqFf6+qn6r3dg' + '\n' +
+    'RaF4LQFwOe8Jqk0j5h1PpukR3MfejaqdBoUL9Fmb9e+NaNdGXT9RGV5XKoekyDc/' + '\n' +
+    'R3OEy7aHIzDSlLBOez/Y9kv4eOMu7RFCHSQV+Dg1ag9DJQtAMMxG30/scP3hLwHW' + '\n' +
+    '3YH2WMb1MNWG4qwtqCdyrwyuNvcRMpXmx9+GxXj1lRXchUQl8x7csNbxmtYyYu+L' + '\n' +
+    'VMfdlEMbyJRrYk1sIczVVjwz+R7B2XAapMEBwmWwipjbT32sR4CSUzdd499EJ3Vb' + '\n' +
+    'al2a/jj5MRoh/J2JAMdXOHz80rP/E9G0pO1kPWm59pHwY1DTHMBmyjQhWvH97OdQ' + '\n' +
+    'imJ0OTxyc6C4BlnVyjXMbrgKjZsH+Q6M/NcuT6oazdrGu2RzAJGD7YC+u+s8yvDN' + '\n' +
+    'JXrNbgjb9C2V68+Pb9CYt1P/8bHNCy1xp/IDCfEtjPPGoeJz4kShnTJsfG4/nAhW' + '\n' +
+    '0icNA9Esojm0RtwabsadL3DGafPVPvVUxRxUnbjqTu9z5jx4y8k61KX48MdzM7Ak' + '\n' +
+    'UBgSXwcjP5N/cbdLeQACrY5+w+Hbi6KXnT8o/nfY1dJS/9Dc8mUX7EgrSdxmg5el' + '\n' +
+    'UZPsk/ryBW+ZdCSJT0xLTFtS4WxcuPD9Fda+8Y80UcoZBbmUVlxqJIMGhOGJUEdR' + '\n' +
+    'qlN0VX2a3K1H1MYeX+gfHpS3m/Yo2eAjvyDvEUaylqMsSeL5SVECyoGzUUaHmuHA' + '\n' +
+    'Xa8VRUg+OgCTqc9Xd6g2ZRGMrj6QOh62RRzBzp2vOlodK5nz2GAGyf/DEzEZctmi' + '\n' +
+    '9saJ4Fb3mBEE9tmqXQ1Jktez6LYTfIvGXy6KQ8VjlUxaEtCxwiOlYd3NVo3ftNVH' + '\n' +
+    '5imHK/jTzLfAKYp+fK/ZY+VrrObf77k41HdJYSXawNzH9jjmaXVcp1ydBFh+bHYR' + '\n' +
+    'YBHPw3rR6jDy4+yXuiTeCwH67ZEZFVQR7ppdkQC8kQMuBDsRJI2gJJMj9ORjq4ry' + '\n' +
+    'YMwSn/1uCyfcTLcf1kSPEKGX/Yh2lN35mcxBLNi6O97Cwjacftn/ENEOpSS8xJxB' + '\n' +
+    'SU109Lr5g8IywqkzTRb4y5qgaPfE/xKFiw49LWDxttXwIvDbUGpitdRgANAjGqg6' + '\n' +
+    'D8J60c/AMAmiVPdVWsHZw1d6ukD49J5+Y7M7OlQL5MTRArKW9/98lUnj3SdqiM7t' + '\n' +
+    'JVtsjSidgSH5e41hbN2PEo77eWD3qRSMcOTPEorcrS4q6CrJzKNu44yrC2WuyLu1' + '\n' +
+    'GjxWQTEC4hahkHSI2W9+879AukW5H/6kbZqqymXjNbV21SrQxfGJ7JGkcFsiLrZh' + '\n' +
+    '0qHW6MSyxGAMvx8/+ljYraeDgCD/x0K3YRQAETXdb5FwCjhU0dirdaeBP7ByrsbR' + '\n' +
+    'dbzZrsL3MY/HxtwA2Azfz6OseZ6cK1oI6vUOkuoddHx8En8l3fqlAe5Ig4huUtn9' + '\n' +
+    'wm4eogbCPzqFh789yr+CV4hun1SP2YvMe0WvfdGBXkDvDKVeA0/RXA1hxnlSuJMb' + '\n' +
+    'EGzBpiIRQnYYTpzu0IA6uJKt8VMwULOOXiNOYBQAXKgO3fGIWf9lqgWIZ+1AS6uo' + '\n' +
+    'N0+G2P361bgmAhsYs+SXK5uCHiZiExM5RrgdYlcNofXZV6ULrpmXMJIp6VBbM2lY' + '\n' +
+    'G/UzkJf0mOh8hmAf92CSmKPUfGMhOD5u4tgukZ7OolM0CQQWOzejTZ1bo3/t392H' + '\n' +
+    'y6FAgfne2AGtaP7nD7fhhPbUXbTDN4d+RxjFOCj6Lf2B7HVGRAbUY2hiEKJuDLGi' + '\n' +
+    '0Rtl235AKynxw/kZULinLQvj44cnv3P/STAtwRVez5YCFmLpjLDrKHYQd5H5Txy7' + '\n' +
+    'JOCgx/tACoZNAgiYRb707AXdOn4gneAuTs6VB3rtSunXKkglrKvKvMVAlJLFLIR8' + '\n' +
+    'XD5Yv4FoUNPL5Hdi6E1Dhj83a+eZzB+HkW1CYPbKNzp4OxkGhetZ/sct2ZMBG0Nx' + '\n' +
+    'gSM5cw1noPrJn4VS62jJTf1tT7Y/8dbgkBlGpRopEQIy5y5fQfj2iySMlrnD4SUP' + '\n' +
+    'CnSKH8+dm0nhcZ62zvEZrefOK8LrT2/tDKhq2lC3o62rLzJEi/nuWSevAtA6Chwr' + '\n' +
+    'mmdsUuyPLQo04nyyp+OxM1MkReMoF9HbaS4bTT7e1XIhv37uwpxp2SVMyPsyLswy' + '\n' +
+    'aIr/AzUMTWMJrwE+ncPyXIPW/qxu5Jyn3dhmJ4jHNpwztpezDL5Ouvd+ust4rzET' + '\n' +
+    'lfFAsVrFlJt3lxbqIs5voFdlMLo7eHRMDMTO/0cpiuso00B5kB4xv0o8UFJBOb+0' + '\n' +
     '-----END RSA PRIVATE KEY-----';
 
     EXPORT UNSIGNED8 staticSalt := 123456789;
@@ -167,8 +169,11 @@ EXPORT TestOpenSSL := MODULE
     EXPORT encrypt_my_iv_default_salt := Std.OpenSSL.Ciphers.Encrypt((DATA)PLAINTEXT, CIPHERS_CIPHER, (DATA)PASSPHRASE, iv := staticIV);
     EXPORT encrypt_default_iv_default_salt := Std.OpenSSL.Ciphers.Encrypt((DATA)PLAINTEXT, CIPHERS_CIPHER, (DATA)PASSPHRASE);
     EXPORT encrypt_rsa := Std.OpenSSL.RSA.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_1);
+    EXPORT encrypt_rsa_passphrase := Std.OpenSSL.RSA.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_2);
     EXPORT seal_rsa := Std.OpenSSL.RSA.Seal((DATA)PLAINTEXT, [RSA_PUBLIC_1, RSA_PUBLIC_2]);
-    EXPORT signed_rsa_sha256 := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PRIVATE_1, 'sha256');
+    EXPORT signed_rsa_sha256 := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)'', RSA_PRIVATE_1, 'sha256');
+    EXPORT signed_rsa_sha256_passphrase := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PRIVATE_2, 'SHA256');
+    // EXPORT signed_rsa_sha256_wrong_passphrase := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)'notmypassphrase', RSA_PRIVATE_2, 'SHA256'); Fails with Error: -1: Error within loading a pkey: error:1C800064:Provider routines::bad decrypt
 
     EXPORT TestDigests := [
         ASSERT(COUNT(Std.OpenSSL.Digest.AvailableAlgorithms()) > 0, 'No digest algorithms available');
@@ -202,10 +207,11 @@ EXPORT TestOpenSSL := MODULE
 
     EXPORT TestRSA := [
         ASSERT(LENGTH(encrypt_rsa) = 512);
-        ASSERT((STRING)Std.OpenSSL.RSA.Decrypt((DATA)encrypt_rsa, RSA_PRIVATE_1) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.RSA.Decrypt((DATA)encrypt_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.RSA.Decrypt((DATA)encrypt_rsa_passphrase, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
         ASSERT(LENGTH(seal_rsa) = 1112);
-        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, RSA_PRIVATE_1) = PLAINTEXT);
-        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, RSA_PRIVATE_2) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
 
         ASSERT(Std.Str.ToHexPairs(signed_rsa_sha256) = '399F5FCB9B1A3C02D734BF3F1C9CB480681126B0F7505697E045ECF22E11A47FADCF7E2BA73761AD6345F6702AAD230957AFA1B0B3C8C29FC537AACA68' +
         '13B79DE0CDEF82B4BB6183D0637583D0E2AA78892EE190D7AB9CB20F9AC36D91DB2994A07F0C17A0CFB5AF0385EA4ABA9723FC72FB08081AE4C6C83E659AEBA1C103FB6F4E831EFDAA4CE037A3874D59664B1DE90' +
@@ -215,8 +221,20 @@ EXPORT TestOpenSSL := MODULE
         'C573C9EBE9FE472131A39D60ED53624745A79A29B31D07DE38D1FA64D3DB32EF447F62B64F8A07C012E55C06551F5C60509797A4521DC4E7CB33F9C0759E6B46DA6B758C86E26507CA9D79933532BE923FC449842' +
         '17A203F97B97606E18E9F4949DC5E6C21705A89844B316093EFD8C0CC');
         ASSERT(LENGTH(signed_rsa_sha256) = 512);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)signed_rsa_sha256, (DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PUBLIC_1, 'sha256') = TRUE);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256 + 1), (DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PUBLIC_1, 'sha256') = FALSE);
+        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)signed_rsa_sha256, (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = TRUE);
+        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256 + 1), (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = FALSE);
+        ASSERT(Std.Str.ToHexPairs(signed_rsa_sha256_passphrase) = '448BD2397EB945D508E81A0AE45A01BB9799CAEDC8EEA779798BB07B5CB0C7D3FD571FF602298214F68B5215F039CEE1E2D6D75112A5CCD' +
+        'A95875C2774779893101907F0F2BD7C259CB2A0519FAE1A015F48D025A446D69C9E50EA8DB0EC071E53178E6550E13E52ACDA9466D012590AAB358F25E68E91AAEC63E1323823CF48004D27406236079C0610347A' +
+        '9A6F4B9B58496DE430C0DDF4BFBD9DC333910EA14F3D8E9F7ADCF8FF9BE4C2AE4735CFE38C2B7F6D08313FA6CDF9E836B7156566851E65165907B74DB1A45D4C404423E5AF34C3972231AE4F18455C90448B0459F' +
+        '3365D037F997FDEB48458646BAE2F756E0A0A0EC68F4676F5426DB568ABE0914592CF0320202063C3F2A4850E7C3BDB801CE9CA8055FFAD5BFFCA2BD3EEC85FDC8C72DA109A7A879097F3B5B1BB106C655DE12C3D' +
+        '1F09DFDD98BF6CA52E021EEC7C39D07C982FDBA7888A88EFC506ADD915CAD4AEC9E6BED8598254322D684E5621DF97F557DFB585D424A877461EBA33C8AFFE0354DBBE9C283E11B03AEBD2974FB876F27292834D3' +
+        '012A8A61A76990085F386495BE729B16D6646D754D3F0AEAD89BA044A8BB9813437F344A579DA4676438CDB7BB98EA396C98E86CBB3FCA1BC46A392E23A52AE177F6C798793146081FD0FD637570D9A718C148E17' +
+        'FFC502936F4FC09E35592B4B7C2FFB1DFE6B7F4CC766595D47A630AB1A58CDD11716');
+        ASSERT(LENGTH(signed_rsa_sha256_passphrase) = 512);
+        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)signed_rsa_sha256_passphrase, (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = TRUE);
+        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256_passphrase + 1), (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = FALSE);
+
+        // ASSERT(LENGTH(signed_rsa_sha256_wrong_passphrase) = 0); // fails with "Error: -1: Error within loading a pkey: error:1C800064:Provider routines::bad decrypt"
 
         ASSERT(TRUE)
     ];

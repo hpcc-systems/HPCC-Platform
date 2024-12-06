@@ -30,10 +30,10 @@ export OpenSSL := SERVICE : plugin('openssl')
 
     // RSA
     DATA rsaSeal(DATA _plaintext, SET OF STRING _pem_public_keys, VARSTRING _symmetric_algorithm) : cpp,action,context,entrypoint='rsaSeal';
-    DATA rsaUnseal(DATA _ciphertext, STRING _pem_private_key, VARSTRING _symmetric_algorithm) : cpp,action,context,entrypoint='rsaUnseal';
+    DATA rsaUnseal(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key, VARSTRING _symmetric_algorithm) : cpp,action,context,entrypoint='rsaUnseal';
     DATA rsaEncrypt(DATA _plaintext, STRING _pem_public_key) : cpp,action,context,entrypoint='rsaEncrypt';
-    DATA rsaDecrypt(DATA _ciphertext, STRING _pem_private_key) : cpp,action,context,entrypoint='rsaDecrypt';
+    DATA rsaDecrypt(DATA _ciphertext, DATA _passphrase, STRING _pem_private_key) : cpp,action,context,entrypoint='rsaDecrypt';
     DATA rsaSign(DATA _plaintext, DATA _passphrase, STRING _pem_private_key, VARSTRING _hash_name) : cpp,action,context,entrypoint='rsaSign';
-    BOOLEAN rsaVerifySignature(DATA _signature, DATA _signedData, DATA _passphrase, STRING _pem_public_key, VARSTRING _hash_name) : cpp,action,context,entrypoint='rsaVerifySignature';
+    BOOLEAN rsaVerifySignature(DATA _signature, DATA _signedData, STRING _pem_public_key, VARSTRING _hash_name) : cpp,action,context,entrypoint='rsaVerifySignature';
 
 END;

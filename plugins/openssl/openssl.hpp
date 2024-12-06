@@ -52,11 +52,11 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
 
 // RSA functions
 OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _symmetric_algorithm);
-OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_pem_private_key, const char * _pem_private_key, const char * _symmetric_algorithm);
+OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _symmetric_algorithm);
 OPENSSL_API void OPENSSL_CALL rsaEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_pem_public_key, const char * _pem_public_key);
-OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_pem_private_key, const char * _pem_private_key);
-OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm);
-OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_passphrase, const void * passphrase, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm);
+OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key);
+OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm);
+OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm);
 }
 
 #endif // ECL_OPENSSL_INCL

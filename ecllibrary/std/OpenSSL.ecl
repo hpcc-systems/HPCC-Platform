@@ -225,6 +225,10 @@ EXPORT RSA := MODULE
      * keys, respectively. Their contents may be passed to this function.
      *
      * @param   ciphertext          The data to decrypt; REQUIRED
+     * @param   passphrase          Passphrase to use for private key;
+     *                              If no passphrase was used when generating
+     *                              the private key, an empty string must be
+     *                              passed in (e.g. (DATA)''); REQUIRED
      * @param   pem_private_key     An RSA public key in PEM format; REQUIRED
      * @param   symmetric_algorithm The name of the symmetric algorithm to use
      *                              to decrypt the payload; must be one of those
@@ -237,7 +241,7 @@ EXPORT RSA := MODULE
      * @see     Seal()
      *          Ciphers.AvailableAlgorithms()
      */
-    EXPORT DATA Unseal(DATA ciphertext, STRING pem_private_key, VARSTRING symmetric_algorithm = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaUnseal(ciphertext, pem_private_key, symmetric_algorithm);
+    EXPORT DATA Unseal(DATA ciphertext, DATA passphrase, STRING pem_private_key, VARSTRING symmetric_algorithm = 'aes-256-cbc') := lib_openssl.OpenSSL.rsaUnseal(ciphertext, passphrase, pem_private_key, symmetric_algorithm);
 
     /**
      * This function performs asymmetric encryption. It should be used to
@@ -259,7 +263,11 @@ EXPORT RSA := MODULE
      * decrypt only small plaintext (e.g. less than 100 bytes) because it is
      * computationally expensive.
      *
-     * @param   ciphertext      The data to decrypt; REUIRED
+     * @param   ciphertext      The data to decrypt; REQUIRED
+     * @param   passphrase      Passphrase to use for private key;
+     *                          If no passphrase was used when generating
+     *                          the private key, an empty string must be
+     *                          passed in (e.g. (DATA)''); REQUIRED
      * @param   pem_private_key The private key to use for decryption, in
      *                          PEM format; REQUIRED
      *
@@ -267,7 +275,7 @@ EXPORT RSA := MODULE
      *
      * @see     Encrypt()
      */
-    EXPORT DATA Decrypt(DATA ciphertext, STRING pem_private_key) := lib_openssl.OpenSSL.rsaDecrypt(ciphertext, pem_private_key);
+    EXPORT DATA Decrypt(DATA ciphertext, DATA passphrase, STRING pem_private_key) := lib_openssl.OpenSSL.rsaDecrypt(ciphertext, passphrase, pem_private_key);
 
     /**
      * Create a digital signature of the given data, using the
@@ -283,7 +291,10 @@ EXPORT RSA := MODULE
      * keys, respectively. Their contents may be passed to this function
      *
      * @param   plaintext       Contents to sign; REQUIRED
-     * @param   passphrase      Passphrase to use for private key; REQUIRED
+     * @param   passphrase      Passphrase to use for private key;
+     *                          If no passphrase was used when generating
+     *                          the private key, an empty string must be
+     *                          passed in (e.g. (DATA)''); REQUIRED
      * @param   pem_private_key Private key to use for signing; REQUIRED
      * @param   hash_name       The name of the hash algorithm to use;
      *                          must be one of the values returned from
@@ -311,7 +322,6 @@ EXPORT RSA := MODULE
      *
      * @param   signature      Signature to verify; REQUIRED
      * @param   signedData     Data used to create signature; REQUIRED
-     * @param   passphrase     Passphrase to use for private key; REQUIRED
      * @param   pem_public_key Public key to use for verification; REQUIRED
      * @param   hash_name      The name of the hash algorithm to use;
      *                         must be one of the values returned from
@@ -322,7 +332,7 @@ EXPORT RSA := MODULE
      * @see     Digest.AvailableAlgorithms()
      *          Sign()
      */
-    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData, DATA passphrase, STRING pem_public_key, VARSTRING hash_name) := lib_openssl.OpenSSL.rsaVerifySignature(signature, signedData, passphrase, pem_public_key, hash_name);
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData, STRING pem_public_key, VARSTRING hash_name) := lib_openssl.OpenSSL.rsaVerifySignature(signature, signedData, pem_public_key, hash_name);
 
 END; // RSA
 
