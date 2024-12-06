@@ -11,6 +11,10 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 4 : undefined,
+    timeout: 60_000,
+    expect: {
+        timeout: 30_000
+    },
     reporter: "html",
     use: {
         baseURL,
@@ -20,19 +24,29 @@ export default defineConfig({
 
     projects: [
         {
-            name: "chromium",
-            use: { ...devices["Desktop Chrome"] },
+            name: "setup",
+            testMatch: /global\.setup\.ts/,
+            teardown: "teardown"
         },
-
+        {
+            name: "chromium",
+            use: devices["Desktop Chrome"],
+            dependencies: ["setup"]
+        },
         {
             name: "firefox",
-            use: { ...devices["Desktop Firefox"] },
+            use: devices["Desktop Firefox"],
+            dependencies: ["setup"]
         },
-
         {
             name: "webkit",
-            use: { ...devices["Desktop Safari"] },
+            use: devices["Desktop Safari"],
+            dependencies: ["setup"]
         },
+        {
+            name: "teardown",
+            testMatch: /global\.teardown\.ts/
+        }
 
     ],
 
