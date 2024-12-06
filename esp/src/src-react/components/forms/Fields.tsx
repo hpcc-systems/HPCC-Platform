@@ -459,6 +459,7 @@ export interface TargetClusterTextFieldProps extends Omit<AsyncDropdownProps, "o
 }
 
 export interface TargetClusterOption extends IDropdownOption {
+    type: string;
     queriesOnly: boolean;
 }
 

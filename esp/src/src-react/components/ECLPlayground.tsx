@@ -346,7 +346,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 className={playgroundStyles.inlineDropdown}
                 onChange={React.useCallback((evt, option: TargetClusterOption) => {
                     const selectedCluster = option.key.toString();
-                    if (option?.queriesOnly) {
+                    if (option?.queriesOnly || option?.type === "roxie") {
                         setShowSubmitBtn(false);
                     } else {
                         setShowSubmitBtn(true);
