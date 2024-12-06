@@ -1088,7 +1088,14 @@ public:
         merging = false;
         appendOutputLinked(this);
     }
-
+// CSlaveActivity overloaded methods
+    virtual unsigned __int64 queryLookAheadCycles() const override
+    {
+        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        if (distributor)
+            lookAheadCycles += distributor->queryLookAheadCycles();
+        return lookAheadCycles;
+    }
 // IHThorGroupAggregateCallback
     virtual void processRow(const void *next)
     {
