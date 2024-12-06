@@ -1617,6 +1617,9 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -1712,6 +1715,9 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -2433,6 +2439,9 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -2692,6 +2701,9 @@
           "type": "boolean",
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -2763,6 +2775,9 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -2803,7 +2818,8 @@
             "annotations": {},
             "labels": {},
             "egress": {},
-            "expert": {}
+            "expert": {},
+            "terminationGracePeriodSeconds": {}
           },
           "additionalProperties": false
         }
@@ -2852,7 +2868,8 @@
             "limit": {},
             "cutoff": {},
             "egress": {},
-            "expert": {}
+            "expert": {},
+            "terminationGracePeriodSeconds": {}
           },
           "additionalProperties": false
         }
@@ -2881,7 +2898,8 @@
             "limit": {},
             "cutoff": {},
             "egress": {},
-            "expert": {}
+            "expert": {},
+            "terminationGracePeriodSeconds": {}
           },
           "additionalProperties": false
         }
@@ -2908,7 +2926,8 @@
             "limit": {},
             "cutoff": {},
             "egress": {},
-            "expert": {}
+            "expert": {},
+            "terminationGracePeriodSeconds": {}
           },
           "additionalProperties": false
         }
@@ -2943,7 +2962,8 @@
         "annotations": {},
         "labels": {},
         "egress": {},
-        "expert": {}
+        "expert": {},
+        "terminationGracePeriodSeconds": {}
       },
       "additionalProperties": false
     },
@@ -2969,7 +2989,9 @@
         "resources": {},
         "annotations": {},
         "labels": {},
-        "egress": {}
+        "egress": {},
+        "expert": {},
+        "terminationGracePeriodSeconds": {}
       },
       "additionalProperties": false
     },
@@ -3060,6 +3082,9 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },

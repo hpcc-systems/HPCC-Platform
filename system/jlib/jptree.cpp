@@ -8582,7 +8582,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
         {
             config = config->queryPropTree(elemName);
             if (!config)
-                throw makeStringExceptionV(99, "Cannot overriding scalar configuration element %s with structure", elemName.get());
+                throw makeStringExceptionV(99, "Cannot override scalar configuration element %s with structure", elemName.get());
         }
         option = tail+1;
     }

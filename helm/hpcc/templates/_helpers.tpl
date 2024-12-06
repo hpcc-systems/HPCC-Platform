@@ -313,31 +313,83 @@ metrics:
 {{- end -}}
 
 {{/*
+Add tmp volume mount
+*/}}
+{{- define "hpcc.addTempVolumeMount" -}}
+{{- $volumeName := .volumeName | default .name -}}
+- name: {{ $volumeName }}-temp-volume
+  mountPath: /tmp
+{{- if not .noSubPath }}
+  subPath: {{ .name | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add runtime volume mount
+*/}}
+{{- define "hpcc.addRuntimeVolumeMount" -}}
+{{- $volumeName := .volumeName | default .name -}}
+- name: {{ $volumeName }}-hpcctmp-volume
+  mountPath: /var/lib/HPCCSystems
+{{- if not .noSubPath }}
+  subPath: {{ .name | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Add ConfigMap volume mount for a component
 */}}
 {{- define "hpcc.addConfigMapVolumeMount" -}}
-- name: {{ .name }}-temp-volume
-  mountPath: /tmp
-- name: {{ .name }}-hpcctmp-volume
-  mountPath: /var/lib/HPCCSystems
-{{- if .tmpSubPath }}
-  subPath: {{ .tmpSubPath | quote }}
-{{- end }}
 - name: {{ .name }}-configmap-volume
+{{- if .noSubPath }}
+  mountPath: {{ printf "/etc/config/%s" .name }}
+{{- else }}
   mountPath: /etc/config
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add standard ephemeral volume mounts for a component
+*/}}
+{{- define "hpcc.addEphemeralVolumeMounts" -}}
+{{ include "hpcc.addTempVolumeMount" . }}
+{{ include "hpcc.addRuntimeVolumeMount" . }}
+{{ include "hpcc.addConfigMapVolumeMount" . }}
+{{- end -}}
+
+{{/*
+Add tmp volume for a component
+*/}}
+{{- define "hpcc.addTempVolume" -}}
+- name: {{ .name }}-temp-volume
+  emptyDir: {}
+{{- end -}}
+
+{{/*
+Add runtime volume for a component
+*/}}
+{{- define "hpcc.addRuntimeVolume" -}}
+- name: {{ .name }}-hpcctmp-volume
+  emptyDir: {}
 {{- end -}}
 
 {{/*
 Add ConfigMap volume for a component
 */}}
 {{- define "hpcc.addConfigMapVolume" -}}
-- name: {{ .name }}-temp-volume
-  emptyDir: {}
-- name: {{ .name }}-hpcctmp-volume
-  emptyDir: {}
 - name: {{ .name }}-configmap-volume
   configMap:
     name: {{ .name }}-configmap
+{{- end -}}
+
+
+{{/*
+Add ConfigMap volume for a component
+*/}}
+{{- define "hpcc.addEphemeralVolumes" -}}
+{{ include "hpcc.addTempVolume" . }}
+{{ include "hpcc.addRuntimeVolume" . }}
+{{ include "hpcc.addConfigMapVolume" . }}
 {{- end -}}
 
 {{/*
@@ -734,57 +786,24 @@ Check that the storage and spill planes for a component exist
 {{- end -}}
 
 {{/*
-Add command for a component
+Add config arg for a component
 */}}
-{{- define "hpcc.componentCommand" -}}
-{{- if .me.valgrind -}}
-valgrind
-{{- else if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
-check_executes
-{{- else -}}
-{{ .process }}
-{{- end }}
-{{- end -}}
-
-{{/*
-Add extra args for a component
-*/}}
-{{- define "hpcc.componentStartArgs" -}}
-{{- if .me.valgrind -}}
-"--leak-check=full",
-"--show-leak-kinds=all",
-"--track-origins=yes",
-"--num-callers=8",
-"--log-fd=1",
-{{ .process | quote }},
-{{- else if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
- {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
- {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
- {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
- {{- $meExpert := .me.expert | default dict -}}
- {{- $globalExpert := .root.Values.global.expert | default dict -}}
- {{- $alwaysPostMortem := (hasKey $meExpert "alwaysPostMortem") | ternary $meExpert.alwaysPostMortem ($globalExpert.alwaysPostMortem | default false) -}}
- {{- if $alwaysPostMortem -}}
-"-a",{{ "\n" }}
- {{- end -}}
-"-d", {{ $prefix }},
-"--",
-{{ .process | quote }},
-{{- end }}
+{{- define "hpcc.getConfigArg" -}}
+/etc/config/{{ .name }}.yaml
 {{- end -}}
 
 {{/*
 Add config arg for a component
 */}}
 {{- define "hpcc.configArg" -}}
-"--config=/etc/config/{{ .name }}.yaml"
+"--config={{ include "hpcc.getConfigArg" . }}"
 {{- end -}}
 
 {{/*
-Add dali arg for a component
+Get dali endpoint for a component
 Pass in dict with root, component (in case of error), optional (true if daliArg is optional)
 */}}
-{{- define "hpcc.daliArg" -}}
+{{- define "hpcc.getDali" -}}
   {{- if empty .root.Values.dali -}}
     {{- if not .optional -}}
       {{- $_ := fail (printf "%s requires a DALI to be defined" .component) -}}
@@ -794,8 +813,20 @@ Pass in dict with root, component (in case of error), optional (true if daliArg 
     {{- $daliService := $dali.service | default dict -}}
     {{- $daliHost := .overrideDaliHost | default $dali.name -}}
     {{- $daliServicePort := .overrideDaliPort | default ($daliService.servicePort | default 7070) -}}
-"--daliServers={{ $daliHost }}:{{ $daliServicePort }}"
+{{ $daliHost }}:{{ $daliServicePort }}
   {{- end -}}
+{{- end -}}
+
+
+{{/*
+Add dali arg for a component
+Pass in dict with root, component (in case of error), optional (true if daliArg is optional)
+*/}}
+{{- define "hpcc.daliArg" -}}
+{{- $dali := include "hpcc.getDali" . -}}
+{{- if $dali -}}
+"--daliServers={{ $dali }}"
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -1023,6 +1054,53 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- end -}}
 
 {{/*
+A sidecar container to run commands after a main container finishes
+Pass in dict with me, and params
+*/}}
+{{- define "hpcc.addPostRunContainer" -}}
+{{- $meExpert := .me.expert | default dict -}}
+{{- $globalExpert := .root.Values.global.expert | default dict -}}
+{{- $postRun := (hasKey $meExpert "postRunSidecar") | ternary $meExpert.postRunSidecar ((hasKey $globalExpert "postRunSidecar") | ternary $globalExpert.postRunSidecar true) }}
+{{- if $postRun }}
+ {{- if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
+  {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
+  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
+  {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
+  {{- $dali := include "hpcc.getDali" . -}}
+- name: postrun
+  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  command:
+    - container_watch.sh
+    - {{ printf "--directory=%s" $prefix }}
+ {{- if $dali }}
+    - {{ printf "--daliServer=%s" $dali }}
+ {{- end }}
+ {{- if .isJob }}
+    - --isJob
+ {{- end }}
+ {{- range $container := .lifeCycleCtx.containers }}
+    - {{ $container.name }}
+    - {{ $container.process }}
+ {{- end }}
+ {{- include "hpcc.addSecurityContext" . | indent 2 }}
+  volumeMounts:
+  {{- include "hpcc.addTempVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
+  {{- include "hpcc.addRuntimeVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
+ {{- $uniqueConfigs := dict -}}
+ {{- range $container := .lifeCycleCtx.containers -}}
+  {{- $config := $container.config -}}
+  {{- $_ := set $uniqueConfigs $config true -}}
+ {{- end -}}
+ {{- $me := .me -}}
+ {{- range $config, $_ := $uniqueConfigs }}
+  {{- include "hpcc.addConfigMapVolumeMount" ($me | merge (dict "name" $config "noSubPath" "true")) | nindent 2 -}}
+ {{- end -}}
+ {{- include "hpcc.addVolumeMounts" (dict "root" .root "me" $me "includeCategories" (list "debug")) | nindent 2 }}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Container to watch for a file on a shared mount and execute a command
 Pass in dict with me and command
 NB: an alternative to sleep loop would be to install and make use of inotifywait
@@ -1095,7 +1173,7 @@ Pass in a dictionary with root and me defined
 {{- define "hpcc.addSecurityContext" }}
 {{- $user := (.root.Values.global.user | default dict) }}
 securityContext:
-{{- if .root.Values.global.privileged }}
+{{- if (or .root.Values.global.privileged .privileged) }}
   privileged: true
   capabilities:
     add:
@@ -1428,7 +1506,7 @@ data:
 
 {{/*
 A template to generate Sasha service containers
-Pass in dict with root, me and dali if container in dali pod
+Pass in dict with root, me, lifeCycleCtx and dali if container in dali pod
 */}}
 {{- define "hpcc.addSashaContainer" }}
 {{- $serviceName := printf "sasha-%s" .me.name }}
@@ -1437,14 +1515,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- $env := concat (.root.Values.global.env | default list) (.env | default list) }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
-  command: [ saserver ] 
-  args: [
-{{- with (dict "name" $serviceName) }}
-          {{ include "hpcc.configArg" . }},
-{{- end }}
-          "--service={{ .me.name }}",
-{{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort) | indent 10 }}
-        ]
+{{- include "hpcc.addCommandAndLifecycle" (merge (pick . "root" "lifeCycleCtx") (dict "me" (.me | merge (dict "name" $serviceName))) (dict "process" "saserver" "extraArgs" (list (printf "--service=%s" .me.name)) "component" "Sasha" "optional" false "overrideConfigName" $serviceName "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort)) | nindent 2 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
@@ -1822,11 +1893,11 @@ Pass in dict with root, pod, target and type
 
 {{/*
 Generate lifecycle, command and args
-Pass in root, me and command
+Pass in root, me and process
 */}}
 {{- define "hpcc.addCommandAndLifecycle" -}}
-{{- $misc := .root.Values.global.misc | default dict }}
-{{- $postJobCommand := $misc.postJobCommand | default "" }}
+{{- $misc := .root.Values.global.misc | default dict -}}
+{{- $postJobCommand := (.isJob | default false) | ternary $misc.postJobCommand "" -}}
 lifecycle:
   preStop:
     exec:
@@ -1835,38 +1906,42 @@ lifecycle:
       - "-c"
       - >-
           k8s_postjob_clearup.sh
-{{- if and (not $misc.postJobCommandViaSidecar) $postJobCommand }} ;
+{{- if $misc.postJobCommandViaSidecar }} ;
+          touch /wait-and-run/{{ .me.name }}.jobdone
+{{- else if $postJobCommand }} ;
           {{ $postJobCommand }}
-{{- end }}
-command: ["/bin/bash"]
-args:
-- -c
-{{- $check_cmd := dict "command" .command}}
-{{- if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
+{{- end -}}
+{{- $meExpert := .me.expert | default dict -}}
+{{- $globalExpert := .root.Values.global.expert | default dict -}}
+{{- $containerName := .containerName | default .me.name -}}
+{{- $args := list -}}
+{{- $configCtx := (hasKey . "overrideConfigName") | ternary (dict "name" .overrideConfigName) .me -}}
+{{- if .me.valgrind -}}
+ {{- $args = append $args "-v" -}}
+{{- else if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
  {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
  {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
- {{- $pmd_always_opt := "" -}}
- {{- $globalExpert := .root.Values.global.expert | default dict -}}
- {{- $meExpert := .me.expert | default dict -}}
  {{- $alwaysPostMortem := (hasKey $meExpert "alwaysPostMortem") | ternary $meExpert.alwaysPostMortem ($globalExpert.alwaysPostMortem | default false) -}}
  {{- if $alwaysPostMortem -}}
-  {{- $pmd_always_opt = "-a " -}}
+  {{- $args = append $args "-a" -}}
  {{- end -}}
- {{- $_ := set $check_cmd "command" (printf "check_executes %s-d %s -- %s" $pmd_always_opt $prefix .command) -}}
-{{- end }}
-- >-
-    {{ $check_cmd.command }};
-    exitCode=$?;
-    k8s_postjob_clearup.sh;
-{{- if $misc.postJobCommandViaSidecar -}}
-    touch /wait-and-run/{{ .me.name }}.jobdone;
-{{- else if $postJobCommand -}}
-    {{ $postJobCommand }} ;
-{{- end }}
-    exit $exitCode;
+ {{- $postRun := (hasKey $meExpert "postRunSidecar") | ternary $meExpert.postRunSidecar ((hasKey $globalExpert "postRunSidecar") | ternary $globalExpert.postRunSidecar true) -}}
+ {{- if $postRun -}}
+  {{- $args = append $args "-p" -}}
+ {{- end -}}
+ {{- $args = concat $args (list "-d" $prefix "-c" $containerName "--") -}}
+ {{- $_ := set .lifeCycleCtx "containers" (append .lifeCycleCtx.containers (dict "name" $containerName "process" .process "config" $configCtx.name)) -}}
 {{- end -}}
-
+{{- $args = append $args .process -}}
+{{- $args = append $args (include "hpcc.configArg" $configCtx) -}}
+{{- $args = append $args (include "hpcc.daliArg" .) -}}
+{{- if hasKey . "extraArgs" -}}
+ {{- $args = concat $args .extraArgs -}}
+{{- end }}
+command: ["check_executes.sh"]
+args: [ {{ join " " $args }} ]
+{{- end -}}
 {{- define "hpcc.addCertificateImpl" }}
  {{- if (.root.Values.certificates | default dict).enabled -}}
   {{- $externalCert := .externalCert -}}

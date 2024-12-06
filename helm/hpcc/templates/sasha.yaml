@@ -30,6 +30,7 @@
 {{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
 {{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
 {{- $_ := set $commonCtx "includeCategories" (splitList " " (include "hpcc.getSashaPlanesFromAccess" $sasha)) -}}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- if and (hasKey $sasha "plane") $sasha.plane -}}
 {{- $_ := set $commonCtx "includeNames" (list ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")))) -}}
 {{- end -}}
@@ -63,6 +64,7 @@ spec:
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $serviceName "type" "sasha") | indent 6 }}
       serviceAccountName: "hpcc-default"
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       {{- if hasKey $sasha "plane" }}
       initContainers:
         {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
@@ -72,7 +74,7 @@ spec:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:
 {{- with (dict "name" $serviceName) }}
- {{- include "hpcc.addConfigMapVolumeMount" . | nindent 8 }}
+ {{- include "hpcc.addEphemeralVolumeMounts" . | nindent 8 }}
 {{ end -}}
 {{- include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
@@ -80,7 +82,7 @@ spec:
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 8 }}
       volumes:
 {{- with (dict "name" $serviceName) }}
- {{- include "hpcc.addConfigMapVolume" . | nindent 6 }}
+ {{- include "hpcc.addEphemeralVolumes" . | nindent 6 }}
 {{ end -}}
 {{- include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}

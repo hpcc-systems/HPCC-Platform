@@ -47,7 +47,8 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "debug") "secretsCategories" $secretsCategories "env" $env }}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap" "component" "eclscheduler" "excludeKeys" "global")) -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -82,11 +83,7 @@ spec:
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "eclscheduler") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "eclscheduler") | nindent 16 }}
-                {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "ECL Scheduler" "optional" false) }}
-              ]
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "eclscheduler" "component" "ECL Scheduler" "optional" false)) | nindent 8 }}
         env:
 {{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
@@ -97,12 +94,15 @@ spec:
 {{- include "hpcc.addResources" (dict "me" .resources "defaults" $defaultResources "root" $) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 -}}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclscheduler") | indent 8 }}
+{{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addEphemeralVolumes" . | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclscheduler") | indent 6 }}

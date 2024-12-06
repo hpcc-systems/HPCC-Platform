@@ -266,10 +266,13 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 
     if (autoCleanup)
     {
-        // touch a file, with naming convention { componentName },{ resourceType },{ jobName }.k8s
+        unsigned deleteJobGracePeriod = 0;
+        if (strcmp(resourceType, "job") == 0)
+            deleteJobGracePeriod = getComponentConfigSP()->getPropInt("@terminationGracePeriodSeconds", defaultDeleteJobGracePeriod);
+        // touch a file, with naming convention { componentName },{ resourceType },{ jobName },{ graceTimeSecs }.k8s
         // it will be used if the job fails ungracefully, to tidy up leaked resources
         // normally (during graceful cleanup) these resources and files will be deleted by deleteResource
-        VStringBuffer k8sResourcesFilename("%s,%s,%s.k8s", componentName, resourceType, jobName.str());
+        VStringBuffer k8sResourcesFilename("%s,%s,%s,%u.k8s", componentName, resourceType, jobName.str(), deleteJobGracePeriod);
         touchFile(k8sResourcesFilename);
     }
 

@@ -74,6 +74,7 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
+          terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
           initContainers:
           {{- include "hpcc.createConfigInitContainers" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
@@ -85,14 +86,13 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 12 }}
-{{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "ECL Agent" "optional" false )) }}
-{{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $appCmd)) | indent 12 }}
+{{- include "hpcc.addCommandAndLifecycle" (. | merge (dict "isJob" true "process" $apptype "extraArgs" (list "_HPCC_ARGS_") "component" "ECL Agent" "optional" false)) | nindent 12 }}
             env:
 {{- include "hpcc.mergeEnvironments" (dict "env" (append (.env | default list) (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_")) "defaultArenas" 1) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
+{{ include "hpcc.addEphemeralVolumeMounts" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" . | indent 12 }}
@@ -100,8 +100,9 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
+{{- include "hpcc.addPostRunContainer" (. | merge (dict "isJob" true)) | nindent 10 }}
           volumes:
-{{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
+{{ include "hpcc.addEphemeralVolumes" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" . | indent 10 }}
@@ -122,7 +123,8 @@ data:
 {{- $enginePlaneDetails := dict -}}
 {{- $_ := include "hpcc.getEnginePlanes" (dict "root" $ "me" . "result" $enginePlaneDetails) -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeCategories" $enginePlaneDetails.planeCategories "includeNames" $enginePlaneDetails.namedPlanes "env" $env }}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas"))) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas") "lifeCycleCtx" (dict "containers" list))) }}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1
 kind: Deployment
@@ -150,17 +152,14 @@ spec:
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent") | indent 6 }}
       serviceAccountName: "hpcc-agent"
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
       {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "agentexec") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
-                {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "ECL Agent" "optional" false) }}
-              ]
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "component" "ECL Agent" "optional" false)) | nindent 8 }}
         env:
 {{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
@@ -174,13 +173,14 @@ spec:
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) | indent 8 }}
+{{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addEphemeralVolumes" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
@@ -191,7 +191,7 @@ spec:
 {{- end }}
 ---
 kind: ConfigMap 
-{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap")) }}
+{{ include "hpcc.generateConfig" ((omit $commonCtx "lifeCycleCtx") | merge (dict "configMapHelper" "hpcc.agentConfigMap" "lifeCycleCtx" (dict "containers" list))) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) }}
 ---
