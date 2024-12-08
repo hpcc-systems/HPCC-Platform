@@ -695,7 +695,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     return count;
 }
 
-class DaliMsgLoggerHandler : public CInterfaceOf<ILogMsgHandler>
+class DaliMsgLoggerHandler : public CSimpleInterfaceOf<ILogMsgHandler>
 {
 public:
     DaliMsgLoggerHandler(unsigned _messageFields=MSGFIELD_all) : messageFields(_messageFields)
@@ -708,7 +708,7 @@ public:
         unsigned __int64 ts = sysInfo.queryTime() * 1000000 + sysInfo.queryUSecs();
         logSysInfoError(msg.queryCategory(), msg.queryCode(), queryComponentName(), msg.queryText(), ts);
     }
-    virtual bool needsPrep() const  override
+    virtual bool needsPrep() const override
     {
         return false;
     }
@@ -746,23 +746,25 @@ private:
     unsigned messageFields = MSGFIELD_all;
 };
 
+static Owned<ILogMsgHandler> msgHandler;
+
 void UseDaliForOperatorMessages(bool use)
 {
-    static ILogMsgHandler *msgHandler=NULL;
-    if (use==(msgHandler!=NULL))
-        return;
     if (use)
     {
-        msgHandler = getDaliMsgLoggerHandler();
-        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator,
-                                                                 MSGCLS_disaster|MSGCLS_error|MSGCLS_warning,
-                                                                 WarnMsgThreshold);
-        queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
+        if (!msgHandler)
+        {
+            msgHandler.setown(getDaliMsgLoggerHandler());
+            ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator,
+                                                                    MSGCLS_disaster|MSGCLS_error|MSGCLS_warning,
+                                                                    WarnMsgThreshold);
+            queryLogMsgManager()->addMonitor(msgHandler, operatorFilter);
+        }
     }
-    else
+    else if (msgHandler)
     {
         queryLogMsgManager()->removeMonitor(msgHandler);
-        msgHandler = NULL;
+        msgHandler.clear();
     }
 }
 

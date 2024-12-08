@@ -142,8 +142,9 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
     covengrp->Release();
     queryLogMsgManager()->setSession(myProcessSession());
 
-    if (getGlobalConfigSP()->getPropBool("@enableGlobalSysLog", true))
-        UseDaliForOperatorMessages();
+    if (getComponentConfigSP()->getPropBool("logging/@enableGlobalSysLog") || getGlobalConfigSP()->getPropBool("logging/@enableGlobalSysLog"))
+        UseDaliForOperatorMessages(true);
+
     if (!isContainerized()) // The Environment is bare-metal only
     {
         // auto install environment monitor for server roles

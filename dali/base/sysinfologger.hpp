@@ -90,5 +90,5 @@ SYSINFO_API bool deleteLogSysInfoMsg(unsigned __int64 msgId, const char *source=
 SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source=nullptr);
 
 SYSINFO_API ILogMsgHandler * getDaliMsgLoggerHandler();
-SYSINFO_API void UseDaliForOperatorMessages(bool use=true);
+SYSINFO_API void UseDaliForOperatorMessages(bool use);
 #endif
