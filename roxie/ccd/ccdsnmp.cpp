@@ -33,6 +33,7 @@ RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
+RoxieQueryStats bgQueryStats;
 RoxieQueryStats combinedQueryStats;
 
 #define addMetric(a) doAddMetric(a, #a)
@@ -185,6 +186,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     loQueryStats.addMetrics(this, "lo");
     hiQueryStats.addMetrics(this, "hi");
     slaQueryStats.addMetrics(this, "sla");
+    bgQueryStats.addMetrics(this, "bg");
     combinedQueryStats.addMetrics(this, "all");
     addMetric(restarts);
 
