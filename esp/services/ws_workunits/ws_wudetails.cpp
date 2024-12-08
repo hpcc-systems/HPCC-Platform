@@ -24,7 +24,7 @@
 #include "jstatcodes.h"
 #include "sysinfologger.hpp"
 
-#define COMPONENT_NOTE_MASK 0xFFFFFC0
+#define COMPONENT_NOTE_MASK 0x80000000
 
 typedef std::pair<WuAttr, StringBuffer> AttribValuePair;
 bool operator==(const AttribValuePair & p1, const AttribValuePair & p2)
@@ -517,21 +517,30 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
             }
             Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
             msgFilter->setVisibleOnly();
-            Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
-            ForEach(*msgIter)
+            try
             {
-                ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
-                Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
-                StringBuffer tmpbuf;
-                encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
-                espWuResponseNote->setSource(sysInfoMsg.querySource());
-                espWuResponseNote->setMessage(tmpbuf.str());
-                espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
-                espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
-                espWuResponseNote->setCost(0);
-                VStringBuffer idstr("%" I64F "u", sysInfoMsg.queryLogMsgId());
-                espWuResponseNote->setId(idstr.str());
-                espWuResponseNotes.append(*espWuResponseNote.getClear());
+                Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
+                ForEach(*msgIter)
+                {
+                    ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
+                    Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
+                    StringBuffer tmpbuf;
+                    encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
+                    espWuResponseNote->setSource(sysInfoMsg.querySource());
+                    espWuResponseNote->setMessage(tmpbuf.str());
+                    espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
+                    espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
+                    espWuResponseNote->setCost(0);
+                    VStringBuffer idstr("%" I64F "u", sysInfoMsg.queryLogMsgId());
+                    espWuResponseNote->setId(idstr.str());
+                    espWuResponseNotes.append(*espWuResponseNote.getClear());
+                }
+            }
+            catch(IException *e)
+            {
+                // Non-existant global messages may mean that /SysInfoLogs hasn't been created
+                // so catch and ignore the exception
+                e->Release();
             }
             Owned<IEspWUResponseScope> respScope = createWUResponseScope("","");
             respScope->setScopeName("");

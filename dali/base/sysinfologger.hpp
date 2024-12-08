@@ -94,5 +94,5 @@ SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenO
 SYSINFO_API unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned seqN, bool nonSysInfoLogMsg=false);
 SYSINFO_API unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned seqN, bool nonSysInfoLogMsg=false);
 SYSINFO_API ILogMsgHandler * getDaliMsgLoggerHandler();
-SYSINFO_API void UseDaliForOperatorMessages(bool use=true);
+SYSINFO_API void UseDaliForOperatorMessages(bool use);
 #endif
