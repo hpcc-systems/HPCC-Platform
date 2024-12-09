@@ -23,18 +23,4 @@ elseif(UNIX)
     set(VCPKG_HOST_TRIPLET "x64-linux-dynamic" CACHE STRING "host triplet")
     set(VCPKG_TARGET_TRIPLET "x64-linux-dynamic" CACHE STRING "target triplet")
 endif()
-
-#  Create a catalog of the vcpkg dependencies ---
-file(GLOB VCPKG_PACKAGES ${VCPKG_FILES_DIR}/vcpkg_packages/*/CONTROL)
-list(APPEND VCPKG_PACKAGE_LIST "-----------------\n")
-foreach(VCPKG_PACKAGE ${VCPKG_PACKAGES})
-    file(READ ${VCPKG_PACKAGE} VCPKG_PACKAGE_CONTENTS)
-    list(APPEND VCPKG_PACKAGE_LIST ${VCPKG_PACKAGE_CONTENTS})
-    list(APPEND VCPKG_PACKAGE_LIST "-----------------\n")
-endforeach()
-file(WRITE ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt ${VCPKG_PACKAGE_LIST})
-if (INSTALL_VCPKG_CATALOG)
-    install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
 endif()
-
-endif ()
