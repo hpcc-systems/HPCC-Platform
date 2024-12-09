@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <title>Guia do Administrador do HPCC System</title>
+  <title>Guia do Administrador do HPCC Systems</title>
 
   <bookinfo>
     <title>Guia do Administrador do HPCC
@@ -80,9 +80,9 @@
       processando bilhões de registros por segundo usando tecnologia de
       processamento paralelo massivo. Grandes quantidades de dados entre
       diferentes fontes de informações podem ser acessadas, analisadas e
-      processadas em questão de segundos. O HPCC funciona como um ambiente de
-      processamento e de armazenamento de dados distribuído capaz de analisar
-      terabytes de informações.</para>
+      processadas em questão de segundos. O HPCC Systems funciona como um
+      ambiente de processamento e de armazenamento de dados distribuído capaz
+      de analisar terabytes de informações.</para>
     </sect1>
 
     <sect1 id="HPCC_Architectural_Overview">
@@ -137,9 +137,9 @@
       <sect2 id="HPCC_Clusters" role="brk">
         <title>Clusters</title>
 
-        <para>O ambiente do HPCC Systems contém clusters que você define e usa
-        de acordo com as suas necessidades. Os tipos de clusters usados pelo
-        HPCC são:</para>
+        <para>Um ambiente do HPCC Systems contém clusters que você define e
+        usa de acordo com as suas necessidades. Os tipos de clusters usados
+        pelo HPCC são:</para>
 
         <sect3 id="SysAdm_Thor_Cluster">
           <title>Thor</title>
@@ -428,64 +428,39 @@
   <chapter id="SysAdm_HW_and_SW-Req">
     <title>Requerimento de Hardware e Software</title>
 
-    <para>Este capítulo descreve alguns dos requisitos de hardware e software
-    para executar o HPCC System. O HPCC foi projetado para ser executado em
-    hardware padrão, tornando o desenvolvimento e a manutenção de clusters de
-    grande escala (petabytes) economicamente viáveis. Ao planejar o hardware
-    do seu cluster, é necessário colocar na balança diversas considerações
-    específicas às suas necessidades.</para>
-
-    <para>Esta seção oferece alguns insights sobre o hardware e a
-    infraestrutura nos quais o HPCC opera de maneira adequada Este não é um
-    conjunto amplo e completo de instruções, nem uma obrigação sobre qual
-    hardware você precisa usar. Considere este como um guia para usar quando
-    for implementar ou dimensionar seu HPCC System. As sugestões devem ser
-    levadas em conta de acordo com as suas necessidades empresariais
-    específicas.</para>
-<!-- COMMENTING FOR TEST - THIS WHOLE SECTION SHOULD BE REMOVED. 
-           Leaving this comment as a placeholder - for BR
-     This section needs to be replaced with the Portuguese content -
-         Translated from the corresponding English section in the EN_US directory
-         Please see the corresponding file in the EN_US directory for the content to be translated
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-Switch'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='HW-LoadBalancer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="xpointer(//*[@id='System_sizings'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="xpointer(//*[@id='Nodes-Software'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>  -->
-                <!-- END COMMENTING OF PLACEHOLDER c SECTION -->
+    <para>Este capítulo fornece uma visão geral dos requisitos de hardware e
+    software para executar a plataforma HPCC Systems de forma otimizada.
+    Embora esses requisitos fossem significativos quando a plataforma HPCC
+    Systems foi implantada pela primeira vez há muitos anos, houve melhorias
+    substanciais no hardware desde então. A plataforma agora suporta
+    contêineres virtuais e implantações em nuvem, tornando os requisitos menos
+    significativos, mesmo para implantações em grande escala (petabytes) em
+    hardware dedicado. Na verdade, a plataforma HPCC Systems deve funcionar
+    satisfatoriamente na maioria das configurações de hardware
+    modernas.</para>
   </chapter>
 
   <chapter id="SysAdm_HWSizing">
     <title>Hardware e Componentes</title>
 
     <para>Esta seção oferece alguns insights sobre que tipo de hardware e
-    infraestrutura nos quais o HPCC opera da melhor maneira. Este não é um
-    conjunto amplo e completo de instruções, nem uma obrigação sobre qual
-    hardware você precisa usar. Considere este como um guia para usar quando
-    for implementar ou dimensionar seu HPCC System. As sugestões devem ser
-    levadas em conta de acordo com as suas necessidades empresariais
-    específicas.</para>
+    infraestrutura nos quais a plataforma HPCC Systems opera da melhor
+    maneira. Este não é um conjunto amplo e completo de instruções, nem uma
+    obrigação sobre qual hardware você precisa usar. Considere este como um
+    guia para usar quando for implementar ou dimensionar sua plataforma HPCC
+    Systems. As sugestões devem ser levadas em conta de acordo com as suas
+    necessidades empresariais específicas.</para>
 
-    <para>O HPCC foi projetado para ser executado em hardware padrão, tornando
-    o desenvolvimento e a manutenção de clusters de grande escala (petabytes)
-    economicamente viáveis. Ao planejar o hardware do seu cluster, é
-    necessário colocar na balança diversas considerações, incluindo domínios
-    de fail-over e possíveis problemas de desempenho. O planejamento de
-    hardware deve incluir a distribuição do HPCC entre múltiplos hosts
-    físicos, como um cluster. Geralmente, é uma boa prática executar processos
-    HPCC de um determinado tipo (por exemplo, Thor, Roxie ou Dali) em um host
-    configurado especificamente para aquele tipo de processo.</para>
+    <para>A plataforma HPCC Systems foi projetado para ser executado em
+    hardware padrão, tornando o desenvolvimento e a manutenção de clusters de
+    grande escala (petabytes) economicamente viáveis. Ao planejar o hardware
+    do seu cluster, é necessário colocar na balança diversas considerações,
+    incluindo domínios de fail-over e possíveis problemas de desempenho. O
+    planejamento de hardware deve incluir a distribuição da plataforma HPCC
+    Systems entre múltiplos hosts físicos, como um cluster. Geralmente, é uma
+    boa prática executar processos da plataforma HPCC Systems de um
+    determinado tipo (por exemplo, Thor, Roxie ou Dali) em um host configurado
+    especificamente para aquele tipo de processo.</para>
 
     <sect1 id="SysAdm_ThorHW">
       <title>Hardware Thor</title>
@@ -501,11 +476,11 @@
       secundários para configurar seus servidores físicos maiores de modo a
       executar múltiplos nós de secundários Thor por servidor físico.</para>
 
-      <para>É importante observar que HPCC, por natureza, é um sistema de
-      processamento paralelo e que todos os nós de secundários Thor serão
-      executados precisamente ao mesmo tempo Desta forma, ao alocar mais de um
-      secundário HPCC Thor por máquina física, verifique se cada secundário
-      atende aos requisitos recomendados.</para>
+      <para>É importante observar que a plataforma HPCC Systems, por natureza,
+      é um sistema de processamento paralelo e que todos os nós de secundários
+      Thor serão executados precisamente ao mesmo tempo Desta forma, ao alocar
+      mais de um secundário HPCC Thor por máquina física, verifique se
+      secundário atende aos requisitos recomendados.</para>
 
       <para>Por exemplo, em sua eficiência ideal, 1 servidor físico com 48
       núcleos, 96GB de memória RAM, I/O de rede de 10Gb/segundo e sequencial
@@ -555,14 +530,16 @@
     <sect1 id="SysAdm_Dali_Sasha">
       <title>Configurações de Hardware do Dali e Sasha</title>
 
-      <para>O Dali do HPCC processa metadados de armazenamento de cluster na
-      memória RAM. Para a melhor eficiência, garanta no mínimo 48GB de memória
-      RAM, 6 ou mais núcleos de CPU, interface de rede de 1Gb/segundo e disco
-      de alta disponibilidade para um único Dali do HPCC. Os processos em Dali
-      do HPCC são um dos poucos componentes nativos ativos/passivos.
-      Recomenda-se usar um clustering de “swinging disk" para uma configuração
-      de alta disponibilidade. Para um único processo em Dali do HPCC , pode
-      ser usado qualquer nível RAID de alta disponibilidade (HA) .</para>
+      <para>O Dali da plataforma HPCC Systems processa metadados de
+      armazenamento de cluster na memória RAM. Para a melhor eficiência,
+      garanta no mínimo 48GB de memória RAM, 6 ou mais núcleos de CPU,
+      interface de rede de 1Gb/segundo e disco de alta disponibilidade para um
+      único Dali da plataforma HPCC Systems. Os processos em Dali da
+      plataforma HPCC Systems são um dos poucos componentes nativos
+      ativos/passivos. Recomenda-se usar um clustering de “swinging disk" para
+      uma configuração de alta disponibilidade. Para um único processo em Dali
+      da plataforma HPCC Systems, pode ser usado qualquer nível RAID de alta
+      disponibilidade (HA).</para>
 
       <para>Sasha só armazena dados em discos disponíveis localmente, lendo
       dados do Dali e, depois, processando-os ao arquivar workunits (WUs) em
@@ -628,21 +605,6 @@
         retornar ao estado operacional mais recente.</para>
 
         <para/>
-
-        <!-- *** COMMENTING OUT WHOLE Of MONITORING SECTION
-       <sect3>
-          <title>HPCC Reporting</title>
-
-          <para>HPCC leverages the use of Ganglia reporting and monitoring
-          components to monitor several aspects of the HPCC System.</para>
-
-          <para>See <emphasis>HPCC Monitoring and Reporting</emphasis> for
-          more information on how to add monitoring and reporting to your HPCC
-          System.</para>
-
-          <para>More to come***</para>          
-        </sect3>
-        END COMMENT ***-->
       </sect2>
     </sect1>
 
@@ -663,19 +625,19 @@
   <chapter id="Routine_Maintenance">
     <title>Manutenção da Rotina</title>
 
-    <para>Para garantir que seu HPCC System continue operando perfeitamente,
+    <para>Para garantir que seu HPCC Systems continue operando perfeitamente,
     são necessários alguns cuidados e manutenção. As próximas seções tratam
-    das tarefas de manutenção rotineira para seu HPCC System.</para>
+    das tarefas de manutenção rotineira para seu HPCC Systems.</para>
 
-    <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
+    <!--***Systems HEALTH CHECK UP***TO COME***-->
 
     <sect1 id="SysAdmin_DataHandling">
       <title>Manipulação dos Dados</title>
 
-      <para>Ao começar a trabalhar com o HPCC System, recomenda-se ter alguns
+      <para>Ao começar a trabalhar com o HPCC Systems, recomenda-se ter alguns
       dados no sistema para processamento. Os dados são transferidos para o
-      HPCC System através de um processo denominado spray (distribuição aos
-      nós). Da mesma forma, os dados são retirados do HPCC System através de
+      HPCC Systems através de um processo denominado spray (distribuição aos
+      nós). Da mesma forma, os dados são retirados do HPCC Systems através de
       um processo denominado despray (consolidação aos nós).</para>
 
       <para>Uma vez que o HPCC é um cluster de computador, os dados são
@@ -693,20 +655,20 @@
       – o arquivo é então remontado a partir de suas peças em todos os nós no
       cluster e colocado em um único arquivo no destino.</para>
 
-      <para>Uma <emphasis>Zona de entrada de arquivos</emphasis> (ou zona de
-      chegada) é um local de armazenamento físico definido no ambiente do seu
-      sistema. É possível definir um ou mais desses locais. Um daemon
-      (dafilesrv) precisa estar em execução no servidor para possibilitar
-      sprays e desprays do arquivo. É possível realizar o spray ou despray de
-      alguns arquivos para sua zona de entrada de arquivo através do ECL
-      Watch. Para enviar arquivos grandes, é necessária uma ferramenta
-      compatível com o protocolo de cópia de segurança – algo como um
-      WinSCP.</para>
+      <para>Uma <emphasis>Landing Zone</emphasis> (ou zona de chegada) é um
+      local de armazenamento físico definido no ambiente do seu sistema. É
+      possível definir um ou mais desses locais. Um daemon (dafilesrv) precisa
+      estar em execução no servidor para possibilitar sprays e desprays do
+      arquivo. É possível realizar o spray ou despray de alguns arquivos para
+      sua zona de entrada de arquivo através do ECL Watch. Para enviar
+      arquivos grandes, é necessária uma ferramenta compatível com o protocolo
+      de cópia de segurança – algo como um WinSCP.</para>
 
-      <para>Para obter mais informações sobre o processamento de dados do
-      HPCC, consulte os documentos <emphasis>Manipulação dos Dados do
-      HPCC</emphasis> e <emphasis>Tutorial de dados do HPCC</emphasis>
-      .</para>
+      <para>Para obter mais informações sobre o processamento de dados da
+      plataforma HPCC Systems<superscript>®</superscript>, consulte os
+      documentos <emphasis> Manipulação dos Dados do HPCC Systems</emphasis> e
+      <emphasis>Tutorial de dados do HPCC Systems<superscript>®</superscript>
+      </emphasis> .</para>
 
       <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
     </sect1>
@@ -728,7 +690,7 @@
         ambiente de operação, há certas considerações adicionais sobre as
         quais você deve estar ciente. As seções a seguir discutem as
         considerações de backup para os componentes individuais do HPCC
-        System.</para>
+        Systems.</para>
 
         <sect3 id="SysAdm_BkU_Dali">
           <title>Dali</title>
@@ -786,8 +748,8 @@
           armazenadas no Dali e são arquivadas pelo Sasha.</para>
 
           <!--***COMMENT:<para><emphasis role="bold">Note:</emphasis> No compiler is shipped
-          with the HPCC System. The ECLCC Server compiles ECL code into C++,
-          however you must have a C++ compiler to use on your system. </para> -->
+          with the HPCC Systems. The ECLCC Server compiles ECL code into C++,
+          however you must have a C++ compiler to use on your Systems. </para> -->
         </sect3>
 
         <sect3 id="SysAdm_BkUp_ECLAgent">
@@ -815,11 +777,11 @@
           <title>Thor</title>
 
           <para>Thor, a refinaria de dados, como um dos componentes críticos
-          dos HPCC Systems,<superscript>®</superscript> precisa ser salvo em
-          backup. Faça um backup do Thor ao configurar a replicação e definir
-          uma tarefa de backup noturno do cron. Se não houver um RAID
-          configurado, crie um backup do Thor sob demanda antes e/ou depois de
-          qualquer troca de nó ou troca de unidade.</para>
+          da plataforma HPCC Systems precisa ser salvo em backup. Faça um
+          backup do Thor ao configurar a replicação e definir uma tarefa de
+          backup noturno do cron. Se não houver um RAID configurado, crie um
+          backup do Thor sob demanda antes e/ou depois de qualquer troca de nó
+          ou troca de unidade.</para>
 
           <para>Uma parte muito importante da administração do Thor é
           verificar os logs para garantir que os backups anteriores foram
@@ -924,11 +886,11 @@
         </sect3>
 
         <sect3 id="SysAdm_BkUp_LandZone">
-          <title>Zona de entrada de arquivos</title>
+          <title>Landing Zone</title>
 
-          <para>A zona de entrada de arquivos é usada para hospedar arquivos
-          de entrada e saída. Isso deve ser tratado da mesma maneira que em um
-          servidor FTP. Use backups tradicionais no nível de sistema.</para>
+          <para>A Landing Zone é usada para hospedar arquivos de entrada e
+          saída. Isso deve ser tratado da mesma maneira que em um servidor
+          FTP. Use backups tradicionais no nível de sistema.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Misc">
@@ -943,25 +905,26 @@
     </sect1>
 
     <sect1 id="SysAdm_Log_Files">
-      <title>Arquivo de Log</title>
+      <title>Arquivos de Log</title>
 
-      <para>É possível conferir as mensagens de sistema e ver quaisquer
-      mensagens de erro no momento em que são reportadas e registradas em
-      arquivos de log. Os arquivos de log podem ajudá-lo a entender o que está
-      ocorrendo no sistema e são úteis na hora de solucionar problemas.</para>
+      <para>A plataforma HPCC Systems fornece uma riqueza de informações que
+      podem ser usadas para depurar, rastrear transações, desempenho de
+      aplicativos e fins de solução de problemas. Você pode revisar as
+      mensagens da plataforma HPCC Systems conforme são relatadas e capturadas
+      nos arquivos de log. Os arquivos de log podem ajudá-lo a entender o que
+      está ocorrendo no sistema e são úteis na solução de problemas.</para>
 
       <sect2 id="SysAdm_Component_Logs">
         <title>Logs de Componente</title>
 
-        <para>Há arquivos de log para cada componente nos diretórios abaixo
+        <para>Os arquivos de componentes do HPCC Systems são gravados em
         <emphasis role="bold"> /var/log/HPCCSystems</emphasis> (local padrão).
-        Opcionalmente, é possível configurar o sistema para gravar os logs em
-        um diretório diferente. Você deve saber a localização dos arquivos de
-        log e consultá-los primeiramente ao solucionar quaisquer
-        problemas.</para>
+        Você pode, opcionalmente, configurar sua plataforma HPCC Systems para
+        gravar os logs em um diretório diferente. Você deve saber onde estão
+        os arquivos de log e consultá-los primeiro ao solucionar qualquer
+        problema.</para>
 
-        <para>Há arquivos de log que registram a atividade entre vários
-        componentes. É possível encontrar os arquivos de log em subdiretórios
+        <para>É possível encontrar os arquivos de log em subdiretórios
         nomeados de forma correspondente aos componentes que eles rastreiam.
         Por exemplo, os logs do Thor são encontrados em um diretório chamado
         mythor; o log do Sasha deve estar no diretório mysasha, enquanto o log
@@ -975,10 +938,100 @@
         atual mais recente daquele componente.</para>
 
         <para>Entender os arquivos de log, e o que normalmente é reportado
-        neles, ajuda a solucionar problemas no HPCC System.</para>
+        neles, ajuda a solucionar problemas na plataforma HPCC Systems.</para>
 
-        <para>Como parte da manutenção de rotina, recomenda-se fazer um
-        backup, arquivar e remover os arquivos de log mais antigos.</para>
+        <para>Como parte da manutenção de rotina, você pode querer fazer
+        backup, arquivar e remover os arquivos de log mais antigos. Alguns
+        arquivos de log podem crescer bastante e você deve estar atento ao
+        espaço disponível em disco onde o sistema grava seus arquivos de log.
+        Pode ser útil separar o diretório de arquivos de log do seu sistema
+        operacional ou sistema de arquivos de componentes.</para>
+      </sect2>
+
+      <sect2 id="The_Log_Files">
+        <title>logfields</title>
+
+        <para>Os arquivos de log de todos os principais componentes do HPCC
+        Systems fornecem informações específicas relativas a cada componente.
+        As informações que são registradas são configuráveis. Os logs dos
+        componentes do HPCC Systems seguem um formato definido na configuração
+        de <emphasis role="bold">logfields</emphasis> do arquivo
+        environment.conf. Opcionalmente, você pode configurar para relatar
+        informações adicionais.</para>
+
+        <para>Por padrão, os logs para relatórios são configurados com as
+        seguintes colunas: TIM, DAT, MLT, MID, PID, TID, COD, QUO, PFX</para>
+
+        <para><informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry>MID</entry>
+
+                  <entry>Message ID</entry>
+                </row>
+
+                <row>
+                  <entry>DAT</entry>
+
+                  <entry>Data</entry>
+                </row>
+
+                <row>
+                  <entry>TIM</entry>
+
+                  <entry>Hora</entry>
+                </row>
+
+                <row>
+                  <entry>MLT</entry>
+
+                  <entry>Milissegundos</entry>
+                </row>
+
+                <row>
+                  <entry>PID</entry>
+
+                  <entry>Process ID</entry>
+                </row>
+
+                <row>
+                  <entry>TID</entry>
+
+                  <entry>Thread ID</entry>
+                </row>
+
+                <row>
+                  <entry>PFX</entry>
+
+                  <entry>Prefixo (não é saída em todas as mensagens)</entry>
+                </row>
+
+                <row>
+                  <entry>QUO</entry>
+
+                  <entry>Mensagem citada. A mensagem real reportada.</entry>
+                </row>
+
+                <row>
+                  <entry>COD</entry>
+
+                  <entry>Código</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Abaixo está um exemplo de entrada de log ESP de
+        /var/log/HPCCSystems/myesp/esp.log (com base na <emphasis
+        role="bold">configuração padrão de logfields</emphasis>):</para>
+
+        <programlisting>000001EE 2018-08-29 15:00:46.653 17746 17775 
+  "TxSummary[activeReqs=2;contLen=-1;rcv=2ms;user=@127.0.0.1;req=GET wsdfu;total=3ms;]"</programlisting>
+
+        <para>Para maiores informações sobre configuração do arquivo de log
+        veja a sessão <link
+        linkend="SysAdm_Env.conf">environment.conf</link>.</para>
       </sect2>
 
       <sect2 id="SysAdm_AccessLogFiles">
@@ -991,9 +1044,9 @@
 
         <para>Para ver os logs no ECL Watch, clique no ícone <emphasis
         role="bold">Operations</emphasis> e depois no link <emphasis
-        role="bold">System Servers</emphasis> . Isso abre a página System
+        role="bold">Systems Servers</emphasis> . Isso abre a página Systems
         Servers no ECL Watch. Essa página lista vários componentes do HPCC
-        System. Na coluna <emphasis role="bold">Diretory</emphasis> para cada
+        Systems. Na coluna <emphasis role="bold">Diretory</emphasis> para cada
         componente, há um ícone de unidade de computador. Clique no ícone na
         linha do log de componente que deseja acessar. <figure>
             <title>Logs no ECL Watch</title>
@@ -1068,19 +1121,20 @@
   <chapter id="OnDemand_Maintenance">
     <title>Configuração e Gerenciamento do Sistema</title>
 
-    <para>O HPCC System requer configuração A ferramenta Configuration Manager
-    (Gerenciador de Configurações-configmgr) inclusa no software do sistema é
-    um item valioso para configurar seu HPCC System. O Gerenciador de
-    Configurações é uma ferramenta gráfica fornecida para configurar o seu
-    sistema. Ele possui um assistente que pode ser executado para gerar
-    facilmente um arquivo de ambiente que o ajudará a configurar, ajustar e
-    operar o sistema com rapidez. O Gerenciador de Configurações também possui
-    uma opção avançada que permite uma configuração mais específica enquanto
-    ainda usa a interface gráfica. Se quiser, é possível editar os arquivos de
-    ambiente usando qualquer editor de texto ou xml, porém a estrutura do
-    arquivo precisa permanecer válida.</para>
+    <para>A plataforma HPCC Systems requer configuração A ferramenta
+    Configuration Manager (Gerenciador de Configurações-configmgr) inclusa no
+    software do sistema é um item valioso para configurar seu HPCC Systems. O
+    Gerenciador de Configurações é uma ferramenta gráfica fornecida para
+    configurar o seu sistema. Ele possui um assistente que pode ser executado
+    para gerar facilmente um arquivo de ambiente que o ajudará a configurar,
+    ajustar e operar o sistema com rapidez. O Gerenciador de Configurações
+    também possui uma opção avançada que permite uma configuração mais
+    específica enquanto ainda usa a interface gráfica. Se quiser, é possível
+    editar os arquivos de ambiente usando qualquer editor de texto ou xml,
+    porém a estrutura do arquivo precisa permanecer válida.</para>
 
-    <para><figure>
+    <para>
+      <figure>
         <title>Configuração de amostra de produção</title>
 
         <mediaobject>
@@ -1088,7 +1142,8 @@
             <imagedata fileref="images/SA008.jpg"/>
           </imageobject>
         </mediaobject>
-      </figure></para>
+      </figure>
+    </para>
 
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
@@ -1121,10 +1176,11 @@
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
-      <para>Um componente dos sistemas HPCC na configuração bare-metal é o
-      arquivo enviroment.conf. O environment.conf contém algumas definições
-      globais que o gerenciador de configuração usa para configurar o HPCC
-      System. Na maioria dos casos, os padrões são suficientes.</para>
+      <para>Um componente da plataforma HPCC Systems na configuração
+      bare-metal é o arquivo enviroment.conf. O environment.conf contém
+      algumas definições globais que o gerenciador de configuração usa para
+      configurar o HPCC Systems. Na maioria dos casos, os padrões são
+      suficientes.</para>
 
       <para>O arquivo environment.conf funciona apenas para implantações
       bare-metal. Para implantações de contêiner ou nuvem, o environment.conf
@@ -1141,7 +1197,9 @@
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+                <entry>
+                  <inlinegraphic fileref="images/caution.png"/>
+                </entry>
 
                 <entry><emphasis role="bold">ATENÇÃO</emphasis>: Essas
                 configurações são fundamentais para que o sistema possa operar
@@ -1172,7 +1230,8 @@
 
       <para>O envrionment.conf padrão:</para>
 
-      <para><programlisting>## Default environment configuration file for OpenHPCC
+      <para>
+        <programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=${CONFIG_DIR}
@@ -1234,7 +1293,7 @@ useDropZoneRestriction=true
 # If set, will force matching local file paths to become remote reads, e.g:
 #forceRemotePattern=/var/lib/HPCCSystems/hpcc-data/eclagent/*
 
-# Dafilesrv: default client side connection settings (NB: 0 = disable/use system defaults)
+# Dafilesrv: default client side connection settings (NB: 0 = disable/use Systems defaults)
 #dafsConnectTimeoutSeconds=100
 #dafsConnectRetries=2
 #dafsMaxReceiveTimeSeconds=0
@@ -1244,7 +1303,8 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
-</programlisting></para>
+</programlisting>
+      </para>
 
       <sect2 id="SysAdm_Paths">
         <title>Considerações sobre caminhos</title>
@@ -1271,6 +1331,186 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>O arquivo de log, <emphasis>hpcc-init.log</emphasis> é gravado
         no caminho do HPCCSystems.</para>
+
+        <sect3 id="logfields">
+          <title>As configurações dos logfields</title>
+
+          <para>A configuração de <emphasis role="bold">logfields</emphasis>
+          declara os campos a serem incluídos nos logs dos componentes. Você
+          pode personalizar quais campos aparecem nos seus logs com base nas
+          suas necessidades empresariais.</para>
+
+          <para>A sintaxe a ser usada para logfields é incluir as colunas
+          desejadas com um sinal de mais (+) e usar o sinal de menos (-) para
+          especificar quaisquer colunas a serem excluídas. Por exemplo, se
+          você quisesse usar as colunas STD e excluir PFX, você poderia
+          inserir:</para>
+
+          <programlisting>logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO</programlisting>
+
+          <para>or</para>
+
+          <programlisting>logfields=STD-PFX</programlisting>
+
+          <para>A tabela a seguir reflete todos os logfields disponíveis na
+          ordem em que são escritos no arquivo de log. <informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry>AUD</entry>
+
+                    <entry>Audiência: (Operator | User | Monitor | Performance
+                    | Internal | Programmer | Legacy | Audit)</entry>
+                  </row>
+
+                  <row>
+                    <entry>CLS</entry>
+
+                    <entry>Classe: (Disaster | Error | Warning | Information |
+                    Progress | Legacy | Event | Unknown | All)</entry>
+                  </row>
+
+                  <row>
+                    <entry>DET</entry>
+
+                    <entry>Detalhes (int não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>MID</entry>
+
+                    <entry>Message ID (int não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>TIM</entry>
+
+                    <entry>Hora: POSIX.2-1992 e pela ISO C99
+                    (%H:%M:%S)</entry>
+                  </row>
+
+                  <row>
+                    <entry>DAT</entry>
+
+                    <entry>Data: Formato ISO 8601 (%Y-%m-%d)</entry>
+                  </row>
+
+                  <row>
+                    <entry>MCT</entry>
+
+                    <entry>Microssegundo: %02d:%02d:%02d.%06d</entry>
+                  </row>
+
+                  <row>
+                    <entry>MLT</entry>
+
+                    <entry>Milissegundo: %02d:%02d:%02d.%03d</entry>
+                  </row>
+
+                  <row>
+                    <entry>PID</entry>
+
+                    <entry>Process ID (int não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>TID</entry>
+
+                    <entry>Thread ID (int não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>SES</entry>
+
+                    <entry>Session ID (int64 não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>NOD</entry>
+
+                    <entry>Nó (local endpoint url)</entry>
+                  </row>
+
+                  <row>
+                    <entry>JOB</entry>
+
+                    <entry>Job ID (int64 não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>USE</entry>
+
+                    <entry>User ID (int64 não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>COM</entry>
+
+                    <entry>Componente (int não-assinado)</entry>
+                  </row>
+
+                  <row>
+                    <entry>QUO</entry>
+
+                    <entry>Citação (messagem)</entry>
+                  </row>
+
+                  <row>
+                    <entry>COD</entry>
+
+                    <entry>Código (int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>PFX</entry>
+
+                    <entry>Prefixo: Erro ou Alerta</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Os seguintes são macros de logfields que fornecem um grupo de
+          colunas:</para>
+
+          <para>
+            <informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry>ALL</entry>
+
+                    <entry>Inclui TODOS os logfields disponíveis</entry>
+                  </row>
+
+                  <row>
+                    <entry>STD</entry>
+
+                    <entry>Incluir apenas logfields padrão: TIM, DAT, MLT,
+                    MID, PID, TID, COD, QUO, PFX</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Using_nice">
+        <title>Utilizando nice</title>
+
+        <para>A plataforma HPCC Systems suporta prioridades baseadas em
+        <emphasis>nice</emphasis> usando a utilidade nice do Linux, que invoca
+        scripts e programas com prioridades especificadas. A prioridade
+        atribuída a um processo indica ao CPU fornecer mais ou menos tempo do
+        que a outros processos. Um valor nice de -20 é a prioridade mais alta,
+        e um valor de 19 é a mais baixa.</para>
+
+        <para>O arquivo environment.conf padrão é entregue com o valor nice
+        desativado. Se você deseja usar nice para priorizar os processos da
+        plataforma HPCC Systems, você precisa modificar o arquivo
+        environment.conf para habilitar o nice. Você também pode ajustar o
+        valor nice no environment.conf.</para>
       </sect2>
 
       <sect2 id="SysAdm_OtherEnv.conf">
@@ -1404,11 +1644,11 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       interação de alguns componentes. Uma área que poderia influenciar o
       desempenho é a relação com usuários, grupos e o Active Directory. Se
       possível, pode ser uma boa política contar com um Active Directory
-      individual e específico para o HPCC. Pode haver alguns casos onde apenas
-      um Active Directory que atende aos vários aplicativos diversos não
-      ofereça um desempenho ideal.</para>
+      individual e específico para a plataforma HPCC Systems. Pode haver
+      alguns casos onde apenas um Active Directory que atende aos vários
+      aplicativos diversos não ofereça um desempenho ideal.</para>
 
-      <para>O HPCC torna a configuração da OU do Active Directory
+      <para>O HPCC Systems torna a configuração da OU do Active Directory
       relativamente fácil. Quando iniciado, o ESP cria todas as UOs para você
       com base nas configurações definidas no Configuration Manager. É
       possível iniciar o Dali/ESP e usar o ECLWatch para adicionar ou
@@ -1502,8 +1742,10 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <para>O valor VmLck deve corresponder à linha de log
           memsize=roxie:</para>
 
-          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
-         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
+          <para>
+            <programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting>
+          </para>
 
           <para>Que é encontrado na configuração RoxieCluster do
           environment.xml ou na seção Helm chart -- values.yaml Roxie para
@@ -1601,18 +1843,19 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
     <title>Melhores práticas:</title>
 
     <para>Este capítulo descreve as diversas formas das boas práticas traçadas
-    por usuários e administradores de longa data do HPCC que executam o HPCC
-    em um ambiente de produção exigente e de alta disponibilidade. No entanto,
-    não é necessário executar seu ambiente dessa forma, uma vez que seus
-    requisitos específicos podem variar. Esta seção oferece algumas
-    recomendações de boas práticas traçadas após vários anos de execução do
-    HPCC em um ambiente de produção intenso e exigente.</para>
+    por usuários e administradores de longa data do HPCC que executam a
+    plataforma HPCC Systems em um ambiente de produção exigente e de alta
+    disponibilidade. No entanto, não é necessário executar seu ambiente dessa
+    forma, uma vez que seus requisitos específicos podem v ariar. Esta seção
+    oferece algumas recomendações de boas práticas traçadas após vários anos
+    de execução da plataforma HPCC Systems em um ambiente de produção intenso
+    e exigente.</para>
 
     <sect1 id="BP_Cluster_Redundancy" role="nobrk">
       <title>Redundância de Cluster</title>
 
       <para>Há vários aspectos de redundância de cluster que devem ser
-      considerados ao configurar seu HPCC System.</para>
+      considerados ao configurar seu HPCC Systems.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -1735,7 +1978,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
     <sect1 id="BP_High_Availability">
       <title>Alto Disponibilidade</title>
 
-      <para>Se precisar de alta disponibilidade para seu HPCC System, há
+      <para>Se precisar de alta disponibilidade para seu HPCC Systems, há
       algumas considerações adicionais que devem ser analisadas.</para>
 
       <para>Esta não é uma lista completa e não visa fornecer instruções passo
@@ -1876,7 +2119,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       <para>Há vários outros aspectos para as considerações de boas práticas,
       e esses aspectos mudarão de acordo com os requisitos do seu sistema. As
       seções a seguir englobam algumas considerações de boas práticas para
-      determinados aspectos do HPCC System. Tenha em mente que as boas
+      determinados aspectos do HPCC Systems. Tenha em mente que as boas
       práticas sugeridas são apenas recomendações e podem não ser adequadas às
       suas necessidades. Uma análise minuciosa das considerações destacadas
       nesta seção pode ser útil se as suas necessidades se alinharem às
@@ -2339,10 +2582,11 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
   <chapter id="Resources">
     <title>Recursos do Sistema</title>
 
-    <para>Há recursos adicionais disponíveis para o HPCC System.</para>
+    <para>Há recursos adicionais disponíveis para a plataforma HPCC
+    Systems.</para>
 
     <sect1 id="HPCC_Resources" role="nobrk">
-      <title>Recursos do HPCC</title>
+      <title>Recursos do HPCC Systems</title>
 
       <para>O link de recursos está disponível abaixo do link do ícone
       Operations. O link de recursos no ECL Watch oferece um link para o
@@ -2363,8 +2607,9 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
     <sect1 id="SysAdm_Addl_Resources">
       <title>Recursos Adicionais</title>
 
-      <para>Outras opções de ajuda com o HPCC e de aprendizado para o ECL
-      também estão disponíveis. Há cursos on-line disponíveis. Acesse:</para>
+      <para>Outras opções de ajuda com a plataforma HPCC Systems e de
+      aprendizado para o ECL também estão disponíveis. Há cursos on-line
+      disponíveis. Acesse:</para>
 
       <para><ulink
       url="https://learn.lexisnexis.com/hpcc">https://learn.lexisnexis.com/hpcc</ulink></para>

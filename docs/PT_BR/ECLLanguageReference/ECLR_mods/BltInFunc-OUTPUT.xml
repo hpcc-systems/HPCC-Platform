@@ -438,10 +438,13 @@
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
+    role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">) ] | [ , PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
     role="bold">) ] </emphasis></para>
@@ -491,6 +494,26 @@
               dos nós (baseado em 1) e/ou dos intervalos (especificados com um
               traço, como p.ex., n-m) para indicar o conjunto específico de
               nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo na lista
+              especificada de planos de destino. Se omitido, o arquivo é
+              gravado no plano padrão. Planos são usados por sistemas
+              conteinerizados, mas como clusters bare-metal são implicitamente
+              suportados por um plano com o mesmo nome, você pode usar
+              PLANE('nomedocluster') para implantações bare-metal.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>Uma lista de constantes de string delimitadas por
+              vírgulas contendo os nomes dos planos para os quais o arquivo
+              será gravado. Os nomes dos <emphasis>targetPlane</emphasis>
+              devem ser listados conforme definidos na implantação.</entry>
             </row>
 
             <row>
@@ -603,10 +626,14 @@ OUTPUT(People(Attr1=FALSE));
         <primary>CSV</primary>
       </indexterm>[ (</emphasis><emphasis>csvoptions</emphasis><emphasis
     role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
+    role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">)] <emphasis role="bold">[,ENCRYPT<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold"> <emphasis
+    role="bold">[,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]</emphasis> [,COMPRESSED]</emphasis></para>
@@ -654,6 +681,26 @@ OUTPUT(People(Attr1=FALSE));
               dos nós (baseado em 1) e/ou dos intervalos (especificados com um
               traço, como p.ex., n-m) para indicar o conjunto específico de
               nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo na lista
+              especificada de planos de destino. Se omitido, o arquivo é
+              gravado no plano padrão. Planos são usados por sistemas
+              conteinerizados, mas como clusters bare-metal são implicitamente
+              suportados por um plano com o mesmo nome, você pode usar
+              PLANE('nomedocluster') para implantações bare-metal.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>Uma lista de constantes de string delimitadas por
+              vírgulas contendo os nomes dos planos para os quais o arquivo
+              será gravado. Os nomes dos <emphasis>targetPlane</emphasis>
+              devem ser listados conforme definidos na implantação.</entry>
             </row>
 
             <row>
@@ -901,11 +948,14 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
+    role="bold">) ] <emphasis role="bold">[, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
-    OVERWRITE<indexterm>
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
     UPDATE<indexterm>
@@ -947,6 +997,26 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
               dos nós (baseado em 1) e/ou dos intervalos (especificados com um
               traço, como p.ex., n-m) para indicar o conjunto específico de
               nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo na lista
+              especificada de planos de destino. Se omitido, o arquivo é
+              gravado no plano padrão. Planos são usados por sistemas
+              conteinerizados, mas como clusters bare-metal são implicitamente
+              suportados por um plano com o mesmo nome, você pode usar
+              PLANE('nomedocluster') para implantações bare-metal.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>Uma lista de constantes de string delimitadas por
+              vírgulas contendo os nomes dos planos para os quais o arquivo
+              será gravado. Os nomes dos <emphasis>targetPlane</emphasis>
+              devem ser listados conforme definidos na implantação.</entry>
             </row>
 
             <row>
@@ -1132,10 +1202,14 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
+    role="bold">)] [, CLUSTER <indexterm>
         <primary>CLUSTER</primary>
-      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+      </indexterm>(</emphasis><emphasis> target</emphasis><emphasis
+    role="bold">)] | [, PLANE <indexterm>
+        <primary>PLANE</primary>
+      </indexterm>(</emphasis><emphasis> targetPlane </emphasis><emphasis
+    role="bold">)]</emphasis><emphasis role="bold">
+    [</emphasis><emphasis>,</emphasis><emphasis role="bold">
     OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
@@ -1178,6 +1252,26 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
               dos nós (baseado em 1) e/ou dos intervalos (especificados com um
               traço, como p.ex., n-m) para indicar o conjunto específico de
               nós para gravar.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PLANE</emphasis></entry>
+
+              <entry>Opcional. Especifica a gravação do arquivo na lista
+              especificada de planos de destino. Se omitido, o arquivo é
+              gravado no plano padrão. Planos são usados por sistemas
+              conteinerizados, mas como clusters bare-metal são implicitamente
+              suportados por um plano com o mesmo nome, você pode usar
+              PLANE('nomedocluster') para implantações bare-metal.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetPlane</emphasis></entry>
+
+              <entry>Uma lista de constantes de string delimitadas por
+              vírgulas contendo os nomes dos planos para os quais o arquivo
+              será gravado. Os nomes dos <emphasis>targetPlane</emphasis>
+              devem ser listados conforme definidos na implantação.</entry>
             </row>
 
             <row>
