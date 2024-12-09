@@ -14,9 +14,9 @@
 #   settings.host.authentication          - authentication settings if authentication is enabled (optional)
 #   settings.host.authentication.type     - authentication type (determines remaining settings) (only 'basic' is supported)
 #   settings.host.authentication.username - username for basic authentication (if not stored in a secret)
-#   settings.host.authentication.password - password for basic authentication (if not stored in a secret)
+#   settings.host.authentication.password - encrypted password for basic authentication (if not stored in a secret)
 #   settings.host.authentication.credentialsSecret  - name of secret containing username and password for basic authentication
-#   settings.host.authentication.credentialsVaultId - vault id for secret containing username password for basic authentication
+#   settings.host.authentication.credentialsVaultId - optional vault id for secret containing username password for basic authentication
 #   settings.index                        - ElasticSearch index settings
 #   settings.index.name                   - index name
 #

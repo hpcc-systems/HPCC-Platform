@@ -306,7 +306,7 @@ Add the following to the environment.xml configuration file (note that some valu
         <metrics name="mymetricsconfig">
             <sinks name="myelasticsink" type="elastic">
                 <settings period="30" ignoreZeroMetrics="1">
-                    <host domain="<domainname>" port="<port>" protocol="http|htps">
+                    <host domain="<domainname>" port="<port>" protocol="http|https">
                         <authentication type="basic" username="<username>" password="<password>"/>
                     </host>
                     <index name="<index>"/> 
