@@ -5006,6 +5006,8 @@ public:
     }
     virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) override
     {
+        atRestCost = 0;
+        accessCost = 0;
         CDateTime dt;
         getModificationTime(dt);
         double fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
@@ -5016,7 +5018,6 @@ public:
         {
             StringArray clusterNames;
             unsigned countClusters = getClusterNames(clusterNames);
-            atRestCost = 0;
             for (unsigned i = 0; i < countClusters; i++)
                 atRestCost += calcFileAtRestCost(clusterNames[i], sizeGB, fileAgeDays);
             if (countClusters)
