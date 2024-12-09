@@ -27,6 +27,7 @@
 #include "espcfg.ipp"
 #include "esplog.hpp"
 #include "espcontext.hpp"
+#include "esptrace.h"
 
 enum class LdapType { LegacyAD, AzureAD };
 
@@ -436,6 +437,15 @@ void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLd
     }
 }
 
+// Copy trace flags from appEsp to legacyEsp. The source is expected to be an application's `esp`
+// configuration object. The destination is expected to be the `EspProcess` element.
+inline static void addTraceFlags(IPropertyTree *legacyEsp, IPropertyTree *appEsp)
+{
+    IPropertyTree *traceFlags = appEsp->queryPropTree(propTraceFlags);
+    if (traceFlags)
+        legacyEsp->setPropTree(propTraceFlags, LINK(traceFlags));
+}
+
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[])
 {
     Owned<IPropertyTree> appEspConfig = loadApplicationConfig(application, argv);
@@ -468,5 +478,7 @@ IPropertyTree *buildApplicationLegacyConfig(const char *application, const char*
     IPropertyTree *legacyDirectories = legacy->queryPropTree("Software/Directories");
     IPropertyTree *appDirectories = appEspConfig->queryPropTree("directories");
     copyDirectories(legacyDirectories, appDirectories);
+
+    addTraceFlags(legacyEsp, appEspConfig);
     return legacy.getClear();
 }

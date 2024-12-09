@@ -49,6 +49,7 @@
 
 #include "jmetrics.hpp"
 #include "workunit.hpp"
+#include "esptrace.h"
 
 using namespace hpccMetrics;
 
@@ -355,6 +356,33 @@ static void usage()
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[]);
 
 //
+// Initialize trace settings
+void initializeTraceFlags(CEspConfig* config)
+{
+    IPropertyTree* pEspTree = config->queryConfigPTree();
+    Owned<IPropertyTree> pTraceTree = pEspTree->getPropTree(propTraceFlags);
+    if (!pTraceTree)
+    {
+        pTraceTree.setown(getComponentConfigSP()->getPropTree(propTraceFlags));
+    }
+#ifdef _DEBUG
+    if (!pTraceTree)
+    {
+        static const char * defaultTraceFlagsYaml = R"!!(
+traceDetail: max
+)!!";
+        pTraceTree.setown(createPTreeFromYAMLString(defaultTraceFlagsYaml));
+    }
+#endif
+
+    if (pTraceTree)
+    {
+        TraceFlags defaults = loadTraceFlags(pTraceTree, mapTraceOptions(pEspTree), queryDefaultTraceFlags());
+        updateTraceFlags(defaults, true);
+    }
+}
+
+//
 // Initialize metrics
 void initializeMetrics(CEspConfig* config)
 {
@@ -577,6 +605,7 @@ int init_main(int argc, const char* argv[])
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
+            initializeTraceFlags(config);
             initializeMetrics(config);        
             initializeStorageGroups(daliClientActive());
         }
