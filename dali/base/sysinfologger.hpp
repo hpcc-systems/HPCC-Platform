@@ -78,7 +78,7 @@ typedef IIteratorOf<ISysInfoLoggerMsg> ISysInfoLoggerMsgIterator;
 SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(const char *source=nullptr);
 SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId, const char *source=nullptr);
 SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day, const char *source=nullptr);
-SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * msgFilter);
 
 SYSINFO_API unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts);
 SYSINFO_API unsigned hideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter);
@@ -89,4 +89,6 @@ SYSINFO_API unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilte
 SYSINFO_API bool deleteLogSysInfoMsg(unsigned __int64 msgId, const char *source=nullptr);
 SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source=nullptr);
 
+SYSINFO_API ILogMsgHandler * getDaliMsgLoggerHandler();
+SYSINFO_API void UseDaliForOperatorMessages(bool use);
 #endif
