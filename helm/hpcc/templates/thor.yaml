@@ -76,6 +76,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root| indent 6 }}
 
 {{- if not .eclAgentUseChildProcesses }}
+  {{- $_ := set . "lifeCycleCtx" (dict "containers" list) }}
   {{ $eclAgentType }}-job.yaml:
     apiVersion: batch/v1
     kind: Job
@@ -98,6 +99,7 @@ data:
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
+          terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
           initContainers: 
           {{- include "hpcc.createConfigInitContainers" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
@@ -112,14 +114,14 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources "root" .root) | indent 12 }}
-{{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
-{{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
+{{- $extraArgs := list "_HPCC_ARGS_" -}}
+{{- include "hpcc.addCommandAndLifecycle" (. | merge (dict "isJob" true "process" $eclAgentType "extraArgs" $extraArgs "component" "Thor ECL Agent" "optional" false)) | nindent 12 }}
             env:
 {{- include "hpcc.mergeEnvironments" (dict "env" (append (.env | default list) (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_")) "defaultArenas" 1) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
+{{ include "hpcc.addEphemeralVolumeMounts" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" . | indent 8 }}
@@ -127,8 +129,9 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
+{{- include "hpcc.addPostRunContainer" (. | merge (dict "isJob" true)) | nindent 10 }}
           volumes:
-{{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
+{{ include "hpcc.addEphemeralVolumes" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" . | indent 10 }}
@@ -140,6 +143,7 @@ data:
       backoffLimit: 0
 {{- end }}
 
+{{- $_ := set . "lifeCycleCtx" (dict "containers" list) }}
   thormanager-job.yaml:
     apiVersion: batch/v1
     kind: Job
@@ -166,6 +170,7 @@ data:
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-thoragent
+          terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 60 }}
           initContainers:
           {{- include "hpcc.createConfigInitContainers" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
@@ -180,14 +185,14 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources "root" .root) | indent 12 }}
-{{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
-{{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
+{{- $extraArgs := list "_HPCC_ARGS_" -}}
+{{- include "hpcc.addCommandAndLifecycle" (. | merge (dict "isJob" true "process" "thormaster_lcr" "extraArgs" $extraArgs "component" "Thor Manager" "optional" false)) | nindent 12 }}
             env:
 {{- include "hpcc.mergeEnvironments" (dict "env" (append (.env | default list) (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_")) "defaultArenas" 2) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" . | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
+{{ include "hpcc.addEphemeralVolumeMounts" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" . | indent 12 }}
@@ -195,8 +200,9 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
+{{- include "hpcc.addPostRunContainer" (. | merge (dict "isJob" true)) | nindent 10 }}
           volumes:
-{{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
+{{ include "hpcc.addEphemeralVolumes" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" . | indent 10 }}
@@ -207,6 +213,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
+{{- $_ := set $configCtx "lifeCycleCtx" (dict "containers" list) }}
   thorworker-job.yaml:
     apiVersion: batch/v1
     kind: Job
@@ -234,6 +241,7 @@ data:
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
+          terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
           initContainers:
           {{- include "hpcc.createConfigInitContainers" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
@@ -241,24 +249,28 @@ data:
           shareProcessNamespace: true
 {{- end }}            
           containers:
+{{- $_ := set $configCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- range $containerNum := untilStep 1 (int (add1 $numWorkersPerPod)) 1 }}
 {{- $slavePort := add 20100 (mul 100 (sub $containerNum 1)) -}}
 {{- if and ($misc.postJobCommandViaSidecar) (eq $containerNum 1) }}
 {{ include "hpcc.addWaitAndRunContainer" ($configCtx | merge (dict "command" $misc.postJobCommand)) | indent 10 }}
 {{- end }}
-          - name: {{ $thorWorkerJobName }}-{{ $containerNum }}
+{{- $containerName := printf "%s-%d" $thorWorkerJobName $containerNum }}
+          - name: {{ $containerName }}
 {{- include "hpcc.addSecurityContext" $configCtx | indent 12 }}
 {{ include "hpcc.addImageAttrs" $configCtx | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources "root" $configCtx.root) | indent 12 }}
-{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
-{{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
+{{- $extraArgs := list "_HPCC_ARGS_" (printf "--slaveport=%d" $slavePort) -}}
+{{- include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "isJob" true "process" "thorslave_lcr" "containerName" $containerName "extraArgs" $extraArgs "component" "Thor Worker" "optional" false "overrideConfigName" $thorScope.name)) | nindent 12 }}
             env:
 {{- $env := concat ($configCtx.me.env | default list) (list (dict "name" "MY_JOB_NAME" "value" "_HPCC_JOBNAME_") (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum))) }}
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | nindent 12 }}
 {{- include "hpcc.generateImageEnv" $configCtx | nindent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" (deepCopy $configCtx.me | merge (dict "tmpSubPath" $containerNum)) | indent 12 }}
+{{ include "hpcc.addTempVolumeMount" (dict "name" $containerName "volumeName" $configCtx.me.name) | indent 12 }}
+{{ include "hpcc.addRuntimeVolumeMount" (dict "name" $containerName "volumeName" $configCtx.me.name) | indent 12 }}
+{{ include "hpcc.addConfigMapVolumeMount" (dict "name" $configCtx.me.name "volumeName" $configCtx.me.name) | indent 12 }}
 {{ include "hpcc.addVolumeMounts" $configCtx | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" $configCtx | indent 12 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $configCtx | indent 12 }}
@@ -267,8 +279,9 @@ data:
 {{ include "hpcc.addWaitAndRunVolumeMount" $configCtx | indent 12 }}
 {{- end }}
 {{- end }}{{/* range */}}
+{{- include "hpcc.addPostRunContainer" ($configCtx | merge (dict "isJob" true)) | nindent 10 }}
           volumes:
-{{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
+{{ include "hpcc.addEphemeralVolumes" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" . | indent 10 }}
@@ -341,6 +354,7 @@ data:
 {{- $_ := set $commonCtx "thorAgentReplicas" (.thorAgentReplicas | default 1) }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap" "component" "thor" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -376,12 +390,8 @@ spec:
       containers:
       - name: {{ $commonCtx.eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "agentexec") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
-                {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "Thor" "optional" false) }},
-                {{ printf "\"--name=%s\"" .name }}
-              ]
+{{- $extraArgs := list (printf "--name=%s" .name) -}}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor ECL Agent" "optional" false)) | nindent 8 }}
         env:
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
 {{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}
@@ -395,18 +405,20 @@ spec:
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent" "includeRemote" true) | indent 8 }}
+{{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addEphemeralVolumes" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent" "includeRemote" true) | indent 6 }}
 ---
+{{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -439,13 +451,8 @@ spec:
       containers:
       - name: {{ $commonCtx.thorAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "agentexec") }} ] 
-        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
-                {{ include "hpcc.configArg" . }},
-                {{ "\"--componentTag=thoragent\"" }},
-                {{ include "hpcc.daliArg" (dict "root" $ "component" "Thor" "optional" false) }},
-                {{ printf "\"--name=%s\"" .name }}
-              ]
+{{- $extraArgs := list "--componentTag=thoragent" (printf "--name=%s" .name) -}}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor Agent" "optional" false)) | nindent 8 }}
         env:
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
 {{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}
@@ -455,13 +462,14 @@ spec:
 {{- include "hpcc.addStubResources" (dict "me" .stubResources "root" $ ) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent" "includeRemote" true) | indent 8 }}
+{{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addEphemeralVolumes" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}

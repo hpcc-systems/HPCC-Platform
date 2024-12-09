@@ -1953,6 +1953,8 @@ public:
                         // reset for next job
                         setProcessAborted(false);
 
+                        saveWuidToFile(""); // clear wuid file. Signifies that no wuid is running.
+
                         if (exception)
                             throw exception.getClear(); // NB: this will cause exception to be part of the reply to master
 
