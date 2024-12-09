@@ -34,9 +34,10 @@ FileMetricSink::FileMetricSink(const char *name, const IPropertyTree *pSettingsT
 }
 
 
-void FileMetricSink::prepareToStartCollecting()
+bool FileMetricSink::prepareToStartCollecting()
 {
     fhandle = fopen(fileName.str(), clearFileOnStartCollecting ? "w" : "a");
+    return (fhandle != nullptr);
 }
 
 

@@ -393,9 +393,11 @@ PeriodicMetricSink::~PeriodicMetricSink()
 void PeriodicMetricSink::startCollection(MetricsManager *_pManager)
 {
     pManager = _pManager;
-    prepareToStartCollecting();
-    isCollecting = true;
-    collectThread = std::thread(&PeriodicMetricSink::collectionThread, this);
+    if (prepareToStartCollecting())
+    {
+        isCollecting = true;
+        collectThread = std::thread(&PeriodicMetricSink::collectionThread, this);
+    }
 }
 
 
