@@ -12,6 +12,8 @@ EXPORT TimeStampRecord := lib_workunitservices.WsTimeStamp;
 
 EXPORT MessageRecord := lib_workunitservices.WsMessage;
 
+EXPORT MessageRecord_v2 := lib_workunitservices.WsMessage_v2;
+
 EXPORT FileReadRecord := lib_workunitservices.WsFileRead;
 
 EXPORT FileWrittenRecord := lib_workunitservices.WsFileWritten;
@@ -126,7 +128,7 @@ EXPORT dataset(TimeStampRecord) WorkunitTimeStamps(varstring wuid) :=
  * @param wuid          the name of the workunit
 */
 
-EXPORT dataset(MessageRecord) WorkunitMessages(varstring wuid) :=
+EXPORT dataset(MessageRecord_v2) WorkunitMessages(varstring wuid) :=
   lib_workunitservices.WorkUnitServices.WorkunitMessages(wuid); 
 
 /*
