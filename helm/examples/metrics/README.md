@@ -252,12 +252,41 @@ An example _yml_ file can be found in the repository at helm/examples/metrics/el
 Make a copy and modify as needed for your installation.
 
 ##### Configuration Settings
-The ElasticSearch sink defines the following settings:
+The ElasticSearch sink defines the following settings
 
-* hostProtocol - The protocol used to connect to the ElasticSearch server. (default: https)
-* hostName - The host name or IP address of the ElasticSearch server. (required)
-* hostPort - The port number of the ElasticSearch server. (default: 9200)
-* indexName - The name of the index to which metrics are reported. (required)
+**Host**
+The host settings define the ElasticSearch server to which metrics are reported. The settings are:
+
+* domain - The domain or IP address of the ElasticSearch server. (required)
+* protocol - The protocol used to connect to the ElasticSearch server. (default: https)
+* port - The port number of the ElasticSearch server. (default: 9200)
+* certificateFilePath - Path to the file containing the certificate used to connect to the ElasticSearch server. (optional)
+
+
+**Authentication**
+
+Optional child of the host configuration where authentication settings are defined. If missing, 
+no authentication is used. If defined, the settings are:
+
+* type - Required Authentication type used to connect to the ElasticSearch server. Value defines the 
+remaining settings. The allowed values are:
+  * basic - Basic authentication is used.
+* credentialsSecret - The name of the secret containing the credentials used to authenticate to 
+the ElasticSearch server. (optional, valid for Kubernetes only)
+* credentialsVaultId - The vault ID containing the credentials used to authenticate to the 
+ElasticSearch server. (optional, valid for Vault only)
+
+For **basic** authentication, the following settings are required, regardless if the credentials are stored 
+as a secret or in the environment.xml file.
+* username - The username used to authenticate to the ElasticSearch server. 
+* password - The password used to authenticate to the ElasticSearch server. When stored in the 
+environment.xml file, it shall be encrypted using standard environment.xml encryption.
+
+**Index**
+
+The index settings define the index where metrics are indexed. The settings are:
+
+* name - The name of the index to which metrics are reported. (required)
 * countMetricSuffix - The suffix used to identify count metrics. (default: count)
 * gaugeMetricSuffix - The suffix used to identify gauge metrics. (default: gauge)
 * histogramMetricSuffix - The suffix used to identify histogram metrics. (default: histogram)
@@ -269,17 +298,17 @@ To enable reporting of metrics to ElasticSearch, add the metric configuration se
 the environment configuration file (enviroment.xml). These settings must be added manually
 since there is no support in the config manager.
 
-Add the following to the environment configuration file (note only the required
-settings are shown):
+Add the following to the environment.xml configuration file (note that some values may not be required): 
 
 ```code xml
-
 <Environment>
     <Software>
         <metrics name="mymetricsconfig">
             <sinks name="myelasticsink" type="elastic">
                 <settings period="30" ignoreZeroMetrics="1">
-                    <host name="<hostname>" port="<port>" protocol="http|htps"/>
+                    <host domain="<domainname>" port="<port>" protocol="http|https">
+                        <authentication type="basic" username="<username>" password="<password>"/>
+                    </host>
                     <index name="<index>"/> 
                 <settings/>
             </sinks>
