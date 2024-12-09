@@ -35,7 +35,7 @@ bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & r
 {
     try
     {
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if(secmgr == NULL)
         {
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "Security manager can't be converted to LdapSecManager. Only LdapSecManager supports this function.");
@@ -161,7 +161,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
     try
     {
         ISecUser* userInContext = context.queryUser();
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
         if (!userInContext)
         {
             if (secmgr || (context.getDomainAuthType() == AuthUserNameOnly))
