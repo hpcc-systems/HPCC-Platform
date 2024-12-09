@@ -351,14 +351,6 @@ public:
     : SimpleActivityTimer(_accumulator.lookAheadCycles, _enabled) { }
 };
 
-#define MEASURE_CYCLES_ATOMIC(atomicvar, enabled, code_block) \
-    { \
-        auto start = (enabled) ? get_cycles_now() : 0; \
-        code_block; \
-        if (enabled) \
-            atomicvar.add(get_cycles_now()-start); \
-    }
-
 #else
 class ActivityTimer
 {
@@ -379,10 +371,6 @@ struct LookAheadTimer
     inline LookAheadTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled){ }
 };
 
-#define MEASURE_CYCLES_ATOMIC(atomicvar, enabled, code_block) \
-    {\
-        code_block; \
-    }
 #endif
 
 class THORHELPER_API IndirectCodeContextEx : public IndirectCodeContext

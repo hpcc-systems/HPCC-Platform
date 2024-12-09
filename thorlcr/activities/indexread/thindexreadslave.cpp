@@ -1161,7 +1161,7 @@ public:
     }
     virtual unsigned __int64 queryLookAheadCycles() const
     {
-        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
         if (distributor)
             lookAheadCycles += distributor->queryLookAheadCycles();
         return lookAheadCycles;

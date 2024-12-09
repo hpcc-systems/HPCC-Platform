@@ -861,11 +861,16 @@ protected:
                     if (aborted)
                         break;
                     const void *row;
-                    MEASURE_CYCLES_ATOMIC(lookAheadCycles, owner.activity->queryTimeActivities(),
-                        {
-                            row = input->ungroupedNextRow();
-                        }
-                    );
+                    if (owner.activity->queryTimeActivities())
+                    {
+                        CCycleTimer rowTimer;
+                        row = input->ungroupedNextRow();
+                        lookAheadCycles.fastAdd(rowTimer.elapsedCycles());
+                    }
+                    else
+                    {
+                        row = input->ungroupedNextRow();
+                    }
                     if (!row)
                         break;
                     CTarget *target = nullptr;
@@ -4119,7 +4124,7 @@ public:
     }
     virtual unsigned __int64 queryLookAheadCycles() const
     {
-        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
         if (lhsDistributor)
             lookAheadCycles += lhsDistributor->queryLookAheadCycles();
         if (rhsDistributor)
@@ -4609,7 +4614,7 @@ public:
     }
     virtual unsigned __int64 queryLookAheadCycles() const
     {
-        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
         if (distributor)
             lookAheadCycles += distributor->queryLookAheadCycles();
         return lookAheadCycles;

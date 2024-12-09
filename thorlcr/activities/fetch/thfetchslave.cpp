@@ -412,7 +412,7 @@ public:
     virtual unsigned __int64 queryLookAheadCycles() const override
     {
         CriticalBlock b(fetchStreamCS);
-        cycle_t lookAheadCycles = slaveTimerStats.lookAheadCycles;
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
         if (fetchStream)
             lookAheadCycles += fetchStream->queryLookAheadCycles();
         return lookAheadCycles;
