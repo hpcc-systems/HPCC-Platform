@@ -88,7 +88,7 @@ int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *p
 
 bool isPublicKey(size32_t keyLen, const char * key)
 {
-    for (int i = 0; key[i] != '\n' && i < keyLen; i++)
+    for (int i = 0; key[i] != '\n' && i < (keyLen - 15); i++)
     {
         if (key[i] == 'P')
         {
