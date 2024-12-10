@@ -771,7 +771,12 @@ struct CLogicalNameEntry: public CInterface
 
     RemoteFilename &constructPartFilename(unsigned partNo, bool replicate, RemoteFilename &rfn)
     {
-        return ::constructPartFilename(grp, partNo, replicate?1:0, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, plane, rfn);
+        if (!plane)
+            throw MakeStringException(0, "Plane definition \"%s\" is missing for File", grpname.str());
+        unsigned numDevices = plane->numDevices();
+        bool r = replicate?1:0;
+
+        return ::constructPartFilename(grp, partNo, r, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, numDevices, rfn);
     }
 
     void resolve(CFileEntry *entry);
@@ -936,18 +941,19 @@ static void constructPartname(const char *filename,unsigned n, StringBuffer &pn,
     }
 }
 
-static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
+static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,unsigned &stripeNum,unsigned &dirPerPart,bool &replicate)
 {
     // takes filename and creates mask filename with $P$ extension
     const char *filename = name;
     StringBuffer nonrepdir;
     if (!isContainerized())
     {
-        // Replicate dir is not supported in containerized environment
         replicate = setReplicateDir(name,nonrepdir,false);
         if (replicate)
             name = nonrepdir.str();
     }
+    else
+        replicate = false; // Replicate dir is not supported in containerized environment
 
     Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
     ForEach(*planesIter)
@@ -958,16 +964,26 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
         {
             mname.ensureCapacity(strlen(name));
-            mname.append(prefix).append(PATHSEPCHAR);
-            name += prefixLen + 1;
+            mname.append(prefix);
+            name += prefixLen;
+            stripeNum = 0;
             if (plane.getPropInt("@numDevices") > 1)
             {
-                if (*name&&*name!='d')
+                name++;
+                if (!*name || *name!='d')
                     throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 name++;
+                if (*name==PATHSEPCHAR)
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 while (*name&&isdigit(*name))
+                {
+                    stripeNum = stripeNum*10+(*name-'0');
                     name++;
-                mname.append("d$P$");
+                }
+                if (!*name || *name!=PATHSEPCHAR)
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                if (stripeNum>=plane.getPropInt("@numDevices"))
+                    throw makeStringExceptionV(-1, "Stripe number in file %s is greater than numDevices in storage plane definition", filename);
             }
             break;
         }
@@ -978,7 +994,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
 
     num = 0;
     max = 0;
-    unsigned dirPerPart = 0;
+    dirPerPart = 0;
     const char * cur = name;
     for (;;) {
         char c=*cur;
@@ -994,17 +1010,17 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
 
             // Check for dir-per-part number
             const char *tailSlash = cur;
-            while (*tailSlash&&*tailSlash!='/')
+            while (tailSlash!=name&&*tailSlash!='/')
                 tailSlash--;
             const char *d = tailSlash-1;
-            for (int i=1;*(d)&&isdigit(*d);i*=10,d--)
+            for (int i=1;d!=name&&isdigit(*d);i*=10,d--)
                 dirPerPart += (*d-'0')*i;
+            // If a dir-per-part number was found, check that it matches the part number
             if (*d&&*d=='/')
             {
                 if (dirPerPart!=pn)
                     throw makeStringExceptionV(-1, "Dir-per-part # does not match part # of file %s", filename);
-
-                mname.append((d+1)-name, name).append("$P$").append(cur-tailSlash, tailSlash);
+                mname.append((d+1)-name, name).append(cur-(tailSlash+1), tailSlash+1);
             }
             else
                 mname.append(cur-name,name);
@@ -1022,19 +1038,17 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                         mname.append(s);
                     num = pn;
                     max = mn;
-                    return true;
                 }
+                else
+                    throw makeStringExceptionV(-1, "Incorrect max part number(%d) and part number (%d) in file %s", mn, pn, filename);
             }
+            else
+                throw makeStringExceptionV(-1, "Missing part number in file %s", filename);
         }
         cur++;
     }
-    return false;
 }
 
-extern DFUXREFLIB_API bool testParseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
-{
-    return parseFileName(name,mname,num,max,replicate);
-}
 
 class COrphanEntry: public CInterface
 {
@@ -1653,7 +1667,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     }
                     if (isContainerized())
                     {
-                        UWARNLOG("Replication not supported in containerized version");
+                        // NB: Replication not supported in containerized version
                         break;
                     }
                     if (replicate)
@@ -1754,13 +1768,14 @@ public:
             StringBuffer orphanname;
             unsigned m;
             unsigned n;
+            unsigned stripeNum;
+            unsigned dirPerPart;
             bool replicate;
-            parseFileName(fullname,orphanname,n,m,replicate);
-            if (n>m) 
-                manager.error(fullname, "Part %d: number greater than max %d",n+1,m);
-            else {
-                orphanname.toLowerCase();
 
+            try
+            {
+                parseFileName(fullname,orphanname,n,m,stripeNum,dirPerPart,replicate);
+                orphanname.toLowerCase();
 
                 COrphanEntryPtr *entryp = manager.orphanmap.getValue(orphanname.str());
                 COrphanEntryPtr entry;
@@ -1777,6 +1792,13 @@ public:
                 if (n)
                     n--;
                 entry->add(ep,n,replicate,sz);
+            }
+            catch (IException *e)
+            {
+                StringBuffer s;
+                e->errorMessage(s.clear());
+                e->Release();
+                manager.error(fullname, "%s", s.str());
             }
         }
     }
@@ -3010,3 +3032,158 @@ IPropertyTree * RunProcess(XRefCmd cmd, unsigned nclusters,const char **clusters
     }
     return nullptr;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
+class DFUXrefLibTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DFUXrefLibTests);
+    CPPUNIT_TEST(TestParseFileName);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    void TestParseFileName()
+    {
+        StringBuffer mname;
+        unsigned num;
+        unsigned max;
+        unsigned stripeNum;
+        unsigned dirPerPart;
+        bool replicate;
+
+        // Standard file name with multiple parts
+        parseFileName("/var/lib/HPCCSystems/hpcc-data/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data/test/myname._$P$_of_3",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)1,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)3,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)0,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)0,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Standard file name with multiple parts is striped across directories, storage plane has numDevices set to 111
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._10_of_30", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_30",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)10,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)30,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)0,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Standard file name with multiple parts is striped across directories and each part has its own directory, storage plane has numDevices set to 111
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)42,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)42,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Test a longer part number
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d110/test/12345/myname._12345_of_100000", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100000",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)12345,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100000,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)110,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)12345,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // A file without a storage plane throws an exception
+        try {
+            parseFileName("/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Could not find matching prefix in plane definition for file /test/myname._1_of_3",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/d/test/myname.42_of_100",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/datadir/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/datadir/test/myname.42_of_100",msg.str());
+        }
+
+        // A file where the stripe number is equal to numDevices(111) throws an exception
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d111/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Stripe number in file /var/lib/HPCCSystems/hpcc-data-two/d111/test/myname.42_of_100 is greater than numDevices in storage plane definition",msg.str());
+        }
+
+        // A file where the dir-per-part number does not match the part number
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Dir-per-part # does not match part # of file /var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100",msg.str());
+        }
+
+        // A file where the part number is greater than the max part number
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Incorrect max part number(100) and part number (1000) in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100",msg.str());
+        }
+
+        // A file where the part number is missing
+        try {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Missing part number in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._of_100",msg.str());
+        }
+
+        printf("All parseFileName tests passed\n");
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DFUXrefLibTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DFUXrefLibTests, "DFUXrefLibTests");
+
+#endif // _USE_CPPUNIT

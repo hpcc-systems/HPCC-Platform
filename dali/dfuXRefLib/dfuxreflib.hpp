@@ -42,6 +42,5 @@ extern  DFUXREFLIB_API IPropertyTree * runXRefCluster(const char *cluster,IXRefN
 // this will use sasha if enabled
 
 extern  DFUXREFLIB_API void testGetDir();
-extern  DFUXREFLIB_API bool testParseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate);
 
 #endif

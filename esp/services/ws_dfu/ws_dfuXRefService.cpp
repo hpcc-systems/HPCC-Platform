@@ -587,19 +587,6 @@ void CWsDfuXRefEx::addXRefNode(const char* name, IPropertyTree* pXRefNodeTree)
     }
 }
 
-// Use of addUniqueXRefNode may no longer be necessary (and the function could probably be deleted) once storage planes are fully supported because they are guarenteed to be unique.
-bool CWsDfuXRefEx::addUniqueXRefNode(const char *processName, BoolHash &uniqueProcesses, IPropertyTree *xrefNodeTree)
-{
-    if (isEmptyString(processName))
-        return false;
-    bool *found = uniqueProcesses.getValue(processName);
-    if (found && *found)
-        return false;
-    uniqueProcesses.setValue(processName, true);
-    addXRefNode(processName, xrefNodeTree);
-    return true;
-}
-
 bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &req, IEspDFUXRefListResponse &resp)
 {
     try
@@ -612,8 +599,9 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         ForEach(*planesIter)
         {
             IPropertyTree &item = planesIter->query();
-
-            addXRefNode(item.queryProp("@name"), xrefNodeTree);
+            bool isCopy = item.getPropBool("@copy", false);
+            if (!isCopy)
+                addXRefNode(item.queryProp("@name"), xrefNodeTree);
         }
 
         StringBuffer buf;

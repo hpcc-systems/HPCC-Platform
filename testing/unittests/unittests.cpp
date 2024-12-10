@@ -131,7 +131,7 @@ global:
       storageClass: ""
       storageSize: 1Gi
       prefix: "/var/lib/HPCCSystems/hpcc-data-two"
-      numDevices: 2
+      numDevices: 111
       category: data
 )!!";
 

@@ -273,7 +273,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     return rfn;
 }
 
-RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,IStoragePlane *plane,RemoteFilename &rfn)
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn)
 {
     partNo--;
     StringBuffer partName;
@@ -286,8 +286,8 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
         }
         lname = expandMask(partName, pmask, partNo, max);
     }
-    // Get stripeNum from storage plane
-    unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
+
+    unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, numDevices);
 
     StringBuffer fullname;
     makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
