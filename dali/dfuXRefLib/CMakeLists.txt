@@ -46,6 +46,7 @@ include_directories (
          ./../../common/environment 
          ./../../common/workunit
          ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DDFUXREFLIB_EXPORTS )
@@ -57,7 +58,8 @@ target_link_libraries ( dfuXRefLib
          mp 
          hrpc 
          dafsclient 
-         dalibase 
+         dalibase
+         ${CppUnit_LIBRARIES}
     )
 
 if (NOT CONTAINERIZED)

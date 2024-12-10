@@ -2994,6 +2994,14 @@
       },
       "additionalProperties": false
     },
+    "sasha-xref": {
+        "type": "object",
+        "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+        "properties": {
+          "disabled": {}
+        },
+        "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3017,6 +3025,9 @@
             },
             "thor-qmon": {
               "$ref": "#/definitions/sasha-thor-qmon"
+            },
+            "xref": {
+              "$ref": "#/definitions/sasha-xref"
             },
             "disabled": {
               "type": "boolean"
