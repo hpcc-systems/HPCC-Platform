@@ -3055,7 +3055,7 @@ class DaliSysInfoLoggerTester : public CppUnit::TestFixture
         const char * msg;
     };
 
-    std::vector<TestCase> testCases =
+    const std::vector<TestCase> testCases =
     {
         {
             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
@@ -3151,7 +3151,7 @@ class DaliSysInfoLoggerTester : public CppUnit::TestFixture
 
                 // Make sure written messages matches message read back
                 matchedMessages.insert(matched->testCaseIndex);
-                TestCase & testCase = testCases[matched->testCaseIndex];
+                const TestCase & testCase = testCases[matched->testCaseIndex];
                 ASSERT(testCase.hidden==sysInfoMsg.queryIsHidden());
                 ASSERT(testCase.code==sysInfoMsg.queryLogMsgCode());
                 ASSERT(strcmp(testCase.msg,sysInfoMsg.queryMsg())==0);
@@ -3187,7 +3187,7 @@ public:
     {
         writtenMessages.clear();
         unsigned testCaseIndex=0;
-        for (auto testCase: testCases)
+        for (const auto & testCase: testCases)
         {
             try
             {
