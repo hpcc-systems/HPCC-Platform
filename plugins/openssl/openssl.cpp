@@ -24,6 +24,7 @@
 #include "jlog.hpp"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #define CURRENT_OPENSSL_VERSION "openssl plugin 1.0.0"
@@ -85,6 +86,19 @@ int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *p
     return 0;
 }
 
+bool isPublicKey(size32_t keyLen, const char * key)
+{
+    for (int i = 0; key[i] != '\n' && i < keyLen; i++)
+    {
+        if (key[i] == 'P')
+        {
+            if (strncmp(key + i + 1, "UBLIC KEY-----", 14) == 0)
+                return true;
+        }
+    }
+    return false;
+}
+
 static constexpr int OPENSSL_MAX_CACHE_SIZE = 10;
 static constexpr bool PRINT_STATS = false;
 template <typename T>
@@ -123,6 +137,8 @@ public:
         hits = 0;
         misses = 0;
     };
+
+    void clear() {cache.clear();};
 
 private:
     int hits;
@@ -175,7 +191,7 @@ public:
             failOpenSSLError("creating buffer for EVP_PKEY");
 
         EVP_PKEY * pkey;
-        if (startsWith(key, "-----BEGIN RSA PUBLIC KEY-----"))
+        if (isPublicKey(keyLen, key))
             pkey = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
         else
         {
@@ -495,9 +511,9 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
     }
 }
 
-// RSA functions
+// pk functions
 
-OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _algorithm_name)
+OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_public_keys == 0)
@@ -615,7 +631,7 @@ OPENSSL_API void OPENSSL_CALL rsaSeal(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
+OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_private_key == 0)
@@ -717,7 +733,7 @@ OPENSSL_API void OPENSSL_CALL rsaUnseal(ICodeContext *ctx, size32_t & __lenResul
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_pem_public_key, const char * _pem_public_key)
+OPENSSL_API void OPENSSL_CALL pkEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_pem_public_key, const char * _pem_public_key)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -769,7 +785,7 @@ OPENSSL_API void OPENSSL_CALL rsaEncrypt(ICodeContext *ctx, size32_t & __lenResu
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key)
+OPENSSL_API void OPENSSL_CALL pkDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -821,7 +837,7 @@ OPENSSL_API void OPENSSL_CALL rsaDecrypt(ICodeContext *ctx, size32_t & __lenResu
     }
 }
 
-OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
+OPENSSL_API void OPENSSL_CALL pkSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -833,28 +849,28 @@ OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult,
         // Create and initialize the message digest context
         mdCtx = EVP_MD_CTX_new();
         if (!mdCtx)
-            failOpenSSLError("EVP_MD_CTX_new (rsaSign)");
+            failOpenSSLError("EVP_MD_CTX_new (pkSign)");
 
         const EVP_MD *md = digestCache.checkCache(_algorithm_name);
 
         if (EVP_DigestSignInit(mdCtx, nullptr, md, nullptr, privateKey) <= 0)
-            failOpenSSLError("EVP_DigestSignInit (rsaSign)");
+            failOpenSSLError("EVP_DigestSignInit (pkSign)");
 
         // Add plaintext to context
         if (EVP_DigestSignUpdate(mdCtx, _plaintext, len_plaintext) <= 0)
-            failOpenSSLError("EVP_DigestSignUpdate (rsaSign)");
+            failOpenSSLError("EVP_DigestSignUpdate (pkSign)");
 
         // Determine the buffer length for the signature
         size_t signatureLen = 0;
         if (EVP_DigestSignFinal(mdCtx, nullptr, &signatureLen) <= 0)
-            failOpenSSLError("determining result length (rsaSign)");
+            failOpenSSLError("determining result length (pkSign)");
 
         // Allocate memory for the signature
         MemoryBuffer signatureBuffer(signatureLen);
 
         // Perform the actual signing
         if (EVP_DigestSignFinal(mdCtx, static_cast<byte *>(signatureBuffer.bufferBase()), &signatureLen) <= 0)
-            failOpenSSLError("signing (rsaSign)");
+            failOpenSSLError("signing (pkSign)");
 
         // Set the result
         __lenResult = signatureLen;
@@ -873,7 +889,7 @@ OPENSSL_API void OPENSSL_CALL rsaSign(ICodeContext *ctx, size32_t & __lenResult,
     }
 }
 
-OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm_name)
+OPENSSL_API bool OPENSSL_CALL pkVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -890,10 +906,10 @@ OPENSSL_API bool OPENSSL_CALL rsaVerifySignature(ICodeContext *ctx, size32_t len
         const EVP_MD *md = digestCache.checkCache(_algorithm_name);
 
         if (EVP_DigestVerifyInit(mdCtx, nullptr, md, nullptr, publicKey) <= 0)
-            failOpenSSLError("EVP_DigestVerifyInit (rsaVerifySignature)");
+            failOpenSSLError("EVP_DigestVerifyInit (pkVerifySignature)");
 
         if (EVP_DigestVerifyUpdate(mdCtx, _signedData, len_signedData) <= 0)
-            failOpenSSLError("EVP_DigestVerifyUpdate (rsaVerifySignature)");
+            failOpenSSLError("EVP_DigestVerifyUpdate (pkVerifySignature)");
 
         // Perform the actual verification
         int res = EVP_DigestVerifyFinal(mdCtx, reinterpret_cast<const unsigned char *>(_signature), len_signature);
@@ -929,4 +945,6 @@ MODULE_EXIT()
     }
 
     pkeyCache.clear();
+    digestCache.clear();
+    cipherCache.clear();
 }

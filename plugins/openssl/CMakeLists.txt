@@ -24,39 +24,41 @@
 
 project(openssl)
 
-find_package(OpenSSL REQUIRED)
+if (PLATFORM AND USE_OPENSSLV3)
+    find_package(OpenSSL REQUIRED)
 
-set(
-    SRCS
-    openssl.hpp
-    openssl.cpp
-)
+    set(
+        SRCS
+        openssl.hpp
+        openssl.cpp
+    )
 
-include_directories(
-    ${HPCC_SOURCE_DIR}/system/include
-    ${HPCC_SOURCE_DIR}/rtl/eclrtl
-    ${HPCC_SOURCE_DIR}/rtl/include
-    ${HPCC_SOURCE_DIR}/common/deftype
-    ${HPCC_SOURCE_DIR}/system/jlib
-)
+    include_directories(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/rtl/eclrtl
+        ${HPCC_SOURCE_DIR}/rtl/include
+        ${HPCC_SOURCE_DIR}/common/deftype
+        ${HPCC_SOURCE_DIR}/system/jlib
+    )
 
-add_definitions(-D_USRDLL -DECL_OPENSSL_EXPORTS)
-HPCC_ADD_LIBRARY(openssl SHARED ${SRCS})
+    add_definitions(-D_USRDLL -DECL_OPENSSL_EXPORTS)
+    HPCC_ADD_LIBRARY(openssl SHARED ${SRCS})
 
-install(
-    TARGETS openssl
-    DESTINATION plugins CALC_DEPS
-)
-install(
-    FILES ${OPENSSL_LIBRARIES}
-    DESTINATION ${LIB_DIR}
-    COMPONENT Runtime
-)
+    install(
+        TARGETS openssl
+        DESTINATION plugins CALC_DEPS
+    )
+    install(
+        FILES ${OPENSSL_LIBRARIES}
+        DESTINATION ${LIB_DIR}
+        COMPONENT Runtime
+    )
 
-target_link_libraries(
-    openssl
-    eclrtl
-    jlib
-    OpenSSL::SSL
-    OpenSSL::Crypto
-)
+    target_link_libraries(
+        openssl
+        eclrtl
+        jlib
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+endif()

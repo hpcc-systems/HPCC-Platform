@@ -168,12 +168,15 @@ EXPORT TestOpenSSL := MODULE
     EXPORT encrypt_default_iv_my_salt := Std.OpenSSL.Ciphers.Encrypt((DATA)PLAINTEXT, CIPHERS_CIPHER, (DATA)PASSPHRASE, salt := (>DATA<)staticSalt);
     EXPORT encrypt_my_iv_default_salt := Std.OpenSSL.Ciphers.Encrypt((DATA)PLAINTEXT, CIPHERS_CIPHER, (DATA)PASSPHRASE, iv := staticIV);
     EXPORT encrypt_default_iv_default_salt := Std.OpenSSL.Ciphers.Encrypt((DATA)PLAINTEXT, CIPHERS_CIPHER, (DATA)PASSPHRASE);
-    EXPORT encrypt_rsa := Std.OpenSSL.RSA.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_1);
-    EXPORT encrypt_rsa_passphrase := Std.OpenSSL.RSA.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_2);
-    EXPORT seal_rsa := Std.OpenSSL.RSA.Seal((DATA)PLAINTEXT, [RSA_PUBLIC_1, RSA_PUBLIC_2]);
-    EXPORT signed_rsa_sha256 := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)'', RSA_PRIVATE_1, 'sha256');
-    EXPORT signed_rsa_sha256_passphrase := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PRIVATE_2, 'SHA256');
-    // EXPORT signed_rsa_sha256_wrong_passphrase := Std.OpenSSL.RSA.Sign((DATA)PLAINTEXT, (DATA)'notmypassphrase', RSA_PRIVATE_2, 'SHA256'); Fails with Error: -1: Error within loading a pkey: error:1C800064:Provider routines::bad decrypt
+    EXPORT encrypt_rsa := Std.OpenSSL.PublicKey.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_1);
+    EXPORT encrypt_rsa_passphrase := Std.OpenSSL.PublicKey.Encrypt((DATA)PLAINTEXT, RSA_PUBLIC_2);
+    EXPORT seal_rsa := Std.OpenSSL.PublicKey.RSASeal((DATA)PLAINTEXT, [RSA_PUBLIC_1, RSA_PUBLIC_2]);
+    EXPORT signed_rsa_sha256 := Std.OpenSSL.PublicKey.Sign((DATA)PLAINTEXT, (DATA)'', RSA_PRIVATE_1);
+    EXPORT signed_rsa_sha256_passphrase := Std.OpenSSL.PublicKey.Sign((DATA)PLAINTEXT, (DATA)PASSPHRASE, RSA_PRIVATE_2, 'SHA256');
+
+    // Fails to sign with the wrong passphrase and throws an exception
+    // There is no clean way to capture this exception, so it is not tested here
+    // EXPORT signed_rsa_sha256_wrong_passphrase := Std.OpenSSL.PublicKey.Sign((DATA)PLAINTEXT, (DATA)'notmypassphrase', RSA_PRIVATE_2, 'SHA256'); Fails with Error: -1: Error within loading a pkey: error:1C800064:Provider routines::bad decrypt
 
     EXPORT TestDigests := [
         ASSERT(COUNT(Std.OpenSSL.Digest.AvailableAlgorithms()) > 0, 'No digest algorithms available');
@@ -207,11 +210,11 @@ EXPORT TestOpenSSL := MODULE
 
     EXPORT TestRSA := [
         ASSERT(LENGTH(encrypt_rsa) = 512);
-        ASSERT((STRING)Std.OpenSSL.RSA.Decrypt((DATA)encrypt_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
-        ASSERT((STRING)Std.OpenSSL.RSA.Decrypt((DATA)encrypt_rsa_passphrase, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.PublicKey.Decrypt((DATA)encrypt_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.PublicKey.Decrypt((DATA)encrypt_rsa_passphrase, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
         ASSERT(LENGTH(seal_rsa) = 1112);
-        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
-        ASSERT((STRING)Std.OpenSSL.RSA.Unseal((DATA)seal_rsa, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.PublicKey.RSAUnseal((DATA)seal_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
+        ASSERT((STRING)Std.OpenSSL.PublicKey.RSAUnseal((DATA)seal_rsa, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
 
         ASSERT(Std.Str.ToHexPairs(signed_rsa_sha256) = '399F5FCB9B1A3C02D734BF3F1C9CB480681126B0F7505697E045ECF22E11A47FADCF7E2BA73761AD6345F6702AAD230957AFA1B0B3C8C29FC537AACA68' +
         '13B79DE0CDEF82B4BB6183D0637583D0E2AA78892EE190D7AB9CB20F9AC36D91DB2994A07F0C17A0CFB5AF0385EA4ABA9723FC72FB08081AE4C6C83E659AEBA1C103FB6F4E831EFDAA4CE037A3874D59664B1DE90' +
@@ -221,8 +224,8 @@ EXPORT TestOpenSSL := MODULE
         'C573C9EBE9FE472131A39D60ED53624745A79A29B31D07DE38D1FA64D3DB32EF447F62B64F8A07C012E55C06551F5C60509797A4521DC4E7CB33F9C0759E6B46DA6B758C86E26507CA9D79933532BE923FC449842' +
         '17A203F97B97606E18E9F4949DC5E6C21705A89844B316093EFD8C0CC');
         ASSERT(LENGTH(signed_rsa_sha256) = 512);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)signed_rsa_sha256, (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = TRUE);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256 + 1), (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = FALSE);
+        ASSERT(Std.OpenSSL.PublicKey.VerifySignature((DATA)signed_rsa_sha256, (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = TRUE);
+        ASSERT(Std.OpenSSL.PublicKey.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256 + 1), (DATA)PLAINTEXT, RSA_PUBLIC_1, 'sha256') = FALSE);
         ASSERT(Std.Str.ToHexPairs(signed_rsa_sha256_passphrase) = '448BD2397EB945D508E81A0AE45A01BB9799CAEDC8EEA779798BB07B5CB0C7D3FD571FF602298214F68B5215F039CEE1E2D6D75112A5CCD' +
         'A95875C2774779893101907F0F2BD7C259CB2A0519FAE1A015F48D025A446D69C9E50EA8DB0EC071E53178E6550E13E52ACDA9466D012590AAB358F25E68E91AAEC63E1323823CF48004D27406236079C0610347A' +
         '9A6F4B9B58496DE430C0DDF4BFBD9DC333910EA14F3D8E9F7ADCF8FF9BE4C2AE4735CFE38C2B7F6D08313FA6CDF9E836B7156566851E65165907B74DB1A45D4C404423E5AF34C3972231AE4F18455C90448B0459F' +
@@ -231,9 +234,11 @@ EXPORT TestOpenSSL := MODULE
         '012A8A61A76990085F386495BE729B16D6646D754D3F0AEAD89BA044A8BB9813437F344A579DA4676438CDB7BB98EA396C98E86CBB3FCA1BC46A392E23A52AE177F6C798793146081FD0FD637570D9A718C148E17' +
         'FFC502936F4FC09E35592B4B7C2FFB1DFE6B7F4CC766595D47A630AB1A58CDD11716');
         ASSERT(LENGTH(signed_rsa_sha256_passphrase) = 512);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)signed_rsa_sha256_passphrase, (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = TRUE);
-        ASSERT(Std.OpenSSL.RSA.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256_passphrase + 1), (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = FALSE);
+        ASSERT(Std.OpenSSL.PublicKey.VerifySignature((DATA)signed_rsa_sha256_passphrase, (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = TRUE);
+        ASSERT(Std.OpenSSL.PublicKey.VerifySignature((DATA)((UNSIGNED)signed_rsa_sha256_passphrase + 1), (DATA)PLAINTEXT, RSA_PUBLIC_2, 'SHA256') = FALSE);
 
+        // Fails to sign with the wrong passphrase and throws an exception
+        // There is no clean way to capture this exception, so it is not tested here
         // ASSERT(LENGTH(signed_rsa_sha256_wrong_passphrase) = 0); // fails with "Error: -1: Error within loading a pkey: error:1C800064:Provider routines::bad decrypt"
 
         ASSERT(TRUE)
