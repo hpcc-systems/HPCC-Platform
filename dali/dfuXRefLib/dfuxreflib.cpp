@@ -645,7 +645,6 @@ struct CLogicalNameEntry: public CInterface
         grouped = file.getPropInt("Attr/@grouped", 0)!=0;
         const char *partmask = file.queryProp("@partmask");
         StringBuffer tmp;
-        partDir = file.queryProp("@directory");
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
                 const char *dir = file.queryProp("@directory");
