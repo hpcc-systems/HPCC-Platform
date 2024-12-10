@@ -2629,7 +2629,7 @@ public:
 
                 StringBuffer spanName;
                 spanName.appendf("%s %s %s:%d", getWsCallTypeName(master->wscType), master->service.str(), url.host.str(), url.port);
-                OwnedSpanScope requestSpan = master->activitySpanScope->createClientSpan(spanName.str());
+                OwnedActiveSpanScope requestSpan = master->activitySpanScope->createClientSpan(spanName.str());
 
                 setSpanURLAttributes(requestSpan, url);
                 requestSpan->setSpanAttribute("request.type", getWsCallTypeName(master->wscType));

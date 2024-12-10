@@ -2069,7 +2069,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     bool noTimeout = false;
 
     ISpan * activeSpan = context.queryActiveSpan();
-    OwnedSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
+    OwnedActiveSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
     Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
     recordTraceDebugOptions(workunit, httpHeaders);
 

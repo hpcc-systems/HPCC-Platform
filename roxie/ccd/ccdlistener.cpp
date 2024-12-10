@@ -1283,7 +1283,7 @@ public:
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
 
         Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);
-        OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
+        OwnedActiveSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
         requestSpan->setSpanAttribute("hpcc.wuid", wuid);
         ContextSpanScope spanScope(*logctx, requestSpan);
 
@@ -1464,7 +1464,7 @@ public:
     Owned<CDebugCommandHandler> debugCmdHandler;
     Owned<StringContextLogger> logctx;
     Owned<IQueryFactory> queryFactory;
-    OwnedSpanScope requestSpan;
+    OwnedActiveSpanScope requestSpan;
 
     SocketEndpoint ep;
     time_t startTime;

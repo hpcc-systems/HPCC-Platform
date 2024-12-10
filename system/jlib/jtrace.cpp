@@ -1504,19 +1504,71 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
 
 //---------------------------------------------------------------------------------------------------------------------
 
-OwnedSpanScope::OwnedSpanScope(ISpan * _ptr) : span(_ptr)
+ActiveSpanScope::ActiveSpanScope(ISpan * _ptr) : ActiveSpanScope(_ptr, queryThreadedActiveSpan()) {}
+ActiveSpanScope::ActiveSpanScope(ISpan * _ptr, ISpan * _prev) : span(_ptr), prevSpan(_prev)
+{
+    setThreadedActiveSpan(_ptr);
+}
+
+ActiveSpanScope::~ActiveSpanScope()
+{
+    ISpan* current = queryThreadedActiveSpan();
+    if (current != span)
+    {
+        const char* currSpanID = current != nullptr ? current->querySpanId() : "null";
+        const char* expectedSpanID = span != nullptr ? span->querySpanId() : "null";
+
+        IERRLOG("~ActiveSpanScope: threadActiveSpan has changed unexpectedly, expected: %s actual: %s", expectedSpanID, currSpanID);
+        return;
+    }
+
+    setThreadedActiveSpan(prevSpan);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+OwnedActiveSpanScope::OwnedActiveSpanScope(ISpan * _ptr) : span(_ptr)
 {
     if (_ptr)
         prevSpan = setThreadedActiveSpan(_ptr);
 }
 
-void OwnedSpanScope::setown(ISpan * _span)
+void OwnedActiveSpanScope::setown(ISpan * _span)
 {
     assertex(_span);
     //Just in case the span is already set, ensure it is ended and that the previous span is restored.
     clear();
     span.setown(_span);
     prevSpan = setThreadedActiveSpan(_span);
+}
+
+void OwnedActiveSpanScope::set(ISpan * _span)
+{
+    setown(LINK(_span));
+}
+
+void OwnedActiveSpanScope::clear()
+{
+    if (span)
+    {
+        span->endSpan();
+        setThreadedActiveSpan(prevSpan);
+        span.clear();
+    }
+}
+
+OwnedActiveSpanScope::~OwnedActiveSpanScope()
+{
+    clear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void OwnedSpanScope::setown(ISpan * _span)
+{
+    assertex(_span);
+    clear();
+    span.setown(_span);
 }
 
 void OwnedSpanScope::set(ISpan * _span)
@@ -1529,7 +1581,6 @@ void OwnedSpanScope::clear()
     if (span)
     {
         span->endSpan();
-        setThreadedActiveSpan(prevSpan);
         span.clear();
     }
 }
