@@ -38,7 +38,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/fs/dafsstream
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
-         ${HPCC_SOURCE_DIR}/dali/dfuXRefLib
     )
 
 HPCC_ADD_EXECUTABLE ( datest ${SRCS} )
@@ -51,8 +50,7 @@ target_link_libraries ( datest
          dafsstream
          eclrtl
          wsdfuaccess 
-         dalibase
-         dfuXRefLib
+         dalibase 
          ${CppUnit_LIBRARIES}
     )
 
