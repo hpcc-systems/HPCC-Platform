@@ -293,6 +293,9 @@ void CWriteMasterBase::publish()
                 compMethod = COMPRESS_METHOD_LZ4HC;
             bool blockCompressed;
             bool compressed = fileDesc->isCompressed(&blockCompressed);
+
+            // NB: it would be far preferable to avoid this and have the file reference a group with the correct number of parts
+            // Possibly could use subgroup syntax: 'data[1..n]'
             for (unsigned clusterIdx=0; clusterIdx<fileDesc->numClusters(); clusterIdx++)
             {
                 StringBuffer clusterName;
@@ -305,6 +308,7 @@ void CWriteMasterBase::publish()
                         p += queryJob().querySlaves();
                     IPartDescriptor *partDesc = fileDesc->queryPart(p);
                     CDateTime createTime, modifiedTime;
+                    offset_t compSize = 0;
                     for (unsigned c=0; c<partDesc->numCopies(); c++)
                     {
                         RemoteFilename rfn;
@@ -316,7 +320,7 @@ void CWriteMasterBase::publish()
                             ensureDirectoryForFile(path.str());
                             OwnedIFile iFile = createIFile(path.str());
                             Owned<IFileIO> iFileIO;
-                            if (compressed)
+                            if (compressed) // NB: this would not be necessary if all builds have the changes in HPCC-32651
                                 iFileIO.setown(createCompressedFileWriter(iFile, recordSize, false, true, NULL, compMethod));
                             else
                                 iFileIO.setown(iFile->open(IFOcreate));
@@ -324,7 +328,10 @@ void CWriteMasterBase::publish()
                             iFileIO.clear();
                             // ensure copies have matching datestamps, as they would do normally (backupnode expects it)
                             if (0 == c)
+                            {
                                 iFile->getTime(&createTime, &modifiedTime, NULL);
+                                compSize = iFile->size();
+                            }
                             else
                                 iFile->setTime(&createTime, &modifiedTime, NULL);
                         }
@@ -345,7 +352,7 @@ void CWriteMasterBase::publish()
                     props.setPropInt64("@recordCount", 0);
                     props.setPropInt64("@size", 0);
                     if (compressed)
-                        props.setPropInt64("@compressedSize", 0);
+                        props.setPropInt64("@compressedSize", compSize);
                     p++;
                 }
             }
