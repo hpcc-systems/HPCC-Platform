@@ -8737,13 +8737,9 @@ bool CHThorDiskReadBaseActivity::openNext()
 
                         if (curPart)
                         {
-                            offset_t expectedSize = curPart->getDiskSize(false, false);
-                            if (expectedSize != unknownFileSize)
-                            {
-                                offset_t actualSize = inputfile->size();
-                                if(actualSize != expectedSize)
-                                    throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", inputfile->queryFilename(), expectedSize, actualSize);
-                            }
+                            offset_t expectedSize, actualSize;
+                            if (!doesPhysicalMatchMeta(*curPart, *inputfile, expectedSize, actualSize))
+                                throw makeStringExceptionV(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", inputfile->queryFilename(), expectedSize, actualSize);
                         }
 
                         if (compressed)

@@ -13807,6 +13807,39 @@ void configurePreferredPlanes()
     }
 }
 
+static bool doesPhysicalMatchMeta(IPropertyTree &partProps, IFile &iFile, offset_t &expectedSize, offset_t &actualSize)
+{
+    // NB: temporary workaround for 'narrow' files publishing extra empty parts with the wrong @compressedSize(0)
+    // causing a new check introduced in HPCC-33064 to be hit (fixed in HPCC-33113, but will continue to affect exiting files)
+    unsigned __int64 size = partProps.getPropInt64("@size", (unsigned __int64)-1);
+    unsigned __int64 compressedSize = partProps.getPropInt64("@compressedSize", (unsigned __int64)-1);
+    if ((0 == size) && (0 == compressedSize))
+        return true;
+
+    if (expectedSize != unknownFileSize)
+    {
+        actualSize = iFile.size();
+        if (actualSize != expectedSize)
+            return false;
+    }
+    return true;
+}
+
+bool doesPhysicalMatchMeta(IPartDescriptor &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize)
+{
+    IPropertyTree &partProps = partDesc.queryProperties();
+    expectedSize = partDesc.getDiskSize(false, false);
+    return doesPhysicalMatchMeta(partProps, iFile, expectedSize, actualSize);
+}
+
+bool doesPhysicalMatchMeta(IDistributedFilePart &part, IFile &iFile, offset_t &expectedSize, offset_t &actualSize)
+{
+    IPropertyTree &partProps = part.queryAttributes();
+    expectedSize = part.getDiskSize(false, false);
+    return doesPhysicalMatchMeta(partProps, iFile, expectedSize, actualSize);
+}
+
+
 #ifdef _USE_CPPUNIT
 /*
  * This method removes files only logically. removeEntry() used to do that, but the only

@@ -489,12 +489,12 @@ public:
                     break;
             };
 #endif
-            unsigned offset = 0;
+            // unsigned offset = 0;
             unsigned total;
             if (restrictedWidth)
                 total = restrictedWidth;
             else
-                total = fixTotal(job, groups, offset);
+                total = job.querySlaves(); //fixTotal(job, groups, offset);
             if (nonLocalIndex)
                 ++total;
             StringBuffer dir;

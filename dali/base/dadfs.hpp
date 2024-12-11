@@ -925,4 +925,8 @@ inline cost_type getLegacyWriteCost(const IPropertyTree & fileAttr, Source sourc
     else
         return 0;
 }
+
+extern da_decl bool doesPhysicalMatchMeta(IPartDescriptor &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize);
+extern da_decl bool doesPhysicalMatchMeta(IDistributedFilePart &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize);
+
 #endif
