@@ -97,6 +97,9 @@ void usage(const char *exe)
   printf("  mpping <server-ip>              -- time MP connect\n");
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
+  printf("  loadxml <srcxmlfile> [--lowmem[=<true|false]]    -- use lowmem AtomPTree's\n"
+         "                       [--parseonly[=<true|false]] -- parse the xml file, don't load it into dali\n"
+         "                       [--savexml[=<true|false]]   -- save and time the parsed xml\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
   printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("  validatestore [fix=<true|false>]\n"
@@ -226,6 +229,18 @@ int main(int argc, const char* argv[])
                 }
                 else if (strieq(cmd, "remotetest"))
                     remoteTest(params.item(1), false);
+                else if (strieq(cmd, "loadxml"))
+                {
+                    bool useLowMemPTree = false;
+                    bool saveFormatedTree = false;
+                    bool parseOnly = getComponentConfigSP()->getPropBool("@parseonly");
+                    if (!parseOnly)
+                    {
+                        useLowMemPTree = getComponentConfigSP()->getPropBool("@lowmem");
+                        saveFormatedTree = getComponentConfigSP()->getPropBool("@savexml");
+                    }
+                    loadXMLTest(params.item(1), parseOnly, useLowMemPTree, saveFormatedTree);
+                }
                 else
                 {
                     UERRLOG("Unknown command %s",cmd);

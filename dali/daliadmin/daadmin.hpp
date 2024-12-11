@@ -28,6 +28,7 @@ namespace daadmin
 
 extern DALIADMIN_API void setDaliConnectTimeoutMs(unsigned timeoutMs);
 extern DALIADMIN_API void xmlSize(const char *filename, double pc);
+extern DALIADMIN_API void loadXMLTest(const char *filename, bool parseOnly, bool useLowMemPTree, bool saveFormattedXML);
 extern DALIADMIN_API void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType = DXB_File);
 
 extern DALIADMIN_API void exportToFile(const char *path, const char *filename, bool safe = false);
