@@ -94,6 +94,7 @@ void usage(const char *exe)
   printf("  auditlog <fromdate> <todate> <match>\n");
   printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
   printf("  cleanjobqueues [dryrun]\n");
+  printf("  cleangenerateddlls [dryrun] [nobackup]\n");
   printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
   printf("  coalesce                        -- force transaction coalesce\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
@@ -581,6 +582,20 @@ int main(int argc, const char* argv[])
                     {
                         bool dryRun = np>0 && strieq("dryrun", params.item(1));
                         cleanJobQueues(dryRun);
+                    }
+                    else if (strieq(cmd, "cleangenerateddlls"))
+                    {
+                        bool dryRun = false;
+                        bool backup = true; // default
+                        for (unsigned i=1; i<params.ordinality(); i++)
+                        {
+                            const char *param = params.item(i);
+                            if (strieq("dryrun", param))
+                                dryRun = true;
+                            else if (strieq("nobackup", param))
+                                backup = false;
+                        }
+                        cleanGeneratedDlls(dryRun, backup);
                     }
                     else if (strieq(cmd, "remotetest"))
                         remoteTest(params.item(1), true);

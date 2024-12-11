@@ -86,6 +86,7 @@ void SuperHashTable::init(unsigned initsize)
 #ifdef TRACE_HASH
     search_tot = 0;
     search_num = 0;
+    search_max = 0;
 #endif
 }
 
