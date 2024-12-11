@@ -31,7 +31,7 @@ public:
     ~ElasticMetricSink() override = default;
 
 protected:
-    virtual void prepareToStartCollecting() override;
+    virtual bool prepareToStartCollecting() override;
     virtual void collectingHasStopped() override;
     virtual void doCollection() override;
 

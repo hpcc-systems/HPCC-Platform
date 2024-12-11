@@ -35,10 +35,11 @@ public:
     ~PeriodicTestSink() = default;
 
 protected:
-    virtual void prepareToStartCollecting() override
+    virtual bool prepareToStartCollecting() override
     {
         prepareCalled = true;
         numCollections = 0;
+        return true;
     }
 
     virtual void collectingHasStopped() override

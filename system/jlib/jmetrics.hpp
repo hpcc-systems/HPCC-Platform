@@ -333,7 +333,7 @@ public:
 
 protected:
     explicit PeriodicMetricSink(const char *_name, const char *_type, const IPropertyTree *_pSettingsTree);
-    virtual void prepareToStartCollecting() = 0;
+    virtual bool prepareToStartCollecting() = 0;
     virtual void collectingHasStopped() = 0;
     virtual void doCollection() = 0;
     void collectionThread();

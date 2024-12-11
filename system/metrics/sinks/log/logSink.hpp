@@ -35,7 +35,7 @@ public:
     ~LogMetricSink() override = default;
 
 protected:
-    virtual void prepareToStartCollecting() override {}
+    virtual bool prepareToStartCollecting() override { return true; }
     virtual void collectingHasStopped() override {}
     virtual void doCollection() override;
     void writeLogEntry(const std::shared_ptr<IMetric> &pMetric);
