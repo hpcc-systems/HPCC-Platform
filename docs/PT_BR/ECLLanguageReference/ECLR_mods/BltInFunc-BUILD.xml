@@ -202,11 +202,17 @@
     de INDEX (apenas):</para>
 
     <para>
-      <emphasis role="bold">[, CLUSTER<indexterm>
+      <emphasis role="bold">[, CLUSTER <indexterm>
           <primary>CLUSTER</primary>
         </indexterm>(</emphasis>
 
       <emphasis>target</emphasis>
+
+      <emphasis role="bold">) ] | [ , PLANE <indexterm>
+          <primary>PLANE</primary>
+        </indexterm>(</emphasis>
+
+      <emphasis>targetPlane</emphasis>
 
       <emphasis role="bold">)] [, SORTED<indexterm>
           <primary>SORTED</primary>
@@ -251,11 +257,11 @@
 
       <emphasis role="bold">[, COMPRESSED<indexterm>
           <primary>COMPRESSION</primary>
-        </indexterm>( LZW<indexterm>
+        </indexterm>( <emphasis>option</emphasis><indexterm>
           <primary>LZW</primary>
-        </indexterm> | ROW<indexterm>
+        </indexterm><indexterm>
           <primary>ROW</primary>
-        </indexterm> | FIRST<indexterm>
+        </indexterm> <indexterm>
           <primary>FIRST</primary>
         </indexterm>) ] [, WIDTH<indexterm>
           <primary>WIDTH</primary>
@@ -319,7 +325,8 @@
               em disco sempre é determinado pelo número de nós no cluster onde
               a workunit é executada, independentemente do número de nós nos
               clusters de destino – a menos que a opção WIDTH também tenha
-              sido especificada.</entry>
+              sido especificada. Use esta opção para implantações
+              bare-metal.</entry>
             </row>
 
             <row>
@@ -327,16 +334,40 @@
                 <emphasis>target</emphasis>
               </entry>
 
-              <entry>Uma lista de constantes de string delimitada por vírgulas
-              que contém os nomes dos clusters no qual o arquivo
-              <emphasis>indexfile</emphasis> será gravado. Os nomes devem
-              estar listados como aparecem na página de Atividade do ECL
-              Watch, ou como são retornados pela função
-              Std.System.Thorlib.Group(); opcionalmente, podem apresentar
-              colchetes contendo uma lista delimitada por vírgula dos números
-              dos nós (baseado em 1) e/ou dos intervalos (especificados com um
-              traço, como p.ex., n-m) para indicar o conjunto específico de
-              nós para gravar.</entry>
+              <entry>Uma lista delimitada por vírgulas de constantes de string
+              contendo os nomes dos clusters para os quais escrever o
+              indexfile. Os nomes devem ser listados conforme aparecem na
+              página ECL Watch Activity ou retornados pela função
+              Std.System.Thorlib.Group(), opcionalmente com colchetes contendo
+              uma lista delimitada por vírgulas de números de nós (base 1)
+              e/ou intervalos (especificados com um traço, como em n-m) para
+              indicar o conjunto específico de nós para escrever.</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis role="bold">PLANE</emphasis>
+              </entry>
+
+              <entry>Especifica a escrita do <emphasis>indexfile</emphasis>
+              para a lista especificada de planos de destino. Se omitido, o
+              <emphasis>indexfile</emphasis> é escrito no plano padrão. Planos
+              são usados por sistemas conteinerizados, mas como clusters
+              bare-metal são implicitamente suportados por um plano com o
+              mesmo nome, você pode usar PLANE('nomedocluster') para
+              implantações bare-metal.</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>targetPlane</emphasis>
+              </entry>
+
+              <entry>Uma lista delimitada por vírgulas de constantes de string
+              contendo os nomes dos planos para os quais escrever o
+              <emphasis>indexfile</emphasis>. Os nomes dos
+              <emphasis>targetPlane</emphasis> devem ser listados conforme
+              definidos na implantação.</entry>
             </row>
 
             <row>
