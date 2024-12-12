@@ -1023,10 +1023,11 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Tempo máximo de espera pela conclusão da atualização
-                  do cluster</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -1624,8 +1625,9 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Define o valor de entrada armazenado
-                  (stored('name'))</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -2852,8 +2854,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Tempo máximo de espera pela atualização do término do
-                  cluster (em ms)</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.)</entry>
                 </row>
 
                 <row>
@@ -3419,10 +3422,11 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Tempo máximo de espera pela atualização do término do
-                  cluster (em ms)</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.)</entry>
                 </row>
 
                 <row>
@@ -3767,10 +3771,11 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Tempo máximo de espera pela conclusão da atualização
-                  do cluster</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -6593,7 +6598,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+                  <entry>--wait-connect=&lt;ms&gt;</entry>
 
                   <entry>Tempo limite ao conectar ao servidor (em
                   milissegundos)</entry>
@@ -6651,7 +6656,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>O tempo máximo de espera em milissegundos</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -6782,7 +6789,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>O tempo máximo de espera em milissegundos</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -6913,7 +6922,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>O tempo máximo de espera em milissegundos</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -7046,7 +7057,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>O tempo máximo de espera em milissegundos</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>
@@ -7222,7 +7235,9 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>O tempo máximo de espera em milissegundos</entry>
+                  <entry>Tempo máximo (em milissegundos) para esperar que o
+                  cluster termine de atualizar. Qualquer valor inferior ao
+                  mínimo de 1000 é ignorado.</entry>
                 </row>
 
                 <row>

@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-let ip = "192.168.99.103";
+let ip = "https://play.hpccsystems.com:18010";
 if (fs.existsSync("./lws.target.txt")) {
     ip = fs.readFileSync("./lws.target.txt").toString().replace("\r\n", "\n").split("\n")[0];
 }
@@ -68,5 +68,5 @@ let rewrite = [
 module.exports = {
     port: 8080,
     rewrite: rewrite,
-    stack: ['lws-basic-auth', 'lws-request-monitor', 'lws-log', 'lws-cors', 'lws-json', 'lws-compress', 'lws-rewrite', 'lws-blacklist', 'lws-conditional-get', 'lws-mime', 'lws-range', 'lws-spa', 'lws-static', 'lws-index']
+    stack: ["lws-basic-auth", "lws-request-monitor", "lws-log", "lws-cors", "lws-json", "lws-compress", "lws-rewrite", "lws-blacklist", "lws-conditional-get", "lws-mime", "lws-range", "lws-spa", "lws-static", "lws-index"]
 };

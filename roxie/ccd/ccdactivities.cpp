@@ -2722,7 +2722,8 @@ public:
             compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
-                logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+                logctx.CTXLOG("WARNING: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+            // should we check if compressed.length() is > continuationErrorThreshold ?
             siLen = compressed.length() - sizeof(siLen);
             compressed.writeDirect(0, sizeof(siLen), &siLen);
             output->sendMetaInfo(compressed.toByteArray(), compressed.length());
@@ -4135,7 +4136,8 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
             compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
-                DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+                DBGLOG("WARNING: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+            // should we check if compressed.length() is > continuationErrorThreshold ?
             siLen = compressed.length() - sizeof(siLen);
             compressed.writeDirect(0, sizeof(siLen), &siLen);
             output->sendMetaInfo(compressed.toByteArray(), compressed.length());

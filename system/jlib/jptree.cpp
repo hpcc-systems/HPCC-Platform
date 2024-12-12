@@ -3848,7 +3848,7 @@ unsigned CAtomPTree::queryHash() const
     {
         const char *_name = name.get();
         size32_t nl = strlen(_name);
-        return isnocase() ? hashnc((const byte *) _name, nl, 0): hashc((const byte *) _name, nl, 0);
+        return isnocase() ? hashnc((const byte *) _name, nl, fnvInitialHash32): hashc((const byte *) _name, nl, fnvInitialHash32);
     }
 }
 

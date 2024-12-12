@@ -28,6 +28,8 @@
 #include "jstring.hpp"
 #include "jmutex.hpp"
 
+constexpr unsigned fnvInitialHash32 = 0x811C9DC5;
+
 extern jlib_decl unsigned hashc( const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashcz( const unsigned char *k, unsigned initval);
@@ -88,7 +90,7 @@ private:
     void             doKill(void);
     void             expand();
     void             expand(unsigned newsize);
-    void             note_searchlen(int) const;
+    void             note_searchlen(unsigned) const;
 
     virtual void     onAdd(void *et) = 0;
     virtual void     onRemove(void *et) = 0;
@@ -105,9 +107,9 @@ protected:
     unsigned         tablesize;
     unsigned         tablecount;
 #ifdef TRACE_HASH
-    mutable int      search_tot;
-    mutable int      search_num;
-    mutable int      search_max;
+    mutable unsigned __int64 search_tot;
+    mutable unsigned search_num;
+    mutable unsigned search_max;
 #endif
 };
 
@@ -514,9 +516,9 @@ public:
         HashKeyElement *hke = (HashKeyElement *) checked_malloc(sizeof(HashKeyElement)+l+1,-605);
         memcpy((void *) (hke->keyPtr()), key, l+1);
         if (nocase)
-            hke->hashValue = hashnc((const unsigned char *)key, l, 0);
+            hke->hashValue = hashnc((const unsigned char *)key, l, fnvInitialHash32);
         else
-            hke->hashValue = hashc((const unsigned char *)key, l, 0);
+            hke->hashValue = hashc((const unsigned char *)key, l, fnvInitialHash32);
         hke->linkCount = 0;
         return hke;
     }
@@ -609,9 +611,9 @@ protected:
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
         if (nocase)
-            return hashncz((const unsigned char *)fp, 0);
+            return hashncz((const unsigned char *)fp, fnvInitialHash32);
         else
-            return hashcz((const unsigned char *)fp, 0);
+            return hashcz((const unsigned char *)fp, fnvInitialHash32);
     }
 
     virtual const void *getFindParam(const void *e) const
