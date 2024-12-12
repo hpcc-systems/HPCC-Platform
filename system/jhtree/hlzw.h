@@ -29,7 +29,7 @@ class KeyCompressor final
 public:
     KeyCompressor() {}
     ~KeyCompressor();
-    void open(void *blk,int blksize, bool isVariable, bool rowcompression);
+    void open(void *blk,int blksize, bool isVariable, bool rowcompression, bool LZ4);
     void open(void *blk,int blksize, ICompressHandler * compressionHandler, const char * options, bool _isVariable, size32_t fixedRowSize);
 
     int writekey(offset_t fPtr, const char *key, unsigned datalength);
@@ -37,7 +37,7 @@ public:
 
     bool compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src, ICompressHandler * compressionHandler, const char * options, bool isVariable, size32_t fixedSize);
 
-    void openBlob(void *blk,int blksize);
+    void openBlob(void *blk,int blksize, bool LZ4);
     unsigned writeBlob(const char *data, unsigned datalength);
     void close();
     bool adjustLimit(size32_t newLimit);
@@ -49,6 +49,7 @@ public:
 
 protected:
     ICompressor *comp = nullptr;
+    MemoryBuffer uncompressed;
     void *bufp = nullptr;
     unsigned curOffset = 0;
     size32_t fixedRowSize = 0;

@@ -322,7 +322,10 @@ public:
         else
             return new CInplaceBranchWriteNode(_fpos, _keyHdr, ctx);
     }
-
+    virtual CBlobWriteNode *createBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) const override
+    {
+        return new CBlobWriteNode(_fpos, _keyHdr, false);
+    }
     virtual offset_t queryBranchMemorySize() const override
     {
         return ctx.branchMemorySize;
