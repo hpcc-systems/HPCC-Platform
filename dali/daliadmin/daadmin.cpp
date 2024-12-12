@@ -2567,6 +2567,81 @@ void xmlSize(const char *filename, double pc)
     }
 }
 
+void loadXMLTest(const char *filename, bool parseOnly, bool useLowMemPTree, bool saveFormattedXML)
+{
+    OwnedIFile iFile = createIFile(filename);
+    OwnedIFileIO iFileIO = iFile->open(IFOread);
+    if (!iFileIO)
+    {
+        WARNLOG("File '%s' not found", filename);
+        return;
+    }
+
+    class CDummyPTreeMaker : public CSimpleInterfaceOf<IPTreeMaker>
+    {
+        StringBuffer xpath;
+        unsigned level = 0;
+    public:
+        virtual IPropertyTree *queryRoot() override { return nullptr; }
+        virtual IPropertyTree *queryCurrentNode() override { return nullptr; }
+        virtual void reset() override { }
+        virtual IPropertyTree *create(const char *tag) override { return nullptr; }
+        // IPTreeNotifyEvent impl.
+        virtual void beginNode(const char *tag, bool sequence, offset_t startOffset) override { }
+        virtual void newAttribute(const char *name, const char *value) override { }
+        virtual void beginNodeContent(const char *tag) override { }
+        virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset) override { }
+    };
+
+    byte flags=ipt_none;
+    PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace;
+    Owned<IPTreeMaker> iMaker;
+    if (!parseOnly)
+    {
+        PROGLOG("Creating property tree from file: %s", filename);
+        byte flags = ipt_none;
+        if (useLowMemPTree)
+        {
+            PROGLOG("Using low memory property trees");
+            flags = ipt_lowmem;
+        }
+        iMaker.setown(createPTreeMaker(flags));
+    }
+    else
+    {
+        PROGLOG("Reading property tree from file (without creating it): %s", filename);
+        iMaker.setown(new CDummyPTreeMaker());
+    }
+
+    offset_t fSize = iFileIO->size();
+    OwnedIFileIOStream stream = createIOStream(iFileIO);
+    OwnedIFileIOStream progressedIFileIOStream = createProgressIFileIOStream(stream, fSize, "Load progress", 1);
+    Owned<IPTreeReader> reader = createXMLStreamReader(*progressedIFileIOStream, *iMaker, readFlags);
+
+    ProcessInfo memInfo(ReadMemoryInfo);
+    __uint64 rss = memInfo.getActiveResidentMemory();
+    CCycleTimer timer;
+    reader->load();
+    memInfo.update(ReadMemoryInfo);
+    __uint64 rssUsed = memInfo.getActiveResidentMemory() - rss;
+    reader.clear();
+    progressedIFileIOStream.clear();
+    PROGLOG("Load took: %.2f - RSS consumed: %.2f MB", (float)timer.elapsedMs()/1000, (float)rssUsed/0x100000);
+
+    if (!parseOnly && saveFormattedXML)
+    {
+        assertex(iMaker->queryRoot());
+        StringBuffer outFilename(filename);
+        outFilename.append(".out.xml");
+        PROGLOG("Saving to %s", outFilename.str());
+        timer.reset();
+        saveXML(outFilename, iMaker->queryRoot(), 2);
+        PROGLOG("Save took: %.2f", (float)timer.elapsedMs()/1000);
+    }
+
+    ::LINK(iMaker->queryRoot()); // intentionally leak (avoid time clearing up)
+}
+
 void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType)
 {
     CDfsLogicalFileName lfn;

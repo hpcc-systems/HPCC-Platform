@@ -1,13 +1,13 @@
 import * as React from "react";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
-import { IconButton, IIconProps, Link, Dropdown, IDropdownOption, TextField, useTheme } from "@fluentui/react";
+import { IconButton, IIconProps, Link, Dropdown, IDropdownOption, Spinner, SpinnerSize, TextField, useTheme } from "@fluentui/react";
 import { Button } from "@fluentui/react-components";
 import { CheckmarkCircleRegular, DismissCircleRegular, QuestionCircleRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { mergeStyleSets } from "@fluentui/style-utilities";
 import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
-import { Workunit, WUUpdate, WorkunitsService } from "@hpcc-js/comms";
+import { Workunit, WUUpdate, WorkunitsService, WUStateID } from "@hpcc-js/comms";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
@@ -238,7 +238,6 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
         if (document.location.hash.includes("play")) {
             if (wu.isFailed()) {
                 pushUrl(`/play/${wu.Wuid}`);
-                setWorkunit(wu);
                 displayErrors(wu, editor);
                 setOutputMode(OutputMode.ERRORS);
             } else if (wu.isComplete()) {
@@ -247,7 +246,6 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                     wu.publish(queryName);
                     setWuState("Published");
                 }
-                setWorkunit(wu);
                 setOutputMode(OutputMode.RESULTS);
             }
         } else {
@@ -255,16 +253,17 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 logger.info(`${nlsHPCC.Playground} ${nlsHPCC.Finished} (${wu.Wuid})`);
             }
         }
-    }, [editor, queryName, setOutputMode, setWorkunit]);
+    }, [editor, queryName, setOutputMode]);
 
     const submitWU = React.useCallback(async () => {
         const wu = await Workunit.create({ baseUrl: "" });
+        setWorkunit(wu);
 
         await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
         await wu.submit(cluster);
 
         wu.watchUntilComplete(changes => playgroundResults(wu));
-    }, [cluster, editor, playgroundResults, queryName]);
+    }, [cluster, editor, playgroundResults, queryName, setWorkunit]);
 
     const publishWU = React.useCallback(async () => {
         if (queryName === "") {
@@ -274,13 +273,14 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
             setQueryNameErrorMsg("");
 
             const wu = await Workunit.create({ baseUrl: "" });
+            setWorkunit(wu);
 
             await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
             await wu.submit(cluster, WUUpdate.Action.Compile);
 
             wu.watchUntilComplete(changes => playgroundResults(wu, "publish"));
         }
-    }, [cluster, editor, playgroundResults, queryName, setQueryNameErrorMsg]);
+    }, [cluster, editor, playgroundResults, queryName, setQueryNameErrorMsg, setWorkunit]);
 
     const checkSyntax = React.useCallback(() => {
         service.WUSyntaxCheckECL({
@@ -470,6 +470,12 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     }, [editor]);
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
 
+    const submissionComplete = React.useMemo(() => {
+        return workunit?.StateID === WUStateID.Completed ||
+            workunit?.StateID === WUStateID.Failed ||
+            (workunit?.ActionEx === "compile" && workunit?.StateID === WUStateID.Compiled);
+    }, [workunit?.StateID, workunit?.ActionEx]);
+
     const handleEclChange = React.useMemo(() => debounce((evt) => {
         if (editor.hasFocus()) {
             setSyntaxStatusIcon(SyntaxCheckResult.Unknown);
@@ -507,23 +513,33 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                     </ReflexElement>
                     <ReflexSplitter />
                     <ReflexElement minSize={100} flex={0.25} style={{ overflow: "hidden" }}>
-                        <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
+                        {submissionComplete ?
+                            <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
+                            : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                                <Spinner size={SpinnerSize.large} />
+                            </div>
+                        }
                     </ReflexElement>
                 </ReflexContainer>
             </ReflexElement>
             <ReflexSplitter />
             <ReflexElement propagateDimensions={true} minSize={100} style={{ overflow: "hidden" }}>
-                <div style={{ height: "calc(100% - 44px)" }}>
-                    {outputMode === OutputMode.ERRORS ? (
-                        <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
+                {submissionComplete ?
+                    <div style={{ height: "calc(100% - 44px)" }}>
+                        {outputMode === OutputMode.ERRORS ? (
+                            <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
 
-                    ) : outputMode === OutputMode.RESULTS ? (
-                        <TabbedResults wuid={workunit?.Wuid} filter={filter} />
+                        ) : outputMode === OutputMode.RESULTS ? (
+                            <TabbedResults wuid={workunit?.Wuid} filter={filter} />
 
-                    ) : outputMode === OutputMode.VIS ? (
-                        <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
-                    ) : null}
-                </div>
+                        ) : outputMode === OutputMode.VIS ? (
+                            <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
+                        ) : null}
+                    </div>
+                    : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                        <Spinner size={SpinnerSize.large} />
+                    </div>
+                }
             </ReflexElement>
         </ReflexContainer>
     </div>;

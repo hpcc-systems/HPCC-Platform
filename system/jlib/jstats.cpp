@@ -1316,7 +1316,7 @@ void StatisticsMapping::createMappings()
     }
 
     const unsigned * kinds = indexToKind.getArray();
-    hashcode = hashc((const byte *)kinds, indexToKind.ordinality() * sizeof(unsigned), 0x811C9DC5);
+    hashcode = hashc((const byte *)kinds, indexToKind.ordinality() * sizeof(unsigned), fnvInitialHash32);
 
     //All StatisticsMapping objects are assumed to be static, and never destroyed.
     const StatisticsMapping * existing = allStatsMappings[hashcode];

@@ -305,7 +305,7 @@ bool HashTable::keyeq(const void *key1, const void *key2, int ksize) const
 
 unsigned HashTable::hash(const void *key, int ksize) const
 {
-   unsigned h = 0x811C9DC5;
+   unsigned h = fnvInitialHash32;
    unsigned char *bp = (unsigned char *) key;
    if (ksize<=0)
    {

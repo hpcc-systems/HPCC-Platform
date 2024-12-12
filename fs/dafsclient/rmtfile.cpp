@@ -2395,9 +2395,19 @@ protected:
         mrequest.append((RemoteFileCommandType)RFCStreamRead);
         VStringBuffer json("{ \"handle\" : %u, \"format\" : \"binary\" }", handle);
         mrequest.append(json.length(), json.str());
-        sendRemoteCommand(mrequest, newReply);
-        unsigned newHandle;
-        newReply.read(newHandle);
+        unsigned newHandle = 0;
+        try
+        {
+            sendRemoteCommand(mrequest, newReply, false);
+            newReply.read(newHandle);
+        }
+        catch (IJSOCK_Exception *e)
+        {
+            // will trigger new request with cursor
+            EXCLOG(e, "CRemoteFilteredFileIOBase:: socket failure whilst streaming, will attempt to reconnect with cursor");
+            newHandle = 0;
+            e->Release();
+        }
         if (newHandle == handle)
         {
             reply.swapWith(newReply);

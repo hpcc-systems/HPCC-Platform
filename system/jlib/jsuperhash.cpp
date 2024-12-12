@@ -33,8 +33,8 @@
 //#define MY_TRACE_HASH
 
 #ifdef MY_TRACE_HASH
-int my_search_tot = 0;
-int my_search_num = 0;
+static unsigned my_search_tot = 0;
+static unsigned my_search_num = 0;
 #endif 
 
 //-- SuperHashTable ---------------------------------------------------
@@ -104,13 +104,13 @@ void SuperHashTable::dumpStats() const
 {
 #ifdef TRACE_HASH
     if (tablecount && search_tot && search_num)
-        printf("Hash table %d entries, %d size, average search length %d(%d/%d) max %d\n", tablecount, tablesize,
-               (int) (search_tot/search_num), search_tot, search_num, search_max);
+        printf("Hash table %u entries, %u size, average search length %" I64F "u(%" I64F "u/%u) max %u\n", tablecount, tablesize,
+               search_tot/search_num, search_tot, search_num, search_max);
 #endif
 }
  
 #ifdef TRACE_HASH
-void SuperHashTable::note_searchlen(int len) const
+void SuperHashTable::note_searchlen(unsigned len) const
 {
     search_tot += len;
     search_num++;
@@ -151,8 +151,8 @@ unsigned SuperHashTable::doFind(unsigned findHash, const void * findParam) const
     }
 #ifdef MY_TRACE_HASH
     my_search_num++;
-    if(my_search_num != 0)
-        printf("Hash table average search length %d\n", (int) (my_search_tot/my_search_num));
+    if (my_search_num != 0)
+        printf("Hash table average search length %u\n", my_search_tot/my_search_num);
 #endif
 #ifdef TRACE_HASH
     note_searchlen(searchlen);
@@ -193,8 +193,8 @@ unsigned SuperHashTable::doFindElement(unsigned v, const void * findET) const
     }
 #ifdef MY_TRACE_HASH
     my_search_num++;
-    if(my_search_num != 0)
-        printf("Hash table average search length %d\n", (int) (my_search_tot/my_search_num));
+    if (my_search_num != 0)
+        printf("Hash table average search length %u\n", my_search_tot/my_search_num);
 #endif
 #ifdef TRACE_HASH
     note_searchlen(searchlen);
@@ -233,8 +233,8 @@ unsigned SuperHashTable::doFindNew(unsigned v) const
     }
 #ifdef MY_TRACE_HASH
     my_search_num++;
-    if(my_search_num != 0)
-        printf("Hash table average search length %d\n", (int) (my_search_tot/my_search_num));
+    if (my_search_num != 0)
+        printf("Hash table average search length %u\n", my_search_tot/my_search_num);
 #endif
 #ifdef TRACE_HASH
     note_searchlen(searchlen);

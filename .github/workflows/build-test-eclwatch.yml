@@ -25,7 +25,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node: ["20", "18", "16"]
+        node: ["22", "20", "18"]
       fail-fast: false
     name: "Check eclwatch and npm"
     needs: pre_job
@@ -41,6 +41,12 @@ jobs:
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci
+      - name: Lint
+        working-directory: ./esp/src
+        run: npm run lint
+      - name: Install Playwright browsers 
+        working-directory: ./esp/src
+        run: npx playwright install --with-deps
       - name: Build
         working-directory: ./esp/src
         run: npm run build
