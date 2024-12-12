@@ -2156,7 +2156,7 @@ void EclAgent::runProcess(IEclProcess *process)
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(queryWorkUnit());
-    OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
+    OwnedActiveSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
     ContextSpanScope spanScope(updateDummyContextLogger(), requestSpan);
     requestSpan->setSpanAttribute("hpcc.wuid", queryWorkUnit()->queryWuid());
 
