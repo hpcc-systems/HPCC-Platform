@@ -1,8 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link } from "@fluentui/react";
 import { hsl as d3Hsl } from "@hpcc-js/common";
+import { Workunit } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
-import { CreateWUQueryStore, defaultSort, emptyFilter, Get, WUQueryStore, formatQuery } from "src/ESPWorkunit";
+import { defaultSort, emptyFilter, getStateImage, WUQueryStore, formatQuery } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import { userKeyValStore } from "src/KeyValStore";
@@ -14,6 +15,7 @@ import { useLogicalClustersPalette } from "../hooks/platform";
 import { calcSearch, pushParams } from "../util/history";
 import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { CreateWUQueryStore } from "../comms/workunit";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -122,11 +124,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             Wuid: {
                 label: nlsHPCC.WUID, width: 120,
                 sortable: true,
-                formatter: (Wuid, row) => {
-                    const wu = Get(Wuid);
+                formatter: (Wuid: string, wu: Workunit) => {
                     const search = calcSearch(filter);
                     return <>
-                        <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
+                        <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
                         <Link href={search ? `#/workunits!${calcSearch(filter)}/${Wuid}` : `#/workunits/${Wuid}`}>{Wuid}</Link >
                     </>;
@@ -294,10 +295,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [selection]);
 
     const renderRowTimings = React.useCallback((props: IDetailsRowProps, size: { readonly width: number; readonly height: number; }) => {
-        if (showTimeline && props?.item?.timings) {
-            const total = props.item.timings.page.end - props.item.timings.page.start;
-            const startPct = 100 - (props.item.timings.start - props.item.timings.page.start) / total * 100;
-            const endPct = 100 - (props.item.timings.end - props.item.timings.page.start) / total * 100;
+        if (showTimeline && props?.item?.__timeline_timings) {
+            const total = props.item.__timeline_timings.page.end - props.item.__timeline_timings.page.start;
+            const startPct = 100 - (props.item.__timeline_timings.start - props.item.__timeline_timings.page.start) / total * 100;
+            const endPct = 100 - (props.item.__timeline_timings.end - props.item.__timeline_timings.page.start) / total * 100;
             const backgroundColor = palette(props.item.Cluster);
             const borderColor = d3Hsl(backgroundColor).darker().toString();
 
