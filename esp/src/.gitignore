@@ -1,7 +1,11 @@
+blob-report/
 build/
 hpcc-js/
 lib/
 node_modules/
+playwright/.cache/
+playwright-report/
+test-results/
 types/
 .vscode/*
 !.vscode/tasks.json
