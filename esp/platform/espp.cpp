@@ -578,7 +578,7 @@ int init_main(int argc, const char* argv[])
             config->checkESPCache(*server.get());
 
             initializeMetrics(config);        
-            initializeStorageGroups(daliClientActive());
+            initializeStoragePlanes(daliClientActive(), true);
         }
         catch(IException* e)
         {

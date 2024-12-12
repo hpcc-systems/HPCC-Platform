@@ -1463,7 +1463,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
 
         //MORE: I'm not sure where this should go, or how it fits in.  Possibly the function needs to be split in two.
-        initializeStorageGroups(false);
+        initializeStoragePlanes(false, true);
 
         EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
