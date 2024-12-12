@@ -336,7 +336,7 @@ typedef std::function<void (IPropertyTree * newComponentConfiguration, IProperty
 jlib_decl unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInstalled);
 jlib_decl unsigned installConfigUpdateHook(ConfigModifyFunc notifyFunc);  // This function must be called before the configuration is loaded.
 jlib_decl void removeConfigUpdateHook(unsigned notifyFuncId);
-jlib_decl void executeConfigUpdaterCallbacks();
+jlib_decl void forceConfigRefresh();
 
 class jlib_decl CConfigUpdateHook
 {
@@ -346,6 +346,7 @@ public:
     ~CConfigUpdateHook() { clear(); }
     void clear();
     void installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled);
+    void installOnce(ConfigModifyFunc callbackFunc);
 };
 
 /*

@@ -8755,7 +8755,7 @@ public:
 #if !defined(__linux__) // file moinitoring only supported in Linux (because createFileEventWatcher only implemented in Linux at the moment)
         return false;
 #endif
-        if (0 == absoluteConfigFilename.length() || (nullptr != fileWatcher.get()))
+        if (absoluteConfigFilename.isEmpty() || (nullptr != fileWatcher.get()))
             return false;
 
         auto updateFunc = [&](const char *filename, FileWatchEvents events)
@@ -8788,13 +8788,9 @@ public:
         return true;
     }
 
-    void refreshConfiguration()
+    void refreshConfiguration(const char * configFilename, IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
     {
-        auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
-
-        IPropertyTree * newComponentConfiguration = std::get<1>(result);
-        IPropertyTree * newGlobalConfiguration = std::get<2>(result);
-
+        CriticalBlock b(notifyFuncCS);
         //Ensure all modifications to the config take place before the config is update, and the monitoring functions are called.
         for (auto & modifyFunc : modifyConfigUpdates)
             modifyFunc.second(newComponentConfiguration, newGlobalConfiguration);
@@ -8819,8 +8815,18 @@ public:
             /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
             However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
             executeCallbacks(oldComponentConfiguration, oldGlobalConfiguration);
-            absoluteConfigFilename.set(std::get<0>(result).c_str());
+
+            //GH: MORE: Not sure this should be updated - the watcher isn't updated to match a change in filname
+            absoluteConfigFilename.set(configFilename);
         }
+    }
+
+    void refreshConfiguration()
+    {
+        auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+        IPropertyTree * newComponentConfiguration = std::get<1>(result);
+        IPropertyTree * newGlobalConfiguration = std::get<2>(result);
+        refreshConfiguration(std::get<0>(result).c_str(), newComponentConfiguration, newGlobalConfiguration);
     }
 
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
@@ -8863,7 +8869,7 @@ public:
         modifyConfigUpdates[notifyFuncId] = notifyFunc;
         if (isInitialized())
         {
-            refreshConfiguiration(); // force all cached values to be recalculated
+            refreshConfiguration(); // force all cached values to be recalculated
             DBGLOG("Modify functions should be registered before the configuration is loaded");
         }
         return notifyFuncId;
@@ -8926,11 +8932,11 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
         WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed", notifyFuncId);
 }
 
-void executeConfigUpdaterCallbacks()
+void forceConfigRefresh()
 {
     if (!configFileUpdater) // NB: executeConfigUpdaterCallbacks should always be called after configFileUpdater is initialized
         return;
-    configFileUpdater->executeCallbacks(componentConfiguration, globalConfiguration);
+    configFileUpdater->refreshConfiguration();
 }
 
 void CConfigUpdateHook::clear()
@@ -8956,6 +8962,22 @@ void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhen
     }
 }
 
+
+void CConfigUpdateHook::installOnce(ConfigModifyFunc callbackFunc)
+{
+    unsigned id = configCBId.load(std::memory_order_acquire);
+    if ((unsigned)-1 == id) // avoid CS in common case
+    {
+        CriticalBlock b(crit);
+        // check again now in CS
+        id = configCBId.load(std::memory_order_acquire);
+        if ((unsigned)-1 == id)
+        {
+            id = installConfigUpdateHook(callbackFunc);
+            configCBId.store(id, std::memory_order_release);
+        }
+    }
+}
 
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
 {
@@ -9090,7 +9112,10 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
 #ifdef _DEBUG
     // NB: don't re-hold, if CLI --hold already held.
     if (!held && newComponentConfig->getPropBool("@hold"))
+    {
         holdLoop();
+        held = true;
+    }
 #endif
 
     unsigned ptreeMappingThreshold = newGlobalConfig->getPropInt("@ptreeMappingThreshold", defaultSiblingMapThreshold);
@@ -9099,7 +9124,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     return std::make_tuple(std::string(absConfigFilename.str()), newComponentConfig.getClear(), newGlobalConfig.getClear());
 }
 
-jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
+IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree *globalDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
 {
     assertex(configFileUpdater); // NB: loadConfiguration should always be called after configFileUpdater is initialized
     if (configFileUpdater->isInitialized())
@@ -9133,7 +9158,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPr
     return componentConfiguration.getLink();
 }
 
-jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
+IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
 {
     if (componentConfiguration)
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
@@ -9156,20 +9181,19 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
 void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig)
 {
-    {
-        CriticalBlock b(configCS);
-        componentConfiguration.set(newComponentConfig);
-        globalConfiguration.set(newGlobalConfig);
-    }
-    executeConfigUpdaterCallbacks();
+    assertex (configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
+    configFileUpdater->refreshConfiguration(nullptr, newComponentConfig, newGlobalConfig);
 }
 
 void initNullConfiguration()
 {
     if (componentConfiguration || globalConfiguration)
         throw makeStringException(99, "Configuration has already been initialised");
-    componentConfiguration.setown(createPTree());
-    globalConfiguration.setown(createPTree());
+
+    assertex(configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
+    Owned<IPropertyTree> newComponentConfig(createPTree());
+    Owned<IPropertyTree> newGlobalConfig(createPTree());
+    configFileUpdater->refreshConfiguration(nullptr, newComponentConfig, newGlobalConfig);
 }
 
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>

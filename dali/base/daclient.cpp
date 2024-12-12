@@ -105,7 +105,7 @@ void installEnvConfigMonitor()
             // ISDSSubscription impl.
             virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=nullptr) override
             {
-                executeConfigUpdaterCallbacks();
+                forceConfigRefresh();
             }
         };
 
@@ -158,6 +158,7 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
             case DCR_EclScheduler:
             case DCR_EclCCServer:
                 installEnvConfigMonitor();
+                break;
             default:
                 break;
         }
