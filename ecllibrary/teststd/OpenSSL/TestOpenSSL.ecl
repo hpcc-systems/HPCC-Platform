@@ -212,7 +212,7 @@ EXPORT TestOpenSSL := MODULE
         ASSERT(LENGTH(encrypt_rsa) = 512);
         ASSERT((STRING)Std.OpenSSL.PublicKey.Decrypt((DATA)encrypt_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
         ASSERT((STRING)Std.OpenSSL.PublicKey.Decrypt((DATA)encrypt_rsa_passphrase, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
-        ASSERT(LENGTH(seal_rsa) = 1112);
+        ASSERT(LENGTH(seal_rsa) = 1100);
         ASSERT((STRING)Std.OpenSSL.PublicKey.RSAUnseal((DATA)seal_rsa, (DATA)'', RSA_PRIVATE_1) = PLAINTEXT);
         ASSERT((STRING)Std.OpenSSL.PublicKey.RSAUnseal((DATA)seal_rsa, (DATA)PASSPHRASE, RSA_PRIVATE_2) = PLAINTEXT);
 

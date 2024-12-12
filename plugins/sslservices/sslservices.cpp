@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "openssl.hpp"
+#include "sslservices.hpp"
 
 #include "openssl/err.h"
 #include "openssl/evp.h"
@@ -24,21 +24,21 @@
 #include "jlog.hpp"
 
 #include <string>
-#include <string_view>
+#include <memory>
 #include <vector>
 
-#define CURRENT_OPENSSL_VERSION "openssl plugin 1.0.0"
+#define CURRENT_SSLSERVICES_VERSION "sslservices plugin 1.0.0"
 
-static const char* opensslCompatibleVersions[] = {
-    CURRENT_OPENSSL_VERSION,
+static const char* sslservicesCompatibleVersions[] = {
+    CURRENT_SSLSERVICES_VERSION,
     NULL };
 
-OPENSSL_API bool OPENSSL_CALL getECLPluginDefinition(ECLPluginDefinitionBlock* pb)
+SSLSERVICES_API bool SSLSERVICES_CALL getECLPluginDefinition(ECLPluginDefinitionBlock* pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
         ECLPluginDefinitionBlockEx* pbx = static_cast<ECLPluginDefinitionBlockEx*>(pb);
-        pbx->compatibleVersions = opensslCompatibleVersions;
+        pbx->compatibleVersions = sslservicesCompatibleVersions;
     }
     else if (pb->size != sizeof(ECLPluginDefinitionBlock))
     {
@@ -46,8 +46,8 @@ OPENSSL_API bool OPENSSL_CALL getECLPluginDefinition(ECLPluginDefinitionBlock* p
     }
 
     pb->magicVersion = PLUGIN_VERSION;
-    pb->version = CURRENT_OPENSSL_VERSION;
-    pb->moduleName = "openssl";
+    pb->version = CURRENT_SSLSERVICES_VERSION;
+    pb->moduleName = "sslservices";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "ECL plugin library for the C++ API in OpenSSL";
@@ -55,13 +55,13 @@ OPENSSL_API bool OPENSSL_CALL getECLPluginDefinition(ECLPluginDefinitionBlock* p
     return true;
 }
 
-namespace nsOpenSSL
+namespace nsSSLServices
 {
 
 void failOpenSSLError(const std::string& context)
 {
-    unsigned long   errCode = 0;
-    char            buffer[120];
+    size_t errCode = 0;
+    char   buffer[120];
 
     ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
 
@@ -77,7 +77,7 @@ void failOpenSSLError(const std::string& context)
 int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *pPassPhraseMB)
 {
     size32_t len = ((MemoryBuffer*)pPassPhraseMB)->length();
-    if (passPhraseBufSize >= (int)len)
+    if (passPhraseBufSize >= len)
     {
         memcpy(passPhraseBuf, ((MemoryBuffer*)pPassPhraseMB)->bufferBase(), len);
         return len;
@@ -88,7 +88,7 @@ int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *p
 
 bool isPublicKey(size32_t keyLen, const char * key)
 {
-    for (int i = 0; key[i] != '\n' && i < (keyLen - 15); i++)
+    for (size32_t i = 0; key[i] != '\n' && i < (keyLen - 15); i++)
     {
         if (key[i] == 'P')
         {
@@ -99,10 +99,10 @@ bool isPublicKey(size32_t keyLen, const char * key)
     return false;
 }
 
-static constexpr int OPENSSL_MAX_CACHE_SIZE = 10;
+static constexpr size32_t SSLSERVICES_MAX_CACHE_SIZE = 10;
 static constexpr bool PRINT_STATS = false;
 template <typename T>
-class OpenSSLCache
+class AlgorithmCache
 {
 public:
     const T * checkCache(const char * algorithm_name)
@@ -120,29 +120,29 @@ public:
         if (newObj)
         {
             cache.emplace_front(algorithm_name, newObj);
-            if (cache.size() > OPENSSL_MAX_CACHE_SIZE)
+            if (cache.size() > SSLSERVICES_MAX_CACHE_SIZE)
                 cache.pop_back();
         }
         else
             failOpenSSLError("adding new object to cache");
 
         return newObj;
-    };
+    }
 
-    void printStatistics() {DBGLOG("OPENSSL %s CACHE STATS: HITS = %d, MISSES = %d", cacheName.c_str(), hits, misses);};
+    void printStatistics() {DBGLOG("SSLSERVICES %s CACHE STATS: HITS = %d, MISSES = %d", cacheName.c_str(), hits, misses);}
 
     void init()
     {
         setCacheName();
         hits = 0;
         misses = 0;
-    };
+    }
 
-    void clear() {cache.clear();};
+    void clear() {cache.clear();}
 
 private:
-    int hits;
-    int misses;
+    size32_t hits;
+    size32_t misses;
     std::string cacheName;
     std::list<std::tuple<std::string, const T *>> cache;
 
@@ -151,16 +151,17 @@ private:
 };
 
 template <>
-void OpenSSLCache<EVP_CIPHER>::setCacheName() { cacheName = "CIPHER"; }
+void AlgorithmCache<EVP_CIPHER>::setCacheName() {cacheName = "CIPHER";}
+
 
 template <>
-void OpenSSLCache<EVP_MD>::setCacheName() { cacheName = "DIGEST"; }
+void AlgorithmCache<EVP_MD>::setCacheName() {cacheName = "DIGEST";}
 
 template <>
-const EVP_CIPHER * OpenSSLCache<EVP_CIPHER>::getObjectByName(const char * name) { return EVP_get_cipherbyname(name); }
+const EVP_CIPHER * AlgorithmCache<EVP_CIPHER>::getObjectByName(const char * name) { return EVP_get_cipherbyname(name); }
 
 template <>
-const EVP_MD * OpenSSLCache<EVP_MD>::getObjectByName(const char * name) { return EVP_get_digestbyname(name); }
+const EVP_MD * AlgorithmCache<EVP_MD>::getObjectByName(const char * name) { return EVP_get_digestbyname(name); }
 
 // PEM Public/Private keys require parsing from a string
 // Store the hash of the original string and parsed key
@@ -171,7 +172,7 @@ public:
     {
         hits = 0;
         misses = 0;
-    };
+    }
 
     EVP_PKEY * checkCache(size32_t keyLen, const char * key, size32_t passphraseLen, const void * passphrase)
     {
@@ -180,7 +181,7 @@ public:
             if (hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)) == std::get<0>(c))
             {
                 hits++;
-                return std::get<1>(c);
+                return std::get<1>(c).get();
             }
         }
 
@@ -203,51 +204,42 @@ public:
 
         if (pkey)
         {
-            cache.emplace_front(hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)), pkey);
-            if (cache.size() > OPENSSL_MAX_CACHE_SIZE)
-            {
-                EVP_PKEY_free(std::get<1>(cache.back()));
+            cache.emplace_front(hashc(reinterpret_cast<const byte *>(passphrase), passphraseLen, hashc(reinterpret_cast<const byte *>(key), keyLen, 0)), std::move(std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(pkey, EVP_PKEY_free)));
+            if (cache.size() > SSLSERVICES_MAX_CACHE_SIZE)
                 cache.pop_back();
-            }
         }
         else
             failOpenSSLError("loading a pkey");
 
         return pkey;
-    };
+    }
 
-    void clear()
-    {
-        for (auto& c : cache)
-            EVP_PKEY_free(std::get<1>(c));
-        cache.clear();
-    };
+    void clear() {cache.clear();}
 
-    void printStatistics() {DBGLOG("OPENSSL PKEY CACHE STATS: HITS = %d, MISSES = %d", hits, misses);};
+    void printStatistics() {DBGLOG("SSLSERVICES PKEY CACHE STATS: HITS = %d, MISSES = %d", hits, misses);}
 
 private:
-    int hits;
-    int misses;
-    std::list<std::tuple<unsigned, EVP_PKEY *>> cache;
+    size32_t hits;
+    size32_t misses;
+    std::list<std::tuple<size32_t, std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>>> cache;
 };
 
 
 static thread_local PKeyCache pkeyCache;
 
-static thread_local OpenSSLCache<EVP_CIPHER> cipherCache;
-static thread_local OpenSSLCache<EVP_MD> digestCache;
-} // nsOpenSSL
+static thread_local AlgorithmCache<EVP_CIPHER> cipherCache;
+static thread_local AlgorithmCache<EVP_MD> digestCache;
+} // nsSSLServices
 
-using namespace nsOpenSSL;
+using namespace nsSSLServices;
 
 //--------------------------------------------------------------------------
-// Advertised Entry Point Functions
+// Advertised Entry Posize32_t Functions
 //--------------------------------------------------------------------------
 
-OPENSSL_API void OPENSSL_CALL digestAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
+SSLSERVICES_API void SSLSERVICES_CALL digestAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
     // Get all the hash (digest) names
-    OpenSSL_add_all_digests();
     std::vector<std::string> digestNames;
     EVP_MD_do_all([](const EVP_MD * md, const char * name, const char * description, void * arg) {
         std::vector<std::string> * digestNames = static_cast<std::vector<std::string>*>(arg);
@@ -278,7 +270,7 @@ OPENSSL_API void OPENSSL_CALL digestAvailableAlgorithms(ICodeContext *ctx, size3
     }
 }
 
-OPENSSL_API void OPENSSL_CALL digestHash(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_indata, const void * _indata, const char * _algorithm_name)
+SSLSERVICES_API void SSLSERVICES_CALL digestHash(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_indata, const void * _indata, const char * _algorithm_name)
 {
     if (strlen(_algorithm_name) == 0)
         rtlFail(-1, "No hash digest name provided");
@@ -316,10 +308,9 @@ OPENSSL_API void OPENSSL_CALL digestHash(ICodeContext *ctx, size32_t & __lenResu
 
 // Symmetric ciphers
 
-OPENSSL_API void OPENSSL_CALL cipherAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
+SSLSERVICES_API void SSLSERVICES_CALL cipherAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
     // Get all the cipher names
-    OpenSSL_add_all_ciphers();
     std::vector<std::string> cipherNames;
     EVP_CIPHER_do_all([](const EVP_CIPHER * cipher, const char * from, const char * to, void * x) {
         auto cipherNames = static_cast<std::vector<std::string> *>(x);
@@ -350,7 +341,7 @@ OPENSSL_API void OPENSSL_CALL cipherAvailableAlgorithms(ICodeContext *ctx, size3
     }
 }
 
-OPENSSL_API uint16_t OPENSSL_CALL cipherIVSize(ICodeContext *ctx, const char * algorithm_name)
+SSLSERVICES_API uint16_t SSLSERVICES_CALL cipherIVSize(ICodeContext *ctx, const char * algorithm_name)
 {
     if (strlen(algorithm_name) == 0)
         rtlFail(-1, "No algorithm name provided");
@@ -361,7 +352,7 @@ OPENSSL_API uint16_t OPENSSL_CALL cipherIVSize(ICodeContext *ctx, const char * a
     return static_cast<uint16_t>(EVP_CIPHER_iv_length(cipher));
 }
 
-OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
+SSLSERVICES_API void SSLSERVICES_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -382,7 +373,7 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
         // Load the cipher
         const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
-        int cipherIVSize = EVP_CIPHER_iv_length(cipher);
+        size32_t cipherIVSize = EVP_CIPHER_iv_length(cipher);
         if (hasIV && len_iv != static_cast<size32_t>(cipherIVSize))
             rtlFail(-1, "Supplied IV is an incorrect size");
 
@@ -407,17 +398,17 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
 
         try
         {
-            int len = 0;
-            int ciphertextLen = 0;
+            size32_t len = 0;
+            size32_t ciphertextLen = 0;
 
             if (EVP_EncryptInit_ex(encryptCtx, cipher, nullptr, static_cast<byte *>(key.bufferBase()),static_cast<byte *>(iv.bufferBase())) != 1)
                 failOpenSSLError("EVP_EncryptInit_ex");
 
-            if (EVP_EncryptUpdate(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), &len, static_cast<const byte *>(_plaintext), len_plaintext) != 1)
+            if (EVP_EncryptUpdate(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), reinterpret_cast<int *>(&len), static_cast<const byte *>(_plaintext), len_plaintext) != 1)
                 failOpenSSLError("EVP_EncryptUpdate");
             ciphertextLen = len;
 
-            if (EVP_EncryptFinal_ex(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, &len) != 1)
+            if (EVP_EncryptFinal_ex(encryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
                 failOpenSSLError("EVP_EncryptFinal_ex");
             ciphertextLen += len;
             __lenResult = ciphertextLen;
@@ -436,7 +427,7 @@ OPENSSL_API void OPENSSL_CALL cipherEncrypt(ICodeContext *ctx, size32_t & __lenR
     }
 }
 
-OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
+SSLSERVICES_API void SSLSERVICES_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, const char * _algorithm_name, size32_t len_passphrase, const void * _passphrase, size32_t len_iv, const void * _iv, size32_t len_salt, const void * _salt)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -457,7 +448,7 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
         // Load the cipher
         const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
-        int cipherIVSize = EVP_CIPHER_iv_length(cipher);
+        size32_t cipherIVSize = EVP_CIPHER_iv_length(cipher);
         if (hasIV && len_iv != static_cast<size32_t>(cipherIVSize))
             rtlFail(-1, "Supplied IV is an incorrect size");
 
@@ -482,17 +473,17 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
 
         try
         {
-            int len = 0;
-            int plaintextLen = 0;
+            size32_t len = 0;
+            size32_t plaintextLen = 0;
 
             if (EVP_DecryptInit_ex(decryptCtx, cipher, nullptr, static_cast<byte *>(key.bufferBase()), static_cast<byte *>(iv.bufferBase())) != 1)
                 failOpenSSLError("EVP_DecryptInit_ex");
 
-            if (EVP_DecryptUpdate(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), &len, static_cast<const byte *>(_ciphertext), len_ciphertext) != 1)
+            if (EVP_DecryptUpdate(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()), reinterpret_cast<int *>(&len), static_cast<const byte *>(_ciphertext), len_ciphertext) != 1)
                 failOpenSSLError("EVP_DecryptUpdate");
             plaintextLen = len;
 
-            if (EVP_DecryptFinal_ex(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, &len) != 1)
+            if (EVP_DecryptFinal_ex(decryptCtx, static_cast<byte *>(resultBuffer.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
                 failOpenSSLError("EVP_DecryptFinal_ex");
             plaintextLen += len;
             __lenResult = plaintextLen;
@@ -511,9 +502,9 @@ OPENSSL_API void OPENSSL_CALL cipherDecrypt(ICodeContext *ctx, size32_t & __lenR
     }
 }
 
-// pk functions
+// PublicKey functions
 
-OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _algorithm_name)
+SSLSERVICES_API void SSLSERVICES_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, bool isAll_pem_public_keys, size32_t len_pem_public_keys, const void * _pem_public_keys, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_public_keys == 0)
@@ -544,17 +535,17 @@ OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResul
             const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
             // Allocate memory for encrypted keys
-            size_t keyCount = publicKeys.size();
-            encryptedKeys = static_cast<byte **>(rtlMalloc(sizeof(byte *) * keyCount));
-            for (size_t x = 0; x < keyCount; x++)
-                encryptedKeys[x] = static_cast<byte *>(rtlMalloc(EVP_PKEY_size(publicKeys[x])));
+            size32_t keyCount = publicKeys.size();
+            encryptedKeys = new byte *[keyCount];
+            for (size32_t x = 0; x < keyCount; x++)
+                encryptedKeys[x] = new byte [EVP_PKEY_size(publicKeys[x])];
 
             // Allocate memory for the IV
-            int ivLen = EVP_CIPHER_iv_length(cipher);
+            size32_t ivLen = EVP_CIPHER_iv_length(cipher);
             iv.ensureCapacity(ivLen);
 
             // Allocate buffer for ciphertext
-            int ciphertextLen = len_plaintext + EVP_CIPHER_block_size(cipher);
+            size32_t ciphertextLen = len_plaintext + EVP_CIPHER_block_size(cipher);
             ciphertext.ensureCapacity(ciphertextLen);
 
             // Create and initialize the context
@@ -568,32 +559,32 @@ OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResul
                 failOpenSSLError("EVP_SealInit");
 
             // Update the envelope (encrypt the plaintext)
-            int len = 0;
-            if (EVP_SealUpdate(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()), &len, reinterpret_cast<const byte *>(_plaintext), len_plaintext) != 1)
+            size32_t len = 0;
+            if (EVP_SealUpdate(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()), reinterpret_cast<int *>(&len), reinterpret_cast<const byte *>(_plaintext), len_plaintext) != 1)
                 failOpenSSLError("EVP_SealUpdate");
             ciphertextLen = len;
 
             // Finalize the envelope's ciphertext
-            if (EVP_SealFinal(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()) + len, &len) != 1)
+            if (EVP_SealFinal(encryptCtx, static_cast<byte *>(ciphertext.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
                 failOpenSSLError("EVP_SealFinal");
             ciphertextLen += len;
 
-            int totalKeyLen = 0;
-            for (int i = 0; i < keyCount; i++)
+            size32_t totalKeyLen = 0;
+            for (size32_t i = 0; i < keyCount; i++)
                 totalKeyLen += keyLens[i];
 
             // We need to prepend the ciphertext with metadata so the blob can be decrypted;
             // this is potentially nonstandard
             MemoryBuffer outBuffer;
-            outBuffer.ensureCapacity(ivLen + (sizeof(size_t)*(keyCount+1)) + totalKeyLen + ciphertextLen);
+            outBuffer.ensureCapacity(ivLen + (sizeof(size32_t)*(keyCount+1)) + totalKeyLen + ciphertextLen);
             // IV comes first; its length can be derived from the cipher
             outBuffer.append(ivLen, static_cast<byte *>(iv.bufferBase()));
-            // Number of keys (size_t)
+            // Number of keys (size32_t)
             outBuffer.append(sizeof(keyCount), reinterpret_cast<byte *>(&keyCount));
-            // Keys; each is (size_t) + <content>
-            for (size_t x = 0; x < keyCount; x++)
+            // Keys; each is (size32_t) + <content>
+            for (size32_t x = 0; x < keyCount; x++)
             {
-                size_t keyLen = keyLens[x];
+                size32_t keyLen = keyLens[x];
                 outBuffer.append(sizeof(keyLen), reinterpret_cast<byte *>(&keyLen));
                 outBuffer.append(keyLen, encryptedKeys[x]);
             }
@@ -606,23 +597,13 @@ OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResul
 
             // Cleanup
             EVP_CIPHER_CTX_free(encryptCtx);
-            for (size_t x = 0; x < publicKeys.size(); x++)
-                rtlFree(encryptedKeys[x]);
-            rtlFree(encryptedKeys);
+            delete [] encryptedKeys;
         }
         catch (...)
         {
             if (encryptCtx)
                 EVP_CIPHER_CTX_free(encryptCtx);
-            if (encryptedKeys)
-            {
-                for (size_t x = 0; x < publicKeys.size(); x++)
-                {
-                    if (encryptedKeys[x])
-                        rtlFree(encryptedKeys[x]);
-                }
-                rtlFree(encryptedKeys);
-            }
+            delete [] encryptedKeys;
             __lenResult = 0;
             rtlFree(__result);
             __result = nullptr;
@@ -631,7 +612,7 @@ OPENSSL_API void OPENSSL_CALL pkRSASeal(ICodeContext *ctx, size32_t & __lenResul
     }
 }
 
-OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
+SSLSERVICES_API void SSLSERVICES_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     // Initial sanity check of our arguments
     if (len_pem_private_key == 0)
@@ -653,9 +634,9 @@ OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenRes
             const EVP_CIPHER * cipher = cipherCache.checkCache(_algorithm_name);
 
             // Allocate memory for the symmetric key and IV
-            int keyLen = EVP_PKEY_size(privateKey);
+            size32_t keyLen = EVP_PKEY_size(privateKey);
             symmetricKey.ensureCapacity(keyLen);
-            int ivLen = EVP_CIPHER_iv_length(cipher);
+            size32_t ivLen = EVP_CIPHER_iv_length(cipher);
             iv.ensureCapacity(ivLen);
 
             // Unpack the structured ciphertext to extract the metadata
@@ -663,15 +644,15 @@ OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenRes
             // IV comes first, length determined by the cipher
             iv.append(ivLen, inPtr);
             inPtr += ivLen;
-            // Number of keys embedded in the metadata (size_t)
-            size_t keyCount = 0;
+            // Number of keys embedded in the metadata (size32_t)
+            size32_t keyCount = 0;
             memcpy(&keyCount, inPtr, sizeof(keyCount));
             inPtr += sizeof(keyCount);
-            // The keys; each has a length (size_t) then contents
+            // The keys; each has a length (size32_t) then contents
             std::vector<std::string> encryptedKeys;
-            for (size_t x = 0; x < keyCount; x++)
+            for (size32_t x = 0; x < keyCount; x++)
             {
-                size_t keySize = 0;
+                size32_t keySize = 0;
                 memcpy(&keySize, inPtr, sizeof(keySize));
                 inPtr += sizeof(keySize);
                 encryptedKeys.emplace_back(reinterpret_cast<const char *>(inPtr), keySize);
@@ -679,7 +660,7 @@ OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenRes
             }
 
             const byte * newCipherText = inPtr;
-            size_t newCipherTextLen = (len_ciphertext - (reinterpret_cast<const char *>(inPtr) - static_cast<const char *>(_ciphertext)));
+            size32_t newCipherTextLen = (len_ciphertext - (reinterpret_cast<const char *>(inPtr) - static_cast<const char *>(_ciphertext)));
 
             // Initialize the context for decryption
             decryptCtx = EVP_CIPHER_CTX_new();
@@ -700,15 +681,15 @@ OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenRes
                 failOpenSSLError("EVP_OpenInit");
 
             // Allocate memory for the plaintext
-            int plaintextLen = newCipherTextLen;
+            size32_t plaintextLen = newCipherTextLen;
             plaintext.ensureCapacity(plaintextLen);
 
-            int len = 0;
-            if (EVP_OpenUpdate(decryptCtx, static_cast<byte *>(plaintext.bufferBase()), &len, newCipherText, newCipherTextLen) != 1)
+            size32_t len = 0;
+            if (EVP_OpenUpdate(decryptCtx, static_cast<byte *>(plaintext.bufferBase()), reinterpret_cast<int *>(&len), newCipherText, newCipherTextLen) != 1)
                 failOpenSSLError("EVP_OpenUpdate");
             plaintextLen = len;
 
-            if (EVP_OpenFinal(decryptCtx, static_cast<byte *>(plaintext.bufferBase()) + len, &len) != 1)
+            if (EVP_OpenFinal(decryptCtx, static_cast<byte *>(plaintext.bufferBase()) + len, reinterpret_cast<int *>(&len)) != 1)
                 failOpenSSLError("EVP_OpenFinal");
             plaintextLen += len;
 
@@ -733,7 +714,7 @@ OPENSSL_API void OPENSSL_CALL pkRSAUnseal(ICodeContext *ctx, size32_t & __lenRes
     }
 }
 
-OPENSSL_API void OPENSSL_CALL pkEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_pem_public_key, const char * _pem_public_key)
+SSLSERVICES_API void SSLSERVICES_CALL pkEncrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_pem_public_key, const char * _pem_public_key)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -785,7 +766,7 @@ OPENSSL_API void OPENSSL_CALL pkEncrypt(ICodeContext *ctx, size32_t & __lenResul
     }
 }
 
-OPENSSL_API void OPENSSL_CALL pkDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key)
+SSLSERVICES_API void SSLSERVICES_CALL pkDecrypt(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_ciphertext, const void * _ciphertext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key)
 {
     __result = nullptr;
     __lenResult = 0;
@@ -837,7 +818,7 @@ OPENSSL_API void OPENSSL_CALL pkDecrypt(ICodeContext *ctx, size32_t & __lenResul
     }
 }
 
-OPENSSL_API void OPENSSL_CALL pkSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
+SSLSERVICES_API void SSLSERVICES_CALL pkSign(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_plaintext, const void * _plaintext, size32_t len_passphrase, const void * _passphrase, size32_t len_pem_private_key, const char * _pem_private_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -889,7 +870,7 @@ OPENSSL_API void OPENSSL_CALL pkSign(ICodeContext *ctx, size32_t & __lenResult, 
     }
 }
 
-OPENSSL_API bool OPENSSL_CALL pkVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm_name)
+SSLSERVICES_API bool SSLSERVICES_CALL pkVerifySignature(ICodeContext *ctx, size32_t len_signature, const void * _signature, size32_t len_signedData, const void * _signedData, size32_t len_pem_public_key, const char * _pem_public_key, const char * _algorithm_name)
 {
     EVP_MD_CTX *mdCtx = nullptr;
 
@@ -912,7 +893,7 @@ OPENSSL_API bool OPENSSL_CALL pkVerifySignature(ICodeContext *ctx, size32_t len_
             failOpenSSLError("EVP_DigestVerifyUpdate (pkVerifySignature)");
 
         // Perform the actual verification
-        int res = EVP_DigestVerifyFinal(mdCtx, reinterpret_cast<const unsigned char *>(_signature), len_signature);
+        size32_t res = EVP_DigestVerifyFinal(mdCtx, reinterpret_cast<const unsigned char *>(_signature), len_signature);
 
         // Clean up
         EVP_MD_CTX_free(mdCtx);

@@ -16,7 +16,7 @@
 ############################################################################## */
 
 // Service definition
-export OpenSSL := SERVICE : plugin('openssl')
+export SSLServices := SERVICE : plugin('sslservices')
 
     // Hash functions
     DATASET({STRING name}) digestAvailableAlgorithms() : cpp,action,context,entrypoint='digestAvailableAlgorithms';

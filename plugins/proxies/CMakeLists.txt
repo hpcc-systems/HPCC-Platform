@@ -27,5 +27,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plu
 ENDIF()
 
 IF (USE_OPENSSLV3)
-    install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_openssl.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+    install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_sslservices.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 ENDIF()

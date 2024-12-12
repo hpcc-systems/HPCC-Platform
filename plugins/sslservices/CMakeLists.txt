@@ -14,23 +14,23 @@
 #    limitations under the License.
 ##############################################################################
 
-# Component: openssl
+# Component: sslservices
 
 #############################################################
 # Description:
 # -----------
-# Cmake Input File for openssl
+# Cmake Input File for sslservices
 #############################################################
 
-project(openssl)
+project(sslservices)
 
 if (PLATFORM AND USE_OPENSSLV3)
     find_package(OpenSSL REQUIRED)
 
     set(
         SRCS
-        openssl.hpp
-        openssl.cpp
+        sslservices.hpp
+        sslservices.cpp
     )
 
     include_directories(
@@ -42,10 +42,10 @@ if (PLATFORM AND USE_OPENSSLV3)
     )
 
     add_definitions(-D_USRDLL -DECL_OPENSSL_EXPORTS)
-    HPCC_ADD_LIBRARY(openssl SHARED ${SRCS})
+    HPCC_ADD_LIBRARY(sslservices SHARED ${SRCS})
 
     install(
-        TARGETS openssl
+        TARGETS sslservices
         DESTINATION plugins CALC_DEPS
     )
     install(
@@ -55,7 +55,7 @@ if (PLATFORM AND USE_OPENSSLV3)
     )
 
     target_link_libraries(
-        openssl
+        sslservices
         eclrtl
         jlib
         OpenSSL::SSL
