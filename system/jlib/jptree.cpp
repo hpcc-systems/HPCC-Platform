@@ -8711,6 +8711,7 @@ class CConfigUpdater : public CInterface
     CriticalSection notifyFuncCS;
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
+    std::unordered_map<unsigned, ConfigModifyFunc> modifyConfigUpdates;
     std::vector<unsigned> pendingInitializeFuncIds;
 
 public:
@@ -8738,6 +8739,9 @@ public:
 
         Owned<IPropertyTree> config = getComponentConfig();
         Owned<IPropertyTree> global = getGlobalConfig();
+        for (auto & modifyFunc : modifyConfigUpdates)
+            modifyFunc.second(config, global);
+
         while (pendingInitializeFuncIds.size())
         {
             unsigned notifyFuncId = pendingInitializeFuncIds.back();
@@ -8753,6 +8757,7 @@ public:
 #endif
         if (0 == absoluteConfigFilename.length() || (nullptr != fileWatcher.get()))
             return false;
+
         auto updateFunc = [&](const char *filename, FileWatchEvents events)
         {
             bool changed = containsFileWatchEvents(events, FileWatchEvents::closedWrite) && streq(filename, configFilename);
@@ -8761,29 +8766,9 @@ public:
             changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
 #endif
             if (changed)
-            {
-                auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
-
-                // NB: block calls to get*Config*() until callbacks notified and new swapped in
-                CriticalBlock b(configCS);
-                Owned<IPropertyTree> oldComponentConfiguration = componentConfiguration.getClear();
-                Owned<IPropertyTree> oldGlobalConfiguration = globalConfiguration.getClear();
-
-                /* swapin before callbacks called, but before releasing crit.
-                 * That way the CB can see the old/diffs and act on them, but any
-                 * code calling e.g. getComponentConfig() will see new.
-                 */
-                componentConfiguration.setown(std::get<1>(result));
-                globalConfiguration.setown(std::get<2>(result));
-                if (!componentName)
-                    componentConfiguration->getProp("@name", componentName);
-
-                /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
-                   However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
-                executeCallbacks(oldComponentConfiguration, oldGlobalConfiguration);
-                absoluteConfigFilename.set(std::get<0>(result).c_str());
-            }
+                refreshConfiguration();
         };
+
         try
         {
             fileWatcher.setown(createFileEventWatcher(updateFunc));
@@ -8802,6 +8787,42 @@ public:
         }
         return true;
     }
+
+    void refreshConfiguration()
+    {
+        auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+
+        IPropertyTree * newComponentConfiguration = std::get<1>(result);
+        IPropertyTree * newGlobalConfiguration = std::get<2>(result);
+
+        //Ensure all modifications to the config take place before the config is update, and the monitoring functions are called.
+        for (auto & modifyFunc : modifyConfigUpdates)
+            modifyFunc.second(newComponentConfiguration, newGlobalConfiguration);
+
+        // NB: block calls to get*Config*() from other threads until callbacks notified and new swapped in, destroy old config outside the critical section
+        Owned<IPropertyTree> oldComponentConfiguration;
+        Owned<IPropertyTree> oldGlobalConfiguration;
+        {
+            CriticalBlock b(configCS);
+            oldComponentConfiguration.setown(componentConfiguration.getClear());
+            oldGlobalConfiguration.setown(globalConfiguration.getClear());
+
+            /* swapin before callbacks called, but before releasing crit.
+            * That way the CB can see the old/diffs and act on them, but any
+            * code calling e.g. getComponentConfig() will see new.
+            */
+            componentConfiguration.setown(newComponentConfiguration);
+            globalConfiguration.setown(newGlobalConfiguration);
+            if (!componentName)
+                componentConfiguration->getProp("@name", componentName);
+
+            /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
+            However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
+            executeCallbacks(oldComponentConfiguration, oldGlobalConfiguration);
+            absoluteConfigFilename.set(std::get<0>(result).c_str());
+        }
+    }
+
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
     {
         for (const auto &item: notifyConfigUpdates)
@@ -8835,9 +8856,24 @@ public:
         }
         return notifyFuncId;
     }
+    unsigned addModifyFunc(ConfigModifyFunc notifyFunc)
+    {
+        CriticalBlock b(notifyFuncCS);
+        notifyFuncId++;
+        modifyConfigUpdates[notifyFuncId] = notifyFunc;
+        if (isInitialized())
+        {
+            refreshConfiguiration(); // force all cached values to be recalculated
+            DBGLOG("Modify functions should be registered before the configuration is loaded");
+        }
+        return notifyFuncId;
+    }
     bool removeNotifyFunc(unsigned funcId)
     {
         CriticalBlock b(notifyFuncCS);
+        if (modifyConfigUpdates.erase(funcId) != 0)
+            return true;
+
         auto it = notifyConfigUpdates.find(funcId);
         if (it == notifyConfigUpdates.end())
             return false;
@@ -8871,6 +8907,13 @@ unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInsta
     if (!configFileUpdater) // NB: installConfigUpdateHook should always be called after configFileUpdater is initialized
         return 0;
     return configFileUpdater->addNotifyFunc(notifyFunc, callWhenInstalled);
+}
+
+jlib_decl unsigned installConfigUpdateHook(ConfigModifyFunc notifyFunc)  // This function must be called before the configuration is loaded.
+{
+    if (!configFileUpdater) // NB: installConfigUpdateHook should always be called after configFileUpdater is initialized
+        return 0;
+    return configFileUpdater->addModifyFunc(notifyFunc);
 }
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
