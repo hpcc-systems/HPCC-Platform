@@ -233,13 +233,15 @@ int main(int argc, const char* argv[])
                 {
                     bool useLowMemPTree = false;
                     bool saveFormatedTree = false;
+                    bool freePTree = false;
                     bool parseOnly = getComponentConfigSP()->getPropBool("@parseonly");
                     if (!parseOnly)
                     {
                         useLowMemPTree = getComponentConfigSP()->getPropBool("@lowmem");
                         saveFormatedTree = getComponentConfigSP()->getPropBool("@savexml");
+                        freePTree = getComponentConfigSP()->getPropBool("@free");
                     }
-                    loadXMLTest(params.item(1), parseOnly, useLowMemPTree, saveFormatedTree);
+                    loadXMLTest(params.item(1), parseOnly, useLowMemPTree, saveFormatedTree, freePTree);
                 }
                 else
                 {
