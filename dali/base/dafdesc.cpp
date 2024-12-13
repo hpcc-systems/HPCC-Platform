@@ -3794,16 +3794,16 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
     setupContainerizedStorageLocations();
 }
 
-void initializeStorageGroups(bool createPlanesFromGroups)
+void initializeStoragePlanes(bool createPlanesFromGroups, bool threadSafe)
 {
     auto updateFunc = [createPlanesFromGroups](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
     {
         //MORE: createPlanesFromGroup will never be updated....
-        PROGLOG("initializeStorageGroups update");
+        PROGLOG("initializeStoragePlanes update");
         doInitializeStorageGroups(createPlanesFromGroups, newGlobalConfiguration);
     };
 
-    configUpdateHook.installOnce(updateFunc);
+    configUpdateHook.installModifierOnce(updateFunc, threadSafe);
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)

@@ -346,7 +346,7 @@ public:
     ~CConfigUpdateHook() { clear(); }
     void clear();
     void installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled);
-    void installOnce(ConfigModifyFunc callbackFunc);
+    void installModifierOnce(ConfigModifyFunc callbackFunc, bool threadSafe);
 };
 
 /*

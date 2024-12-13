@@ -805,7 +805,7 @@ public:
                 waitToConnect -= delay;
             }
         }
-        initializeStorageGroups(daliHelper->connected());
+        initializeStoragePlanes(daliHelper->connected(), false); // This can be called while queries are running - so is not thread safe
         return daliHelper;
     }
 

@@ -398,8 +398,6 @@ public:
         processGroup->serialize(msg);
         globals->serialize(msg);
         getGlobalConfigSP()->serialize(msg);
-        DBGLOG("**** CONFIG ****");
-        dbglogXML(globals);
         msg.append(managerWorkerMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
@@ -762,7 +760,7 @@ int main( int argc, const char *argv[]  )
         }
 
         //This can only be called once dali is initialised
-        initializeStorageGroups(true);
+        initializeStoragePlanes(true, true);
 
         if (globals->getPropBool("@MPChannelReconnect"))
             getMPServer()->setOpt(mpsopt_channelreopen, "true");

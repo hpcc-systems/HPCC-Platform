@@ -8821,22 +8821,20 @@ public:
         }
         else if (avoidClone)
         {
+            //This is added during the initialiation phase, so no danger of other threads accesing the global information
+            //while it is updated.  Thor currently relies on the pointer not changing.
             Owned<IPropertyTree> newComponentConfiguration = getComponentConfigSP();
             Owned<IPropertyTree> newGlobalConfiguration = getGlobalConfigSP();
             refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
         }
         else
         {
-            DBGLOG("Refresh %p,", getComponentConfigSP().get());
-            dbglogXML(getComponentConfigSP());
             // File monitor is disabled - no updates to the configuration files are supported.
             //So clone the existing configuration and use that to refresh the config - update fucntions may perform differently.
             Owned<IPropertyTree> newComponentConfiguration = createPTreeFromIPT(getComponentConfigSP());
             Owned<IPropertyTree> newGlobalConfiguration = createPTreeFromIPT(getGlobalConfigSP());
             refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
         }
-        DBGLOG("Refreshed %p,", getComponentConfigSP().get());
-        dbglogXML(getComponentConfigSP());
     }
 
     void executeCallbacks()
@@ -8873,7 +8871,7 @@ public:
         }
         return notifyFuncId;
     }
-    unsigned addModifyFunc(ConfigModifyFunc notifyFunc)
+    unsigned addModifyFunc(ConfigModifyFunc notifyFunc, bool threadSafe)
     {
         CriticalBlock b(notifyFuncCS);
         notifyFuncId++;
@@ -8883,8 +8881,7 @@ public:
             //Force all cached values to be recalculated, do not reload the config
             //This is only legal if no other threads are accessing the config yet - otherwise the reading thread
             //could crash when the global configuration is updated.
-            //MORE: This function needs an extra parameter to indicate whether or not threads have already started/avoid clone
-            refreshConfiguration(false, true);
+            refreshConfiguration(false, threadSafe);
             DBGLOG("Modify functions should be registered before the configuration is loaded");
         }
         return notifyFuncId;
@@ -8925,11 +8922,11 @@ unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInsta
     return configFileUpdater->addNotifyFunc(notifyFunc, callWhenInstalled);
 }
 
-jlib_decl unsigned installConfigUpdateHook(ConfigModifyFunc notifyFunc)  // This function must be called before the configuration is loaded.
+jlib_decl unsigned installConfigUpdateHook(ConfigModifyFunc notifyFunc, bool threadSafe)  // This function must be called before the configuration is loaded.
 {
     if (!configFileUpdater) // NB: installConfigUpdateHook should always be called after configFileUpdater is initialized
         return 0;
-    return configFileUpdater->addModifyFunc(notifyFunc);
+    return configFileUpdater->addModifyFunc(notifyFunc, threadSafe);
 }
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
@@ -8973,7 +8970,7 @@ void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhen
 }
 
 
-void CConfigUpdateHook::installOnce(ConfigModifyFunc callbackFunc)
+void CConfigUpdateHook::installModifierOnce(ConfigModifyFunc callbackFunc, bool threadSafe)
 {
     unsigned id = configCBId.load(std::memory_order_acquire);
     if ((unsigned)-1 == id) // avoid CS in common case
@@ -8983,7 +8980,7 @@ void CConfigUpdateHook::installOnce(ConfigModifyFunc callbackFunc)
         id = configCBId.load(std::memory_order_acquire);
         if ((unsigned)-1 == id)
         {
-            id = installConfigUpdateHook(callbackFunc);
+            id = installConfigUpdateHook(callbackFunc, threadSafe);
             configCBId.store(id, std::memory_order_release);
         }
     }
@@ -10231,8 +10228,6 @@ void setExpertOpt(const char *opt, const char *value)
         config->setPropTree(xpath);
     getExpertOptPath(opt, xpath.clear());
     config->setProp(xpath, value);
-    DBGLOG("*** SET *** %p", config.get());
-    dbglogXML(config);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
