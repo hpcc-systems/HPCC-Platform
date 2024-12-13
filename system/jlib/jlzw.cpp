@@ -336,7 +336,7 @@ void CLZWCompressor::open(void *buf,size32_t max)
 
 
 
-#define HASHC(code,ch) (((0x01000193*(unsigned)code)^(unsigned char)ch)%LZW_HASH_TABLE_SIZE)
+#define HASHC(code,ch) (((fnvPrime32*(unsigned)code)^(unsigned char)ch)%LZW_HASH_TABLE_SIZE)
 
 #define BE_MEMCPY4(dst,src)     { if (supportbigendian) _WINCPYREV4(dst,src); else memcpy(dst,src,4); }
 

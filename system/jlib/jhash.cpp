@@ -64,12 +64,14 @@ MODULE_EXIT()
     // do not want these in your leak checking call releaseAtoms()
 }
 
-#define HASHONE(hash, c)        { hash *= 0x01000193; hash ^= c; }      // Fowler/Noll/Vo Hash... seems to work pretty well, and fast
+#define HASHONE(hash, c)        { hash *= fnvPrime32; hash ^= c; }      // Fowler/Noll/Vo Hash... seems to work pretty well, and fast
+#define HASHONE_FNV1a(hash, c)  { hash ^= c; hash *= fnvPrime32; }
 
 //Following is potentially quicker, but not tested
 //#define HASHONE(hash, c)        { hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24); hash ^= c; }
 
-unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
+// deprecatedHash* functions (non template versions) kept for unittest only
+unsigned deprecatedHashc(const unsigned char *k, unsigned length, unsigned initval)
 {
     unsigned hash = initval;
     unsigned char c;
@@ -94,7 +96,7 @@ unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
     return hash;
 }
 
-unsigned hashcz( const unsigned char *k, unsigned initval)
+unsigned deprecatedHashcz(const unsigned char *k, unsigned initval)
 {
     unsigned hash = initval;
     for (;;)
@@ -107,8 +109,87 @@ unsigned hashcz( const unsigned char *k, unsigned initval)
     return hash;
 }
 
-template <typename T>
-inline unsigned doHashValue( T value, unsigned initval)
+// FNV Hash Operations
+struct FNV1
+{
+    static inline void apply(unsigned &hash, unsigned char c)
+    {
+        hash *= fnvPrime32;
+        hash ^= c;
+    }
+};
+
+struct FNV1a
+{
+    static inline void apply(unsigned &hash, unsigned char c)
+    {
+        hash ^= c;
+        hash *= fnvPrime32;
+    }
+};
+
+template <typename HashPolicy>
+unsigned policyHashc(const unsigned char *k, unsigned length, unsigned initval)
+{
+    unsigned hash = initval;
+    unsigned char c;
+    while (length >= 8)
+    {
+        c = (*k++); HashPolicy::apply(hash, c);
+        c = (*k++); HashPolicy::apply(hash, c);
+        c = (*k++); HashPolicy::apply(hash, c);
+        c = (*k++); HashPolicy::apply(hash, c);
+        length-=4;
+    }
+    switch (length)
+    {
+    case 7: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 6: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 5: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 4: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 3: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 2: c = (*k++); HashPolicy::apply(hash, c); // fallthrough
+    case 1: c = (*k++); HashPolicy::apply(hash, c);
+    }
+    return hash;
+}
+
+template <typename HashPolicy>
+unsigned policyHashcz(const unsigned char *k, unsigned initval)
+{
+    unsigned hash = initval;
+    for (;;)
+    {
+        unsigned char c = (*k++);
+        if (c == 0)
+            break;
+        HashPolicy::apply(hash, c);
+    }
+    return hash;
+}
+
+unsigned hashc(const unsigned char *k, unsigned length, unsigned initval)
+{
+    return policyHashc<FNV1>(k, length, initval);
+}
+
+unsigned hashcz(const unsigned char *k, unsigned initval)
+{
+    return policyHashcz<FNV1>(k, initval);
+}
+
+unsigned hashc_fnv1a(const unsigned char *k, unsigned length, unsigned initval)
+{
+    return policyHashc<FNV1a>(k, length, initval);
+}
+
+unsigned hashcz_fnv1a(const unsigned char *k, unsigned initval)
+{
+    return policyHashcz<FNV1a>(k, initval);
+}
+
+template <typename HashPolicy, typename T>
+inline unsigned doHashValue(T value, unsigned initval)
 {
     //The values returned from this function are only consistent with those from hashn() if running on little endian architecture
     unsigned hash = initval;
@@ -117,30 +198,47 @@ inline unsigned doHashValue( T value, unsigned initval)
     {
         c = (byte)value;
         value >>= 8;
-        HASHONE(hash, c);
+        HashPolicy::apply(hash, c);
     }
     return hash;
 }
 
-unsigned hashvalue( unsigned value, unsigned initval)
+unsigned hashvalue(unsigned value, unsigned initval)
 {
-    return doHashValue(value, initval);
+    return doHashValue<FNV1>(value, initval);
 }
 
 unsigned hashvalue( unsigned __int64 value, unsigned initval)
 {
-    return doHashValue(value, initval);
+    return doHashValue<FNV1>(value, initval);
 }
 
 unsigned hashvalue( const void * value, unsigned initval)
 {
-    return doHashValue((memsize_t)value, initval);
+    return doHashValue<FNV1>((memsize_t)value, initval);
 }
+
+unsigned hashvalue_fnv1a(unsigned value, unsigned initval)
+{
+    return doHashValue<FNV1a>(value, initval);
+}
+
+unsigned hashvalue_fnv1a(unsigned __int64 value, unsigned initval)
+{
+    return doHashValue<FNV1a>(value, initval);
+}
+
+unsigned hashvalue_fnv1a(const void * value, unsigned initval)
+{
+    return doHashValue<FNV1a>((memsize_t)value, initval);
+}
+
 
 #define GETWORDNC(k,n) ((GETBYTE0(n)+GETBYTE1(n)+GETBYTE2(n)+GETBYTE3(n))&0xdfdfdfdf)
 
 
-unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval)
+template <typename HashPolicy>
+unsigned policyHashnc(const unsigned char *k, unsigned length, unsigned initval)
 {
     unsigned hash = initval;
     unsigned char c;
@@ -165,8 +263,8 @@ unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval)
     return hash;
 }
 
-
-unsigned hashncz( const unsigned char *k, unsigned initval)
+template <typename HashPolicy>
+unsigned policyHashncz(const unsigned char *k, unsigned initval)
 {
     unsigned hash = initval;
     for (;;)
@@ -178,6 +276,26 @@ unsigned hashncz( const unsigned char *k, unsigned initval)
         HASHONE(hash, c);
     }
     return hash;
+}
+
+unsigned hashnc(const unsigned char *k, unsigned length, unsigned initval)
+{
+    return policyHashnc<FNV1>(k, length, initval);
+}
+
+unsigned hashncz(const unsigned char *k, unsigned initval)
+{
+    return policyHashncz<FNV1>(k, initval);
+}
+
+unsigned hashnc_fnv1a(const unsigned char *k, unsigned length, unsigned initval)
+{
+    return policyHashnc<FNV1a>(k, length, initval);
+}
+
+unsigned hashncz_fnv1a(const unsigned char *k, unsigned initval)
+{
+    return policyHashncz<FNV1a>(k, initval);
 }
 
 MappingKey::MappingKey(const void * inKey, int keysize)
@@ -200,6 +318,7 @@ MappingKey::MappingKey(const void * inKey, int keysize)
   memcpy(temp, inKey, ksm);
   key = temp;
 }
+
 
 //-- Mapping ---------------------------------------------------
 

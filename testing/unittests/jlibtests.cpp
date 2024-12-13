@@ -21,9 +21,12 @@
  */
 
 #ifdef _USE_CPPUNIT
-#include <memory>
-#include <chrono>
 #include <algorithm>
+#include <chrono>
+#include <memory>
+#include <random>
+#include <vector>
+
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -4933,6 +4936,121 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibSecretsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibSecretsTest, "JLibSecretsTest" );
+class HashFuncTests : public CppUnit::TestFixture
+{
+public:
+    virtual void setUp() override
+    {
+        generateFixedRandomNullTermiantedStrings();
+    }
+
+    CPPUNIT_TEST_SUITE(HashFuncTests);
+        CPPUNIT_TEST(fnvTests);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr unsigned maxCalls = 10'000'000;
+    static constexpr unsigned minLen = 5, maxLen = 100;
+    static constexpr unsigned lenRange = maxLen - minLen + 1;
+    static constexpr unsigned randomSeed = 42;
+    static constexpr size_t testBufferSize = 1'000'000;
+    CCycleTimer timer;
+    std::vector<unsigned char> buffer;
+
+    unsigned getOffsetLenHash(unsigned offset, unsigned hash)
+    {
+        hash ^= (offset * 0x27D4EB2D); // use MurMurHash3 multiplier to introduce more randomness
+        hash *= fnvPrime32;
+        return hash;
+    }
+    void generateFixedRandomNullTermiantedStrings()
+    {
+        buffer.resize(testBufferSize);
+        std::mt19937 rng(randomSeed);
+        std::uniform_int_distribution<unsigned char> dist(1, 255);
+
+        unsigned offset = 0;
+        unsigned lenHash = fnvInitialHash32;
+        while (offset < testBufferSize)
+        {
+            // create str lengths between min and max based on offset,
+            // so that we can predictably read them back
+            lenHash = getOffsetLenHash(offset, lenHash);
+            unsigned len = (lenHash % lenRange) + minLen;
+
+            if (offset + len + 1 >= testBufferSize)
+                break;
+
+            for (unsigned i=0; i<len; i++)
+                buffer[offset + i] = dist(rng);
+            buffer[offset + len] = '\0';
+
+            offset += len + 1;
+        }
+    }
+    template <unsigned (*HASHCFUNC)(const unsigned char *, unsigned, unsigned)>
+    void testHashc()
+    {
+        unsigned hashResult = fnvInitialHash32;
+
+        unsigned offset = 0;
+        for (unsigned i=0; i<maxCalls; i++)
+        {
+            unsigned len = (i % 100) + 5;
+            if (offset + len > buffer.size())
+                offset = 0;
+
+            hashResult ^= HASHCFUNC(&buffer[offset], len, hashResult);
+            offset += len;
+        }
+        CPPUNIT_ASSERT(hashResult != 0);
+    }
+    template <unsigned (*HASHCZFUNC)(const unsigned char *, unsigned)>
+    void testHashcz()
+    {
+        unsigned hashResult = fnvInitialHash32;
+
+        unsigned lenHash = fnvInitialHash32;
+        unsigned offset = 0;
+        for (unsigned i=0; i<maxCalls; i++)
+        {
+            // get next length, as populated by generate function
+            lenHash = getOffsetLenHash(offset, lenHash);
+            unsigned len = (lenHash % lenRange) + minLen;
+
+            if (offset + (len + 1) > buffer.size())
+            {
+                offset = 0;
+                lenHash = getOffsetLenHash(offset, fnvInitialHash32);
+                len = (lenHash % lenRange) + minLen;
+            }
+            dbgassertex(len == strlen((const char *)&buffer[offset]));
+            hashResult ^= HASHCZFUNC(&buffer[offset], hashResult);
+            offset += len + 1;
+        }
+        CPPUNIT_ASSERT(hashResult != 0);
+    }
+    void measure(const char *funcName, const std::function<void(void)> &func)
+    {
+        timer.reset();
+        func();
+        unsigned elapsed = timer.elapsedMs();
+        double throughput = static_cast<double>(maxCalls) / elapsed * 1000;
+        PROGLOG("%s: %u calls took %u ms (%.2f hashes/sec)", funcName, maxCalls, elapsed, throughput);
+    }
+    void fnvTests()
+    {
+        measure("deprecatedHashc (fnv1)", [this]() { testHashc<deprecatedHashc>(); });
+        measure("deprecatedHashcz (fnv1)", [this]() { testHashcz<deprecatedHashcz>(); });
+        measure("hashc (fnv1)", [this]() { testHashc<hashc>(); });
+        measure("hashcz (fnv1)", [this]() { testHashcz<hashcz>(); });
+        measure("hashc_fnv1a", [this]() { testHashc<hashc_fnv1a>(); });
+        measure("hashcz_fnv1a", [this]() { testHashcz<hashcz_fnv1a>(); });
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( HashFuncTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( HashFuncTests, "HashFuncTests" );
 
 class JLibStringTest : public CppUnit::TestFixture
 {
