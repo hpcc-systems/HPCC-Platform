@@ -1862,9 +1862,9 @@ void EclAgent::runWorkunitAnalyser(IWorkUnit * w, const char * optGraph)
 {
     if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
     {
-        double costPerMs = calculateThorCost(1, getNodes());
+        double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, getNodes());
         IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-        analyseWorkunit(w, optGraph, analyzerOptions, costPerMs);
+        analyseWorkunit(w, optGraph, analyzerOptions, costPerHour);
     }
 }
 

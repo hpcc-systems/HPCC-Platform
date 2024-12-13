@@ -58,6 +58,7 @@ enum  WutOptValueType
     wutOptValueTypePercent,
     wutOptValueTypeCount,
     wutOptValueTypeBool,
+    wutOptValueTypeCost,
     wutOptValueTypeMax,
 };
 
@@ -71,10 +72,11 @@ struct WuOption
 
 constexpr struct WuOption wuOptionsDefaults[watOptMax]
 = { {watOptMinInterestingTime, "minInterestingTime", 1000, wutOptValueTypeMSec},
-    {watOptMinInterestingCost, "minInterestingCost", 30000, wutOptValueTypeMSec},
+    {watOptMinInterestingCost, "minInterestingCost", money2cost_type(5.0) /* $5 */, wutOptValueTypeCost},
     {watOptSkewThreshold, "skewThreshold", 20, wutOptValueTypePercent},
     {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount},
     {watPreFilteredKJThreshold, "preFilteredKJThreshold", 50, wutOptValueTypePercent},
+    {watCostRatePerHour, "costRatePerHour", 0, wutOptValueTypeCost},
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -107,9 +109,8 @@ public:
             case wutOptValueTypePercent:
                 wuOptions[opt] = statPercent((stat_type)val);
                 break;
+            case wutOptValueTypeCost:
             case wutOptValueTypeCount:
-                wuOptions[opt] = (stat_type) val;
-                break;
             case wutOptValueTypeBool:
                 wuOptions[opt] = (stat_type) val;
                 break;
@@ -121,25 +122,63 @@ public:
     void applyConfig(IPropertyTree *options)
     {
         if (!options) return;
+        bool minInterestedTimeExplitlySet = false;
         for (int opt = watOptFirst; opt < watOptMax; opt++)
         {
             StringBuffer wuOptionName("@");
             wuOptionName.append(wuOptionsDefaults[opt].name);
-            __int64 val =  options->getPropInt64(wuOptionName, -1);
-            if (val!=-1)
-                setOptionValue(static_cast<WutOptionType>(opt), val);
+            if (opt==watOptMinInterestingCost)
+            {
+                double val =  options->getPropReal(wuOptionName, -1.0);
+                if (val>=0.0)
+                {
+                    setOptionValue(static_cast<WutOptionType>(opt), money2cost_type(val));
+                    // if cost option provided, use it instead of the default interesting time option
+                    if (!minInterestedTimeExplitlySet)
+                        setOptionValue(watOptMinInterestingTime, 0);
+                }
+            }
+            else
+            {
+                __int64 val =  options->getPropInt64(wuOptionName, -1);
+                if (val!=-1)
+                {
+                    setOptionValue(static_cast<WutOptionType>(opt), val);
+                    if (opt==watOptMinInterestingTime)
+                        minInterestedTimeExplitlySet = true;
+                }
+            }
         }
     }
 
     void applyConfig(IConstWorkUnit * wu)
     {
+        bool minInterestedTimeExplitlySet = false;
         for (int opt = watOptFirst; opt < watOptMax; opt++)
         {
             StringBuffer wuOptionName("analyzer_");
             wuOptionName.append(wuOptionsDefaults[opt].name);
-            __int64 val = wu->getDebugValueInt64(wuOptionName, -1);
-            if (val!=-1)
-                setOptionValue(static_cast<WutOptionType>(opt), val);
+            if (opt==watOptMinInterestingCost)
+            {
+                double val =  wu->getDebugValueReal(wuOptionName, -1.0);
+                if (val>=0.0)
+                {
+                    setOptionValue(static_cast<WutOptionType>(opt), money2cost_type(val));
+                    // if cost option provided, use it instead of the default interesting time option
+                    if (!minInterestedTimeExplitlySet)
+                        setOptionValue(watOptMinInterestingTime, 0);
+                }
+            }
+            else
+            {
+                __int64 val = wu->getDebugValueInt64(wuOptionName, -1);
+                if (val!=-1)
+                {
+                    setOptionValue(static_cast<WutOptionType>(opt), val);
+                    if (opt==watOptMinInterestingTime)
+                        minInterestedTimeExplitlySet = true;
+                }
+            }
         }
     }
     stat_type queryOption(WutOptionType opt) const override { return wuOptions[opt]; }
@@ -175,12 +214,12 @@ class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 public:
     WorkunitRuleAnalyser();
 
-    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu);
+    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
 
     void applyRules();
     void check(const char * scope, IWuActivity & activity);
     void print();
-    void update(IWorkUnit *wu, double costRate);
+    void update(IWorkUnit *wu);
 
 protected:
     CIArrayOf<AActivityRule> rules;
@@ -1353,10 +1392,11 @@ WorkunitRuleAnalyser::WorkunitRuleAnalyser()
     gatherRules(rules);
 }
 
-void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu)
+void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
 {
     options.applyConfig(cfg);
     options.applyConfig(wu);
+    options.setOptionValue(watCostRatePerHour, money2cost_type(costRate));
 }
 
 
@@ -1372,11 +1412,8 @@ void WorkunitRuleAnalyser::check(const char * scope, IWuActivity & activity)
             Owned<PerformanceIssue> issue (new PerformanceIssue);
             if (rules.item(i).check(*issue, activity, options))
             {
-                if (issue->getTimePenalityCost() >= options.queryOption(watOptMinInterestingCost))
-                {
-                    if (!highestCostIssue || highestCostIssue->getTimePenalityCost() < issue->getTimePenalityCost())
-                        highestCostIssue.setown(issue.getClear());
-                }
+                if (!highestCostIssue || highestCostIssue->getTimePenalty() < issue->getTimePenalty())
+                    highestCostIssue.setown(issue.getClear());
             }
         }
     }
@@ -1401,10 +1438,10 @@ void WorkunitRuleAnalyser::print()
         issues.item(i).print();
 }
 
-void WorkunitRuleAnalyser::update(IWorkUnit *wu, double costRate)
+void WorkunitRuleAnalyser::update(IWorkUnit *wu)
 {
     ForEachItemIn(i, issues)
-        issues.item(i).createException(wu, costRate);
+        issues.item(i).createException(wu);
 }
 
 
@@ -2087,19 +2124,19 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPropertyTree *options, double costPerMs)
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPropertyTree *options, double costPerHour)
 {
     WorkunitRuleAnalyser analyser;
-    analyser.applyConfig(options, wu);
+    analyser.applyConfig(options, wu, costPerHour);
     analyser.analyse(wu, optGraph);
     analyser.applyRules();
-    analyser.update(wu, costPerMs);
+    analyser.update(wu);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costRate, bool updatewu)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerHour, bool updatewu)
 {
     WorkunitRuleAnalyser analyser;
-    analyser.applyConfig(nullptr, wu);
+    analyser.applyConfig(nullptr, wu, costPerHour);
     analyser.analyse(wu, nullptr);
     analyser.applyRules();
     analyser.print();
@@ -2107,7 +2144,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costRate, 
     {
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions(CostOptimizerName);
-        analyser.update(lockedwu, costRate);
+        analyser.update(lockedwu);
     }
 }
 
