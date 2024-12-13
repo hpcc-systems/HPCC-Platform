@@ -246,6 +246,7 @@ private:
     virtual void beforeDispose()
     {
         CriticalBlock b(daliHelperCrit);
+
         disconnectSem.interrupt();
         connectWatcher.stop();
         if (daliHelper==this)  // there is a tiny window where new dalihelper created immediately after final release
@@ -928,6 +929,7 @@ public:
             CriticalBlock b(daliConnectionCrit);
             if (isConnected)
             {
+                disableStoragePlanesDaliUpdates();
                 isConnected = false;
                 delete serverStatus;
                 serverStatus = NULL;

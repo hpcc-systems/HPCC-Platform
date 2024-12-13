@@ -3794,16 +3794,35 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
     setupContainerizedStorageLocations();
 }
 
+//Store whether we are currently creating planes from groups, and what the last update was
+static bool globalCreatePlanesFromGroups = false;
+static bool lastCreatedPlanesFromGroups = false;
 void initializeStoragePlanes(bool createPlanesFromGroups, bool threadSafe)
 {
-    auto updateFunc = [createPlanesFromGroups](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+    Rename parameter to updatePlanesFromDali?
     {
-        //MORE: createPlanesFromGroup will never be updated....
+        //If the createPlanesFromGroups parameter is now true, and was previously false, force an update
+        CriticalBlock block(storageCS);
+        if (!lastCreatedPlanesFromGroups && createPlanesFromGroups)
+            configUpdateHook.clear();
+        globalCreatePlanesFromGroups = createPlanesFromGroups;
+    }
+    MORE: Check this logic
+
+    auto updateFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+    {
+        bool createPlanesFromGroups = globalCreatePlanesFromGroups;
+        lastCreatedPlanesFromGroups = createPlanesFromGroups;
         PROGLOG("initializeStoragePlanes update");
         doInitializeStorageGroups(createPlanesFromGroups, newGlobalConfiguration);
     };
 
     configUpdateHook.installModifierOnce(updateFunc, threadSafe);
+}
+
+void disableStoragePlanesDaliUpdates()
+{
+    globalCreatePlanesFromGroups = false;
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)
