@@ -62,12 +62,13 @@ class PerformanceIssue : public CInterface
 public:
     int compareCost(const PerformanceIssue & other) const;
     void print() const;
-    void createException(IWorkUnit * we, double costRate);
+    void createException(IWorkUnit * we);
 
-    void set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, const char * msg, ...) __attribute__((format(printf, 4, 5)));
+    void set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, cost_type _costPenalty, const char * msg, ...) __attribute__((format(printf, 5, 6)));
     void setLocation(const char * definition);
     void setScope(const char *_scope) { scope.set(_scope); }
-    stat_type getTimePenalityCost() const { return timePenalty; }
+    stat_type getTimePenalty() const { return timePenalty; }
+    cost_type getCostPenalty() const { return costPenalty; }
 
 private:
     AnalyzerErrorCode errorCode = ANA_GENERICERROR_ID;
@@ -76,6 +77,7 @@ private:
     unsigned column = 0;
     StringAttr scope;
     stat_type timePenalty = 0; // number of nanoseconds lost as a result.
+    cost_type costPenalty = 0;
     StringBuffer comment;
 };
 
@@ -84,9 +86,11 @@ enum WutOptionType
     watOptFirst=0,
     watOptMinInterestingTime=0,
     watOptMinInterestingCost,
+    watOptMinInterestingWaste,
     watOptSkewThreshold,
     watOptMinRowsPerNode,
     watPreFilteredKJThreshold,
+    watClusterCostPerHour,
     watOptMax
 };
 
