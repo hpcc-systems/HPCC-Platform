@@ -2567,7 +2567,7 @@ void xmlSize(const char *filename, double pc)
     }
 }
 
-void loadXMLTest(const char *filename, bool parseOnly, bool useLowMemPTree, bool saveFormattedXML)
+void loadXMLTest(const char *filename, bool parseOnly, bool useLowMemPTree, bool saveFormattedXML, bool freePTree)
 {
     OwnedIFile iFile = createIFile(filename);
     OwnedIFileIO iFileIO = iFile->open(IFOread);
@@ -2639,7 +2639,8 @@ void loadXMLTest(const char *filename, bool parseOnly, bool useLowMemPTree, bool
         PROGLOG("Save took: %.2f", (float)timer.elapsedMs()/1000);
     }
 
-    ::LINK(iMaker->queryRoot()); // intentionally leak (avoid time clearing up)
+    if (!freePTree)
+        ::LINK(iMaker->queryRoot()); // intentionally leak (avoid time clearing up)
 }
 
 void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType)
