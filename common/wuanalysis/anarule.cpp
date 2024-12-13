@@ -21,6 +21,13 @@
 #include "anarule.hpp"
 #include "commonext.hpp"
 
+
+static cost_type calcIssueCost(stat_type timePenalty, const stat_type clusterCostPerHour)
+{
+    double timePenaltyPerHour = (double)statUnits2seconds(timePenalty) / 3600;
+    return timePenaltyPerHour*clusterCostPerHour;
+}
+
 class ActivityKindRule : public AActivityRule
 {
 public:
@@ -52,21 +59,24 @@ public:
         stat_type rowsMaxSkew = outputEdge->getStatRaw(StNumRowsProcessed, StSkewMax);
         if (rowsMaxSkew > options.queryOption(watOptSkewThreshold))
         {
-            // Use downstream activity time to calculate approximate cost
+            // Use downstream activity time to calculate approximate timePenalty
             IWuActivity * targetActivity = outputEdge->queryTarget();
             assertex(targetActivity);
             stat_type timeMaxLocalExecute = targetActivity->getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = targetActivity->getStatRaw(StTimeLocalExecute, StAvgX);
-            // Consider ways to improve this cost calculation further
-            stat_type cost = timeMaxLocalExecute - timeAvgLocalExecute;
-
-            IWuEdge * inputEdge = activity.queryInput(0);
-            if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
-                result.set(ANA_DISTRIB_SKEW_INPUT_ID, cost, "DISTRIBUTE output skew is worse than input skew");
-            else
-                result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, cost, "Significant skew in DISTRIBUTE output");
-            updateInformation(result, activity);
-            return true;
+            // Consider ways to improve this timePenalty calculation further
+            stat_type timePenalty = timeMaxLocalExecute - timeAvgLocalExecute;
+            cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
+            if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+            {
+                IWuEdge * inputEdge = activity.queryInput(0);
+                if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
+                    result.set(ANA_DISTRIB_SKEW_INPUT_ID, timePenalty, costPenalty, "DISTRIBUTE output skew is worse than input skew");
+                else
+                    result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, timePenalty, costPenalty, "Significant skew in DISTRIBUTE output");
+                updateInformation(result, activity);
+                return true;
+            }
         }
         return false;
     }
@@ -135,12 +145,13 @@ public:
             stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
 
-            stat_type cost;
+            stat_type timePenalty;
+            const char * msg = nullptr;
             if ((actkind==TAKspillread||actkind==TAKspillwrite) && (activity.getStatRaw(stat, StMinX) == 0))
             {
                 //If one node didn't spill then it is possible the skew caused all the lost time
-                cost = timeMaxLocalExecute;
-                result.set(ANA_IOSKEW_RECORDS_ID, cost, "Uneven worker spilling is causing uneven %s time", category);
+                timePenalty = timeMaxLocalExecute;
+                msg = "Uneven worker spilling";
             }
             else
             {
@@ -161,19 +172,25 @@ public:
                 }
                 if (wuEdge && wuEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
                     numRowsSkew = true;
-                cost = (timeMaxLocalExecute - timeAvgLocalExecute);
+                timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);
                 if (sizeSkew)
                 {
                     if (numRowsSkew)
-                        result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in number of records is causing uneven %s time", category);
+                        msg = "Significant skew in number of records";
                     else
-                        result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in record sizes is causing uneven %s time", category);
+                        msg = "Significant skew in record sizes";
                 }
                 else
-                    result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in IO performance is causing uneven %s time", category);
+                    msg = "Significant skew in IO performance";
             }
-            updateInformation(result, activity);
-            return true;
+            assertex(msg);
+            cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
+            if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+            {
+                result.set(ANA_IOSKEW_RECORDS_ID, timePenalty, costPenalty, "%s is causing uneven %s time", msg,  category);
+                updateInformation(result, activity);
+                return true;
+            }
         }
         return false;
     }
@@ -206,7 +223,7 @@ public:
 
         stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
         stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
-        stat_type timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);;
+        stat_type timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);
         if (timePenalty<options.queryOption(watOptMinInterestingTime))
             return false;
 
@@ -224,13 +241,19 @@ public:
         if (wuOutputEdge && (wuOutputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold)))
             outputSkewed = true;
 
-        if (inputSkewed)
-            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time caused by uneven input");
-        else if (outputSkewed)
-            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time caused by uneven output");
-        else
-            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time");
-        return true;
+        cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
+        if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+        {
+            if (inputSkewed)
+                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time caused by uneven input");
+            else if (outputSkewed)
+                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time caused by uneven output");
+            else
+                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time");
+            updateInformation(result, activity);
+            return true;
+        }
+        return false;
     }
 };
 
@@ -252,12 +275,16 @@ public:
                 if (preFilteredPer > options.queryOption(watPreFilteredKJThreshold))
                 {
                     IWuActivity * inputActivity = inputEdge->querySource();
-                    // Use input activity as the basis of cost because the rows generated from input activity is being filtered out
+                    // Use input activity as the basis of timePenalty because the rows generated from input activity is being filtered out
                     stat_type timeAvgLocalExecute = inputActivity->getStatRaw(StTimeLocalExecute, StAvgX);
-                    stat_type cost = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
-                    result.set(ANA_KJ_EXCESS_PREFILTER_ID, cost, "Large number of rows from left dataset rejected in keyed join");
-                    updateInformation(result, activity);
-                    return true;
+                    stat_type timePenalty = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
+                    cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
+                    if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+                    {
+                        result.set(ANA_KJ_EXCESS_PREFILTER_ID, timePenalty, costPenalty, "Large number of rows from left dataset rejected in keyed join");
+                        updateInformation(result, activity);
+                        return true;
+                    }
                 }
             }
         }
