@@ -426,13 +426,25 @@ extern jlib_decl IIdAtom * createIdAtom(const char *value);
 extern jlib_decl IIdAtom * createIdAtom(const char *value, size32_t len);
 
 extern jlib_decl void releaseAtoms();
-extern jlib_decl unsigned hashc( const unsigned char *k, unsigned length, unsigned initval);
-extern jlib_decl unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval);
-extern jlib_decl unsigned hashcz( const unsigned char *k, unsigned initval);
-extern jlib_decl unsigned hashncz( const unsigned char *k, unsigned initval);
-extern jlib_decl unsigned hashvalue( unsigned value, unsigned initval);
-extern jlib_decl unsigned hashvalue( unsigned __int64 value, unsigned initval);
-extern jlib_decl unsigned hashvalue( const void * value, unsigned initval);
+
+extern jlib_decl unsigned deprecatedHashc(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned deprecatedHashcz(const unsigned char *k, unsigned initval);
+
+extern jlib_decl unsigned hashc(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashnc(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashcz(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashncz(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashvalue(unsigned value, unsigned initval);
+extern jlib_decl unsigned hashvalue(unsigned __int64 value, unsigned initval);
+extern jlib_decl unsigned hashvalue(const void * value, unsigned initval);
+
+extern jlib_decl unsigned hashc_fnv1a(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashnc_fnv1a(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashcz_fnv1a(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashncz_fnv1a(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashvalue_fnv1a(unsigned value, unsigned initval);
+extern jlib_decl unsigned hashvalue_fnv1a(unsigned __int64 value, unsigned initval);
+extern jlib_decl unsigned hashvalue_fnv1a(const void * value, unsigned initval);
 
 //================================================
 // Minimal Hash table template - slightly less overhead that HashTable/SuperHashTable
