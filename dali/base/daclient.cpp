@@ -105,7 +105,7 @@ void installEnvConfigMonitor()
             // ISDSSubscription impl.
             virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=nullptr) override
             {
-                forceConfigRefresh();
+                refreshConfiguration();
             }
         };
 

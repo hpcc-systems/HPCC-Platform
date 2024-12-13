@@ -8712,7 +8712,6 @@ class CConfigUpdater : public CInterface
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
     std::unordered_map<unsigned, ConfigModifyFunc> modifyConfigUpdates;
-    std::vector<unsigned> pendingInitializeFuncIds;
 
 public:
     CConfigUpdater()
@@ -8722,10 +8721,9 @@ public:
     {
         return args.ordinality(); // NB: null terminated, so always >=1 if initialized
     }
-    void init(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, IPropertyTree *_globalDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
+    void init(IPropertyTree *_componentDefault, IPropertyTree *_globalDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
     {
         dbgassertex(!isInitialized());
-        absoluteConfigFilename.set(_absoluteConfigFilename);
         componentDefault.set(_componentDefault);
         globalDefault.set(_globalDefault);
         componentTag.set(_componentTag);
@@ -8737,18 +8735,7 @@ public:
             args.append(arg);
         args.append(nullptr);
 
-        Owned<IPropertyTree> config = getComponentConfig();
-        Owned<IPropertyTree> global = getGlobalConfig();
-        for (auto & modifyFunc : modifyConfigUpdates)
-            modifyFunc.second(config, global);
-
-        while (pendingInitializeFuncIds.size())
-        {
-            unsigned notifyFuncId = pendingInitializeFuncIds.back();
-            pendingInitializeFuncIds.pop_back();
-            ConfigUpdateFunc notifyFunc = notifyConfigUpdates[notifyFuncId];
-            notifyFunc(config, global);
-        }
+        refreshConfiguration(true);
     }
     bool startMonitoring()
     {
@@ -8761,12 +8748,13 @@ public:
         auto updateFunc = [&](const char *filename, FileWatchEvents events)
         {
             bool changed = containsFileWatchEvents(events, FileWatchEvents::closedWrite) && streq(filename, configFilename);
-#ifdef _CONTAINERIZED
+
             // NB: in k8s, it's a little strange, the config file is in a linked dir, a new dir is created and swapped in.
-            changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
-#endif
+            if (isContainerized())
+                changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
+
             if (changed)
-                refreshConfiguration();
+                refreshConfiguration(false);
         };
 
         try
@@ -8788,10 +8776,10 @@ public:
         return true;
     }
 
-    void refreshConfiguration(const char * configFilename, IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+    void refreshConfiguration(IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
     {
         CriticalBlock b(notifyFuncCS);
-        //Ensure all modifications to the config take place before the config is update, and the monitoring functions are called.
+        //Ensure all modifications to the config take place before the config is updated, and the monitoring/caching functions are called.
         for (auto & modifyFunc : modifyConfigUpdates)
             modifyFunc.second(newComponentConfiguration, newGlobalConfiguration);
 
@@ -8807,26 +8795,27 @@ public:
             * That way the CB can see the old/diffs and act on them, but any
             * code calling e.g. getComponentConfig() will see new.
             */
-            componentConfiguration.setown(newComponentConfiguration);
-            globalConfiguration.setown(newGlobalConfiguration);
-            if (!componentName)
-                componentConfiguration->getProp("@name", componentName);
+            componentConfiguration.set(newComponentConfiguration);
+            globalConfiguration.set(newGlobalConfiguration);
 
             /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
             However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
             executeCallbacks(oldComponentConfiguration, oldGlobalConfiguration);
-
-            //GH: MORE: Not sure this should be updated - the watcher isn't updated to match a change in filname
-            absoluteConfigFilename.set(configFilename);
         }
     }
 
-    void refreshConfiguration()
+    void refreshConfiguration(bool firstTime)
     {
         auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
         IPropertyTree * newComponentConfiguration = std::get<1>(result);
         IPropertyTree * newGlobalConfiguration = std::get<2>(result);
-        refreshConfiguration(std::get<0>(result).c_str(), newComponentConfiguration, newGlobalConfiguration);
+        refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
+
+        if (firstTime)
+        {
+            absoluteConfigFilename.set(std::get<0>(result).c_str());
+            newGlobalConfiguration->getProp("@name", componentName);
+        }
     }
 
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
@@ -8853,12 +8842,6 @@ public:
         {
             if (isInitialized())
                 notifyFunc(getComponentConfigSP(), getGlobalConfigSP());
-            else
-            {
-                // If the configuration is not yet be loaded, track notify callbacks that
-                // want to be initialized on install, and call during CConfigUpdater::init.
-                pendingInitializeFuncIds.push_back(notifyFuncId);
-            }
         }
         return notifyFuncId;
     }
@@ -8869,7 +8852,7 @@ public:
         modifyConfigUpdates[notifyFuncId] = notifyFunc;
         if (isInitialized())
         {
-            refreshConfiguration(); // force all cached values to be recalculated
+            refreshConfiguration(false); // force all cached values to be recalculated
             DBGLOG("Modify functions should be registered before the configuration is loaded");
         }
         return notifyFuncId;
@@ -8886,11 +8869,6 @@ public:
 
         ConfigUpdateFunc notifyFunc = it->second;
         notifyConfigUpdates.erase(it);
-        if (!isInitialized())
-        {
-           auto it = std::remove(pendingInitializeFuncIds.begin(), pendingInitializeFuncIds.end(), funcId);
-           pendingInitializeFuncIds.erase(it, pendingInitializeFuncIds.end());
-        }
         return true;
     }
 };
@@ -8932,11 +8910,11 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
         WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed", notifyFuncId);
 }
 
-void forceConfigRefresh()
+void refreshConfiguration()
 {
-    if (!configFileUpdater) // NB: executeConfigUpdaterCallbacks should always be called after configFileUpdater is initialized
+    if (!configFileUpdater) // NB: refreshConfiguration() should always be called after configFileUpdater is initialized
         return;
-    configFileUpdater->refreshConfiguration();
+    configFileUpdater->refreshConfiguration(false);
 }
 
 void CConfigUpdateHook::clear()
@@ -9130,11 +9108,6 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
     if (configFileUpdater->isInitialized())
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
 
-    auto result = doLoadConfiguration(componentDefault, globalDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
-
-    componentConfiguration.setown(std::get<1>(result));
-    globalConfiguration.setown(std::get<2>(result));
-
     /* In k8s, pods auto-restart by default on monitored ConfigMap settings/areas
      * ConfigMap settings/areas deliberately not monitored will rely on this config updater mechanism,
      * and if necessary, installed hooks that are called on an update, to perform updates of cached state.
@@ -9150,7 +9123,7 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
      * installed config hooks to be called when an environment change is detected e.g when pushed to Dali)
      */
 
-    configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, globalDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+    configFileUpdater->init(componentDefault, globalDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
         configFileUpdater->startMonitoring();
 
@@ -9182,7 +9155,7 @@ IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv,
 void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig)
 {
     assertex (configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
-    configFileUpdater->refreshConfiguration(nullptr, newComponentConfig, newGlobalConfig);
+    configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
 }
 
 void initNullConfiguration()
@@ -9193,7 +9166,7 @@ void initNullConfiguration()
     assertex(configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
     Owned<IPropertyTree> newComponentConfig(createPTree());
     Owned<IPropertyTree> newGlobalConfig(createPTree());
-    configFileUpdater->refreshConfiguration(nullptr, newComponentConfig, newGlobalConfig);
+    configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
 }
 
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
