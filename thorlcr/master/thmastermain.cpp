@@ -389,12 +389,17 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
+        //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
+        assertex(globals == getComponentConfigSP());
+
         PROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
         globals->serialize(msg);
         getGlobalConfigSP()->serialize(msg);
+        DBGLOG("**** CONFIG ****");
+        dbglogXML(globals);
         msg.append(managerWorkerMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
@@ -636,7 +641,9 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, false));
+        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
+        //MORE: What about updates to storage planes - they will not be passed through to the slaves
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
     }
 #ifdef _DEBUG
     unsigned holdWorker = globals->getPropInt("@holdSlave", NotFound);
@@ -754,6 +761,7 @@ int main( int argc, const char *argv[]  )
             }
         }
 
+        //This can only be called once dali is initialised
         initializeStorageGroups(true);
 
         if (globals->getPropBool("@MPChannelReconnect"))

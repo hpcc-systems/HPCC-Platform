@@ -8707,7 +8707,7 @@ class CConfigUpdater : public CInterface
     StringAttr componentTag, envPrefix, legacyFilename;
     IPropertyTree * (*mapper)(IPropertyTree *);
     StringAttr altNameAttribute;
-    Owned<IFileEventWatcher> fileWatcher;
+    Owned<IFileEventWatcher> fileWatcher; // null if updates to the config file are not allowed
     CriticalSection notifyFuncCS;
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
@@ -8735,7 +8735,7 @@ public:
             args.append(arg);
         args.append(nullptr);
 
-        refreshConfiguration(true);
+        refreshConfiguration(true, false);
     }
     bool startMonitoring()
     {
@@ -8754,7 +8754,7 @@ public:
                 changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
 
             if (changed)
-                refreshConfiguration(false);
+                refreshConfiguration(false, false);
         };
 
         try
@@ -8804,18 +8804,46 @@ public:
         }
     }
 
-    void refreshConfiguration(bool firstTime)
+    void refreshConfiguration(bool firstTime, bool avoidClone)
     {
-        auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
-        IPropertyTree * newComponentConfiguration = std::get<1>(result);
-        IPropertyTree * newGlobalConfiguration = std::get<2>(result);
-        refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
-
-        if (firstTime)
+        if (firstTime || fileWatcher)
         {
-            absoluteConfigFilename.set(std::get<0>(result).c_str());
-            newGlobalConfiguration->getProp("@name", componentName);
+            auto result = doLoadConfiguration(componentDefault, globalDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+            IPropertyTree * newComponentConfiguration = std::get<1>(result);
+            IPropertyTree * newGlobalConfiguration = std::get<2>(result);
+            refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
+
+            if (firstTime)
+            {
+                absoluteConfigFilename.set(std::get<0>(result).c_str());
+                newGlobalConfiguration->getProp("@name", componentName);
+            }
         }
+        else if (avoidClone)
+        {
+            Owned<IPropertyTree> newComponentConfiguration = getComponentConfigSP();
+            Owned<IPropertyTree> newGlobalConfiguration = getGlobalConfigSP();
+            refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
+        }
+        else
+        {
+            DBGLOG("Refresh %p,", getComponentConfigSP().get());
+            dbglogXML(getComponentConfigSP());
+            // File monitor is disabled - no updates to the configuration files are supported.
+            //So clone the existing configuration and use that to refresh the config - update fucntions may perform differently.
+            Owned<IPropertyTree> newComponentConfiguration = createPTreeFromIPT(getComponentConfigSP());
+            Owned<IPropertyTree> newGlobalConfiguration = createPTreeFromIPT(getGlobalConfigSP());
+            refreshConfiguration(newComponentConfiguration, newGlobalConfiguration);
+        }
+        DBGLOG("Refreshed %p,", getComponentConfigSP().get());
+        dbglogXML(getComponentConfigSP());
+    }
+
+    void executeCallbacks()
+    {
+        CriticalBlock notifyBlock(notifyFuncCS);
+        CriticalBlock configBlock(configCS);
+        executeCallbacks(componentConfiguration, globalConfiguration);
     }
 
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
@@ -8852,7 +8880,11 @@ public:
         modifyConfigUpdates[notifyFuncId] = notifyFunc;
         if (isInitialized())
         {
-            refreshConfiguration(false); // force all cached values to be recalculated
+            //Force all cached values to be recalculated, do not reload the config
+            //This is only legal if no other threads are accessing the config yet - otherwise the reading thread
+            //could crash when the global configuration is updated.
+            //MORE: This function needs an extra parameter to indicate whether or not threads have already started/avoid clone
+            refreshConfiguration(false, true);
             DBGLOG("Modify functions should be registered before the configuration is loaded");
         }
         return notifyFuncId;
@@ -8914,7 +8946,7 @@ void refreshConfiguration()
 {
     if (!configFileUpdater) // NB: refreshConfiguration() should always be called after configFileUpdater is initialized
         return;
-    configFileUpdater->refreshConfiguration(false);
+    configFileUpdater->refreshConfiguration(false, false);
 }
 
 void CConfigUpdateHook::clear()
@@ -10199,6 +10231,8 @@ void setExpertOpt(const char *opt, const char *value)
         config->setPropTree(xpath);
     getExpertOptPath(opt, xpath.clear());
     config->setProp(xpath, value);
+    DBGLOG("*** SET *** %p", config.get());
+    dbglogXML(config);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
