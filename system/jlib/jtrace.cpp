@@ -915,12 +915,13 @@ public:
     virtual void recordError(const SpanError & error) override {};
     virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage) override {}
 
-    virtual const char * queryTraceId() const override { return nullptr; }
-    virtual const char * querySpanId() const override { return nullptr; }
+    virtual const char * queryTraceId() const override { return "00000000000000000000000000000000"; }
+    virtual const char * querySpanId() const override { return "0000000000000000"; }
 
-    virtual const char* queryGlobalId() const override { return nullptr; }
-    virtual const char* queryCallerId() const override { return nullptr; }
-    virtual const char* queryLocalId() const override { return nullptr; }
+    // Note: GlobalID & LocalID are created from lnuid, which creates 23 char UIDs (16 rand bytes in base58), and uses "1" for zeroes
+    virtual const char* queryGlobalId() const override { return "11111111111111111111111"; }
+    virtual const char* queryCallerId() const override { return ""; }
+    virtual const char* queryLocalId() const override { return "11111111111111111111111"; }
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
@@ -1504,13 +1505,36 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
 
 //---------------------------------------------------------------------------------------------------------------------
 
-OwnedSpanScope::OwnedSpanScope(ISpan * _ptr) : span(_ptr)
+ActiveSpanScope::ActiveSpanScope(ISpan * _ptr) : ActiveSpanScope(_ptr, queryThreadedActiveSpan()) {}
+ActiveSpanScope::ActiveSpanScope(ISpan * _ptr, ISpan * _prev) : span(_ptr), prevSpan(_prev)
+{
+    setThreadedActiveSpan(_ptr);
+}
+
+ActiveSpanScope::~ActiveSpanScope()
+{
+    ISpan* current = queryThreadedActiveSpan();
+    if (current != span)
+    {
+        const char* currSpanID = current->querySpanId();
+        const char* expectedSpanID = span != nullptr ? span->querySpanId() : "0000000000000000";
+
+        IERRLOG("~ActiveSpanScope: threadActiveSpan has changed unexpectedly, expected: %s actual: %s", expectedSpanID, currSpanID);
+        return;
+    }
+
+    setThreadedActiveSpan(prevSpan);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+OwnedActiveSpanScope::OwnedActiveSpanScope(ISpan * _ptr) : span(_ptr)
 {
     if (_ptr)
         prevSpan = setThreadedActiveSpan(_ptr);
 }
 
-void OwnedSpanScope::setown(ISpan * _span)
+void OwnedActiveSpanScope::setown(ISpan * _span)
 {
     assertex(_span);
     //Just in case the span is already set, ensure it is ended and that the previous span is restored.
@@ -1519,12 +1543,12 @@ void OwnedSpanScope::setown(ISpan * _span)
     prevSpan = setThreadedActiveSpan(_span);
 }
 
-void OwnedSpanScope::set(ISpan * _span)
+void OwnedActiveSpanScope::set(ISpan * _span)
 {
     setown(LINK(_span));
 }
 
-void OwnedSpanScope::clear()
+void OwnedActiveSpanScope::clear()
 {
     if (span)
     {
@@ -1534,7 +1558,35 @@ void OwnedSpanScope::clear()
     }
 }
 
-OwnedSpanScope::~OwnedSpanScope()
+OwnedActiveSpanScope::~OwnedActiveSpanScope()
+{
+    clear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void OwnedSpanLifetime::setown(ISpan * _span)
+{
+    assertex(_span);
+    clear();
+    span.setown(_span);
+}
+
+void OwnedSpanLifetime::set(ISpan * _span)
+{
+    setown(LINK(_span));
+}
+
+void OwnedSpanLifetime::clear()
+{
+    if (span)
+    {
+        span->endSpan();
+        span.clear();
+    }
+}
+
+OwnedSpanLifetime::~OwnedSpanLifetime()
 {
     clear();
 }
