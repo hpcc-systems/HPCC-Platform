@@ -11,7 +11,7 @@ global:
       id: "1"
       name: "Loki"
     namespace:
-      name: "hpcc"
+      name: "default"
     logFormat:
       type: "json"
     logMaps:

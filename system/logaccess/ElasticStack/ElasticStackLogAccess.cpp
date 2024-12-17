@@ -252,7 +252,8 @@ const IPropertyTree * ElasticStackLogAccess::getIndexSearchStatus(const char * i
     if (!indexpattern || !*indexpattern)
         throw makeStringException(-1, "ElasticStackLogAccess::getIndexSearchStatus: indexpattern must be provided");
 
-    VStringBuffer indexsearch("_cat/indices/%s?format=JSON", indexpattern);
+//    VStringBuffer indexsearch("_cat/indices/%s?format=JSON", indexpattern);
+    VStringBuffer indexsearch("_cat/indices?v");
     return performAndLogESRequest(Client::HTTPMethod::GET, indexsearch.str(), "", "List of available indexes");
 
 }
@@ -261,6 +262,183 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
 {
     return performAndLogESRequest(Client::HTTPMethod::GET, "_cluster/health", "", "Target cluster health");
 }
+
+ bool ElasticStackLogAccess::healthReport(StringBuffer & report, LogAccessHealthReportOptions options)
+ {
+    try
+    {
+        report.appendf("\"ConnectionInfo\": { \"ConnectionString\": \"%s\" }", m_esConnectionStr.str());
+
+        report.append(", \"ConfigurationInfo\": { ");
+        if (m_pluginCfg)
+        {
+            StringBuffer configJSON;
+            toJSON(m_pluginCfg, configJSON, 0, JSON_Format|JSON_HideRootArrayObject);
+            report.appendf("\"ConfigurationTree\": %s", configJSON.str()); //json encode
+        }
+        else
+        {
+            report.append("\"Error\": \"Configuration tree is empty!!!\"");
+        }
+        report.append(" }"); // close config info
+
+        report.append(", \"Internals\": { ");
+        if (options.IncludeServerInternals)
+        {
+            report.appendf("\"Plugin\": { \"LogMaps\": {");
+            report.appendf("\"Global\": { \"ColName\": \"%s\", \"Source\": \"%s\", \"TimeStampCol\": \"%s\" }", m_globalSearchColName.str(), m_globalIndexSearchPattern.str(), m_globalIndexTimestampField.str()); 
+            report.appendf(", \"Workunits\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_workunitSearchColName.str(), m_workunitIndexSearchPattern.str());
+            report.appendf(", \"Components\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_componentsSearchColName.str(), m_componentsIndexSearchPattern.str());
+            report.appendf(", \"Audience\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_audienceSearchColName.str(), m_audienceIndexSearchPattern.str());
+            report.appendf(", \"Class\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_classSearchColName.str(), m_classIndexSearchPattern.str());
+            report.appendf(", \"Instance\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_instanceSearchColName.str(), m_instanceIndexSearchPattern.str());
+            report.appendf(", \"Pod\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_podSearchColName.str(), m_podIndexSearchPattern.str());
+            report.appendf(", \"TraceID\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_traceSearchColName.str(), m_traceIndexSearchPattern.str());
+            report.appendf(", \"SpanID\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_spanSearchColName.str(), m_spanIndexSearchPattern.str());
+            report.appendf(", \"Host\": { \"ColName\": \"%s\", \"Source\": \"%s\"}", m_hostSearchColName.str(), m_hostIndexSearchPattern.str());
+            report.append(" }"); //close logmaps
+            report.append(" }"); //close plugin
+        }
+
+        if (options.IncludeServerInternals)
+        {
+            report.append(", \"Server\": { \"ESStatus\": ");
+            try
+            {
+                StringBuffer out;
+                const IPropertyTree * status = getESStatus();
+                if (status)
+                {
+                    toJSON(status, report);
+                }
+                else
+                {
+                    report.append("\"Could not populate ES Status\"");
+                }
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Exception fetching ES Status (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Unknown exception while fetching ES Status\"");
+            }
+
+            report.append(", \"AvailableIndices\": ");
+            try
+            {
+                const IPropertyTree * is =  getIndexSearchStatus(m_globalIndexSearchPattern);
+                if (is)
+                {
+                    toJSON(is, report);
+                }
+                else
+                {
+                    report.appendf("\"Could not populate Available Indices for Index %s\"", m_globalIndexSearchPattern.str());
+                }
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Exception fetching available ES indices (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Unknown exception while fetching available ES indices\"");
+            }
+
+            report.append(", \"TimestampField\": ");
+            try
+            {
+                const IPropertyTree * ts = getTimestampTypeFormat(m_globalIndexSearchPattern, m_globalIndexTimestampField);
+                if (ts)
+                {
+                    toJSON(ts, report);
+                }
+                else
+                {
+                    report.appendf("\"Could not populate AES timestamp format for IndexPattern %s\"", m_globalIndexSearchPattern.str());
+                }
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Exception fetching target ES timestamp format (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Unknown exception while fetching target ES timestamp format\"");
+            }
+            report.append(" } "); //close Server
+        }
+        report.append(" } "); //close Internals
+
+        if (options.IncludeSampleQuery)
+        {
+            report.append(", \"SampleQuery\": { ");
+            try
+            {
+                report.appendf("\"Query\": { \"LogFormat\": \"JSON\",");
+                LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_json;
+                LogAccessConditions queryOptions;
+                report.appendf("\"Filter\": {\"type\": \"byComponent\", \"value\": \"eclwatch\" },");
+                queryOptions.setFilter(getComponentLogAccessFilter("eclwatch"));
+
+                struct LogAccessTimeRange range;
+                CDateTime endtt;
+                endtt.setNow();
+                range.setEnd(endtt);
+                StringBuffer endstr;
+                endtt.getString(endstr);
+
+                CDateTime startt;
+                startt.setNow();
+                startt.adjustTimeSecs(-60); //an hour ago
+                range.setStart(startt);
+
+                StringBuffer startstr;
+                startt.getString(startstr);
+                report.appendf("\"TimeRange\": {\"Start\": \"%s\", \"End\": \"%s\" },", startstr.str(), endstr.str());
+                queryOptions.setTimeRange(range);
+                queryOptions.setLimit(5);
+                report.appendf("\"Limit\": \"5\" }, ");
+
+                StringBuffer logs;
+                LogQueryResultDetails  resultDetails;
+                fetchLog(resultDetails, queryOptions, logs, outputFormat);
+                report.appendf("\"ResultCount\": \"%d\", ", resultDetails.totalReceived);
+                report.appendf("\"Results\": %s", logs.str());
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Error\": \"Exception while executing sample query (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+            }
+            catch(...)
+            {
+                report.append("\"Error\": \"Unknown exception while executing samplequery\"");
+            }
+            report.append(" }"); //close sample query
+        }
+    }
+    catch(...)
+    {
+        report.append("\"Error\": \"Encountered unexpected exception during health report\"");
+        return false;
+    }
+
+    return true;
+ }
 
 /*
  * Transform iterator of hits/fields to back-end agnostic response

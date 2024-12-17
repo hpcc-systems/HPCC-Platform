@@ -385,3 +385,30 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
 
     return true;
 }
+
+bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp)
+{
+    StringBuffer report;
+    //LogAccessHealthReportDetails  reportDetails;
+    LogAccessHealthReportOptions options;
+    options.IncludeServerInternals = req.getIncludeServerInternals();
+    options.IncludePluginInternals = req.getIncludePluginInternals();
+    options.IncludeSampleQuery = req.getIncludeSampleQuery();
+
+    report.set("{ ");
+    bool success = true;
+    if (!queryRemoteLogAccessor())
+    {
+        report.append("\"Error\": \"LogAccess plugin not available, review logAccess configuration!\"");
+        success = false;
+    }
+    else
+    {
+        //queryRemoteLogAccessor()->healthReport(report, reportDetails);
+        queryRemoteLogAccessor()->healthReport(report, options);
+    }
+    report.append(" }");
+    resp.setReport(report.str());
+
+    return success;
+}
