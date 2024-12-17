@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 #include "platform.h"
@@ -3496,6 +3497,78 @@ void cleanJobQueues(bool dryRun)
         PROGLOG("Job queue '%s': %s %u stale client entries", name, dryRun ? "dryrun, there are" : "removed", (unsigned)toRemove.size());
         queueConn->commit();
         queueConn.clear();
+    }
+}
+
+void cleanGeneratedDlls(bool dryRun, bool backup)
+{
+    PROGLOG("Gathering workunits for referencd generated dlls");
+    CCycleTimer timer;
+    Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+    if (!conn)
+    {
+        WARNLOG("Failed to connect to /WorkUnits");
+        return;
+    }
+    IPropertyTree *root = conn->queryRoot();
+    IPropertyTree *wuidsTree = root->queryPropTree("WorkUnits");
+    if (!wuidsTree)
+    {
+        PROGLOG("No WorkUnits found");
+        return;
+    }
+    Owned<IPropertyTreeIterator> wuidIter = wuidsTree->getElements("*");
+    std::unordered_set<std::string> referencedGDlls;
+    ForEach(*wuidIter)
+    {
+        IPropertyTree &wuid = wuidIter->query();
+        Owned<IPropertyTreeIterator> gdIter = wuid.getElements("Query/Associated/File[@type='dll']");
+        ForEach(*gdIter)
+        {
+            IPropertyTree &gd = gdIter->query();
+            const char *fullPath = gd.queryProp("@filename");
+            const char *filename = pathTail(fullPath);
+            if (filename)
+                referencedGDlls.emplace(filename);
+        }
+    }
+    PROGLOG("Found %u workunits that reference generated dlls, took: %u ms", (unsigned)referencedGDlls.size(), timer.elapsedMs());
+    PROGLOG("Scanning GeneratedDlls");
+    timer.reset();
+    IPropertyTree *generatedDllsTree = root->queryPropTree("GeneratedDlls");
+    if (!generatedDllsTree)
+    {
+        PROGLOG("No GeneratedDlls found");
+        return;
+    }
+    std::vector<IPropertyTree *> gDllsToRemove;
+    unsigned totalGDlls = 0;
+    Owned<IPropertyTreeIterator> gDlls = generatedDllsTree->getElements("*");
+    ForEach(*gDlls)
+    {
+        ++totalGDlls;
+        IPropertyTree &gDll = gDlls->query();
+        const char *name = gDll.queryProp("@name");
+        if (referencedGDlls.find(name) == referencedGDlls.end())
+            gDllsToRemove.push_back(&gDll);
+    }
+    PROGLOG("Found %u GeneratedDlls, %u not referenced, took: %u ms", totalGDlls, (unsigned)gDllsToRemove.size(), timer.elapsedMs());
+    if (!dryRun)
+    {
+        if (backup)
+        {
+            StringBuffer bakName;
+            Owned<IFileIO> iFileIO = createUniqueFile(NULL, "daliadmin_generateddlls", "bak", bakName);
+            if (!iFileIO)
+                throw makeStringException(0, "Failed to create backup file");
+            PROGLOG("Saving backup of GeneratedDlls to %s", bakName.str());
+            saveXML(*iFileIO, generatedDllsTree, 2);
+        }
+        PROGLOG("Deleting %u unreferenced GeneratedDlls", (unsigned)gDllsToRemove.size());
+        timer.reset();
+        for (auto &item: gDllsToRemove)
+            generatedDllsTree->removeTree(item);
+        PROGLOG("Removed %u unreferenced GeneratedDlls, took: %u ms", (unsigned)gDllsToRemove.size(), timer.elapsedMs());
     }
 }
 
