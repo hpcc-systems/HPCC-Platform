@@ -88,8 +88,9 @@ bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
     if (!hostGroup)
         return false;
 
-    if (which >= hostGroup->getCount("hosts"))
-        throw makeStringException(0, "getPlaneHost: index out of range");
+    unsigned maxHosts = hostGroup->getCount("hosts");
+    if (which >= maxHosts)
+        throw makeStringExceptionV(0, "getPlaneHost: index %u out of range 1..%u", which, maxHosts);
     VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
     host.append(hostGroup->queryProp(xpath));
     return true;

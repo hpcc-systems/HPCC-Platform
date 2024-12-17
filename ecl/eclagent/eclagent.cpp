@@ -3785,7 +3785,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
             }
         }
 
-        initializeStorageGroups(daliClientActive());
+        initializeStoragePlanes(daliClientActive(), true);
 
         if (!standAloneWorkUnit)
         {
