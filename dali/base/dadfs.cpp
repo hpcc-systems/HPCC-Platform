@@ -247,7 +247,7 @@ extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_ty
 
 
 // Deprecated and should be removed and new feature tested
-RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
+RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
 {
     partno--;
     StringBuffer tmp;
