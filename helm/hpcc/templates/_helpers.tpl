@@ -1894,6 +1894,7 @@ args:
       {{- end -}}
      {{- end -}}
      {{- $_ := set $local "dnsNames" (uniq $local.dnsNames ) -}}
+     {{- $_ := set $local "allDomains" (prepend (default list $issuer.alternativeDomains) $domain ) -}}
      {{- if $externalCert -}}
        {{- $_ := set $local "commonName" (mustFirst $local.dnsNames ) -}}
      {{- else -}}
@@ -1929,7 +1930,9 @@ spec:
      {{- end }}
   dnsNames:
      {{- range $dnsName := $local.dnsNames }}
-  - {{ (printf "%s.%s" $dnsName $domain) | quote }}
+     {{- range $altDomain := $local.allDomains }}
+  - {{ (printf "%s.%s" $dnsName $altDomain) | quote }}
+     {{- end }}
      {{- end }}
      {{- if $spiffe }}
   uris:
