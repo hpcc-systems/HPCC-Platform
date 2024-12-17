@@ -58,6 +58,6 @@ constexpr ResolveOptions operator &(ResolveOptions l, ResolveOptions r) { return
  */
 
 extern da_decl IPropertyTree * resolveLogicalFilenameFromDali(const char * filename, IUserDescriptor * user, ResolveOptions options);
-extern da_decl void normalizeHostGroups();  // Expand indirect hostGroups so each hostGroups has an expanded list of host names
+extern da_decl void normalizeHostGroups(IPropertyTree * globalConfig);  // Expand indirect hostGroups so each hostGroups has an expanded list of host names
 
 #endif

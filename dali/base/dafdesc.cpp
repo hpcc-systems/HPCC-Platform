@@ -3786,7 +3786,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
     }
 
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
-    normalizeHostGroups();
+    normalizeHostGroups(newGlobalConfiguration);
 
     //The following can be removed once the storage planes have better integration
     setupContainerizedStorageLocations();

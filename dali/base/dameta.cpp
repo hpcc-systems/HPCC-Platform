@@ -21,10 +21,12 @@
 #include "dautils.hpp"
 
 
-// Expand indirect hostGroups so each hostGroups has an expanded list of host names
-void normalizeHostGroups()
+//Expand indirect hostGroups so each hostGroups has an expanded list of host names
+//This function cannot use (directly or indirectly) getGlobalConfig(), because it may be called when creating
+//a new config.
+void normalizeHostGroups(IPropertyTree * globalConfig)
 {
-    Owned<IPropertyTreeIterator> hostGroupIter = getGlobalConfigSP()->getElements("storage/hostGroups");
+    Owned<IPropertyTreeIterator> hostGroupIter = globalConfig->getElements("storage/hostGroups");
     //Process the groups in order - so that multiple levels of indirection are supported
     ForEach (*hostGroupIter)
     {
@@ -33,7 +35,15 @@ void normalizeHostGroups()
         {
             const char * name = cur.queryProp("@name");
             const char * baseGroup = cur.queryProp("@hostGroup");
-            Owned<IPropertyTree> match = getHostGroup(baseGroup, true);
+            if (!baseGroup)
+                throw makeStringExceptionV(-1, "HostGroup %s with no hosts does not have a base hostgroup", name ? name : "<null>");
+
+            //Cannot call getHostGroup() because that uses getGlobalConfig()
+            VStringBuffer xpath("storage/hostGroups[@name='%s']", baseGroup);
+            IPropertyTree * match = globalConfig->queryPropTree(xpath);
+            if (!match)
+                throw makeStringExceptionV(-1, "No entry found for hostGroup: '%s'", baseGroup);
+
             StringArray hosts;
             Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
             ForEach (*hostIter)
