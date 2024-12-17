@@ -772,7 +772,7 @@ struct CLogicalNameEntry: public CInterface
     RemoteFilename &constructPartFilename(unsigned partNo, bool replicate, RemoteFilename &rfn)
     {
         if (!plane)
-            throw MakeStringException(0, "Plane definition \"%s\" is missing for File", grpname.str());
+            throw makeStringExceptionV(0, "Plane definition \"%s\" is missing for File", grpname.str());
         unsigned numDevices = plane->numDevices();
         bool r = replicate?1:0;
 
@@ -964,13 +964,12 @@ static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
         {
             mname.ensureCapacity(strlen(name));
-            mname.append(prefix);
-            name += prefixLen;
+            mname.append(prefix).append(PATHSEPCHAR);
+            name += prefixLen + 1;
             stripeNum = 0;
             if (plane.getPropInt("@numDevices") > 1)
             {
-                name++;
-                if (!*name || *name!='d')
+                if (*name!='d')
                     throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 name++;
                 if (*name==PATHSEPCHAR)
@@ -980,8 +979,9 @@ static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                     stripeNum = stripeNum*10+(*name-'0');
                     name++;
                 }
-                if (!*name || *name!=PATHSEPCHAR)
+                if (*name!=PATHSEPCHAR)
                     throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                name++;
                 if (stripeNum>=plane.getPropInt("@numDevices"))
                     throw makeStringExceptionV(-1, "Stripe number in file %s is greater than numDevices in storage plane definition", filename);
             }
@@ -996,14 +996,17 @@ static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     max = 0;
     dirPerPart = 0;
     const char * cur = name;
-    for (;;) {
+    for (;;)
+    {
         char c=*cur;
         if (!c)
             break;
-        if ((c=='.')&&(cur[1]=='_')) {
+        if ((c=='.')&&(cur[1]=='_'))
+        {
             unsigned pn = 0;
             const char *s = cur+2;
-            while (*s&&isdigit(*s)) {
+            while (*s&&isdigit(*s))
+            {
                 pn = pn*10+(*s-'0');
                 s++;
             }
@@ -1016,7 +1019,7 @@ static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
             for (int i=1;d!=name&&isdigit(*d);i*=10,d--)
                 dirPerPart += (*d-'0')*i;
             // If a dir-per-part number was found, check that it matches the part number
-            if (*d&&*d=='/')
+            if (*d=='/')
             {
                 if (dirPerPart!=pn)
                     throw makeStringExceptionV(-1, "Dir-per-part # does not match part # of file %s", filename);
@@ -1025,14 +1028,18 @@ static void parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
             else
                 mname.append(cur-name,name);
 
-            if (pn&&(memicmp(s,"_of_",4)==0)) {
+            if (pn&&(memicmp(s,"_of_",4)==0))
+            {
                 unsigned mn = 0;
                 s += 4;
-                while (*s&&isdigit(*s)) {
+                while (*s&&isdigit(*s))
+                {
                     mn = mn*10+(*s-'0');
                     s++;
                 }
-                if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn)) {          // NB allow trailing extension
+                if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn))
+                {
+                    // NB allow trailing extension
                     mname.append("._$P$_of_").append(mn);
                     if (*s)
                         mname.append(s);
@@ -3091,10 +3098,13 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
 
         // A file without a storage plane throws an exception
-        try {
+        try
+        {
             parseFileName("/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3102,10 +3112,13 @@ protected:
         }
 
         // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3113,10 +3126,13 @@ protected:
         }
 
         // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3124,10 +3140,13 @@ protected:
         }
 
         // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/datadir/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3135,10 +3154,13 @@ protected:
         }
 
         // A file where the stripe number is equal to numDevices(111) throws an exception
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d111/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3146,10 +3168,13 @@ protected:
         }
 
         // A file where the dir-per-part number does not match the part number
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3157,10 +3182,13 @@ protected:
         }
 
         // A file where the part number is greater than the max part number
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
@@ -3168,10 +3196,13 @@ protected:
         }
 
         // A file where the part number is missing
-        try {
+        try
+        {
             parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
             CPPUNIT_ASSERT(false);
-        } catch (IException *e) {
+        }
+        catch (IException *e)
+        {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
