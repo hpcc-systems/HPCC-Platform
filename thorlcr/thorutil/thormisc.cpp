@@ -78,7 +78,7 @@ static Owned<IMPtagAllocator> ClusterMPAllocator;
 
 // stat. mappings shared between master and slave activities
 const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StSizePeakTempDisk});
-const StatisticsMapping executeStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
+const StatisticsMapping executeStatistics({StWhenFirstRow, StTimeElapsed, StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping soapcallStatistics({StTimeSoapcall, StTimeSoapcallDNS, StTimeSoapcallConnect, StNumSoapcallConnectFailures});
 const StatisticsMapping basicActivityStatistics({StNumParallelExecute, StTimeLookAhead}, executeStatistics, spillStatistics);
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
