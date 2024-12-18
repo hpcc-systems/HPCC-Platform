@@ -24,6 +24,9 @@ global:
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 80
+    # GlobalSysLog records user/operator messages to dali so that messages are reported in ECL Watch
+    # The following enables GlobalSysLog (default: disabled)
+    #enableGlobalSysLog: true
 
   # tracing sets the default tracing information for all components. Can be overridden locally
   tracing:
