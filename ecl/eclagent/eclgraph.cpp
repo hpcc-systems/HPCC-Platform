@@ -37,6 +37,7 @@
 #include "thorfile.hpp"
 #include "commonext.hpp"
 #include "thorcommon.hpp"
+#include "anawu.hpp"
 
 #include <list>
 #include <string>
@@ -1616,11 +1617,11 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
         try
         {
             executeThorGraph(graphName, *wuRead, *agentTopology);
-            runWorkunitAnalyserAfterGraph(graphName);
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
         }
         catch (...)
         {
-            runWorkunitAnalyserAfterGraph(graphName);
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
             throw;
         }
     }
