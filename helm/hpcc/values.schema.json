@@ -1141,10 +1141,10 @@
           "description": "The data format used to report logging: xml|json|table(space delimited values)",
           "enum": [ "xml", "json", "table"]
         },
-	"enableGlobalSysLog": {
-	  "type": "boolean",
-          "description" : "Enable the reporting of important user/operator messages in ECL Watch"
-	}
+        "enableGlobalSysLog": {
+            "type": "boolean",
+                "description" : "Enable centralized reporting of important user/operator logging messages"
+        }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
     },

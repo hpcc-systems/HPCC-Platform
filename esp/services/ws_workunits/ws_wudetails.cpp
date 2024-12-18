@@ -496,7 +496,10 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
             // 2) dynamic global messages generated from executing components
             // Static component messages will have COMPONENT_NOTE_MASK.
             Owned<IPropertyTreeIterator> iter = componentConfig->getElements("warnings");
-            unsigned __int64 id=1;
+            unsigned __int64 entry_num=1;
+            CDateTime dt;
+            dt.setNow();
+            timestamp_type ts = dt.getTimeStamp();
             ForEach(*iter)
             {
                 IPropertyTree & cur = iter->query();
@@ -510,37 +513,28 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
                     espWuResponseNote->setErrorCode_null();
                 espWuResponseNote->setSeverity(cur.queryProp("@severity"));
                 espWuResponseNote->setCost(0);
-                VStringBuffer idstr("%" I64F "u", id|COMPONENT_NOTE_MASK);
+                VStringBuffer idstr("%" I64F "u", makeMessageId(ts, entry_num, true));
                 espWuResponseNote->setId(idstr.str());
                 espWuResponseNotes.append(*espWuResponseNote.getClear());
-                id++;
+                entry_num++;
             }
             Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
             msgFilter->setVisibleOnly();
-            try
+            Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
+            ForEach(*msgIter)
             {
-                Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
-                ForEach(*msgIter)
-                {
-                    ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
-                    Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
-                    StringBuffer tmpbuf;
-                    encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
-                    espWuResponseNote->setSource(sysInfoMsg.querySource());
-                    espWuResponseNote->setMessage(tmpbuf.str());
-                    espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
-                    espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
-                    espWuResponseNote->setCost(0);
-                    VStringBuffer idstr("%" I64F "u", sysInfoMsg.queryLogMsgId());
-                    espWuResponseNote->setId(idstr.str());
-                    espWuResponseNotes.append(*espWuResponseNote.getClear());
-                }
-            }
-            catch(IException *e)
-            {
-                // Non-existant global messages may mean that /SysInfoLogs hasn't been created
-                // so catch and ignore the exception
-                e->Release();
+                ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
+                Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
+                StringBuffer tmpbuf;
+                encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
+                espWuResponseNote->setSource(sysInfoMsg.querySource());
+                espWuResponseNote->setMessage(tmpbuf.str());
+                espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
+                espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
+                espWuResponseNote->setCost(0);
+                VStringBuffer idstr("%" I64F "u", sysInfoMsg.queryLogMsgId());
+                espWuResponseNote->setId(idstr.str());
+                espWuResponseNotes.append(*espWuResponseNote.getClear());
             }
             Owned<IEspWUResponseScope> respScope = createWUResponseScope("","");
             respScope->setScopeName("");
