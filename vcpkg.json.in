@@ -53,6 +53,7 @@
             "platform": "@VCPKG_ELASTICSTACK_CLIENT@"
         },
         "curl",
+        "doctest",
         {
             "name": "elasticlient",
             "platform": "@VCPKG_ELASTICSTACK_CLIENT@ & !windows"

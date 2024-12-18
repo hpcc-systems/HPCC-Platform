@@ -1,6 +1,7 @@
 import wasm;
 
-boolean boolTest (boolean a, boolean b) := IMPORT(wasm, 'wasmembed.bool-test');
+boolean boolAndTest (boolean a, boolean b) := IMPORT(wasm, 'wasmembed.bool-and-test');
+boolean boolOrTest (boolean a, boolean b) := IMPORT(wasm, 'wasmembed.bool-or-test');
 real4 float32Test (real4 a, real4 b) := IMPORT(wasm, 'wasmembed.float32-test');
 real8 float64Test (real8 a, real8 b) := IMPORT(wasm, 'wasmembed.float64-test');
 unsigned1 u8Test (unsigned1 a, unsigned1 b) := IMPORT(wasm, 'wasmembed.u8-test');
@@ -11,19 +12,45 @@ integer1 s8Test (integer1 a, integer1 b) := IMPORT(wasm, 'wasmembed.s8-test');
 integer2 s16Test (integer2 a, integer2 b) := IMPORT(wasm, 'wasmembed.s16-test');
 integer4 s32Test (integer4 a, integer4 b) := IMPORT(wasm, 'wasmembed.s32-test');
 integer8 s64Test (integer8 a, integer8 b) := IMPORT(wasm, 'wasmembed.s64-test');
-string stringTest (string a, string b) := IMPORT(wasm, 'wasmembed.string-test');
-string12 string5Test (string5 a, string5 b) := IMPORT(wasm, 'wasmembed.string-test');
-varstring varstringTest (varstring a, varstring b) := IMPORT(wasm, 'wasmembed.string-test');
-unicode12 unicode5Test (unicode5 a, unicode5 b) := IMPORT(wasm, 'wasmembed.string-test');
-unicode unicodeTest (unicode a, unicode b) := IMPORT(wasm, 'wasmembed.string-test');
-utf8_12 utf8_5Test (utf8_5 a, utf8_5 b) := IMPORT(wasm, 'wasmembed.string-test');
-utf8 utf8Test (utf8 a, utf8 b) := IMPORT(wasm, 'wasmembed.string-test');
+
+string stringTest (string a, string b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+string12 string5Test (string5 a, string5 b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+varstring varstringTest (varstring a, varstring b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+unicode12 unicode5Test (unicode5 a, unicode5 b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+unicode unicodeTest (unicode a, unicode b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+utf8_12 utf8_5Test (utf8_5 a, utf8_5 b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+utf8 utf8Test (utf8 a, utf8 b) := IMPORT(wasm, 'wasmembed.utf8-string-test');
+
+set of boolean listTestBoolean () := IMPORT(wasm, 'wasmembed.list-test-bool');
+set of boolean listBooleanTestBoolean (set of boolean a) := IMPORT(wasm, 'wasmembed.list-bool-test-bool');
+set of unsigned4 listTestU32 () := IMPORT(wasm, 'wasmembed.list-test-u32');
+set of unsigned4 listU32TestU32 (set of unsigned4 a) := IMPORT(wasm, 'wasmembed.list-u32-test-u32');
+set of real4 listTestFloat32 () := IMPORT(wasm, 'wasmembed.list-test-float32');
+set of real4 listFloat32TestFloat32 (set of real4 a) := IMPORT(wasm, 'wasmembed.list-float32-test-float32');
+set of string listTestString () := IMPORT(wasm, 'wasmembed.list-test-string');
+set of string listStringTestString (set of string a) := IMPORT(wasm, 'wasmembed.list-string-test-string');
+
+listTestBoolean() = [true, false, true, false, true, false, true, false];
+listBooleanTestBoolean([false, false, true, true, false, true]) = [true, false, true, true, false, false];
+
+listTestFloat32() = [(real4)0.33, (real4)1.33, (real4)2.33, (real4)3.33];
+listFloat32TestFloat32([1.23, 2.34, 3.45, 4.56]) = [(real4)4.56, (real4)3.45, (real4)2.34, (real4)1.23];
+
+listTestU32() = [0, 1, 2, 3];
+listU32TestU32([0, 1, 2, 3]) = [3, 2, 1, 0];
+
+listTestString()=['test-0', 'test-1', 'test-2', 'test-3'];
+listStringTestString(['aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ggg', 'hhh', 'iii']) = ['iii', 'hhh', 'ggg', 'fff', 'eee', 'ddd', 'ccc', 'bbb', 'aaa'];
 
 // '--- bool ---';
-boolTest(false, false) = (false AND false);
-boolTest(false, true) = (false AND true);
-boolTest(true, false) = (true AND false);
-boolTest(true, true) = (true AND true);
+boolAndTest(false, false) = (false AND false);
+boolAndTest(false, true) = (false AND true);
+boolAndTest(true, false) = (true AND false);
+boolAndTest(true, true) = (true AND true);
+boolOrTest(false, false) = (false OR false);
+boolOrTest(false, true) = (false OR true);
+boolOrTest(true, false) = (true OR false);
+boolOrTest(true, true) = (true OR true);
 // '--- float ---';
 ROUND(float32Test((real4)1234.1234, (real4)2345.2345), 3) = ROUND((real4)((real4)1234.1234 + (real4)2345.2345), 3);
 float64Test(123456789.123456789, 23456789.23456789) = (real8)((real8)123456789.123456789 + (real8)23456789.23456789);
