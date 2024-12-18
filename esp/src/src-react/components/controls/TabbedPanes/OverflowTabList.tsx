@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Overflow, OverflowItem, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
+import { Overflow, OverflowItem, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from "@fluentui/react-components";
 import { Count } from "./Count";
 import { TabInfo } from "./TabInfo";
 import { OverflowMenu } from "../OverflowMenu";
@@ -28,7 +28,9 @@ export const OverflowTabList: React.FunctionComponent<OverflowTabListProps> = ({
                 tab.__state = state;
             }
             return <OverflowItem key={tab.id} id={tab.id} priority={tab.id === selected ? 2 : 1}>
-                <Tab value={tab.id} icon={tab.icon} disabled={tab.disabled}>{tab.label}<Count value={tab.count} /></Tab>
+                <Tooltip content={tab.tooltipText || tab.label} relationship="label">
+                    <Tab value={tab.id} icon={tab.icon} disabled={tab.disabled}>{tab.label}<Count value={tab.count} /></Tab>
+                </Tooltip>
             </OverflowItem>;
         }), tabsIndex];
     }, [selected, state, tabs]);

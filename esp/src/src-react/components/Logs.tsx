@@ -112,7 +112,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     const now = React.useMemo(() => new Date(), []);
 
-    const { columns: logColumns } = useLogAccessInfo();
+    const { logsColumns: logColumns } = useLogAccessInfo();
 
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {

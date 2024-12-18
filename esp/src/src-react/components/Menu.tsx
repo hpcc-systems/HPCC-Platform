@@ -2,11 +2,11 @@ import * as React from "react";
 import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Link, mergeStyleSets, Nav, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
-import { hasLogAccess } from "src/ESPLog";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { navCategory } from "../util/history";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
+import { useLogAccessInfo } from "../hooks/platform";
 import { useSessionStore } from "../hooks/store";
 import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
@@ -295,12 +295,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         }
     }), [theme]);
 
-    const [logsDisabled, setLogsDisabled] = React.useState(true);
-    React.useEffect(() => {
-        hasLogAccess().then(response => {
-            setLogsDisabled(!response);
-        });
-    }, []);
+    const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
     const linkStyle = React.useCallback((disabled) => {
         return disabled ? {
             background: themeV9.colorNeutralBackgroundDisabled,
@@ -326,9 +321,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
-                            const linkDisabled = (row.itemKey === "/topology/logs" && logsDisabled) || (row.itemKey.indexOf("security") > -1 && !isAdmin);
+                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (row.itemKey.indexOf("security") > -1 && !isAdmin);
                             return <Link
                                 disabled={linkDisabled}
+                                title={row.itemKey === "/topology/logs" && !logsEnabled ? logsStatusMessage : ""}
                                 key={`MenuLink_${idx}`}
                                 href={`#${row.itemKey}`}
                                 className={[
