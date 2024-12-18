@@ -23,16 +23,18 @@
 #define SYS_INFO_VERSION "1.0"
 
 #define SYS_INFO_ROOT  "/SysLogs"
-#define ATTR_NEXTID    "@nextId"
+#define ATTR_NEXTSEQN  "@nextSeqNum"
 #define ATTR_VERSION   "@version"
 #define MSG_NODE       "msg"
-#define ATTR_ID        "@id"
+#define ATTR_SEQNUM    "@seqNum"
 #define ATTR_TIMESTAMP "@ts"
 #define ATTR_AUDIENCE  "@audience"
 #define ATTR_CLASS     "@class"
 #define ATTR_CODE      "@code"
 #define ATTR_HIDDEN    "@hidden"
 #define ATTR_SOURCE    "@source"
+
+#define NON_SYSLOGMSG_MASK 0x8000000000
 
 static void extractDate(timestamp_type ts, unsigned & year, unsigned & month, unsigned & day)
 {
@@ -41,24 +43,25 @@ static void extractDate(timestamp_type ts, unsigned & year, unsigned & month, un
     timeStamp.getDate(year, month, day);
 }
 
-static unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned id)
+unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned seqN, bool nonSysInfoLogMsg)
 {
-    return id<<21 | year<<9 | month<<5 | day;
+    return (nonSysInfoLogMsg?NON_SYSLOGMSG_MASK:0) | seqN<<21 | year<<9 | month<<5 | day;
 }
 
-static unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned id)
+unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned seqN, bool nonSysInfoLogMsg)
 {
     unsigned year, month, day;
     extractDate(ts, year, month, day);
-    return makeMessageId(year, month, day, id);
+    return makeMessageId(year, month, day, seqN, nonSysInfoLogMsg);
 }
 
-static void decodeMessageId(unsigned __int64 msgId, unsigned & year, unsigned & month, unsigned & day, unsigned & id)
+static bool decodeMessageId(unsigned __int64 msgId, unsigned & year, unsigned & month, unsigned & day, unsigned & seqn)
 {
     day = msgId & 0x1F;
     month = (msgId>>5) & 0x0F;
     year = (msgId>>9) & 0xFFF;
-    id = (msgId>>21);
+    seqn = (msgId>>21);
+    return msgId & NON_SYSLOGMSG_MASK;
 }
 
 class CSysInfoLoggerMsg : implements ISysInfoLoggerMsg
@@ -77,10 +80,10 @@ public:
     {
         msgPtree.setown(createPTree(MSG_NODE));
     }
-    CSysInfoLoggerMsg(unsigned id, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, timestamp_type ts, bool hidden)
+    CSysInfoLoggerMsg(unsigned seqn, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, timestamp_type ts, bool hidden)
     {
         msgPtree.setown(createPTree(MSG_NODE));
-        msgPtree->setPropInt64(ATTR_ID, id);
+        msgPtree->setPropInt64(ATTR_SEQNUM, seqn);
         msgPtree->setPropBool(ATTR_HIDDEN, hidden);
         msgPtree->setPropInt64(ATTR_TIMESTAMP, ts);
         msgPtree->setPropInt(ATTR_CODE, code);
@@ -130,7 +133,7 @@ public:
     }
     virtual unsigned __int64 queryLogMsgId() const override
     {
-        return makeMessageId(queryTimeStamp(), msgPtree->getPropInt64(ATTR_ID, 0));
+        return makeMessageId(queryTimeStamp(), msgPtree->getPropInt64(ATTR_SEQNUM, 0));
     }
     virtual const char * queryMsg() const override
     {
@@ -146,8 +149,8 @@ public:
     {
         unsigned year, month, day;
         extractDate(queryTimeStamp(), year, month, day);
-        unsigned __int64 id = msgPtree->getPropInt64(ATTR_ID, 0);
-        xpath.appendf("m%04u%02u/d%02u/" MSG_NODE "[" ATTR_ID "='%" I64F "u']", year, month, day, id);
+        unsigned __int64 seqn = msgPtree->getPropInt64(ATTR_SEQNUM, 0);
+        xpath.appendf("m%04u%02u/d%02u/" MSG_NODE "[" ATTR_SEQNUM "='%" I64F "u']", year, month, day, seqn);
         return xpath;
     }
     IPropertyTree * getTree()
@@ -220,14 +223,16 @@ public:
     }
     virtual void setMatchMsgId(unsigned __int64 msgId) override
     {
-        unsigned year, month, day, id;
-        decodeMessageId(msgId, year, month, day, id);
-        if (year==0 || month==0 || day==0 || id==0)
-            throw makeStringExceptionV(-1,"ISysInfoLoggerMsgFilter::setMatchMsgId invalid argument: %" I64F "u", msgId);
+        unsigned year, month, day, seqn;
+        bool nonSysInfoLogMsg = decodeMessageId(msgId, year, month, day, seqn);
+        if (nonSysInfoLogMsg)
+            throw makeStringExceptionV(-1, "Message id: %" I64F "u cannot be processed by SysInfoLogger", msgId);
+        if (year==0 || month==0 || day==0 || seqn==0)
+            throw makeStringExceptionV(-1,"ISysInfoLoggerMsgFilter::setMatchMsgId invalid message id: %" I64F "u", msgId);
         matchEndYear = matchStartYear = year;
         matchEndMonth = matchStartMonth = month;
         matchEndDay = matchStartDay = day;
-        matchId = id;
+        matchId = seqn;
         haveDateRange = false;
     }
     virtual void setDateRange(unsigned startYear, unsigned startMonth, unsigned startDay, unsigned endYear, unsigned endMonth, unsigned endDay) override
@@ -394,7 +399,7 @@ public:
         if (matchClass!=MSGCLS_all)
             xpath.appendf("[" ATTR_CLASS "='%s']", LogMsgClassToFixString(matchClass));
         if (matchId)
-            xpath.appendf("[" ATTR_ID "='%u']", matchId);
+            xpath.appendf("[" ATTR_SEQNUM "='%u']", matchId);
         if (matchTimeStamp)
             xpath.appendf("[" ATTR_TIMESTAMP "='%" I64F "u']", matchTimeStamp);
         return xpath;
@@ -501,10 +506,10 @@ unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, co
         throw makeStringExceptionV(-1, "logSysInfoLogger: unable to create connection to '%s'", SYS_INFO_ROOT);
 
     IPropertyTree * root = conn->queryRoot();
-    unsigned id = root->getPropInt(ATTR_NEXTID, 1);
-    if (id==UINT_MAX)  // wrap id to reuse id numbers (shouldn't wrap but no harm in doing this for safety)
-        id=1;
-    root->setPropInt(ATTR_NEXTID, id+1);
+    unsigned seqn = root->getPropInt(ATTR_NEXTSEQN, 1);
+    if (seqn==UINT_MAX)  // wrap id to reuse id numbers (shouldn't wrap but no harm in doing this for safety)
+        seqn=1;
+    root->setPropInt(ATTR_NEXTSEQN, seqn+1);
 
     StringBuffer xpath;
     unsigned year, month, day;
@@ -515,10 +520,10 @@ unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, co
         throw makeStringExceptionV(-1, "logSysInfoLogger: unable to create connection to '%s'", xpath.str());
     IPropertyTree * msgPT = connMsgRoot->queryRoot();
 
-    CSysInfoLoggerMsg sysInfoMsg(id, cat, code, source, msg, ts, false);
+    CSysInfoLoggerMsg sysInfoMsg(seqn, cat, code, source, msg, ts, false);
     msgPT->setPropTree(nullptr, sysInfoMsg.getTree());
     msgPT->setProp(".", msg); // previous setPropTree doesn't set the node value
-    return makeMessageId(ts, id);
+    return makeMessageId(ts, seqn);
 }
 
 unsigned updateMessage(IConstSysInfoLoggerMsgFilter * msgFilter, std::function<void (CSysInfoLoggerMsg &)> updateOp)
