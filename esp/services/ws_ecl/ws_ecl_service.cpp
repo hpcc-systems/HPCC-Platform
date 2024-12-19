@@ -2068,7 +2068,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     bool noTimeout = false;
 
-    ISpan * activeSpan = context.queryActiveSpan();
+    ISpan * activeSpan = queryThreadedActiveSpan();
     OwnedActiveSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
     Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
     recordTraceDebugOptions(workunit, httpHeaders);

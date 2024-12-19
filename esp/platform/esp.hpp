@@ -236,7 +236,7 @@ interface IEspContext : extends IInterface
     virtual IHttpMessage* queryRequest() = 0;
 
     virtual void setRequestSpan(ISpan * span)=0;     // Call this function to set the server span for the query.  The spans's lifetime will match the lifetime of the context object.
-    virtual ISpan * queryActiveSpan() const = 0;
+    virtual ISpan * queryRequestSpan() const = 0;
     virtual IProperties * getClientSpanHeaders() const = 0;
     virtual const char* getGlobalId() const = 0;
     virtual const char* getCallerId() const = 0;

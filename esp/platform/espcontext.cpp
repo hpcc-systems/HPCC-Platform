@@ -89,7 +89,7 @@ private:
     Owned<IEspSecureContextEx> m_secureContext;
 
     StringAttr   m_transactionID;
-    OwnedActiveSpanScope m_requestSpan;    // When the context is destroy the span will end.
+    OwnedSpanLifetime m_requestSpan;    // When the context is destroy the span will end.
     IHttpMessage* m_request;
 
 public:
@@ -628,9 +628,11 @@ public:
     }
     virtual void setRequestSpan(ISpan * span) override
     {
-        m_requestSpan.set(span);
+        // The server span for a request can be set only once.
+        if (span && span != m_requestSpan && m_requestSpan == queryNullSpan())
+            m_requestSpan.set(span);
     }
-    virtual ISpan * queryActiveSpan() const override
+    virtual ISpan * queryRequestSpan() const override
     {
         return m_requestSpan;
     }
