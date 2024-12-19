@@ -3579,7 +3579,10 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
     StringBuffer mirrorname;
     const char * planeName = name;
     if (copy != 0)
+    {
         planeName = mirrorname.append(name).append("_mirror");
+        plane->setPropBool("@copy", true);
+    }
 
     plane->setProp("@name", planeName);
 
