@@ -29,11 +29,16 @@
 #include "jmutex.hpp"
 
 constexpr unsigned fnvInitialHash32 = 0x811C9DC5;
+constexpr unsigned fnvPrime32 = 0x01000193;
 
 extern jlib_decl unsigned hashc( const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashcz( const unsigned char *k, unsigned initval);
 extern jlib_decl unsigned hashncz( const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashc_fnv1a(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashnc_fnv1a(const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashcz_fnv1a(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashncz_fnv1a(const unsigned char *k, unsigned initval);
 
 class jlib_decl SuperHashTable : public CInterface
 {
@@ -516,9 +521,9 @@ public:
         HashKeyElement *hke = (HashKeyElement *) checked_malloc(sizeof(HashKeyElement)+l+1,-605);
         memcpy((void *) (hke->keyPtr()), key, l+1);
         if (nocase)
-            hke->hashValue = hashnc((const unsigned char *)key, l, fnvInitialHash32);
+            hke->hashValue = hashnc_fnv1a((const unsigned char *)key, l, fnvInitialHash32);
         else
-            hke->hashValue = hashc((const unsigned char *)key, l, fnvInitialHash32);
+            hke->hashValue = hashc_fnv1a((const unsigned char *)key, l, fnvInitialHash32);
         hke->linkCount = 0;
         return hke;
     }
@@ -611,9 +616,9 @@ protected:
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
         if (nocase)
-            return hashncz((const unsigned char *)fp, fnvInitialHash32);
+            return hashncz_fnv1a((const unsigned char *)fp, fnvInitialHash32);
         else
-            return hashcz((const unsigned char *)fp, fnvInitialHash32);
+            return hashcz_fnv1a((const unsigned char *)fp, fnvInitialHash32);
     }
 
     virtual const void *getFindParam(const void *e) const

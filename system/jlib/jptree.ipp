@@ -58,7 +58,7 @@ protected:
     virtual unsigned getHashFromElement(const void *e) const override;
     virtual unsigned getHashFromFindParam(const void *fp) const override
     {
-        return hashcz((const unsigned char *)fp, fnvInitialHash32);
+        return hashcz_fnv1a((const unsigned char *)fp, fnvInitialHash32);
     }
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const override
     {
@@ -108,7 +108,7 @@ public:
 // SuperHashTable definitions
     virtual unsigned getHashFromFindParam(const void *fp) const override
     {
-        return hashncz((const unsigned char *)fp, fnvInitialHash32);
+        return hashncz_fnv1a((const unsigned char *)fp, fnvInitialHash32);
     }
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const override
     {
@@ -844,7 +844,7 @@ public:
         const char *myname = queryName();
         assert(myname);
         size32_t nl = strlen(myname);
-        return isnocase() ? hashnc((const byte *)myname, nl, fnvInitialHash32): hashc((const byte *)myname, nl, fnvInitialHash32);
+        return isnocase() ? hashnc_fnv1a((const byte *)myname, nl, fnvInitialHash32): hashc_fnv1a((const byte *)myname, nl, fnvInitialHash32);
     }
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
