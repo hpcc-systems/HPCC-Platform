@@ -24,6 +24,7 @@
 #define COUCHBASEEMBED_PLUGIN_API DECL_IMPORT
 #endif
 
+#include <cassert>
 //Using cpp wrapper from https://github.com/couchbaselabs/libcouchbase-cxx
 #include <libcouchbase/couchbase++.h>
 #include <libcouchbase/couchbase++/views.h>
