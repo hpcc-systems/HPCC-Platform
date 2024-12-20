@@ -686,6 +686,9 @@ vaults:
     {{- if (hasKey $vault "writeTimeout") }}
       writeTimeout: {{ $vault.writeTimeout }}
     {{- end }}
+    {{- if (hasKey $vault "backoffTimeout") }}
+      backoffTimeout: {{ $vault.backoffTimeout }}
+    {{- end }}
   {{- end -}}
  {{- end -}}
 {{- end -}}

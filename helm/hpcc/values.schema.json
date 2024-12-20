@@ -930,6 +930,10 @@
         "writeTimeout": {
           "description": "optional timeout (in ms) for socket writing to vault",
           "type": "number"
+        },
+        "backoffTimeout": {
+          "description": "optional time (in ms) to back-off connecting to a vault that cannot be reached, or fails to authenticate",
+          "type": "number"
         }
       },
       "required": [ "name", "url" ],
