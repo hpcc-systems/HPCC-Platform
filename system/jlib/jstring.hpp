@@ -659,4 +659,7 @@ extern jlib_decl void ensureSeparator(StringBuffer & out, char separator);
 //Search for one block of bytes within another block of bytes - memmem is not standard, so we provide our own
 extern jlib_decl const void * jmemmem(size_t lenHaystack, const void * haystack, size_t lenNeedle, const void *needle);
 
+// For preventing command injection, sanitize the argument to be passed to the system command
+extern jlib_decl StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized);
+
 #endif
