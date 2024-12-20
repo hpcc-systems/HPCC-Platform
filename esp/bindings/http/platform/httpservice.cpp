@@ -351,6 +351,44 @@ int CEspHttpServer::processRequest()
         m_request->getEspPathInfo(stype, &pathEx, &serviceName, &methodName, false);
         ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
+        // getEspPathInfo provides all information needed to decide if the request should be
+        // traced. Create a server span, if needed, before proceding with request processing
+        // so maximize the amount of request processing that can be traced. Specifically, user
+        // authentication and authorization may generate trace output.
+        bool wantTracing = true;
+        if (!queryTraceManager().isTracingEnabled())
+            wantTracing = false;
+        else if (streq(method, GET_METHOD))
+        {
+            if (sub_serv_root == stype)
+                wantTracing = false;
+            else if (strieq(serviceName, "esp"))
+            {
+                wantTracing = !(methodName.isEmpty() ||
+                    strieq(methodName, "files") ||
+                    strieq(methodName, "xslt") ||
+                    strieq(methodName, "frame") ||
+                    strieq(methodName, "titlebar") ||
+                    strieq(methodName, "nav") ||
+                    strieq(methodName, "navdata") ||
+                    strieq(methodName, "navmenuevent") ||
+                    strieq(methodName, "soapreq"));
+            }
+        }
+        else if (!m_apport)
+            wantTracing = false;
+        Owned<ISpan> serverSpan;
+        if (wantTracing)
+        {
+            // The context will be destroyed when this request is destroyed. So initialise a
+            // SpanScope in the context to ensure the span is also terminated at the same time.
+            serverSpan.setown(m_request->createServerSpan(serviceName, methodName));
+            ctx->setRequestSpan(serverSpan);
+        }
+        else
+            serverSpan.setown(getNullSpan());
+        ActiveSpanScope serverSpanScope(serverSpan);
+
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
@@ -499,11 +537,6 @@ int CEspHttpServer::processRequest()
                 ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
                 return 0;
             }
-
-            //The context will be destroyed when this request is destroyed. So initialise a SpanScope in the context to
-            //ensure the span is also terminated at the same time.
-            Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
-            ctx->setRequestSpan(serverSpan);
 
             if (thebinding!=NULL)
             {
