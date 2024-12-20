@@ -78,6 +78,7 @@ include_directories (
          ./../../dali/base
          ./../../system/security/shared
          ./../../common/deftype
+         ./../../common/workunit
          ./../../system/security/cryptohelper
          ./../../configuration/configmgr/configmgrlib
          ${HPCC_SOURCE_DIR}/system/masking/include
@@ -118,6 +119,7 @@ target_link_libraries ( unittests
          esphttp
          esdllib
          logginglib
+         workunit
          ${CppUnit_LIBRARIES}
     )
 
