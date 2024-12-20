@@ -89,7 +89,7 @@ private:
     Owned<IEspSecureContextEx> m_secureContext;
 
     StringAttr   m_transactionID;
-    OwnedSpanScope m_requestSpan;    // When the context is destroy the span will end.
+    OwnedActiveSpanScope m_requestSpan;    // When the context is destroy the span will end.
     IHttpMessage* m_request;
 
 public:
