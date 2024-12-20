@@ -34,6 +34,8 @@
 #include "htmlpage.hpp"
 #include "dasds.hpp"
 
+#include <map>
+
 /***************************************************************************
  *              CEspHttpServer Implementation
  ***************************************************************************/
@@ -297,6 +299,59 @@ void CEspHttpServer::traceRequest(IEspContext* ctx, const char* normalizeMethod)
     span->setSpanAttribute("url.full", full);
 }
 
+// Enumeration of "esp" service methods. These are generally requests for files or form markup, in
+// other words, they are web service overhead not specific to any ESP instance. Add new values as
+// additional requests become relevant.
+enum class EspGetMethod
+{
+    None, // empty name
+    Files,
+    Xslt,
+    Body,
+    Frame,
+    TitleBar,
+    Nav,
+    NavData,
+    NavMenuEvent,
+    SoapReq,
+    // DO NOT MAP NAMES TO THE FOLLOWING VALUES:
+    Unhandled, // catch-all for any method name not explicitly handled by processRequest
+    NotApplicable, // request not associated with the "esp" service
+};
+struct EspGetMethodNameComparator
+{
+    bool operator()(const char* lhs, const char* rhs) const { return stricmp(lhs, rhs) < 0; }
+};
+using EspGetMethodMap = std::map<const char*, EspGetMethod, EspGetMethodNameComparator>;
+// Association of method names to specific "esp" service requests. This mapping allows
+// processRequest to decide if the request should be traced before processing the request, without
+// repeating the method name string comparisons. Multiple names may map to the same request, and
+// all redundant names (e.g., "files" and "files_") must be included in the map.
+static const EspGetMethodMap getRequests{
+    // esp
+    {"", EspGetMethod::None},
+    // esp/<key>
+    {"files", EspGetMethod::Files},
+    {"xslt", EspGetMethod::Xslt},
+    {"body", EspGetMethod::Body},
+    {"frame", EspGetMethod::Frame},
+    {"titlebar", EspGetMethod::TitleBar},
+    {"nav", EspGetMethod::Nav},
+    {"navdata", EspGetMethod::NavData},
+    {"navmenuevent", EspGetMethod::NavMenuEvent},
+    {"soapreq", EspGetMethod::SoapReq},
+    // same as above but with trailing underscore
+    {"files_", EspGetMethod::Files},
+    {"xslt_", EspGetMethod::Xslt},
+    {"body_", EspGetMethod::Body},
+    {"frame_", EspGetMethod::Frame},
+    {"titlebar_", EspGetMethod::TitleBar},
+    {"nav_", EspGetMethod::Nav},
+    {"navdata_", EspGetMethod::NavData},
+    {"navmenuevent_", EspGetMethod::NavMenuEvent},
+    {"soapreq_", EspGetMethod::SoapReq},
+};
+
 int CEspHttpServer::processRequest()
 {
     IEspContext* ctx = m_request->queryContext();
@@ -351,6 +406,44 @@ int CEspHttpServer::processRequest()
         m_request->getEspPathInfo(stype, &pathEx, &serviceName, &methodName, false);
         ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
+        // getEspPathInfo provides all information needed to decide if the request should be
+        // traced. Create a server span, if needed, before proceding with request processing
+        // so maximize the amount of request processing that can be traced. Specifically, user
+        // authentication and authorization may generate trace output.
+        bool wantTracing = queryTraceManager().isTracingEnabled();
+        EspGetMethod espGetMethod = EspGetMethod::NotApplicable;
+        if (streq(method, GET_METHOD))
+        {
+            if (sub_serv_root == stype)
+                wantTracing = false;
+            else if (strieq(serviceName, "esp"))
+            {
+                // At this time, the presence of a method name in the get request map is sufficient
+                // to suppress trace output. The mapped value will be used later.
+                EspGetMethodMap::const_iterator it = getRequests.find(methodName);
+                if (it != getRequests.end())
+                {
+                    espGetMethod = it->second;
+                    wantTracing = false;
+                }
+                else
+                    espGetMethod = EspGetMethod::Unhandled;
+            }
+        }
+        else if (!m_apport)
+            wantTracing = false;
+        Owned<ISpan> serverSpan;
+        if (wantTracing)
+        {
+            // The context will be destroyed when this request is destroyed. So initialise a
+            // SpanScope in the context to ensure the span is also terminated at the same time.
+            serverSpan.setown(m_request->createServerSpan(serviceName, methodName));
+            ctx->setRequestSpan(serverSpan);
+        }
+        else
+            serverSpan.setown(getNullSpan());
+        ActiveSpanScope serverSpanScope(serverSpan);
+
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
@@ -395,40 +488,40 @@ int CEspHttpServer::processRequest()
                 return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
             }
 
-            if (!stricmp(serviceName.str(), "esp"))
+            // Use the previously identified method selector to dispatch the request.
+            switch (espGetMethod)
             {
-                if (!methodName.length())
-                    return 0;
-
-                if (methodName.charAt(methodName.length()-1)=='_')
-                    methodName.setCharAt(methodName.length()-1, 0);
-                if (!stricmp(methodName.str(), "files"))
-                {
-                    if (!getTxSummaryResourceReq())
-                        ctx->cancelTxSummary();
-                    checkInitEclIdeResponse(m_request, m_response);
-                    return onGetFile(m_request.get(), m_response.get(), pathEx.str());
-                }
-                else if (!stricmp(methodName.str(), "xslt"))
-                {
-                    if (!getTxSummaryResourceReq())
-                        ctx->cancelTxSummary();
-                    return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
-                }
-                else if (!stricmp(methodName.str(), "body"))
-                    return onGetMainWindow(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "frame"))
-                    return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
-                else if (!stricmp(methodName.str(), "titlebar"))
-                    return onGetTitleBar(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "nav"))
-                    return onGetNavWindow(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "navdata"))
-                    return onGetDynNavData(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "navmenuevent"))
-                    return onGetNavEvent(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "soapreq"))
-                    return onGetBuildSoapRequest(m_request.get(), m_response.get());
+            case EspGetMethod::None:
+                return 0;
+            case EspGetMethod::Files:
+                if (!getTxSummaryResourceReq())
+                    ctx->cancelTxSummary();
+                checkInitEclIdeResponse(m_request, m_response);
+                return onGetFile(m_request.get(), m_response.get(), pathEx.str());
+            case EspGetMethod::Xslt:
+                if (!getTxSummaryResourceReq())
+                    ctx->cancelTxSummary();
+                return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
+            case EspGetMethod::Body:
+                return onGetMainWindow(m_request.get(), m_response.get());
+            case EspGetMethod::Frame:
+                return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
+            case EspGetMethod::TitleBar:
+                return onGetTitleBar(m_request.get(), m_response.get());
+            case EspGetMethod::Nav:
+                return onGetNavWindow(m_request.get(), m_response.get());
+            case EspGetMethod::NavData:
+                return onGetDynNavData(m_request.get(), m_response.get());
+            case EspGetMethod::NavMenuEvent:
+                return onGetNavEvent(m_request.get(), m_response.get());
+            case EspGetMethod::SoapReq:
+                return onGetBuildSoapRequest(m_request.get(), m_response.get());
+            case EspGetMethod::Unhandled:
+            case EspGetMethod::NotApplicable:
+                break;
+            default:
+                IERRLOG("unexpected EspGetMethod value: %d", (int)espGetMethod);
+                break;
             }
         }
 
@@ -499,12 +592,6 @@ int CEspHttpServer::processRequest()
                 ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
                 return 0;
             }
-
-            //The context will be destroyed when this request is destroyed. So initialise a SpanScope in the context to
-            //ensure the span is also terminated at the same time.
-            Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
-            ctx->setRequestSpan(serverSpan);
-            ActiveSpanScope spanScope(serverSpan);
 
             if (thebinding!=NULL)
             {

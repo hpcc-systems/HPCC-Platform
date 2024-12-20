@@ -1924,7 +1924,7 @@ ISpan * CHttpRequest::createServerSpan(const char * serviceName, const char * me
         spanName.append("/").append(methodName);
     spanName.toLowerCase();
     Owned<IProperties> httpHeaders = getHeadersAsProperties(m_headers);
-    return queryTraceManager().createServerSpan(spanName, httpHeaders, SpanFlags::EnsureGlobalId);
+    return queryTraceManager().createServerSpan(spanName, httpHeaders, &m_receivedAt, SpanFlags::EnsureGlobalId);
 }
 
 void CHttpRequest::annotateSpan(const char * key, const char * value)
@@ -2089,6 +2089,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
     char oneline[MAX_HTTP_HEADER_LEN + 2];
 
     int lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN + 1, me);
+    m_receivedAt.now(); // use receipt of a first line as the start time for a server span
     if(lenread <= 0) //special case client connected and disconnected, load balancer ping?
         return -1;
     else if (lenread > MAX_HTTP_HEADER_LEN)
