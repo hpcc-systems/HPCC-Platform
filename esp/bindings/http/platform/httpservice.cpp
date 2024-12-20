@@ -416,6 +416,7 @@ int CEspHttpServer::processRequest()
             //ensure the span is also terminated at the same time.
             Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
             ctx->setRequestSpan(serverSpan);
+            ActiveSpanScope spanScope(serverSpan);
 
             if (thebinding!=NULL)
             {

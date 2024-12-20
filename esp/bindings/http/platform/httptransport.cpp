@@ -1929,7 +1929,7 @@ ISpan * CHttpRequest::createServerSpan(const char * serviceName, const char * me
 
 void CHttpRequest::annotateSpan(const char * key, const char * value)
 {
-    m_context->queryActiveSpan()->setSpanAttribute(key, value);
+    queryThreadedActiveSpan()->setSpanAttribute(key, value);
 }
 
 void CHttpRequest::updateContext()
