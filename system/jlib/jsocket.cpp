@@ -462,7 +462,7 @@ static void queryTCPSettings()
     }
 }
 
-extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
+bool queryKeepAlive(int &time, int &intvl, int &probes)
 {
     queryTCPSettings();
     if (hasKeepAlive)
@@ -472,6 +472,16 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
         probes = keepAliveProbes;
     }
     return hasKeepAlive;
+}
+
+void setKeepAlive(bool enabled, int time, int intvl, int probes)
+{
+    CriticalBlock block(queryTCPCS);
+    keepAliveTime = time ? time : 200;
+    keepAliveInterval = intvl ? intvl : 75;
+    keepAliveProbes = probes ? probes : 9;
+    hasKeepAlive = enabled;
+    expertTCPSettings = INITED;
 }
 
 static int getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr);
@@ -1337,7 +1347,7 @@ void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
         optval = intvl;
         srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (char *)&optval, optlen);
         if (srtn != 0)
-            OWARNLOG("KeepAlive probes not set");
+            OWARNLOG("KeepAlive interval not set");
     }
 
     if (probes >= 0)
