@@ -1908,7 +1908,7 @@ class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
 
-    CStatisticCollection * ensureSubScopePath(std::initializer_list<const StatsScopeId> path)
+    CStatisticCollection * ensureSubScopePath(std::initializer_list<const StatsScopeId> & path)
     {
         CStatisticCollection * curScope = this;
         for (const auto & scopeItem: path)
