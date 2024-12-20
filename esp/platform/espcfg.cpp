@@ -400,7 +400,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         if (sdsSessionNeeded && !daliservers.isEmpty())
             initSDSSessionCleaner(isDetachedFromDali());
 
-        initializeStorageGroups(daliClientActive());
+        initializeStoragePlanes(daliClientActive(), true);
 
         const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;
         const unsigned dafilesrvReadTimeout = m_cfg->getPropInt("@dafilesrvReadTimeout", 10)*1000;

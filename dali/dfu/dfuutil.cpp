@@ -513,7 +513,7 @@ public:
         dstfdesc->setDefaultDir(dstdir.str());
 
         Owned<IStoragePlane> plane = getDataStoragePlane(cluster1, false);
-        if (plane) // I think it should always exist, even in bare-metal.., but guard against it not for now (assumes initializeStorageGroups has been called)
+        if (plane) // I think it should always exist, even in bare-metal.., but guard against it not for now (assumes initializeStoragePlanes has been called)
         {
             DBGLOG("cloneSubFile: destfilename='%s', plane='%s', dirPerPart=%s", destfilename, cluster1.get(), boolToStr(plane->queryDirPerPart()));
 

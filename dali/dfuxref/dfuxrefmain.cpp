@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     try
     {
         initClientProcess(group, DCR_XRef);
-        initializeStorageGroups(true);
+        initializeStoragePlanes(true, true);
         StringArray args, clusters;
         bool backupcheck = false;
         unsigned mode = PMtextoutput|PMcsvoutput|PMtreeoutput;

@@ -105,7 +105,7 @@ void installEnvConfigMonitor()
             // ISDSSubscription impl.
             virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=nullptr) override
             {
-                executeConfigUpdaterCallbacks();
+                refreshConfiguration();
             }
         };
 
@@ -147,7 +147,6 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
         // causes any config update hooks (installed by installConfigUpdateHook() to trigger on an env. change)
         switch (role)
         {
-            case DCR_ThorMaster:
             case DCR_EclServer:
             case DCR_EclAgent:
             case DCR_SashaServer:
@@ -158,6 +157,9 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
             case DCR_EclScheduler:
             case DCR_EclCCServer:
                 installEnvConfigMonitor();
+                break;
+            // Thor does not monitor because a fixed configuration is serialized to the slaves
+            case DCR_ThorMaster:
             default:
                 break;
         }
