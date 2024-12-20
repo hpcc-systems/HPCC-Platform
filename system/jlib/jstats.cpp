@@ -2242,7 +2242,7 @@ public:
             ++scopeItem;
         }
 
-        CStatisticCollection * tgtScopeCollection = ensureSubScopePath(path);
+        CStatisticCollection * tgtScopeCollection = ensureSubScopePath(std::move(path));
         bool wasUpdated = false;
         // More efficient to iterate over stats rather than mapping...
         ForEachItemIn(i, curSrcCollection->stats)
