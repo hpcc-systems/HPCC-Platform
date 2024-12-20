@@ -2925,3 +2925,32 @@ const char * stristr (const char *haystack, const char *needle)
 
     return nullptr;
 }
+
+/**
+ * For preventing command injection, sanitize the argument to be passed to the system command.
+ * - Quote the entire argument with single quotes to prevent interpretation of shell metacharacters.
+ * - Since a single-quoted string can't contain single quotes, even escaped, replace each single
+ *   quote in the argument with the sequence '"'"' . That closes the single quoted string, appends
+ *   a literal single quote, and reopens the single quoted string
+ */
+StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized)
+{
+#if defined(__linux__) || defined(__APPLE__)
+    if (!isEmptyString(arg))
+    {
+        size_t len = strlen(arg);
+        sanitized.append('\'');
+        for (size_t i = 0; i < len; i++)
+        {
+            if (arg[i] == '\'')
+                sanitized.append(R"('"'"')");
+            else
+                sanitized.append(arg[i]);
+        }
+        sanitized.append('\'');
+    }
+#else
+    sanitized.append(arg);
+#endif
+    return sanitized;
+}

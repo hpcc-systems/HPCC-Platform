@@ -4,11 +4,10 @@ import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
-import { hasLogAccess } from "src/ESPLog";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
+import { useLogAccessInfo } from "../hooks/platform";
 import { Variable, useWorkunit, useWorkunitVariables } from "../hooks/workunit";
-import { useDeepEffect } from "../hooks/deepHooks";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
 import { parseQuery, pushUrl, updateFullscreen } from "../util/history";
@@ -58,7 +57,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [variables, , , refreshVariables] = useWorkunitVariables(wuid);
     const [otTraceParent, setOtTraceParent] = React.useState("");
     const [logCount, setLogCount] = React.useState<number | string>("*");
-    const [logsDisabled, setLogsDisabled] = React.useState(true);
+    const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
     const [_nextPrev, setNextPrev] = useNextPrev();
 
     const query = React.useMemo(() => {
@@ -121,13 +120,6 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         };
     }, [nextWuid, query, setNextPrev, wuid]);
 
-    useDeepEffect(() => {
-        hasLogAccess().then(response => {
-            setLogsDisabled(!response);
-            return response;
-        });
-    }, [wuid], [queryParams]);
-
     const onTabSelect = React.useCallback((tab: TabInfo) => {
         pushUrl(tab.__state ?? `${parentUrl}/${wuid}/${tab.id}`);
         updateFullscreen(fullscreen);
@@ -174,7 +166,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "logs",
             label: nlsHPCC.Logs,
             count: logCount,
-            disabled: logsDisabled
+            tooltipText: !logsEnabled ? (logsStatusMessage || nlsHPCC.LogsDisabled) : null,
+            disabled: !logsEnabled
         }, {
             id: "eclsummary",
             label: nlsHPCC.ECL
@@ -182,7 +175,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "xml",
             label: nlsHPCC.XML
         }];
-    }, [logCount, logsDisabled, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, wuid]);
+    }, [logCount, logsEnabled, logsStatusMessage, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, wuid]);
 
     return <FullscreenFrame fullscreen={fullscreen}>
         <SizeMe monitorHeight>{({ size }) =>
