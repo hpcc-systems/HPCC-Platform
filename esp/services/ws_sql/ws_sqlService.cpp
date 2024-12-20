@@ -685,7 +685,7 @@ printTree(sqlAST, 0);
 
 bool CwssqlEx::getWUResult(IEspContext &context, const char * wuid, StringBuffer &result, unsigned start, unsigned count, int sequence, const char * dsname, const char * schemaname)
 {
-    OwnedSpanScope resultSpanScope(queryThreadedActiveSpan()->createInternalSpan("get_wu_result"));
+    OwnedActiveSpanScope resultSpanScope(queryThreadedActiveSpan()->createInternalSpan("get_wu_result"));
     try
     {
         if (wuid && *wuid)
@@ -710,7 +710,7 @@ bool CwssqlEx::getWUResult(IEspContext &context, const char * wuid, StringBuffer
                 Owned<INewResultSet> nr = factory->createNewResultSet(wuid, sequence, NULL);
                 if (nr.get())
                 {
-                    OwnedSpanScope xmlSpanScope(queryThreadedActiveSpan()->createInternalSpan("get_result_xml"));
+                    OwnedActiveSpanScope xmlSpanScope(queryThreadedActiveSpan()->createInternalSpan("get_result_xml"));
                     try
                     {
                         getResultXml(resultXML, nr.get(), dsname, start, count, schemaname);
@@ -854,7 +854,7 @@ void CwssqlEx::processMultipleClusterOption(StringArray & clusters, const char  
 
 bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IEspExecuteSQLResponse &resp)
 {
-    OwnedSpanScope exSpanScope(queryThreadedActiveSpan()->createInternalSpan("on_execute_sql"));
+    OwnedActiveSpanScope exSpanScope(queryThreadedActiveSpan()->createInternalSpan("on_execute_sql"));
     try
     {
         context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "WsSQL::ExecuteSQL: Permission denied.");
@@ -964,7 +964,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                     clonable = false;
 
                 {
-                    OwnedSpanScope eclGenSpanScope(queryThreadedActiveSpan()->createInternalSpan("generate_ecl"));
+                    OwnedActiveSpanScope eclGenSpanScope(queryThreadedActiveSpan()->createInternalSpan("generate_ecl"));
                     try
                     {
                         ECLEngine::generateECL(parsedSQL, ecltext);
@@ -1008,7 +1008,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                 wu->commit();
                 wu.clear();
 
-                OwnedSpanScope wuCompileSpanScope(queryThreadedActiveSpan()->createInternalSpan("submit_ws_workunits"));
+                OwnedActiveSpanScope wuCompileSpanScope(queryThreadedActiveSpan()->createInternalSpan("submit_ws_workunits"));
                 try
                 {
                     WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
@@ -1052,7 +1052,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
 
             if (clonable)
             {
-                OwnedSpanScope wuCloneSpanScope(queryThreadedActiveSpan()->createInternalSpan("clone_and_execute_wu"));
+                OwnedActiveSpanScope wuCloneSpanScope(queryThreadedActiveSpan()->createInternalSpan("clone_and_execute_wu"));
                 try
                 {
                     wuCloneSpanScope->setSpanAttribute("compiled_wuid", compiledwuid.str());
@@ -1071,7 +1071,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
             }
             else
             {
-                OwnedSpanScope wuSubmitSpanScope(queryThreadedActiveSpan()->createInternalSpan("submit_ws_workunit"));
+                OwnedActiveSpanScope wuSubmitSpanScope(queryThreadedActiveSpan()->createInternalSpan("submit_ws_workunit"));
                 try
                 {
                     WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, false, true, true, nullptr, nullptr, nullptr, nullptr);
@@ -1090,7 +1090,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
             int timeToWait = req.getWait();
             if (timeToWait != 0)
             {
-                OwnedSpanScope wuProcessSpanScope(queryThreadedActiveSpan()->createInternalSpan("wait_for_workunit_to_complete"));
+                OwnedActiveSpanScope wuProcessSpanScope(queryThreadedActiveSpan()->createInternalSpan("wait_for_workunit_to_complete"));
                 try
                 {
                     waitForWorkUnitToComplete(runningwuid.str(), timeToWait);
