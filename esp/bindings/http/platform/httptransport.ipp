@@ -329,6 +329,7 @@ const char* getSubServiceDesc(sub_service stype);
 class esp_http_decl CHttpRequest : public CHttpMessage
 {
 private:
+    SpanTimeStamp m_receivedAt;
     StringAttr    m_httpMethod;
     StringAttr    m_espServiceName;
     StringAttr    m_espMethodName;
