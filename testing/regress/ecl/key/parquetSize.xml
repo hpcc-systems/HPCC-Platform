@@ -1,0 +1,13 @@
+<Dataset name='singleDataset'>
+ <Row><id>1</id><name>Alice</name><price>10.5</price><isactive>yes</isactive></Row>
+ <Row><id>2</id><name>Bob</name><price>20.75</price><isactive>no</isactive></Row>
+ <Row><id>3</id><name>Charlie</name><price>15.25</price><isactive>yes</isactive></Row>
+ <Row><id>1</id><name>A</name><price>10.0</price><isactive>1</isactive></Row>
+</Dataset>
+<Dataset name='multiDataset'>
+ <Row><id>1</id><name>A</name><price>10.0</price><isactive>1</isactive></Row>
+ <Row><id>3</id><name>Charlie</name><price>15.25</price><isactive>yes</isactive></Row>
+ <Row><id>2</id><name>Bob</name><price>20.75</price><isactive>no</isactive></Row>
+ <Row><id>1</id><name>A</name><price>10.0</price><isactive>1</isactive></Row>
+ <Row><id>1</id><name>Alice</name><price>10.5</price><isactive>yes</isactive></Row>
+</Dataset>
