@@ -3,6 +3,7 @@ import { Octokit } from "octokit";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { LogaccessService, Topology, WsLogaccess, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
+import nlsHPCC from "src/nlsHPCC";
 import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
 import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
 import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
@@ -209,19 +210,34 @@ export function useModernMode(): {
     return { modernMode, setModernMode };
 }
 
-export function useLogAccessInfo(): {
-    managerType: string;
-    columns: WsLogaccess.Column[]
-} {
-    const [managerType, setManagerType] = React.useState("");
-    const [columns, setColumns] = React.useState<WsLogaccess.Column[]>();
+interface LogAccessInfo {
+    logsEnabled: boolean;
+    logsManagerType: string;
+    logsColumns: WsLogaccess.Column[];
+    logsStatusMessage: string;
+}
+
+export function useLogAccessInfo(): LogAccessInfo {
+    const [logsEnabled, setLogsEnabled] = React.useState(false);
+    const [logsManagerType, setLogsManagerType] = React.useState("");
+    const [logsColumns, setLogsColumns] = React.useState<WsLogaccess.Column[]>();
+    const [logsStatusMessage, setLogsStatusMessage] = React.useState("");
 
     React.useEffect(() => {
         service.GetLogAccessInfo({}).then(response => {
-            setManagerType(response.RemoteLogManagerType ?? "");
-            setColumns(response?.Columns?.Column);
+            if (response.hasOwnProperty("Exceptions")) {
+                setLogsStatusMessage(response["Exceptions"]?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException);
+            } else {
+                if (response.RemoteLogManagerType === null) {
+                    setLogsStatusMessage(nlsHPCC.LogAccess_LoggingNotConfigured);
+                } else {
+                    setLogsEnabled(true);
+                    setLogsManagerType(response.RemoteLogManagerType);
+                    setLogsColumns(response?.Columns?.Column);
+                }
+            }
         });
     }, []);
 
-    return { managerType, columns };
+    return { logsEnabled, logsManagerType, logsColumns, logsStatusMessage };
 }

@@ -4496,7 +4496,11 @@ void CWsWuFileHelper::zipZAPFiles(const char* parentFolder, const char* zapFiles
     else
         zipCommand.setf("cd %s\nzip -r", parentFolder);
     if (!isEmptyString(passwordReq))
-        zipCommand.append(" --password ").append(passwordReq);
+    {
+        StringBuffer sanitizedPassword;
+        sanitizeCommandArg(passwordReq, sanitizedPassword);
+        zipCommand.append(" --password ").append(sanitizedPassword);
+    }
     zipCommand.append(" ").append(zipFileNameWithFullPath).append(" ").append(zapFiles);
     int zipRet = system(zipCommand);
     if (zipRet != 0)
