@@ -45,7 +45,7 @@ void PerformanceIssue::print() const
     printf("\n");
 }
 
-void PerformanceIssue::createException(IWorkUnit * wu, double costRate)
+void PerformanceIssue::createException(IWorkUnit * wu)
 {
     ErrorSeverity mappedSeverity = wu->getWarningSeverity(errorCode, (ErrorSeverity)SeverityWarning);
     if (mappedSeverity == SeverityIgnore)
@@ -66,17 +66,15 @@ void PerformanceIssue::createException(IWorkUnit * wu, double costRate)
     StringBuffer s(comment);        // Append scope to comment as scope column is not visible in ECLWatch
     s.appendf(" (%s)", scope.str());
     we->setExceptionMessage(s.str());
-    if (costRate!=0.0)
-    {
-        double timePenaltyPerHour = (double)statUnits2seconds(timePenalty) / 3600;
-        we->setCost(timePenaltyPerHour*costRate);
-    }
+    if (costPenalty!=0)
+        we->setCost(cost_type2money(costPenalty));
     we->setExceptionSource(CostOptimizerName);
 }
 
-void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, const char * msg, ...)
+void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, cost_type _costPenalty, const char * msg, ...)
 {
     timePenalty = _timePenalty;
+    costPenalty = _costPenalty;
     errorCode = _errorCode;
     va_list args;
     va_start(args, msg);
