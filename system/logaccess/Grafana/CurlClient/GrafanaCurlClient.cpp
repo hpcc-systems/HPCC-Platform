@@ -760,14 +760,15 @@ void processLogMapConfig(const IPropertyTree * logMapConfig, LogField * targetFi
         targetField->name = logMapConfig->queryProp(logMapSearchColAtt);
 }
 
-bool GrafanaLogAccessCurlClient::healthReport(StringBuffer & report, LogAccessHealthReportOptions options)
+void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
 {
-    try
+    LogAccessHealthStatus status = LOGACCESS_STATUS_green;
+    /*try
     {
         report.append("\"ConnectionInfo\": { ");
         report.appendf("\"ConnectionString\": \"%s\"", m_grafanaConnectionStr.str());
         report.appendf(", \"UserName\": \"%s\"", m_grafanaUserName.str());
-        report.appendf(", \"PasswordProvided\": %s", isEmptyString(m_grafanaPassword.str()) ? "true" : "false");
+        report.appendf(", \"PasswordProvided\": %s", !isEmptyString(m_grafanaPassword.str()) ? "true" : "false");
         report.appendf(", \"TargetDatasourceID\": \"%s\"", m_targetDataSource.id.str());
         report.appendf(", \"TargetDatasourceName\": \"%s\"", m_targetDataSource.name.str());
         report.appendf(", \"TargetLogsNamespace\": \"%s\"", m_targetNamespace.str());
@@ -933,6 +934,9 @@ bool GrafanaLogAccessCurlClient::healthReport(StringBuffer & report, LogAccessHe
             LogQueryResultDetails  resultDetails;
             fetchLog(resultDetails, queryOptions, logs, outputFormat);
             report.appendf("\"ResultCount\": \"%d\", ", resultDetails.totalReceived);
+            if (resultDetails.totalReceived == 0)
+                status = LOGACCESS_STATUS_yellow;
+
             report.appendf("\"Results\": %s", logs.str());
         }
         catch(IException * e)
@@ -941,6 +945,7 @@ bool GrafanaLogAccessCurlClient::healthReport(StringBuffer & report, LogAccessHe
             e->errorMessage(description);
             report.appendf("\"Error\": \"Exception while executing sample Grafana/Loki query (%d) - %s\"", e->errorCode(), description.str());
             e->Release();
+            status = LOGACCESS_STATUS_red;
         }
         catch(...)
         {
@@ -951,10 +956,10 @@ bool GrafanaLogAccessCurlClient::healthReport(StringBuffer & report, LogAccessHe
     catch(...)
     {
         report.append("\"Error\": \"Encountered unexpected exception during health report\"");
-        return false;
+        status = LOGACCESS_STATUS_red;
     }
-
-    return true;
+*/
+    //return status;
 }
 
 GrafanaLogAccessCurlClient::GrafanaLogAccessCurlClient(IPropertyTree & logAccessPluginConfig)

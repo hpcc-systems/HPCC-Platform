@@ -103,5 +103,5 @@ public:
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;
     virtual bool supportsResultPaging() const override { return true;}
-    virtual bool healthReport(StringBuffer & report, LogAccessHealthReportOptions options) override;
+    virtual void healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report) override;
 };

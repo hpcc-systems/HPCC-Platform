@@ -1710,104 +1710,66 @@ struct LogQueryResultDetails
     unsigned int totalReceived;
     unsigned int totalAvailable;
 };
-/*
+
+
 typedef enum
 {
-    LOGACCESS_STATUS_unknown,
-    LOGACCESS_STATUS_ok,
-    LOGACCESS_STATUS_fail
-} LogAccessHealthStatus;
+    LOGACCESS_STATUS_unknown = 0,
+    LOGACCESS_STATUS_green = 1,
+    LOGACCESS_STATUS_yellow = 2,
+    LOGACCESS_STATUS_red = 3
+} LogAccessHealthStatusCode;
 
-struct LogAccessConnectionDetails
+struct LogAccessHealthStatus
 {
-    StringAttr connectionString;
-    StringAttr connectionInfo;
-    StringAttr connectionStatus;
-    StringAttr sampleQueryStatus;
+    LogAccessHealthStatusCode code;
+    StringBuffer message;
 
-    void toJSON(StringBuffer & out)
+    LogAccessHealthStatus(LogAccessHealthStatusCode code_)
     {
+        code = code_;
+    }
+
+    void appendMessage(const char * message_)
+    {
+        message.append(message_);
     }
 };
 
-struct LogAccessConfigLogMap
-{
-    LogAccessMappedField logFieldType;
-    StringAttr fieldName;
-    StringAttr sourceName;
-    LogAccessConfigLogMap(LogAccessMappedField type, const char * name, const char * source)
-    {
-        logFieldType = type;
-        fieldName.set(name);
-        sourceName.set(source);
-    }
 
-    void toJSON(StringBuffer & out)
+inline const char * LogAccessHealthStatusToString(LogAccessHealthStatusCode statusCode)
+{
+    switch(statusCode)
     {
-        out.appendf("\"%s\": { \"ColName\": \"%s\", \"Source\": \"%s\" }", MappedFieldTypeToString(logFieldType), fieldName.str(), sourceName.str());
+    case LOGACCESS_STATUS_green:
+        return "Green";
+    case LOGACCESS_STATUS_yellow:
+        return "Yellow";
+    case LOGACCESS_STATUS_red:
+        return "Red";
+    default:
+        return "Unknown";
     }
 };
 
-struct LogAccessConfigDetails
+struct LogAccessDebugReport
 {
-    StringAttr connectionInfo;
-    StringArray logMaps;
-    //IArrayOf<LogAccessConfigLogMap> logMaps;
-
-    void appendLogMap(LogAccessConfigLogMap logMap)
-    {
-        StringBuffer logMapJson;
-        logMap.toJSON(logMapJson);
-        logMaps.append(logMapJson.str());
-        //logMaps.append(logMap);
-    }
-
-    void toJSON(StringBuffer & out)
-    {
-        out.appendf("\"ConfigInfo\": { \"LogMaps\": {");
-
-        ForEachItemIn(i, logMaps)
-            //logMaps.item(i).toJSON(out);
-            out.append(logMaps.item(i));
-
-        //close out the logmaps
-        out.append(" }");
-        //close out the ConfigInfo
-        out.append(" }");
-    }
+    StringBuffer SampleQueryReport;
+    StringBuffer PluginDebugReport;
+    StringBuffer ServerDebugReport;
 };
 
 struct LogAccessHealthReportDetails
 {
-    LogAccessConnectionDetails connectionInfo;
-    LogAccessConfigDetails configInfo;
-    StringBuffer JsonMessages;
-
-    void appendLogMap(LogAccessConfigLogMap logMap)
-    {
-        configInfo.appendLogMap(logMap);
-    }
-
-    void toJSON(StringBuffer & out)
-    {
-        StringBuffer scratch;
-
-        out.append("{ \"Connection\": ");
-        connectionInfo.toJSON(scratch);
-        out.append(scratch.str());
-
-        out.append(", \"ConfigInfo\": ");
-        configInfo.toJSON(scratch.clear());
-        out.append(scratch.str());
-
-        out.appendf(", \"Messages\": \"%s\"", JsonMessages.str());
-    }
+    LogAccessHealthStatus status = LOGACCESS_STATUS_unknown;
+    LogAccessDebugReport DebugReport;
+    StringAttr Configuration;
 };
-*/
+
 struct LogAccessHealthReportOptions
 {
-    bool IncludeServerInternals = true;
-    bool IncludePluginInternals = true;
+    bool IncludeConfiguration = true;
+    bool IncludeDebugReport = true;
     bool IncludeSampleQuery = true;
 };
 
@@ -1825,8 +1787,7 @@ interface IRemoteLogAccess : extends IInterface
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
     virtual bool supportsResultPaging() const = 0;
-    //virtual bool healthReport(StringBuffer & messages, LogAccessHealthReportDetails & report) = 0;
-    virtual bool healthReport(StringBuffer & report, LogAccessHealthReportOptions options) = 0;
+    virtual void healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report) = 0;
 };
 
 // Helper functions to construct log access filters

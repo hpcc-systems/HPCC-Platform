@@ -388,27 +388,49 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
 
 bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp)
 {
+    IEspLogAccessStatus * status = createLogAccessStatus("","");
+
     StringBuffer report;
-    //LogAccessHealthReportDetails  reportDetails;
+    LogAccessHealthReportDetails reportDetails;
     LogAccessHealthReportOptions options;
-    options.IncludeServerInternals = req.getIncludeServerInternals();
-    options.IncludePluginInternals = req.getIncludePluginInternals();
+    options.IncludeConfiguration = req.getIncludeConfiguration();
+    options.IncludeDebugReport = req.getIncludeDebugReport();
     options.IncludeSampleQuery = req.getIncludeSampleQuery();
 
-    report.set("{ ");
-    bool success = true;
     if (!queryRemoteLogAccessor())
     {
-        report.append("\"Error\": \"LogAccess plugin not available, review logAccess configuration!\"");
-        success = false;
+        status->setCode("Red");
+        status->setMessages("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
     }
     else
     {
-        //queryRemoteLogAccessor()->healthReport(report, reportDetails);
-        queryRemoteLogAccessor()->healthReport(report, options);
-    }
-    report.append(" }");
-    resp.setReport(report.str());
+        IEspLogAccessDebugReport * debugReport = createLogAccessDebugReport();
+        queryRemoteLogAccessor()->healthReport(options, reportDetails);
+        status->setCode(LogAccessHealthStatusToString(reportDetails.status.code));
+        VStringBuffer encapsulatedMessages("{%s}", reportDetails.status.message.str());
+        status->setMessages(encapsulatedMessages.str());
 
-    return success;
+        if (options.IncludeConfiguration)
+        {
+            resp.setConfiguration(reportDetails.Configuration.str());
+            DBGLOG("WsLogAccessHealth: configuration: %s", reportDetails.Configuration.str());
+        }
+
+        if (options.IncludeSampleQuery)
+        {
+            debugReport->setSampleQueryReport(reportDetails.DebugReport.SampleQueryReport.str());
+        }
+
+        if (options.IncludeDebugReport)
+        {
+            debugReport->setPluginDebugReport(reportDetails.DebugReport.PluginDebugReport.str());
+            debugReport->setServerDebugReport(reportDetails.DebugReport.ServerDebugReport.str());
+        }
+
+        resp.setDebugReport(*debugReport);
+    }
+
+    resp.setStatus(*status);
+
+    return true;
 }

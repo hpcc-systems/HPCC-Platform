@@ -263,9 +263,10 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
     return performAndLogESRequest(Client::HTTPMethod::GET, "_cluster/health", "", "Target cluster health");
 }
 
- bool ElasticStackLogAccess::healthReport(StringBuffer & report, LogAccessHealthReportOptions options)
+ void ElasticStackLogAccess::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
  {
-    try
+    LogAccessHealthStatus status = LOGACCESS_STATUS_green;
+    /*try
     {
         report.appendf("\"ConnectionInfo\": { \"ConnectionString\": \"%s\" }", m_esConnectionStr.str());
 
@@ -279,11 +280,12 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
         else
         {
             report.append("\"Error\": \"Configuration tree is empty!!!\"");
+            status = LOGACCESS_STATUS_red;
         }
         report.append(" }"); // close config info
 
         report.append(", \"Internals\": { ");
-        if (options.IncludeServerInternals)
+        //if (options.IncludeServerInternals)
         {
             report.appendf("\"Plugin\": { \"LogMaps\": {");
             report.appendf("\"Global\": { \"ColName\": \"%s\", \"Source\": \"%s\", \"TimeStampCol\": \"%s\" }", m_globalSearchColName.str(), m_globalIndexSearchPattern.str(), m_globalIndexTimestampField.str()); 
@@ -300,35 +302,10 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
             report.append(" }"); //close plugin
         }
 
-        if (options.IncludeServerInternals)
+        //if (options.IncludeServerInternals)
         {
-            report.append(", \"Server\": { \"ESStatus\": ");
-            try
-            {
-                StringBuffer out;
-                const IPropertyTree * status = getESStatus();
-                if (status)
-                {
-                    toJSON(status, report);
-                }
-                else
-                {
-                    report.append("\"Could not populate ES Status\"");
-                }
-            }
-            catch(IException * e)
-            {
-                StringBuffer description;
-                e->errorMessage(description);
-                report.appendf("\"Exception fetching ES Status (%d) - %s\"", e->errorCode(), description.str());
-                e->Release();
-            }
-            catch(...)
-            {
-                report.append("\"Unknown exception while fetching ES Status\"");
-            }
-
-            report.append(", \"AvailableIndices\": ");
+            report.append(", \"Server\": {");
+            report.append("\"AvailableIndices\": ");
             try
             {
                 const IPropertyTree * is =  getIndexSearchStatus(m_globalIndexSearchPattern);
@@ -339,6 +316,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 else
                 {
                     report.appendf("\"Could not populate Available Indices for Index %s\"", m_globalIndexSearchPattern.str());
+                    status = LOGACCESS_STATUS_yellow;
                 }
             }
             catch(IException * e)
@@ -347,10 +325,12 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 e->errorMessage(description);
                 report.appendf("\"Exception fetching available ES indices (%d) - %s\"", e->errorCode(), description.str());
                 e->Release();
+                status = LOGACCESS_STATUS_yellow;
             }
             catch(...)
             {
                 report.append("\"Unknown exception while fetching available ES indices\"");
+                status = LOGACCESS_STATUS_yellow;
             }
 
             report.append(", \"TimestampField\": ");
@@ -372,10 +352,41 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 e->errorMessage(description);
                 report.appendf("\"Exception fetching target ES timestamp format (%d) - %s\"", e->errorCode(), description.str());
                 e->Release();
+                status = LOGACCESS_STATUS_red;
             }
             catch(...)
             {
                 report.append("\"Unknown exception while fetching target ES timestamp format\"");
+                status = LOGACCESS_STATUS_red;
+            }
+
+            report.append(", \"ESStatus\": ");
+            try
+            {
+                StringBuffer out;
+                const IPropertyTree * esStatus = getESStatus();
+                if (esStatus)
+                {
+                    toJSON(esStatus, report); //extract esstatus info to set status green/yellow/red?
+                }
+                else
+                {
+                    report.append("\"Could not populate ES Status\"");
+                    status = LOGACCESS_STATUS_yellow;
+                }
+            }
+            catch(IException * e)
+            {
+                StringBuffer description;
+                e->errorMessage(description);
+                report.appendf("\"Exception fetching ES Status (%d) - %s\"", e->errorCode(), description.str());
+                e->Release();
+                status = LOGACCESS_STATUS_red;
+            }
+            catch(...)
+            {
+                report.append("\"Unknown exception while fetching ES Status\"");
+                status = LOGACCESS_STATUS_red;
             }
             report.append(" } "); //close Server
         }
@@ -415,6 +426,9 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 LogQueryResultDetails  resultDetails;
                 fetchLog(resultDetails, queryOptions, logs, outputFormat);
                 report.appendf("\"ResultCount\": \"%d\", ", resultDetails.totalReceived);
+                if (resultDetails.totalReceived == 0)
+                    status = LOGACCESS_STATUS_yellow;
+
                 report.appendf("\"Results\": %s", logs.str());
             }
             catch(IException * e)
@@ -423,10 +437,12 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 e->errorMessage(description);
                 report.appendf("\"Error\": \"Exception while executing sample query (%d) - %s\"", e->errorCode(), description.str());
                 e->Release();
+                status = LOGACCESS_STATUS_red;
             }
             catch(...)
             {
                 report.append("\"Error\": \"Unknown exception while executing samplequery\"");
+                status = LOGACCESS_STATUS_red;
             }
             report.append(" }"); //close sample query
         }
@@ -434,10 +450,10 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
     catch(...)
     {
         report.append("\"Error\": \"Encountered unexpected exception during health report\"");
-        return false;
+        status = LOGACCESS_STATUS_red;
     }
-
-    return true;
+*/
+    //return status;
  }
 
 /*
