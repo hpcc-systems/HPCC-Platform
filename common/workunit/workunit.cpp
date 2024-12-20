@@ -2708,7 +2708,7 @@ void StatisticsAggregator::recordStats(IStatisticCollection * sourceStats, unsig
     verifyex(graphScopeId.setScopeText(graphName));
     StatsScopeId wfScopeId(SSTworkflow, wfid);
     StatsScopeId sgScopeId(SSTsubgraph, sgId);
-    statsCollection->recordStats(mapping, sourceStats, {wfScopeId, graphScopeId, sgScopeId});
+    statsCollection->recordStats(mapping, sourceStats, {std::move(wfScopeId), std::move(graphScopeId), std::move(sgScopeId)});
 }
 
 // Recalculate aggregates and then write the aggregates to global stats (dali)
