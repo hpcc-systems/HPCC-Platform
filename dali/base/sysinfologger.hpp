@@ -89,4 +89,8 @@ SYSINFO_API unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilte
 SYSINFO_API bool deleteLogSysInfoMsg(unsigned __int64 msgId, const char *source=nullptr);
 SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source=nullptr);
 
+/* makeMessageId - Create a message id from date, sequence number and nonSysInfoLogMsg flag to uniquely identify a message
+ - nonSysInfoLogMsg flag is used to identify whether or not the message is managed by SysInfoLogger */
+SYSINFO_API unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned seqN, bool nonSysInfoLogMsg=false);
+SYSINFO_API unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned seqN, bool nonSysInfoLogMsg=false);
 #endif
