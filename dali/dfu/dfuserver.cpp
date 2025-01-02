@@ -198,7 +198,7 @@ int main(int argc, const char *argv[])
             IPropertyTree * config = nullptr;
             installDefaultFileHooks(config);
 
-            initializeStorageGroups(true);
+            initializeStoragePlanes(true, true);
         }
         StringBuffer queue, monitorQueue;
 #ifndef _CONTAINERIZED

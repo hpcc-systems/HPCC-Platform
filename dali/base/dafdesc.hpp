@@ -406,7 +406,9 @@ extern da_decl StringBuffer &getPartMask(StringBuffer &ret,const char *lname=NUL
 extern da_decl void setPartMask(const char * mask);
 extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes directory of name passed to backup directory
 
-extern da_decl void initializeStorageGroups(bool createPlanesFromGroups);
+extern da_decl void initializeStoragePlanes(bool createPlanesFromGroups, bool threadSafe);  // threadSafe should be true if no other threads will be accessing the global config
+extern da_decl void disableStoragePlanesDaliUpdates();
+
 extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern da_decl bool getDefaultSpillPlane(StringBuffer &ret);
 extern da_decl bool getDefaultIndexBuildStoragePlane(StringBuffer &ret);

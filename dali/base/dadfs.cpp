@@ -10756,10 +10756,11 @@ public:
 
     void constructStorageGroups(bool force, StringBuffer &messages)
     {
-        Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
+        Owned<IPropertyTree> globalConfig = getGlobalConfig();
+        Owned<IPropertyTree> storage = globalConfig->getPropTree("storage");
         if (storage)
         {
-            normalizeHostGroups();
+            normalizeHostGroups(globalConfig);
 
             Owned<IPropertyTreeIterator> planes = storage->getElements("planes");
             ForEach(*planes)
