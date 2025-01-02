@@ -278,7 +278,7 @@ extern jlib_decl void testJLogExporterPrintAttributes(StringBuffer & out, const 
 */
 
 //The following class is responsible for ensuring that the active span is restored in a context when the scope is exited
-//Use a template class so it can be reused for IContextLogger and IEspContext
+//Use a template class so it can be used for IContextLogger and any other conforming interface.
 template <class CONTEXT>
 class ContextSpanScopeImp
 {
