@@ -38,5 +38,10 @@ EXPORT TestCrypto_SKE := MODULE
     EXPORT DATA dat2 := mod.Encrypt(          (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
     EXPORT TS05 := ASSERT(mod.Decrypt(dat2) = (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
   END;
+
+  EXPORT TestSKE05 := MODULE // HPCC-33157
+    EXPORT mod := Std.Crypto.SymmetricEncryption('aes-256-cbc', '01234567890123456789012345678901');
+    EXPORT TS05 := ASSERT(mod.Decrypt((DATA)'') = (DATA)'');
+  END;
 END;
 
