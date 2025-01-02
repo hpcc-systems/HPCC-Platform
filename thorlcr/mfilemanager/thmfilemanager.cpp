@@ -119,6 +119,9 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
             }
             else
             {
+                // NB: it is very unlikely this code has ever been used.
+                // The whole of fixTotal should be deleted at some point (see HPCC-33150)
+
                 // Check options to shrink 'large' tgtfile to this cluster size
                 const char *wideDestOptStr = globals->queryProp("@wideDestOpt");
                 if (wideDestOptStr)
@@ -489,12 +492,16 @@ public:
                     break;
             };
 #endif
-            unsigned offset = 0;
             unsigned total;
             if (restrictedWidth)
                 total = restrictedWidth;
-            else
+            else if (job.getOptBool("legacyLFNTargetWidth"))
+            {
+                unsigned offset; // set by fixTotal (always 0), but never used.
                 total = fixTotal(job, groups, offset);
+            }
+            else
+                total = job.querySlaves();
             if (nonLocalIndex)
                 ++total;
             StringBuffer dir;
