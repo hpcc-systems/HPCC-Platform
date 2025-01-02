@@ -34,6 +34,8 @@
 #include "htmlpage.hpp"
 #include "dasds.hpp"
 
+#include <map>
+
 /***************************************************************************
  *              CEspHttpServer Implementation
  ***************************************************************************/
@@ -297,6 +299,50 @@ void CEspHttpServer::traceRequest(IEspContext* ctx, const char* normalizeMethod)
     span->setSpanAttribute("url.full", full);
 }
 
+// Enumeration of "esp" service methods that are never traced. Add new values as additional
+// requests become relevant.
+enum class UntracedGetMethod
+{
+    Files,
+    Xslt,
+    Body,
+    Frame,
+    TitleBar,
+    Nav,
+    NavData,
+    NavMenuEvent,
+    SoapReq,
+};
+struct UntracedGetMethodNameComparator
+{
+    bool operator()(const char* lhs, const char* rhs) const { return stricmp(lhs, rhs) < 0; }
+};
+using UntracedGetMethodMap = std::map<const char*, UntracedGetMethod, UntracedGetMethodNameComparator>;
+// Association of method name to a specific "esp" request that will not be traced. Multiple names
+// may map to the same request, and all redundant names (e.g., "files" and "files_") must be in the
+// map. Tracing will be suppressed for all method names in the map.
+static const UntracedGetMethodMap getRequests{
+    {"files", UntracedGetMethod::Files},
+    {"xslt", UntracedGetMethod::Xslt},
+    {"body", UntracedGetMethod::Body},
+    {"frame", UntracedGetMethod::Frame},
+    {"titlebar", UntracedGetMethod::TitleBar},
+    {"nav", UntracedGetMethod::Nav},
+    {"navdata", UntracedGetMethod::NavData},
+    {"navmenuevent", UntracedGetMethod::NavMenuEvent},
+    {"soapreq", UntracedGetMethod::SoapReq},
+    // same as above but with trailing underscore
+    {"files_", UntracedGetMethod::Files},
+    {"xslt_", UntracedGetMethod::Xslt},
+    {"body_", UntracedGetMethod::Body},
+    {"frame_", UntracedGetMethod::Frame},
+    {"titlebar_", UntracedGetMethod::TitleBar},
+    {"nav_", UntracedGetMethod::Nav},
+    {"navdata_", UntracedGetMethod::NavData},
+    {"navmenuevent_", UntracedGetMethod::NavMenuEvent},
+    {"soapreq_", UntracedGetMethod::SoapReq},
+};
+
 int CEspHttpServer::processRequest()
 {
     IEspContext* ctx = m_request->queryContext();
@@ -356,6 +402,7 @@ int CEspHttpServer::processRequest()
         // so maximize the amount of request processing that can be traced. Specifically, user
         // authentication and authorization may generate trace output.
         bool wantTracing = true;
+        UntracedGetMethodMap::const_iterator untracedRequestIt = getRequests.end();
         if (!queryTraceManager().isTracingEnabled())
             wantTracing = false;
         else if (streq(method, GET_METHOD))
@@ -364,15 +411,16 @@ int CEspHttpServer::processRequest()
                 wantTracing = false;
             else if (strieq(serviceName, "esp"))
             {
-                wantTracing = !(methodName.isEmpty() ||
-                    strieq(methodName, "files") ||
-                    strieq(methodName, "xslt") ||
-                    strieq(methodName, "frame") ||
-                    strieq(methodName, "titlebar") ||
-                    strieq(methodName, "nav") ||
-                    strieq(methodName, "navdata") ||
-                    strieq(methodName, "navmenuevent") ||
-                    strieq(methodName, "soapreq"));
+                if (methodName.isEmpty())
+                    wantTracing = false;
+                else
+                {
+                    // The presence of a method name in the get request map is sufficient to
+                    // suppress trace output. The enumerated value will be used later.
+                    untracedRequestIt = getRequests.find(methodName);
+                    if (untracedRequestIt != getRequests.end())
+                        wantTracing = false;
+                }
             }
         }
         else if (!m_apport)
@@ -438,35 +486,38 @@ int CEspHttpServer::processRequest()
                 if (!methodName.length())
                     return 0;
 
-                if (methodName.charAt(methodName.length()-1)=='_')
-                    methodName.setCharAt(methodName.length()-1, 0);
-                if (!stricmp(methodName.str(), "files"))
+                if (untracedRequestIt != getRequests.end())
                 {
-                    if (!getTxSummaryResourceReq())
-                        ctx->cancelTxSummary();
-                    checkInitEclIdeResponse(m_request, m_response);
-                    return onGetFile(m_request.get(), m_response.get(), pathEx.str());
+                    // Use the previously identified method selector to dispatch the request.
+                    switch (untracedRequestIt->second)
+                    {
+                    case UntracedGetMethod::Files:
+                        if (!getTxSummaryResourceReq())
+                            ctx->cancelTxSummary();
+                        checkInitEclIdeResponse(m_request, m_response);
+                        return onGetFile(m_request.get(), m_response.get(), pathEx.str());
+                    case UntracedGetMethod::Xslt:
+                        if (!getTxSummaryResourceReq())
+                            ctx->cancelTxSummary();
+                        return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
+                    case UntracedGetMethod::Body:
+                        return onGetMainWindow(m_request.get(), m_response.get());
+                    case UntracedGetMethod::Frame:
+                        return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
+                    case UntracedGetMethod::TitleBar:
+                        return onGetTitleBar(m_request.get(), m_response.get());
+                    case UntracedGetMethod::Nav:
+                        return onGetNavWindow(m_request.get(), m_response.get());
+                    case UntracedGetMethod::NavData:
+                        return onGetDynNavData(m_request.get(), m_response.get());
+                    case UntracedGetMethod::NavMenuEvent:
+                        return onGetNavEvent(m_request.get(), m_response.get());
+                    case UntracedGetMethod::SoapReq:
+                        return onGetBuildSoapRequest(m_request.get(), m_response.get());
+                    default:
+                        break;
+                    }
                 }
-                else if (!stricmp(methodName.str(), "xslt"))
-                {
-                    if (!getTxSummaryResourceReq())
-                        ctx->cancelTxSummary();
-                    return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
-                }
-                else if (!stricmp(methodName.str(), "body"))
-                    return onGetMainWindow(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "frame"))
-                    return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
-                else if (!stricmp(methodName.str(), "titlebar"))
-                    return onGetTitleBar(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "nav"))
-                    return onGetNavWindow(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "navdata"))
-                    return onGetDynNavData(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "navmenuevent"))
-                    return onGetNavEvent(m_request.get(), m_response.get());
-                else if (!stricmp(methodName.str(), "soapreq"))
-                    return onGetBuildSoapRequest(m_request.get(), m_response.get());
             }
         }
 
