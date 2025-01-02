@@ -1,0 +1,33 @@
+<Dataset name='BooleanTest'>
+ <Row><BooleanTest>Pass</BooleanTest></Row>
+</Dataset>
+<Dataset name='IntegerTest'>
+ <Row><IntegerTest>Pass</IntegerTest></Row>
+</Dataset>
+<Dataset name='UnsignedTest'>
+ <Row><UnsignedTest>Pass</UnsignedTest></Row>
+</Dataset>
+<Dataset name='RealTest'>
+ <Row><RealTest>Pass</RealTest></Row>
+</Dataset>
+<Dataset name='DecimalTest'>
+ <Row><DecimalTest>Pass</DecimalTest></Row>
+</Dataset>
+<Dataset name='StringTest'>
+ <Row><StringTest>Pass</StringTest></Row>
+</Dataset>
+<Dataset name='DataAsStringTest'>
+ <Row><DataAsStringTest>Pass</DataAsStringTest></Row>
+</Dataset>
+<Dataset name='VarStringTest'>
+ <Row><VarStringTest>Pass</VarStringTest></Row>
+</Dataset>
+<Dataset name='QStringTest'>
+ <Row><QStringTest>Pass</QStringTest></Row>
+</Dataset>
+<Dataset name='UTF8Test'>
+ <Row><UTF8Test>Pass</UTF8Test></Row>
+</Dataset>
+<Dataset name='UnicodeTest'>
+ <Row><UnicodeTest>Pass</UnicodeTest></Row>
+</Dataset>
