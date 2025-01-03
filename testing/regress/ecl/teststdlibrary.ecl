@@ -28,6 +28,7 @@
 //version tmod='Crypto'
 //version tmod='str'
 //version tmod='Math'
+//version tmod='OpenSSL'
 
 //version tmod='DataPatterns'
 // /version tmod='DataPatterns.TestDataPatterns'
