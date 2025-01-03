@@ -72,12 +72,13 @@ struct WuOption
 
 constexpr struct WuOption wuOptionsDefaults[watOptMax]
 = { {watOptMinInterestingTime, "minInterestingTime", 1000, wutOptValueTypeMSec},
-    {watOptMinInterestingCost, "minInterestingCost", money2cost_type(5.0) /* $5 */, wutOptValueTypeCost},
+    {watOptMinInterestingCost, "minInterestingCost", money2cost_type(1.00) /* $1.00 */, wutOptValueTypeCost},
+    {watOptMinInterestingWaste, "minInterestingTimeWaste", 30000, wutOptValueTypeMSec},
     {watOptSkewThreshold, "skewThreshold", 20, wutOptValueTypePercent},
     {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount},
     {watPreFilteredKJThreshold, "preFilteredKJThreshold", 50, wutOptValueTypePercent},
-    /* Note watCostRatePerHour cannot be used as debug option or config option (this is calculated) */
-    {watCostRatePerHour, "costRatePerHour", 0, wutOptValueTypeCost}, 
+    /* Note watClusterCostPerHour cannot be used as debug option or config option (this is calculated) */
+    {watClusterCostPerHour, "costRatePerHour", 0, wutOptValueTypeCost},
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -127,13 +128,15 @@ public:
         {
             StringBuffer wuOptionName("@");
             wuOptionName.append(wuOptionsDefaults[opt].name);
-            __int64 val = 0;
-            if (opt==watOptMinInterestingCost)
-                val = money2cost_type(options->getPropReal(wuOptionName, cost_type2money(-1.0)));
-            else
-                val = options->getPropInt64(wuOptionName, -1);
-            if (val>0)
-                setOptionValue(static_cast<WutOptionType>(opt), money2cost_type(val));
+            if (options->hasProp(wuOptionName))
+            {
+                stat_type val = 0;
+                if (opt==watOptMinInterestingCost)
+                    val = money2cost_type(options->getPropReal(wuOptionName));
+                else
+                    val = options->getPropInt64(wuOptionName);
+                setOptionValue(static_cast<WutOptionType>(opt), val);
+            }
         }
     }
 
@@ -143,13 +146,15 @@ public:
         {
             StringBuffer wuOptionName("analyzer_");
             wuOptionName.append(wuOptionsDefaults[opt].name);
-            __int64 val = 0;
-            if (opt==watOptMinInterestingCost)
-                val = money2cost_type(wu->getDebugValueReal(wuOptionName, cost_type2money(-1.0)));
-            else
-                val = wu->getDebugValueInt64(wuOptionName, -1);
-            if (val>0)
-                setOptionValue(static_cast<WutOptionType>(opt), money2cost_type(val));
+            if (wu->hasDebugValue(wuOptionName))
+            {
+                stat_type val = 0;
+                if (opt==watOptMinInterestingCost)
+                    val = money2cost_type(wu->getDebugValueReal(wuOptionName, 0.0));
+                else
+                    val = wu->getDebugValueInt64(wuOptionName, 0);
+                setOptionValue(static_cast<WutOptionType>(opt), val);
+            }
         }
     }
     stat_type queryOption(WutOptionType opt) const override { return wuOptions[opt]; }
@@ -1367,9 +1372,9 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
 {
     options.applyConfig(cfg);
     options.applyConfig(wu);
-    /* watCostRatePerHour is calculated by caller and its value is set in options*/
-    /* (So, watCostRatePerHour cannot be used as debug option or config option)*/
-    options.setOptionValue(watCostRatePerHour, money2cost_type(costRate));
+    /* watClusterCostPerHour is calculated by caller and its value is set in options*/
+    /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
+    options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
 }
 
 

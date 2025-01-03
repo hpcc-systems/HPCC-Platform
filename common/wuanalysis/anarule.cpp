@@ -22,10 +22,25 @@
 #include "commonext.hpp"
 
 
-static cost_type calcIssueCost(stat_type timePenalty, const stat_type clusterCostPerHour)
+static constexpr cost_type calcIssueCost(const stat_type clusterCostPerHour, stat_type timeWasted)
 {
-    double timePenaltyPerHour = (double)statUnits2seconds(timePenalty) / 3600;
-    return timePenaltyPerHour*clusterCostPerHour;
+    double timePenaltyHours = statUnits2seconds(timeWasted) / 3600;
+    return timePenaltyHours * clusterCostPerHour;
+}
+
+static constexpr bool isWorthReporting(const IAnalyserOptions & options, stat_type timeWasted, cost_type moneyWasted)
+{
+    // if neither threshold is set, then report all issues
+    if (timeWasted && options.queryOption(watOptMinInterestingWaste)==0 && options.queryOption(watOptMinInterestingCost)==0)
+        return true;
+    // if the cluster cost available and the issue cost is greater than threshold, report it
+    if (options.queryOption(watClusterCostPerHour) && options.queryOption(watOptMinInterestingCost)
+        && (moneyWasted >= options.queryOption(watOptMinInterestingCost)))
+        return true;
+    // if the issue time wasted is greater than threshold, report it
+    if (options.queryOption(watOptMinInterestingWaste) && (timeWasted >= options.queryOption(watOptMinInterestingWaste)))
+        return true;
+    return false;
 }
 
 class ActivityKindRule : public AActivityRule
@@ -59,21 +74,21 @@ public:
         stat_type rowsMaxSkew = outputEdge->getStatRaw(StNumRowsProcessed, StSkewMax);
         if (rowsMaxSkew > options.queryOption(watOptSkewThreshold))
         {
-            // Use downstream activity time to calculate approximate timePenalty
+            // Use downstream activity time to calculate approximate time wasted
             IWuActivity * targetActivity = outputEdge->queryTarget();
             assertex(targetActivity);
             stat_type timeMaxLocalExecute = targetActivity->getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = targetActivity->getStatRaw(StTimeLocalExecute, StAvgX);
-            // Consider ways to improve this timePenalty calculation further
-            stat_type timePenalty = timeMaxLocalExecute - timeAvgLocalExecute;
-            cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
-            if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+            // Consider ways to improve this time wasted calculation
+            stat_type timeWasted = timeMaxLocalExecute - timeAvgLocalExecute;
+            cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
+            if (isWorthReporting(options, timeWasted, moneyWasted))
             {
                 IWuEdge * inputEdge = activity.queryInput(0);
                 if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
-                    result.set(ANA_DISTRIB_SKEW_INPUT_ID, timePenalty, costPenalty, "DISTRIBUTE output skew is worse than input skew");
+                    result.set(ANA_DISTRIB_SKEW_INPUT_ID, timeWasted, moneyWasted, "DISTRIBUTE output skew is worse than input skew");
                 else
-                    result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, timePenalty, costPenalty, "Significant skew in DISTRIBUTE output");
+                    result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, timeWasted, moneyWasted, "Significant skew in DISTRIBUTE output");
                 updateInformation(result, activity);
                 return true;
             }
@@ -145,12 +160,12 @@ public:
             stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
 
-            stat_type timePenalty;
+            stat_type timeWasted;
             const char * msg = nullptr;
             if ((actkind==TAKspillread||actkind==TAKspillwrite) && (activity.getStatRaw(stat, StMinX) == 0))
             {
                 //If one node didn't spill then it is possible the skew caused all the lost time
-                timePenalty = timeMaxLocalExecute;
+                timeWasted = timeMaxLocalExecute;
                 msg = "Uneven worker spilling";
             }
             else
@@ -172,7 +187,7 @@ public:
                 }
                 if (wuEdge && wuEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
                     numRowsSkew = true;
-                timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);
+                timeWasted = (timeMaxLocalExecute - timeAvgLocalExecute);
                 if (sizeSkew)
                 {
                     if (numRowsSkew)
@@ -184,10 +199,10 @@ public:
                     msg = "Significant skew in IO performance";
             }
             assertex(msg);
-            cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
-            if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+            cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
+            if (isWorthReporting(options, timeWasted, moneyWasted))
             {
-                result.set(ANA_IOSKEW_RECORDS_ID, timePenalty, costPenalty, "%s is causing uneven %s time", msg,  category);
+                result.set(ANA_IOSKEW_RECORDS_ID, timeWasted, moneyWasted, "%s is causing uneven %s time", msg,  category);
                 updateInformation(result, activity);
                 return true;
             }
@@ -223,8 +238,9 @@ public:
 
         stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
         stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
-        stat_type timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);
-        if (timePenalty<options.queryOption(watOptMinInterestingTime))
+        stat_type timeWasted = (timeMaxLocalExecute - timeAvgLocalExecute);
+        cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
+        if (!isWorthReporting(options, timeWasted, moneyWasted))
             return false;
 
         bool inputSkewed = false;
@@ -241,19 +257,14 @@ public:
         if (wuOutputEdge && (wuOutputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold)))
             outputSkewed = true;
 
-        cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
-        if (costPenalty >= options.queryOption(watOptMinInterestingCost))
-        {
-            if (inputSkewed)
-                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time caused by uneven input");
-            else if (outputSkewed)
-                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time caused by uneven output");
-            else
-                result.set(ANA_EXECUTE_SKEW_ID, timePenalty, costPenalty, "Significant skew in local execute time");
-            updateInformation(result, activity);
-            return true;
-        }
-        return false;
+        if (inputSkewed)
+            result.set(ANA_EXECUTE_SKEW_ID, timeWasted, moneyWasted, "Significant skew in local execute time caused by uneven input");
+        else if (outputSkewed)
+            result.set(ANA_EXECUTE_SKEW_ID, timeWasted, moneyWasted, "Significant skew in local execute time caused by uneven output");
+        else
+            result.set(ANA_EXECUTE_SKEW_ID, timeWasted, moneyWasted, "Significant skew in local execute time");
+        updateInformation(result, activity);
+        return true;
     }
 };
 
@@ -275,13 +286,13 @@ public:
                 if (preFilteredPer > options.queryOption(watPreFilteredKJThreshold))
                 {
                     IWuActivity * inputActivity = inputEdge->querySource();
-                    // Use input activity as the basis of timePenalty because the rows generated from input activity is being filtered out
+                    // Use input activity as the basis of time wasted because the rows generated from input activity is being filtered out
                     stat_type timeAvgLocalExecute = inputActivity->getStatRaw(StTimeLocalExecute, StAvgX);
-                    stat_type timePenalty = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
-                    cost_type costPenalty = calcIssueCost(timePenalty, options.queryOption(watCostRatePerHour));
-                    if (costPenalty >= options.queryOption(watOptMinInterestingCost))
+                    stat_type timeWasted = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
+                    cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
+                    if (isWorthReporting(options, timeWasted, moneyWasted))
                     {
-                        result.set(ANA_KJ_EXCESS_PREFILTER_ID, timePenalty, costPenalty, "Large number of rows from left dataset rejected in keyed join");
+                        result.set(ANA_KJ_EXCESS_PREFILTER_ID, timeWasted, moneyWasted, "Large number of rows from left dataset rejected in keyed join");
                         updateInformation(result, activity);
                         return true;
                     }

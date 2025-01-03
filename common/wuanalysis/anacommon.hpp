@@ -86,10 +86,11 @@ enum WutOptionType
     watOptFirst=0,
     watOptMinInterestingTime=0,
     watOptMinInterestingCost,
+    watOptMinInterestingWaste,
     watOptSkewThreshold,
     watOptMinRowsPerNode,
     watPreFilteredKJThreshold,
-    watCostRatePerHour,
+    watClusterCostPerHour,
     watOptMax
 };
 

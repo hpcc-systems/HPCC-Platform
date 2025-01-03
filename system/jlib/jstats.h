@@ -34,8 +34,8 @@ const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum
 
 inline constexpr stat_type seconds2StatUnits(stat_type secs) { return secs * 1000000000; }
 inline constexpr stat_type msecs2StatUnits(stat_type ms) { return ms * 1000000; }
-inline constexpr stat_type statUnits2seconds(stat_type stat) {return stat / 1000000000; }
-inline constexpr stat_type statUnits2msecs(stat_type stat) {return stat / 1000000; }
+inline constexpr double statUnits2seconds(stat_type stat) {return ((double)stat) / 1000000000; }
+inline constexpr double statUnits2msecs(stat_type stat) {return ((double)stat) / 1000000; }
 
 inline constexpr stat_type statPercent(int value) { return (stat_type)value * 100; }            // Since 1 = 0.01% skew
 inline constexpr stat_type statPercent(double value) { return (stat_type)(value * 100); }
