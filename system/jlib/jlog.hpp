@@ -1500,8 +1500,43 @@ enum LogAccessMappedField
     LOGACCESS_MAPPEDFIELD_host,
     LOGACCESS_MAPPEDFIELD_traceid,
     LOGACCESS_MAPPEDFIELD_spanid,
+    LOGACCESS_MAPPEDFIELD_global,
+    LOGACCESS_MAPPEDFIELD_container,
+    LOGACCESS_MAPPEDFIELD_message,
     LOGACCESS_MAPPEDFIELD_unmapped
 };
+
+inline const char * MappedFieldTypeToString(LogAccessMappedField mappedField)
+{
+    if (mappedField == LOGACCESS_MAPPEDFIELD_timestamp)
+        return "timestamp";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_jobid)
+        return "jobid";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_component)
+        return "component";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_class)
+        return "class";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_audience)
+        return "audience";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_instance)
+        return "instance";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_pod)
+        return "pod";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_host)
+        return "host";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_traceid)
+        return "traceID";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_spanid)
+        return "spanID";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_global)
+        return "global";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_container)
+        return "container";
+    else if (mappedField == LOGACCESS_MAPPEDFIELD_message)
+        return "message";
+    else
+        return "UNKNOWNFIELDTYPE";
+}
 
 enum SortByDirection
 {
@@ -1676,6 +1711,68 @@ struct LogQueryResultDetails
     unsigned int totalAvailable;
 };
 
+
+typedef enum
+{
+    LOGACCESS_STATUS_unknown = 0,
+    LOGACCESS_STATUS_green = 1,
+    LOGACCESS_STATUS_yellow = 2,
+    LOGACCESS_STATUS_red = 3
+} LogAccessHealthStatusCode;
+
+struct LogAccessHealthStatus
+{
+    LogAccessHealthStatusCode code;
+    StringBuffer message;
+
+    LogAccessHealthStatus(LogAccessHealthStatusCode code_)
+    {
+        code = code_;
+    }
+
+    void appendMessage(const char * message_)
+    {
+        message.append(message_);
+    }
+};
+
+
+inline const char * LogAccessHealthStatusToString(LogAccessHealthStatusCode statusCode)
+{
+    switch(statusCode)
+    {
+    case LOGACCESS_STATUS_green:
+        return "Green";
+    case LOGACCESS_STATUS_yellow:
+        return "Yellow";
+    case LOGACCESS_STATUS_red:
+        return "Red";
+    default:
+        return "Unknown";
+    }
+};
+
+struct LogAccessDebugReport
+{
+    StringBuffer SampleQueryReport;
+    StringBuffer PluginDebugReport;
+    StringBuffer ServerDebugReport;
+};
+
+struct LogAccessHealthReportDetails
+{
+    LogAccessHealthStatus status = LOGACCESS_STATUS_unknown;
+    LogAccessDebugReport DebugReport;
+    StringAttr Configuration;
+};
+
+struct LogAccessHealthReportOptions
+{
+    bool IncludeConfiguration = true;
+    bool IncludeDebugReport = true;
+    bool IncludeSampleQuery = true;
+};
+
 // Log Access Interface - Provides filtered access to persistent logging - independent of the log storage mechanism
 //                      -- Declares method to retrieve log entries based on options set
 //                      -- Declares method to retrieve remote log access type (eg elasticstack, etc)
@@ -1690,6 +1787,7 @@ interface IRemoteLogAccess : extends IInterface
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
     virtual bool supportsResultPaging() const = 0;
+    virtual void healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report) = 0;
 };
 
 // Helper functions to construct log access filters
@@ -1714,7 +1812,7 @@ extern jlib_decl bool fetchLog(LogQueryResultDetails & resultDetails, StringBuff
 extern jlib_decl bool fetchJobIDLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
-extern jlib_decl bool  fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
+extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
 #endif
