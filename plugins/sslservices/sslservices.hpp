@@ -36,10 +36,13 @@
 #include "eclrtl_imp.hpp"
 #include "eclhelper.hpp"
 
+extern "C"
+{
+    SSLSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+}
+
 extern "C++"
 {
-SSLSERVICES_API bool SSLSERVICES_CALL getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-
 // Digest functions
 SSLSERVICES_API void SSLSERVICES_CALL digestAvailableAlgorithms(ICodeContext *ctx, size32_t & __lenResult, void * & __result);
 SSLSERVICES_API void SSLSERVICES_CALL digestHash(ICodeContext *ctx, size32_t & __lenResult, void * & __result, size32_t len_indata, const void * _indata, const char * _algorithm_name);
