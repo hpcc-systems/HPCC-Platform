@@ -1530,6 +1530,11 @@ public:
         return options;
     }
 
+    virtual cycle_t queryElapsedCycles() const
+    {
+        return elapsedTimer.elapsedCycles();
+    }
+
     const char *queryAuthToken()
     {
         return authToken.str();

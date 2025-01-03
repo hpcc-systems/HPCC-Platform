@@ -78,7 +78,16 @@ void setMulticastEndpoints(unsigned numChannels);
 #define ROXIE_SLA_PRIORITY 0x40000000    // mask in activityId indicating it goes SLA priority queue
 #define ROXIE_HIGH_PRIORITY 0x80000000   // mask in activityId indicating it goes on the fast queue
 #define ROXIE_LOW_PRIORITY 0x00000000    // mask in activityId indicating it goes on the slow queue (= default)
+// background priority queue is when both ROXIE_SLA_PRIORITY and ROXIE_HIGH_PRIORITY are set
+#define ROXIE_BG_PRIORITY 0xc0000000     // mask in activityId indicating it goes on the bg queue
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
+
+#define QUERY_BG_PRIORITY_VALUE  -1
+#define QUERY_LOW_PRIORITY_VALUE  0
+#define QUERY_HIGH_PRIORITY_VALUE 1
+#define QUERY_SLA_PRIORITY_VALUE  2
+const static int queryMinPriorityValue = QUERY_BG_PRIORITY_VALUE;
+const static int queryMaxPriorityValue = QUERY_SLA_PRIORITY_VALUE;
 
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
 
@@ -303,6 +312,7 @@ extern StringArray allQuerySetNames;
 extern bool blockedLocalAgent;
 extern bool acknowledgeAllRequests;
 extern unsigned packetAcknowledgeTimeout;
+extern cycle_t dynPriorityAdjustCycles;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
@@ -481,6 +491,8 @@ inline unsigned getBondedChannel(unsigned partNo)
 {
     return ((partNo - 1) % numChannels) + 1;
 }
+
+extern unsigned getPriorityMask(int priority);
 
 extern void FatalError(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 extern unsigned getNextInstanceId();
