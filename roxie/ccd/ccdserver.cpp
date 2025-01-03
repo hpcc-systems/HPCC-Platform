@@ -3629,18 +3629,18 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-unsigned priorityMask(int priority)
+unsigned getPriorityMask(int priority)
 {
     unsigned newPri = ROXIE_BG_PRIORITY;
     switch (priority)
     {
-        case 2:
+        case QUERY_SLA_PRIORITY_VALUE:
             newPri = ROXIE_SLA_PRIORITY;
             break;
-        case 1:
+        case QUERY_HIGH_PRIORITY_VALUE:
             newPri = ROXIE_HIGH_PRIORITY;
             break;
-        case 0:
+        case QUERY_LOW_PRIORITY_VALUE:
             newPri = ROXIE_LOW_PRIORITY;
             break;
     }
@@ -4584,16 +4584,16 @@ public:
             int dynPriority = ctx->queryOptions().dynPriority;
             if (dynPriority < origPriority)
             {
-                unsigned newPri = priorityMask(dynPriority);
+                unsigned newPri = getPriorityMask(dynPriority);
                 p->queryHeader().activityId &= ~ROXIE_PRIORITY_MASK;
                 p->queryHeader().activityId |= newPri;
             }
 
             // TODO: perhaps check elapsed every Nth msg ?
-            if ( (dynPriorityAdjustCycles > 0) && (origPriority == 0) && (dynPriority == 0) &&
+            if ( (dynPriorityAdjustCycles > 0) && (origPriority == QUERY_LOW_PRIORITY_VALUE) && (dynPriority == QUERY_LOW_PRIORITY_VALUE) &&
                  (ctx->queryElapsedCycles() > dynPriorityAdjustCycles) )
             {
-                ctx->queryOptions().dynPriority = -1;
+                ctx->queryOptions().dynPriority = QUERY_BG_PRIORITY_VALUE;
                 unsigned dynAdjustMsec = (dynPriorityAdjustCycles * 1000ULL) / queryOneSecCycles();
                 UWARNLOG("WARNING: %d msec dynamic adjustment threshold reached, shifting query to BG queue", dynAdjustMsec);
                 p->queryHeader().activityId |= ROXIE_BG_PRIORITY;
@@ -5061,10 +5061,10 @@ public:
         unsigned timeout = lowTimeout;
         switch (activity.queryContext()->queryOptions().dynPriority)
         {
-            case 2:
+            case QUERY_SLA_PRIORITY_VALUE:
                 timeout = slaTimeout;
                 break;
-            case 1:
+            case QUERY_HIGH_PRIORITY_VALUE:
                 timeout = highTimeout;
                 break;
         }
