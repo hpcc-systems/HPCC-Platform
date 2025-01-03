@@ -1,5 +1,5 @@
 /*##############################################################################
-    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
@@ -16,21 +16,6 @@
 #include "jsecrets.hpp"
 #include "jencrypt.hpp"
 
-//including cpp-httplib single header file REST client
-//  doesn't work with format-nonliteral as an error
-//
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-#endif
-
-#undef INVALID_SOCKET
-#include "httplib.h"
-
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
 using namespace hpccMetrics;
 
 extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
@@ -43,6 +28,7 @@ extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pS
 ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSettingsTree) :
     PeriodicMetricSink(name, "elastic", pSettingsTree)
 {
+
     // Standard sink settings
     ignoreZeroMetrics = pSettingsTree->getPropBool("@ignoreZeroMetrics", true);
 
@@ -89,7 +75,7 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
     pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
 
     // Get authentication settings, if present
-    Owned<IPropertyTree> pAuthConfigTree = pSettingsTree->getPropTree("authentication");
+    Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
     if (!pAuthConfigTree)
         return true;
 
@@ -141,6 +127,7 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
                 return false;
             }
             decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
+            password.clear().append("Blm8huMeiLC4DkX1N1UO");
         }
     }
     return true;
@@ -162,23 +149,154 @@ bool ElasticMetricSink::getIndexConfig(const IPropertyTree *pSettingsTree)
         return false;
     }
 
-    // Initialize standard suffixes
-    if (!pIndexConfigTree->getProp("@countMetricSuffix", countMetricSuffix))
-        countMetricSuffix.append("count");
+    intializeElasticClient();
 
-    if (!pSettingsTree->getProp("@gaugeMetricSuffix", gaugeMetricSuffix))
-        gaugeMetricSuffix.append("gauge");
+    if (!validateIndex())
+        return false;
 
-    if (!pSettingsTree->getProp("@histogramMetricSuffix", histogramMetricSuffix))
-        histogramMetricSuffix.append("histogram");
+    return getDynamicMappingSuffixesFromIndex(pIndexConfigTree);
+}
 
-    return true;
+
+bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *pIndexConfigTree)
+{
+    StringBuffer countSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@countSuffixMappingName", countSuffixMappingName))
+        countSuffixMappingName.append("hpcc_metrics_count_suffix");
+
+    StringBuffer gaugeSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@gaugeSuffixMappingName", gaugeSuffixMappingName))
+        gaugeSuffixMappingName.append("hpcc_metrics_gauge_suffix");
+
+    StringBuffer histogramSuffixMappingName;
+    if (!pIndexConfigTree->getProp("@histogramSuffixMappingName", histogramSuffixMappingName))
+        histogramSuffixMappingName.append("hpcc_metrics_histogram_suffix");
+
+    std::string endpoint;
+    endpoint.append("/").append(indexName.str()).append("/_mapping");
+    httplib::Result res = pClient->Get(endpoint.c_str(), elasticHeaders);
+    if (res->status != 200)
+    {
+        WARNLOG("ElasticMetricSink: Unable to retrieve index mapping for index %s", indexName.str());
+        return false;
+    }
+
+    nlohmann::json data = nlohmann::json::parse(res->body);
+
+    auto indexConfig = data[indexName.str()];
+    if (indexConfig.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Mapping section for Index '%s' does not exist", indexName.str());
+        return false;
+    }
+
+    auto mappings = indexConfig["mappings"];
+    if (mappings.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Index %s does not have a 'mappings' section", indexName.str());
+        return false;
+    }
+
+    auto dynamicTemplates = mappings["dynamic_templates"];
+    if (dynamicTemplates.is_null())
+    {
+        WARNLOG("ElasticMetricSink: Index %s does not have a 'dynamic_templates' section", indexName.str());
+        return false;
+    }
+
+    // validate type is as expected from the data
+    if (dynamicTemplates.is_array())
+    {
+        for (auto & dynamicTemplate : dynamicTemplates.items())
+        {
+            auto mappingObject = dynamicTemplate.value().get<nlohmann::json::object_t>();
+
+            for (const auto& it: mappingObject)
+            {
+                auto const &mappingName = it.first;
+                auto kvPairs = it.second;
+                if (mappingName == countSuffixMappingName.str())
+                {
+                    auto const &matchValue = kvPairs["match"];
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), countMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid count suffix pattern");
+                        return false;
+                    }
+                }
+                else if (mappingName == histogramSuffixMappingName.str())
+                {
+                    auto const &matchValue = kvPairs["match"];
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), histogramMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid histogram suffix pattern");
+                        return false;
+                    }
+                }
+                else if (mappingName == gaugeSuffixMappingName.str())
+                {
+                    auto const &matchValue = kvPairs["match"];
+                    if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), gaugeMetricSuffix))
+                    {
+                        WARNLOG("ElasticMetricSink: Invalid gauge suffix pattern");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // If no gauge suffix pattern configured, use the count suffix pattern
+        if (gaugeMetricSuffix.isEmpty())
+            gaugeMetricSuffix.append(countMetricSuffix);
+
+        // All three must be configured
+        return !countMetricSuffix.isEmpty() && !gaugeMetricSuffix.isEmpty() && !histogramMetricSuffix.isEmpty();
+    }
+    return false;
+}
+
+
+bool ElasticMetricSink::convertPatternToSuffix(const char *pattern, StringBuffer &suffix)
+{
+    if (pattern && (strlen(pattern) > 2) && pattern[0] == '*')
+    {
+        suffix.append(pattern + 1);
+        return true;
+    }
+    return false;
+}
+
+
+void ElasticMetricSink::intializeElasticClient()
+{
+    elasticHeaders = {
+            {"Content-Type", "application/json"},
+            {"Accept",       "application/json"}
+    };
+
+    // Add authorization header if needed
+    if (streq(authenticationType, "basic"))
+    {
+        StringBuffer token;
+        StringBuffer usernamePassword;
+        usernamePassword.append(username).append(":").append(password);
+        JBASE64_Encode(usernamePassword.str(), usernamePassword.length(), token, false);
+        StringBuffer basicAuth;
+        basicAuth.append("Basic ").append(token);
+        elasticHeaders.insert({"Authorization", basicAuth.str()});
+    }
+
+    pClient = std::make_shared<httplib::Client>(elasticHostUrl.str());
+
+    // Add cert path if needed
+    if (!certificateFilePath.isEmpty())
+        pClient->set_ca_cert_path(certificateFilePath.str());
 }
 
 
 bool ElasticMetricSink::prepareToStartCollecting()
 {
-    return false;
+    return configurationValid;
 }
 
 
@@ -193,3 +311,17 @@ void ElasticMetricSink::collectingHasStopped()
 
 }
 
+
+bool ElasticMetricSink::validateIndex()
+{
+    std::string endpoint;
+    endpoint.append("/").append(indexName.str());
+    auto res = pClient->Get(endpoint.c_str(), elasticHeaders);
+
+    if (res->status != 200)
+    {
+        WARNLOG("ElasticMetricSink: Index %s does not exist", indexName.str());
+        return false;
+    }
+    return true;
+}
