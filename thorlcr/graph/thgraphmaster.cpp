@@ -657,7 +657,6 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     {
         StringBuffer clusterName;
         file->getClusterName(0, clusterName);
-        IPropertyTree & fileAttr = file->queryAttributes();
         cost_type curReadCost = 0;
         stat_type curDiskReads = stats.getStatisticSum(StNumDiskReads);
         if(useJhtreeCacheStats)
@@ -671,18 +670,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
             curReadCost = calcFileAccessCost(clusterName, 0, curDiskReads);
 
         if (updateFileProps)
-        {
-            cost_type legacyReadCost = 0;
-            // Legacy files will not have the readCost stored as an attribute
-            if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
-            {
-                // Legacy file: calculate readCost using prev disk reads and new disk reads
-                stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-                legacyReadCost = calcFileAccessCost(clusterName, 0, prevDiskReads);
-            }
-            file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
-            file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
-        }
+            updateCostAndNumReads(file, curDiskReads);
         return curReadCost;
     };
     cost_type readCost = 0;
