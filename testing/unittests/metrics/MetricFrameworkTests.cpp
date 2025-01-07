@@ -76,6 +76,7 @@ public:
         CPPUNIT_TEST(Test_metric_meta_data);
         CPPUNIT_TEST(Test_gauge_by_counters_metric);
         CPPUNIT_TEST(Test_histogram_metric);
+        CPPUNIT_TEST(Test_validate_unique_metric_ids);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -467,6 +468,31 @@ protected:
 
         bool result = ((expectedValue >= (value - error)) && (expectedValue <= (value + error)));
         CPPUNIT_ASSERT(result);
+    }
+
+    void Test_validate_unique_metric_ids()
+    {
+        std::shared_ptr<CounterMetric> pCounter1 = std::make_shared<CounterMetric>("testcounter1", "description", SMeasureCount);
+        auto initialMetricId1 = pCounter1->queryId();
+        std::shared_ptr<CounterMetric> pCounter2 = std::make_shared<CounterMetric>("testcounter2", "description", SMeasureCount);
+        auto initialMetricId2 = pCounter2->queryId();
+        std::shared_ptr<CounterMetric> pCounter3 = std::make_shared<CounterMetric>("testcounter3", "description", SMeasureCount);
+        auto initialMetricId3 = pCounter3->queryId();
+
+        // make sure initial id query values all different
+        bool different = initialMetricId1 != initialMetricId2 && initialMetricId1 != initialMetricId3 && initialMetricId2 != initialMetricId3;
+        CPPUNIT_ASSERT(different);
+
+        // requery values since some were queried before additional metrics allocated
+        auto afterMetricId1 = pCounter1->queryId();
+        auto afterMetricId2 = pCounter2->queryId();
+        auto afterMetricId3 = pCounter3->queryId();
+
+        bool different2 = afterMetricId1 != afterMetricId2 && afterMetricId1 != afterMetricId3 && afterMetricId2 != afterMetricId3;
+        CPPUNIT_ASSERT(different2);
+
+        bool unchanged = initialMetricId1 == afterMetricId1 && initialMetricId2 == afterMetricId2 && initialMetricId3 == afterMetricId3;
+        CPPUNIT_ASSERT(unchanged);
     }
 
 protected:

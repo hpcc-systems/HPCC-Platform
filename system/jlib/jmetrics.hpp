@@ -126,6 +126,7 @@ public:
     StatisticMeasure queryUnits() const override { return units; }
     virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override { return {}; }
+    unsigned int queryId() const { return myId; }
 
 
 protected:
@@ -135,7 +136,7 @@ protected:
         description{_desc},
         metricType{_metricType},
         units{_units},
-        metaData{_metaData} { }
+        metaData{_metaData} { myId = ++metricId; }
 
 protected:
     std::string name;
@@ -143,6 +144,10 @@ protected:
     MetricType metricType;
     StatisticMeasure units;
     MetricMetaData metaData;
+
+private:
+    static std::atomic<unsigned int> metricId;
+    unsigned int myId;
 };
 
 
