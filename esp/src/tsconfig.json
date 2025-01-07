@@ -14,7 +14,6 @@
         "noUnusedLocals": true,
         "strictNullChecks": false,
         "importHelpers": true,
-        "experimentalDecorators": true,
         "allowJs": true,
         "skipLibCheck": true,
         "noImplicitUseStrict": true,
