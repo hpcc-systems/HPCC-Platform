@@ -1269,9 +1269,8 @@ public:
         Owned<IJobQueueItem> item;
         if (prioritytransitiondelay)
         {
-            unsigned timeout = prioritytransitiondelay;
             bool usePrevPrio = true;
-            item.setown(dodequeue(minPrio, timeout, usePrevPrio, nullptr));
+            item.setown(dodequeue(minPrio, prioritytransitiondelay, usePrevPrio, nullptr));
         }
         if (!item)
             item.setown(dodequeue(minPrio, timeout-prioritytransitiondelay, false, nullptr));

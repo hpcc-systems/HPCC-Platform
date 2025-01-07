@@ -3269,20 +3269,20 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliSysInfoLoggerTester, "DaliSysInfoLogg
 
 
 static constexpr bool traceJobQueue = false;
-static unsigned jobQueueStartTick;
+static unsigned jobQueueStartTick = 0;
 //The following allows the tests to be slowed down to make it easier to debug problems
 static constexpr unsigned tickScaling = 1;
 static unsigned getJobQueueTick()
 {
     return (msTick() - jobQueueStartTick) / tickScaling;
 }
-static void JobQueueSleep(unsigned ms)
+static void jobQueueSleep(unsigned ms)
 {
     MilliSleep(ms * tickScaling);
 }
-class JobQueueTester : public CppUnit::TestFixture
+class DaliJobQueueTester : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(JobQueueTester);
+    CPPUNIT_TEST_SUITE(DaliJobQueueTester);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(testDouble);
@@ -3303,8 +3303,8 @@ class JobQueueTester : public CppUnit::TestFixture
     public:
         JobProcessor(Semaphore & _startedSem, Semaphore & _processedSem, IJobQueue * _queue, unsigned _id)
          : startedSem(_startedSem), processedSem(_processedSem), queue(_queue), id(_id)
-         {
-         }
+        {
+        }
 
          virtual int run() override
          {
@@ -3333,7 +3333,7 @@ class JobQueueTester : public CppUnit::TestFixture
                 log.append(",");
             log.append(name).append("@").append(getJobQueueTick());
             unsigned delay = item->getPort();
-            JobQueueSleep(delay);
+            jobQueueSleep(delay);
             processedSem.signal();
             return true;
          }
@@ -3453,7 +3453,7 @@ class JobQueueTester : public CppUnit::TestFixture
 
     void runTestCase(const char * name, const std::initializer_list<JobEntry> & jobs, const std::initializer_list<JobProcessorType> & processors, const std::initializer_list<const char *> & expectedResults, bool uniqueQueues)
     {
-        Owned<IJobQueue> queue = createJobQueue("JobQueueTester");
+        Owned<IJobQueue> queue = createJobQueue("DaliJobQueueTester");
         Semaphore startedSem;
         Semaphore processedSem;
 
@@ -3465,7 +3465,7 @@ class JobQueueTester : public CppUnit::TestFixture
             IJobQueue * processorQueue = queue;
             if (uniqueQueues)
             {
-                localQueue.setown(createJobQueue("JobQueueTester"));
+                localQueue.setown(createJobQueue("DaliJobQueueTester"));
                 processorQueue = localQueue;
             }
 
@@ -3494,7 +3494,7 @@ class JobQueueTester : public CppUnit::TestFixture
         jobQueueStartTick = msTick();
         for (auto & job : jobs)
         {
-            JobQueueSleep(job.delayMs);
+            jobQueueSleep(job.delayMs);
             if (traceJobQueue)
                 DBGLOG("Add (%s, %d, %d) @%u", job.name, job.delayMs, job.processingMs, getJobQueueTick());
             Owned<IJobQueueItem> item = createJobQueueItem(job.name);
@@ -3527,8 +3527,28 @@ class JobQueueTester : public CppUnit::TestFixture
         {
             JobProcessor & cur = jobProcessors.item(i3);
             DBGLOG("  Result: '%s' '%s'", cur.queryOutput(), cur.queryLog());
-//            if (i3 < expectedResults.size())
-//                CPPUNIT_ASSERT_EQUAL(std::string(expectedResults.begin()[i3]), std::string(cur.queryOutput()));
+
+            //If expected results are provided, check that the result matches one of them (it is undefined which
+            //processor will match which result)
+            if (expectedResults.size())
+            {
+                bool matched = false;
+                StringBuffer expectedText;
+                for (auto & expected : expectedResults)
+                {
+                    if (streq(expected, cur.queryOutput()))
+                    {
+                        matched = true;
+                        break;
+                    }
+                    expectedText.append(", ").append(expected);
+                }
+                if (!matched)
+                {
+                    DBGLOG("Result does not match any expected: %s", expectedText.str()+2);
+                    CPPUNIT_ASSERT_MESSAGE("Result does not match any of the expected results", false);
+                }
+            }
         }
     }
 
@@ -3630,9 +3650,9 @@ class JobQueueTester : public CppUnit::TestFixture
     void testDouble()
     {
         runTestCaseX2("2 wu, 2 standard", twoWuTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
-        runTestCaseX2("lo hi wu, 2 standard", lowHighTest, { StandardProcessor, StandardProcessor }, { "aBDc" "ACbd" });
-        runTestCaseX2("lo hi2  wu, 2 standard", lowHigh2Test, { StandardProcessor, StandardProcessor }, { "a"});
-        runTestCaseX2("lo hi2  wu, 2 thor", lowHigh2Test, { ThorProcessor, ThorProcessor }, {});
+        runTestCaseX2("lo hi wu, 2 standard", lowHighTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
+        runTestCaseX2("lo hi2  wu, 2 standard", lowHigh2Test, { StandardProcessor, StandardProcessor }, { "aBDc", "ACbd" });
+        runTestCaseX2("lo hi2  wu, 2 thor", lowHigh2Test, { ThorProcessor, ThorProcessor }, { "aBDc", "ACbd" });
         runTestCaseX2("lo hi2  wu, 2 newthor", lowHigh2Test, { NewThorProcessor, NewThorProcessor }, {});
 
         runTestCaseX2("lo hi3  wu, 2 thor", lowHigh3Test, { ThorProcessor, ThorProcessor }, {});
@@ -3648,7 +3668,7 @@ class JobQueueTester : public CppUnit::TestFixture
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( JobQueueTester );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JobQueueTester, "JobQueueTester" );
+CPPUNIT_TEST_SUITE_REGISTRATION( DaliJobQueueTester );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliJobQueueTester, "DaliJobQueueTester" );
 
 #endif // _USE_CPPUNIT
