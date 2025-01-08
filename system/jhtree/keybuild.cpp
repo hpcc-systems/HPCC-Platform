@@ -133,9 +133,9 @@ protected:
 
 private:
     unsigned __int64 duplicateCount;
-    unsigned __int64 numLeaves = 0;
-    unsigned __int64 numBranches = 0;
-    unsigned __int64 numBlobs = 0;
+    RelaxedAtomic<__uint64> numLeaves{0};
+    RelaxedAtomic<__uint64> numBranches{0};
+    RelaxedAtomic<__uint64> numBlobs{0};
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
     CBlobWriteNode *activeBlobNode = nullptr;
