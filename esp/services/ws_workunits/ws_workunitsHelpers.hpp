@@ -369,6 +369,7 @@ struct CWsWuZAPInfoReq
     bool sendEmail, attachZAPReportToEmail;
     bool includeRelatedLogs = true, includePerComponentLogs = false;
     unsigned maxAttachmentSize, port;
+    bool hasLogsAccess = false;
 
     WUComponentLogOptions logFilter;
 
@@ -380,6 +381,17 @@ struct CWsWuZAPInfoReq
     void populateLogFilter(CHttpRequest * httpRequest)
     {
         logFilter.populateLogFilter(wuid.str(), httpRequest);
+    }
+
+    // True when logs _would have been included_ if the user had access
+    bool logsExcludedDueToNoAccess()
+    {
+#ifdef _CONTAINERIZED
+        return (includeRelatedLogs || includePerComponentLogs) && !hasLogsAccess;
+#else
+        // Bare metal historically always includes Thor and EclAgent logs
+        return !hasLogsAccess;
+#endif
     }
 };
 
@@ -890,11 +902,10 @@ class CWsWuFileHelper
     IFile *createWorkingFolder(IEspContext &context, const char *wuid, const char *namePrefix,
         StringBuffer &namePrefixStr, StringBuffer &folderName);
 
-    void createZAPInfoFile(const char *url, const char *espIP, const char *thorIP, const char *problemDesc,
-        const char *whatChanged, const char *timing, IConstWorkUnit *cwu, const char *pathNameStr);
+    void createZAPInfoFile(CWsWuZAPInfoReq &request, IConstWorkUnit *cwu, const char *pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
     void createZAPECLQueryArchiveFiles(IConstWorkUnit *cwu, const char *pathNameStr);
-    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles);
+    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles, bool hasLogsAccess);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
 #ifndef _CONTAINERIZED
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);

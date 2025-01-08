@@ -45,6 +45,9 @@
 
 namespace ws_workunits {
 
+// Same feature access as in ws_logaccess.ecm
+#define WS_LOGACCESS "WsLogAccess"
+
 const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
 const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
@@ -4096,8 +4099,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 }
 #endif
 
-void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const char* thor, const char* problemDesc,
-    const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* tempDirName)
+void CWsWuFileHelper::createZAPInfoFile(CWsWuZAPInfoReq &request, IConstWorkUnit* cwu, const char* tempDirName)
 {
     VStringBuffer fileName("%s%c%s.txt", tempDirName, PATHSEPCHAR, cwu->queryWuid());
     Owned<IFileIOStream> outFile = createBufferedIOStreamFromFile(fileName.str(), IFOcreate);
@@ -4109,11 +4111,11 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const 
     sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
     sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
     sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
-    sb.append("ESP:          ").append(esp).append("\r\n");
-    if (!isEmptyString(url))
-        sb.append("URL:          ").append(url).append("\r\n");
-    if (!isEmptyString(thor))
-        sb.append("Thor:         ").append(thor).append("\r\n");
+    sb.append("ESP:          ").append(request.esp).append("\r\n");
+    if (!isEmptyString(request.url))
+        sb.append("URL:          ").append(request.url).append("\r\n");
+    if (!isEmptyString(request.thor))
+        sb.append("Thor:         ").append(request.thor).append("\r\n");
     outFile->write(sb.length(), sb.str());
 
     //Exceptions/Warnings/Info
@@ -4147,9 +4149,14 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const 
     }
 
     //User provided Information
-    writeZAPWUInfoToIOStream(outFile, "Problem:      ", problemDesc);
-    writeZAPWUInfoToIOStream(outFile, "What Changed: ", whatChanged);
-    writeZAPWUInfoToIOStream(outFile, "Timing:       ", timing);
+    writeZAPWUInfoToIOStream(outFile, "Problem:      ", request.problemDesc);
+    writeZAPWUInfoToIOStream(outFile, "What Changed: ", request.whatChanged);
+    writeZAPWUInfoToIOStream(outFile, "Timing:       ", request.whereSlow);
+    if (request.logsExcludedDueToNoAccess())
+    {
+        writeZAPWUInfoToIOStream(outFile, "Logs:          ", "Excluded due to no access, need WsLogAccess:Read");
+        LOG(MCuserWarning, "ZAP report for workunit %s excludes logs due to access restrictions. Need WsLogAccess:READ", request.wuid.str());
+    }
 }
 
 void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const char* name, SCMStringBuffer& value)
@@ -4517,14 +4524,14 @@ int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFi
 void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu, CWsWuZAPInfoReq& request,
     const char* tempDirName, StringBuffer& zapFileName, StringBuffer& zipFileNameWithFullPath, unsigned _thorSlaveLogThreadPoolSize)
 {
+    request.hasLogsAccess = context.validateFeatureAccess(WS_LOGACCESS, SecAccess_Read, false);
     setZAPReportName(request.zapFileName, cwu->queryWuid(), zapFileName);
 
     zipFileNameWithFullPath.set(tempDirName).append(PATHSEPCHAR).append("zapreport.zip");
     thorSlaveLogThreadPoolSize = _thorSlaveLogThreadPoolSize;
 
-    //create WU ZAP files
-    createZAPInfoFile(request.url.str(), request.esp.str(), request.thor.str(), request.problemDesc.str(), request.whatChanged.str(),
-        request.whereSlow.str(), cwu, tempDirName);
+//create WU ZAP files
+    createZAPInfoFile(request, cwu, tempDirName);
     createZAPECLQueryArchiveFiles(cwu, tempDirName);
 
     WsWuInfo winfo(context, cwu);
@@ -4532,21 +4539,24 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     createZAPWUGraphProgressFile(request.wuid.str(), tempDirName);
 
     StringArray localFiles;
-    createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles);
+    createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles, request.hasLogsAccess);
+    if (request.hasLogsAccess)
+    {
 #ifndef _CONTAINERIZED
-    createProcessLogfile(cwu, winfo, "EclAgent", tempDirName);
-    createProcessLogfile(cwu, winfo, "Thor", tempDirName);
-    if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
-        createThorSlaveLogfile(cwu, winfo, tempDirName);
+        createProcessLogfile(cwu, winfo, "EclAgent", tempDirName);
+        createProcessLogfile(cwu, winfo, "Thor", tempDirName);
+        if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
+            createThorSlaveLogfile(cwu, winfo, tempDirName);
 #else
-    readWULogToFiles(cwu, winfo, tempDirName, request);
+        readWULogToFiles(cwu, winfo, tempDirName, request);
 #endif
+    }
 
     //Write out to ZIP file
     zipAllZAPFiles(tempDirName, localFiles, request.password, zipFileNameWithFullPath);
 }
 
-void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* tempDirName, StringArray& localFiles)
+void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* tempDirName, StringArray& localFiles, bool hasLogsAccess)
 {
     Owned<IConstWUQuery> query = cwu->getQuery();
     if (!query)
@@ -4562,6 +4572,9 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
         IConstWUAssociatedFile& cur = iter->query();
         cur.getName(name);
         cur.getIp(ip);
+
+        if (!hasLogsAccess && endsWith(name.str(), ".eclcc.log"))
+            continue;
 
         RemoteFilename rfn;
         SocketEndpoint ep(ip.str());
