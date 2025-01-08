@@ -5533,15 +5533,14 @@ IRoxieServerActivityFactory *createRoxieServerApplyActivityFactory(unsigned _id,
 
 static class CDummyIndexReadInfo : public CInterfaceOf<IIndexReadActivityInfo>
 {
-    RemoteActivityId dummyRemoteId{0,0};
 public:
     virtual IKeyArray *getKeySet() const { return nullptr; }
     virtual const IResolvedFile *getVarFileInfo() const { return nullptr; }
     virtual ITranslatorSet *getTranslators() const { return nullptr; }
 
-    virtual void mergeSegmentMonitors(IIndexReadContext *irc) const { }
-    virtual IRoxieServerActivity *queryActivity() { return nullptr; };
-    virtual const RemoteActivityId &queryRemoteId() const { return dummyRemoteId; }
+    virtual void mergeSegmentMonitors(IIndexReadContext *irc) const {  }
+    virtual IRoxieServerActivity *queryActivity() { throwUnexpected(); };    // Should never involve remote agent if keyset has returned nullptr
+    virtual const RemoteActivityId &queryRemoteId() const { throwUnexpected(); }
 } dummyIndexReadInfo;
 
 class CRoxieServerNullActivity : public CRoxieServerActivity
@@ -5558,7 +5557,7 @@ public:
     }
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity() 
-    { 
+    {
         return &dummyIndexReadInfo;
     }
 };
