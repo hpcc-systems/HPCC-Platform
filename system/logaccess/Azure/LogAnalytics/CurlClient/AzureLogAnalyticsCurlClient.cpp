@@ -1109,7 +1109,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             }
             else
             {
-                status = LOGACCESS_STATUS_red;
+                status = LOGACCESS_STATUS_fail;
                 appendJSONStringValue(status.message, "Message", "ALA Pluging Configuration tree is empty!!!", false);
             }
 
@@ -1201,14 +1201,14 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             {
                 StringBuffer description;
                 e->errorMessage(description);
-                status = LOGACCESS_STATUS_red;
+                status = LOGACCESS_STATUS_fail;
                 appendJSONStringValue(status.message, "Result", "Exception while requesting sample token (%d) - %s", e->errorCode(), description.str());
                 e->Release();
             }
             catch(...)
             {
                 appendJSONStringValue(status.message, "Message", "Unknown exception while requesting sample token", false);
-                status = LOGACCESS_STATUS_red;
+                status = LOGACCESS_STATUS_fail;
             }
             sampleQueryReport.append(" }"); //close sample token request
 
@@ -1254,7 +1254,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
                 appendJSONValue(sampleQueryReport, "ResultCount", resultDetails.totalReceived);
                 if (resultDetails.totalReceived==0)
                 {
-                    status = LOGACCESS_STATUS_yellow;
+                    status = LOGACCESS_STATUS_warning;
                     appendJSONStringValue(status.message, "Message", "Query succeeded but returned 0 log entries", false);
                 }
 
@@ -1264,14 +1264,14 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             {
                 StringBuffer description;
                 e->errorMessage(description);
-                status = LOGACCESS_STATUS_red;
+                status = LOGACCESS_STATUS_fail;
                 status.message.appendf("%s{\"Message\": \"Exception while executing sample ALA query (%d) - %s\"", status.message.length() == 0 ? "" : ", ", e->errorCode(), description.str());
                 e->Release();
             }
             catch(...)
             {
                 appendJSONStringValue(status.message, "Message", "Unknown exception while executing sample ALA query", false);
-                status = LOGACCESS_STATUS_red;
+                status = LOGACCESS_STATUS_fail;
             }
             sampleQueryReport.append(" }"); //close sample query
 
@@ -1280,7 +1280,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
     }
     catch(...)
     {
-        status = LOGACCESS_STATUS_red;
+        status = LOGACCESS_STATUS_fail;
         appendJSONStringValue(status.message, "Message", "Encountered unexpected exception during health report", false);
     }
 

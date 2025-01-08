@@ -762,7 +762,7 @@ void processLogMapConfig(const IPropertyTree * logMapConfig, LogField * targetFi
 
 void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
 {
-    LogAccessHealthStatus status = LOGACCESS_STATUS_green;
+    LogAccessHealthStatus status = LOGACCESS_STATUS_success;
     /*try
     {
         report.append("\"ConnectionInfo\": { ");

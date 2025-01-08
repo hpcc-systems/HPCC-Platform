@@ -238,10 +238,9 @@ ESPRequest GetHealthReportRequest
 
 ESPenum LogAccessStatusCode : int
 {
-    Unknown(0, "Unknown"),
-    Green(1, "Green"),
-    Yellow(2, "Yellow"),
-    Red(3, "Red")
+    Success(0, "Success"),
+    Warning(1, "Warning"),
+    Fail(2, "Fail")
 };
 
 /*

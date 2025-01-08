@@ -1711,13 +1711,12 @@ struct LogQueryResultDetails
     unsigned int totalAvailable;
 };
 
-
 typedef enum
 {
     LOGACCESS_STATUS_unknown = 0,
-    LOGACCESS_STATUS_green = 1,
-    LOGACCESS_STATUS_yellow = 2,
-    LOGACCESS_STATUS_red = 3
+    LOGACCESS_STATUS_success = 1,
+    LOGACCESS_STATUS_warning = 2,
+    LOGACCESS_STATUS_fail = 3
 } LogAccessHealthStatusCode;
 
 struct LogAccessHealthStatus
@@ -1741,12 +1740,12 @@ inline const char * LogAccessHealthStatusToString(LogAccessHealthStatusCode stat
 {
     switch(statusCode)
     {
-    case LOGACCESS_STATUS_green:
-        return "Green";
-    case LOGACCESS_STATUS_yellow:
-        return "Yellow";
-    case LOGACCESS_STATUS_red:
-        return "Red";
+    case LOGACCESS_STATUS_success:
+        return "Success";
+    case LOGACCESS_STATUS_warning:
+        return "Warning";
+    case LOGACCESS_STATUS_fail:
+        return "Fail";
     default:
         return "Unknown";
     }

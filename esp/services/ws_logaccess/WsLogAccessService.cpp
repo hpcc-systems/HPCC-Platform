@@ -399,7 +399,7 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
 
     if (!queryRemoteLogAccessor())
     {
-        status->setCode("Red");
+        status->setCode("Fail");
         status->setMessages("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
     }
     else

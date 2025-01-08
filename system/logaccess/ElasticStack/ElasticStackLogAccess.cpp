@@ -265,7 +265,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
 
  void ElasticStackLogAccess::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
  {
-    LogAccessHealthStatus status = LOGACCESS_STATUS_green;
+    LogAccessHealthStatus status = LOGACCESS_STATUS_success;
     /*try
     {
         report.appendf("\"ConnectionInfo\": { \"ConnectionString\": \"%s\" }", m_esConnectionStr.str());
