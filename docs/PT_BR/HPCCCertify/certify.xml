@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
@@ -16,32 +16,46 @@
     </author>
 
     <legalnotice>
-      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email> </para>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para <email></email></para>
 
-      <para>Inclua a frase <emphasis role="bold">Feedback sobre documentação</emphasis> na linha de assunto e indique o nome do documento, o número das páginas e número da versão atual no corpo da mensagem.</para>
+      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
 
-      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas da Reed Elsevier Properties Inc., usadas sob licença. </para>
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
 
-      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada da LexisNexis Risk Data Management Inc.</para>
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou registradas de suas respectivas empresas. </para>
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
 
-      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer semelhança com pessoas reais, vivas ou mortas, é mera coincidência.</para>
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
 
       <para><!--Release Information is used for running footers only. The ID attribute in version.xml is FooterInfo
 Date is used as the dateline/version number in the title page. The ID attribute in version.xml is DateVer--><!--
 Copyright is used for the copyright line on title page. The ID attribute is CopyRight--></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -54,11 +68,15 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
   <chapter id="certification_approach">
     <title>Introdução: Abordagem sobre Certificação</title>
 
-    <para>Este documento informa as etapas que podem ser usadas para certificar o seu ambiente HPCC.</para>
+    <para>Este documento informa as etapas que podem ser usadas para
+    certificar o seu ambiente HPCC.</para>
 
-    <para>Use este procedimento ao criar um novo sistema HPCC ou após alterar ou fazer upgrade em um sistema já existente. O procedimento garante que o sistema está funcionando adequadamente.</para>
+    <para>Use este procedimento ao criar um novo sistema HPCC ou após alterar
+    ou fazer upgrade em um sistema já existente. O procedimento garante que o
+    sistema está funcionando adequadamente.</para>
 
-    <para>Você também pode usar todos ou alguns dos procedimentos regularmente ou antes de um processamento de dados de missão crítica.<informaltable
+    <para>Você também pode usar todos ou alguns dos procedimentos regularmente
+    ou antes de um processamento de dados de missão crítica.<informaltable
         colsep="1" frame="all" rowsep="1">
         <?dbfo keep-together="always"?>
 
@@ -71,7 +89,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
             <row>
               <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-              <entry>Sugerimos a leitura completa deste documento antes de começar.</entry>
+              <entry>Sugerimos a leitura completa deste documento antes de
+              começar.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -80,7 +99,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     <sect1 id="Scope">
       <title>Escopo</title>
 
-      <para>Esses procedimentos certificam as seguintes áreas funcionais:</para>
+      <para>Esses procedimentos certificam as seguintes áreas
+      funcionais:</para>
 
       <itemizedlist mark="bullet">
         <listitem>
@@ -88,11 +108,13 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Transferência de dados da Refinaria de Dados para a Zona de Entrada de Arquivos</para>
+          <para>Transferência de dados da Refinaria de Dados para a Zona de
+          Entrada de Arquivos</para>
         </listitem>
 
         <listitem>
-          <para>Transferência de dados da Zona de Entrada de Arquivos para a Refinaria de Dados</para>
+          <para>Transferência de dados da Zona de Entrada de Arquivos para a
+          Refinaria de Dados</para>
         </listitem>
 
         <listitem>
@@ -100,39 +122,48 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <itemizedlist>
             <listitem>
-              <para>Certificar recursos completos de classificação da Refinaria de Dados</para>
+              <para>Certificar recursos completos de classificação da
+              Refinaria de Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar recursos locais de classificação da Refinaria de Dados</para>
+              <para>Certificar recursos locais de classificação da Refinaria
+              de Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar recursos locais de eliminação de duplicidades da Refinaria de Dados</para>
+              <para>Certificar recursos locais de eliminação de duplicidades
+              da Refinaria de Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar recursos de eliminação de duplicidades de hash da Refinaria de Dados</para>
+              <para>Certificar recursos de eliminação de duplicidades de hash
+              da Refinaria de Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar recursos de compactação de E/S da Refinaria de Dados</para>
+              <para>Certificar recursos de compactação de E/S da Refinaria de
+              Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar recursos de busca de strings da Refinaria de Dados</para>
+              <para>Certificar recursos de busca de strings da Refinaria de
+              Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar os principais recursos de construção do mecanismo da Refinaria de Dados</para>
+              <para>Certificar os principais recursos de construção do
+              mecanismo da Refinaria de Dados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar o acesso do motor de entrega de dados a dados indexados</para>
+              <para>Certificar o acesso do motor de entrega de dados a dados
+              indexados</para>
             </listitem>
 
             <listitem>
-              <para>Certificar o acesso rápido do motor de entrega de dados a dados indexados</para>
+              <para>Certificar o acesso rápido do motor de entrega de dados a
+              dados indexados</para>
             </listitem>
           </itemizedlist>
         </listitem>
@@ -156,15 +187,21 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Verifique se a pasta  <emphasis>_Certification</emphasis>  está em seu repositório. Normalmente, ela é instalada com a IDE.</para>
+          <para>Verifique se a pasta <emphasis>_Certification</emphasis> está
+          em seu repositório. Normalmente, ela é instalada com a IDE.</para>
         </listitem>
 
         <listitem>
-          <para>Remova todos os itens que podem ter restado das certificações anteriores. Busque e remova todas as Workunits velhas, DFU Workunits, arquivos de dados e consultas publicadas.</para>
+          <para>Remova todos os itens que podem ter restado das certificações
+          anteriores. Busque e remova todas as Workunits velhas, DFU
+          Workunits, arquivos de dados e consultas publicadas.</para>
         </listitem>
 
         <listitem>
-          <para>Os nomes de arquivos (Filenames) e outras variáveis são definidas no arquivo _Certification.Setup. Esse arquivo pode ser editado para alterar o número de registros ou os nomes de arquivos gerados.</para>
+          <para>Os nomes de arquivos (Filenames) e outras variáveis são
+          definidas no arquivo _Certification.Setup. Esse arquivo pode ser
+          editado para alterar o número de registros ou os nomes de arquivos
+          gerados.</para>
         </listitem>
       </orderedlist>
     </sect1>

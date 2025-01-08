@@ -9,7 +9,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -19,8 +19,9 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para
-      <email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para <email></email></para>
+
+      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -40,12 +41,12 @@
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Release Info makes a running page footer: now an include! -->
 
@@ -53,7 +54,7 @@
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -61,13 +62,13 @@
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Copyright tag inserts the symbol automatically: Now an Include!-->
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -182,15 +183,15 @@
       também oferece suporte para dados não estruturados, mas este exemplo é
       mais simples. Este arquivo é documentado na tabela a seguir:</para>
 
-      <para/>
+      <para></para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="3">
-            <colspec colwidth="147.60pt"/>
+            <colspec colwidth="147.60pt" />
 
-            <colspec colwidth="147.60pt"/>
+            <colspec colwidth="147.60pt" />
 
-            <colspec colwidth="147.60pt"/>
+            <colspec colwidth="147.60pt" />
 
             <thead>
               <row>
@@ -266,7 +267,7 @@
       todos os campos). É necessário conhecer esse comprimento para o processo
       de <emphasis role="bold">Spray do arquivo</emphasis> .</para>
 
-      <para/>
+      <para></para>
 
       <sect2 id="Uploading_a_file">
         <title>Enviando os arquivos de dados de entrada para sua Zona de
@@ -312,14 +313,14 @@
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/caution.png"/></entry>
+                      fileref="images/caution.png" /></entry>
 
                       <entry>Seu endereço IP poderá ser diferente dos
                       endereços fornecidos nas imagens de exemplo. Use o
@@ -349,7 +350,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg03-1.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -372,7 +373,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg04.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -386,7 +387,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg06.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -443,7 +444,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg000.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -465,7 +466,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg001.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -482,7 +483,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/LZimg002.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -535,7 +536,7 @@
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/DTimg02.jpg"
-                               vendor="eclwatchSS"/>
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -576,7 +577,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg04.jpg"/>
+                  <imagedata fileref="images/DTimg04.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -600,7 +601,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg05.jpg"/>
+                  <imagedata fileref="images/DTimg05.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -624,7 +625,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg06.jpg"/>
+                  <imagedata fileref="images/DTimg06.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -636,7 +637,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg07.jpg"/>
+                  <imagedata fileref="images/DTimg07.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -668,7 +669,7 @@ END;  </programlisting> <figure>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg08.jpg"/>
+                  <imagedata fileref="images/DTimg08.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -686,7 +687,7 @@ END;  </programlisting> <figure>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg23.jpg"/>
+                  <imagedata fileref="images/DTimg23.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -721,7 +722,7 @@ END;  </programlisting> <figure>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg09.jpg"/>
+                    <imagedata fileref="images/DTimg09.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure>Uma janela do compilador será aberta.</para>
@@ -741,7 +742,7 @@ DATASET('~tutorial::YN::OriginalPerson',TutorialYourName.Layout_People,THOR);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg10.jpg"/>
+                    <imagedata fileref="images/DTimg10.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -784,7 +785,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg11.jpg"/>
+                    <imagedata fileref="images/DTimg11.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -793,7 +794,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
           <listitem>
             <para>Quando a tarefa for concluída, ela aparece com uma marca de
             verificação verde <inlinegraphic
-            fileref="images/DT173-15.jpg"/>.</para>
+            fileref="images/DT173-15.jpg" />.</para>
           </listitem>
 
           <listitem>
@@ -807,7 +808,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DT173-16.png"/>
+                    <imagedata fileref="images/DT173-16.png" />
                   </imageobject>
                 </mediaobject>
               </figure>Essa guia nos mostra que há 841.400 registros no
@@ -825,7 +826,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
             modificada é mostrada em <emphasis
             role="bold">negrito</emphasis>.</para>
 
-            <para/>
+            <para></para>
           </listitem>
 
           <listitem>
@@ -845,7 +846,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DT173-17.png"/>
+                    <imagedata fileref="images/DT173-17.png" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -915,7 +916,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DT173-18.jpg"/>
+                    <imagedata fileref="images/DT173-18.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -934,7 +935,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
       <sect2 id="Using_our_Data">
         <title>Utilizando nossos Novos Dados</title>
 
-        <para/>
+        <para></para>
 
         <para>Agora que temos nossos dados em um formato útil e o arquivo está
         salvo, podemos escrever mais códigos para usar o novo arquivo de
@@ -942,13 +943,13 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
         esse tutorial, vamos supor que o campo que precisamos indexar é o do
         CEP.</para>
 
-        <para/>
+        <para></para>
 
         <para>Na definição DATASET, vamos adicionar um campo virtual à
         estrutura RECORD para a posição de arquivo. Isso é necessário para os
         índices.</para>
 
-        <para/>
+        <para></para>
 
         <orderedlist>
           <listitem>
@@ -959,7 +960,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
             escreva esse código (alterando <emphasis>YN </emphasis> para as
             suas iniciais):</para>
 
-            <para/>
+            <para></para>
 
             <para><programlisting>IMPORT TutorialYourName;
 EXPORT File_TutorialPerson :=
@@ -975,7 +976,7 @@ DATASET('~tutorial::YN::TutorialPerson',
 
           <listitem>
             <para>Depois de concluir, ela aparece com uma marca de verificação
-            verde <inlinegraphic fileref="images/DT173-15.jpg"/>.</para>
+            verde <inlinegraphic fileref="images/DT173-15.jpg" />.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -1132,7 +1133,7 @@ OUTPUT(resultset);
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg12.jpg"/>
+                  <imagedata fileref="images/DTimg12.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -1144,7 +1145,7 @@ OUTPUT(resultset);
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg12b.jpg"/>
+                  <imagedata fileref="images/DTimg12b.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -1176,12 +1177,12 @@ OUTPUT(resultset);
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/DTimg13.jpg"/>
+                <imagedata fileref="images/DTimg13.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para/>
+        <para></para>
 
         <orderedlist>
           <listitem>
@@ -1202,7 +1203,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg14a.jpg"/>
+                    <imagedata fileref="images/DTimg14a.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1221,7 +1222,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg15a.jpg"/>
+                    <imagedata fileref="images/DTimg15a.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1253,7 +1254,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg16.jpg"/>
+                    <imagedata fileref="images/DTimg16.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1270,7 +1271,7 @@ OUTPUT(resultset);
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/DTimg17.jpg"/>
+                  <imagedata fileref="images/DTimg17.jpg" />
                 </imageobject>
               </mediaobject>
             </figure>
@@ -1292,7 +1293,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg18.jpg"/>
+                    <imagedata fileref="images/DTimg18.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1325,7 +1326,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg19.jpg"/>
+                    <imagedata fileref="images/DTimg19.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure>Isso publica a consulta.</para>
@@ -1362,7 +1363,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg21.jpg"/>
+                    <imagedata fileref="images/DTimg21.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1382,7 +1383,7 @@ OUTPUT(resultset);
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg22.jpg"/>
+                    <imagedata fileref="images/DTimg22.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1427,7 +1428,7 @@ OUTPUT(resultset);
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/DTimg24.jpg"/>
+                <imagedata fileref="images/DTimg24.jpg" />
               </imageobject>
             </mediaobject>
           </figure>A aba Links oferece fácil acesso a um formulário, uma

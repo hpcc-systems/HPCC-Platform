@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -17,11 +17,14 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para
-      <email>docfeedback@hpccsystems.com</email> Inclua a frase <emphasis
-      role="bold">Feedback sobre documentação</emphasis> na linha de assunto e
-      indique o nome do documento, o número das páginas e número da Versão
-      atual no corpo da mensagem.</para>
+      bem-vindos e podem ser enviados por e-mail para <email></email></para>
+
+      <para role="syntax"><email>docfeedback@hpccsystems.com</email> </para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da Versão atual no corpo da
+      mensagem.</para>
 
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
       registradas da Reed Elsevier Properties Inc., usadas sob licença. Os
@@ -30,26 +33,26 @@
       exemplo usados neste manual são fictícios. Qualquer semelhança com
       pessoas reais, vivas ou mortas, é mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -110,7 +113,7 @@
           <para>Fornece meios para utilizar arquivos de índice HPCC para
           leituras mais rápidas.</para>
 
-          <para/>
+          <para></para>
         </listitem>
       </itemizedlist></para>
 
@@ -168,7 +171,7 @@
       <para>Recomendamos dedicar tempo para a leitura completa deste manual;
       porém, segue abaixo um guia rápido com o resumo das etapas.</para>
 
-      <para/>
+      <para></para>
 
       <sect2>
         <title>Configure Utilizando o Assistente</title>
@@ -252,7 +255,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               selecione <emphasis role="bold">Novo Serviço ESP</emphasis> &gt;
               <emphasis role="bold">ws_sql</emphasis> .</para>
 
-              <para><graphic fileref="images/AddWsSQLService.jpg"/></para>
+              <para><graphic fileref="images/AddWsSQLService.jpg" /></para>
 
               <para>Isso adiciona uma definição para o serviço.</para>
             </listitem>
@@ -263,7 +266,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               Service Bindings.</para>
 
               <para><graphic
-              fileref="images/WsSQLServiceBinding2.jpg"/></para>
+              fileref="images/WsSQLServiceBinding2.jpg" /></para>
             </listitem>
 
             <listitem>
@@ -388,7 +391,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
         fullLogicalFilename2</emphasis></emphasis><emphasis
         role="bold">]</emphasis></para>
 
-        <para/>
+        <para></para>
 
         <para>Exemplo:</para>
 
@@ -410,7 +413,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
         role="bold">XDBC:PosField=[</emphasis><emphasis>indexPositionFieldName</emphasis><emphasis
         role="bold">]</emphasis></para>
 
-        <para/>
+        <para></para>
 
         <para>Exemplo:</para>
 
@@ -437,7 +440,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
           </varlistentry>
         </variablelist>
 
-        <para/>
+        <para></para>
       </sect2>
     </sect1>
   </chapter>
@@ -448,7 +451,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
     <para>Esses métodos estão incluídos na interface de serviço do
     WsSQL:</para>
 
-    <para/>
+    <para></para>
 
     <itemizedlist>
       <listitem>
@@ -569,11 +572,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -609,9 +612,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200 pt"/>
+              <colspec colwidth="200 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -661,11 +664,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -702,9 +705,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -855,11 +858,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -939,9 +942,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1315,7 +1318,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 <emphasis role="greenbold">&lt;!-- Use either TargetCluster or TargetQuerySet, not both --&gt;</emphasis>
 <emphasis role="greenbold">&lt;!-- If stored procedure was fully qualified, you can omit TargetQuerySet --&gt;</emphasis>
     &lt;TargetCluster&gt;<emphasis role="bluebold">thor</emphasis>&lt;/TargetCluster&gt;
-    &lt;TargetQuerySet&gt;<emphasis role="bluebold"/>&lt;/TargetQuerySet&gt;
+    &lt;TargetQuerySet&gt;<emphasis role="bluebold"></emphasis>&lt;/TargetQuerySet&gt;
     &lt;SuppressResults&gt;<emphasis role="bluebold">1</emphasis>&lt;/SuppressResults&gt;
     &lt;SuppressXmlSchema&gt;<emphasis role="bluebold">0</emphasis>&lt;/SuppressXmlSchema&gt;
     &lt;resultLimit&gt;<emphasis role="bluebold">100</emphasis>&lt;/resultLimit&gt;
@@ -1332,11 +1335,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1458,9 +1461,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1556,11 +1559,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1623,9 +1626,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1753,11 +1756,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1825,9 +1828,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1936,11 +1939,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200 pt"/>
+              <colspec colwidth="200 pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2074,9 +2077,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2211,11 +2214,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2471,9 +2474,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200 pt"/>
+              <colspec colwidth="200 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2528,7 +2531,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
       arquivo de dados. Isso o torna disponível para o WsSQL para uso em uma
       busca indexada.</para>
 
-      <para/>
+      <para></para>
 
       <sect2>
         <title>Sample Input XML</title>
@@ -2552,11 +2555,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2570,7 +2573,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 <row>
                   <entry><programlisting role="wsig">SetRelatedIndexesRequest</programlisting></entry>
 
-                  <entry/>
+                  <entry></entry>
 
                   <entry>Estrutura contendo a solicitação</entry>
                 </row>
@@ -2628,9 +2631,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200 pt"/>
+              <colspec colwidth="200 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2691,7 +2694,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
       sobre anotações que indicam um arquivo de índice relacionado a um
       arquivo de dados.</para>
 
-      <para/>
+      <para></para>
 
       <sect2>
         <title>Sample Input XML</title>
@@ -2709,11 +2712,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec colwidth="40 pt"/>
+              <colspec colwidth="40 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2727,7 +2730,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 <row>
                   <entry><programlisting role="wsig">SetRelatedIndexesRequest</programlisting></entry>
 
-                  <entry/>
+                  <entry></entry>
 
                   <entry>Estrutura contendo a solicitação</entry>
                 </row>
@@ -2759,9 +2762,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200 pt"/>
+              <colspec colwidth="200 pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2825,9 +2828,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2886,9 +2889,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="200pt"/>
+              <colspec colwidth="200pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -3007,9 +3010,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="113.65pt"/>
+            <colspec colwidth="113.65pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -3074,9 +3077,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="123.45pt"/>
+            <colspec colwidth="123.45pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -3086,7 +3089,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>A(s) coluna(s) a retornar(em) (lista separada por
                 vírgula). Além disso, essas funções agregadas são suportadas:
@@ -3108,7 +3111,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               </row>
 
               <row>
-                <entry><emphasis/></entry>
+                <entry><emphasis></emphasis></entry>
 
                 <entry>O conjunto de resultados conterá apenas valores
                 distintos (exclusivos)</entry>
@@ -3121,13 +3124,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>Uma ou mais tabelas, separadas por vírgulas.</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry><emphasis role="bold">OBSERVAÇÃO: </emphasis>Uma lista
                 de tabelas com múltiplas tabelas criadas com (uma ou mais)
@@ -3143,7 +3146,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>O nome da tabela como referenciado, definindo
                 opcionalmente seu alias</entry>
@@ -3164,78 +3167,78 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>BOOLEAN suporta apenas <emphasis>Verdade</emphasis> ou
                 <emphasis>Falso</emphasis>, não use Y, N, 0 ou 1</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry><emphasis role="bold">Operadores
                 válido:</emphasis></entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>= Equal (e.g., age=33)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&gt; Greater than (e.g., age &gt;55)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt; Less than (e.g., age &lt; 18)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
                 values are comma separated homogeneous types</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
                 where values are comma separated homogeneous types</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>LIKE <emphasis>pattern</emphasis> where the pattern
                 uses SQL LIKE operators with % and _ wildcards.</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>NOT LIKE <emphasis>pattern</emphasis> where the pattern
                 uses SQL LIKE operators with % and _ wildcards.</entry>
@@ -3254,7 +3257,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
       suportado</para>
 
       <para><superscript>2</superscript>Pode conter apenas referências a
-      funções agregadas<superscript/>se usado com a cláusula
+      funções agregadas<superscript></superscript>se usado com a cláusula
       <emphasis>HAVING</emphasis>.</para>
 
       <para>Funções agregadas só podem ser expressas em logicalExpressions
@@ -3369,9 +3372,9 @@ Jane Row FL 33024
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="123.45pt"/>
+            <colspec colwidth="123.45pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -3381,7 +3384,7 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>A(s) coluna(s) a retornar(em) (lista separada por
                 vírgula). Além disso, essas funções agregadas são suportadas:
@@ -3403,7 +3406,7 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry><emphasis/></entry>
+                <entry><emphasis></emphasis></entry>
 
                 <entry>O conjunto de resultados conterá apenas valores
                 distintos (exclusivos)</entry>
@@ -3445,78 +3448,78 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>BOOLEAN suporta apenas <emphasis>Verdade</emphasis> ou
                 <emphasis>Falso</emphasis>, não use Y, N, 0 ou 1</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry><emphasis role="bold">Operadores
                 válido:</emphasis></entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>= Equal (e.g., age=33)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&gt; Greater than (e.g., age &gt;55)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt; Less than (e.g., age &lt; 18)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
                 values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
                 where values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>LIKE <emphasis>pattern</emphasis> where the pattern
                 uses SQL LIKE operators with % and _ wildcards.</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
                 <entry>NOT LIKE <emphasis>pattern</emphasis> where the pattern
                 uses SQL LIKE operators with % and _ wildcards.</entry>
@@ -3537,7 +3540,7 @@ Jane Row FL 33024
       <para><superscript>1</superscript>Aliasing não suportado</para>
 
       <para><superscript>2</superscript>Pode conter apenas referências a
-      funções agregadas<superscript/>se usado com a cláusula
+      funções agregadas<superscript></superscript>se usado com a cláusula
       <emphasis>HAVING</emphasis>.</para>
 
       <para>Funções agregadas só podem ser expressas em logicalExpressions
@@ -3556,7 +3559,7 @@ Select * from tableList Group by F1 Having Sum (F1 &gt; 100) /* IS SUPPORTED */<
            (t1.firstname = 'jim' AND
             t1.lastname  = 'smith' )) </programlisting></para>
 
-      <para/>
+      <para></para>
 
       <para>A interface não converte os valores da lista de parâmetros ou da
       lista de colunas em literais de string.</para>
@@ -3576,7 +3579,7 @@ Select Firstname from persons where lastname = Jones and zip &gt; 33445     /* d
 
 Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /* doesn't work */</programlisting></para>
 
-      <para/>
+      <para></para>
     </sect1>
 
     <sect1>
@@ -3629,9 +3632,9 @@ Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /*
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="123.45pt"/>
+            <colspec colwidth="123.45pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -3760,9 +3763,9 @@ INTO TABLE newCustomerFile4CSV
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="200pt"/>
+            <colspec colwidth="200pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -3829,13 +3832,13 @@ INTO TABLE newCustomerFile4CSV
         <para><emphasis
         role="bold">LOWER</emphasis>(<emphasis>columnName</emphasis>)</para>
 
-        <para/>
+        <para></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="200pt"/>
+            <colspec colwidth="200pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
