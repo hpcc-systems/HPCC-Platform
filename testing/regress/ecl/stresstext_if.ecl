@@ -18,17 +18,17 @@
 //nothor
 //nohthor
 
-//version multiPart=false
-//version multiPart=true
-//version multiPart=true,variant='inplace'
-//version multiPart=true,variant='default'
-//version multiPart=true,variant='inplace',conditionVersion=2
-//version multiPart=true,variant='inplace',conditionVersion=3
-//version multiPart=true,variant='',conditionVersion=2
+//xversion multiPart=false
+//xversion multiPart=true
+//xversion multiPart=true,variant='inplace'
+//xversion multiPart=true,variant='default'
+//xversion multiPart=true,variant='inplace',conditionVersion=2
+//xversion multiPart=true,variant='inplace',conditionVersion=3
+//xversion multiPart=true,variant='',conditionVersion=2
 
 //The following is processed correctly by the code generator, but not yet supported by roxie
 //enable the test once the necessary changes are made in the roxie engine.
-//noversion multiPart=true,variant='',conditionVersion=4
+//version multiPart=true,variant='',conditionVersion=4
 
 // The settings below may be useful when trying to analyse Roxie keyed join behaviour, as they will
 // eliminate some wait time for an agent queue to become available
