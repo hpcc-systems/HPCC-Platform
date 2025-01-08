@@ -1,7 +1,7 @@
 import { Connection, ResourcesService, Topology } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { containerized } from "src/BuildInfo";
-import { Memory } from "src/store/Memory";
+import { containerized } from "./BuildInfo";
+import { Memory } from "./store/Memory";
 import * as arrayUtil from "dojo/_base/array";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
