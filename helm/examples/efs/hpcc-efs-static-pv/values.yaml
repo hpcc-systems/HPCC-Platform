@@ -28,7 +28,7 @@ planes:
   rwmany: true
   apID:
 - name: mydropzone
-  subPath: dropzone
+  subPath: mydropzone
   size: 1Gi
   rwmany: true
   category: lz

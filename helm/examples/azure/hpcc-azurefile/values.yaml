@@ -40,7 +40,7 @@ planes:
   #shareName: datashare
   #volumeId: "100-data"
 - name: mydropzone
-  subPath: dropzone
+  subPath: mydropzone
   size: 1Gi
   rwmany: true
   category: lz
