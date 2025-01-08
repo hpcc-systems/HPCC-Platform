@@ -133,9 +133,9 @@ protected:
 
 private:
     unsigned __int64 duplicateCount;
-    unsigned __int64 numLeaves = 0;
-    unsigned __int64 numBranches = 0;
-    unsigned __int64 numBlobs = 0;
+    RelaxedAtomic<__uint64> numLeaves{0};
+    RelaxedAtomic<__uint64> numBranches{0};
+    RelaxedAtomic<__uint64> numBlobs{0};
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
     CBlobWriteNode *activeBlobNode = nullptr;
@@ -485,7 +485,7 @@ protected:
         keyHdr->getHdrStruct()->partitionFieldMask = partitionFieldMask;
         CRC32 headerCrc;
         writeFileHeader(false, &headerCrc);
-
+        out->flush();
         if (fileCrc)
         {
             if (doCrc)
@@ -605,7 +605,20 @@ protected:
     virtual unsigned __int64 getOffsetBranches() const override { return offsetBranches; }
     virtual unsigned __int64 getBranchMemorySize() const override { return indexCompressor->queryBranchMemorySize(); }
     virtual unsigned __int64 getLeafMemorySize() const override { return indexCompressor->queryLeafMemorySize(); }
-
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        switch (kind)
+        {
+        case StNumLeafCacheAdds:
+            return numLeaves;
+        case StNumNodeCacheAdds:
+            return numBranches;
+        case StNumBlobCacheAdds:
+            return numBlobs;
+        default:
+            return out->getStatistic(kind);
+        }
+    }
 protected:
     void writeMetadata(char const * data, size32_t size)
     {
