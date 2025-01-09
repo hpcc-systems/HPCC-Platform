@@ -1264,6 +1264,19 @@ public:
     }
 
 
+    IJobQueueItem *dequeue(int minPrio, unsigned timeout, unsigned prioritytransitiondelay) override
+    {
+        Owned<IJobQueueItem> item;
+        if (prioritytransitiondelay)
+        {
+            bool usePrevPrio = true;
+            item.setown(dodequeue(minPrio, prioritytransitiondelay, usePrevPrio, nullptr));
+        }
+        if (!item)
+            item.setown(dodequeue(minPrio, timeout-prioritytransitiondelay, false, nullptr));
+        return item.getClear();
+    }
+
     void placeonqueue(sQueueData &qd, IJobQueueItem *qitem,unsigned idx) // takes ownership of qitem
     {
         Owned<IJobQueueItem> qi = qitem;
