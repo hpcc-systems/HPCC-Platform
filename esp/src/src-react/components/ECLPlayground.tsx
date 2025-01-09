@@ -471,10 +471,11 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
 
     const submissionComplete = React.useMemo(() => {
+        if (!workunit?.Wuid) return true;
         return workunit?.StateID === WUStateID.Completed ||
             workunit?.StateID === WUStateID.Failed ||
             (workunit?.ActionEx === "compile" && workunit?.StateID === WUStateID.Compiled);
-    }, [workunit?.StateID, workunit?.ActionEx]);
+    }, [workunit?.StateID, workunit?.ActionEx, workunit?.Wuid]);
 
     const handleEclChange = React.useMemo(() => debounce((evt) => {
         if (editor.hasFocus()) {
