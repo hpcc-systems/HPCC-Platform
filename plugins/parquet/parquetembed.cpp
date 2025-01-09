@@ -230,6 +230,9 @@ arrow::Status ParquetReader::openReadFile()
             reportIfFailure(readerBuilder.Build(&parquetFileReader));
             parquetFileReaders.push_back(std::move(parquetFileReader));
         }
+
+        if (parquetFileReaders.empty())
+            failx("Parquet file %s not found", location.c_str());
     }
     return arrow::Status::OK();
 }
@@ -643,7 +646,7 @@ arrow::Status ParquetWriter::writePartition(std::shared_ptr<arrow::Table> table)
     auto dataset = std::make_shared<arrow::dataset::InMemoryDataset>(table);
 
     StringBuffer basenameTemplate;
-    basenameTemplate.appendf("part_%d{i}_%lld.parquet",activityCtx->querySlave(), tablesProcessed++);
+    basenameTemplate.appendf("part_{i}_of_table_%lld_from_worker_%d.parquet", tablesProcessed++, activityCtx->querySlave());
     writeOptions.basename_template = basenameTemplate.str();
 
     ARROW_ASSIGN_OR_RAISE(auto scannerBuilder, dataset->NewScan());

@@ -12,8 +12,13 @@
 ############################################################################## */
 
 //class=parquet
+//fail
 //nothor
 //noroxie
+
+// This test tries writing an empty dataset to a Parquet file and then tries to read it.
+// When writing Parquet files the plugin waits for a row before opening a file. The record
+// is empty, therefore the file is never created and the read fails.
 
 IMPORT Std;
 IMPORT Parquet;
@@ -31,6 +36,3 @@ EMPTY_PARQUET := DATASET([], RECORDDEF);
 ParquetIO.Write(EMPTY_PARQUET, filePath, TRUE);
 
 read_data := ParquetIO.Read(RECORDDEF, filePath);
-
-OUTPUT(read_data);
-

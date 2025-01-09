@@ -15,11 +15,7 @@
 ##############################################################################*/
 
 //class=parquet
-//nothor
-//noroxie
-//nohthor
 
-IMPORT Std;
 IMPORT Parquet;
 
 recordLayout := RECORD
@@ -29,10 +25,10 @@ recordLayout := RECORD
     STRING isactive;
 END;
 
-basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
+string basePath := '' : STORED('OriginalTextFilesOsPath');
 
-singleFilePath := basePath + 'single.parquet';
-multiFilePath := basePath + 'multi.parquet';
+singleFilePath := basePath + '/download/single.parquet';
+multiFilePath := basePath + '/download/multi.parquet';
 
 // Reading the single and multi-part files
 singleDataset := ParquetIO.Read(recordLayout, singleFilePath);

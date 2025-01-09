@@ -10,26 +10,29 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+
 //class=parquet
-//nothor
-//noroxie
 
 IMPORT Std;
 IMPORT Parquet;
 
 // Define the record layout with explicit field lengths
 datasetRecordLayout := RECORD
-    UNSIGNED4 id;
-    STRING25 name;
+    UNSIGNED4 district;
+    STRING firstname;
+    STRING lastname;
     UNSIGNED4 age;
-    STRING50 city;
+    STRING city;
 END;
 
 // Create a small dataset - ensure all records have valid data
 smallData := DATASET([
-    {1, 'Alice', 30, 'New York'},
-    {2, 'Bob', 25, 'Los Angeles'},
-    {3, 'Charlie', 40, 'Chicago'}
+    {1, 'Alice', 'A', 30, 'New York'},
+    {1, 'Alice', 'B', 35, 'New York'},
+    {1, 'Chalice', 'C', 40, 'Boston'},
+    {2, 'Bob', 'A', 25, 'Los Angeles'},
+    {2, 'Jim', 'A', 25, 'Los Angeles'},
+    {3, 'Charlie', 'C', 40, 'Chicago'}
 ], datasetRecordLayout);
 
 // Set options
@@ -40,7 +43,51 @@ rowSize := 1024;  // Increased buffer size
 basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
 
 // Define partition keys as a semicolon-separated string with all keys
-partitionKeys := 'id';
+partitionKeys := 'district;firstname;city';
+
+/**
+ * This partitioning creates a structure like this:
+ *
+ * Hive Partitioning:
+ * ├── district=1
+ * │   ├── firstname=Alice
+ * │   │   └── city=New%20York
+ * │   │       └── part_0_of_table_0_from_worker_0.parquet
+ * │   └── firstname=Chalice
+ * │       └── city=Boston
+ * │           └── part_0_of_table_0_from_worker_0.parquet
+ * ├── district=2
+ * │   ├── firstname=Bob
+ * │   │   └── city=Los%20Angeles
+ * │   │       └── part_0_of_table_0_from_worker_0.parquet
+ * │   └── firstname=Jim
+ * │       └── city=Los%20Angeles
+ * │           └── part_0_of_table_0_from_worker_0.parquet
+ * └── district=3
+ *     └── firstname=Charlie
+ *         └── city=Chicago
+ *             └── part_0_of_table_0_from_worker_0.parquet
+ *
+ * Directory Partitioning:
+ * ├── 1
+ * │   ├── Alice
+ * │   │   └── New York
+ * │   │       └── part_0_of_table_0_from_worker_0.parquet
+ * │   └── Chalice
+ * │       └── Boston
+ * │           └── part_0_of_table_0_from_worker_0.parquet
+ * ├── 2
+ * │   ├── Bob
+ * │   │   └── Los Angeles
+ * │   │       └── part_0_of_table_0_from_worker_0.parquet
+ * │   └── Jim
+ * │       └── Los Angeles
+ * │           └── part_0_of_table_0_from_worker_0.parquet
+ * └── 3
+ *     └── Charlie
+ *         └── Chicago
+ *             └── part_0_of_table_0_from_worker_0.parquet
+ */
 
 // Write out the dataset with Hive partitioning on all keys
 ParquetIO.HivePartition.Write(
