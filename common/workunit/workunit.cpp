@@ -14041,17 +14041,32 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
     }
 }
 
+// Evaluates if wuid matches the pattern:
+//   firstChar # # # # # # # # "-" # # # # # # [ "-" #+ ]
+// All other deviations from the pattern, including an incomplete match or the use of wildcard
+// characters, will return false.
 bool looksLikeAWuid(const char * wuid, const char firstChar)
 {
     if (!wuid)
         return false;
-    if (wuid[0] != firstChar)
+    // pattern match required content
+    if ((toupper(wuid[0]) != toupper(firstChar)) ||
+        !isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]) ||
+        !isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]) ||
+        ('-' != wuid[9]) ||
+        !isdigit(wuid[10]) || !isdigit(wuid[11]) || !isdigit(wuid[12]) ||
+        !isdigit(wuid[13]) || !isdigit(wuid[14]) || !isdigit(wuid[15]))
         return false;
-    if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
-        return false;
-    if (!isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]))
-        return false;
-    return (wuid[9]=='-');
+    // pattern match optional content
+    size_t idx = 16;
+    if ('-' == wuid[16] && isdigit(wuid[17]))
+    {
+        idx += 2;
+        while (isdigit(wuid[idx]))
+            idx++;
+    }
+    // expect the NULL terminator
+    return ('\0' == wuid[idx]);
 }
 
 IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char * path)

@@ -47,6 +47,7 @@ set (    SRCS
          fxpptests.cpp
          espapicmdtests.cpp
          filetests.cpp
+         wutests.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
          ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
@@ -86,6 +87,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/common/dllserver
+         ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
