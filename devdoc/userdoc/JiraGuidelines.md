@@ -5,9 +5,9 @@ This is a guide to the type of information that is desired in JIRA tickets.
 # For bugs / improvement requests on any existing features or docs: 
    - User-Interface Issues:
       - Provide a screenshot when it’s applicable.  Not just of the offending line or excerpt, but of the entire application window.
-      - URL to environment.
-      - URL to workunit.
-   - Which browser and its version.
+      - Which browser and its version.
+   - URL to environment.
+   - URL to workunit.
    - Provide a zap file if there is one.
    - Build version of the environment you're using.
    - Steps for reproducing.
