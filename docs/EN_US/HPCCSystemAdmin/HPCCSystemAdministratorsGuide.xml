@@ -11,7 +11,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -41,26 +41,26 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -97,7 +97,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/SA004.jpg"/>
+              <imagedata fileref="images/SA004.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -122,7 +122,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/SA002.jpg"/>
+              <imagedata fileref="images/SA002.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -171,7 +171,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/SA003.jpg"/>
+                  <imagedata fileref="images/SA003.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -430,7 +430,7 @@
 
       <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
                   xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
-                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
@@ -600,7 +600,7 @@
         transaction log at restart in order to replay the last save and
         changes to return to the last operational state.</para>
 
-        <para/>
+        <para></para>
 
         <!-- *** COMMENTING OUT WHOLE Of MONITORING SECTION
        <sect3>
@@ -721,6 +721,146 @@
           workunits in the event of a loss. In addition it would affect every
           other Thor/Roxie cluster in the same environment if you lose this
           node.</para>
+
+          <sect4 id="DaliRestore">
+            <title>Restoring Dali from backup</title>
+
+            <para>If configured correctly, Dali creates a backup or mirror
+            copy to a secondary location on another physical server.
+            (Bare-metal only).</para>
+
+            <para>Systems can be configured with their own scheduled backup to
+            create a snapshot of the primary store files to a custom location.
+            The same steps apply when using a snapshot copy of a backup set as
+            when using the mirror copy. In other words, this technique applies
+            to either bare-metal or k8s deployments .</para>
+
+            <para>The Dali meta files are comprised of:</para>
+
+            <orderedlist>
+              <listitem>
+                <para><emphasis role="bold">store.&lt;NNNN&gt;</emphasis>
+                (e.g., store.36). This file is a reference to the current Dali
+                meta file edition. There should never be more than one of
+                these files. The NNNN is used to determine the current base
+                and delta files in use.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">dalisds&lt;NNNN&gt;.xml</emphasis>
+                (e.g., dalisds36.xml). This is the main Dali meta info file,
+                containing all logical file, workunit, and state information.
+                Sasha (or Dali on save) periodically creates new versions
+                (with incrementally rising NNNN’s). It will keep the last T
+                copies (default 10) based on the configuration option
+                “keepStores”.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">daliinc&lt;NNNN&gt;.xml</emphasis>
+                (e.g., daliinc36.xml). This is the delta transaction log. Dali
+                continuously writes to this file, recording all changes that
+                are made to any meta data. It is used to playback changes and
+                apply them to the base meta info from the
+                dalisds&lt;NNNN&gt;xml file.</para>
+
+                <para>Specifically, when Sasha creates a new store version, it
+                loads the base file (e.g., dalisds36.xml), then loads and
+                applies the delta file (e.g., daliinc36.xml). Sasha then has
+                its own independent representation of the current state and
+                saves a new base file (e.g., dalisds(NNNN+1).xml).</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">dalidet&lt;NNNN&gt;.xml</emphasis>
+                (e.g., dalidet36.xml). This file is created at the point that
+                Sasha starts the process of creating a new base file. At which
+                point it atomically renames the delta transaction file to a
+                ‘det’ file (short for 'detached'). For example, it renames
+                daliinc36.xml to dalidet36.xml. Dali then continues to write
+                new transactions to daliinc36.xml.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis
+                role="bold">dalisds_&lt;MMMM&gt;.bv2</emphasis> files. These
+                files are in effect part of the main store (part of
+                dalisdsNNNN.xml). They are single large values that were
+                deemed too big to keep in Dali memory, and written to disk
+                separately instead (and are loaded on demand).</para>
+              </listitem>
+            </orderedlist>
+
+            <para>If Dali is shutdown cleanly and saves its files as expected,
+            the daliinc*.xml and dalidet*.xml files are not needed, since it
+            saves the entire state of the store directly from internal memory,
+            and on startup, there is no daliincNNNN.xml or dalidetNNNN.xml
+            related to the new version.</para>
+
+            <para>These transaction delta files are only used by Sasha when
+            creating new versions of the base store or if Dali has been
+            stopped abruptly (e.g., machine rebooted). If Dali restarts after
+            an unclean exit, there will be a daliincNNN.xml (and possible a
+            dalidetNNNN.xml file if Sasha was actively creating a new version
+            at the time). In those cases, Dali will load these files in
+            addition to the base file.</para>
+
+            <para>By default Dali’s main data store directory is
+            /var/lib/HPCCSystems/hpcc-data/dali/ . In other words, all meta
+            data is written to and read from this location.</para>
+
+            <para>When restoring from a backup: <orderedlist>
+                <listitem>
+                  <para>Make sure Dali is not running</para>
+                </listitem>
+
+                <listitem>
+                  <para>Make sure the /var/lib/HPCCSystems/hpcc-data/dali
+                  folder is empty.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Copy all pertinent backup file into the
+                  /var/lib/HPCCSystems/hpcc-data/dali folder:</para>
+
+                  <itemizedlist>
+                    <listitem>
+                      <para>One store.NNNN file</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>One dalisdsNNNN.xml file</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>&lt;=1 daliincNNNN.xml file (only if
+                      present)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>&lt;=1 dalidetNNNN.xml file (only if
+                      present)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>All dalisds_MMMM.bv2 files.</para>
+                    </listitem>
+                  </itemizedlist>
+                </listitem>
+              </orderedlist>Other/older dalisds/daliinc/dalidet editions could
+            be copied, but the above are the only ones that will be used. In
+            other words, only the NNNN version based on the single store.NNNN
+            file will be loaded.</para>
+
+            <para>The automatic back to a mirror location is bare-metal only.
+            In a cloud deployment, it is assumed that the storage choices
+            provided by the cloud provider are providing redundancy, such as
+            multi-zone replication.</para>
+
+            <para>In either case, and/or if a manual strategy has been used to
+            copy Dali’s files on a schedule, the process of restoring from a
+            backup should be the same.</para>
+          </sect4>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Sasha">
@@ -1047,7 +1187,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/SA005.jpg"/>
+                <imagedata fileref="images/SA005.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -1098,7 +1238,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/SA006.jpg"/>
+                  <imagedata fileref="images/SA006.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -1109,7 +1249,7 @@
 
   <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
               xpointer="xpointer(//*[@id='Cert_Prelight'])"
-              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="OnDemand_Maintenance">
     <title>System Configuration and Management</title>
@@ -1131,7 +1271,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/SA008.jpg"/>
+            <imagedata fileref="images/SA008.jpg" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -1140,29 +1280,29 @@
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP0'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP1'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_p1b'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP2'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP3'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--/*Including special SysAdmin Config Module -Sect1- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='configuring-a-multi-node-system'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
@@ -1181,13 +1321,13 @@
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
                 <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
@@ -1566,13 +1706,13 @@ lock=/var/lock/HPCCSystems</programlisting>
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
-              <colspec colwidth="49.50pt"/>
+              <colspec colwidth="49.50pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
-                  <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
                   <entry><para>When targeting custom classes, all dependencies
                   must be accessible by declaring their location on the
@@ -1654,21 +1794,21 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="xpointer(//*[@id='ssl4esp'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--LDAP and DALI Include-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/DaliLDAP.xml"
                 xpointer="xpointer(//*[@id='Dali-LDAP'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SystemD_initScripts">
       <title>Initialization under Systemd</title>
@@ -1887,7 +2027,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
       <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
                   xpointer="xpointer(//*[@id='wutool'])"
-                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">
@@ -1962,13 +2102,13 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/tip.jpg"/></entry>
+                <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
 
                 <entry><para>Make sure you allocate ample resources to your
                 key components. Dali is RAM intensive. ECL Agent and ECL
@@ -2240,7 +2380,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
         <para><informaltable border="all" colsep="1" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="94.50pt"/>
+              <colspec colwidth="94.50pt" />
 
               <tbody>
                 <row>
@@ -2379,7 +2519,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           described. If that option is enabled, then you must unset the
           option, or add the hpcc user to the AllowUsers list.</para>
 
-          <para/>
+          <para></para>
         </sect3>
       </sect2>
 
@@ -2394,7 +2534,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/SA011.jpg"/>
+                <imagedata fileref="images/SA011.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -2441,15 +2581,15 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         configurations were typically set to N number of <emphasis
         role="bold">slavesPerNode</emphasis><indexterm>
             <primary>slavesPerNode</primary>
-          </indexterm> <emphasis/> , where N equalled or approached the number
-        of cores per machine.</para>
+          </indexterm> <emphasis></emphasis> , where N equalled or approached
+        the number of cores per machine.</para>
 
         <para>This resulted in N independent slave processes per node, as seen
         below:</para>
 
-        <para/>
+        <para></para>
 
-        <para><graphic fileref="images//SA009.jpg"/></para>
+        <para><graphic fileref="images//SA009.jpg" /></para>
 
         <para>This had several significant disadvantages:</para>
 
@@ -2472,7 +2612,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         <para>Now a new approach is used, allowing virtual slaves to be
         created with a single slave process, as depicted below:.</para>
 
-        <para><graphic fileref="images//SA010.jpg"/></para>
+        <para><graphic fileref="images//SA010.jpg" /></para>
 
         <itemizedlist>
           <listitem>
@@ -2485,9 +2625,10 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
             Thor configuration option called <emphasis
             role="bold">channelsPerSlave</emphasis><indexterm>
                 <primary>channelsPerSlave</primary>
-              </indexterm> <emphasis><emphasis role="strong"/></emphasis>.
-            Under this architecture, slaves within the same process can
-            communicate directly with one another and share resources.</para>
+              </indexterm> <emphasis><emphasis
+            role="strong"></emphasis></emphasis>. Under this architecture,
+            slaves within the same process can communicate directly with one
+            another and share resources.</para>
           </listitem>
         </itemizedlist>
 
@@ -2643,11 +2784,11 @@ heapUseTransparentHugePages</programlisting>
 
     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
                 xpointer="xpointer(//*[@id='Capacity_Planning'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='Sample_Sizings'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Resources">
