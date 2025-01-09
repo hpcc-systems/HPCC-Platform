@@ -48,13 +48,12 @@ import "dijit/ToolbarSeparator";
 import "hpcc/JSGraphWidget";
 import "hpcc/TimingTreeMapWidget";
 
-import { declareDecorator } from "./DeclareDecorator";
+import { declareMixin } from "./DeclareDecorator";
 
 type _Widget = any;
-export interface GraphTreeWidget extends _Widget { }
+interface _GraphTreeWidget extends _Widget { }
 
-@declareDecorator("GraphTreeWidget", _Widget)
-export class GraphTreeWidget {
+class _GraphTreeWidget {
     templateString = template;
     baseClass = "GraphTreeWidget";
     i18n = nlsHPCC;
@@ -796,3 +795,4 @@ export class GraphTreeWidget {
         this.setDisabled(this.id + "ActivityMetric", tab.id !== this.id + "ActivitiesTreeMap");
     }
 }
+export const GraphTreeWidget = declareMixin(_GraphTreeWidget, "GraphTreeWidget", _Widget);

@@ -220,7 +220,7 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
         }
     }, [workunit, workunit?.StateID, theme.semanticColors.errorIcon, theme.semanticColors.successIcon, theme.semanticColors.warningIcon]);
 
-    return <FluentProvider theme={themeV9} style={{ marginRight: 4, display: "inline-block" }}>
+    return <FluentProvider theme={themeV9} style={{ paddingTop: 4, flexGrow: 1, height: 26 }}>
         <ThemeProvider theme={theme} title={workunit?.State}>
             {showProtected &&
                 <span style={{ marginLeft: 8, marginRight: 2 }}>

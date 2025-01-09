@@ -15,7 +15,7 @@ import { hashSum } from "@hpcc-js/util";
 
 // @ts-ignore
 import * as _Widget from "hpcc/_Widget";
-import { declareDecorator } from "./DeclareDecorator";
+import { declareMixin } from "./DeclareDecorator";
 import { Grid, maximizeWidget } from "./ESPUtil";
 import { GraphStore, GraphTreeStore } from "./GraphStore";
 import nlsHPCC from "./nlsHPCC";
@@ -88,11 +88,10 @@ type _Widget = {
     setDisabled(id: string, disabled: boolean, icon?: string, disabledIcon?: string);
 };
 
-export interface GraphTree7Widget extends _Widget {
+interface _GraphTree7Widget extends _Widget {
 }
 
-@declareDecorator("GraphTree7Widget", _Widget)
-export class GraphTree7Widget {
+class _GraphTree7Widget {
     templateString = template;
     static baseClass = "GraphTree7Widget";
     i18n = nlsHPCC;
@@ -761,7 +760,7 @@ export class GraphTree7Widget {
     }
 }
 
-GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTree7Widget, sourceControlOrGlobalIDs) {
+_GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: _GraphTree7Widget, sourceControlOrGlobalIDs) {
     this.inSyncSelectionFrom = true;
     const sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
     let selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
@@ -846,3 +845,5 @@ GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTr
     }
     this.inSyncSelectionFrom = false;
 }, 500, false);
+
+export const GraphTree7Widget = declareMixin(_GraphTree7Widget, "GraphTree7Widget", _Widget);

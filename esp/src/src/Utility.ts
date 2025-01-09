@@ -5,7 +5,7 @@ import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
 import { darkTheme } from "../src-react/themes";
-import nlsHPCC from "src/nlsHPCC";
+import nlsHPCC from "./nlsHPCC";
 
 declare const dojoConfig;
 declare const ActiveXObject;
@@ -631,7 +631,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/viz/DojoD3NDChart"], doLoad);
             break;
         case "DataPatternsWidget":
-            require(["src/DataPatternsWidget"], doLoad);
+            require(["./DataPatternsWidget"], doLoad);
             break;
         case "DynamicESDLDefinitionDetailsWidget":
             require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
@@ -655,7 +655,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/ECLPlaygroundWidget"], doLoad);
             break;
         case "ECLArchiveWidget":
-            require(["src/ECLArchiveWidget"], doLoad);
+            require(["./ECLArchiveWidget"], doLoad);
             break;
         case "ECLSourceWidget":
             require(["hpcc/ECLSourceWidget"], doLoad);
@@ -710,13 +710,13 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/GraphsLFWidget"], doLoad);
             break;
         case "GraphTreeWidget":
-            require(["src/GraphTreeWidget"], doLoad);
+            require(["./GraphTreeWidget"], doLoad);
             break;
         case "GraphTree7Widget":
-            require(["src/GraphTree7Widget"], doLoad);
+            require(["./GraphTree7Widget"], doLoad);
             break;
         case "Graph7Widget":
-            require(["src/Graph7Widget"], doLoad);
+            require(["./Graph7Widget"], doLoad);
             break;
         case "GridDetailsWidget":
             require(["hpcc/GridDetailsWidget"], doLoad);
