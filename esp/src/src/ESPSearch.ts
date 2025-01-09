@@ -1,8 +1,8 @@
 import * as Observable from "dojo/store/Observable";
-import * as ESPWorkunit from "src/ESPWorkunit";
-import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
-import * as ESPLogicalFile from "src/ESPLogicalFile";
-import * as ESPQuery from "src/ESPQuery";
+import * as ESPWorkunit from "./ESPWorkunit";
+import * as ESPDFUWorkunit from "./ESPDFUWorkunit";
+import * as ESPLogicalFile from "./ESPLogicalFile";
+import * as ESPQuery from "./ESPQuery";
 import { Memory } from "./store/Memory";
 import * as WsWorkunits from "./WsWorkunits";
 import * as FileSpray from "./FileSpray";

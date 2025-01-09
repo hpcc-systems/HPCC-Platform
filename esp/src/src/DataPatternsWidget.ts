@@ -34,7 +34,7 @@ import "dijit/TooltipDialog";
 import "hpcc/TableContainer";
 import "hpcc/TargetSelectWidget";
 
-import { declareDecorator } from "./DeclareDecorator";
+import { declareMixin } from "./DeclareDecorator";
 import { WUStatus } from "./WUStatus";
 
 type _TabContainerWidget = {
@@ -50,11 +50,10 @@ type _TabContainerWidget = {
 
 export const supportedFileType = (contentType: string): boolean => ["flat", "csv", "thor"].indexOf((contentType || "").toLowerCase()) >= 0;
 
-export interface DataPatternsWidget extends _TabContainerWidget {
+interface _DataPatternsWidget extends _TabContainerWidget {
 }
 
-@declareDecorator("DataPatternsWidget", _TabContainerWidget)
-export class DataPatternsWidget {
+class _DataPatternsWidget {
     templateString = template;
     static baseClass = "DataPatternsWidget";
     i18n = nlsHPCC;
@@ -296,3 +295,5 @@ export class DataPatternsWidget {
             ;
     }
 }
+
+export const DataPatternsWidget = declareMixin(_DataPatternsWidget, "DataPatternsWidget", _TabContainerWidget);

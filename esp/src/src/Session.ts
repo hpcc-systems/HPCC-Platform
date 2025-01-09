@@ -4,7 +4,7 @@ import * as topic from "dojo/topic";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { cookieKeyValStore, sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
+import { cookieKeyValStore, sessionKeyValStore, userKeyValStore } from "./KeyValStore";
 import { singletonDebounce } from "../src-react/util/throttle";
 import { parseSearch, replaceUrl } from "../src-react/util/history";
 import { ModernMode } from "./BuildInfo";
