@@ -40,7 +40,6 @@ using namespace Azure::Storage::Files;
 using namespace std::chrono;
 
 #define TRACE_AZURE
-//#define TEST_AZURE_PAGING
 
 /*
  * Azure related comments
@@ -50,11 +49,6 @@ using namespace std::chrono;
  */
 constexpr const char * azureFilePrefix = "azure:";
 constexpr const char * azureBlobPrefix = "azureblob:";  // Syntax azureblob:storageplane[/device]/apth
-#ifdef TEST_AZURE_PAGING
-constexpr offset_t azureReadRequestSize = 50;
-#else
-constexpr offset_t azureReadRequestSize = 0x400000;  // Default to requesting 4Mb each time
-#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 
