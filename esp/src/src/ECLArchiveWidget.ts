@@ -18,7 +18,7 @@ import { themeIsDark } from "./Utility";
 import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
 // @ts-ignore
 import * as _Widget from "hpcc/_Widget";
-import { declareDecorator } from "./DeclareDecorator";
+import { declareMixin } from "./DeclareDecorator";
 
 const TIME_NAMES = ["TimeMaxLocalExecute", "TimeAvgLocalExecute", "TimeLocalExecute"];
 
@@ -36,11 +36,10 @@ type _Widget = {
     setDisabled(id: string, disabled: boolean, icon?: string, disabledIcon?: string);
 };
 
-export interface ECLArchiveWidget extends _Widget {
+interface _ECLArchiveWidget extends _Widget {
 }
 
-@declareDecorator("ECLArchiveWidget", _Widget)
-export class ECLArchiveWidget {
+class _ECLArchiveWidget {
     protected templateString = template;
     static baseClass = "ECLArchiveWidget";
     protected i18n = nlsHPCC;
@@ -714,3 +713,5 @@ export class ECLArchiveWidget {
         }
     }
 }
+export const ECLArchiveWidget = declareMixin(_ECLArchiveWidget, "ECLArchiveWidget", _Widget);
+

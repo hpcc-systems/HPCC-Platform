@@ -149,6 +149,7 @@ extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
 extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
 
 extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes);
+extern jlib_decl void setKeepAlive(bool enabled, int time=0, int intvl=0, int probes=0);
 
 class jlib_decl SocketEndpoint : extends IpAddress
 {

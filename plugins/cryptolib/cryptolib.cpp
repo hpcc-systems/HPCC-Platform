@@ -132,22 +132,36 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSupportedSymmetricCipherAlgorithms(bool & __
 //Helpers to build the DATA buffer returned from clSymmetricEncrypt, and sent to clSymmetricDecrypt
 //Buffer is structured as:
 // (size32_t)lenIV, IV excluding NULL, (size32_t)LenPlainText excluding NULL, (size32_t)LenCipher, Cipher
-static void symmDeserialize(const void * pBuffer, StringBuffer & sbIV, StringBuffer & sbCipher, size32_t * lenPlainText)
+static void symmDeserialize(size32_t lenPBuffer, const void * pBuffer, StringBuffer & sbIV, StringBuffer & sbCipher, size32_t * lenPlainText)
 {
-    size32_t len;
-    const char * finger = (const char *)pBuffer;
+    // It is okay to pass an empty encrypted buffer; we just do nothing
+    if (pBuffer && lenPBuffer > 0)
+    {
+        if (lenPBuffer < (sizeof(size32_t) + sizeof(size32_t) + sizeof(size32_t))) // size of IV + size of plaintext + size of cipher name
+            throw makeStringExceptionV(-1, "Invalid encrypted data length (%d) while deserializing ciphertext", lenPBuffer);
 
-    memcpy(&len, finger, sizeof(size32_t));//extract IV
-    finger += sizeof(size32_t);
-    sbIV.append(len, finger);
+        size32_t len;
+        const char * finger = (const char *)pBuffer;
 
-    finger += len;
-    memcpy(lenPlainText, finger, sizeof(size32_t));//extract length of plain text
+        memcpy(&len, finger, sizeof(size32_t));//extract IV
+        finger += sizeof(size32_t);
+        sbIV.append(len, finger);
 
-    finger += sizeof(size32_t);
-    memcpy(&len, finger, sizeof(size32_t));//extract cipher
-    finger += sizeof(size32_t);
-    sbCipher.append(len, finger);
+        finger += len;
+        memcpy(lenPlainText, finger, sizeof(size32_t));//extract length of plain text
+
+        finger += sizeof(size32_t);
+        memcpy(&len, finger, sizeof(size32_t));//extract length of cipher name
+        finger += sizeof(size32_t);
+        if ((finger + len) > (finger + lenPBuffer))
+            throw makeStringExceptionV(-1, "Invalid cipher name length (%d) while deserializing ciphertext", len);
+        
+        sbCipher.append(len, finger);//extract cipher name
+    }
+    else
+    {
+        *lenPlainText = 0;
+    }
 }
 
 static void symmSerialize(void * & result, size32_t & lenResult, const char * pIV, size32_t lenIV, size32_t lenPlainText, size32_t lenCipherBuff, const void * pCipherBuff)
@@ -167,7 +181,7 @@ static void symmSerialize(void * & result, size32_t & lenResult, const char * pI
     pRes += sizeof(size32_t);
     memcpy(pRes, &lenCipherBuff, sizeof(size32_t));
     pRes += sizeof(size32_t);
-    memcpy(pRes, pCipherBuff, lenCipherBuff);
+    memcpy_iflen(pRes, pCipherBuff, lenCipherBuff);
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
@@ -225,14 +239,21 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSymmDecrypt(size32_t & __lenResult,void * & 
     StringBuffer sbIV;
     StringBuffer sbCipher;
     size32_t     lenPlainText;
-    symmDeserialize(encrypteddata, sbIV, sbCipher, &lenPlainText);
 
-    __result = (char *)CTXMALLOC(parentCtx, lenPlainText);
-    __lenResult = lenPlainText;
+    __result = nullptr;
+    __lenResult = 0;
 
-    MemoryBuffer decrypted;
-    size32_t len = aesDecrypt(decrypted, sbCipher.length(), sbCipher.str(), lenKey, (const char *)key, sbIV.str());
-    memcpy(__result, decrypted.toByteArray(), __lenResult);
+    symmDeserialize(lenEncrypteddata, encrypteddata, sbIV, sbCipher, &lenPlainText);
+
+    if (lenPlainText > 0)
+    {
+        __result = (char *)CTXMALLOC(parentCtx, lenPlainText);
+        __lenResult = lenPlainText;
+
+        MemoryBuffer decrypted;
+        size32_t len = aesDecrypt(decrypted, sbCipher.length(), sbCipher.str(), lenKey, (const char *)key, sbIV.str());
+        memcpy(__result, decrypted.toByteArray(), __lenResult);
+    }
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricEncrypt(size32_t & __lenResult, void * & __result,
