@@ -12,6 +12,14 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - alwaysCreateGlobalIds - If true, assign newly created global ID to any requests that do not supply one.
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
 - enableDefaultLogExporter - If true, creates a trace exporter outputting to the log using the default options
+- resourceAttributes: - Defines OTel specific resource attribute configuration values
+                        which are appended to the runtime OTEL_RESOURCE_ATTRIBUTES. See OTel doc: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration
+  - deploymentEnvironment - Defines deployment.environment, which is used to specify
+                            the spans' deployment environment (aka deployment tier).
+                            See OTel doc:  https://opentelemetry.io/docs/specs/semconv/resource/deployment-environment/
+  - serviceNamespace - Defines service.namespace which helps to distinguish a group
+                       of services.
+                       See OTel doc: https://opentelemetry.io/docs/specs/semconv/resource/#semantic-attributes-with-dedicated-environment-variable
 - exporters: - Defines a list of exporters in charge of forwarding span data to target back-end
   - type - "OTLP-HTTP" | "OTLP-GRPC" | "OS" | "JLOG"
     - "JLOG"

@@ -1342,6 +1342,20 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
 
 void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
 {
+    /*
+    Service related resourceAttributes supported by otel:
+
+        service.instance.id string	The string ID of the service instance.
+        service.name        string	Logical name of the service.
+        service.namespace   string	A namespace for service.name.
+        service.version     string	The version string of the service API or implementation.
+    */
+    opentelemetry::sdk::resource::ResourceAttributes resourceAtts =
+        {
+            {"service.name", moduleName.get()},
+            {"service.version", hpccBuildInfo.buildVersion}
+        };
+
     std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
 
     //By default trace spans to the logs in debug builds - so that developers get used to seeing them.
@@ -1349,6 +1363,18 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     bool enableDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
+        IPropertyTree * resourceAttributesTree = traceConfig->queryPropTree("resourceAttributes");
+        if (resourceAttributesTree)
+        {
+            const char * depEnv = resourceAttributesTree->queryProp("@deploymentEnvironment");
+            if (depEnv)
+                resourceAtts.SetAttribute("deployment.environment", depEnv);
+
+            const char * servNS = resourceAttributesTree->queryProp("@serviceNamespace");
+            if (servNS)
+                resourceAtts.SetAttribute("service.namespace", servNS);
+        }
+
         //Administrators can choose to export trace data to a different backend by specifying the exporter type
         Owned<IPropertyTreeIterator> iter = traceConfig->getElements("exporters");
         ForEach(*iter)
@@ -1369,11 +1395,6 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
-    opentelemetry::sdk::resource::ResourceAttributes resourceAtts = 
-        {
-            {"service.name", moduleName.get()},
-            {"service.version", hpccBuildInfo.buildVersion}
-        };
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     // Default is an always-on sampler.
@@ -1412,6 +1433,8 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
             const char * simulatedGlobalYaml = R"!!(global:
   tracing:
     disabled: false
+    resourceAttributes: # used to declare OTEL Resource Attribute config values
+      deploymentEnvironment: testing
     processor:
       type: simple
     exporter:

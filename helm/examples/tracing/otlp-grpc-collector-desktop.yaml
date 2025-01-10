@@ -1,0 +1,13 @@
+global:
+  tracing:
+    resourceAttributes: # used to declare OTEL Resource Attribute config values
+      deploymentEnvironment: development # used to anotate tracing spans' environment identifier (development/production/statiging/etc)
+    exporters:
+    - type: OTLP-GRPC
+      endpoint: "192.168.68.111:4317/"
+      useSslCredentials: false
+      batch:
+        enabled: true
+        maxQueueSize: 4096
+        scheduledDelayMillis: 6000
+        maxExportBatchSize: 512

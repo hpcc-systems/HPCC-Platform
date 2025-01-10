@@ -29,6 +29,8 @@ global:
   tracing:
     disabled: false
     alwaysCreateTraceIds: true
+    resourceAttributes: # used to declare OTEL Resource Attribute config values
+      deploymentEnvironment: development # used to anotate tracing spans' environment identifier (development/production/statiging/etc)
 
   ## resource settings for stub components
   #stubInstanceResources:
