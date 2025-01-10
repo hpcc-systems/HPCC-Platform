@@ -30,7 +30,7 @@ In this case the esdl bundle file is located on a persistent volume mounted to t
 Some setup is required on your local machine prior to installing the helm charts:
 
 1. Create the host directory `C:\hpccdata`
-2. Create subdirectories named `dalistorage`, `debug`, `dropzone`, `esdl\echo-example`, `hpcc-data`, `queries` and `sasha`.
+2. Create subdirectories named `dalistorage`, `debug`, `mydropzone`, `esdl\echo-example`, `hpcc-data`, `queries` and `sasha`.
 3. Copy `helm/examples/esdl/image/echo_address-bundle.xml` to `C:\hpccdata\esdl\echo-example` so ESP can load it on startup. The ESP does not re-attempt to load bundles after its initial startup. 
 
 Next install the `hpcc-localfile` chart with some custom values:
