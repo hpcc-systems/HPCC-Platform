@@ -13809,21 +13809,48 @@ void configurePreferredPlanes()
 
 static bool doesPhysicalMatchMeta(IPropertyTree &partProps, IFile &iFile, offset_t expectedSize, offset_t &actualSize)
 {
+    constexpr unsigned delaySecs = 5;
     // NB: temporary workaround for 'narrow' files publishing extra empty parts with the wrong @compressedSize(0)
     // causing a new check introduced in HPCC-33064 to be hit (fixed in HPCC-33113, but will continue to affect exiting files)
     unsigned __int64 size = partProps.getPropInt64("@size", unknownFileSize);
     unsigned __int64 compressedSize = partProps.getPropInt64("@compressedSize", unknownFileSize);
     if ((0 == size) && (0 == compressedSize))
     {
-        actualSize = unknownFileSize;
+        // either this is a file from 9.10 where empty compressed files can be zero length (no header)
+        // or it's a pre 9.10 (and pre HPCC-33133 fix) dummy part created with incorrect a @compressedSize of 0
+        // (also in future empty physical files may legitimately not exist)
+        // If file exists check that the size is either 0, or the compressed header size (the size of an empty compressed file pre 9.10)
+        actualSize = iFile.size();
+        if (unknownFileSize != actualSize) // file exists. NB: ok not to exist for future compatibility where 0-length files not written
+        {
+            if (0 != actualSize) // could be zero if file from >= 9.10
+            {
+                constexpr size32_t nonEmptyCompressedFileSize = 56; // min size of a non-empty compressed file (with header) - 56 bytes
+                if (nonEmptyCompressedFileSize != actualSize)
+                {
+                    // in >= 9.8 - this could 1st check getWriteSyncMarginMs() and only check if not set.
+                    WARNLOG("Empty compressed file %s's size (%" I64F "u) is not expected size of 0 or %u - retry after %u second delay", iFile.queryFilename(), actualSize, nonEmptyCompressedFileSize, delaySecs);
+                    MilliSleep(delaySecs * 1000);
+                    actualSize = iFile.size();
+                    if ((0 != actualSize) && (nonEmptyCompressedFileSize != actualSize))
+                        return false; // including if unknownFileSize - no longer exists!
+                }
+            }
+        }
         return true;
     }
-
-    if (expectedSize != unknownFileSize)
+    else if (expectedSize != unknownFileSize)
     {
         actualSize = iFile.size();
         if (actualSize != expectedSize)
-            return false;
+        {
+            // in >= 9.8 - this could 1st check getWriteSyncMarginMs() and only check if not set.
+            WARNLOG("File %s's size (%" I64F "u) does not match meta size (%" I64F "u) - retry after %u second delay", iFile.queryFilename(), actualSize, expectedSize, delaySecs);
+            MilliSleep(delaySecs * 1000);
+            actualSize = iFile.size();
+            if (actualSize != expectedSize)
+                return false;
+        }
     }
     else
         actualSize = unknownFileSize;
