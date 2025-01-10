@@ -25,3 +25,7 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fileservices.ecllib DESTINATION 
 IF (USE_OPENSSL)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
 ENDIF()
+
+IF (USE_OPENSSLV3)
+    install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_sslservices.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+ENDIF()

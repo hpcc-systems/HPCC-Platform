@@ -28,6 +28,7 @@ set(
     Math.ecl
     Metaphone3.ecl
     Metaphone.ecl
+    OpenSSL.ecl
     Str.ecl
     Uni.ecl
 )
