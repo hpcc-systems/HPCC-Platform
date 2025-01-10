@@ -606,6 +606,8 @@ private:
     bool verify_server = true;
     unsigned retries = 3;
     unsigned retryWait = 1000;
+    timestamp_type backoffTimeoutUs = 0; // Default to no backoff
+    std::atomic<timestamp_type> backoffFailureTs{0};
     timeval connectTimeout = {0, 0};
     timeval readTimeout = {0, 0};
     timeval writeTimeout = {0, 0};
@@ -647,6 +649,9 @@ public:
         verify_server = vault->getPropBool("@verify_server", true);
         retries = (unsigned) vault->getPropInt("@retries", retries);
         retryWait = (unsigned) vault->getPropInt("@retryWait", retryWait);
+
+        if (vault->hasProp("@backoffTimeout"))
+            backoffTimeoutUs = vault->getPropInt64("@backoffTimeout") * 1000ULL;
 
         setTimevalMS(connectTimeout, (time_t) vault->getPropInt("@connectTimeout"));
         setTimevalMS(readTimeout, (time_t) vault->getPropInt("@readTimeout"));
@@ -894,55 +899,79 @@ public:
     }
     bool requestSecretAtLocation(CVaultKind &rkind, StringBuffer &content, const char *location, const char *secretCacheKey, const char *version, bool permissionDenied)
     {
-        checkAuthentication(permissionDenied);
-        if (isEmptyString(location))
+        //If a previous request failed, then do not retry until backoffTimeoutUs has passed.
+        if (backoffFailureTs)
         {
-            OERRLOG("Vault %s cannot get secret at location without a location", name.str());
-            return false;
+            if (getTimeStampNowValue() - backoffFailureTs < backoffTimeoutUs)
+                return false;
+
+            //Clear the last failure - to avoid the check on the timestamp.
+            backoffFailureTs = 0;
         }
 
-        httplib::Client cli(schemeHostPort.str());
-        httplib::Headers headers = {
-            { "X-Vault-Token", clientToken.str() }
-        };
-
-        unsigned numRetries = 0;
-        initClient(cli, headers, numRetries);
-        httplib::Result res = cli.Get(location, headers);
-        while (!res && numRetries--)
+        bool backoff = false;
+        try
         {
-            OERRLOG("Retrying vault %s get secret, communication error %d location %s", name.str(), res.error(), location);
-            if (retryWait)
-                Sleep(retryWait);
-            res = cli.Get(location, headers);
-        }
+            checkAuthentication(permissionDenied);
+            if (isEmptyString(location))
+            {
+                OERRLOG("Vault %s cannot get secret at location without a location", name.str());
+                return false;
+            }
 
-        if (res)
-        {
-            if (res->status == 200)
+            httplib::Client cli(schemeHostPort.str());
+            httplib::Headers headers = {
+                { "X-Vault-Token", clientToken.str() }
+            };
+
+            unsigned numRetries = 0;
+            initClient(cli, headers, numRetries);
+            httplib::Result res = cli.Get(location, headers);
+            while (!res && numRetries--)
             {
-                rkind = kind;
-                content.append(res->body.c_str());
-                return true;
+                OERRLOG("Retrying vault %s get secret, communication error %d location %s", name.str(), res.error(), location);
+                if (retryWait)
+                    Sleep(retryWait);
+                res = cli.Get(location, headers);
             }
-            else if (res->status == 403)
+
+            if (res)
             {
-                 //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
-                if (permissionDenied==false)
-                    return requestSecretAtLocation(rkind, content, location, secretCacheKey, version, true);
-                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
-            }
-            else if (res->status == 404)
-            {
-                OERRLOG("Vault %s secret not found %s.%s location %s", name.str(), secretCacheKey, version ? version : "", location);
+                if (res->status == 200)
+                {
+                    rkind = kind;
+                    content.append(res->body.c_str());
+                    return true;
+                }
+                else if (res->status == 403)
+                {
+                    //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
+                    if (permissionDenied==false)
+                        return requestSecretAtLocation(rkind, content, location, secretCacheKey, version, true);
+                    OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
+                }
+                else if (res->status == 404)
+                {
+                    OERRLOG("Vault %s secret not found %s.%s location %s", name.str(), secretCacheKey, version ? version : "", location);
+                }
+                else
+                {
+                    OERRLOG("Vault %s error accessing secret %s.%s location %s [%d](%d) - response: %s", name.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
+                }
             }
             else
-            {
-                OERRLOG("Vault %s error accessing secret %s.%s location %s [%d](%d) - response: %s", name.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
-            }
+                OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secretCacheKey, version ? version : "", location);
         }
-        else
-            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secretCacheKey, version ? version : "", location);
+        catch (IException * e)
+        {
+            backoff = true;
+            OERRLOG(e);
+            e->Release();
+        }
+
+        //If authentication failed (or another serious error), then record when that failure occurred
+        if (backoff && backoffTimeoutUs)
+            backoffFailureTs = getTimeStampNowValue();
 
         return false;
     }
