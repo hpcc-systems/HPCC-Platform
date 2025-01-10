@@ -4900,6 +4900,7 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( getaddrinfotest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( getaddrinfotest, "getaddrinfotest" );
+
 class HashFuncTests : public CppUnit::TestFixture
 {
 public:
