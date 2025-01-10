@@ -297,7 +297,6 @@ public:
     }
     const void *getNextRow(bool stopping)
     {
-        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!abortSoon && !eof)
         {
             unsigned emptyIterations = 0;
@@ -305,12 +304,32 @@ public:
             {
                 while (!abortSoon)
                 {
-                    OwnedConstThorRow ret = (void *)curInput->nextRow();
-                    if (!ret)
+                    OwnedConstThorRow ret;
                     {
-                        ret.setown(curInput->nextRow()); // more cope with groups somehow....
-                        if (!ret)
-                            break;
+                        if (loopCounter==1)
+                        {
+                            // The disk reads occur in the first iteration only so track lookahead time
+                            // in the first iteration only. In subsequent iterations, it is reading the
+                            // output from previous iterations.
+                            LookAheadTimer t(slaveTimerStats, timeActivities);
+                            ret.setown(curInput->nextRow());
+                            if (!ret)
+                            {
+                                ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                                if (!ret)
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            ret.setown(curInput->nextRow());
+                            if (!ret)
+                            {
+                                ret.setown(curInput->nextRow()); // more cope with groups somehow....
+                                if (!ret)
+                                    break;
+                            }
+                        }
                     }
 
                     if (finishedLooping || 
@@ -439,6 +458,7 @@ public:
     }
     CATCH_NEXTROW()
     {
+        ActivityTimer t(slaveTimerStats, timeActivities);
         return nextRowFeeder->nextRow();
     }
     virtual void stop() override
