@@ -21,7 +21,7 @@ import "dijit/layout/ContentPane";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 
-import { declareDecorator } from "./DeclareDecorator";
+import { declareMixin } from "./DeclareDecorator";
 import nlsHPCC from "./nlsHPCC";
 import { WUScopeController } from "./WUScopeController";
 
@@ -33,11 +33,10 @@ type _Widget = {
     setDisabled(id: string, disabled: boolean, icon?: string, disabledIcon?: string);
 };
 
-export interface Graph7Widget extends _Widget {
+interface _Graph7Widget extends _Widget {
 }
 
-@declareDecorator("Graph7Widget", _Widget)
-export class Graph7Widget {
+class _Graph7Widget {
     templateString = template;
     static baseClass = "Graph7Widget";
     i18n = nlsHPCC;
@@ -252,3 +251,4 @@ export class Graph7Widget {
             ;
     }
 }
+export const Graph7Widget = declareMixin(_Graph7Widget, "Graph7Widget", _Widget);

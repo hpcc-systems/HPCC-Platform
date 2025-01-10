@@ -251,12 +251,10 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                     </MessageBar>
                                 }
                             </Sticky>
-                            <Sticky stickyPosition={StickyPositionType.Header}>
+                            <div style={{ position: "sticky", zIndex: 2, top: 44, display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
                                 <WorkunitPersona wuid={wuid} />
-                                <div style={{ width: "512px", height: "64px", float: "right" }}>
-                                    <WUStatus wuid={wuid}></WUStatus>
-                                </div>
-                            </Sticky>
+                                <WUStatus wuid={wuid}></WUStatus>
+                            </div>
                             <TableGroup fields={{
                                 "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
                                 "otTraceId": { label: nlsHPCC.Trace, type: "string", value: otTraceId, readonly: true },

@@ -10,7 +10,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -20,8 +20,9 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para
-      <email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para <email></email></para>
+
+      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -41,26 +42,26 @@
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -98,7 +99,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/SA004.jpg"/>
+              <imagedata fileref="images/SA004.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -125,7 +126,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/SA002.jpg"/>
+              <imagedata fileref="images/SA002.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -178,7 +179,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/SA003.jpg"/>
+                  <imagedata fileref="images/SA003.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -604,7 +605,7 @@
         reinicialização para reproduzir o último salvamento e alterações para
         retornar ao estado operacional mais recente.</para>
 
-        <para/>
+        <para></para>
       </sect2>
     </sect1>
 
@@ -1053,7 +1054,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/SA005.jpg"/>
+                <imagedata fileref="images/SA005.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -1105,7 +1106,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/SA006.jpg"/>
+                  <imagedata fileref="images/SA006.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -1116,7 +1117,7 @@
 
   <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
               xpointer="xpointer(//*[@id='Cert_Prelight'])"
-              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="OnDemand_Maintenance">
     <title>Configuração e Gerenciamento do Sistema</title>
@@ -1133,45 +1134,43 @@
     editar os arquivos de ambiente usando qualquer editor de texto ou xml,
     porém a estrutura do arquivo precisa permanecer válida.</para>
 
-    <para>
-      <figure>
+    <para><figure>
         <title>Configuração de amostra de produção</title>
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/SA008.jpg"/>
+            <imagedata fileref="images/SA008.jpg" />
           </imageobject>
         </mediaobject>
-      </figure>
-    </para>
+      </figure></para>
 
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP0'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP1'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_p1b'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP2'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP3'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--/*Including special SysAdmin Config Module -Sect1- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='configuring-a-multi-node-system'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
@@ -1191,15 +1190,13 @@
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry>
-                  <inlinegraphic fileref="images/caution.png"/>
-                </entry>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
                 <entry><emphasis role="bold">ATENÇÃO</emphasis>: Essas
                 configurações são fundamentais para que o sistema possa operar
@@ -1230,8 +1227,7 @@
 
       <para>O envrionment.conf padrão:</para>
 
-      <para>
-        <programlisting>## Default environment configuration file for OpenHPCC
+      <para><programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=${CONFIG_DIR}
@@ -1303,8 +1299,7 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
-</programlisting>
-      </para>
+</programlisting></para>
 
       <sect2 id="SysAdm_Paths">
         <title>Considerações sobre caminhos</title>
@@ -1473,8 +1468,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>Os seguintes são macros de logfields que fornecem um grupo de
           colunas:</para>
 
-          <para>
-            <informaltable>
+          <para><informaltable>
               <tgroup cols="2">
                 <tbody>
                   <row>
@@ -1491,8 +1485,7 @@ lock=/var/lock/HPCCSystems</programlisting>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </sect3>
       </sect2>
 
@@ -1631,11 +1624,11 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_WUs_ActiveDir">
       <title>Workunits e Active Directory</title>
@@ -1742,10 +1735,8 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <para>O valor VmLck deve corresponder à linha de log
           memsize=roxie:</para>
 
-          <para>
-            <programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
-         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting>
-          </para>
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
 
           <para>Que é encontrado na configuração RoxieCluster do
           environment.xml ou na seção Helm chart -- values.yaml Roxie para
@@ -1784,7 +1775,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
       <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
                   xpointer="xpointer(//*[@id='wutool'])"
-                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">
@@ -1861,18 +1852,18 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/tip.jpg"/></entry>
+                <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
 
                 <entry><para>Lembre-se de alocar recursos amplos para seus
                 principais componentes. Dali exige bastante memória RAM. ECL
                 Agent e ECL Server dependem do processador. Thor deve ter pelo
-                menos 4GB de memória RAM por nó.</para> <para/></entry>
+                menos 4GB de memória RAM por nó.</para> <para></para></entry>
               </row>
             </tbody>
           </tgroup>
@@ -2153,7 +2144,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
         <para><informaltable border="all" colsep="1" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="94.50pt"/>
+              <colspec colwidth="94.50pt" />
 
               <tbody>
                 <row>
@@ -2293,7 +2284,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           desativá-la ou adicionar o usuário hpcc à lista de
           AllowUsers.</para>
 
-          <para/>
+          <para></para>
         </sect3>
       </sect2>
 
@@ -2308,7 +2299,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/SA011.jpg"/>
+                <imagedata fileref="images/SA011.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -2358,15 +2349,15 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         cluster eram normalmente definidas para um número N de <emphasis
         role="bold">slavesPerNode</emphasis><indexterm>
             <primary>slavesPerNode</primary>
-          </indexterm> <emphasis/> , onde N é igual ou próximo ao número de
-        núcleos por máquina.</para>
+          </indexterm> <emphasis></emphasis> , onde N é igual ou próximo ao
+        número de núcleos por máquina.</para>
 
         <para>Isso resultou em N processos de secundário independentes por nó,
         como visto abaixo:</para>
 
-        <para/>
+        <para></para>
 
-        <para><graphic fileref="images//SA009.jpg"/></para>
+        <para><graphic fileref="images//SA009.jpg" /></para>
 
         <para>A prática apresentou diversas desvantagens
         significativas:</para>
@@ -2392,7 +2383,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         virtuais são criados com um único processo de secundário, como
         mostrado abaixo:</para>
 
-        <para><graphic fileref="images//SA010.jpg"/></para>
+        <para><graphic fileref="images//SA010.jpg" /></para>
 
         <itemizedlist>
           <listitem>
@@ -2406,9 +2397,10 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
             denominada <emphasis
             role="bold">channelsPerSlave</emphasis><indexterm>
                 <primary>channelsPerSlave</primary>
-              </indexterm> <emphasis> <emphasis role="strong"/> </emphasis>.
-            Nessa arquitetura, secundários no mesmo processo podem se
-            comunicar diretamente entre si e compartilhar recursos.</para>
+              </indexterm> <emphasis> <emphasis role="strong"></emphasis>
+            </emphasis>. Nessa arquitetura, secundários no mesmo processo
+            podem se comunicar diretamente entre si e compartilhar
+            recursos.</para>
           </listitem>
         </itemizedlist>
 
@@ -2572,11 +2564,11 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
                 xpointer="xpointer(//*[@id='Capacity_Planning'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='Sample_Sizings'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Resources">

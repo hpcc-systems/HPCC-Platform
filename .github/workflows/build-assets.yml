@@ -275,7 +275,8 @@ jobs:
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,
-
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.pdf,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.pdf,
             ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/*.md5sum
@@ -704,7 +705,7 @@ jobs:
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-2022-logs
           path: ./ECLIDE/build/**/*.log

@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -17,8 +17,9 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para
-      <email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para <email></email></para>
+
+      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -38,26 +39,26 @@
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -108,7 +109,7 @@
 
       <para>Nesta seção vamos:</para>
 
-      <para/>
+      <para></para>
 
       <itemizedlist>
         <listitem>
@@ -116,14 +117,14 @@
           para adicionar um ESP Service baseado em Dynamic ESDL e vinculá-lo a
           uma porta em um servidor ESP</para>
 
-          <para/>
+          <para></para>
         </listitem>
 
         <listitem>
           <para>Criar uma definição do ESDL Service usando o editor no ECL
           IDE.</para>
 
-          <para/>
+          <para></para>
         </listitem>
 
         <listitem>
@@ -132,7 +133,7 @@
           Você usará as definições neste arquivo ECL ao gravar a consulta ECL
           que apresentará o resultado (a lógica de negócios).</para>
 
-          <para/>
+          <para></para>
         </listitem>
 
         <listitem>
@@ -142,20 +143,20 @@
           <para>Neste ponto, você pode testar a consulta usando o
           WsECL.</para>
 
-          <para/>
+          <para></para>
         </listitem>
 
         <listitem>
           <para>Publicar a definição de Dynamic ESDL do ECL IDE.</para>
 
-          <para/>
+          <para></para>
         </listitem>
 
         <listitem>
           <para>Vincular os métodos de serviço às consultas Roxie usando uma
           configuração formatada em XML.</para>
 
-          <para/>
+          <para></para>
         </listitem>
       </itemizedlist>
 
@@ -167,11 +168,11 @@
       configuration service</emphasis> definido para <emphasis
       role="bold">Allow Full</emphasis>, como mostrado abaixo.</para>
 
-      <para><graphic fileref="images/desdl-LDAP.jpg"/></para>
+      <para><graphic fileref="images/desdl-LDAP.jpg" /></para>
 
-      <para/>
+      <para></para>
 
-      <para/>
+      <para></para>
     </sect1>
 
     <sect1 id="DESDLConfigureAndBind">
@@ -203,14 +204,14 @@
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt"/>
+                <colspec colwidth="49.50pt" />
 
-                <colspec/>
+                <colspec />
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/OSSgr3.png"/></entry>
+                    fileref="images/OSSgr3.png" /></entry>
 
                     <entry>Este comando pode ser usado para confirmar que os
                     processos do HPCC foram interrompidos (Centos/Red
@@ -226,7 +227,7 @@
 
         <listitem>
           <para>Inicie o serviço do Gerenciador de Configurações.<emphasis
-          role="bold"/><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+          role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
 </programlisting></para>
         </listitem>
 
@@ -247,7 +248,7 @@
           depois selecione o arquivo XML do ambiente de origem para
           editar.</para>
 
-          <para><graphic fileref="images/desdl-openconfig.jpg"/></para>
+          <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -261,7 +262,7 @@
           ESDL</emphasis> em <emphasis role="bold">New ESP
           Services</emphasis>.</para>
 
-          <para><graphic fileref="images/desdl-addDESDL.jpg"/></para>
+          <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -269,7 +270,7 @@
 
           <para>Forneça um nome ao arquivo do ambiente.</para>
 
-          <para><graphic fileref="images/dsdl-NametheService.jpg"/></para>
+          <para><graphic fileref="images/dsdl-NametheService.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -278,7 +279,7 @@
           <para>Selecione seu ESP, e depois selecione a guia ESP Service
           Bindings.</para>
 
-          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg"/></para>
+          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -287,7 +288,7 @@
           <para>Clique com o botão direito na lista de ligações e selecione
           <emphasis role="bold">Add.</emphasis></para>
 
-          <para><graphic fileref="images/desdl-AddSVCBinding.jpg"/></para>
+          <para><graphic fileref="images/desdl-AddSVCBinding.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -295,7 +296,7 @@
           suspensa. A definição de serviço que você adicionou será exibida na
           lista de serviços disponíveis.</para>
 
-          <para><graphic fileref="images/desdl-NameSVCBinding.jpg"/></para>
+          <para><graphic fileref="images/desdl-NameSVCBinding.jpg" /></para>
         </listitem>
 
         <listitem>
@@ -310,14 +311,14 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt"/>
+                <colspec colwidth="49.50pt" />
 
-                <colspec/>
+                <colspec />
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/caution.png"/></entry>
+                    fileref="images/caution.png" /></entry>
 
                     <entry>Certifique-se de que você possua direitos
                     suficientes para gravar arquivos no diretório de destino
@@ -362,19 +363,19 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-          <para/>
+          <para></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
-              <colspec colwidth="49.50pt"/>
+              <colspec colwidth="49.50pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
-                  <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
                   <entry><para>Você pode criar um script para forçar esse
                   arquivo para todos os nós. Um script de amostra é fornecido
@@ -386,7 +387,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             </tgroup>
           </informaltable>
 
-          <para/>
+          <para></para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -422,7 +423,7 @@ ESPresponse AddThisResponse
         <listitem>
           <para>Salve o arquivo como MathService.ecm.</para>
 
-          <para/>
+          <para></para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -469,7 +470,7 @@ end;
 /*===================================================*/</emphasis>
 </programlisting>
 
-            <para/>
+            <para></para>
           </listitem>
 
           <listitem>
@@ -563,7 +564,7 @@ MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
             <para>Onde myesp é o nome do seu processo ESP, 8003 é a porta que
             você reservou para seu serviço Dynamic ESDL.</para>
 
-            <para/>
+            <para></para>
           </listitem>
 
           <listitem>
@@ -575,7 +576,7 @@ MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
               xpointer="xpointer(//*[@id='ESDL_CLI'])"
-              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <!-- Moved the ESDL Language Reference to a separate book -->
 </book>

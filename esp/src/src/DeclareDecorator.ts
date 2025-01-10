@@ -10,3 +10,8 @@ export function declareDecorator(classID: string, ...mixins: object[]) {
         return declare(classID, mixins, target.prototype);
     };
 }
+
+type Constructor<T = object> = new (...args: any[]) => T;
+export function declareMixin<T extends Constructor>(target: T, classID: string, ...mixins: object[]): T {
+    return declare(classID, mixins, target.prototype);
+}
