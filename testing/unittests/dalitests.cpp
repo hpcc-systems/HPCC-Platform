@@ -3434,11 +3434,36 @@ class DaliJobQueueTester : public CppUnit::TestFixture
 
     };
 
+    class PriorityJobProcessor : public JobProcessor
+    {
+    public:
+        PriorityJobProcessor(Semaphore & _startedSem, Semaphore & _processedSem, IJobQueue * _queue, unsigned _id)
+        : JobProcessor(_startedSem, _processedSem, _queue, _id)
+        {
+        }
+
+        virtual void processAll() override
+        {
+            __uint64 priority = 0;
+            for (;;)
+            {
+                Owned<IJobQueueItem> item = queue->dequeuePriority(priority);
+                if (!item)
+                    item.setown(queue->dequeue(0, INFINITE, 0));
+                bool ret = processItem(item);
+                if (!ret)
+                    break;
+                priority = getTimeStampNowValue();
+            }
+        }
+    };
+
     enum JobProcessorType
     {
         StandardProcessor,
         ThorProcessor,
         NewThorProcessor,
+        PriorityProcessor,
     };
 
     void testInit()
@@ -3451,111 +3476,130 @@ class DaliJobQueueTester : public CppUnit::TestFixture
         daliClientEnd();
     }
 
-    void runTestCase(const char * name, const std::initializer_list<JobEntry> & jobs, const std::initializer_list<JobProcessorType> & processors, const std::initializer_list<const char *> & expectedResults, bool uniqueQueues)
+    void runTestCase(const char * name, const std::initializer_list<JobEntry> & jobs, const std::initializer_list<JobProcessorType> & processors, const std::initializer_list<const char *> & expectedResults)
     {
-        Owned<IJobQueue> queue = createJobQueue("DaliJobQueueTester");
-        Semaphore startedSem;
-        Semaphore processedSem;
-
-        CIArrayOf<JobProcessor> jobProcessors;
-        for (auto & processor : processors)
+        try
         {
-            JobProcessor * cur = nullptr;
-            Owned<IJobQueue> localQueue;
-            IJobQueue * processorQueue = queue;
-            if (uniqueQueues)
+            Owned<IJobQueue> queue = createJobQueue("DaliJobQueueTester");
+            queue->connect(true);
+            queue->clear();
+
+            Semaphore startedSem;
+            Semaphore processedSem;
+
+            CIArrayOf<JobProcessor> jobProcessors;
+            for (auto & processor : processors)
             {
-                localQueue.setown(createJobQueue("DaliJobQueueTester"));
-                processorQueue = localQueue;
-            }
+                JobProcessor * cur = nullptr;
+                //All listening threads must have a unique queue objects
+                Owned<IJobQueue> localQueue = createJobQueue("DaliJobQueueTester");
 
-            switch (processor)
-            {
-            case StandardProcessor:
-                cur = new StandardJobProcessor(startedSem, processedSem, processorQueue, jobProcessors.ordinality());
-                break;
-            case ThorProcessor:
-                cur = new ThorJobProcessor(startedSem, processedSem, processorQueue, jobProcessors.ordinality());
-                break;
-            case NewThorProcessor:
-                cur = new NewThorJobProcessor(startedSem, processedSem, processorQueue, jobProcessors.ordinality());
-                break;
-            default:
-                UNIMPLEMENTED;
-            }
-            jobProcessors.append(*cur);
-            cur->start(true);
-        }
-
-        for (auto & processor : processors)
-            startedSem.wait();
-
-        IArrayOf<IConversation> conversations;
-        jobQueueStartTick = msTick();
-        for (auto & job : jobs)
-        {
-            jobQueueSleep(job.delayMs);
-            if (traceJobQueue)
-                DBGLOG("Add (%s, %d, %d) @%u", job.name, job.delayMs, job.processingMs, getJobQueueTick());
-            Owned<IJobQueueItem> item = createJobQueueItem(job.name);
-            item->setPort(job.processingMs);
-            item->setPriority(job.priority);
-
-            queue->enqueue(item.getClear());
-        }
-
-        ForEachItemIn(i1, jobProcessors)
-        {
-            if (traceJobQueue)
-                DBGLOG("Add (eoj) @%u", getJobQueueTick());
-
-            //The queue code dedups by "wuid", so we need to add a unique "stop" entry
-            std::string end = std::string("!") + std::to_string(i1);
-            Owned<IJobQueueItem> item = createJobQueueItem(end.c_str());
-            queue->enqueue(item.getClear());
-        }
-
-        ForEachItemIn(i2, jobProcessors)
-        {
-            if (traceJobQueue)
-                DBGLOG("Wait for %u", i2);
-            jobProcessors.item(i2).join();
-        }
-
-        DBGLOG("%s:%s, %ums", name, uniqueQueues ? " unique queues" : "", getJobQueueTick());
-        ForEachItemIn(i3, jobProcessors)
-        {
-            JobProcessor & cur = jobProcessors.item(i3);
-            DBGLOG("  Result: '%s' '%s'", cur.queryOutput(), cur.queryLog());
-
-            //If expected results are provided, check that the result matches one of them (it is undefined which
-            //processor will match which result)
-            if (expectedResults.size())
-            {
-                bool matched = false;
-                StringBuffer expectedText;
-                for (auto & expected : expectedResults)
+                switch (processor)
                 {
-                    if (streq(expected, cur.queryOutput()))
+                case StandardProcessor:
+                    cur = new StandardJobProcessor(startedSem, processedSem, localQueue, jobProcessors.ordinality());
+                    break;
+                case ThorProcessor:
+                    cur = new ThorJobProcessor(startedSem, processedSem, localQueue, jobProcessors.ordinality());
+                    break;
+                case NewThorProcessor:
+                    cur = new NewThorJobProcessor(startedSem, processedSem, localQueue, jobProcessors.ordinality());
+                    break;
+                case PriorityProcessor:
+                    cur = new PriorityJobProcessor(startedSem, processedSem, localQueue, jobProcessors.ordinality());
+                    break;
+                default:
+                    UNIMPLEMENTED;
+                }
+                jobProcessors.append(*cur);
+                cur->start(true);
+            }
+
+            for (auto & processor : processors)
+                startedSem.wait();
+
+            IArrayOf<IConversation> conversations;
+            jobQueueStartTick = msTick();
+            for (auto & job : jobs)
+            {
+                jobQueueSleep(job.delayMs);
+                if (traceJobQueue)
+                    DBGLOG("Add (%s, %d, %d) @%u", job.name, job.delayMs, job.processingMs, getJobQueueTick());
+                Owned<IJobQueueItem> item = createJobQueueItem(job.name);
+                item->setPort(job.processingMs);
+                item->setPriority(job.priority);
+
+                queue->enqueue(item.getClear());
+            }
+
+            for (;;)
+            {
+                //Wait until all the items have been processed before adding the special end markers
+                //otherwise the ends will be interpreted as valid items, and may cause the items to
+                //be dequeued by the wrong thread.
+                unsigned connected;
+                unsigned waiting;
+                unsigned enqueued;
+                queue->getStats(connected,waiting,enqueued);
+                if (enqueued == 0)
+                    break;
+                MilliSleep(100 * tickScaling);
+            }
+
+            ForEachItemIn(i1, jobProcessors)
+            {
+                if (traceJobQueue)
+                    DBGLOG("Add (eoj) @%u", getJobQueueTick());
+
+                //The queue code dedups by "wuid", so we need to add a unique "stop" entry
+                std::string end = std::string("!") + std::to_string(i1);
+                Owned<IJobQueueItem> item = createJobQueueItem(end.c_str());
+                queue->enqueue(item.getClear());
+            }
+
+            ForEachItemIn(i2, jobProcessors)
+            {
+                if (traceJobQueue)
+                    DBGLOG("Wait for %u", i2);
+                jobProcessors.item(i2).join();
+            }
+
+            DBGLOG("%s: %ums", name, getJobQueueTick());
+            ForEachItemIn(i3, jobProcessors)
+            {
+                JobProcessor & cur = jobProcessors.item(i3);
+                DBGLOG("  Result: '%s' '%s'", cur.queryOutput(), cur.queryLog());
+
+                //If expected results are provided, check that the result matches one of them (it is undefined which
+                //processor will match which result)
+                if (expectedResults.size())
+                {
+                    bool matched = false;
+                    StringBuffer expectedText;
+                    for (auto & expected : expectedResults)
                     {
-                        matched = true;
-                        break;
+                        if (streq(expected, cur.queryOutput()))
+                        {
+                            matched = true;
+                            break;
+                        }
+                        expectedText.append(", ").append(expected);
                     }
-                    expectedText.append(", ").append(expected);
-                }
-                if (!matched)
-                {
-                    DBGLOG("Result does not match any expected: %s", expectedText.str()+2);
-                    CPPUNIT_ASSERT_MESSAGE("Result does not match any of the expected results", false);
+                    if (!matched)
+                    {
+                        DBGLOG("Test %s: No match for output %u: %s", name, i3, expectedText.str()+2);
+                        CPPUNIT_ASSERT_MESSAGE("Result does not match any of the expected results", false);
+                    }
                 }
             }
         }
-    }
-
-    void runTestCaseX2(const char * name, const std::initializer_list<JobEntry> & jobs, const std::initializer_list<JobProcessorType> & processors, const std::initializer_list<const char *> & expectedResults)
-    {
-        runTestCase(name, jobs, processors, expectedResults, false);
-        runTestCase(name, jobs, processors, expectedResults, true);
+        catch (IException * e)
+        {
+            StringBuffer msg("Fail: ");
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE(msg.str(), 0);
+        }
     }
 
     static constexpr std::initializer_list<JobEntry> singleWuTest = {
@@ -3637,35 +3681,46 @@ class DaliJobQueueTester : public CppUnit::TestFixture
 
     void testSingle()
     {
-        runTestCase("1 wu, 1 standard", singleWuTest, { StandardProcessor }, { "abcd" }, false);
-        runTestCase("2 wu, 1 standard", twoWuTest, { StandardProcessor }, { "aAbBcCdD" }, false);
-        runTestCase("lo hi wu, 1 standard", lowHighTest, { StandardProcessor }, { "aABCDbcd" }, false);
-        runTestCase("lo hi2 wu, 1 standard", lowHigh2Test, { StandardProcessor }, { "aABCDbcd" }, false);
-        runTestCase("lo hi2 wu, 1 thor", lowHigh2Test, { ThorProcessor }, {}, false);
-        runTestCase("lo hi2 wu, 1 newthor", lowHigh2Test, { NewThorProcessor }, {}, false);
-        runTestCase("drip wu, 1 std", dripFeedTest, { StandardProcessor }, {}, false);
-
+        runTestCase("1 wu, 1 standard", singleWuTest, { StandardProcessor }, { "abcd" });
+        runTestCase("2 wu, 1 standard", twoWuTest, { StandardProcessor }, { "aAbBcCdD" });
+        runTestCase("lo hi wu, 1 standard", lowHighTest, { StandardProcessor }, { "aABCDbcd" });
+        runTestCase("lo hi2 wu, 1 standard", lowHigh2Test, { StandardProcessor }, { "aABCDbcd" });
+        runTestCase("lo hi2 wu, 1 thor", lowHigh2Test, { ThorProcessor }, {});
+        runTestCase("lo hi2 wu, 1 newthor", lowHigh2Test, { NewThorProcessor }, {});
+        runTestCase("drip wu, 1 std", dripFeedTest, { StandardProcessor }, { "abcdefghij" });
+        runTestCase("drip wu, 1 std", dripFeedTest, { PriorityProcessor }, { "abcdefghij" });
     }
 
     void testDouble()
     {
-        runTestCaseX2("2 wu, 2 standard", twoWuTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
-        runTestCaseX2("lo hi wu, 2 standard", lowHighTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
-        runTestCaseX2("lo hi2  wu, 2 standard", lowHigh2Test, { StandardProcessor, StandardProcessor }, { "aBDc", "ACbd" });
-        runTestCaseX2("lo hi2  wu, 2 thor", lowHigh2Test, { ThorProcessor, ThorProcessor }, { "aBDc", "ACbd" });
-        runTestCaseX2("lo hi2  wu, 2 newthor", lowHigh2Test, { NewThorProcessor, NewThorProcessor }, {});
+        runTestCase("2 wu, 2 standard", twoWuTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
+        runTestCase("lo hi wu, 2 standard", lowHighTest, { StandardProcessor, StandardProcessor }, { "abcd", "ABCD" });
+        runTestCase("lo hi2  wu, 2 standard", lowHigh2Test, { StandardProcessor, StandardProcessor }, { "aBDc", "ACbd" });
+        runTestCase("lo hi2  wu, 2 thor", lowHigh2Test, { ThorProcessor, ThorProcessor }, { "aBDc", "ACbd" });
+        runTestCase("lo hi2  wu, 2 newthor", lowHigh2Test, { NewThorProcessor, NewThorProcessor }, {});
 
-        runTestCaseX2("lo hi3  wu, 2 thor", lowHigh3Test, { ThorProcessor, ThorProcessor }, {});
-        runTestCaseX2("lo hi3  wu, 2 newthor", lowHigh3Test, { NewThorProcessor, NewThorProcessor }, {});
-        runTestCaseX2("drip wu, 2 std", dripFeedTest, { StandardProcessor, StandardProcessor }, {});
-        runTestCaseX2("drip wu, 2 newthor", dripFeedTest, { NewThorProcessor, NewThorProcessor }, {});
+        runTestCase("lo hi3  wu, 2 thor", lowHigh3Test, { ThorProcessor, ThorProcessor }, {});
+        runTestCase("lo hi3  wu, 2 newthor", lowHigh3Test, { NewThorProcessor, NewThorProcessor }, {});
+        runTestCase("lo hi3  wu, 2 prio", lowHigh3Test, { PriorityProcessor, PriorityProcessor }, {});
+        runTestCase("drip wu, 2 std", dripFeedTest, { StandardProcessor, StandardProcessor }, {});
+        runTestCase("drip wu, 2 newthor", dripFeedTest, { NewThorProcessor, NewThorProcessor }, {});
+        runTestCase("drip wu, 2 prio", dripFeedTest, { PriorityProcessor, PriorityProcessor }, { "abcdefghij", "" });
     }
 
     void testMany()
     {
-        runTestCaseX2("drip wu, 3 std", dripFeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
-        runTestCaseX2("drip2 wu, 3 std", drip2FeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
+        runTestCase("drip wu, 3 std", dripFeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
+        runTestCase("drip2 wu, 3 std", drip2FeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
+        runTestCase("drip wu, 3 prio", dripFeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor }, { "abcdefghij", "", "" });
+        runTestCase("drip2 wu, 3 prio", drip2FeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor }, { "acegikmo", "bdfhjln", ""});
     }
+
+    //MORE Tests:
+    //Many requests at a time in waves
+    //Priority 1,2,3 fixed - not dynamic
+    //Stopping listening after N to check priorities removed correctly
+    //Mix standard and priority
+    //Priority with expiring and gaps to ensure the correct client picks up the items.
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( DaliJobQueueTester );
