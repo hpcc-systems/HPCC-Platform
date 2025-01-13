@@ -1716,6 +1716,7 @@ void doWUQueryBySingleWU(IEspContext &context, IConstWorkUnit *cw, IEspWUQueryRe
     IArrayOf<IEspECLWorkunit> results;
     results.append(*info.getClear());
     resp.setWorkunits(results);
+    resp.setNumWUs(1);
     resp.setPageSize(1);
     resp.setCount(1);
     PROGLOG("getWUInfo: %s", cw->queryWuid());
@@ -2598,6 +2599,9 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     {
         StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
+
+        // assume an empty list until told otherwise
+        resp.setNumWUs(0);
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
