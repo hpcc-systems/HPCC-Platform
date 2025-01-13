@@ -1708,17 +1708,27 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
 }
 
 
-void doWUQueryBySingleWuid(IEspContext &context, const char *wuid, IEspWUQueryResponse &resp)
+void doWUQueryBySingleWU(IEspContext &context, IConstWorkUnit *cw, IEspWUQueryResponse &resp)
 {
     Owned<IEspECLWorkunit> info= createECLWorkunit("","");
-    WsWuInfo winfo(context, wuid);
+    WsWuInfo winfo(context, cw);
     winfo.getCommon(*info, 0);
     IArrayOf<IEspECLWorkunit> results;
     results.append(*info.getClear());
     resp.setWorkunits(results);
     resp.setPageSize(1);
     resp.setCount(1);
-    PROGLOG("getWUInfo: %s", wuid);
+    PROGLOG("getWUInfo: %s", cw->queryWuid());
+}
+
+void doWUQueryBySingleWuid(IEspContext &context, const char *wuid, IEspWUQueryResponse &resp)
+{
+    Owned<IWorkUnitFactory> wf = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid, nullptr, nullptr, false);
+    if (!cw)
+        return;
+    ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+    doWUQueryBySingleWU(context, cw, resp);
 }
 
 void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryResponse &resp)
@@ -1739,7 +1749,7 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
             "Cannot access the workunit for file %s. Resource %s : Permission denied. Read Access Required.",
             logicalFile, secAccessFeature.str());
 
-    doWUQueryBySingleWuid(context, wuid.str(), resp);
+    doWUQueryBySingleWU(context, cw, resp);
 
     resp.setFirst(false);
     resp.setPageSize(1);
@@ -2592,10 +2602,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
-        {
-            ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
             doWUQueryBySingleWuid(context, wuid, resp);
-        }
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
         else

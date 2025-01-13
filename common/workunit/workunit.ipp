@@ -595,7 +595,7 @@ public:
         const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser);
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser);
-    virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
+    virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool expected);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated);
     virtual int setTracingLevel(int newlevel);

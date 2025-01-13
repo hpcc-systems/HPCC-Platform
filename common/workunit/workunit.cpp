@@ -5304,7 +5304,7 @@ bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, IS
     return deleteWorkUnitEx(wuid, false, secmgr, secuser);
 }
 
-IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, bool expected)
 {
     StringBuffer wuidStr(wuid);
     wuidStr.trim();
@@ -5330,7 +5330,7 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *se
     }
     else
     {
-        if (workUnitTraceLevel > 0)
+        if (expected && workUnitTraceLevel > 0)
             IERRLOG("openWorkUnit %s not found", wuidStr.str());
         return NULL;
     }
@@ -6722,11 +6722,11 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->deleteWorkUnitEx(wuid, throwException, secMgr, secUser);
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser, bool expected)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->openWorkUnit(wuid, secMgr, secUser);
+        return baseFactory->openWorkUnit(wuid, secMgr, secUser, expected);
     }
     virtual IWorkUnit* updateWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
@@ -6888,7 +6888,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser) override
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser, bool expected) override
     {
         throwUnexpected();
     }
