@@ -156,6 +156,8 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
         appSecMgr = authNZ;
     }
     const char *method = appSecMgr->queryProp("@name");
+    if (isEmptyString(method))
+        throw MakeStringException(-1, "SecurityManager name attribute required.  To run without security set 'auth: none'");
     const char *tag = appSecMgr->queryProp("@type");
     if (isEmptyString(tag))
         throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set 'auth: none'");
@@ -167,7 +169,7 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
     mergePTree(legacy, authNZ); //extra info clean up later
     legacy->removeProp("SecurityManager"); //already copied these attributes above, don't need this as a child
 
-    bindAuth.setf("<Authenticate method='%s'/>", method ? method : "unknown");
+    bindAuth.setf("<Authenticate method='%s'/>", method);
     return true;
 }
 

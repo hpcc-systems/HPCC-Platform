@@ -373,17 +373,7 @@ public:
 
 extern jlib_decl StringBuffer &dumpNamedCounts(StringBuffer &str);
 
-
-interface IAuthenticatedUser: extends IInterface
-{
-    virtual bool login(const char *user, const char *passwd) = 0;
-    virtual void impersonate()=0;
-    virtual void revert()=0;
-    virtual const char *username()=0;
-};
-
 interface IAtom;
-extern jlib_decl IAuthenticatedUser *createAuthenticatedUser();
 extern jlib_decl void serializeAtom(MemoryBuffer & target, IAtom * name);
 extern jlib_decl IAtom * deserializeAtom(MemoryBuffer & source);
 

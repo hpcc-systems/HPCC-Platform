@@ -446,11 +446,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
                         m_setting_authmap.setown(m_secmgr->createSettingMap(authcfg));
                     }
-                    else if(stricmp(m_authmethod.str(), "Local") == 0)
-                    {
-                        m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
-                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-                    }
+                    else if(strieq(m_authmethod.str(), "Local") || strieq(m_authmethod.str(), "Default"))
+                        throw makeStringExceptionV(-1, "obsolete auth method %s; update configuration", m_authmethod.str());
                     IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
                     if(restartManager!=NULL)
                     {
