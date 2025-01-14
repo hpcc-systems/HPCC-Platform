@@ -6,7 +6,6 @@ set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cma
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
 set(VCPKG_INSTALLED_DIR "${VCPKG_FILES_DIR}/vcpkg_installed")
 set(VCPKG_INSTALL_OPTIONS "--x-abi-tools-use-exact-versions;--downloads-root=${VCPKG_FILES_DIR}/vcpkg_downloads;--x-buildtrees-root=${VCPKG_FILES_DIR}/vcpkg_buildtrees;--x-packages-root=${VCPKG_FILES_DIR}/vcpkg_packages")
-set(VCPKG_VERBOSE OFF)
 
 if(WIN32)
     set(VCPKG_HOST_TRIPLET "x64-windows" CACHE STRING "host triplet")
@@ -23,6 +22,15 @@ elseif(UNIX)
     set(VCPKG_HOST_TRIPLET "x64-linux-dynamic" CACHE STRING "host triplet")
     set(VCPKG_TARGET_TRIPLET "x64-linux-dynamic" CACHE STRING "target triplet")
 endif()
+
+message("-- vcpkg settings:")
+message("---- VCPKG_FILES_DIR: ${VCPKG_FILES_DIR}")
+message("---- CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+message("---- VCPKG_ROOT: ${VCPKG_ROOT}")
+message("---- VCPKG_INSTALLED_DIR: ${VCPKG_INSTALLED_DIR}")
+message("---- VCPKG_INSTALL_OPTIONS: ${VCPKG_INSTALL_OPTIONS}")
+message("---- VCPKG_HOST_TRIPLET: ${VCPKG_HOST_TRIPLET}")
+message("---- VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
 
 #  Create a catalog of the vcpkg dependencies ---
 file(GLOB VCPKG_PACKAGES ${VCPKG_FILES_DIR}/vcpkg_packages/*/CONTROL)
