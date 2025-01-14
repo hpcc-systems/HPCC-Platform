@@ -36,3 +36,5 @@ EMPTY_PARQUET := DATASET([], RECORDDEF);
 ParquetIO.Write(EMPTY_PARQUET, filePath, TRUE);
 
 read_data := ParquetIO.Read(RECORDDEF, filePath);
+
+OUTPUT(read_data);

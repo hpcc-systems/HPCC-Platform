@@ -222,14 +222,22 @@ arrow::Status ParquetReader::openReadFile()
         ForEach (*itr)
         {
             IFile &file = itr->query();
+            const char *filename = file.queryFilename();
             parquet::arrow::FileReaderBuilder readerBuilder;
-            reportIfFailure(readerBuilder.OpenFile(file.queryFilename(), false, readerProperties));
+            reportIfFailure(readerBuilder.OpenFile(filename, false, readerProperties));
             readerBuilder.memory_pool(pool);
             readerBuilder.properties(arrowReaderProps);
             std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
             reportIfFailure(readerBuilder.Build(&parquetFileReader));
-            parquetFileReaders.push_back(std::move(parquetFileReader));
+            parquetFileReaders.emplace_back(filename, std::move(parquetFileReader));
         }
+
+        auto sortFileReaders = [](NamedFileReader &a, NamedFileReader &b) -> bool
+        {
+            return strcmp(std::get<0>(a).c_str(), std::get<0>(b).c_str()) < 0;
+        };
+
+        std::sort(parquetFileReaders.begin(), parquetFileReaders.end(), sortFileReaders);
 
         if (parquetFileReaders.empty())
             failx("Parquet file %s not found", location.c_str());
@@ -361,8 +369,8 @@ std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable
         tables += fileTableCounts[i];
         if (currTable < tables)
         {
-            currentTableMetadata = parquetFileReaders[i]->parquet_reader()->metadata()->Subset({static_cast<int>(currTable - offset)});
-            return parquetFileReaders[i]->RowGroup(currTable - offset);
+            currentTableMetadata = std::get<1>(parquetFileReaders[i])->parquet_reader()->metadata()->Subset({static_cast<int>(currTable - offset)});
+            return std::get<1>(parquetFileReaders[i])->RowGroup(currTable - offset);
         }
         offset = tables;
     }
@@ -393,7 +401,7 @@ arrow::Status ParquetReader::processReadFile()
 
         for (int i = 0; i < parquetFileReaders.size(); i++)
         {
-            __int64 tables = parquetFileReaders[i]->num_row_groups();
+            __int64 tables = std::get<1>(parquetFileReaders[i])->num_row_groups();
             fileTableCounts.push_back(tables);
             totalTables += tables;
         }

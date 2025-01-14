@@ -32,3 +32,5 @@ string basePath := '' : STORED('OriginalTextFilesOsPath');
 filePath := basePath + '/download/corrupt.parquet';
 
 CORRUPT_PARQUET := ParquetIO.Read(RECORDDEF, filePath);
+
+OUTPUT(CORRUPT_PARQUET);
