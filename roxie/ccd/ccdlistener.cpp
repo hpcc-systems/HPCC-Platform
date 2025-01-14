@@ -1241,10 +1241,10 @@ class RoxieWorkUnitWorker : public RoxieQueryWorker
     {
         switch((int)priority)
         {
-        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
-        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
-        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
-        case -1: bgQueryStats.noteQuery(failed, elapsedTime); break;
+        case QUERY_LOW_PRIORITY_VALUE: loQueryStats.noteQuery(failed, elapsedTime); break;
+        case QUERY_HIGH_PRIORITY_VALUE: hiQueryStats.noteQuery(failed, elapsedTime); break;
+        case QUERY_SLA_PRIORITY_VALUE: slaQueryStats.noteQuery(failed, elapsedTime); break;
+        case QUERY_BG_PRIORITY_VALUE: bgQueryStats.noteQuery(failed, elapsedTime); break;
         }
         combinedQueryStats.noteQuery(failed, elapsedTime);
     }
@@ -1334,7 +1334,7 @@ public:
         unsigned agentsReplyLen = 0;
         unsigned agentsDuplicates = 0;
         unsigned agentsResends = 0;
-        unsigned priority = (unsigned) -2;
+        unsigned priority = (unsigned) -2; // NB -2 is outside of priority range
         try
         {
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
@@ -1358,10 +1358,10 @@ public:
             priority = queryFactory->queryOptions().priority;
             switch ((int)priority)
             {
-            case 0: loQueryStats.noteActive(); break;
-            case 1: hiQueryStats.noteActive(); break;
-            case 2: slaQueryStats.noteActive(); break;
-            case -1: bgQueryStats.noteActive(); break;
+            case QUERY_LOW_PRIORITY_VALUE: loQueryStats.noteActive(); break;
+            case QUERY_HIGH_PRIORITY_VALUE: hiQueryStats.noteActive(); break;
+            case QUERY_SLA_PRIORITY_VALUE: slaQueryStats.noteActive(); break;
+            case QUERY_BG_PRIORITY_VALUE: bgQueryStats.noteActive(); break;
             }
             combinedQueryStats.noteActive();
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
@@ -1528,10 +1528,10 @@ public:
         unsigned priority = getQueryPriority();
         switch ((int)priority)
         {
-        case 0: loQueryStats.noteActive(); break;
-        case 1: hiQueryStats.noteActive(); break;
-        case 2: slaQueryStats.noteActive(); break;
-        case -1: bgQueryStats.noteActive(); break;
+        case QUERY_LOW_PRIORITY_VALUE: loQueryStats.noteActive(); break;
+        case QUERY_HIGH_PRIORITY_VALUE: hiQueryStats.noteActive(); break;
+        case QUERY_SLA_PRIORITY_VALUE: slaQueryStats.noteActive(); break;
+        case QUERY_BG_PRIORITY_VALUE: bgQueryStats.noteActive(); break;
         }
         unknownQueryStats.noteComplete();
         combinedQueryStats.noteActive();
