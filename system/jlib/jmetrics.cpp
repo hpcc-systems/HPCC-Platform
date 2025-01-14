@@ -28,6 +28,8 @@ MODULE_EXIT()
     metricsManager.destroy();
 }
 
+// MetricBase static member
+std::atomic<unsigned int> MetricBase::metricId = 0;
 
 HistogramMetric::HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData) :
     MetricBase(_name, _desc, MetricType::METRICS_HISTOGRAM, _units, _metaData)
