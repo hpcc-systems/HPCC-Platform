@@ -6,7 +6,7 @@ ROOT_DIR="${SCRIPT_DIR}/../../.."
 echo "SCRIPT_DIR: ${SCRIPT_DIR}"
 echo "ROOT_DIR: $ROOT_DIR"
 
-docker build --progress plain -f "${SCRIPT_DIR}/wasm32-wasi/Dockerfile" \
+docker buildx build --progress plain "${SCRIPT_DIR}/wasm32-wasi/Dockerfile" \
     -t wasm32-wasi:latest \
     "${SCRIPT_DIR}/."
 
