@@ -133,10 +133,10 @@ bool initLDAP(IPropertyTree * ldapProps)
     catch(...) {}//user may already exist, so just move on
 
     //Add HPCC admin user to Administrators group
-    CLdapSecManager* ldapSecMgr = dynamic_cast<CLdapSecManager*>(secMgr.get());
+    ILdapSecManager* ldapSecMgr = dynamic_cast<ILdapSecManager*>(secMgr.get());
     if (!ldapSecMgr)
     {
-        fprintf(stderr, "\nERROR: Unable to access CLdapSecManager object");
+        fprintf(stderr, "\nERROR: Unable to access ILdapSecManager object");
         return false;
     }
     StringAttr adminGroup;

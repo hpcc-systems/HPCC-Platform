@@ -456,7 +456,7 @@ public:
     virtual void ensureSuperUser(unsigned excCode, const char* excMsg)
     {
 #ifdef _USE_OPENLDAP
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(m_secmgr.get());
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(m_secmgr.get());
         if (secmgr && !secmgr->isSuperUser(m_user.get()))
         {
             setAuthStatus(AUTH_STATUS_NOACCESS);

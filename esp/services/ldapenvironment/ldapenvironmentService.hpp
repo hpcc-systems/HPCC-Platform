@@ -22,7 +22,7 @@ class CldapenvironmentEx : public Cldapenvironment  //base class name built from
 {
 private:
     IPropertyTree * cfg;
-    CLdapSecManager* secmgr = nullptr;
+    ILdapSecManager* secmgr = nullptr;
     StringBuffer    ldapRootOU;
     StringBuffer    sharedFilesBaseDN;
     StringBuffer    sharedGroupsBaseDN;
@@ -52,7 +52,7 @@ public:
     virtual void init(IPropertyTree *_cfg, const char *_process, const char *_service);
     bool onLDAPQueryDefaults(IEspContext &context, IEspLDAPQueryDefaultsRequest &req, IEspLDAPQueryDefaultsResponse &resp);
     bool onLDAPCreateEnvironment(IEspContext &context, IEspLDAPCreateEnvironmentRequest &req, IEspLDAPCreateEnvironmentResponse &resp);
-    void setSecMgr( ISecManager*sm) { secmgr = dynamic_cast<CLdapSecManager*>(sm); }
+    void setSecMgr( ISecManager*sm) { secmgr = dynamic_cast<ILdapSecManager*>(sm); }
 };
 
 
