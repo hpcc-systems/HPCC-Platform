@@ -25,6 +25,7 @@
 #endif
 
 //Using cpp wrapper from https://github.com/couchbaselabs/libcouchbase-cxx
+#include <cassert>
 #include <libcouchbase/couchbase++.h>
 #include <libcouchbase/couchbase++/views.h>
 #include <libcouchbase/couchbase++/query.h>
