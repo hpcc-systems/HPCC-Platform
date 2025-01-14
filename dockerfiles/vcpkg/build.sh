@@ -32,11 +32,10 @@ CMAKE_OPENBLAS_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE
 CMAKE_PLATFORM_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DPLATFORM=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 function doBuild() {
-    # docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
-    # docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
-    # docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
+    docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
+    docker pull "hpccsystems/platform-build-base-$1:$GITHUB_BRANCH" || true
 
-    docker build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
+    docker buildx build --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
         --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
@@ -49,11 +48,6 @@ function doBuild() {
     # docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH
 
     CMAKE_OPTIONS_EXTRA=""
-    if [ "$1" == "centos-7*" ]; then
-        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-    elif [ "$1" == "amazonlinux" ]; then
-        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
-    fi
     mkdir -p $HOME/.ccache
     docker run --rm \
         --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
@@ -75,15 +69,12 @@ trap 'kill $(jobs -p)' EXIT
 mkdir -p ./vcpkg-logs
 
 if [ "$1" != "" ]; then
-    doBuild $1 &
+    doBuild $1
 else
     doBuild ubuntu-24.04 &> vcpkg-logs/ubuntu-24.04.log &
     doBuild ubuntu-22.04 &> vcpkg-logs/ubuntu-22.04.log &
     doBuild ubuntu-20.04 &> vcpkg-logs/ubuntu-20.04.log &
     doBuild rockylinux-8 &> vcpkg-logs/rockylinux-8.log &
-    doBuild centos-8 &> vcpkg-logs/centos-8.log &
-    doBuild amazonlinux &> vcpkg-logs/amazonlinux.log &
-    doBuild centos-7-rh-python38 &> vcpkg-logs/centos-7-rh-python38.log & 
     doBuild centos-7 &> vcpkg-logs/centos-7.log & 
 fi
 

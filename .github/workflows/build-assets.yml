@@ -122,6 +122,9 @@ jobs:
             name: LN
             cmake_options_extra: ""
             ln: true
+          - os: centos-7
+            name: LN
+            ln: true
       fail-fast: false
 
     steps:
