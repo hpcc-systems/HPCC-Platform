@@ -3,9 +3,6 @@
 # Settings:
 #   type                                  - sink type (must be elastic for ElasticSearch support)
 #   name                                  - name for the sink instance
-#   settings.countMetricSuffix            - suffix for count metrics (default: count)
-#   settings.gaugeMetricSuffix            - suffix for gauge metrics (default: gauge)
-#   settings.histogramMetricSuffix        - suffix for histogram metrics (default: histogram)
 #   settings.host                         - ElasticSearch host settings
 #   settings.host.protocol                - protocol to use, http or https (default)
 #   settings.host.domain                  - host domain
@@ -19,6 +16,9 @@
 #   settings.host.authentication.credentialsVaultId - optional vault id for secret containing username password for basic authentication
 #   settings.index                        - ElasticSearch index settings
 #   settings.index.name                   - index name
+#   settings.index.countSuffixMappingName    - dynamic template mapping object name for count metrics suffixes (default: hpcc_metrics_count_suffix)
+#   settings.index.gaugeSuffixMappingName    - dynamic template mapping object name for gauge metrics suffixes (default: hpcc_metrics_gauge_suffix)
+#   settings.index.histogramSuffixMappingName - dynamic template mapping object name for histogram metrics suffixes (default: hpcc_metrics_histogram_suffix)
 #
 # If not overridden, the following suffixes are used by default:
 #   countMetricSuffix: count
@@ -31,9 +31,6 @@ global:
     - type: elastic
       name: myelasticsink
       settings:
-        countMetricSuffix: count
-        gaugeMetricSuffix: gauge
-        histogramMetricSuffix: histogram
         host:
           protocol: https
           domain: domain
@@ -47,3 +44,6 @@ global:
             credentialsVaultId: vaultId
         index:
           name: hpccmetrics
+          countSuffixMappingName: name
+          gaugeSuffixMappingName: name
+          histogramSuffixMappingName: name

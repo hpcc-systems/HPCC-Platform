@@ -18,6 +18,23 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 
+//including cpp-httplib single header file REST client
+//  doesn't work with format-nonliteral as an error
+//
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
+#undef INVALID_SOCKET
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "httplib.h"
+
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #ifdef ELASTICSINK_EXPORTS
 #define ELASTICSINK_API DECL_EXPORT
 #else
@@ -36,6 +53,10 @@ protected:
     virtual void doCollection() override;
     bool getHostConfig(const IPropertyTree *pSettingsTree);
     bool getIndexConfig(const IPropertyTree *pSettingsTree);
+    bool getDynamicMappingSuffixesFromIndex(const IPropertyTree *pIndexConfigTree);
+    static bool convertPatternToSuffix(const char *pattern, StringBuffer &suffix);
+    bool validateIndex();
+    void intializeElasticClient();
 
 protected:
     StringBuffer indexName;
@@ -48,5 +69,10 @@ protected:
     StringBuffer countMetricSuffix;
     StringBuffer gaugeMetricSuffix;
     StringBuffer histogramMetricSuffix;
+    int connectTimeout = 5;
+    int readTimeout = 5;
+    int writeTimeout = 5;
     bool configurationValid = false;
+    std::shared_ptr<httplib::Client> pClient;
+    httplib::Headers elasticHeaders;
 };
