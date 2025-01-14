@@ -366,7 +366,6 @@ dafilesrv:
     detail: 100
 )!!";
 
-
 int main(int argc, const char* argv[])
 {
     InitModuleObjects();
@@ -386,7 +385,21 @@ int main(int argc, const char* argv[])
     StringBuffer componentName;
 
     // NB: bare-metal dafilesrv does not have a component specific xml
-    Owned<IPropertyTree> config = loadConfiguration(defaultYaml, argv, "dafilesrv", "DAFILESRV", nullptr, nullptr);
+    Owned<IPropertyTree> extractedGlobalConfig = createPTree("dafilesrv");
+
+#ifndef _CONTAINERIZED
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    IPropertyTree* globalTracing = env->getPropTree("Software/tracing");
+    if (globalTracing != nullptr)
+        extractedGlobalConfig->addPropTree("tracing", globalTracing);
+#endif
+
+    const char* componentTag = "dafilesrv";
+    Owned<IPropertyTree> defaultConfig = createPTreeFromYAMLString(defaultYaml, 0, ptr_ignoreWhiteSpace, nullptr);
+    Owned<IPropertyTree> componentDefault(defaultConfig->getPropTree(componentTag));
+
+    // NB: bare-metal dafilesrv does not have a component specific xml, extracting relevant global configuration instead
+    Owned<IPropertyTree> config = loadConfiguration(componentDefault, extractedGlobalConfig, argv, componentTag, "DAFILESRV", nullptr, nullptr);
 
     Owned<IPropertyTree> keyPairInfo; // NB: not used in containerized mode
     // Get SSL Settings
@@ -513,7 +526,6 @@ int main(int argc, const char* argv[])
 
     IPropertyTree *dafileSrvInstance = nullptr;
 #ifndef _CONTAINERIZED
-    Owned<IPropertyTree> env = getHPCCEnvironment();
     Owned<IPropertyTree> _dafileSrvInstance;
     if (env)
     {

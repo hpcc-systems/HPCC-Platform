@@ -839,6 +839,9 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
     MemoryBuffer expandMb;
     Owned<IXmlWriterExt> responseWriter; // for xml or json response
 
+    OwnedSpanLifetime requestSpan;
+    std::string requestTraceParent;
+
     bool handleFull(MemoryBuffer &inMb, size32_t inPos, MemoryBuffer &compressMb, ICompressor *compressor, size32_t replyLimit, size32_t &totalSz)
     {
         size32_t sz = inMb.length()-inPos;
@@ -1092,6 +1095,15 @@ public:
             responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
         }
     }
+
+    ~CRemoteRequest()
+    {
+        if (requestSpan != nullptr)
+        {
+            requestSpan->setSpanStatusSuccess(true);
+        }
+    }
+
     OutputFormat queryFormat() const { return format; }
     unsigned __int64 queryReplyLimit() const { return replyLimit; }
     IRemoteActivity *queryActivity() const { return activity; }
@@ -1099,6 +1111,42 @@ public:
 
     void process(IPropertyTree *requestTree, MemoryBuffer &restMb, MemoryBuffer &responseMb, CClientStats &stats)
     {
+        bool traceParentChanged = false;
+        const char* fullTraceContext = requestTree->queryProp("_trace/traceparent");
+        if (fullTraceContext != nullptr)
+        {
+            // We only want to compare the trace-id & span-id, so ignore the last sampling group after the '-'
+            const char* lastHyphen = strchr(fullTraceContext, '-');
+            if (lastHyphen != nullptr)
+            {
+                size_t lastHyphenIdx = lastHyphen - fullTraceContext;
+                traceParentChanged = strncmp(fullTraceContext, requestTraceParent.c_str(), lastHyphenIdx) != 0;
+            }
+        }
+
+        if (traceParentChanged)
+        {
+            // Check to see if we have an existing span that needs to be marked successful before close
+            if (requestSpan != nullptr)
+            {
+                requestSpan->setSpanStatusSuccess(true);
+            }
+
+            Owned<IProperties> traceHeaders = createProperties();
+            traceHeaders->setProp("traceparent", fullTraceContext);
+
+            const char* requestSpanName = nullptr;
+            if (activity->queryIsReadActivity())
+                requestSpanName = "ReadRequest";
+            else
+                requestSpanName = "WriteRequest";
+
+            requestSpan.setown(queryTraceManager().createServerSpan(requestSpanName, traceHeaders));
+            requestTraceParent = fullTraceContext;
+        }
+
+        ActiveSpanScope activeSpan(requestSpan.query());
+
         if (requestTree->hasProp("replyLimit"))
             replyLimit = requestTree->getPropInt64("replyLimit", defaultDaFSReplyLimitKB) * 1024;
 
@@ -3027,12 +3075,12 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
                         else
                         {
                             if (gc)
-                                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);                            
+                                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
                             break; // wait for rest via subsequent notifySelected's
                         }
                     }
                     else if (gc)
-                        THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);                            
+                        THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
                     // to be here, implies handled full message, loop around to see if more on the wire.
                     // will break out if nothing/partial.
                 }
@@ -4818,7 +4866,7 @@ public:
          *   }
          *  }
          * }
-         * 
+         *
          * fetch continuation:
          * {
          *  "format" : "binary",
@@ -4960,8 +5008,23 @@ public:
             }
             case StreamCmd::CLOSE:
             {
+                OwnedActiveSpanScope closeSpan;
+                const char* traceParent = requestTree->queryProp("_trace/traceparent");
+                if (traceParent != nullptr)
+                {
+                    Owned<IProperties> traceHeaders = createProperties();
+                    traceHeaders->setProp("traceparent", traceParent);
+
+                    closeSpan.setown(queryTraceManager().createServerSpan("CloseRequest", traceHeaders));
+                }
+
                 if (0 == cursorHandle)
-                    throw createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'close' command");
+                {
+                    IDAFS_Exception* exception = createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'close' command");
+                    closeSpan->recordException(exception);
+                    throw exception;
+                }
+
                 IFileIO *dummy;
                 checkFileIOHandle(cursorHandle, dummy, true);
                 break;
@@ -4990,6 +5053,16 @@ public:
         {
             case StreamCmd::VERSION:
             {
+                OwnedActiveSpanScope versionSpan;
+                const char* traceParent = requestTree->queryProp("_trace/traceparent");
+                if (traceParent != nullptr)
+                {
+                    Owned<IProperties> traceHeaders = createProperties();
+                    traceHeaders->setProp("traceparent", traceParent);
+
+                    versionSpan.setown(queryTraceManager().createServerSpan("VersionRequest", traceHeaders));
+                }
+
                 if (outFmt_Binary == outputFormat)
                     reply.append(DAFILESRV_VERSIONSTRING);
                 else
