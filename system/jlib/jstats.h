@@ -34,8 +34,8 @@ const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum
 
 inline constexpr stat_type seconds2StatUnits(stat_type secs) { return secs * 1000000000; }
 inline constexpr stat_type msecs2StatUnits(stat_type ms) { return ms * 1000000; }
-inline constexpr stat_type statUnits2seconds(stat_type stat) {return stat / 1000000000; }
-inline constexpr stat_type statUnits2msecs(stat_type stat) {return stat / 1000000; }
+inline constexpr double statUnits2seconds(stat_type stat) {return ((double)stat) / 1000000000; }
+inline constexpr double statUnits2msecs(stat_type stat) {return ((double)stat) / 1000000; }
 
 inline constexpr stat_type statPercent(int value) { return (stat_type)value * 100; }            // Since 1 = 0.01% skew
 inline constexpr stat_type statPercent(double value) { return (stat_type)(value * 100); }
@@ -43,8 +43,8 @@ inline constexpr stat_type statPercent(stat_type  value) { return (stat_type)(va
 inline constexpr stat_type statPercentageOf(stat_type value, stat_type per) { return value * per / 10000; }
 
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
-inline cost_type money2cost_type(double money) { return money * 1E6; }
-inline double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
+constexpr cost_type money2cost_type(const double money) { return money * 1E6; }
+constexpr double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
 
 extern jlib_decl void formatTime(StringBuffer & out, unsigned __int64 value);
 //---------------------------------------------------------------------------------------------------------------------
