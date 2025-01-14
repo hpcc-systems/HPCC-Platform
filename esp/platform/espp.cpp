@@ -607,7 +607,7 @@ int init_main(int argc, const char* argv[])
 
             initializeTraceFlags(config);
             initializeMetrics(config);        
-            initializeStorageGroups(daliClientActive());
+            initializeStoragePlanes(daliClientActive(), true);
         }
         catch(IException* e)
         {

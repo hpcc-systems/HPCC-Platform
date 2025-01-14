@@ -508,7 +508,7 @@ bool dfspart(const char *lname, IUserDescriptor *userDesc, unsigned partnum, Str
 void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage)
 {
     //This function isn't going to work on a container system because it won't have access to the storage planes
-    initializeStorageGroups(true);
+    initializeStoragePlanes(true, true);
     ResolveOptions options = ROpartinfo|ROdiskinfo|ROsizes;
     if (includeStorage)
         options = options | ROincludeLocation;

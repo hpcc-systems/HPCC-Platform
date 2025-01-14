@@ -3722,16 +3722,14 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
 static CConfigUpdateHook configUpdateHook;
 static std::atomic<unsigned> normalizeHostGroupUpdateCBId{(unsigned)-1};
 static CriticalSection storageCS;
-static void doInitializeStorageGroups(bool createPlanesFromGroups)
+static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree * newGlobalConfiguration)
 {
     CriticalBlock block(storageCS);
-    Owned<IPropertyTree> globalConfig = getGlobalConfig();
-    Owned<IPropertyTree> storage = globalConfig->getPropTree("storage");
+    IPropertyTree * storage = newGlobalConfiguration->queryPropTree("storage");
     if (!storage)
-        storage.set(globalConfig->addPropTree("storage"));
+        storage = newGlobalConfiguration->addPropTree("storage");
 
-#ifndef _CONTAINERIZED
-    if (createPlanesFromGroups)
+    if (!isContainerized() && createPlanesFromGroups)
     {
         // Remove old planes created from groups
         while (storage->removeProp("planes[@fromGroup='1']"));
@@ -3786,25 +3784,63 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
         //Uncomment the following to trace the values that been generated
         //printYAML(storage);
     }
-#endif
 
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
-    normalizeHostGroups();
+    normalizeHostGroups(newGlobalConfiguration);
 
     //The following can be removed once the storage planes have better integration
     setupContainerizedStorageLocations();
 }
 
-void initializeStorageGroups(bool createPlanesFromGroups)
+/*
+ * This function is used to:
+ *
+ * (a) create storage planes from bare-metal groups
+ * (b) to expand out host groups that are defined in terms of other host groups
+ * (c) to setup the base directory for the storage planes.  (GH->JCS is this threadsafe?)
+ *
+ * For most components this init function is called only once - the exception is roxie (called when it connects and disconnects from dali).
+ * In thor it is important that the update of the global config does not clone the property trees
+ * In containerized mode, the update function can be called whenever the config file changes (but it will not be creating planes from groups)
+ * In bare-metal mode the update function may be called whenever the environment changes in dali.  (see initClientProcess)
+ *
+ * Because of the requirement that thor does not clone the property trees, thor cannot support any background update - via the environment in
+ * bare-metal, or config files in containerized.  If it was to support it the code in the master would need to change, and updates would
+ * need to be synchronized to the workers.  To support this requiremnt a threadSafe parameter is provided to avoid the normal clone.
+ *
+ * For roxie, which dynamically connects and disconnects from dali, there are different problems.  The code needs to retain whether or not roxie
+ * is connected to dali - and only create planes from groups if it is connected.  There is another potential problem, which I don't think will
+ * actually be hit:
+ * Say roxie connects, updates planes from groups and disconnects.  If the update functions were called again those storage planes would be lost,
+ * but in bare-metal only a change to the environment will trigger an update, and that update will not happen if roxie is not connected to dali.
+ */
+
+static bool savedConnectedToDali = false; // Store in a global so it can be used by the callback without having to reregister
+static bool lastUpdateConnectedToDali = false;
+void initializeStoragePlanes(bool connectedToDali, bool threadSafe)
 {
-    auto updateFunc = [createPlanesFromGroups](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        PROGLOG("initializeStorageGroups update");
-        doInitializeStorageGroups(createPlanesFromGroups);
+        //If the createPlanesFromGroups parameter is now true, and was previously false, force an update
+        CriticalBlock block(storageCS);
+        if (!lastUpdateConnectedToDali && connectedToDali)
+            configUpdateHook.clear();
+        savedConnectedToDali = connectedToDali;
+    }
+
+    auto updateFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+    {
+        bool connectedToDali = savedConnectedToDali;
+        lastUpdateConnectedToDali = connectedToDali;
+        PROGLOG("initializeStoragePlanes update");
+        doInitializeStorageGroups(connectedToDali, newGlobalConfiguration);
     };
 
-    doInitializeStorageGroups(createPlanesFromGroups);
-    configUpdateHook.installOnce(updateFunc, false);
+    configUpdateHook.installModifierOnce(updateFunc, threadSafe);
+}
+
+void disableStoragePlanesDaliUpdates()
+{
+    savedConnectedToDali = false;
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)

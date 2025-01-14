@@ -409,7 +409,7 @@ int main(int argc, const char* argv[])
             else
             {
                 addAbortHandler(actionOnAbort);
-                initializeStorageGroups(true);
+                initializeStoragePlanes(true, true);
 #ifdef _CONTAINERIZED
                 service = serverConfig->queryProp("@service");
                 if (isEmptyString(service))
