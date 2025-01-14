@@ -2318,7 +2318,7 @@ private:
             {
                 blobCacheMB = control->getPropInt("@val", 0);
                 topology->setPropInt("@blobCacheMem", blobCacheMB);
-                setBlobCacheMem(blobCacheMB * 0x100000);
+                setBlobCacheMem(blobCacheMB * 0x100000ULL);
             }
             else
                 unknown = true;
@@ -2549,7 +2549,7 @@ private:
             {
                 leafCacheMB = control->getPropInt("@val", 50);
                 topology->setPropInt("@leafCacheMem", leafCacheMB);
-                setLeafCacheMem(leafCacheMB * 0x100000);
+                setLeafCacheMem(leafCacheMB * 0x100000ULL);
             }
             else if (stricmp(queryName, "control:listFileOpenErrors")==0)
             {
@@ -2656,7 +2656,7 @@ private:
             {
                 nodeCacheMB = control->getPropInt("@val", 100);
                 topology->setPropInt("@nodeCacheMem", nodeCacheMB);
-                setNodeCacheMem(nodeCacheMB * 0x100000);
+                setNodeCacheMem(nodeCacheMB * 0x100000ULL);
             }
             else if (stricmp(queryName, "control:numFilesToProcess")==0)
             { 

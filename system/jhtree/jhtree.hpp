@@ -136,9 +136,9 @@ extern jhtree_decl unsigned setKeyIndexCacheSize(unsigned limit);
 extern jhtree_decl void clearNodeCache();
 extern jhtree_decl void logCacheState();
 // these methods return previous values
-extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
-extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
-extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
+extern jhtree_decl size_t setNodeCacheMem(size_t cacheSize);
+extern jhtree_decl size_t setLeafCacheMem(size_t cacheSize);
+extern jhtree_decl size_t setBlobCacheMem(size_t cacheSize);
 extern jhtree_decl void setNodeFetchThresholdNs(__uint64 thresholdNs);
 extern jhtree_decl void setIndexWarningThresholds(IPropertyTree * options);
 

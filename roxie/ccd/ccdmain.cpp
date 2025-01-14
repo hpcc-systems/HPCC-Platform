@@ -1313,11 +1313,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         setKeyIndexCacheSize((unsigned)-1); // unbound
         nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100); 
-        setNodeCacheMem(nodeCacheMB * 0x100000);
+        setNodeCacheMem(nodeCacheMB * 0x100000ULL);
         leafCacheMB = topology->getPropInt("@leafCacheMem", 50);
-        setLeafCacheMem(leafCacheMB * 0x100000);
+        setLeafCacheMem(leafCacheMB * 0x100000ULL);
         blobCacheMB = topology->getPropInt("@blobCacheMem", 0);
-        setBlobCacheMem(blobCacheMB * 0x100000);
+        setBlobCacheMem(blobCacheMB * 0x100000ULL);
         if (topology->hasProp("@nodeFetchThresholdNs"))
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
         setIndexWarningThresholds(topology);

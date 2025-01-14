@@ -695,8 +695,8 @@ protected:
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
 class CNodeMRUSubCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
-    std::atomic<size32_t> sizeInMem{0};
-    size32_t memLimit = 0;
+    std::atomic<size_t> sizeInMem{0};
+    size_t memLimit = 0;
 public:
     mutable CriticalSection lock;
     RelaxedAtomic<__uint64> numHits{0};
@@ -704,9 +704,9 @@ public:
     RelaxedAtomic<__uint64> numDups{0};
     RelaxedAtomic<__uint64> numEvicts{0};
 
-    size32_t setMemLimit(size32_t _memLimit)
+    size_t setMemLimit(size_t _memLimit)
     {
-        size32_t oldMemLimit = memLimit;
+        size_t oldMemLimit = memLimit;
         memLimit = _memLimit;
         if (full())
             makeSpace(nullptr);
@@ -722,7 +722,7 @@ public:
         {
             CNodeMapping *tail = mruList.tail();
             if (unlikely(!tail))
-                throw makeStringExceptionV(9999, "Index cache appears full but contains no entries size=%x limit=%x", sizeInMem.load(), memLimit);
+                throw makeStringExceptionV(9999, "Index cache appears full but contains no entries size=%zx limit=%zx", sizeInMem.load(), memLimit);
 
             //Never evict an entry that hasn't yet loaded - otherwise the sizeInMem can become inconsistent
             //When running with slow remote storage this can take a long time to be ready - so we need
@@ -749,7 +749,7 @@ public:
     }
     virtual bool full()
     {
-        if (((size32_t)-1) == memLimit) return false;
+        if (((size_t)-1) == memLimit) return false;
         return sizeInMem > memLimit;
     }
     virtual void elementRemoved(CNodeMapping *mapping)
@@ -782,7 +782,7 @@ public:
     void traceState(StringBuffer & out)
     {
         //Should be safe to call outside of a critical section, but values may be inconsistent
-        out.append(table.ordinality()).append(":").append(sizeInMem);
+        out.append(table.ordinality()).append(":").append((__uint64)sizeInMem);
         out.appendf(" [%" I64F "u:%" I64F "u:%" I64F "u:%" I64F "u]", numHits.load(), numAdds.load(), numDups.load(), numEvicts.load());
     }
     unsigned __int64 getStatisticValue(StatisticKind kind) const
@@ -875,9 +875,9 @@ public:
             cache[j].reportEntries(cacheInfo);
     }
 
-    size32_t setCacheMem(size32_t newSize)
+    size_t setCacheMem(size_t newSize)
     {
-        unsigned oldV = 0;
+        size_t oldV = 0;
         for (unsigned i=0; i < cacheBuckets; i++)
         {
             CriticalBlock block(cache[i].lock);
@@ -915,7 +915,7 @@ private:
     CNodeMRUCache cache[CacheMax] = { CacheBranch, CacheLeaf, CacheBlob };
     std::vector<std::shared_ptr<hpccMetrics::IMetric>> metrics;
 public:
-    CNodeCache(size32_t maxNodeMem, size32_t maxLeaveMem, size32_t maxBlobMem)
+    CNodeCache(size_t maxNodeMem, size_t maxLeaveMem, size_t maxBlobMem)
     {
         setNodeCacheMem(maxNodeMem);
         setLeafCacheMem(maxLeaveMem);
@@ -925,15 +925,15 @@ public:
     const CJHTreeNode *getCachedNode(const INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
 
-    inline size32_t setNodeCacheMem(size32_t newSize)
+    inline size_t setNodeCacheMem(size_t newSize)
     {
         return setCacheMem(newSize, CacheBranch);
     }
-    inline size32_t setLeafCacheMem(size32_t newSize)
+    inline size_t setLeafCacheMem(size_t newSize)
     {
         return setCacheMem(newSize, CacheLeaf);
     }
-    inline size32_t setBlobCacheMem(size32_t newSize)
+    inline size_t setBlobCacheMem(size_t newSize)
     {
         return setCacheMem(newSize, CacheBlob);
     }
@@ -965,7 +965,7 @@ public:
     }
 
 protected:
-    size32_t setCacheMem(size32_t newSize, CacheType type)
+    size_t setCacheMem(size_t newSize, CacheType type)
     {
         return cache[type].setCacheMem(newSize);
     }
@@ -2825,17 +2825,17 @@ extern jhtree_decl void resetIndexMetrics()
     queryKeyStore()->resetMetrics();
 }
 
-extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize)
+extern jhtree_decl size_t setNodeCacheMem(size_t cacheSize)
 {
     return queryNodeCache()->setNodeCacheMem(cacheSize);
 }
 
-extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize)
+extern jhtree_decl size_t setLeafCacheMem(size_t cacheSize)
 {
     return queryNodeCache()->setLeafCacheMem(cacheSize);
 }
 
-extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize)
+extern jhtree_decl size_t setBlobCacheMem(size_t cacheSize)
 {
     return queryNodeCache()->setBlobCacheMem(cacheSize);
 }
