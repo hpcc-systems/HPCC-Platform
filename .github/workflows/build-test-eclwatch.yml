@@ -51,7 +51,7 @@ jobs:
       - name: Lint
         working-directory: ./esp/src
         run: npm run lint
-      - name: Install Playwright browsers 
+      - name: Install Playwright browsers
         working-directory: ./esp/src
         run: npx playwright install --with-deps
       - name: Build
@@ -60,3 +60,9 @@ jobs:
       - name: Test
         working-directory: ./esp/src
         run: npm run test
+      - name: Upload Playwright test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclwatch-test-results
+          path: ./esp/src/test-results/*

@@ -111,7 +111,7 @@ define([
                 var logicalCluster = context.targetSelectWidget.selectedTarget();
                 var submitBtn = registry.byId(context.id + "SubmitBtn");
                 var publishBtn = registry.byId(context.id + "PublishBtn");
-                if (logicalCluster.QueriesOnly) {
+                if (logicalCluster.QueriesOnly || logicalCluster.Type === "roxie") {
                     domStyle.set(submitBtn.domNode, "display", "none");
                     domStyle.set(publishBtn.domNode, "display", null);
                 } else {
