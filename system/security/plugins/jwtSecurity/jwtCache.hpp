@@ -449,8 +449,6 @@ class JWTUserCache
 
         JWTUserCache& clear();
 
-        unsigned int count() const;
-
     private:
 
         mutable CriticalSection     crit;           //!< Used to prevent thread collisions during userPermMap modification

@@ -1039,6 +1039,7 @@ CKeyStore::~CKeyStore()
 
 unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
 {
+    synchronized block(mutex);
     return keyIndexCache.setCacheLimit(limit);
 }
 
