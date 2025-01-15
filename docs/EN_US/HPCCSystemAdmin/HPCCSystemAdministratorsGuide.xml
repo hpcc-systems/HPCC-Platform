@@ -344,7 +344,7 @@
 
           <para>The topology server is an internal component used by ROXIE to
           keep track of the health of the different ROXIE processes in a
-          cluster.</para>
+          cluster. There is no configuration or setup required.</para>
         </sect3>
       </sect2>
 
