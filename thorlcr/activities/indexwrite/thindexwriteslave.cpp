@@ -45,6 +45,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
+    mutable CriticalSection builderFileCS; // protect changes to both builder and builderFileIO (they should be in sync)
 
     bool buildTlk, active;
     bool sizeSignalled;
@@ -54,9 +55,9 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 
     size32_t lastRowSize, firstRowSize, maxRecordSizeSeen, keyedSize;
     unsigned __int64 duplicateKeyCount;
-    unsigned __int64 numLeafNodes = 0;
-    unsigned __int64 numBranchNodes = 0;
-    unsigned __int64 numBlobNodes = 0;
+    mutable unsigned __int64 numLeafNodes = 0;
+    mutable unsigned __int64 numBranchNodes = 0;
+    mutable unsigned __int64 numBlobNodes = 0;
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
@@ -73,6 +74,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned partCrc, tlkCrc;
     mptag_t mpTag2;
     Owned<IRowServer> rowServer;
+    bool isDoingTlk = false;
 
     void init()
     {
@@ -153,6 +155,7 @@ public:
     }
     void open(IPartDescriptor &partDesc, bool isTlk)
     {
+        isDoingTlk = isTlk;
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
         bool compress=false;
@@ -212,12 +215,15 @@ public:
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
         unsigned twFlags = isUrl(partFname) ? TW_Direct : TW_RenameToPrimary;
-        builderIFileIO.setown(createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon));
-        Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
-        if (!needsSeek)
-            out.setown(createNoSeekIOStream(out));
-        maxRecordSizeSeen = 0;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
+        {
+            CriticalBlock b(builderFileCS);
+            builderIFileIO.setown(createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon));
+            Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
+            if (!needsSeek)
+                out.setown(createNoSeekIOStream(out));
+            maxRecordSizeSeen = 0;
+            builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
+        }
     }
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
@@ -261,6 +267,7 @@ public:
         }
         try 
         { 
+            CriticalBlock b(builderFileCS);
             metadata.clear();
             builder.clear();
             if (builderIFileIO)
@@ -613,7 +620,10 @@ public:
     }
     virtual void processDone(MemoryBuffer &mb) override
     {
-        builder.clear();
+        {
+            CriticalBlock b(builderFileCS);
+            builder.clear();
+        }
         if (refactor && !active)
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
@@ -699,6 +709,19 @@ public:
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
         PARENT::gatherActiveStats(activeStats);
+        {
+            CriticalBlock b(builderFileCS);
+            if (builderIFileIO)
+            {
+                mergeStats(activeStats, builderIFileIO, diskWriteRemoteStatistics);
+                if (builder && !isDoingTlk)
+                {
+                    numLeafNodes = builder->getNumLeafNodes();
+                    numBranchNodes = builder->getNumBranchNodes();
+                    numBlobNodes = builder->getNumBlobNodes();
+                }
+            }
+        }
         activeStats.setStatistic(StPerReplicated, replicateDone);
         activeStats.setStatistic(StNumLeafCacheAdds, numLeafNodes);
         activeStats.setStatistic(StNumNodeCacheAdds, numBranchNodes);
