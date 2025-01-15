@@ -58,6 +58,35 @@
     handling your support request, or you can upload the file into the issue
     tracking system. Remember, you should only use the email feature if
     appropriate to share your data.</para>
+
+    <sect3 id="ZAP_Config_Options">
+      <title>Configuration Options</title>
+
+      <para>The component logs are some of the most important artifacts
+      included in these ZAP reports. In containerized deployments logging is
+      handled differently from bare metal. The log fetching for containers is
+      dependent on a back-end log processor being properly configured and
+      available and the HPCC LogAccess feature configured to bind to the log
+      processor. See the <link linkend="Containerized_Logging">Containerized
+      Logging</link> section in the <ulink
+      url="https://hpccsystems.com/training/documentation/all/">Containerized
+      HPCC Systems Platform</ulink> documentation for more information about
+      configuring log processing. </para>
+
+      <para>Another factor to consider are the ESP feature permissions. Where
+      bare metal installations always include the logs, regardless of the
+      "include worker logs" option in the ZAP dialog. A containerized
+      deployment must have logging properly configured to be able to include
+      logs. Additionally the user must have the feature permission
+      WsLogAccess:Read or the logs will be excluded and instead contain the
+      error message: </para>
+
+      <programlisting>"Logs: Excluded due to no access, need WsLogAccess:Read"</programlisting>
+
+      <para>If the preceding message is present in the ZAP info file
+      (&lt;WUID&gt;.txt) the WsLogAccess permission value must be set to Read
+      to ensure the logs are included in the ZAP report. </para>
+    </sect3>
   </sect2>
 </sect1>
 
