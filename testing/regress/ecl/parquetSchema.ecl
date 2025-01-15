@@ -14,7 +14,6 @@
 //class=parquet
 //nothor
 //noroxie
-//fail
 
 IMPORT Std;
 IMPORT Parquet;

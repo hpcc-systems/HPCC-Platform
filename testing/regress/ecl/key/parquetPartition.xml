@@ -1,10 +1,16 @@
 <Dataset name='HivePartitionedSampleData'>
- <Row><id>1</id><name>Alice                    </name><age>30</age><city>New York                                          </city></Row>
- <Row><id>2</id><name>Bob                      </name><age>25</age><city>Los Angeles                                       </city></Row>
- <Row><id>3</id><name>Charlie                  </name><age>40</age><city>Chicago                                           </city></Row>
+ <Row><district>1</district><firstname>Alice</firstname><lastname>A</lastname><age>30</age><city>New York</city></Row>
+ <Row><district>1</district><firstname>Alice</firstname><lastname>B</lastname><age>35</age><city>New York</city></Row>
+ <Row><district>1</district><firstname>Chalice</firstname><lastname>C</lastname><age>40</age><city>Boston</city></Row>
+ <Row><district>2</district><firstname>Bob</firstname><lastname>A</lastname><age>25</age><city>Los Angeles</city></Row>
+ <Row><district>2</district><firstname>Jim</firstname><lastname>A</lastname><age>25</age><city>Los Angeles</city></Row>
+ <Row><district>3</district><firstname>Charlie</firstname><lastname>C</lastname><age>40</age><city>Chicago</city></Row>
 </Dataset>
 <Dataset name='DirPartitionedSampleData'>
- <Row><id>1</id><name>Alice                    </name><age>30</age><city>New York                                          </city></Row>
- <Row><id>2</id><name>Bob                      </name><age>25</age><city>Los Angeles                                       </city></Row>
- <Row><id>3</id><name>Charlie                  </name><age>40</age><city>Chicago                                           </city></Row>
+ <Row><district>1</district><firstname>Alice</firstname><lastname>A</lastname><age>30</age><city>New York</city></Row>
+ <Row><district>1</district><firstname>Alice</firstname><lastname>B</lastname><age>35</age><city>New York</city></Row>
+ <Row><district>1</district><firstname>Chalice</firstname><lastname>C</lastname><age>40</age><city>Boston</city></Row>
+ <Row><district>2</district><firstname>Bob</firstname><lastname>A</lastname><age>25</age><city>Los Angeles</city></Row>
+ <Row><district>2</district><firstname>Jim</firstname><lastname>A</lastname><age>25</age><city>Los Angeles</city></Row>
+ <Row><district>3</district><firstname>Charlie</firstname><lastname>C</lastname><age>40</age><city>Chicago</city></Row>
 </Dataset>

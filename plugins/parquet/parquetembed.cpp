@@ -222,14 +222,25 @@ arrow::Status ParquetReader::openReadFile()
         ForEach (*itr)
         {
             IFile &file = itr->query();
+            const char *filename = file.queryFilename();
             parquet::arrow::FileReaderBuilder readerBuilder;
-            reportIfFailure(readerBuilder.OpenFile(file.queryFilename(), false, readerProperties));
+            reportIfFailure(readerBuilder.OpenFile(filename, false, readerProperties));
             readerBuilder.memory_pool(pool);
             readerBuilder.properties(arrowReaderProps);
             std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
             reportIfFailure(readerBuilder.Build(&parquetFileReader));
-            parquetFileReaders.push_back(std::move(parquetFileReader));
+            parquetFileReaders.emplace_back(filename, std::move(parquetFileReader));
         }
+
+        auto sortFileReaders = [](NamedFileReader &a, NamedFileReader &b) -> bool
+        {
+            return strcmp(std::get<0>(a).c_str(), std::get<0>(b).c_str()) < 0;
+        };
+
+        std::sort(parquetFileReaders.begin(), parquetFileReaders.end(), sortFileReaders);
+
+        if (parquetFileReaders.empty())
+            failx("Parquet file %s not found", location.c_str());
     }
     return arrow::Status::OK();
 }
@@ -358,8 +369,8 @@ std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable
         tables += fileTableCounts[i];
         if (currTable < tables)
         {
-            currentTableMetadata = parquetFileReaders[i]->parquet_reader()->metadata()->Subset({static_cast<int>(currTable - offset)});
-            return parquetFileReaders[i]->RowGroup(currTable - offset);
+            currentTableMetadata = std::get<1>(parquetFileReaders[i])->parquet_reader()->metadata()->Subset({static_cast<int>(currTable - offset)});
+            return std::get<1>(parquetFileReaders[i])->RowGroup(currTable - offset);
         }
         offset = tables;
     }
@@ -381,7 +392,7 @@ arrow::Status ParquetReader::processReadFile()
         rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
         PARQUET_ASSIGN_OR_THROW(auto datasetRows, scanner->CountRows());
         // Divide the work among any number of workers
-        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRowGroup);
+        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRow);
     }
     else
     {
@@ -390,7 +401,7 @@ arrow::Status ParquetReader::processReadFile()
 
         for (int i = 0; i < parquetFileReaders.size(); i++)
         {
-            __int64 tables = parquetFileReaders[i]->num_row_groups();
+            __int64 tables = std::get<1>(parquetFileReaders[i])->num_row_groups();
             fileTableCounts.push_back(tables);
             totalTables += tables;
         }
@@ -430,7 +441,7 @@ arrow::Result<std::shared_ptr<arrow::Table>> ParquetReader::queryRows()
     {
         // Start by getting the number of rows in the first group and checking if it includes this workers startRow
         __int64 offset = (*rbatchItr)->get()->num_rows();
-        while (offset < startRow)
+        while (offset <= startRow)
         {
             rbatchItr++;
             offset += (*rbatchItr)->get()->num_rows();
@@ -643,7 +654,7 @@ arrow::Status ParquetWriter::writePartition(std::shared_ptr<arrow::Table> table)
     auto dataset = std::make_shared<arrow::dataset::InMemoryDataset>(table);
 
     StringBuffer basenameTemplate;
-    basenameTemplate.appendf("part_%d{i}_%lld.parquet",activityCtx->querySlave(), tablesProcessed++);
+    basenameTemplate.appendf("part_{i}_of_table_%lld_from_worker_%d.parquet", tablesProcessed++, activityCtx->querySlave());
     writeOptions.basename_template = basenameTemplate.str();
 
     ARROW_ASSIGN_OR_RAISE(auto scannerBuilder, dataset->NewScan());
