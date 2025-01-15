@@ -1286,7 +1286,7 @@ private:
 
 private:
     Owned<INodeReceiver> tlkReceiver;
-    unsigned remaining;
+    std::atomic<unsigned> remaining;
     KeyDiffHeader const & header;
     StringAttr filename;
     Owned<CKeyWriter> writer;
