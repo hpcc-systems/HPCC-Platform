@@ -166,7 +166,6 @@
             "name": "openssl",
             "platform": "@VCPKG_OPENSSL@"
         },
-        "pcre2",
         {
             "name": "opentelemetry-cpp",
             "default-features": false,
@@ -175,6 +174,7 @@
                 "otlp-grpc"
             ]
         },
+        "pcre2",
         {
             "name": "python3",
             "platform": "@VCPKG_PYTHON3@ & windows"
