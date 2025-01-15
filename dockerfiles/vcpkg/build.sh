@@ -36,7 +36,7 @@ function doBuild() {
     # docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
     # docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
 
-    docker build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
+    docker buildx build --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
         --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
