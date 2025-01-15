@@ -76,6 +76,8 @@ bool blockedLocalAgent = true;
 bool acknowledgeAllRequests = true;
 unsigned packetAcknowledgeTimeout = 100;
 cycle_t dynPriorityAdjustCycles = 0;   // default off (0)
+bool traceThreadStartDelay = true;
+int adjustBGThreadNiceValue = 5;
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
@@ -1011,6 +1013,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         unsigned dynAdjustMsec = topology->getPropInt("@dynPriorityAdjustTime", 0);
         if (dynAdjustMsec)
             dynPriorityAdjustCycles = dynAdjustMsec * (queryOneSecCycles() / 1000ULL);
+        traceThreadStartDelay = topology->getPropBool("@traceThreadStartDelay", traceThreadStartDelay);
+        adjustBGThreadNiceValue = topology->getPropInt("@adjustBGThreadNiceValue", adjustBGThreadNiceValue);
+        if (adjustBGThreadNiceValue < 0)
+            adjustBGThreadNiceValue = 0;
+        if (adjustBGThreadNiceValue > 19)
+            adjustBGThreadNiceValue = 19;
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));

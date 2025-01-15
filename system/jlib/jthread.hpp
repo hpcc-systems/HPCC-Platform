@@ -289,6 +289,7 @@ interface IThreadPool : extends IInterface
         virtual unsigned runningCount()=0;                  // number of currently running threads
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
+        virtual void setNiceValue(int value) = 0;                    // set priority for thread
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
 };
 

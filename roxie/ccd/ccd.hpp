@@ -313,6 +313,8 @@ extern bool blockedLocalAgent;
 extern bool acknowledgeAllRequests;
 extern unsigned packetAcknowledgeTimeout;
 extern cycle_t dynPriorityAdjustCycles;
+extern bool traceThreadStartDelay;
+extern int adjustBGThreadNiceValue;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;

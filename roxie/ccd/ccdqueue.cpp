@@ -1175,6 +1175,13 @@ public:
         if (qname && *qname)
             tname.appendf(" (%s)", qname);
         workers.setown(createThreadPool(tname.str(), this, false, nullptr, numWorkers));
+        if (traceThreadStartDelay)
+            workers->setStartDelayTracing(60);
+        if (qname && *qname)
+        {
+            if (streq(qname, "BG"))
+                workers->setNiceValue(adjustBGThreadNiceValue);
+        }
         started = 0;
         idle = 0;
         if (IBYTIbufferSize)
@@ -1914,7 +1921,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers, "SLA"), hiQueue(headRegionSize, _numWorkers, "HIGH"), loQueue(headRegionSize, _numWorkers, "LOW"), bgQueue(headRegionSize, _numWorkers/2 + 1, "BG"), numWorkers(_numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers, "SLA"), hiQueue(headRegionSize, _numWorkers, "HIGH"), loQueue(headRegionSize, _numWorkers, "LOW"), bgQueue(headRegionSize, _numWorkers, "BG"), numWorkers(_numWorkers)
     {
     }
 
@@ -1936,7 +1943,7 @@ public:
         loQueue.start();
         hiQueue.start();
         slaQueue.start();
-        bgQueue.start(); // consider nice(+3) BG threads
+        bgQueue.start(); // NB BG thread priority can be adjusted
     }
 
     virtual void stop() 

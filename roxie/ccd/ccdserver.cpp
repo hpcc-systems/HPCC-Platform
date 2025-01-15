@@ -4596,6 +4596,7 @@ public:
                 ctx->queryOptions().dynPriority = QUERY_BG_PRIORITY_VALUE;
                 unsigned dynAdjustMsec = (dynPriorityAdjustCycles * 1000ULL) / queryOneSecCycles();
                 UWARNLOG("WARNING: %d msec dynamic adjustment threshold reached, shifting query to BG queue", dynAdjustMsec);
+                p->queryHeader().activityId &= ~ROXIE_PRIORITY_MASK;
                 p->queryHeader().activityId |= ROXIE_BG_PRIORITY;
                 // TODO: what to do about still running activities' continuation/ack priorities ?
             }
