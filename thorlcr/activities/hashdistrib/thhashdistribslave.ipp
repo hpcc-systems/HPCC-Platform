@@ -31,6 +31,7 @@ interface IHashDistributor : extends IInterface
     virtual void join()=0;
     virtual void setBufferSizes(unsigned sendBufferSize, unsigned outputBufferSize, unsigned pullBufferSize) = 0;
     virtual void mergeStats(CRuntimeStatisticCollection &stats) const = 0;
+    virtual unsigned __int64 queryLookAheadCycles() const = 0;
     virtual void abort()=0;
 };
 

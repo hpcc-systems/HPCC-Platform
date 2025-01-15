@@ -1801,8 +1801,6 @@ void ActivityTimeAccumulator::addStatistics(IStatisticGatherer & builder) const
         if (blockedCycles)
             builder.addStatistic(StTimeBlocked, cycle_to_nanosec(blockedCycles));
     }
-    if (lookAheadCycles)
-        builder.addStatistic(StTimeLookAhead, (unsigned __int64)cycle_to_nanosec(lookAheadCycles));
 }
 
 void ActivityTimeAccumulator::addStatistics(CRuntimeStatisticCollection & merged) const
@@ -1816,8 +1814,6 @@ void ActivityTimeAccumulator::addStatistics(CRuntimeStatisticCollection & merged
         if (blockedCycles)
             merged.mergeStatistic(StTimeBlocked, cycle_to_nanosec(blockedCycles));
     }
-    if (lookAheadCycles)
-        merged.mergeStatistic(StTimeLookAhead, (unsigned __int64)cycle_to_nanosec(lookAheadCycles));
 }
 
 void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
