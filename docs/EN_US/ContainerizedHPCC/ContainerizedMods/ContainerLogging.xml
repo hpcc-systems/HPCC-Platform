@@ -70,8 +70,39 @@
       choose to integrate HPCC Systems logging data with any existing logging
       solutions, or to implement another one specifically for HPCC Systems
       data. Starting with HPCC Systems version 8.4, we provide a lightweight,
-      yet complete log-processing solution for your convenience. The following
-      sections will look at a couple of the possible solutions.</para>
+      yet complete log-processing solution for convenience. Subsequent
+      sections will look at a couple other possible log-processing
+      solutions.</para>
+
+      <sect3 id="LogP_Depends">
+        <title>Log Dependant Applications</title>
+
+        <para>Currently there is a utility delivered with a containerized HPCC
+        Systems deployment which is dependant on having a properly configured
+        log-processing solution for optimal results.</para>
+
+        <sect4 id="CNTR_ZAP">
+          <title>The Z.A.P. Utility</title>
+
+          <para>The Zipped Analysis Package (Z.A.P.) utility collects system
+          information and encapsulates it into a shareable package. This
+          utility packages up information to send for further analysis. ZAP
+          reports contain several artifacts related to a given workunit, to
+          aid in debugging.</para>
+
+          <para>The Component logs are one of most important artifacts
+          expected to be included in the report. In containerized deployments
+          logging is handled differently from bare metal. The log fetching is
+          dependent on a back-end log processor being properly configured and
+          available and the HPCC LogAccess feature configured to bind to the
+          log processor. If those two dependencies are not met, the
+          containerized cluster logs are not included in the ZAP report. Those
+          ZAP reports will then be incomplete. To ensure inclusion of the logs
+          in the ZAP report you must have log access configured properly. See
+          the <link linkend="Containerized_Logging">Containerized
+          Logging</link> sections for more information.</para>
+        </sect4>
+      </sect3>
     </sect2>
   </sect1>
 
