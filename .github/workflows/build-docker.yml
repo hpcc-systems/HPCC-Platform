@@ -111,9 +111,8 @@ jobs:
           echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
+          docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_branch=$docker_build_label:$branch_label" >> $GITHUB_OUTPUT
 
       - name: Print vars
         shell: "bash"
@@ -125,16 +124,6 @@ jobs:
       - name: Pull Build Image
         run: |
           docker pull ${{ steps.vars.outputs.docker_tag }} || true
-          docker pull ${{ steps.vars.outputs.docker_branch }} || true
-
-          docker buildx build --rm -f "dockerfiles/vcpkg/${{ inputs.os }}.dockerfile" \
-              --build-arg DOCKER_NAMESPACE=${{ secrets.DOCKER_USERNAME }} \
-              --build-arg VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }} \
-              --cache-from hpccsystems/platform-build-${{ inputs.os }}:${{ steps.vars.outputs.vcpkg_sha_short }} \
-              --cache-from hpccsystems/platform-build-${{ inputs.os }}:${{ steps.vars.outputs.branch_label }} \
-              -t hpccsystems/platform-build-${{ inputs.os }}:${{ steps.vars.outputs.vcpkg_sha_short }} \
-              -t hpccsystems/platform-build-${{ inputs.os }}:${{ steps.vars.outputs.branch_label }} \
-              "dockerfiles/vcpkg"
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
