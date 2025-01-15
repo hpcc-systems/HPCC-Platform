@@ -4170,6 +4170,8 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testStandard3);
         CPPUNIT_TEST(testLightweight);
         CPPUNIT_TEST(testLightweight2);
+        CPPUNIT_TEST(testConcurrent1);
+        CPPUNIT_TEST(testConcurrent2);
     CPPUNIT_TEST_SUITE_END();
 
     void testStandard()
@@ -4285,6 +4287,94 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
             DBGLOG("%" I64F "u %" I64F "u", blockTime-expected, postBlockTime-blockTime);
+    }
+
+    inline bool within10Percent(__uint64 expected, __uint64 actual)
+    {
+        __uint64 threshold = expected / 10;
+        return (actual >= expected - threshold) && (actual <= expected + threshold);
+    }
+
+    void testConcurrent1()
+    {
+        BlockedTimeTracker serverLoadTracker;
+        BlockedTimeTracker workerLoadTracker;
+        OverlapTimeInfo serverStartInfo;
+        OverlapTimeInfo workerStartInfo;
+        OverlapTimeInfo serverFinishInfo;
+        OverlapTimeInfo workerFinishInfo;
+        OverlapTimeInfo dummyInfo;
+
+        serverLoadTracker.extractOverlapInfo(serverStartInfo, true, true);
+        workerLoadTracker.extractOverlapInfo(workerStartInfo, true, false);
+
+        MilliSleep(100);
+        //Another query starts
+        serverLoadTracker.extractOverlapInfo(dummyInfo, true, true);
+        workerLoadTracker.noteWaiting(); // worker thread starts
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes
+        serverLoadTracker.extractOverlapInfo(dummyInfo, true, true);            // 3rd query starts
+        MilliSleep(100);
+        serverLoadTracker.extractOverlapInfo(dummyInfo, false, true);          // 2nd (or 3rd) query finishes
+        workerLoadTracker.noteWaiting(); // worker thread starts
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes
+        MilliSleep(100);
+
+        workerLoadTracker.extractOverlapInfo(workerFinishInfo, false, false);
+        serverLoadTracker.extractOverlapInfo(serverFinishInfo, false, true);    // main thread stops
+
+        CPPUNIT_ASSERT_EQUAL(2U, workerFinishInfo.count - workerStartInfo.count);
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(200'000'000, workerFinishInfo.elapsedNs - workerStartInfo.elapsedNs));
+
+        CPPUNIT_ASSERT_EQUAL(3U, serverFinishInfo.count - serverStartInfo.count);
+
+        // This query for 500, second query for 200, 3rd query for 300
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(1000'000'000, serverFinishInfo.elapsedNs - serverStartInfo.elapsedNs));
+    }
+
+    //MORE: Is this a cleaner interface - effectively remove the 3rd parameter to extractOverlapInfo
+    void testConcurrent2()
+    {
+        BlockedTimeTracker serverLoadTracker;
+        BlockedTimeTracker workerLoadTracker;
+        OverlapTimeInfo serverStartInfo;
+        OverlapTimeInfo workerStartInfo;
+        OverlapTimeInfo serverFinishInfo;
+        OverlapTimeInfo workerFinishInfo;
+        OverlapTimeInfo dummyInfo;
+
+        serverLoadTracker.extractOverlapInfo(serverStartInfo, true, false);
+        workerLoadTracker.extractOverlapInfo(workerStartInfo, true, false);
+        cycle_t startCycles = serverLoadTracker.noteWaiting();
+
+        MilliSleep(100);
+        //Another query starts
+        serverLoadTracker.extractOverlapInfo(dummyInfo, true, true);
+        workerLoadTracker.noteWaiting(); // worker thread starts
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes
+        serverLoadTracker.extractOverlapInfo(dummyInfo, true, true);            // 3rd query starts
+        MilliSleep(100);
+        serverLoadTracker.extractOverlapInfo(dummyInfo, false, true);          // 2nd (or 3rd) query finishes
+        workerLoadTracker.noteWaiting(); // worker thread starts
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes
+        MilliSleep(100);
+
+        workerLoadTracker.extractOverlapInfo(workerFinishInfo, false, false);
+        serverLoadTracker.extractOverlapInfo(serverFinishInfo, false, false);    // main thread stops
+        cycle_t endCycles = serverLoadTracker.noteComplete();
+
+        CPPUNIT_ASSERT_EQUAL(2U, workerFinishInfo.count - workerStartInfo.count);
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(200'000'000, workerFinishInfo.elapsedNs - workerStartInfo.elapsedNs));
+
+        CPPUNIT_ASSERT_EQUAL(3U, serverFinishInfo.count - serverStartInfo.count);
+
+        // This query for 500, second query for 200, 3rd query for 300
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(1000'000'000, serverFinishInfo.elapsedNs - serverStartInfo.elapsedNs));
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(500'000'000, cycle_to_nanosec(endCycles - startCycles)));
     }
 };
 
