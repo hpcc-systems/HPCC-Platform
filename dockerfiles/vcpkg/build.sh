@@ -32,8 +32,8 @@ CMAKE_OPENBLAS_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE
 CMAKE_PLATFORM_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DPLATFORM=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 function doBuild() {
-    docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
-    docker pull "hpccsystems/platform-build-base-$1:$GITHUB_BRANCH" || true
+    docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
+    docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
 
     docker buildx build --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \

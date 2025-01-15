@@ -6,7 +6,6 @@ set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cma
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
 set(VCPKG_INSTALLED_DIR "${VCPKG_FILES_DIR}/vcpkg_installed")
 set(VCPKG_INSTALL_OPTIONS "--x-abi-tools-use-exact-versions;--downloads-root=${VCPKG_FILES_DIR}/vcpkg_downloads;--x-buildtrees-root=${VCPKG_FILES_DIR}/vcpkg_buildtrees;--x-packages-root=${VCPKG_FILES_DIR}/vcpkg_packages")
-set(VCPKG_VERBOSE OFF)
 
 if(WIN32)
     set(VCPKG_HOST_TRIPLET "x64-windows" CACHE STRING "host triplet")
