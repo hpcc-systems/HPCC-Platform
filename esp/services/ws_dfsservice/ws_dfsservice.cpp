@@ -126,6 +126,26 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
         {
             VStringBuffer storagePlaneXPath("storage/%s", planeXPath.str());
             Owned<IPropertyTree> dataPlane = getGlobalConfigSP()->getPropTree(storagePlaneXPath);
+
+            const char *hostGroupName = dataPlane->queryProp("@hostGroup");
+            if (!isEmptyString(hostGroupName))
+            {
+                Owned<IPropertyTree> hostGroup = getHostGroup(hostGroupName, false);
+                if (hostGroup)
+                {
+                    // This is only likely to be used if this service is in BM
+                    // Cloud based storage planes are unlikely to be backed by hosts/hostGroups
+                    dataPlane.setown(createPTreeFromIPT(dataPlane));
+                    unsigned daFsSrvPort = getPreferredDaFsServerPort();
+                    Owned<IPropertyTreeIterator> iter = hostGroup->getElements("hosts");
+                    ForEach(*iter)
+                    {
+                        VStringBuffer endpoint("%s:%u", iter->query().queryProp(nullptr), daFsSrvPort);
+                        dataPlane->addProp("hosts", endpoint);
+                    }
+                    dataPlane->removeProp("@hostGroup");
+                }
+            }
             metaRoot->addPropTree("planes", dataPlane.getClear());
         }
     }
@@ -135,6 +155,8 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
 void CWsDfsEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     DBGLOG("Initializing %s service [process = %s]", service, process);
+    VStringBuffer xpath("Software/EspProcess/EspBinding[@service=\"%s\"]/@protocol", service);
+    isHttps = strsame("https", cfg->queryProp(xpath));
 }
 
 bool CWsDfsEx::onGetLease(IEspContext &context, IEspLeaseRequest &req, IEspLeaseResponse &resp)
@@ -177,8 +199,13 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
         if (req.getAccessViaDafilesrv())
             opts |= LfnMOptRemap;
 
-        // NB: if we ever have some services with tls, and some without in bare-metal, this may need revisiting.
-        if (getComponentConfigSP()->getPropBool("@tls"))
+        if (isContainerized())
+        {
+            // NB: if we ever have some services with tls, and some without in bare-metal, this may need revisiting.
+            if (getComponentConfigSP()->getPropBool("@tls"))
+                opts |= LfnMOptTls;
+        }
+        else if (isHttps)
             opts |= LfnMOptTls;
 
         Owned<IPropertyTree> responseTree = createPTree();
