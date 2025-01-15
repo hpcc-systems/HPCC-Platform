@@ -281,7 +281,7 @@ static void initMaxCacheSize()
     }
 
     if (cacheMaxSize > 0)
-        compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize);
+        compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize); // NOTE: Called from init code - no need to lock
     else
         compiledCacheEnabled = false;
 }
