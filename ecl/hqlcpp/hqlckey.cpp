@@ -307,14 +307,38 @@ IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
 
 IHqlExpression * queryBaseIndexForKeyedJoin(IHqlExpression * expr)
 {
-    if (expr->getOperator() == no_if)
+    node_operator op = expr->getOperator();
+    if (op == no_if)
     {
         IHqlExpression * left = queryBaseIndexForKeyedJoin(expr->queryChild(1));
         IHqlExpression * right = queryBaseIndexForKeyedJoin(expr->queryChild(2));
         if (left && right)
-            return left;
+        {
+            //IF (cond, index) and IF(cond, null, index) should be allowed, and will return the index
+            if (left->getOperator() != no_null)
+                return left;
+            return right;
+        }
         return nullptr;
     }
+    else if (op == no_chooseds)
+    {
+        IHqlExpression * result = nullptr;
+        ForEachChildFrom(i, expr, 1)
+        {
+            IHqlExpression * match = queryBaseIndexForKeyedJoin(expr->queryChild(i));
+            if (!match)
+                return nullptr;
+            if (!result || result->getOperator() == no_null)
+                result = match;
+        }
+        return result;
+    }
+    else if (op == no_null)
+        return expr;
+    else if (op == no_split)
+        return queryBaseIndexForKeyedJoin(expr->queryChild(0));
+
     return queryPhysicalRootTable(expr);
 }
 

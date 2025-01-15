@@ -1169,6 +1169,20 @@
           "items": {
             "$ref": "#/definitions/traceExporter"
           }
+        },
+        "resourceAttributes": {
+          "type": "object",
+          "properties": {
+            "deploymentEnvironment": {
+              "type": "string",
+              "description": "Name of the deployment environment (aka deployment tier) such as staging/development/production. "
+            },
+            "serviceNamespace": {
+              "type": "string",
+              "description": "Identifier used to help distinguish instances of same service"
+            }
+          },
+          "additionalProperties": { "type": ["integer", "string", "boolean"] }
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
