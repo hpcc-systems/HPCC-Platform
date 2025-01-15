@@ -9554,6 +9554,11 @@ public:
         CRoxieServerActivity::stop();
     };
 
+    virtual IIndexReadActivityInfo *queryIndexReadActivity() override
+    {
+        return input->queryIndexReadActivity();
+    }
+
     void reset(unsigned oid)
     {
         if (state != STATEreset) // make sure input is only reset once
@@ -21058,6 +21063,14 @@ public:
         unusedStopped = false;
         active = NULL;
         CRoxieServerMultiInputBaseActivity::reset();
+    }
+
+    virtual IIndexReadActivityInfo *queryIndexReadActivity()
+    {
+        //CHOOSE defaults to the last argument if out of range.
+        if (cond >= numInputs)
+            cond = numInputs - 1;
+        return inputArray[cond]->queryIndexReadActivity();
     }
 
     virtual const void *nextRow()
