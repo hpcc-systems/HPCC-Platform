@@ -38,6 +38,10 @@ static void checkRoxieControlExceptions(IPropertyTree *response)
             me->append(*MakeStringException(ex.getPropInt("Code"), "Endpoint %s: %s", endp.queryProp("@ep"), ex.queryProp("Message")));
         }
     }
+
+    if( strieq("Exception", response->queryName()))
+        me->append(*MakeStringException(response->getPropInt("Code"), "Source %s: %s", response->queryProp("Source"), response->queryProp("Message")));
+
     if (me->ordinality())
         throw me.getClear();
 }
