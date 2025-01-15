@@ -38,7 +38,7 @@ IsOldPerson := Person.Age &gt;= 65;</programlisting>
         <primary>Value Definition</primary>
       </indexterm>s</title>
 
-    <para>A Value Definition is defined as any Definition whose expression is
+    <para>A Value Definition is defined as any definition whose expression is
     an arithmetic or string expression with a single-valued result. For
     example, the following are all Value Definitions:</para>
 
@@ -103,7 +103,7 @@ SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
 
     <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
 
-    <para>You can construct a DATASET from a SET. </para>
+    <para>You can construct a DATASET from a SET.</para>
 
     <programlisting>SET OF STRING s := ['Jim','Bob','Richard','Tom'];
 DATASET(s,{STRING txt});</programlisting>
@@ -217,7 +217,7 @@ MyRec4 := Person[2..];   // all recs except the first</programlisting>
     <programlisting>ds[1].x    //note that this returns 0 if ds contains no records.
 </programlisting>
 
-    <para></para>
+    <para/>
   </sect2>
 
   <sect2 id="TypeDef_Attributes">
