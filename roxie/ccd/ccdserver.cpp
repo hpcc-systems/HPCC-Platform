@@ -316,6 +316,10 @@ public:
     {
         return ctx->queryOptions();
     }
+    virtual cycle_t queryElapsedCycles() const override
+    {
+        return ctx->queryElapsedCycles();
+    }
     virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) override
     {
         ctx->addAgentsReplyLen(len, duplicates, resends);
@@ -3636,6 +3640,24 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
+unsigned getPriorityMask(int priority)
+{
+    unsigned newPri = ROXIE_BG_PRIORITY;
+    switch (priority)
+    {
+        case QUERY_SLA_PRIORITY_VALUE:
+            newPri = ROXIE_SLA_PRIORITY;
+            break;
+        case QUERY_HIGH_PRIORITY_VALUE:
+            newPri = ROXIE_HIGH_PRIORITY;
+            break;
+        case QUERY_LOW_PRIORITY_VALUE:
+            newPri = ROXIE_LOW_PRIORITY;
+            break;
+    }
+    return newPri;
+}
+
 class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, implements IExceptionHandler, public CInterface
 {
     friend class CRemoteResultMerger;
@@ -4568,6 +4590,27 @@ public:
             //       But this could still cause too many reply packets on the fastlane
             //       (higher priority output Q), which may cause the activities on the 
             //       low priority output Q to not get service on time.
+
+            int origPriority = (int)ctx->queryOptions().priority;
+            int dynPriority = ctx->queryOptions().dynPriority;
+            if (dynPriority < origPriority)
+            {
+                unsigned newPri = getPriorityMask(dynPriority);
+                p->queryHeader().activityId &= ~ROXIE_PRIORITY_MASK;
+                p->queryHeader().activityId |= newPri;
+            }
+
+            // TODO: perhaps check elapsed every Nth msg ?
+            if ( (dynPriorityAdjustCycles > 0) && (origPriority == QUERY_LOW_PRIORITY_VALUE) && (dynPriority == QUERY_LOW_PRIORITY_VALUE) &&
+                 (ctx->queryElapsedCycles() > dynPriorityAdjustCycles) )
+            {
+                ctx->queryOptions().dynPriority = QUERY_BG_PRIORITY_VALUE;
+                unsigned dynAdjustMsec = (dynPriorityAdjustCycles * 1000ULL) / queryOneSecCycles();
+                UWARNLOG("WARNING: %d msec dynamic adjustment threshold reached, shifting query to BG queue", dynAdjustMsec);
+                p->queryHeader().activityId |= ROXIE_BG_PRIORITY;
+                // TODO: what to do about still running activities' continuation/ack priorities ?
+            }
+
             unsigned pmask = p->queryHeader().activityId & ROXIE_PRIORITY_MASK;
             if ((colocalArg == 0) &&     // not a child query activity??
                     ( (pmask == ROXIE_SLA_PRIORITY) || (pmask == ROXIE_HIGH_PRIORITY) ) &&
@@ -5025,7 +5068,18 @@ public:
         mu.clear();
         SimpleActivityTimer t(unpackerWaitCycles, timeActivities);
         unsigned ctxTraceLevel = activity.queryLogCtx().queryTraceLevel();
-        unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
+
+        unsigned timeout = lowTimeout;
+        switch (activity.queryContext()->queryOptions().dynPriority)
+        {
+            case QUERY_SLA_PRIORITY_VALUE:
+                timeout = slaTimeout;
+                break;
+            case QUERY_HIGH_PRIORITY_VALUE:
+                timeout = highTimeout;
+                break;
+        }
+
         unsigned checkInterval = activity.queryContext()->checkInterval();
         if (checkInterval > timeout)
             checkInterval = timeout;
@@ -9570,6 +9624,11 @@ public:
         activeOutputs = numOutputs;
         CRoxieServerActivity::stop();
     };
+
+    virtual IIndexReadActivityInfo *queryIndexReadActivity() override
+    {
+        return input->queryIndexReadActivity();
+    }
 
     void reset(unsigned oid)
     {
@@ -21075,6 +21134,14 @@ public:
         unusedStopped = false;
         active = NULL;
         CRoxieServerMultiInputBaseActivity::reset();
+    }
+
+    virtual IIndexReadActivityInfo *queryIndexReadActivity()
+    {
+        //CHOOSE defaults to the last argument if out of range.
+        if (cond >= numInputs)
+            cond = numInputs - 1;
+        return inputArray[cond]->queryIndexReadActivity();
     }
 
     virtual const void *nextRow()
