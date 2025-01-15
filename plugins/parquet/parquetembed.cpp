@@ -392,7 +392,7 @@ arrow::Status ParquetReader::processReadFile()
         rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
         PARQUET_ASSIGN_OR_THROW(auto datasetRows, scanner->CountRows());
         // Divide the work among any number of workers
-        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRowGroup);
+        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRow);
     }
     else
     {
@@ -441,7 +441,7 @@ arrow::Result<std::shared_ptr<arrow::Table>> ParquetReader::queryRows()
     {
         // Start by getting the number of rows in the first group and checking if it includes this workers startRow
         __int64 offset = (*rbatchItr)->get()->num_rows();
-        while (offset < startRow)
+        while (offset <= startRow)
         {
             rbatchItr++;
             offset += (*rbatchItr)->get()->num_rows();
