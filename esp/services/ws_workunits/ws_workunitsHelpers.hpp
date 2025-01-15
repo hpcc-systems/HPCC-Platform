@@ -383,16 +383,6 @@ struct CWsWuZAPInfoReq
         logFilter.populateLogFilter(wuid.str(), httpRequest);
     }
 
-    // True when logs _would have been included_ if the user had access
-    bool logsExcludedDueToNoAccess()
-    {
-#ifdef _CONTAINERIZED
-        return (includeRelatedLogs || includePerComponentLogs) && !hasLogsAccess;
-#else
-        // Bare metal historically always includes Thor and EclAgent logs
-        return !hasLogsAccess;
-#endif
-    }
 };
 
 class WsWuInfo
@@ -908,8 +898,8 @@ class CWsWuFileHelper
     void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles, bool hasLogsAccess);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
 #ifndef _CONTAINERIZED
-    void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
-    void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
+    void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path, bool hasLogsAccess);
+    void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, bool hasLogsAccess);
 #endif
     LogAccessLogFormat getComponentLogFormatFromLogName(const char *log);
     void readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq &zapLogFilterOptions);

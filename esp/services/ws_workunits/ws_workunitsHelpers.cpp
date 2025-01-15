@@ -45,8 +45,11 @@
 
 namespace ws_workunits {
 
-// Same feature access as in ws_logaccess.ecm
-#define WS_LOGACCESS "WsLogAccess"
+#ifdef _CONTAINERIZED
+static const char* LOG_ACCESS_FEATURE = "WsLogAccess";
+#else
+static const char* LOG_ACCESS_FEATURE = "ClusterTopologyAccess";
+#endif
 
 const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
 const char* zipFolder = "tempzipfiles" PATHSEPSTR;
@@ -3994,13 +3997,12 @@ void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
 }
 
 #ifndef _CONTAINERIZED
-void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* process, const char* path)
+void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* process, const char* path, bool hasLogsAccess)
 {
     BoolHash uniqueProcesses;
     Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
     ForEach (*procs)
     {
-        StringBuffer logSpec;
         IPropertyTree& proc = procs->query();
         const char* processName = proc.queryName();
         if (isEmpty(processName))
@@ -4024,11 +4026,17 @@ void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo,
                 pid.appendf("%d", proc.getPropInt("@pid"));
 
                 fileName.append("_eclagent.log");
+                if (!hasLogsAccess)
+                    throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+
                 winfo.getWorkunitEclAgentLog(processName, nullptr, pid.str(), mb, fileName.str());
             }
             else if (strieq(process, "Thor"))
             {
                 fileName.append("_thormaster.log");
+                if (!hasLogsAccess)
+                    throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+
                 winfo.getWorkunitThorMasterLog(processName, nullptr, mb, fileName.str());
             }
         }
@@ -4036,14 +4044,14 @@ void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo,
         {
             StringBuffer s;
             e->errorMessage(s);
-            IERRLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
+            IERRLOG("Error accessing Process Log file %s: %s", processName, s.str());
             writeToFile(fileName.str(), s.length(), s.str());
             e->Release();
         }
     }
 }
 
-void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* path)
+void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* path, bool hasLogsAccess)
 {
     if (cwu->getWuidVersion() == 0)
         return;
@@ -4055,6 +4063,18 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
     if (!clusterInfo)
     {
         OWARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
+        return;
+    }
+
+    // Since there is not already a handler inserting exceptions into the thor slave log,
+    // make a simple case here to insert a message about permission failure and write it to
+    // a file that could be recognized as a thor slave log.
+    if (!hasLogsAccess)
+    {
+        StringBuffer msg;
+        msg.appendf("Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+        VStringBuffer fileName("%s%cthorslave.log", path, PATHSEPCHAR);
+        writeToFile(fileName.str(), msg.length(), msg.str());
         return;
     }
 
@@ -4152,11 +4172,6 @@ void CWsWuFileHelper::createZAPInfoFile(CWsWuZAPInfoReq &request, IConstWorkUnit
     writeZAPWUInfoToIOStream(outFile, "Problem:      ", request.problemDesc);
     writeZAPWUInfoToIOStream(outFile, "What Changed: ", request.whatChanged);
     writeZAPWUInfoToIOStream(outFile, "Timing:       ", request.whereSlow);
-    if (request.logsExcludedDueToNoAccess())
-    {
-        writeZAPWUInfoToIOStream(outFile, "Logs:          ", "Excluded due to no access, need WsLogAccess:Read");
-        LOG(MCuserWarning, "ZAP report for workunit %s excludes logs due to access restrictions. Need WsLogAccess:READ", request.wuid.str());
-    }
 }
 
 void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const char* name, SCMStringBuffer& value)
@@ -4288,6 +4303,8 @@ void CWsWuFileHelper::readWULogToFile(const char *logFileName, WsWuInfo &winfo, 
 {
     try
     {
+        if (!zapLogFilterOptions.hasLogsAccess)
+            throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
         winfo.readWorkunitComponentLogs(logFileName, zapLogFilterOptions);
     }
     catch(IException* e)
@@ -4524,7 +4541,7 @@ int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFi
 void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu, CWsWuZAPInfoReq& request,
     const char* tempDirName, StringBuffer& zapFileName, StringBuffer& zipFileNameWithFullPath, unsigned _thorSlaveLogThreadPoolSize)
 {
-    request.hasLogsAccess = context.validateFeatureAccess(WS_LOGACCESS, SecAccess_Read, false);
+    request.hasLogsAccess = context.validateFeatureAccess(LOG_ACCESS_FEATURE, SecAccess_Read, false);
     setZAPReportName(request.zapFileName, cwu->queryWuid(), zapFileName);
 
     zipFileNameWithFullPath.set(tempDirName).append(PATHSEPCHAR).append("zapreport.zip");
@@ -4540,17 +4557,14 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
 
     StringArray localFiles;
     createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles, request.hasLogsAccess);
-    if (request.hasLogsAccess)
-    {
 #ifndef _CONTAINERIZED
-        createProcessLogfile(cwu, winfo, "EclAgent", tempDirName);
-        createProcessLogfile(cwu, winfo, "Thor", tempDirName);
+        createProcessLogfile(cwu, winfo, "EclAgent", tempDirName, request.hasLogsAccess);
+        createProcessLogfile(cwu, winfo, "Thor", tempDirName, request.hasLogsAccess);
         if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
-            createThorSlaveLogfile(cwu, winfo, tempDirName);
+            createThorSlaveLogfile(cwu, winfo, tempDirName, request.hasLogsAccess);
 #else
         readWULogToFiles(cwu, winfo, tempDirName, request);
 #endif
-    }
 
     //Write out to ZIP file
     zipAllZAPFiles(tempDirName, localFiles, request.password, zipFileNameWithFullPath);
@@ -4573,12 +4587,24 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
         cur.getName(name);
         cur.getIp(ip);
 
-        if (!hasLogsAccess && endsWith(name.str(), ".eclcc.log"))
-            continue;
-
         RemoteFilename rfn;
         SocketEndpoint ep(ip.str());
         rfn.setPath(ep, name.str());
+        StringBuffer fileName(name.str());
+        getFileNameOnly(fileName, false);
+
+        VStringBuffer outFileName("%s%c%s", tempDirName, PATHSEPCHAR, fileName.str());
+
+        // Since users are only accustomed to seeing error messages replacing log file contents,
+        // special case an access denied error message for the one log file processed here.
+        if (!hasLogsAccess && endsWith(name.str(), ".eclcc.log"))
+        {
+            StringBuffer msg;
+            msg.appendf("Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+            writeToFile(outFileName.str(), msg.length(), msg.str());
+            continue;
+        }
+
         if (rfn.isLocal())
         {
             localFiles.append(name.str());
@@ -4591,11 +4617,6 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
             IERRLOG("Cannot open %s on %s.", name.str(), ip.str());
             continue;
         }
-
-        StringBuffer fileName(name.str());
-        getFileNameOnly(fileName, false);
-
-        VStringBuffer outFileName("%s%c%s", tempDirName, PATHSEPCHAR, fileName.str());
 
         OwnedIFile outFile = createIFile(outFileName);
         if (!outFile)
