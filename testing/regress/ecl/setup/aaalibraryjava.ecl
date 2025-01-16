@@ -18,6 +18,7 @@
 //nohthor
 //nothor
 //publish
+//library
 
 #option ('targetService', 'aaaLibraryJava');
 #option ('createServiceAlias', true);
