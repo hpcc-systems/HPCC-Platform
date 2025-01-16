@@ -18,6 +18,7 @@
 //nohthor
 //nothor
 //publish
+//library
 
 #option ('targetService', 'aaaLibrary2');
 #option ('createServiceAlias', true);

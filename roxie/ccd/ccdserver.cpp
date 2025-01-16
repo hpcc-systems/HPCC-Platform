@@ -1505,7 +1505,11 @@ public:
     virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return junction; }
     virtual IRoxieServerActivity *queryActivity() { return this; }
-    virtual IIndexReadActivityInfo *queryIndexReadActivity() { return NULL; }
+    virtual IIndexReadActivityInfo *queryIndexReadActivity()
+    {
+        CTXLOG("Activity does not implement queryIndexReadActivity");
+        return NULL; 
+    }
 
     virtual bool needsAllocator() const { return false; }
 
@@ -5585,6 +5589,18 @@ IRoxieServerActivityFactory *createRoxieServerApplyActivityFactory(unsigned _id,
 
 //=================================================================================
 
+static class CDummyIndexReadInfo : public CInterfaceOf<IIndexReadActivityInfo>
+{
+public:
+    virtual IKeyArray *getKeySet() const { return nullptr; }
+    virtual const IResolvedFile *getVarFileInfo() const { return nullptr; }
+    virtual ITranslatorSet *getTranslators() const { return nullptr; }
+
+    virtual void mergeSegmentMonitors(IIndexReadContext *irc) const {  }
+    virtual IRoxieServerActivity *queryActivity() { throwUnexpected(); };    // Should never involve remote agent if keyset has returned nullptr
+    virtual const RemoteActivityId &queryRemoteId() const { throwUnexpected(); }
+} dummyIndexReadInfo;
+
 class CRoxieServerNullActivity : public CRoxieServerActivity
 {
 public:
@@ -5598,6 +5614,10 @@ public:
         return NULL;
     }
 
+    virtual IIndexReadActivityInfo *queryIndexReadActivity() 
+    {
+        return &dummyIndexReadInfo;
+    }
 };
 
 IRoxieServerActivity * createRoxieServerNullActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -21269,7 +21289,7 @@ public:
         IFinalRoxieInput *in = cond ? inputTrue  : inputFalse;
         if (in)
             return in->queryIndexReadActivity();
-        return NULL;
+        return &dummyIndexReadInfo;
     }
 
     virtual void reset()

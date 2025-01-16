@@ -1,8 +1,12 @@
 import { Workunit, WorkunitsService, type WsWorkunits } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+import nlsHPCC from "src/nlsHPCC";
 import { Thenable } from "src/store/Deferred";
 import { Paged } from "src/store/Paged";
 import { BaseStore } from "src/store/Store";
 import { wuidToDateTime } from "src/Utility";
+
+const logger = scopedLogger("src-react/comms/workunit.ts");
 
 const service = new WorkunitsService({ baseUrl: "" });
 
@@ -64,6 +68,16 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunits.WUQuery, Workunit> {
             return {
                 data,
                 total: response.NumWUs
+            };
+        }).catch(e => {
+            if (e.Exception && e.Exception[0] && e.Exception[0].Message === nlsHPCC.GridAbortMessage) {
+                logger.debug(e.Exception[0].Message);
+            } else {
+                logger.error(e);
+            }
+            return {
+                data: [],
+                total: 0
             };
         });
     });
