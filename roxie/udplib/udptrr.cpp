@@ -392,7 +392,7 @@ enum class ReceiveState {
     granted,        // at least one permit granted and NO pending request, waiting for data to be sent
     max
 };
-constexpr const char * receiveStateNameText[(unsigned)ReceiveState::max] = { "idle", "requested", "granted" };
+constexpr const char * receiveStateNameText[(unsigned)ReceiveState::max+1] = { "idle", "requested", "granted", "unknown" };
 const char * receiveStateName(ReceiveState idx) { return receiveStateNameText[(unsigned)idx]; }
 
 
