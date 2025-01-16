@@ -67,7 +67,7 @@ export function parseSort(_?: string): QuerySortItem | undefined {
 }
 
 export function updateSort(sorted: boolean, descending: boolean, sortBy: string) {
-    updateParam("sortBy", sorted ? (descending ? "-" : "") + sortBy : undefined);
+    updateParam("sortBy", sorted ? (descending ? "-" : "") + sortBy : null);    // null to remove param...
 }
 
 export function parsePage(_: string): number {
