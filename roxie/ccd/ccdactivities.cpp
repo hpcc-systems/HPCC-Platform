@@ -2514,15 +2514,19 @@ protected:
         else
         {
             IKeyIndexBase *kib = keyArray->queryKeyPart(lastPartNo.partNo);
-            assertex(kib != NULL);
-            IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
-            if (filechanged)
-            {
-                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
-                createSegmentMonitorsPending = true;
-            }
+            if (!kib)
+                tlk.clear();
             else
-                tlk->setKey(k);
+            {
+                IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
+                if (filechanged || !tlk)
+                {
+                    tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
+                    createSegmentMonitorsPending = true;
+                }
+                else
+                    tlk->setKey(k);
+            }
         }
     }
 

@@ -239,12 +239,12 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
 
     const abortController = React.useRef<AbortController>();
 
-    React.useEffect(() => {
+    useDeepEffect(() => {
         if (abortController.current) {
-            abortController.current.abort({ message: "Grid aborting stale request" });
+            abortController.current.abort({ message: nlsHPCC.GridAbortMessage });
         }
         abortController.current = new AbortController();
-    }, [query]);
+    }, [], [query, sorted]);
 
     const refreshTable = useDeepCallback((clearSelection = false) => {
         if (isNaN(start) || isNaN(count)) return;
@@ -260,7 +260,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             setItems(items);
             selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
         });
-    }, [abortController?.current?.signal, count, selectionHandler, start, store], [query, sorted]);
+    }, [count, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
         //  Dummy line to ensure its included in the dependency array  ---
