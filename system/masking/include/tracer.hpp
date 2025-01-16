@@ -135,7 +135,8 @@ private:
 public:
     CModularTracer()
     {
-        setSink(DefaultHelperName, new CStandardTraceMsgSink());
+        Owned<IModularTraceMsgSink> sink(new CStandardTraceMsgSink());
+        setSink(DefaultHelperName, sink);
     }
     inline bool setSink(IModularTraceMsgSink* sink)
     {
