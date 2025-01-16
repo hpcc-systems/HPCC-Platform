@@ -195,8 +195,6 @@ struct WUComponentLogOptions
         {
             if (relativeTimeBufferSecs > 0 )
                 wuLogSearchTimeBuffSecs = relativeTimeBufferSecs;
-            else
-                throw makeStringException(ECLWATCH_INVALID_INPUT, "ZapLogFilter: Invalid 'TimeRange' detected!");
         }
     }
 

@@ -396,6 +396,7 @@ export = {
         Graphs: "Graphs",
         GraphControl: "Graph Control",
         GraphView: "Graph View",
+        GridAbortMessage: "Grid aborting stale request",
         Group: "Group",
         GroupBy: "Group By",
         Grouping: "Grouping",
