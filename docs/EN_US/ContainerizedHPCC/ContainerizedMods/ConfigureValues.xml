@@ -509,7 +509,7 @@
 
               <entry>components</entry>
 
-              <entry></entry>
+              <entry/>
             </row>
           </tbody>
         </tgroup>
@@ -1332,9 +1332,9 @@ thor:
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="125.55pt" />
+            <colspec colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
