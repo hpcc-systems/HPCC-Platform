@@ -228,6 +228,10 @@ namespace xpp {
         case XmlPullParser::END_TAG:
           --level;
           break;
+        case XmlPullParser::END_DOCUMENT:
+          throw XmlPullParserException(
+            string("unexpected end of document while skipping sub tree")
+            +tokenizer.getPosDesc(), tokenizer.getLineNumber(), tokenizer.getColumnNumber());
         }
       }
       return hasChildren;
