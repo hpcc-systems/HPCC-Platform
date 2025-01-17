@@ -7,4 +7,8 @@ RUN yum install -y \
 
 ENTRYPOINT ["/bin/bash", "--login", "-c"]
 
+RUN yum install -y \
+    rpm-build && \
+    yum -y clean all && rm -rf /var/cache 
+
 CMD ["/bin/bash"]
