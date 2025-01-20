@@ -50,8 +50,11 @@ def calculateDerivedStats(curRow):
 
     timeLocalExecute = float(curRow.get("TimeLocalExecute", 0.0))
     timeAgentWait = float(curRow.get("TimeAgentWait", 0.0))
+    timeAgentQueue = float(curRow.get("TimeAgentQueue", 0.0))
     timeAgentProcess = float(curRow.get("TimeAgentProcess", 0.0))
     timeSoapcall = float(curRow.get("TimeSoapcall", 0.0))
+    sizeAgentReply = float(curRow.get("SizeAgentReply", 0.0))
+    sizeAgentRequests = float(curRow.get("SizeAgentRequests", 0.0))
 
     agentRequestEstimate = numLeafHits + numLeafAdds                                  # This could be completely wrong, but better than nothing
     numAgentRequests = float(curRow.get("NumAgentRequests", agentRequestEstimate))    # 9.8.x only
@@ -76,6 +79,10 @@ def calculateDerivedStats(curRow):
     if numBranchFetches:
         curRow["AvgTimeBranchFetch"] = timeBranchFetches/(numBranchFetches)
 
+    if (numLeafAdds + numLeafHits):
+        numIndexRowsRead = float(curRow.get("NumIndexRowsRead", 0.0))
+        curRow["Rows/Leaf"] = numIndexRowsRead / (numLeafAdds + numLeafHits)
+
     if numLeafFetches:
         curRow["AvgTimeLeafFetch"] = timeLeafFetches/(numLeafFetches)
 
@@ -86,9 +93,74 @@ def calculateDerivedStats(curRow):
     if numAgentRequests:
         curRow["avgTimeAgentProcess"] = timeAgentProcess / numAgentRequests
 
-def calculateSummaryStats(curRow, numCpus, numRows):
+    # Generate a summary analyis for the transaction(s)
+    normalSummary = ''
+    unusualSummary = ''
+    notes = ''
+    if numBranchFetches or numLeafFetches:
+        avgDiskReadDelay = (timeLeafFetches+timeBranchFetches)/(numLeafFetches+numBranchFetches)
+        if avgDiskReadDelay < 150:
+            normalSummary += ",Disk Fetch"
+        elif avgDiskReadDelay < 2000:
+            unusualSummary += ",Disk Fetch slow for NVME"
+        else:
+            unusualSummary += ",Disk Fetch slow for remote storage"
 
-    curRow["summary"] = "summary"
+    if numBranchAdds < (numBranchAdds + numBranchHits) // 100:
+        normalSummary += ",Branch hits"
+    else:
+        normalSummary += ",Branch hits"
+
+    if numLeafAdds < (numLeafAdds + numLeafHits) * 50 // 100:
+        normalSummary += ",Leaf hits"
+    else:
+        normalSummary += ",Leaf hits"
+
+    if timeSoapcall > 0:
+        if timeSoapcall * 2 > timeLocalExecute:
+            notes += ", Most of time in soapcall"
+
+    if timeAgentWait == 0:
+        notes += ", Only executes on the server"
+    else:
+        if timeAgentWait * 2 > timeLocalExecute:
+            if timeAgentWait * 10 > timeLocalExecute * 8:
+                notes += ", Agent bound"
+            else:
+                notes += ", Most of time in agent"
+        else:
+            if (timeAgentWait + timeSoapcall) < (timeLocalExecute / 5):
+                unusualSummary += ",Unexplained Server Time"
+
+    if sizeAgentReply > 1000000:
+        unusualSummary += ",Size Agent reply"
+
+    if timeLocalExecute * 10 < elapsed * 11:
+        notes += ", Single threaded"
+
+    if timeAgentProcess:
+        if (timeAgentQueue > timeAgentProcess):
+            unusualSummary += ",Agent Queue backlog"
+
+        if timeAgentWait > (timeAgentQueue + timeAgentProcess) * 2:
+            unusualSummary += ",Agent send backlog"
+
+        if timeBranchDecompress + timeLeafDecompress > timeAgentProcess / 4:
+            unusualSummary += ",Decompress time"
+
+    numAckRetries = float(curRow.get("NumAckRetries", 0.0))
+    resentPackets = float(curRow.get("resentPackets", 0.0))
+
+    if resentPackets:
+        unusualSummary += ",Resent packets"
+    elif numAckRetries:
+        unusualSummary += ",Ack retries"
+
+    curRow["unusual"] =  '"' + unusualSummary[1:] + '"'
+    curRow["normal"] = '"' + normalSummary[1:] + '"'
+    curRow["notes"] = '"' + notes[1:] + '"'
+
+def calculateSummaryStats(curRow, numCpus, numRows):
 
     timeLocalCpu = float(curRow.get("TimeLocalCpu", 0.0))
     timeRemoteCpu = float(curRow.get("TimeRemoteCpu", 0.0))
@@ -144,10 +216,11 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("filename")
     parser.add_argument("--all", "-a", help="Combine all services into a single result", action='store_true')
+    parser.add_argument("--commentary", help="Add commentary to the end of the output", action='store_true')
+    parser.add_argument("--cpu", "-c", type=int, default=8, help="Number of CPUs to use (default: 8)")
+    parser.add_argument("--ignorecase", "-i", help="Use case-insensitive query names", action='store_true')
     parser.add_argument("--nosummary", "-n", help="Avoid including a summary", action='store_true')
     parser.add_argument("--summaryonly", "-s", help="Only generate a summary", action='store_true')
-    parser.add_argument("--ignorecase", "-i", help="Use case-insensitive query names", action='store_true')
-    parser.add_argument("--cpu", "-c", type=int, default=8, help="Number of CPUs to use (default: 8)")
     args = parser.parse_args()
     combineServices = args.all
     suppressDetails = args.summaryonly
@@ -247,11 +320,11 @@ if __name__ == "__main__":
                                 castValue = float(value[0:-2])
                             elif value.endswith("s"):
                                 castValue = float(value[0:-1])*1000
-                            elif value.endswith("MB"):
+                            elif value.endswith("MB") or value.endswith("Mb"):
                                 castValue = float(value[0:-2])*1000000
-                            elif value.endswith("KB"):
+                            elif value.endswith("KB") or value.endswith("Kb"):
                                 castValue = float(value[0:-2])*1000
-                            elif value.endswith("B"):
+                            elif value.endswith("B") or value.endswith("b"):
                                 castValue = float(value[0:-1])
                             else:
                                 try:
@@ -291,6 +364,7 @@ if __name__ == "__main__":
     allStats["AvgTimeBranchDecompress"] = 1
     allStats["TimeLeafDecompress"] = 1
     allStats["AvgTimeLeafDecompress"] = 1
+    allStats["Rows/Leaf"] = 1
     allStats["WorkerCpuLoad"] = 1
     allStats["TimeLocalCpu"] = 1
     allStats["TimeRemoteCpu"] = 1
@@ -301,6 +375,9 @@ if __name__ == "__main__":
     allStats["MaxWorkerThreads"] = 1
     allStats["MaxFarmers"] = 1
     allStats["CpuLoad@10q/s"] = 1
+    allStats["unusual"] = 1
+    allStats["normal"] = 1
+    allStats["notes"] = 1
 
     elapsed = 0
     try:
@@ -363,7 +440,7 @@ if __name__ == "__main__":
             numRows = len(allRows)
             avgRow = dict(_id_="avg", totalRow="avg")
             for statName in allStats:
-                if statName in totalRow:
+                if statName in totalRow and type(totalRow[statName]) != str:
                     avgRow[statName] = float(totalRow[statName]) / numRows
             calculateDerivedStats(avgRow)
 
@@ -457,7 +534,8 @@ if __name__ == "__main__":
 ""
 "Note: All times in ms unless explicitly stated"
 '''
-        print(commentary)
+        if (args.commentary):
+            print(commentary)
 
 # Thoughts for future enhancements:
 #
