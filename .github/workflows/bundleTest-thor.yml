@@ -156,9 +156,10 @@ jobs:
           output(seg()); 
           EOF
           
-          ecl run -t hthor crash.ecl
+          #ecl run -t hthor crash.ecl
           ecl run -t thor  crash.ecl
           ecl run -t roxie crash.ecl
+          echo "Number of core files: $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; )"
         continue-on-error: true
 
       - name: Get test from Github
