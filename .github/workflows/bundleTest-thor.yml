@@ -156,7 +156,7 @@ jobs:
           output(seg()); 
           EOF
           
-          ecl run -t hthor crash.ecl
+          ecl run crash.ecl
         continue-on-error: true
 
       - name: Get test from Github
@@ -310,8 +310,8 @@ jobs:
                   #lastSubdir=${base##*/}
                   #comp=${lastSubdir##my}
                   corename=${core##*/}
-                  compNamePart=${ find /opt/HPCCSystems/bin/ -iname '$comp*' -type f -print | head -n 1
-                  compName=${compNamePrt##*/}
+                  compNamePart=${ find /opt/HPCCSystems/bin/ -iname '$comp*' -type f -print | head -n 1}
+                  compName=${compNamePart##*/}
                   echo "compName: ${compName}, core: ${core}"
                   sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core | sudo tee "$core.trace" 2>&1
                   cp "$core.trace" /home/runner/HPCCSystems-regression/log/ 
