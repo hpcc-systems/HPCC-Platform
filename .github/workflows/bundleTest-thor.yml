@@ -306,11 +306,14 @@ jobs:
           then      
               for core in ${CORE_FILES[@]}
               do
-                  base=$( dirname $core )
-                  lastSubdir=${base##*/}
-                  comp=${lastSubdir##my}
-                  echo "comp: ${comp}, core: ${core}"
-                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${comp}" $core | sudo tee "$core.trace" 2>&1
+                  #base=$( dirname $core )
+                  #lastSubdir=${base##*/}
+                  #comp=${lastSubdir##my}
+                  corename=${core##*/}
+                  compNamePart=${ find /opt/HPCCSystems/bin/ -iname '$comp*' -type f -print | head -n 1
+                  compName=${compNamePrt##*/}
+                  echo "compName: ${compName}, core: ${core}"
+                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core | sudo tee "$core.trace" 2>&1
                   cp "$core.trace" /home/runner/HPCCSystems-regression/log/ 
               done
               echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
