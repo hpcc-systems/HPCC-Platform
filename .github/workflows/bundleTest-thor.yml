@@ -313,7 +313,7 @@ jobs:
                   #comp=${lastSubdir##my}
                   coreName=${core##*/}
                   component=$( echo $coreName | tr '-.' ' ' |  awk '{print $2 }' )
-                  compNamePart=${ find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1}
+                  compNamePart=$( find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1)
                   compName=${compNamePart##*/}
                   echo "component: '${component}', compName: '${compName}', core: '${core}'"
                   sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core | sudo tee "$core.trace" 2>&1
