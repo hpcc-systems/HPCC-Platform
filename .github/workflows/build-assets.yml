@@ -87,6 +87,10 @@ jobs:
     strategy:
       matrix:
         include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04
+            name: k8s
+            container: true
           - os: ubuntu-22.04
           - os: ubuntu-22.04
             name: k8s
@@ -100,6 +104,10 @@ jobs:
             name: k8s
             container: true
           - os: rockylinux-8
+          - os: ubuntu-24.04
+            name: LN k8s
+            ln: true
+            container: true
           - os: ubuntu-22.04
             name: LN k8s
             ln: true
@@ -109,9 +117,15 @@ jobs:
             name: LN k8s
             ln: true
             container: true
+          - os: ubuntu-24.04
+            name: LN
+            ln: true
           - os: ubuntu-22.04
             name: LN
             ln: true
+          - os: ubuntu-24.04
+            name: Enterprise
+            ee: true
           - os: ubuntu-22.04
             name: Enterprise
             ee: true
