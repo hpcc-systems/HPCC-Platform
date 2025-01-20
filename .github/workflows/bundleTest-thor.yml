@@ -136,7 +136,6 @@ jobs:
       - name: Start HPCC-Platform
         shell: "bash"
         run: |
-          ulimit -c 100
           echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
           export LANG="en_US.UTF-8"
           sudo update-locale
@@ -160,7 +159,7 @@ jobs:
           ecl run -t hthor crash.ecl
           ecl run -t thor  crash.ecl
           # Do not execute crash.ecl on Roxie. It takes ages to complete.
-          echo "Number of core files: $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; )"
+          echo "Number of core files: $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; | wc -l )"
         continue-on-error: true
 
       - name: Get test from Github
@@ -304,17 +303,15 @@ jobs:
 
       - name: Check for Core files
         run: |
-          mkdir -p $HOME/.config/gdb/
-          echo "set auto-load safe-path /" >> $HOME/.config/gdb/gdbinit
           CORE_FILES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; ) )
           echo "NUM_OF_ML_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
           if [ ${#CORE_FILES[@]} -ne 0 ]
-          then      
+          then
+              mkdir -p $HOME/.config/gdb/
+              echo "set auto-load safe-path /" >> $HOME/.config/gdb/gdbinit
+
               for core in ${CORE_FILES[@]}
               do
-                  #base=$( dirname $core )
-                  #lastSubdir=${base##*/}
-                  #comp=${lastSubdir##my}
                   coreName=${core##*/}
                   component=$( echo $coreName | tr '_.' ' ' | awk '{print $2 }' )
                   compNamePart=$( find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1); 
