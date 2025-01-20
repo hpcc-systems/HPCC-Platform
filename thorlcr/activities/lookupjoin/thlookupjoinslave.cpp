@@ -2837,6 +2837,15 @@ public:
         PARENT::start();
         dbgassertex(isSmart() || (leftITDL->isGrouped() == grouped)); // std. lookup join expects these to match
     }
+    virtual unsigned __int64 queryLookAheadCycles() const
+    {
+        cycle_t lookAheadCycles = PARENT::queryLookAheadCycles();
+        if (rhsDistributor)
+            lookAheadCycles += rhsDistributor->queryLookAheadCycles();
+        if (lhsDistributor)
+            lookAheadCycles += lhsDistributor->queryLookAheadCycles();
+        return lookAheadCycles;
+    }
     virtual void reset() override
     {
         PARENT::reset();

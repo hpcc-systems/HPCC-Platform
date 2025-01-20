@@ -269,6 +269,7 @@ public:
     bool canStall() const;
     bool isFastThrough() const;
     bool suppressLookAhead() const;
+    unsigned __int64 queryLocalCycles(unsigned __int64 totalCycles, unsigned __int64 blockedCycles, unsigned __int64 lookAheadCycles) const;
 
 // IThorDataLink
     virtual CSlaveActivity *queryFromActivity() override { return this; }
