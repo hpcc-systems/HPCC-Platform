@@ -159,7 +159,7 @@ jobs:
           
           ecl run -t hthor crash.ecl
           ecl run -t thor  crash.ecl
-          ecl run -t roxie crash.ecl
+          # Do not execute crash.ecl on Roxie. It takes ages to complete.
           echo "Number of core files: $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; )"
         continue-on-error: true
 
