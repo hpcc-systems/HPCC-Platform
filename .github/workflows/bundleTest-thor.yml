@@ -146,6 +146,7 @@ jobs:
         if: ${{ inputs.test-core-file-generation }}
         shell: "bash"
         run: |
+          set +e     # Ignore intermediate error(s) in this step
           cat > crash.ecl << EOF
           boolean seg() := beginc++ #option action
           #include <csignal>
@@ -156,7 +157,7 @@ jobs:
           output(seg()); 
           EOF
           
-          #ecl run -t hthor crash.ecl
+          ecl run -t hthor crash.ecl
           ecl run -t thor  crash.ecl
           ecl run -t roxie crash.ecl
           echo "Number of core files: $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; )"
