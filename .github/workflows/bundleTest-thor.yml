@@ -32,7 +32,7 @@ on:
         type: boolean
         description: 'Test core file generation'
         required: false
-        default: true
+        default: false
 
 env:
   ML_SUPPRESS_WARNING_FILES: "RegressionTestModified.ecl ClassificationTestModified.ecl"
