@@ -304,6 +304,7 @@ jobs:
 
       - name: Check for Core files
         run: |
+          echo "set auto-load safe-path /" >> /home/runner/.config/gdb/gdbinit
           CORE_FILES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; ) )
           echo "NUM_OF_ML_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
           if [ ${#CORE_FILES[@]} -ne 0 ]
