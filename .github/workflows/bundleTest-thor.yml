@@ -156,7 +156,9 @@ jobs:
           output(seg()); 
           EOF
           
-          ecl query -t all crash.ecl
+          ecl run -t hthor crash.ecl
+          ecl run -t thor  crash.ecl
+          ecl run -t roxie crash.ecl
         continue-on-error: true
 
       - name: Get test from Github
