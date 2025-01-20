@@ -156,7 +156,7 @@ jobs:
           output(seg()); 
           EOF
           
-          ecl run crash.ecl
+          ecl query -t all crash.ecl
         continue-on-error: true
 
       - name: Get test from Github
