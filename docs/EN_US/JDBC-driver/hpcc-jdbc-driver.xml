@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -48,21 +48,21 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -126,7 +126,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/jdbc01.jpg" />
+            <imagedata fileref="images/jdbc01.jpg"/>
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -173,13 +173,13 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
     <para><informaltable align="left" colsep="1" frame="all" rowsep="1">
         <tgroup cols="4">
-          <colspec colwidth="120pt" />
+          <colspec colwidth="120pt"/>
 
-          <colspec colwidth="3*" />
+          <colspec colwidth="3*"/>
 
-          <colspec colwidth="1*" />
+          <colspec colwidth="1*"/>
 
-          <colspec colwidth="35pt" />
+          <colspec colwidth="35pt"/>
 
           <thead>
             <row>
@@ -408,7 +408,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </varlistentry>
       </variablelist></para>
 
-    <para></para>
+    <para/>
 
     <para>In addition, you can utilize indexes on the HPCC in one of two
     ways:</para>
@@ -455,7 +455,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         fullLogicalFilename2</emphasis></emphasis><emphasis
         role="bold">]</emphasis></para>
 
-        <para></para>
+        <para/>
 
         <para>Example:</para>
 
@@ -466,7 +466,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <para>In this example, the source file has three indexes
         available.</para>
 
-        <para></para>
+        <para/>
       </sect2>
 
       <sect2>
@@ -476,7 +476,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         role="bold">XDBC:PosField=[</emphasis><emphasis>indexPositionFieldName</emphasis><emphasis
         role="bold">]</emphasis></para>
 
-        <para></para>
+        <para/>
 
         <para>Example:</para>
 
@@ -495,7 +495,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         indexes. Published queries lock the file and would prevent editing the
         metadata.</para>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
   </chapter>
@@ -513,9 +513,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="113.65pt" />
+            <colspec colwidth="113.65pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -541,7 +541,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
       <programlisting>Call SearchPeopleByZipService (‘33024’)</programlisting>
 
-      <para></para>
+      <para/>
     </sect1>
 
     <sect1>
@@ -581,9 +581,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="123.45pt" />
+            <colspec colwidth="123.45pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -593,7 +593,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>The column(s) to return (comma-separated list). In
                 addition, these aggregate functions are supported : COUNT,
@@ -602,9 +602,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -614,9 +614,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry><emphasis></emphasis></entry>
+                <entry><emphasis/></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -627,16 +627,16 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry><emphasis></emphasis></entry>
+                <entry><emphasis/></entry>
 
                 <entry>The result set will only contain distinct (unique)
                 values.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -646,13 +646,13 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>One or more tables, separated by commas.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><emphasis role="bold">NOTE: </emphasis>A table list
                 with multiple tables creates an (one or more) implicit inner
@@ -661,9 +661,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -673,16 +673,16 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>The Name of the table as referenced, optionally
                 defining its alias.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -693,9 +693,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -709,71 +709,71 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>BOOLEAN Only supports <emphasis>True</emphasis> or
                 <emphasis>False</emphasis>, do not use Y, N, 0, or 1.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><emphasis role="bold">Valid
                 operators:</emphasis></entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>= Equal (e.g., age=33)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&gt; Greater than (e.g., age &gt;55)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt; Less than (e.g., age &lt; 18)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
                 values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
                 where values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>IS NULL</entry>
               </row>
@@ -787,18 +787,18 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><superscript>1</superscript>Aliasing not
                 supported</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><superscript>2</superscript>Can only contain references
                 to aggregate functions<superscript> </superscript>if used with
@@ -806,7 +806,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Aggregate functions can only be expressed in
                 logicalExpressions by using <emphasis>Group by </emphasis>and
@@ -814,29 +814,29 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><emphasis role="bold">Examples:</emphasis></entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Select * from tableList where Sum(F1 &gt; 100) /* is
                 NOT SUPPORTED */</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Select * from tableList Group byF1 Haveing Sum (F1 &gt;
                 100) /* IS SUPPORTED */</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
             </tbody>
           </tgroup>
@@ -882,7 +882,7 @@ Jim Smith FL 33024
 Jane Row FL 33024
 </programlisting>
 
-      <para></para>
+      <para/>
     </sect1>
 
     <sect1>
@@ -916,9 +916,9 @@ Jane Row FL 33024
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="123.45pt" />
+            <colspec colwidth="123.45pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -928,7 +928,7 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>The column(s) to return (comma-separated list). In
                 addition, these aggregate functions are supported : COUNT,
@@ -937,9 +937,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -949,9 +949,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry><emphasis></emphasis></entry>
+                <entry><emphasis/></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -962,16 +962,16 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry><emphasis></emphasis></entry>
+                <entry><emphasis/></entry>
 
                 <entry>The result set will only contain distinct (unique)
                 values.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -982,9 +982,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -994,9 +994,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -1006,9 +1006,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -1019,9 +1019,9 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -1035,71 +1035,71 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>BOOLEAN Only supports <emphasis>True</emphasis> or
                 <emphasis>False</emphasis>, do not use Y, N, 0, or 1.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><emphasis role="bold">Valid
                 operators:</emphasis></entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>= Equal (e.g., age=33)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&gt; Greater than (e.g., age &gt;55)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt; Less than (e.g., age &lt; 18)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
                 values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
                 where values are comma separated homogeneous types.</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>IS NULL</entry>
               </row>
@@ -1114,18 +1114,18 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><superscript>1</superscript>Aliasing not
                 supported</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><superscript>2</superscript>Can only contain references
                 to aggregate functions<superscript> </superscript>if used with
@@ -1133,7 +1133,7 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Aggregate functions can only be expressed in
                 logicalExpressions by using <emphasis>Group by </emphasis>and
@@ -1141,20 +1141,20 @@ Jane Row FL 33024
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry><emphasis role="bold">Examples:</emphasis></entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Select * from tableList where Sum(F1 &gt; 100) /* is
                 NOT SUPPORTED */</entry>
               </row>
 
               <row>
-                <entry></entry>
+                <entry/>
 
                 <entry>Select * from tableList Group byF1 Having Sum (F1 &gt;
                 100) /* IS SUPPORTED */</entry>
@@ -1171,7 +1171,7 @@ Jane Row FL 33024
            (t1.firstname = 'jim' AND
             t1.lastname  = 'smith' )) </programlisting></para>
 
-      <para></para>
+      <para/>
 
       <para>The JDBC driver does not convert parameter list or column list
       values to string literals.</para>
@@ -1190,7 +1190,7 @@ Select Firstname from persons where Firstname = Jim and zip &gt; 33445     /* do
 
 Select Firstname from persons where Firstname = ‘Jim’ and zip &gt; ‘33445’   /* doesn’t work */</programlisting></para>
 
-      <para></para>
+      <para/>
     </sect1>
 
     <sect1>
@@ -1220,9 +1220,9 @@ Select Firstname from persons where Firstname = ‘Jim’ and zip &gt; ‘33445�
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="119.65pt" />
+            <colspec colwidth="119.65pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -1289,13 +1289,13 @@ Select Firstname from persons where Firstname = ‘Jim’ and zip &gt; ‘33445�
         <para><emphasis
         role="bold">LOWER</emphasis>(<emphasis>columnName</emphasis>)</para>
 
-        <para></para>
+        <para/>
 
         <informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="119.65pt" />
+            <colspec colwidth="119.65pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>

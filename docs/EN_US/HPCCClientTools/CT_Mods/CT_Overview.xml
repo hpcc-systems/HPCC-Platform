@@ -9,9 +9,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -110,7 +110,7 @@
         <listitem>
           <para>From the HPCC Systems<superscript>®</superscript> download
           page, <ulink
-          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+          url="https://hpccsystems.com/download/">https://hpccsystems.com/download/</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
           System. (available for CentOS, Ubuntu, Mac OSX, or Windows)</para>
@@ -185,7 +185,7 @@
       for this purpose.</para>
 
       <para><graphic align="left"
-      fileref="../../images/ECLCmdPrompt.jpg" /></para>
+      fileref="../../images/ECLCmdPrompt.jpg"/></para>
     </sect2>
   </sect1>
 </chapter>
