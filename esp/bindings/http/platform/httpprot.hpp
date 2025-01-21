@@ -87,8 +87,6 @@ private:
     bool m_viewConfig;
     StringAttr m_context;
     int m_MaxRequestEntityLength;
-    CHttpThread(bool viewConfig);
-    CHttpThread(ISocket *sock, bool viewConfig);
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;

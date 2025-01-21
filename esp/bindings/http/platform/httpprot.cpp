@@ -390,22 +390,6 @@ const char * CSecureHttpProtocol::getProtocolName()
 /**************************************************************************
  *  CHttpThread Implementation                                            *
  **************************************************************************/
-CHttpThread::CHttpThread(bool viewConfig) : 
-   CEspProtocolThread("Http Thread")
-{
-    m_viewConfig = viewConfig;
-    m_is_ssl = false;
-    m_ssctx = NULL;
-}
-
-CHttpThread::CHttpThread(ISocket *sock, bool viewConfig) : 
-   CEspProtocolThread(sock, "HTTP Thread")
-{
-    m_viewConfig = viewConfig;
-    m_is_ssl = false;
-    m_ssctx = NULL;
-}
-
 CHttpThread::CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL, ISecureSocketContext* ssctx,  IPersistentHandler* persistentHandler) :
    CEspProtocolThread(sock, "HTTP Thread"), m_persistentHandler(persistentHandler)
 {
