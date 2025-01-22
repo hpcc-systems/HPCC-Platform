@@ -71,6 +71,7 @@ public:
         CPPUNIT_TEST(manualTestScopeEnd);
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
+        CPPUNIT_TEST(testSpanIsValid);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
         CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
@@ -396,6 +397,96 @@ protected:
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
+    }
+
+    void testSpanIsValid()
+    {
+        OwnedActiveSpanScope nullSpan = getNullSpan();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullspan detected", true, nullSpan != nullptr);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected valid nullspan detected", false, nullSpan->isValid());
+
+        const char * nullSpanTraceID = nullSpan->queryTraceId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan TraceID==nullptr", false, nullSpanTraceID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan TraceID length", strlen("00000000000000000000000000000000"), strlen(nullSpanTraceID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan TraceID value", 0, strcmp("00000000000000000000000000000000", nullSpanTraceID));
+
+        const char * nullSpanSpanID = nullSpan->querySpanId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan SpanID==nullptr", false, nullSpanSpanID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan SpanID length", strlen("0000000000000000"), strlen(nullSpanSpanID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan SpanID value", 0, strcmp("0000000000000000", nullSpanSpanID));
+
+        const char * nullSpanGlobalID = nullSpan->queryGlobalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan GlobalID==nullptr", false, nullSpanGlobalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan GlobalID length", strlen("11111111111111111111111"), strlen(nullSpanGlobalID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan GlobalID value", 0, strcmp("11111111111111111111111", nullSpanGlobalID));
+
+        const char * nullSpanCallerID = nullSpan->queryCallerId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan CallerID==nullptr", false, nullSpanCallerID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan CallerID length", strlen(""), strlen(nullSpanCallerID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan CallerID value", 0, strcmp("", nullSpanCallerID));
+
+        const char * nullSpanLocalID = nullSpan->queryLocalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan LocalID==nullptr", false, nullSpanLocalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan LocalID length", strlen("11111111111111111111111"), strlen(nullSpanLocalID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspan LocalID value", 0, strcmp("11111111111111111111111", nullSpanLocalID));
+
+        OwnedActiveSpanScope nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullSpanChild detected", true, nullSpanChild != nullptr);
+
+        const char * nullSpanChildTraceID = nullSpanChild->queryTraceId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild TraceID==nullptr", false, nullSpanChildTraceID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild TraceID length", strlen("00000000000000000000000000000000"), strlen(nullSpanChildTraceID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild TraceID value", 0, strcmp("00000000000000000000000000000000", nullSpanChildTraceID));
+
+        const char * nullSpanChildSpanID = nullSpanChild->querySpanId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild SpanID==nullptr", false, nullSpanChildSpanID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild SpanID length", strlen("0000000000000000"), strlen(nullSpanChildSpanID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild SpanID value", 0, strcmp("0000000000000000", nullSpanChildSpanID));
+
+        const char * nullSpanChildGlobalID = nullSpanChild->queryGlobalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild GlobalID==nullptr", false, nullSpanGlobalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild GlobalID length", strlen("11111111111111111111111"), strlen(nullSpanChildGlobalID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild GlobalID value", 0, strcmp("11111111111111111111111", nullSpanChildGlobalID));
+
+        const char * nullSpanChildCallerID = nullSpanChild->queryCallerId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild CallerID==nullptr", false, nullSpanChildCallerID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild CallerID length", strlen(""), strlen(nullSpanChildCallerID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild CallerID value", 0, strcmp("", nullSpanChildCallerID));
+
+        const char * nullSpanChildLocalID = nullSpanChild->queryLocalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild LocalID==nullptr", false, nullSpanChildLocalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild LocalID length", strlen("11111111111111111111111"), strlen(nullSpanChildLocalID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullspanChild LocalID value", 0, strcmp("11111111111111111111111", nullSpanChildLocalID));
+
+
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        OwnedActiveSpanScope validSpan = queryTraceManager().createServerSpan("validSpan", mockHTTPHeaders);
+
+        const char * validSpanTraceID = validSpan->queryTraceId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan TraceID==nullptr", false, validSpanTraceID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan TraceID length", strlen("00000000000000000000000000000000"), strlen(validSpanTraceID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan TraceID value", true, strcmp("00000000000000000000000000000000", validSpanTraceID)!=0);
+
+        const char * validSpanSpanID = validSpan->querySpanId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID==nullptr", false, validSpanSpanID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID length", strlen("0000000000000000"), strlen(validSpanSpanID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID value", true, strcmp("0000000000000000", validSpanSpanID)!=0);
+
+        const char * validSpanGlobalID = validSpan->queryGlobalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan GlobalID==nullptr", false, validSpanGlobalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan GlobalID value", true, strcmp("11111111111111111111111", validSpanGlobalID)!=0);
+
+        const char * validSpanCallerID = validSpan->queryCallerId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID==nullptr", false, validSpanCallerID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID value", true, strcmp("", validSpanCallerID)!=0);
+
+        const char * validSpanLocalID = validSpan->queryLocalId();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID==nullptr", false, validSpanLocalID==nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected validSpan SpanID value", true, strcmp("11111111111111111111111", validSpanLocalID)!=0);
+
     }
 
     void testSpanFetchMethods()
