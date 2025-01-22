@@ -99,13 +99,7 @@ interface IKeyBuilder : public IInterface
     virtual void processKeyData(const char *keyData, offset_t pos, size32_t recsize) = 0;
     virtual void addLeafInfo(CNodeInfo *info) = 0;
     virtual unsigned __int64 createBlob(size32_t size, const char * _ptr) = 0;
-    virtual unsigned __int64 getDuplicateCount() const = 0;
-    virtual unsigned __int64 getNumLeafNodes() const = 0;
-    virtual unsigned __int64 getNumBranchNodes() const = 0;
-    virtual unsigned __int64 getNumBlobNodes() const = 0;
-    virtual unsigned __int64 getOffsetBranches() const = 0;
-    virtual unsigned __int64 getBranchMemorySize() const = 0;
-    virtual unsigned __int64 getLeafMemorySize() const = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
 };
 
 extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK);

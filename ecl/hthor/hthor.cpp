@@ -1280,20 +1280,20 @@ void CHThorIndexWriteActivity::execute()
             reccount++;
         }
         builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
-        duplicateKeyCount = builder->getDuplicateCount();
+        duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
         cummulativeDuplicateKeyCount += duplicateKeyCount;
-        numLeafNodes = builder->getNumLeafNodes();
-        numBranchNodes = builder->getNumBranchNodes();
-        numBlobNodes = builder->getNumBlobNodes();
+        numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
+        numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);
+        numBlobNodes = builder->getStatistic(StNumBlobCacheAdds);
         originalBlobSize = bc.queryTotalSize();
-        branchMemorySize = builder->getBranchMemorySize();
-        leafMemorySize = builder->getLeafMemorySize();
+        branchMemorySize = builder->getStatistic(StSizeBranchMemory);
+        leafMemorySize = builder->getStatistic(StSizeLeafMemory);
 
         totalLeafNodes += numLeafNodes;
         totalBranchNodes += numBranchNodes;
         totalBlobNodes += numBlobNodes;
         numDiskWrites = io->getStatistic(StNumDiskWrites);
-        offsetBranches = builder->getOffsetBranches();
+        offsetBranches = builder->getStatistic(StSizeOffsetBranches);
         out->flush();
         out.clear();
         io->close();
