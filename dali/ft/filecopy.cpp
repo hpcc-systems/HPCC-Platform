@@ -41,6 +41,7 @@
 #include "jlog.hpp"
 #include "dalienv.hpp"
 #include "ftbase.ipp"
+#include "dautils.hpp"
 
 #ifdef _CONTAINERIZED
 //Temporary see HPCC-25822
@@ -3848,13 +3849,14 @@ cost_type FileSprayer::updateTargetProperties()
 cost_type FileSprayer::updateSourceProperties()
 {
     TimeSection timer("FileSprayer::updateSourceProperties() time");
-    // Update file readCost and numReads in file properties and do the same for subfiles
+    // Update file readCost and numReads in file properties and do the same for owning super files
     if (distributedSource)
     {
+        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(nullptr);
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
+        cost_type totalCost = 0;
         if (superSrc && superSrc->numSubFiles() > 0)
         {
-            cost_type totalReadCost = 0;
             Owned<IFileDescriptor> fDesc = superSrc->getFileDescriptor();
             ISuperFileDescriptor *superFDesc = fDesc->querySuperFileDescriptor();
             ForEachItemIn(idx, partition)
@@ -3876,20 +3878,16 @@ cost_type FileSprayer::updateSourceProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    totalReadCost += updateCostAndNumReads(subfile, curProgress.numReads);
-                }
-                else
-                {
-                    // not sure if src superfile can have whichInput==-1 (but if so, this is best effort to calc cost)
-                    totalReadCost += calcFileAccessCost(distributedSource, 0, curProgress.numReads);
+                    totalCost += fileReadPropertiesUpdater->addCostAndNumReads(subfile, curProgress.numReads, 0);
                 }
             }
-            return updateCostAndNumReads(distributedSource, totalNumReads, totalReadCost);
         }
         else
         {
-            return updateCostAndNumReads(distributedSource, totalNumReads);
+            totalCost += fileReadPropertiesUpdater->addCostAndNumReads(distributedSource, totalNumReads, 0);
         }
+        fileReadPropertiesUpdater->publish();
+        return totalCost;
     }
     return 0;
 }

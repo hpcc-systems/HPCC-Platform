@@ -1051,6 +1051,9 @@ typedef MapBetween<graphid_t, graphid_t, EclSubGraphPtr, EclSubGraphPtr> SubGrap
 
 class EclGraph : public CInterface
 {
+    AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
+    CriticalSection fileReadPropsUpdaterCrit;
+
     RedirectedAgentContext graphAgentContext;
     class SubGraphCodeContext : public IndirectCodeContextEx
     {
@@ -1115,7 +1118,7 @@ public:
 
     inline bool queryLibrary() const { return isLibrary; }
     inline unsigned queryWfid() const { return wfid; }
-
+    IFileReadPropertiesUpdater * queryFileReadPropsUpdater();
 protected:
     IAgentContext * agent;
     CIArrayOf<EclSubGraph> graphs;
