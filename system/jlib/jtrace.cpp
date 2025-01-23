@@ -757,6 +757,15 @@ public:
         return span ? span->IsRecording() : false;
     }
 
+    virtual bool isValid() const override
+    {
+        if (span == nullptr)
+            return false;
+
+        auto spanCtx = span->GetContext();
+        return spanCtx.IsValid();
+    }
+
     virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage)
     {
         if (span != nullptr)
@@ -910,6 +919,7 @@ public:
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
     virtual bool isRecording() const { return false; }
+    virtual bool isValid() const { return false; }
 
     virtual void recordException(IException * e, bool spanFailed, bool escapedScope) override {}
     virtual void recordError(const SpanError & error) override {};
