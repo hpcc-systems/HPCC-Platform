@@ -62,7 +62,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/b
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 
-RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.6.0_amd64.deb/download && \
+RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.6.1_amd64.deb/download && \
     dpkg -i download && \
     rm download
 
