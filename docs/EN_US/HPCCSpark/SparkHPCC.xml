@@ -99,10 +99,10 @@
       provided to facilitate filtering records of interest from the HPCC
       Cluster.</para>
 
-      <para>The git repository includes examples in the Examples folder. The
-      examples are Scala Objects with a main() function. The dataset can be
-      obtained from a variety of sources, including the HPCC-Systems/ecl-ml
-      repository. </para>
+      <para>The Github repository includes examples in the Examples folder.
+      The examples are Scala Objects with a main() function. The dataset can
+      be obtained from a variety of sources, including the HPCC-Systems/ecl-ml
+      repository.</para>
 
       <para>A walk-through of the examples is provided in the Examples
       section.</para>
