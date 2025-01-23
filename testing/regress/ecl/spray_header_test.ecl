@@ -28,7 +28,7 @@ import ^ as root;
 
 
 isTerminated := #IFDEFINED(root.isTerminated, false);
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 prefix := setup.Files(false, false).QueryFilePrefix;
 

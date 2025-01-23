@@ -36,7 +36,7 @@ import ^ as root;
 
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 espUrl := FileServices.GetEspURL() + '/FileSpray';

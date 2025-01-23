@@ -1718,6 +1718,7 @@ void doWUQueryBySingleWU(IEspContext &context, IConstWorkUnit *cw, IEspWUQueryRe
     resp.setWorkunits(results);
     resp.setPageSize(1);
     resp.setCount(1);
+    resp.setNumWUs(1);
     PROGLOG("getWUInfo: %s", cw->queryWuid());
 }
 
@@ -1754,6 +1755,7 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     resp.setFirst(false);
     resp.setPageSize(1);
     resp.setCount(1);
+    resp.setNumWUs(1);
 }
 
 bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *name, WUSortField value)
@@ -2601,6 +2603,8 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     try
     {
         WuidPattern pattern(req.getWuid());
+
+        resp.setNumWUs(0);
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
