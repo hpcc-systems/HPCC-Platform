@@ -34,7 +34,7 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
 
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;

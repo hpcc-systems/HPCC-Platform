@@ -554,7 +554,7 @@ MemoryBuffer &CSlaveActivity::getInitializationData(unsigned slave, MemoryBuffer
     return mb.append(queryInitializationData(slave));
 }
 
-unsigned __int64 CSlaveActivity::queryLocalCycles() const
+unsigned __int64 CSlaveActivity::queryLocalCycles(unsigned __int64 totalCycles, unsigned __int64 blockedCycles, unsigned __int64 lookAheadCycles) const
 {
     unsigned __int64 inputCycles = 0;
     if (1 == inputs.ordinality())
@@ -587,17 +587,21 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
                 break;
         }
     }
-    unsigned __int64 processCycles = queryTotalCycles() + queryLookAheadCycles();
+    unsigned __int64 processCycles = totalCycles + lookAheadCycles;
     if (processCycles < inputCycles) // not sure how/if possible, but guard against
         return 0;
     processCycles -= inputCycles;
-    const unsigned __int64 blockedCycles = queryBlockedCycles();
     if (processCycles < blockedCycles)
     {
         ActPrintLog("CSlaveActivity::queryLocalCycles - process %" I64F "uns < blocked %" I64F "uns", cycle_to_nanosec(processCycles), cycle_to_nanosec(blockedCycles));
         return 0;
     }
     return processCycles-blockedCycles;
+}
+
+unsigned __int64 CSlaveActivity::queryLocalCycles() const
+{
+    return queryLocalCycles(queryTotalCycles(), queryBlockedCycles(), queryLookAheadCycles());
 }
 
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
@@ -619,7 +623,15 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
     queryCodeContext()->gatherStats(serializedStats);
 
     // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
-    serializedStats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+    //
+    // Note: Look ahead cycles are not being kept up to date in slaverStats as multiple objects and threads are updating
+    // look ahead cycles.  At the moment, each thread and objects that generate look ahead cycles, track its own look ahead
+    // cycles and the up to date lookahead cycles is only available with a call to queryLookAheadCycles().  The code would
+    // need to be refactored to change this behaviour.
+    unsigned __int64 lookAheadCycles = queryLookAheadCycles();
+    unsigned __int64 localCycles = queryLocalCycles(queryTotalCycles(), queryBlockedCycles(), lookAheadCycles);
+    serializedStats.setStatistic(StTimeLookAhead, (unsigned __int64)cycle_to_nanosec(lookAheadCycles));
+    serializedStats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(localCycles));
     slaveTimerStats.addStatistics(serializedStats);
     serializedStats.serialize(mb);
     ForEachItemIn(i, outputs)

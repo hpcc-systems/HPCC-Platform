@@ -608,7 +608,7 @@ public:
 
     const char * queryTraceID() const
     {
-        if (span)
+        if (span && span->isValid())
         {
             const char * traceId = span->queryTraceId();
             if (traceId)
@@ -619,7 +619,7 @@ public:
 
     const char * querySpanID() const
     {
-        if (span)
+        if (span && span->isValid())
         {
             const char * spanId = span->querySpanId();
             if (spanId)

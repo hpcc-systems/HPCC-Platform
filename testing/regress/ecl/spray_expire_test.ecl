@@ -26,7 +26,7 @@ import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;

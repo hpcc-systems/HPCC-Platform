@@ -133,6 +133,7 @@ struct SpanTimeStamp
 
 interface ISpan : extends IInterface
 {
+    virtual bool isValid() const = 0;
     virtual void setSpanAttribute(const char * key, const char * val) = 0;
     virtual void setSpanAttribute(const char *name, __uint64 value) = 0;
     virtual void setSpanAttributes(const IProperties * attributes) = 0;

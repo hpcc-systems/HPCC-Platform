@@ -1843,4 +1843,17 @@ private:
     const StatisticsMapping & mapping;
 };
 
+class WORKUNIT_API WuidPattern
+{
+private:
+    StringBuffer pattern;
+public:
+    WuidPattern(const char* _pattern);
+    inline bool isEmpty() const { return pattern.isEmpty(); }
+    inline const char* str() const { return pattern.str(); }
+    inline operator const char* () const { return pattern.str(); }
+    inline operator const StringBuffer& () const { return pattern; }
+    inline operator StringBuffer& () { return pattern; }
+};
+
 #endif

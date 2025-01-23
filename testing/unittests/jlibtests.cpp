@@ -4170,6 +4170,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testStandard3);
         CPPUNIT_TEST(testLightweight);
         CPPUNIT_TEST(testLightweight2);
+        CPPUNIT_TEST(testConcurrent);
     CPPUNIT_TEST_SUITE_END();
 
     void testStandard()
@@ -4285,6 +4286,53 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
             DBGLOG("%" I64F "u %" I64F "u", blockTime-expected, postBlockTime-blockTime);
+    }
+
+    inline bool within10Percent(__uint64 expected, __uint64 actual)
+    {
+        __uint64 threshold = expected / 10;
+        return (actual >= expected - threshold) && (actual <= expected + threshold);
+    }
+
+    void testConcurrent()
+    {
+        BlockedTimeTracker serverLoadTracker;
+        BlockedTimeTracker workerLoadTracker;
+        OverlapTimeInfo serverStartInfo;
+        OverlapTimeInfo workerStartInfo;
+        OverlapTimeInfo serverFinishInfo;
+        OverlapTimeInfo workerFinishInfo;
+        OverlapTimeInfo dummyInfo;
+
+        serverLoadTracker.extractOverlapInfo(serverStartInfo, true);
+        workerLoadTracker.extractOverlapInfo(workerStartInfo, true);
+        cycle_t startCycles = serverLoadTracker.noteWaiting();
+
+        MilliSleep(100);
+        serverLoadTracker.noteWaiting();  // 2nd query starts          Q1 Q2
+        workerLoadTracker.noteWaiting();  // worker thread starts      Q1 Q2 W1
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes    Q1 Q2
+        serverLoadTracker.noteWaiting();  // 3rd query starts          Q1 Q2 Q3
+        MilliSleep(100);
+        serverLoadTracker.noteComplete(); // 2nd query finishes        Q1 Q3
+        workerLoadTracker.noteWaiting();  // worker thread starts      Q1 Q3 W2
+        MilliSleep(100);
+        workerLoadTracker.noteComplete(); // worker thread finishes    Q1 Q3
+        MilliSleep(100);
+
+        cycle_t endCycles = serverLoadTracker.noteComplete(); //       Q3
+        workerLoadTracker.extractOverlapInfo(workerFinishInfo, false);
+        serverLoadTracker.extractOverlapInfo(serverFinishInfo, false);
+
+        CPPUNIT_ASSERT_EQUAL(2U, workerFinishInfo.count - workerStartInfo.count);
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(200'000'000, workerFinishInfo.elapsedNs - workerStartInfo.elapsedNs));
+
+        CPPUNIT_ASSERT_EQUAL(3U, serverFinishInfo.count - serverStartInfo.count);
+
+        // This query for 500, second query for 200, 3rd query for 300
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(1000'000'000, serverFinishInfo.elapsedNs - serverStartInfo.elapsedNs));
+        CPPUNIT_ASSERT_EQUAL(true, within10Percent(500'000'000, cycle_to_nanosec(endCycles - startCycles)));
     }
 };
 
