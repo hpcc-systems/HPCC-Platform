@@ -40,7 +40,7 @@
  *              CEspHttpServer Implementation
  ***************************************************************************/
 
-CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
+CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort& apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
     m_request.setown(new CHttpRequest(sock));
     IEspContext* ctx = createEspContext(createHttpSecureContext(m_request.get()));
@@ -48,9 +48,9 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool 
     m_response.setown(new CHttpResponse(sock));
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
-    m_apport = apport;
-    if (apport->getDefaultBinding())
-        m_defaultBinding.set(apport->getDefaultBinding()->queryBinding());
+    m_apport = &apport;
+    if (apport.getDefaultBinding())
+        m_defaultBinding.set(apport.getDefaultBinding()->queryBinding());
     m_viewConfig=viewConfig;
 }
 

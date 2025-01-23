@@ -41,6 +41,31 @@
 IThreadPool* http_thread_pool;
 CHttpThreadPoolFactory* http_pool_factory;
 
+struct PooledThreadInfo
+{
+    ISocket& socket;
+    CEspApplicationPort& apport;
+    int maxRequestEntityLength = 0;
+    bool isSSL = false;
+    ISecureSocketContext* ssctx = nullptr;
+    IPersistentHandler* persistentHandler = nullptr;
+    bool shouldClose = false;
+
+    PooledThreadInfo(ISocket& _socket, CEspApplicationPort& _apport) : socket(_socket), apport(_apport) {}
+    ~PooledThreadInfo()
+    {
+#if __cplusplus >= 201703L
+        if (std::uncaught_exceptions() > 0)
+#else
+        if (std::uncaught_exception())
+#endif
+        {
+            IERRLOG("Error starting thread from %s thread pool.", isSSL ? "https" : "http");
+            socket.close();
+        }
+    }
+};
+
 /**************************************************************************
  *  CHttpProtocol Implementation                                          *
  **************************************************************************/
@@ -137,42 +162,17 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                 if(m_maxConcurrentThreads > 0)
                 {
                     // Using Threading pool instead of generating one thread per request.
-                    void ** holder = new void*[7];
-                    holder[0] = (void*)(accepted.getLink());
-                    holder[1] = (void*)apport;
-                    int maxEntityLength = getMaxRequestEntityLength();
-                    holder[2] = (void*)&maxEntityLength;
-                    bool useSSL = false;
-                    holder[3] = (void*)&useSSL;
-                    ISecureSocketContext* ctx = NULL;
-                    holder[4] = (void*)ctx;
-                    holder[5] = (void*)persistentHandler;
-                    holder[6] = (void*)&shouldClose;
-                    try
-                    {
-                        http_thread_pool->start((void*)holder, "", m_threadCreateTimeout > 0?m_threadCreateTimeout*1000:0);
-                    }
-                    catch(...)
-                    {
-                        IERRLOG("Error starting thread from http thread pool.");
-                        if(accepted.get())
-                        {
-                            accepted->close();
-                            //Assumption here is that if start() throws exception, that means the new 
-                            //thread hasn't been started, so there's no other thread holding a link.
-                            CInterface* ci = dynamic_cast<CInterface*>(accepted.get());
-                            if(ci && ci->IsShared())
-                                accepted->Release();
-                        }
-                        delete [] holder;
-                        throw;
-                    }
-                    delete [] holder;
+                    PooledThreadInfo pti(*accepted, *apport);
+                    pti.maxRequestEntityLength = getMaxRequestEntityLength();
+                    pti.persistentHandler = persistentHandler;
+                    pti.shouldClose = shouldClose;
+                    // cleanup on exception is handled by pti
+                    http_thread_pool->start((void*)&pti, "", m_threadCreateTimeout > 0?m_threadCreateTimeout*1000:0);
                 }
                 else
                 {
                     /* create one thread per request */
-                    CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), false, nullptr, persistentHandler);
+                    CHttpThread *workthread = new CHttpThread(*accepted.getLink(), *apport, CEspProtocol::getViewConfig(), false, nullptr, persistentHandler);
                     workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                     workthread->setShouldClose(shouldClose);
                     workthread->start(false);
@@ -330,23 +330,19 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                     if(m_maxConcurrentThreads > 0)
                     {
                         // Using Threading pool instead of generating one thread per request.
-                        void ** holder = new void*[7];
-                        holder[0] = (void*)accepted.getLink();
-                        holder[1] = (void*)apport;
-                        int maxEntityLength = getMaxRequestEntityLength();
-                        holder[2] = (void*)&maxEntityLength;
-                        bool useSSL = true;
-                        holder[3] = (void*)&useSSL;
-                        holder[4] = (void*)m_ssctx.get();
-                        holder[5] = (void*)persistentHandler;
-                        holder[6] = (void*)&shouldClose;
-                        http_thread_pool->start((void*)holder);
-                        delete [] holder;
+                        PooledThreadInfo pti(*accepted, *apport);
+                        pti.maxRequestEntityLength = getMaxRequestEntityLength();
+                        pti.isSSL = true;
+                        pti.ssctx = m_ssctx.get();
+                        pti.persistentHandler = persistentHandler;
+                        pti.shouldClose = shouldClose;
+                        // cleanup on exception is handled by pti
+                        http_thread_pool->start((void*)&pti);
                     }
                     else
                     {
                         /* create one thread per request */
-                        CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), true, m_ssctx.get(), persistentHandler);
+                        CHttpThread *workthread = new CHttpThread(*accepted.getLink(), *apport, CEspProtocol::getViewConfig(), true, m_ssctx.get(), persistentHandler);
                         workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                         workthread->setShouldClose(shouldClose);
                         workthread->start(false);
@@ -390,11 +386,11 @@ const char * CSecureHttpProtocol::getProtocolName()
 /**************************************************************************
  *  CHttpThread Implementation                                            *
  **************************************************************************/
-CHttpThread::CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL, ISecureSocketContext* ssctx,  IPersistentHandler* persistentHandler) :
-   CEspProtocolThread(sock, "HTTP Thread"), m_persistentHandler(persistentHandler)
+CHttpThread::CHttpThread(ISocket& sock, CEspApplicationPort& apport, bool viewConfig, bool isSSL, ISecureSocketContext* ssctx,  IPersistentHandler* persistentHandler) :
+   CEspProtocolThread(&sock, "HTTP Thread"), m_persistentHandler(persistentHandler)
 {
     m_viewConfig = viewConfig;
-    m_apport = apport;
+    m_apport = &apport;
     m_is_ssl = isSSL;
     m_ssctx = ssctx;
 }
@@ -438,7 +434,7 @@ bool CHttpThread::onRequest()
         }
         ESPLOG(LogMax, "Request from secure socket");
         m_socket.set(secure_sock);
-        httpserver.setown(new CEspHttpServer(*secure_sock.get(), m_apport, m_viewConfig, getMaxRequestEntityLength()));
+        httpserver.setown(new CEspHttpServer(*secure_sock.get(), *m_apport, m_viewConfig, getMaxRequestEntityLength()));
         IEspContext* ctx = httpserver->queryContext();
         if(ctx)
         {
@@ -449,7 +445,7 @@ bool CHttpThread::onRequest()
     }
     else
     {
-        httpserver.setown(new CEspHttpServer(*m_socket, m_apport, m_viewConfig, getMaxRequestEntityLength()));
+        httpserver.setown(new CEspHttpServer(*m_socket, *m_apport, m_viewConfig, getMaxRequestEntityLength()));
     }
 
     time_t t = time(NULL);  
@@ -499,13 +495,16 @@ void CHttpThread::returnSocket()
  **************************************************************************/
 void CPooledHttpThread::init(void *param)
 {
-    m_socket.setown((ISocket*)(((void**)param)[0]));
-    m_apport = (CEspApplicationPort*)(((void**)param)[1]);
-    m_MaxRequestEntityLength = *(int*)(((void**)param)[2]);
-    m_is_ssl = *(bool*)(((void**)param)[3]);
-    m_ssctx = (ISecureSocketContext*)(((void**)param)[4]);
-    m_persistentHandler = (IPersistentHandler*)(((void**)param)[5]);
-    m_shouldClose = *(bool*)(((void**)param)[6]);
+    if (!param)
+        throw makeStringException(-1, "CPooledHttpThread::init: invalid param");
+    PooledThreadInfo* ptip = (PooledThreadInfo*)param;
+    m_socket.set(&ptip->socket);
+    m_apport = &ptip->apport;
+    m_MaxRequestEntityLength = ptip->maxRequestEntityLength;
+    m_is_ssl = ptip->isSSL;
+    m_ssctx = ptip->ssctx;
+    m_persistentHandler = ptip->persistentHandler;
+    m_shouldClose = ptip->shouldClose;
     m_httpserver = nullptr;
     m_processAborted = false;
     m_socketReturned = false;
@@ -517,6 +516,11 @@ CPooledHttpThread::~CPooledHttpThread()
 
 void CPooledHttpThread::threadmain()
 {
+    if (!m_socket || !m_apport)
+    {
+        IERRLOG("CPooledHttpThread::thradmain: uninitialized thread");
+        return;
+    }
     TimeSection timing("CPooledHttpThread::threadmain()");
     Owned<CEspHttpServer> httpserver;
     
@@ -545,7 +549,7 @@ void CPooledHttpThread::threadmain()
             return;
         }
         m_socket.set(secure_sock);
-        httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
+        httpserver.setown(new CEspHttpServer(*m_socket, *m_apport, false, getMaxRequestEntityLength()));
         IEspContext* ctx = httpserver->queryContext();
         if(ctx)
         {
@@ -556,7 +560,7 @@ void CPooledHttpThread::threadmain()
     }
     else
     {
-        httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
+        httpserver.setown(new CEspHttpServer(*m_socket, *m_apport, false, getMaxRequestEntityLength()));
     }
     m_httpserver = httpserver;
     httpserver->setShouldClose(m_shouldClose);
