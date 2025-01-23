@@ -1566,12 +1566,8 @@ public:
 
         ensureContextLogger();
 
-        const char * spanQueryName = !isEmptyString(queryName) ? queryName : "run_query";
-        StringBuffer spanName(querySetName);
-        if (spanName.length())
-            spanName.append('/');
-        spanName.append(spanQueryName);
-        requestSpan.setown(queryTraceManager().createServerSpan(spanName, allHeaders, flags));
+        requestSpan.setown(queryTraceManager().createServerSpan(!isEmptyString(queryName) ? queryName : "run_query", allHeaders, flags));
+        requestSpan->setSpanAttribute("queryset.name", querySetName);
         logctx->setActiveSpan(requestSpan);
 
         const char * globalId = requestSpan->queryGlobalId();
