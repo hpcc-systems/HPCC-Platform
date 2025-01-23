@@ -40,11 +40,11 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     StringAttr logicalFilename;
     Owned<IPartDescriptor> partDesc, tlkDesc;
     IHThorIndexWriteArg *helper;
-    Owned <IKeyBuilder> builder;
-    OwnedIFileIO builderIFileIO;
+    Owned<IKeyBuilder> builder;
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
+    mutable CriticalSection builderCS;
 
     bool buildTlk, active;
     bool sizeSignalled;
@@ -54,9 +54,6 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 
     size32_t lastRowSize, firstRowSize, maxRecordSizeSeen, keyedSize;
     unsigned __int64 duplicateKeyCount;
-    unsigned __int64 numLeafNodes = 0;
-    unsigned __int64 numBranchNodes = 0;
-    unsigned __int64 numBlobNodes = 0;
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
@@ -212,12 +209,15 @@ public:
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
         unsigned twFlags = isUrl(partFname) ? TW_Direct : TW_RenameToPrimary;
-        builderIFileIO.setown(createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon));
+        OwnedIFileIO builderIFileIO = createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon);
         Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
         maxRecordSizeSeen = 0;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
+        {
+            CriticalBlock b(builderCS);
+            builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
+        }
     }
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
@@ -235,16 +235,24 @@ public:
         {
             if (builder)
             {
-                builder->finish(metadata, &crc, maxRecordSizeSeen);
-                if (!isTLK)
+                // Clear out builder before merging builder stats into inactive stats
+                // so that gatherActiveStatistics doesn't also merge builder stats.
+                Owned<IKeyBuilder> tmpBuilder;
                 {
-                    duplicateKeyCount = builder->getDuplicateCount();
-                    numLeafNodes = builder->getNumLeafNodes();
-                    numBranchNodes = builder->getNumBranchNodes();
-                    numBlobNodes = builder->getNumBlobNodes();
-                    offsetBranches = builder->getOffsetBranches();
-                    branchMemorySize = builder->getBranchMemorySize();
-                    leafMemorySize = builder->getLeafMemorySize();
+                    CriticalBlock b(builderCS);
+                    tmpBuilder.setown(builder.getClear());
+                }
+                if (tmpBuilder)
+                {
+                    tmpBuilder->finish(metadata, &crc, maxRecordSizeSeen);
+                    if (!isTLK)
+                    {
+                        duplicateKeyCount = tmpBuilder->getDuplicateCount();
+                        offsetBranches = tmpBuilder->getOffsetBranches();
+                        branchMemorySize = tmpBuilder->getBranchMemorySize();
+                        leafMemorySize = tmpBuilder->getLeafMemorySize();
+                    }
+                    mergeStats(inactiveStats, tmpBuilder, indexWriteActivityStatistics);
                 }
             }
         }
@@ -259,22 +267,7 @@ public:
             abortSoon = true;
             e.setown(MakeActivityException(this, 0, "INDEXWRITE: Error closing file: %s - unknown exception", partFname.str()));
         }
-        try 
-        { 
-            metadata.clear();
-            builder.clear();
-            if (builderIFileIO)
-            {
-                mergeStats(inactiveStats, builderIFileIO, diskWriteRemoteStatistics);
-                builderIFileIO->close();
-                builderIFileIO.clear();
-            }
-        }
-        catch (IException *_e)
-        {
-            ActPrintLog(_e, "Error closing file: %s", partFname.str());
-            e.setown(_e);
-        }
+        metadata.clear();
         if (abortSoon)
             removeFiles(partDesc);
         if (e)
@@ -613,7 +606,10 @@ public:
     }
     virtual void processDone(MemoryBuffer &mb) override
     {
-        builder.clear();
+        {
+            CriticalBlock b(builderCS);
+            builder.clear();
+        }
         if (refactor && !active)
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
@@ -630,10 +626,9 @@ public:
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
             mb.append(partCrc);
-
-            mb.append(numLeafNodes);
-            mb.append(numBlobNodes);
-            mb.append(numBranchNodes);
+            mb.append(inactiveStats.getStatisticValue(StNumLeafCacheAdds));
+            mb.append(inactiveStats.getStatisticValue(StNumBlobCacheAdds));
+            mb.append(inactiveStats.getStatisticValue(StNumNodeCacheAdds));
             mb.append(offsetBranches);
             mb.append(uncompressedSize);
             mb.append(originalBlobSize);
@@ -699,10 +694,12 @@ public:
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
         PARENT::gatherActiveStats(activeStats);
+        {
+            CriticalBlock b(builderCS);
+            if (builder)
+                mergeStats(activeStats, builder, indexWriteActivityStatistics);
+        }
         activeStats.setStatistic(StPerReplicated, replicateDone);
-        activeStats.setStatistic(StNumLeafCacheAdds, numLeafNodes);
-        activeStats.setStatistic(StNumNodeCacheAdds, numBranchNodes);
-        activeStats.setStatistic(StNumBlobCacheAdds, numBlobNodes);
     }
 
 // ICopyFileProgress
