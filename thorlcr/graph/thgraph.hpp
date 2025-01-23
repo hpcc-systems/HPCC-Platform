@@ -817,6 +817,7 @@ public:
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
     }
+
 // IExceptionHandler
     virtual bool fireException(IException *e);
 

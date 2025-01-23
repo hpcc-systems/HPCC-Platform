@@ -504,7 +504,7 @@ public:
         return group.get();
     }
 
-    StringBuffer &getGroupName(StringBuffer &ret,IGroupResolver *resolver)
+    StringBuffer &getGroupName(StringBuffer &ret,IGroupResolver *resolver) const
     {
         if (name.isEmpty()) {
             if (group)
@@ -601,7 +601,7 @@ public:
             basedir.append(mspec.defaultReplicateDir);
     }
 
-    StringBuffer &getClusterLabel(StringBuffer &ret)
+    StringBuffer &getClusterLabel(StringBuffer &ret) const
     {
         return getGroupName(ret, NULL);
     }
