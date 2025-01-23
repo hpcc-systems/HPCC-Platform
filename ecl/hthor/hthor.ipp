@@ -2299,6 +2299,7 @@ protected:
     IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
     RowFilter actualFilter;               // This refers to the actual disk layout
+    FileReadPropertiesUpdater fileReadPropertiesUpdater;
 
     void checkFileType(IDistributedFile *file);
     void close();
