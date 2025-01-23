@@ -4544,7 +4544,8 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, tempDirName);
 #else
-    readWULogToFiles(cwu, winfo, tempDirName, request);
+    if (request.includeRelatedLogs || request.includePerComponentLogs)
+        readWULogToFiles(cwu, winfo, tempDirName, request);
 #endif
 
     //Write out to ZIP file

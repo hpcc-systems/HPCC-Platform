@@ -1421,6 +1421,9 @@ public:
 
     size32_t read(offset_t pos, size32_t len, void * data)
     {
+        if (0 == len)
+            return 0;
+        dbgassertex(data);
         size32_t got;
         MemoryBuffer replyBuffer;
         CCycleTimer timer;

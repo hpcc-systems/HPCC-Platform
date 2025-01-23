@@ -667,18 +667,34 @@ MODULE_EXIT()
 //===========================================================================
 
 
-void BlockedTimeTracker::noteWaiting()
+//Calculate how much time has elapsed total - with the given number of threads still active
+__uint64 BlockedTimeTracker::calcActiveTime(cycle_t tally, unsigned active) const
 {
-    CriticalBlock block(cs);
-    numWaiting++;
-    timeStampTally -= get_cycles_now();
+    if (active != 0)
+    {
+        cycle_t now = get_cycles_now();
+        tally += active * now;
+    }
+
+    return cycle_to_nanosec(tally);
 }
 
-void BlockedTimeTracker::noteComplete()
+cycle_t BlockedTimeTracker::noteWaiting()
 {
+    cycle_t now = get_cycles_now();
     CriticalBlock block(cs);
-    numWaiting--;
-    timeStampTally += get_cycles_now();
+    numStarted++;
+    timeStampTally -= now;
+    return now;
+}
+
+cycle_t BlockedTimeTracker::noteComplete()
+{
+    cycle_t now = get_cycles_now();
+    CriticalBlock block(cs);
+    numFinished++;
+    timeStampTally += now;
+    return now;
 }
 
 __uint64 BlockedTimeTracker::getWaitingNs() const
@@ -687,17 +703,30 @@ __uint64 BlockedTimeTracker::getWaitingNs() const
     cycle_t tally;
     {
         CriticalBlock block(cs);
-        active = numWaiting;
+        active = numStarted - numFinished;
         tally = timeStampTally;
     }
 
-    if (active != 0)
+    return calcActiveTime(tally, active);
+}
+
+
+void BlockedTimeTracker::extractOverlapInfo(OverlapTimeInfo & info, bool isStart) const
+{
+    unsigned started;
+    unsigned finished;
+    cycle_t tally;
+
     {
-        cycle_t now = get_cycles_now();
-        tally += active * now;
+        CriticalBlock block(cs);
+        started = numStarted;
+        finished = numFinished;
+        tally = timeStampTally;
     }
 
-    return cycle_to_nanosec(tally);
+    //Record so that when counts are subtracted, the total count will include all jobs that overlapped in any part
+    info.count = isStart ? finished : started;
+    info.elapsedNs = calcActiveTime(tally, started - finished);
 }
 
 

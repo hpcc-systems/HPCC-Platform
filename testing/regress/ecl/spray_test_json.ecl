@@ -35,7 +35,7 @@ isSmallFile := #IFDEFINED(root.isSmallFile, true);
 
 isUnBallanced := #IFDEFINED(root.isUnBallanced, false);
 
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 engine := thorlib.platform() : stored('thor');
 prefix := setup.Files(false, false).FilePrefix + '-' + WORKUNIT;

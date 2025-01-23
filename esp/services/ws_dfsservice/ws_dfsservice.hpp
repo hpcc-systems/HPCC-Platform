@@ -26,6 +26,7 @@
 
 class CWsDfsEx : public CWsDfs
 {
+    bool isHttps = false;
 public:
     virtual ~CWsDfsEx() {}
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);

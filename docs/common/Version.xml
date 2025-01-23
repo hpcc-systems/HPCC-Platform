@@ -5,11 +5,11 @@
   <chapterinfo>
     <date id="DateVer">DEVELOPER NON-GENERATED VERSION</date>
 
-    <releaseinfo id="FooterInfo">© 2024 HPCC
+    <releaseinfo id="FooterInfo">© 2025 HPCC
     Systems<superscript>®</superscript>. All rights reserved</releaseinfo>
 
     <copyright id="Copyright">
-      <year>2024 HPCC Systems<superscript>®</superscript>. All rights
+      <year>2025 HPCC Systems<superscript>®</superscript>. All rights
       reserved</year>
     </copyright>
   </chapterinfo>
@@ -23,9 +23,9 @@
     serve one purpose and that is to store the chapterinfo and other information
     used by several document components.</para>
 
-    <para id="CHMVer">2024 Version ${DOC_VERSION}</para>
+    <para id="CHMVer">2025 Version ${DOC_VERSION}</para>
 
-    <remark id="YrVer">2024</remark>
+    <remark id="YrVer">2025</remark>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>

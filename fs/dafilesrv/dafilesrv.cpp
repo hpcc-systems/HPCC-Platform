@@ -585,10 +585,17 @@ int main(int argc, const char* argv[])
                 rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
 
             // merge in bare-metal dafilesrv component expert settings
-            IPropertyTree *componentExpert = nullptr;
-            componentExpert = daFileSrv->queryPropTree("expert");
+            IPropertyTree *componentExpert = daFileSrv->queryPropTree("expert");
             if (componentExpert)
                 synchronizePTree(expert, componentExpert, false, true);
+
+            // merge in bare-metal dafilesrv component cert settings into newConfig
+            IPropertyTree *componentCert = daFileSrv->queryPropTree("cert");
+            if (componentCert)
+            {
+                IPropertyTree *cert = ensurePTree(newConfig, "cert");
+                synchronizePTree(cert, componentCert, false, true);
+            }
 
             // any overrides by Instance definitions?
             Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");

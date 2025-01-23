@@ -721,6 +721,146 @@
           workunits in the event of a loss. In addition it would affect every
           other Thor/Roxie cluster in the same environment if you lose this
           node.</para>
+
+          <sect4 id="DaliRestore">
+            <title>Restoring Dali from backup</title>
+
+            <para>If configured correctly, Dali creates a backup or mirror
+            copy to a secondary location on another physical server.
+            (Bare-metal only).</para>
+
+            <para>Systems can be configured with their own scheduled backup to
+            create a snapshot of the primary store files to a custom location.
+            The same steps apply when using a snapshot copy of a backup set as
+            when using the mirror copy. In other words, this technique applies
+            to either bare-metal or k8s deployments.</para>
+
+            <para>The Dali meta files are comprised of:</para>
+
+            <orderedlist>
+              <listitem>
+                <para><emphasis role="bold">store.&lt;NNNN&gt;</emphasis>
+                (e.g., store.36). This file is a reference to the current Dali
+                meta file edition. There should never be more than one of
+                these files. The NNNN is used to determine the current base
+                and delta files in use.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">dalisds&lt;NNNN&gt;.xml</emphasis>
+                (e.g., dalisds36.xml). This is the main Dali meta info file,
+                containing all logical file, workunit, and state information.
+                Sasha (or Dali on save) periodically creates new versions
+                (with incrementally rising NNNN’s). It will keep the last T
+                copies (default 10) based on the configuration option
+                “keepStores”.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">daliinc&lt;NNNN&gt;.xml</emphasis>
+                (e.g., daliinc36.xml). This is the delta transaction log. Dali
+                continuously writes to this file, recording all changes that
+                are made to any meta data. It is used to playback changes and
+                apply them to the base meta info from the
+                dalisds&lt;NNNN&gt;xml file.</para>
+
+                <para>Specifically, when Sasha creates a new store version, it
+                loads the base file (e.g., dalisds36.xml), then loads and
+                applies the delta file (e.g., daliinc36.xml). Sasha then has
+                its own independent representation of the current state and
+                saves a new base file (e.g., dalisds(NNNN+1).xml).</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">dalidet&lt;NNNN&gt;.xml</emphasis>
+                (e.g., dalidet36.xml). This file is created at the point that
+                Sasha starts the process of creating a new base file. At which
+                point it atomically renames the delta transaction file to a
+                ‘det’ file (short for 'detached'). For example, it renames
+                daliinc36.xml to dalidet36.xml. Dali then continues to write
+                new transactions to daliinc36.xml.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis
+                role="bold">dalisds_&lt;MMMM&gt;.bv2</emphasis> files. These
+                files are in effect part of the main store (part of
+                dalisdsNNNN.xml). They are single large values that were
+                deemed too big to keep in Dali memory, and written to disk
+                separately instead (and are loaded on demand).</para>
+              </listitem>
+            </orderedlist>
+
+            <para>If Dali is shutdown cleanly and saves its files as expected,
+            the daliinc*.xml and dalidet*.xml files are not needed, since it
+            saves the entire state of the store directly from internal memory,
+            and on startup, there is no daliincNNNN.xml or dalidetNNNN.xml
+            related to the new version.</para>
+
+            <para>These transaction delta files are only used by Sasha when
+            creating new versions of the base store or if Dali has been
+            stopped abruptly (e.g., machine rebooted). If Dali restarts after
+            an unclean exit, there will be a daliincNNN.xml (and possibly a
+            dalidetNNNN.xml file if Sasha was actively creating a new version
+            at the time). In those cases, Dali will load these files in
+            addition to the base file.</para>
+
+            <para>By default Dali’s main data store directory is
+            /var/lib/HPCCSystems/hpcc-data/dali/ . In other words, all meta
+            data is written to and read from this location.</para>
+
+            <para>When restoring from a backup: <orderedlist>
+                <listitem>
+                  <para>Make sure Dali is not running</para>
+                </listitem>
+
+                <listitem>
+                  <para>Make sure the /var/lib/HPCCSystems/hpcc-data/dali
+                  folder is empty.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Copy all pertinent backup file into the
+                  /var/lib/HPCCSystems/hpcc-data/dali folder:</para>
+
+                  <itemizedlist>
+                    <listitem>
+                      <para>One store.NNNN file</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>One dalisdsNNNN.xml file</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>&lt;=1 daliincNNNN.xml file (only if
+                      present)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>&lt;=1 dalidetNNNN.xml file (only if
+                      present)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>All dalisds_MMMM.bv2 files.</para>
+                    </listitem>
+                  </itemizedlist>
+                </listitem>
+              </orderedlist>Other/older dalisds/daliinc/dalidet editions could
+            be copied, but the above are the only ones that will be used. In
+            other words, only the NNNN version based on the single store.NNNN
+            file will be loaded.</para>
+
+            <para>The automatic back to a mirror location is bare-metal only.
+            In a cloud deployment, it is assumed that the storage choices
+            provided by the cloud provider are providing redundancy, such as
+            multi-zone replication.</para>
+
+            <para>In either case, and/or if a manual strategy has been used to
+            copy Dali’s files on a schedule, the process of restoring from a
+            backup should be the same.</para>
+          </sect4>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Sasha">

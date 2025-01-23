@@ -39,7 +39,7 @@ import ^ as root;
 engine := thorlib.platform();
 prefix := '~regress::' + engine + '::' + WORKUNIT + '::';
 
-dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;

@@ -1166,7 +1166,7 @@ protected:
             getWorkUnitCreateTime(wuid,time);
         }
         virtual ~cDFUWUBranchItem() {}
-        bool isempty() { return (wuid[0]!='D')||iserr; }
+        bool isempty() { return (toupper(wuid[0])!='D')||iserr; }
         bool qualifies() 
         { 
             if (isprotected)

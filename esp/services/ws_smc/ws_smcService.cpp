@@ -1237,7 +1237,7 @@ void CWsSMCEx::addWUsToResponse(IEspContext &context, const IArrayOf<IEspActiveW
     {
         IEspActiveWorkunit& wu = aws.item(i);
         const char* wuid = wu.getWuid();
-        if (wuid[0] == 'D')//DFU WU
+        if (toupper(wuid[0]) == 'D')//DFU WU
         {
             awsReturned.append(*LINK(&wu));
             continue;
