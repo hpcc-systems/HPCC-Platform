@@ -3675,6 +3675,11 @@ static CConfigUpdateHook directIOUpdateHook;
 static CriticalSection dafileSrvNodeCS;
 static Owned<INode> tlsDirectIONode, nonTlsDirectIONode;
 
+unsigned getPreferredDaFsServerPort()
+{
+    return getPreferredDafsClientPort(true);
+}
+
 void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
 {
     Owned<IPropertyTreeIterator> iter = file->getElements("Cluster");
@@ -3683,7 +3688,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
         IPropertyTree &cluster = iter->query();
         const char *planeName = cluster.queryProp("@name");
         Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-        if ((0 == plane->queryHosts().size()) && isAbsolutePath(plane->queryPrefix())) // if hosts group, or url, don't touch
+        if (isAbsolutePath(plane->queryPrefix())) // if url (i.e. not absolute prefix path) don't touch
         {
             if (isContainerized())
             {

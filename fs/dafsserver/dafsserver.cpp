@@ -134,10 +134,10 @@ static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVe
         {
 #ifdef _CONTAINERIZED
             /* Connections are expected from 3rd parties via TLS,
-             * we do not expect them to provide a valid certificate for verification.
-             * Currently the server (this dafilesrv), will use either the "public" certificate issuer,
-             * unless it's visibility is "cluster" (meaning internal only)
-             */
+            * we do not expect them to provide a valid certificate for verification.
+            * Currently the server (this dafilesrv), will use either the "public" certificate issuer,
+            * unless it's visibility is "cluster" (meaning internal only)
+            */
 
             const char *certScope = strsame("cluster", getComponentConfigSP()->queryProp("service/@visibility")) ? "local" : "public";
             Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(certScope, nullptr, disableClientCertVerification);
@@ -145,7 +145,14 @@ static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVe
                 throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
             secureContextServer.setown(createSecureSocketContextSynced(info, ServerSocket));
 #else
-            secureContextServer.setown(createSecureSocketContextEx2(securitySettings.getSecureConfig(), ServerSocket));
+            Owned<IPropertyTree> cert = getComponentConfigSP()->getPropTree("cert");
+            if (cert)
+            {
+                Owned<ISyncedPropertyTree> certSyncedWrapper = createSyncedPropertyTree(cert);
+                secureContextServer.setown(createSecureSocketContextSynced(certSyncedWrapper, ServerSocket));
+            }
+            else
+                secureContextServer.setown(createSecureSocketContextEx2(securitySettings.getSecureConfig(), ServerSocket));
 #endif
         }
     }
@@ -5449,7 +5456,11 @@ public:
                     securitySettings.privateKey = nullptr;
                 }
             }
-            else
+            else if (!isContainerized() && getComponentConfigSP()->hasProp("cert"))
+            {
+                // validated when context is created in createSecureSocket
+            }
+            else // using environment.conf HPCCCertificateFile etc.
                 validateSSLSetup();
 #endif
 
