@@ -304,8 +304,16 @@ enum DFUQResultField
 };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField field);
-extern da_decl const char* getDFUQResultFieldName(DFUQResultField field);
+constexpr const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
+    "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
+    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost", "@maxSkew", "@minSkew", "@maxSkewPart", "@minSkewPart",
+    "@readCost", "@writeCost" };
 
+extern da_decl constexpr const char* getDFUQResultFieldName(DFUQResultField field)
+{
+    return DFUQResultFieldNames[field];
+}
 /**
  * File operations can be included in a transaction to ensure that multiple
  * updates are handled atomically. This is the interface to a transaction
@@ -434,6 +442,10 @@ interface IDistributedFile: extends IInterface
     virtual int  getExpire(StringBuffer *expirationDate) = 0;
     virtual void setExpire(int expireDays) = 0;
     virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) = 0;
+    virtual bool getNumReads(stat_type &numReads) const = 0;
+    virtual bool getNumWrites(stat_type &numWrites) const = 0;
+    virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
+    virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
 };
 
 

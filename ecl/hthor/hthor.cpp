@@ -8545,6 +8545,7 @@ void CHThorDiskReadBaseActivity::closepart()
                     {
                         IDistributedSuperFile *super = dFile->querySuperFile();
                         dFile = &(super->querySubFile(subfile, true));
+                        updateCostAndNumReads(super, curDiskReads);
                     }
                 }
                 updateCostAndNumReads(dFile, curDiskReads);
