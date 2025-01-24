@@ -23,6 +23,12 @@
 #include "opentelemetry/sdk/trace/tracer_context_factory.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
+#include <opentelemetry/sdk/trace/samplers/always_on_factory.h>
+#include <opentelemetry/sdk/trace/samplers/always_off_factory.h>
+#include <opentelemetry/sdk/trace/samplers/trace_id_ratio_factory.h>
+#include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
+#include <opentelemetry/sdk/trace/samplers/always_off.h>
+#include <opentelemetry/sdk/trace/samplers/parent.h>
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
 #include "opentelemetry/exporters/ostream/common_utils.h"
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
@@ -1382,6 +1388,56 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     return opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
 }
 
+static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IPropertyTree * samplerTree)
+{
+    std::unique_ptr<opentelemetry::sdk::trace::Sampler> sampler;
+
+    if (samplerTree)
+    {
+        const char * samplerType = samplerTree->queryProp("@type");
+        if (!isEmptyString(samplerType))
+        {
+            if (streq(samplerType, "AlwaysOff"))
+            {
+                sampler.reset(new opentelemetry::sdk::trace::AlwaysOffSampler());
+            }
+            else if (streq(samplerType, "AlwaysOn"))
+            {
+                sampler.reset(new opentelemetry::sdk::trace::AlwaysOnSampler());
+            }
+            else if (streq(samplerType,"Ratio"))
+            {
+                double ratio = samplerTree->getPropReal("@argument");
+                if (ratio < 0 || ratio > 1)
+                {
+                    OERRLOG("JTrace invalid ratio sampler configuration. Ratio must be LE 1.0 or GE 0.0");
+                }
+                else
+                {
+                    sampler.reset(new opentelemetry::sdk::trace::TraceIdRatioBasedSampler(ratio));
+                }
+            }
+            else
+            {
+                WARNLOG("JTrace initialization: Invalid sampler type configured: '%s'", samplerType);
+            }
+
+            if (sampler && samplerTree->getPropBool("@parentBased", true))
+            {
+                return std::unique_ptr<opentelemetry::sdk::trace::ParentBasedSampler>(new opentelemetry::sdk::trace::ParentBasedSampler(std::move(sampler)));
+            }
+        }
+    }
+
+    if (!sampler) 
+    {
+        sampler.reset(new opentelemetry::sdk::trace::AlwaysOnSampler());
+        WARNLOG("JTrace sampler set to 'Always ON' by default!");
+    }
+
+    return sampler;
+}
+
 void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
 {
     /*
@@ -1399,6 +1455,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         };
 
     std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
+    std::unique_ptr<opentelemetry::sdk::trace::Sampler> sampler;
 
     bool enableOTELDebugLogging = false;
 
@@ -1407,6 +1464,8 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     bool enableDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
+        sampler = createSampler(traceConfig->queryPropTree("sampler"));
+
         IPropertyTree * resourceAttributesTree = traceConfig->queryPropTree("resourceAttributes");
         if (resourceAttributesTree)
         {
@@ -1433,6 +1492,11 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         enableDefaultLogExporter = traceConfig->getPropBool("@enableDefaultLogExporter", enableDefaultLogExporter);
     }
 
+    if (!sampler) 
+    {
+        sampler = std::unique_ptr<opentelemetry::sdk::trace::AlwaysOnSampler>(new opentelemetry::sdk::trace::AlwaysOnSampler);
+    }
+
     if (enableDefaultLogExporter)
     {
         //Simple option to create logging to the log file - primarily to aid developers.
@@ -1442,9 +1506,9 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
 
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
-    // Default is an always-on sampler.
     std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
-        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource);
+        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource, std::move(sampler));
+
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
         opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 
@@ -1468,6 +1532,10 @@ global:
         disabled: true                  #optional - disable OTel tracing
         alwaysCreateGlobalIds : false   #optional - should global ids always be created?
         alwaysCreateTraceIds            #optional - should trace ids always be created?
+        sampler:                        #optional - controls how traces are either suppressed or sampled
+          type:                         #"AlwaysOff" | "AlwaysOn" | "Ratio"
+          argument:                     #optional sampler type configuration value
+          parentBased:                  #optional sets the sampling decision based on the Span’s parent, or absence of parent, to know which secondary sampler to use.
         exporters:                       #optional - Controls how trace data is exported/reported
         -   type: OTLP                    #OS|OTLP|Prometheus|JLOG
             endpoint: "localhost:4317"    #exporter specific key/value pairs
