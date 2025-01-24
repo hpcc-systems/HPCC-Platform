@@ -13,6 +13,10 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
 - enableDefaultLogExporter - If true, creates a trace exporter outputting to the log using the default options
 - enableOTELDebugLogging - If true, OTel library logging level set to debug, otherwise warning
+- sampling - Defines head sampling strategy. Decision to sample or drop a span or trace is not made by inspecting the trace as a whole. https://opentelemetry.io/docs/concepts/sampling/
+  - type "AlwaysOff" | "AlwaysOn" | "Ratio"
+  - ratio - Required if Ratio sampling type enabled. Represents the ratio of trace/spans to sample Must be a numeric value betwen 0.0 and 1.0. 
+  - parentBased - Optional boolean. Determines if the sampling policy honors the remote root span sampled flag
 - resourceAttributes: - Defines OTel specific resource attribute configuration values
                         which are appended to the runtime OTEL_RESOURCE_ATTRIBUTES. See OTel doc: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration
   - deploymentEnvironment - Defines deployment.environment, which is used to specify
