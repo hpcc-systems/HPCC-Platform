@@ -11,6 +11,8 @@ GITHUB_REF=$(git rev-parse --short=8 HEAD)
 cd vcpkg
 VCPKG_REF=$(git rev-parse --short=8 HEAD)
 cd ..
+GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}' | xargs)
+GITHUB_BRANCH=${GITHUB_BRANCH:-master}
 DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-none}"
 
@@ -19,35 +21,79 @@ echo "GITHUB_ACTOR: $GITHUB_ACTOR"
 echo "GITHUB_TOKEN: $GITHUB_TOKEN"
 echo "GITHUB_REF: $GITHUB_REF"
 echo "VCPKG_REF: $VCPKG_REF"
+echo "GITHUB_BRANCH: $GITHUB_BRANCH"
 echo "DOCKER_USERNAME: $DOCKER_USERNAME"
 echo "DOCKER_PASSWORD: $DOCKER_PASSWORD"
 
-# docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+
+CMAKE_ALL_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DINCLUDE_PLUGINS=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DUSE_CPPUNIT=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON"
+CMAKE_OPENBLAS_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF -DECLBLAS=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF"
+CMAKE_PLATFORM_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DPLATFORM=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF"
 
 function doBuild() {
-    docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
-        -t build-$1:$GITHUB_REF \
-        -t build-$1:latest \
+    # docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
+    # docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
+    # docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
+
+    docker buildx build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
-        "$SCRIPT_DIR/." 
+        --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
+        --cache-from hpccsystems/platform-build-$1:$GITHUB_BRANCH \
+        -t hpccsystems/platform-build-$1:$VCPKG_REF \
+        -t hpccsystems/platform-build-$1:$GITHUB_BRANCH \
+        "$SCRIPT_DIR/."
 
-    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
-    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
+    # docker push hpccsystems/platform-build-$1:$VCPKG_REF
+    # docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH
 
+    rm -f ./vcpkg/vcpkg 
+    mkdir -p ./build-$1
+    if [ "$1" == "centos-7*" ]; then
+        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    elif [ "$1" == "amazonlinux" ]; then
+        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    fi
+    mkdir -p $HOME/.ccache
+    docker run --rm \
+        --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+        --mount source="$(realpath ~)/.cache/vcpkg",target=/root/.cache/vcpkg,type=bind,consistency=cached \
+        --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
+        hpccsystems/platform-build-$1:$VCPKG_REF \
+        "rm -rf /hpcc-dev/HPCC-Platform/build-$1/CMakeCache.txt /hpcc-dev/HPCC-Platform/build-$1/CMakeFiles && \
+        cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_ALL_OPTIONS} ${CMAKE_OPTIONS_EXTRA} && \
+        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel && \
+        echo 'Done'"
+
+    rm -f ./vcpkg/vcpkg 
+
+# sudo chown -R $(id -u):$(id -g) ./build-$1
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+function cleanup() {
+    kill $(jobs -p)
+    rm -f ./vcpkg/vcpkg || true
+}
 
-doBuild centos-7
-doBuild centos-8
-doBuild amazonlinux
-doBuild ubuntu-22.10 
-doBuild ubuntu-22.04 
-doBuild ubuntu-20.04
+trap 'cleanup; exit' EXIT
+
+# ./vcpkg/bootstrap-vcpkg.sh
+mkdir -p ./vcpkg-logs
+
+if [ "$1" != "" ]; then
+    doBuild $1
+else
+    doBuild ubuntu-24.04 &> vcpkg-logs/ubuntu-24.04.log &
+    doBuild ubuntu-22.04 &> vcpkg-logs/ubuntu-22.04.log &
+    doBuild ubuntu-20.04 &> vcpkg-logs/ubuntu-20.04.log &
+    doBuild centos-7 &> vcpkg-logs/centos-7.log & 
+    doBuild centos-8 &> vcpkg-logs/centos-8.log & 
+    doBuild amazonlinux &> vcpkg-logs/amazonlinux.log & 
+fi
+
+wait
 
 # docker build --progress plain --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
 #     -t $DOCKER_USERNAME/core:$GITHUB_REF \
