@@ -48,6 +48,7 @@ static PassAllLogMsgFilter * thePassAllFilter = nullptr;
 static PassLocalLogMsgFilter * thePassLocalFilter = nullptr;
 static PassNoneLogMsgFilter * thePassNoneFilter = nullptr;
 static HandleLogMsgHandler * theStderrHandler = nullptr;
+static PostMortemLogMsgHandler * thePostMortemHandler = nullptr;
 static CSysLogEventLogger * theSysLogEventLogger = nullptr;
 
 
@@ -1056,7 +1057,7 @@ PostMortemLogMsgHandler::PostMortemLogMsgHandler(const char * _filebase, unsigne
 
 PostMortemLogMsgHandler::~PostMortemLogMsgHandler()
 {
-    closeAndDeleteEmpty(filename, handle);
+    closeAndDeleteEmpty(filename.length()?filename.str():nullptr, handle);
 }
 
 void PostMortemLogMsgHandler::handleMessage(const LogMsg & msg)
@@ -1067,9 +1068,10 @@ void PostMortemLogMsgHandler::handleMessage(const LogMsg & msg)
         checkRollover();
         msg.toStringTable(curMsgText.clear(), messageFields);
         fputs(curMsgText.str(), handle);
-        if(flushes)
+        if (flushes)
             fflush(handle);
-        linesInCurrent++;
+        if (filename.length()) // don't track if writing to null (and hence no rollover)
+            linesInCurrent++;
     }
 }
 
@@ -1087,6 +1089,7 @@ void PostMortemLogMsgHandler::checkRollover()
 
 void PostMortemLogMsgHandler::doRollover()
 {
+    dbgassertex(filename.length());
     closeAndDeleteEmpty(filename, handle);
     handle = 0;
     if (sequence > 0)
@@ -1104,10 +1107,75 @@ void PostMortemLogMsgHandler::openFile()
     filename.clear().append(filebase).append('.').append(sequence);
     recursiveCreateDirectoryForFile(filename.str());
     handle = fopen(filename.str(), "wt");
-    if(!handle)
+    if (!handle)
+    {
+        filename.clear();
         handle = getNullHandle();   // If we can't write where we expected, write to /dev/null instead
+    }
     linesInCurrent = 0;
 }
+
+void PostMortemLogMsgHandler::copyTo(const char *target, bool clear)
+{
+    CriticalBlock block(crit);
+    if (handle)
+    {
+        fflush(handle);
+        if (clear)
+        {
+            fclose(handle);
+            handle = 0;
+        }
+    }
+    try
+    {
+        if (sequence) // meaning there is a prior file
+        {
+            StringBuffer priorName;
+            priorName.append(filebase).append('.').append(sequence-1);
+            recursiveCreateDirectoryForFile(target);
+            copyFile(target, priorName);
+            if (clear)
+                remove(priorName);
+        }
+        if (filename.length() && linesInCurrent)
+        {
+            Owned<IFile> targetIFile = createIFile(target);
+            Owned<IFileIO> targetIO;
+            if (sequence)
+                targetIO.setown(targetIFile->open(IFOreadwrite));
+            else
+            {
+                recursiveCreateDirectoryForFile(target);
+                targetIO.setown(targetIFile->open(IFOcreate));
+            }
+            if (!targetIO)
+                throwStringExceptionV(-1, "postmortem copyTo - Failed to open target file %s", target);
+            Owned<IFile> currentIFile = createIFile(filename);
+            targetIO->appendFile(currentIFile, 0, currentIFile->size());
+            if (clear)
+                remove(filename);
+        }
+        if (clear)
+            sequence = 0;
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+    }
+    if (clear)
+        openFile();
+}
+
+bool copyPostMortemLogging(const char *target, bool clear)
+{
+    if (!thePostMortemHandler)
+        return false;
+    thePostMortemHandler->copyTo(target, clear);
+    return true;
+}
+
 
 // RollingFileLogMsgHandler
 #define MIN_LOGFILE_SIZE_LIMIT 10000
@@ -2281,11 +2349,13 @@ MODULE_EXIT()
     theManager = &nullManager;
     delete theSysLogEventLogger;
     delete theStderrHandler;
+    delete thePostMortemHandler;
     delete thePassNoneFilter;
     delete thePassLocalFilter;
     delete thePassAllFilter;
     theSysLogEventLogger = nullptr;
     theStderrHandler = nullptr;
+    thePostMortemHandler = nullptr;
     thePassNoneFilter = nullptr;
     thePassLocalFilter = nullptr;
     thePassAllFilter = nullptr;
@@ -2399,8 +2469,8 @@ void setupContainerizedLogMsgHandler()
             unsigned pid = GetCurrentProcessId();
             VStringBuffer portMortemFileBase("/tmp/postmortem.%u.log", pid);
 
-            ILogMsgHandler *fileMsgHandler = getPostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
-            queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+            thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
+            queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
     }
 }
@@ -2413,6 +2483,11 @@ ILogMsgManager * queryLogMsgManager()
 ILogMsgHandler * queryStderrLogMsgHandler()
 {
     return theStderrHandler;
+}
+
+ILogMsgHandler * queryPostMortemLogMsgHandler()
+{
+    return thePostMortemHandler;
 }
 
 ILogMsgManager * createLogMsgManager() // use with care! (needed by mplog listener facility)

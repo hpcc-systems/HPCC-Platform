@@ -181,6 +181,7 @@ public:
     bool go();
     void pause(bool abort);
     void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc);
+    void captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags);
 
     virtual IConstWorkUnit &queryWorkUnit() const
     {
