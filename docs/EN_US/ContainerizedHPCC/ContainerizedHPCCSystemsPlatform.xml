@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -37,26 +37,26 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -92,7 +92,7 @@
 
     <para>For Cloud deployments, you can use any flavor of Cloud services, if
     it supports Docker, Kubernetes, and Helm. This book, however, will focus
-    on Microsoft Azure for Cloud Services. </para>
+    on Microsoft Azure for Cloud Services.</para>
 
     <para>If you want to manually manage your local or Cloud deployment, you
     can still use the traditional installers and Configuration Manager, but
@@ -205,28 +205,32 @@
         automatically ensures that the required agent components are
         provisioned.</para>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
   </chapter>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/AzureDeployment.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/TerraformDeployChap.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/ConfigureValues.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/StoragePlanes.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
   <xi:include href="ContainerizedHPCC/ContainerizedMods/TroubleshootingHelmDeployments.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />			  
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 </book>

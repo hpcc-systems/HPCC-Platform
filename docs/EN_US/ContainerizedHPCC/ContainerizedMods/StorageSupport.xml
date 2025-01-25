@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Storage Planes</title>
+
+  <sect1 id="Stg_PlaneSupport">
+    <title>Storage Plane Support</title>
+
+    <para>The goal is to support the following models:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Existing Kubernetes model - shared storage used by all nodes.
+          All nodes have access to all data.</para>
+        </listitem>
+
+        <listitem>
+          <para>Allow a Kubernetes Roxie with a fixed number of replicas per
+          channel to use local NVMe disks to store the data. Nodes only have
+          access to local data.</para>
+        </listitem>
+
+        <listitem>
+          <para>Allow Kubernetes Roxies with any replica scaling to access
+          data exported by NFS from a bare-metal Roxie. The widths may be
+          completely different. Nodes have load-balanced access to the local
+          data on bare-metal Roxie.</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <sect2 id="Stg_BareMetalRoxie">
+      <title>Bare-metal Roxie</title>
+
+      <para>For bare metal the following rules define the mapping of file
+      parts to "devices"/nodes.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Channel replicas are implemented by duplicating the set of
+            Roxie worker channels on a second set of independent nodes. For
+            instance, an 80 way Roxie with 2 workers for each channel, the
+            primary channels could be located on nodes 1-40, and the secondary
+            channels are located on 41-80.</para>
+          </listitem>
+
+          <listitem>
+            <para>Channels only ever access local files. This means that
+            single part files (and TLKs) are duplicated onto every
+            node.</para>
+          </listitem>
+
+          <listitem>
+            <para>Each Channel reads the file part number that corresponds to
+            the channel plus multiples of the total number of channels. For
+            instance channel 1 on a Roxie with 40 channels will read file
+            parts 1, 41, 81,..361</para>
+          </listitem>
+
+          <listitem>
+            <para>If there are more channels than nodes for each replica set
+            then the channels wrap - e.g. node 1 contains channel 1, 41; node2
+            channel 2, 42 etc. (With 80 channels channel 1 would then read
+            parts 1, 81, 161..321)</para>
+          </listitem>
+
+          <listitem>
+            <para>The location of the file-parts are always local to the node
+            of the channel that will read that part.</para>
+          </listitem>
+
+          <listitem>
+            <para>The location of a file part can be determined from the
+            number of nodes for the replica set independent of the number of
+            channels. If the channels wrap around the nodes the parts accessed
+            locally are unaffected.</para>
+          </listitem>
+
+          <listitem>
+            <para>The resulting file distribution will be referred to as the
+            "simple" replication scheme.</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>The 80 node system could be modelled as a storage system with 80
+      devices and 2 copies. The second copy is found on device n + 40.</para>
+    </sect2>
+
+    <sect2 id="Stg_BAreMetalThor">
+      <title>Bare-metal Thor</title>
+
+      <para>Bare-metal Thor generally uses a different mapping - file part 1
+      is stored on node 1 with a backup on 2, file part 2 on nodes 2 and 3
+      etc. This is referred to as the cyclic replication scheme.</para>
+    </sect2>
+
+    <sect2 id="Stg_Kubernetes">
+      <title>Kubernetes</title>
+
+      <para>If a storage plane supports multiple devices, a file part is
+      written to device number.</para>
+
+      <programlisting>(part0device + part) % numDevices  </programlisting>
+
+      <para>Where 'part0device' is calculated from a hash of the filename.
+      This ensures that single part files are evenly distributed over the
+      devices. Storage planes do not currently have a concept of file copies -
+      redundancy has been assumed to be a responsibility of the cloud
+      provider.</para>
+    </sect2>
+
+    <sect2 id="Stg_GeneralizedMapping">
+      <title>Generalized Mapping</title>
+
+      <para>Assuming a 1:1 equivalence between nodes in a Roxie/thor<emphasis
+      role="bold"> bare-metal</emphasis> system and devices in a storage
+      plane.</para>
+
+      <para>This gives us the following rules for the location of a file
+      part:</para>
+
+      <programlisting>RoxieDevice(part, copy) 
+  if (singlePart) return *ALL* 
+  repeatLength = numDevices / numCopies; 
+  return part % repeatLength + repeatLength * copy; 
+
+thorDevice(part, copy)
+  //for thor cyclicOffset == 1, Roxie supports cyclicOffset&gt;1
+  return (part + copy * cyclicOffset) % numDevices
+
+k8device(part, copy)
+  rootDevice = hash(filename);
+  return (rootDevice + part) % numDevices </programlisting>
+
+      <para>We can combine them with a single function in the following way
+      (and also provide support for copies in Kubernetes).</para>
+
+      <para>The following maps file parts to devices:</para>
+
+      <programlisting>device(part, copy)
+  if ((singlePart || tlk) &amp;&amp; plane.cloneSingleParts return *ALL*
+  switch replication:
+    "cyclic":
+       rootDevice = plane.unbalanced ? 0 : hash(filename);
+       return (rootDevice + part + copy * cyclicOffset) % plane.numDevices
+    "simple":
+       repeatLength = plane.numDevices / plane.numCopies;
+       return (part % repeatLength) + (repeatLength * copy); </programlisting>
+
+      <para>Note: This is independent of the configuration of the component
+      that is accessing the data.</para>
+
+      <para>This could be supported in Kubernetes (and in bare metal by
+      extending the configuration) by adding the following attributes to a
+      storage plane:</para>
+
+      <programlisting>cloneSingleParts: boolean # default false, true for bare-metal Roxie 
+numCopies: number # defaults to 1, 2 for bare-metal thor. Must be &lt;= numDevices 
+replication: cyclic|simple # default "cyclic", "simple" for bare-metal Roxie 
+unbalanced: boolean # default false containerized, true bare-metal </programlisting>
+
+      <para>There are a couple of other attributes that should be added at the
+      same time to allow local NVMe drives to be be cleanly supported on
+      multi-node Kubernetes systems, and to support the existing bare metal
+      configurations.</para>
+
+      <programlisting>attachedTo: &lt;component-name&gt; 
+runNFS: boolean 
+runDafilesrc: boolean </programlisting>
+
+      <para>The <emphasis>attachedTo</emphasis> option indicates whether a
+      device is local to a component. If a plane is attached to a component it
+      is only directly mounted by that component. There might be other options
+      to allow other components to access the files in a different way. See
+      the discussion at the end for more details on local planes. For most of
+      the discussion it is sufficient to accept the idea of a local
+      plane.</para>
+    </sect2>
+
+    <sect2 id="Stg_ImplFunctionality">
+      <title>Implementing the Functionality</title>
+
+      <para>There are the following aspects to supporting these
+      attributes:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>When files are created or copied ensure that file parts are
+          present on all the places that are required.</para>
+        </listitem>
+
+        <listitem>
+          <para>When files are accessed they are accessed from the correct
+          device.</para>
+        </listitem>
+
+        <listitem>
+          <para>Ensuring the correct mounts are performed in the helm
+          chart.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Supporting this requires the following changes to the system.
+      Sections marked with [remote] are needed to read data from a remote bare
+      metal deployment.</para>
+
+      <sect3 id="Stg_Roxie">
+        <title>Roxie</title>
+
+        <para>A Roxie node channel c of C, channel-replica r of R. It is
+        running over a set of N nodes.</para>
+
+        <para>A storage plane has D devices and X copies.</para>
+
+        <para>For a local plane:</para>
+
+        <para>X must be the same as R. (This makes it non trivial to scale the
+        number of channels dynamically.)</para>
+
+        <para>In this case, each node corresponds to a single device (i.e. N =
+        D) for a local plane. Alternatively you could allow multiple devices
+        per node (by specifying a Roxie.channelsPerNode or
+        numNodesPerChannelSet), but to do so check if there is a good use-case
+        for it.</para>
+
+        <para>N/R should be a factor of C for a local plane. For example, a
+        5-way Kubernetes (C=5, R=2, N=10) with a node per channel replica, or
+        N=2 if all processes are on 2 nodes.</para>
+      </sect3>
+
+      <sect3 id="Stg_RoxieDataSource">
+        <title>Roxie Data Source</title>
+
+        <para>Where does a Roxie cluster reading remote, either to process the
+        data, or to copy it, get the data from?</para>
+
+        <programlisting>// If the data is local it should only read local 
+//        (if the local storage is dead you have bigger problems!) 
+// If it is remote then you can either read from a single copy of the data - chosen to load balance traffic - or allow reads from any of the copies 
+pseudoPart = isSinglePart || isTLK ? channel : part; 
+if (plane.isLocal()) 
+  this channel will only read data from local device. i.e. device(pseudoPart, channelReplica);
+  else if (component.supportRedundantReads())
+   this channel will read data from a load balanced list of copies 1..numCopies for the file/plane. 
+   //Better to read from device(pseudoPart, copy), and fall back to device(pseudoPart, copy+i % numCopies) if that fails. 
+   // similar would also be useful for thor reading from files - allow fallback to the backup. Even better if dynamic. 
+   // if plance.cloneSinglePart is true it could be redundant over all devices, but that may not be desirable. 
+else 
+   read data from device(pseudoPart, channelReplica % numCopies) 
+
+//Simplified to 
+if (!plane.isLocal() &amp;&amp; component.supportRedundantReads())
+  this channel will read data from a load balanced list of copies 1..numCopies for the file/plane.
+  //Better might be to read from device(pseudoPart, copy), and fall back to device(pseudoPart, copy+i % numCopies) if that fails. 
+else
+   read data from device(pseudoPart, channelReplica % numCopies) </programlisting>
+      </sect3>
+
+      <sect3 id="Stg_PlaneCopyingReplicas">
+        <title>Replicas That Copy Data to a Plane</title>
+
+        <para>There may be multiple channels and replicas accessing data on a
+        given storage device - either local or remote. Which channel instance
+        should be responsible for copying each part to each target
+        location?</para>
+
+        <para>Is there any way of telling which replica a node belongs to? If
+        yes, copying should be restricted to first the not there is a
+        potential problems</para>
+
+        <programlisting>//Only copy from the first channel replica if the storage is remote. Is it currently possible to determine that?? Only via toposerver for Kubernetes ? How about bare-metal? 
+if (plane.isLocal() || isFirstChannelReplica())
+  //Calculate if this channel will read this part.
+  if ((plane.cloneSingleParts) &amp;&amp; (singlePart || tlk)) || device(part,copy) = myDevice)
+  //How many channels will be reading this file?
+  //not at all sure about these formulas - revisit... 
+  if (plane.isLocal())
+    numReaders = (C*R)/N 
+  else if (singlePart || tlk))
+    if (plane.cloneSingleParts)
+      numReaders = C*R/D ???? 
+    else
+      numReaders = C*R else numReaders = 1; // only a single channel reads this part
+  // Some formula to select between the different potential copiers. I doubt the following is correct.
+    if (hash(filename) + (r * C + c) % numReaders = 0) 
+      ///I'm allocated to copy... </programlisting>
+      </sect3>
+
+      <sect3 id="Stg_K8SupportLocalNVMDsk">
+        <title>Kubernetes Support for Local NVMe Disks</title>
+
+        <para>***NOTE: THIS SECTION IS INCOMPLETE **** Before deciding on the
+        details -- work out how to ensure the correct channel replicas end up
+        on the correct nodes.</para>
+
+        <para>Possibly further complicated if a single node can have multiple
+        devices.</para>
+
+        <para>This section needs completing from a SME before following on
+        with the rest of the details.***</para>
+
+        <para>***Taints and tolerances?</para>
+
+        <para>Could provide taints that ensure only one channel replica can be
+        placed on each node. The replica number would be determined by the
+        node number.</para>
+
+        <para>***Stateful set?</para>
+      </sect3>
+
+      <sect3 id="Stg_RoxieHelmChanges">
+        <title>Roxie Helm Changes</title>
+
+        <para>To support local storage the helm chart will need to ensure that
+        the channel/replica combination is bound to the correct pod. May need
+        to use a different "channelReplicas" setting that is fixed and
+        generates a separate yaml - so that replicas can be bound to the
+        correct place. (see later)</para>
+      </sect3>
+
+      <sect3 id="Stg_RemoteOptimizer">
+        <title>[remote optimization]</title>
+
+        <para/>
+
+        <para>If a storage plane uses simple replication and the number of
+        channels is a factor of the numberDevices/numCopies, then only mount
+        the devices that will be accessed. Applies to remote and local.
+        Primarily applies to Roxie.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Stg_GeneralHelmChanges">
+      <title>General Helm Changes</title>
+
+      <para>assert numDevices &gt;= numCopies</para>
+
+      <para>warn if cloneSingleParts and numDevices == 1</para>
+
+      <para>If the plane is attached to the component then</para>
+
+      <para>assert(C*R &gt;= numDevices) (higher numbers of replicas allows
+      load-balanced replicas accessing the same data)</para>
+
+      <para>assert(plane.replication = simple) (Revisit if need to implement
+      thor with local storage.)</para>
+
+      <para>check no independent scaling of channels.</para>
+
+      <para>number of replicas cannot auto scale because number of devices
+      would also need to scale at the same time.</para>
+
+      <para>Use affinities to ensure all pods end up on the same node that
+      matches the device number. [No idea how to actually achieve
+      this...]</para>
+
+      <para>Use a different pvc (e.g. with local prefix) to bind to the
+      device/mount - so that the data could still be read by other components
+      using a NFS server using a different set of pvcs.</para>
+
+      <sect3 id="Stg_dfuserver">
+        <title>dfuserver</title>
+
+        <para>Clone single part files (and TLKS) to all devices if
+        plane.cloneSingleParts is set.</para>
+
+        <para>Enable multiple copies being written in containerized mode
+        (defined by number of copies set in the storage plane).</para>
+
+        <para>ensure that files are copied to the correct location given the
+        options above</para>
+      </sect3>
+
+      <sect3 id="Stg_Thor">
+        <title>Thor</title>
+
+        <para>Should it follow the same rules as dfuserver?</para>
+
+        <para>Is it ok to only write a single part of a file to a plane that
+        needs it duplicating? Should it purely error?</para>
+      </sect3>
+
+      <sect3 id="Stg_DaliFileMetaData">
+        <title>Dali File Meta Data</title>
+
+        <para>One-shot Roxie should mark files as only having a single copy
+        (if it doesn't already). A similar fix to eclAgent was recently
+        applied.</para>
+
+        <para>Is num copies currently a property of a logical file, or a
+        (logical-file, cluster) combination? It needs to be the latter. I
+        think in bare-metal setting it correctly has been lax. ***This seems
+        conversational not authoritative*** <emphasis
+        role="bold">NOTED</emphasis> ***LIKELY INCOMPLETE***</para>
+      </sect3>
+
+      <sect3 id="Stg_XREF">
+        <title>Xref</title>
+
+        <para>Xref should enforce the rules for copies. It could replicate
+        missing entries</para>
+
+        <para>Any other components? Most will automatically support these
+        attributes if the dfs functions are modified.</para>
+
+        <para>Could use this to support copies in containerized system, and
+        could use the same mechanism in bare metal so there is a unified model
+        for accessing files in both modes.</para>
+      </sect3>
+
+      <sect3 id="Stg_WeirdQuest">
+        <title>Additional (Weird) Questions</title>
+
+        <para>Should deployed Roxie be allowed to output files? If it does
+        they should theoretically be cloned on to all nodes if they output to
+        a local plane. Should require output to a plane without
+        cloneSingleParts. Same for hthor.</para>
+      </sect3>
+
+      <sect3 id="Stg_Eg_xamples">
+        <title>Examples</title>
+
+        <para>8 device Roxie, 20 channels, 2 copies, 2 replicas, local plane
+        (channel:replica)</para>
+
+        <programlisting>device0: [0:0, 4:0, 8:0, 12:0, 16:0] device4: [0:1, 4:1, 8:1, 12:1, 16:1] 
+device1: [1:0, 5:0, 9:0, 13:0, 17:0] device5: [1:1, 5:1, 9:1, 13:1, 17:1] 
+device2: [2:0, 6:0, 10:0, 14:0, 18:0] device6: [2:1, 6:1, 10:1, 14:1, 18:1] 
+device3: [3:0, 7:0, 11:0, 15:0, 19:0] device7: [3:1, 7:1, 11:1, 15:1, 19:1] </programlisting>
+
+        <para>Same with a non-local plane - e.g. using a NFS server from a
+        bare-metal system. The difference is the file reads have multiple
+        sources.</para>
+
+        <programlisting>(device0, device4): [0:0, 4:0, 8:0, 12:0, 16:0, 0:1, 4:1, 8:1, 12:1, 16:1] 
+(device1, device5): [1:0, 5:0, 9:0, 13:0, 17:0, 1:1, 5:1, 9:1, 13:1, 17:1] 
+(device2, device6): [2:0, 6:0, 10:0, 14:0, 18:0, 2:1, 6:1, 10:1, 14:1, 18:1] 
+(device3, device7): [3:0, 7:0, 11:0, 15:0, 19:0, 3:1, 7:1, 11:1, 15:1, 19:1] </programlisting>
+
+        <para>5 channel Roxie, accessing 50 device, 2 copies</para>
+
+        <programlisting>channel1: ((device0, device25), (device5, device30), (device10, device35) (device15, device40), (device20, device45)) - load- balanced pairs 
+channel2: ((device1, device26), (device6, device31), (device11, device36), (device16, device41), (device21, device46)) - load- balanced pairs </programlisting>
+      </sect3>
+
+      <sect3 id="Stg_MoreLocalPlanes">
+        <title>More Local Planes</title>
+
+        <para>The plane is only mounted by that component. It also only mounts
+        the devices that correspond to the channels/Thor workers that will
+        read that local file.</para>
+
+        <para>Pods for the component should be allocated to ensure they end up
+        on the correct associated node. ***How do we do that??</para>
+
+        <para>***This seems conversational not authoritative*** <emphasis
+        role="bold">NOTED</emphasis> ***LIKELY INCOMPLETE***</para>
+
+        <para>**taints? **stateful sets?</para>
+
+        <para>**How do multiple channels get started on the correct
+        nodes?</para>
+
+        <para>**How do other pods get started on the same ndoes?</para>
+
+        <para>What happens when you have replicas - can you distinguish them -
+        we need to be able to... Do we need a different mechanism??</para>
+
+        <para>Impose a restriction that only one plane can be attached to each
+        component? (Simplifies logic and I suspect doesn't cause any problems.
+        (We could allow planes with dup definitions and different
+        subpaths/categories as we do currently.)</para>
+
+        <para>Impose a restriction that only one component can be attached to
+        each plane? This doesn't allow for the fusion-Roxie style setup.
+        Possibly better is for a plane to be attached to a logical node-set
+        (new concept), and a Roxie to optionally be attached to a node-set.
+        How would the node-set be implemented?</para>
+
+        <para>How to (optionally) start a uniquely-identifiable instance of
+        dafilesrv on each node using local storage? What problems does that
+        cause for the logical-&gt;physical filename mapping (if any)???</para>
+
+        <para>Would it be possible to (optionally) create a network share for
+        a local file system on each node. Would it be better to leave that to
+        a terraform module - because it may lead to ordering problems starting
+        a cluster up, especially if a local plane is defined, but no external.
+        Are there complications with creating labelled nodes though?</para>
+
+        <para>The number of channelReplicas for the attached Roxie needs to be
+        the same as the number of copies for the plane.</para>
+
+        <para>What requirements does it places on the number of
+        channels/slaves for thor with a local plane?? Do we even attempt to
+        support it? ***The immediately preceding text seems conversational and
+        not authoritative*** <emphasis role="bold">NOTED</emphasis> ***LIKELY
+        INCOMPLETE***</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</chapter>
