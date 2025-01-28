@@ -36,8 +36,9 @@
 #include "SOAP/xpp/xjx/xjxpp.hpp"
 #include "jmetrics.hpp"
 
+static std::once_flag metricsInitialized;
 #ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
-static auto pSoapRequestCount = hpccMetrics::registerCounterMetric("esp.soap_requests.received", "Number of JSON and SOAP POST requests received", SMeasureCount);
+static std::shared_ptr<hpccMetrics::CounterMetric> pSoapRequestCount;
 #endif
 
 
@@ -68,15 +69,20 @@ int CSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_respons
     return 0;
 }
 
-CHttpSoapBinding::CHttpSoapBinding():EspHttpBinding(NULL, NULL, NULL)
+CHttpSoapBinding::CHttpSoapBinding()
+: CHttpSoapBinding(NULL, NULL, NULL)
 {
-    log_level_=hsl_none;
 }
 
 CHttpSoapBinding::CHttpSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level)
 : EspHttpBinding(cfg, bindname, procname)
 {
     log_level_=level;
+#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
+    std::call_once(metricsInitialized, [](){
+        pSoapRequestCount = hpccMetrics::registerCounterMetric("esp.soap.requests.received", "Number of JSON and SOAP POST requests received", SMeasureCount);
+    });
+#endif
 }
 
 CHttpSoapBinding::~CHttpSoapBinding()
