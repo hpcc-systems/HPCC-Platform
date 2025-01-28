@@ -15,13 +15,15 @@
 eval set -- "$1"
 
 usage() {
-  echo "Usage: check_executes [options] -- cmd args"
+  echo "Usage: check_executes.sh [options] -- cmd args"
   echo "    -c <name>          The name of the container"
   echo "    -d <directory>     Mounted directory to store post-mortem info in"
-  echo "    -f <file>          Specifies a file to preserve on post-mortem"
+  echo "    -a                 Always collect post-mortem info, even if the process exits cleanly"
+  echo "    -v                 Run the process under valgrind"
+  echo "    -p                 This is a postrun sidecar container"
 }
 
-PMD_DIRECTORYBASE=$(pwd)
+PMD_DIRECTORYBASE=
 PMD_PROGNAME=
 PMD_DALISERVER=
 PMD_WORKUNIT=
@@ -152,9 +154,13 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   if [[ -n "$PMD_WORKUNIT" ]]; then
     extraArgs+=("--workunit=$PMD_WORKUNIT")
   fi
-  echo "Collecting post mortem info"
-  collect_postmortem.sh "--directory=${PMD_DIRECTORYBASE}" "--daliServer=${PMD_DALISERVER}" "--container=${PMD_CONTAINERNAME}" "--process=${PMD_PROGNAME}" "${extraArgs[@]}"
-  echo "Post mortem collection completed"
+  if [[ -n "$PMD_DIRECTORYBASE" ]]; then
+    echo "Collecting post mortem info"
+    collect_postmortem.sh "--directory=${PMD_DIRECTORYBASE}" "--daliServer=${PMD_DALISERVER}" "--container=${PMD_CONTAINERNAME}" "--process=${PMD_PROGNAME}" "${extraArgs[@]}"
+    echo "Post mortem collection completed"
+  else
+    echo "Post mortem directory not provided, unable to collect post mortem info"
+  fi
 else
   echo "Process exited cleanly (code=0)"
 fi
