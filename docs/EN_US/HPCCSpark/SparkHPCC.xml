@@ -75,8 +75,8 @@
       reading in parallel by the Spark cluster.</para>
 
       <para>In the GitHub repository (<ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC">https://github.com/hpcc-systems/Spark-HPCC</ulink>)
-      you can find the source code and examples. </para>
+      url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink>)
+      you can find the source code and examples.</para>
 
       <para>A walk-through of the examples is provided in the Examples
       section.</para>
@@ -356,7 +356,7 @@ write.df(df, source = "hpcc",
       <para>You can refer to the examples in the Github repository:</para>
 
       <para><ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples</ulink></para>
+      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/hpcc4j/tree/master/spark-hpcc/Examples</ulink></para>
     </sect1>
   </chapter>
 </book>
