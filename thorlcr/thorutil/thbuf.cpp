@@ -1107,7 +1107,8 @@ public:
             {
                 if (nextInputRow == nextOutputRow)
                 {
-                    readState = rs_stopped;
+                    CriticalBlock b(readerWriterCS);
+                    handleInputComplete(); // sets readState to rs_stopped
                     return nullptr;
                 }
                 const void *row = readRowFromStream();
