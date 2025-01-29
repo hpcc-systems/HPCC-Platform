@@ -300,6 +300,19 @@ tracing:
 {{- end -}}
 {{- end -}}
 
+
+{{/*
+Generate analyzerOptions
+*/}}
+{{- define "hpcc.generateAnalyzerOptions" -}}
+{{- $analyzerOptions := deepCopy (.me.analyzerOptions | default dict) | mergeOverwrite dict (.root.Values.global.analyzerOptions | default dict) -}}
+{{- if not (empty $analyzerOptions) }}
+analyzerOptions:
+{{ toYaml $analyzerOptions | indent 2 }}
+{{- end -}}
+{{ end -}}
+
+
 {{/*
 Generate local metrics configuration, merged with global
 Pass in dict with root and me

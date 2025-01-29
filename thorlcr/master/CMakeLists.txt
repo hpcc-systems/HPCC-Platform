@@ -58,6 +58,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ./../../system/security/shared
          ./../../system/security/securesocket
+         ${HPCC_SOURCE_DIR}/common/wuanalysis
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -87,6 +88,7 @@ target_link_libraries (  thormaster_lcr
          graphmaster_lcr 
          activitymasters_lcr 
          swapnodelib
+         wuanalysis
     )
 
 if (USE_OPENSSL)

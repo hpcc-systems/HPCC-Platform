@@ -32,6 +32,15 @@ global:
     resourceAttributes: # used to declare OTEL Resource Attribute config values
       deploymentEnvironment: development # used to anotate tracing spans' environment identifier (development/production/statiging/etc)
 
+  # analyzerOptions:
+  #   disabled: false
+  #   analyzeInEclAgent: false
+  #   analyzeWhenComplete: false
+  #   minInterestingTime: 1000 # ms
+  #   minInterestingCost: 1.0 # $
+  #   minInterestingWaste: 30000 #ms
+  #   skewThreshold: 20
+
   ## resource settings for stub components
   #stubInstanceResources:
   #  memory: "200Mi"
