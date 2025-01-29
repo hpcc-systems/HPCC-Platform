@@ -768,9 +768,6 @@ public:
         if (span == nullptr)
             return false;
 
-        if (!span->IsRecording()) //if not sampled, we shouldn't consider this valid?
-            return false;
-
         auto spanCtx = span->GetContext();
         return spanCtx.IsValid();
     }
@@ -1368,19 +1365,17 @@ static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IProper
         const char * samplerType = samplerTree->queryProp("@type");
         if (!isEmptyString(samplerType))
         {
-            const char * samplerArgument = samplerTree->queryProp("@argument");
-            if (strcmp("AlwaysOff", samplerType)==0)
+            if (streq(samplerType, "AlwaysOff"))
             {
                 sampler.reset(new opentelemetry::sdk::trace::AlwaysOffSampler());
             }
-            else if (strcmp("AlwaysOn", samplerType)==0)
+            else if (streq(samplerType, "AlwaysOn"))
             {
                 sampler.reset(new opentelemetry::sdk::trace::AlwaysOnSampler());
             }
-            else if (strcmp("Ratio", samplerType)==0)
+            else if (streq(samplerType,"Ratio"))
             {
-                size_t pos;
-                double ratio = std::stod(samplerArgument, &pos);
+                double ratio = samplerTree->getPropReal("@argument");
                 if (ratio < 0 || ratio > 1)
                 {
                     OERRLOG("JTrace invalid ratio sampler configuration. Ratio must be LE 1.0 or GE 0.0");
@@ -1397,16 +1392,15 @@ static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IProper
 
             if (sampler && samplerTree->getPropBool("@parentBased", true))
             {
-                return std::unique_ptr<opentelemetry::sdk::trace::ParentBasedSampler>(new opentelemetry::sdk::trace::ParentBasedSampler( std::move(sampler)));
+                return std::unique_ptr<opentelemetry::sdk::trace::ParentBasedSampler>(new opentelemetry::sdk::trace::ParentBasedSampler(std::move(sampler)));
             }
         }
     }
 
     if (!sampler) 
     {
-        WARNLOG("JTrace: Default Sampler 'Always ON' set");
-        sampler = std::unique_ptr<opentelemetry::sdk::trace::AlwaysOnSampler>
-                                (new opentelemetry::sdk::trace::AlwaysOnSampler);
+        sampler.reset(new opentelemetry::sdk::trace::AlwaysOnSampler());
+        WARNLOG("JTrace sampler set to 'Always ON' by default!");
     }
 
     return sampler;
@@ -1466,8 +1460,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
 
     if (!sampler) 
     {
-        sampler = std::unique_ptr<opentelemetry::sdk::trace::AlwaysOnSampler>
-                                (new opentelemetry::sdk::trace::AlwaysOnSampler);
+        sampler = std::unique_ptr<opentelemetry::sdk::trace::AlwaysOnSampler>(new opentelemetry::sdk::trace::AlwaysOnSampler);
     }
 
     if (enableDefaultLogExporter)
