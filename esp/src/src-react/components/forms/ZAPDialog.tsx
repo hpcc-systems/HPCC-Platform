@@ -1,10 +1,10 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, TooltipHost } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, Label, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
-import { useBuildInfo } from "../../hooks/platform";
+import { useBuildInfo, useLogAccessInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import { CloudContainerNameField } from "../forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
@@ -36,7 +36,7 @@ type CustomLabelProps = ITextFieldProps & IDropdownProps & IOnRenderComboBoxLabe
 
 const CustomLabel = (props: CustomLabelProps): JSX.Element => {
     return <Stack horizontal verticalAlign="center" tokens={stackTokens}>
-        <label htmlFor={props.name} id={props.id} style={{ fontWeight: 600, display: "block", padding: "5px 0" }}>{props.label}</label>
+        <Label htmlFor={props.name} disabled={props.disabled} id={props.id} style={{ fontWeight: 600, display: "block", padding: "5px 0" }}>{props.label}</Label>
         <TooltipHost content={props.tooltip}>
             <Icon iconName="Info" style={{ cursor: "default" }} />
         </TooltipHost>
@@ -56,6 +56,8 @@ interface ZAPDialogValues {
     WhereSlow: string;
     Password: string;
     IncludeThorSlaveLog: boolean;
+    IncludeRelatedLogs: boolean;
+    IncludePerComponentLogs: boolean;
     SendEmail: boolean;
     EmailTo: string;
     EmailFrom: string;
@@ -92,6 +94,8 @@ const defaultValues: ZAPDialogValues = {
     WhereSlow: "",
     Password: "",
     IncludeThorSlaveLog: true,
+    IncludeRelatedLogs: true,
+    IncludePerComponentLogs: false,
     SendEmail: false,
     EmailTo: "",
     EmailFrom: "",
@@ -155,6 +159,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             textOverflow: "ellipsis",
             outline: 0
         },
+        disabled: {
+            background: theme.semanticColors.disabledBackground,
+            border: `1px solid ${theme.semanticColors.disabledBackground}`
+        },
         "errorMessage": {
             fontSize: 12,
             margin: 0,
@@ -175,6 +183,20 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
 
     const [, { isContainer }] = useBuildInfo();
 
+    const [logFiltersUnavailable, setLogFiltersUnavailable] = React.useState(false);
+    const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
+
+    const logFiltersUnavailableMessage = React.useMemo(() => {
+        let retVal = "";
+        if (!isContainer) {
+            retVal = nlsHPCC.UnavailableInBareMetal;
+        }
+        if (logsStatusMessage !== "") {
+            retVal = logsStatusMessage;
+        }
+        return retVal;
+    }, [isContainer, logsStatusMessage]);
+
     const closeForm = React.useCallback(() => {
         setShowForm(false);
     }, [setShowForm]);
@@ -189,22 +211,29 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 setSubmitDisabled(true);
                 setSpinnerHidden(false);
 
+                if (logsEnabled) {
+                    for (const key in logFilter) {
+                        if (key === "AbsoluteTimeRange") {
+                            const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate) : null;
+                            let endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate) : null;
+                            if (startDate) {
+                                endDate = endDate === null ? new Date(startDate.getTime() + (8 * 3600 * 1000)) : endDate;
+                                formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate.toISOString());
+                                formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate.toISOString());
+                                delete logFilter.RelativeTimeRangeBuffer;
+                            }
+                        } else {
+                            formData.append(`LogFilter_${key}`, logFilter[key]);
+                        }
+                    }
+                } else {
+                    data.IncludePerComponentLogs = false;
+                    data.IncludeRelatedLogs = false;
+                    data.IncludeThorSlaveLog = false;
+                }
+
                 for (const key in data) {
                     formData.append(key, data[key]);
-                }
-                for (const key in logFilter) {
-                    if (key === "AbsoluteTimeRange") {
-                        const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate) : null;
-                        let endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate) : null;
-                        if (startDate) {
-                            endDate = endDate === null ? new Date(startDate.getTime() + (8 * 3600 * 1000)) : endDate;
-                            formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate.toISOString());
-                            formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate.toISOString());
-                            delete logFilter.RelativeTimeRangeBuffer;
-                        }
-                    } else {
-                        formData.append(`LogFilter_${key}`, logFilter[key]);
-                    }
                 }
 
                 fetch("/WsWorkunits/WUCreateAndDownloadZAPInfo", {
@@ -244,7 +273,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             },
             logger.info
         )();
-    }, [closeForm, handleSubmit, logAccessorMessage]);
+    }, [closeForm, handleSubmit, logAccessorMessage, logsEnabled]);
 
     React.useEffect(() => {
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
@@ -260,6 +289,11 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             reset(newValues);
         }).catch(err => logger.error(err));
     }, [wuid, reset]);
+
+    React.useEffect(() => {
+        if (!logsEnabled) { setLogFiltersUnavailable(true); }
+        else { setLogFiltersUnavailable(false); }
+    }, [logsEnabled]);
 
     return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} minWidth={440} show={showForm} setShow={closeForm}
         footer={<>
@@ -384,14 +418,34 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 />}
         />
         <div style={{ padding: "15px 0 7px 0" }}>
-            <div>
-                <Controller
-                    control={control} name="IncludeThorSlaveLog"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
-                />
-            </div>
+            {!isContainer
+                ? <div>
+                    <Controller
+                        control={control} name="IncludeThorSlaveLog"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
+                    />
+                </div>
+                : <div>
+                    <div style={{ marginBottom: 4 }}>
+                        <Controller
+                            control={control} name="IncludeRelatedLogs"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={onChange} label={nlsHPCC.IncludeRelatedLogs} />}
+                        />
+                    </div>
+                    <div>
+                        <Controller
+                            control={control} name="IncludePerComponentLogs"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={onChange} label={nlsHPCC.IncludePerComponentLogs} />}
+                        />
+                    </div>
+                </div>
+            }
             <div style={{ paddingTop: "10px" }}>
                 <Controller
                     control={control} name="SendEmail"
@@ -447,7 +501,14 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 />}
         />
         <fieldset style={{ marginTop: 8 }}>
-            <legend>{nlsHPCC.LogFilters}</legend>
+            <legend>
+                <span>{nlsHPCC.LogFilters}</span>
+                {logFiltersUnavailable &&
+                    <TooltipHost content={logFiltersUnavailable ? `${nlsHPCC.LogFiltersUnavailable}: ${logFiltersUnavailableMessage}` : ""}>
+                        <Icon iconName="Info" style={{ cursor: "default", margin: "0 1px 0 4px" }} />
+                    </TooltipHost>
+                }
+            </legend>
             <Controller
                 control={control} name="LogFilter.AbsoluteTimeRange.StartDate"
                 render={({
@@ -455,7 +516,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     fieldState: { error }
                 }) => <div>
                         <Stack horizontal verticalAlign="center" tokens={stackTokens}>
-                            <label htmlFor={fieldName} className={formClasses.label}>{nlsHPCC.FromDate}</label>
+                            <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.FromDate}</Label>
                             <TooltipHost content={nlsHPCC.LogFilterStartDateTooltip}>
                                 <Icon iconName="Info" style={{ cursor: "default" }} />
                             </TooltipHost>
@@ -465,7 +526,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                                 key={fieldName}
                                 type="datetime-local"
                                 name={fieldName}
-                                className={formClasses.input}
+                                disabled={logFiltersUnavailable}
+                                className={[formClasses.input, logFiltersUnavailable ? formClasses.disabled : ""].join(" ")}
                                 defaultValue={value}
                                 onChange={onChange}
                             />
@@ -491,7 +553,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     fieldState: { error }
                 }) => <div>
                         <Stack horizontal verticalAlign="center" tokens={stackTokens}>
-                            <label htmlFor={fieldName} className={formClasses.label}>{nlsHPCC.ToDate}</label>
+                            <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.ToDate}</Label>
                             <TooltipHost content={nlsHPCC.LogFilterEndDateTooltip}>
                                 <Icon iconName="Info" style={{ cursor: "default" }} />
                             </TooltipHost>
@@ -500,7 +562,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             key={fieldName}
                             type="datetime-local"
                             name={fieldName}
-                            className={formClasses.input}
+                            disabled={logFiltersUnavailable}
+                            className={[formClasses.input, logFiltersUnavailable ? formClasses.disabled : ""].join(" ")}
                             defaultValue={value}
                             onChange={onChange}
                         />
@@ -516,8 +579,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         name={fieldName}
                         onChange={onChange}
                         label={nlsHPCC.RelativeTimeRange}
+                        disabled={logFiltersUnavailable}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterRelativeTimeRangeTooltip}
                             {...props}
                         />}
@@ -545,8 +610,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         name={fieldName}
                         onChange={onChange}
                         label={nlsHPCC.LogLineLimit}
+                        disabled={logFiltersUnavailable}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterLineLimitTooltip}
                             {...props}
                         />}
@@ -562,8 +629,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         name={fieldName}
                         onChange={onChange}
                         label={nlsHPCC.LogLineStartFrom}
+                        disabled={logFiltersUnavailable}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterLineStartFromTooltip}
                             {...props}
                         />}
@@ -578,6 +647,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.ColumnMode}
+                        disabled={logFiltersUnavailable}
                         options={[
                             { key: ColumnMode.MIN, text: "MIN" },
                             { key: ColumnMode.DEFAULT, text: "DEFAULT" },
@@ -587,6 +657,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         selectedKey={columnMode}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterSelectColumnModeTooltip}
                             {...props}
                         />}
@@ -606,8 +677,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             name={fieldName}
                             onChange={onChange}
                             label={nlsHPCC.CustomLogColumns}
+                            disabled={logFiltersUnavailable}
                             onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                                 id={`${fieldName}_Label`}
+                                disabled={logFiltersUnavailable}
                                 tooltip={nlsHPCC.LogFilterCustomColumnsTooltip}
                                 {...props}
                             />}
@@ -624,6 +697,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }) => <CloudContainerNameField
                         name={fieldName}
                         selectedKey={value}
+                        disabled={logFiltersUnavailable}
                         onChange={(_evt, option, _idx, _value) => {
                             const selectedKeys = value ? [...value] : [];
                             const selected = option?.key ?? _value;
@@ -640,6 +714,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             label={nlsHPCC.ContainerName}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterComponentsFilterTooltip}
                             {...props}
                         />}
@@ -653,6 +728,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.LogFormat}
+                        disabled={logFiltersUnavailable}
                         options={[
                             { key: LogFormat.CSV, text: "CSV" },
                             { key: LogFormat.JSON, text: "JSON" },
@@ -661,6 +737,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         selectedKey={logFormat}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterFormatTooltip}
                             {...props}
                         />}
@@ -678,8 +755,10 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         name={fieldName}
                         onChange={onChange}
                         label={nlsHPCC.WildcardFilter}
+                        disabled={logFiltersUnavailable}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterWildcardFilterTooltip}
                             {...props}
                         />}
@@ -694,6 +773,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }) => <Dropdown
                         key={fieldName}
                         label={`${nlsHPCC.Sort} (${nlsHPCC.TimeStamp})`}
+                        disabled={logFiltersUnavailable}
                         options={[
                             { key: "0", text: "ASC" },
                             { key: "1", text: "DESC" },
@@ -702,6 +782,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterSortByTooltip}
                             {...props}
                         />}
@@ -718,6 +799,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.LogEventType}
+                        disabled={logFiltersUnavailable}
                         options={[
                             { key: "ALL", text: "All" },
                             { key: LogType.Disaster, text: "Disaster" },
@@ -730,6 +812,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
+                            disabled={logFiltersUnavailable}
                             tooltip={nlsHPCC.LogFilterEventTypeTooltip}
                             {...props}
                         />}
