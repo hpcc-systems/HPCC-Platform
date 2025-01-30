@@ -1068,7 +1068,11 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
     RemoteFilename rfn;
     StringBuffer locationName, primaryName;
     //First check for local matches
-    for (l=0; l<partDesc.numCopies(); l++)
+    unsigned copies = partDesc.numCopies();
+    unsigned localCopies = 0;
+    Owned<IException> accessException;
+    IMultiException *multiException = nullptr;
+    for (l=0; l<copies; l++)
     {
         rfn.clear();
         partDesc.getFilename(l, rfn);
@@ -1081,6 +1085,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
         }
         if (rfn.isLocal())
         {
+            localCopies++;
             rfn.getPath(locationName.clear());
             assertex(locationName.length());
 
@@ -1105,44 +1110,76 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             catch (IException *e)
             {
                 ActPrintLog(&activity->queryContainer(), e, "getBestFilePart");
-                e->Release();
+                if (!accessException)
+                    accessException.setown(e);
+                else
+                {
+                    if (!multiException)
+                    {
+                        multiException = makeMultiException();
+                        multiException->append(*accessException.getClear());
+                        accessException.setown(multiException);
+                    }
+                    multiException->append(*e);
+                }
             }
         }
     }
 
-    //Now check for a remote match...
-    for (l=0; l<partDesc.numCopies(); l++)
+    if (localCopies < copies)
     {
-        rfn.clear();
-        partDesc.getFilename(l, rfn);
-        if (!rfn.isLocal())
+        //Now check for a remote match...
+        for (l=0; l<partDesc.numCopies(); l++)
         {
-            rfn.getPath(locationName.clear());
-            assertex(locationName.length());
-            Owned<IFile> file = createIFile(locationName.str());
-            try
+            rfn.clear();
+            partDesc.getFilename(l, rfn);
+            if (!rfn.isLocal())
             {
-                if (file->exists())
+                rfn.getPath(locationName.clear());
+                assertex(locationName.length());
+                Owned<IFile> file = createIFile(locationName.str());
+                try
                 {
-                    ifile.set(file);
-                    location = l;
-                    if (0 != l)
+                    if (file->exists())
                     {
-                        Owned<IThorException> e = MakeActivityWarning(activity, 0, "Primary file missing: %s, using remote copy: %s", primaryName.str(), locationName.str());
-                        if (!eHandler)
-                            throw e.getClear();
-                        eHandler->fireException(e);
+                        ifile.set(file);
+                        location = l;
+                        if (0 != l)
+                        {
+                            Owned<IThorException> e = MakeActivityWarning(activity, 0, "Primary file missing: %s, using remote copy: %s", primaryName.str(), locationName.str());
+                            if (!eHandler)
+                                throw e.getClear();
+                            eHandler->fireException(e);
+                        }
+                        path.append(locationName);
+                        return true;
                     }
-                    path.append(locationName);
-                    return true;
+                }
+                catch (IException *e)
+                {
+                    ActPrintLog(&activity->queryContainer(), e, "In getBestFilePart");
+                    if (!accessException)
+                        accessException.setown(e);
+                    else
+                    {
+                        if (!multiException)
+                        {
+                            multiException = makeMultiException();
+                            multiException->append(*accessException.getClear());
+                            accessException.setown(multiException);
+                        }
+                        multiException->append(*e);
+                    }
                 }
             }
-            catch (IException *e)
-            {
-                ActPrintLog(&activity->queryContainer(), e, "In getBestFilePart");
-                e->Release();
-            }
         }
+    }
+    if (accessException)
+    {
+        if (!eHandler)
+            throw accessException.getClear();
+
+        eHandler->fireException(accessException);
     }
     return false;
 }
