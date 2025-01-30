@@ -108,6 +108,11 @@ interface IMetric
      * Query histogram bucket limits
      */
     virtual std::vector<__uint64> queryHistogramBucketLimits() const = 0;
+
+    /*
+     * Query the unique id for the metric
+     */
+    virtual unsigned int queryId() const = 0;
 };
 
 

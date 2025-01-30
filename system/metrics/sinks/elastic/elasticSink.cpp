@@ -284,7 +284,6 @@ bool ElasticMetricSink::convertPatternToSuffix(const char *pattern, StringBuffer
 void ElasticMetricSink::intializeElasticClient()
 {
     elasticHeaders = {
-            {"Content-Type", "application/json"},
             {"Accept",       "application/json"}
     };
 
@@ -312,6 +311,44 @@ void ElasticMetricSink::intializeElasticClient()
 }
 
 
+const std::string & ElasticMetricSink::getMetricReportName(const std::shared_ptr<hpccMetrics::IMetric> &pMetric)
+{
+    unsigned int metricId = pMetric->queryId();
+
+    auto it = metricReportNames.find(metricId);
+    if (it != metricReportNames.end())
+        return it->second;
+
+    std::string name = pMetric->queryName();
+    std::replace(name.begin(), name.end(), '.', '_');  // elastic does not like dots in field names
+    const auto & metaData = pMetric->queryMetaData();
+    for (auto &metaDataIt: metaData)
+        name.append("_").append(metaDataIt.value);
+
+    const char *unitsStr = pManager->queryUnitsString(pMetric->queryUnits());
+    if (!isEmptyString(unitsStr))
+        name.append("_").append(unitsStr);
+
+    auto metricType = pMetric->queryMetricType();
+
+    if (metricType != METRICS_HISTOGRAM)
+    {
+        // only append the suffix if name doesn't already end with it to prevent double naming at the end
+        const char *suffix = (metricType == METRICS_COUNTER) ? countMetricSuffix.str() : gaugeMetricSuffix.str();
+        if (name.rfind(suffix) != name.length() - strlen(suffix))
+            name.append(suffix);
+    }
+    else
+    {
+        // always append the histogram suffix
+        name.append(histogramMetricSuffix.str());
+    }
+
+    auto result = metricReportNames.insert(std::pair<unsigned int, std::string>(metricId, name));
+    return result.first->second;
+}
+
+
 bool ElasticMetricSink::prepareToStartCollecting()
 {
     return configurationValid;
@@ -320,7 +357,54 @@ bool ElasticMetricSink::prepareToStartCollecting()
 
 void ElasticMetricSink::doCollection()
 {
+    nlohmann::json reportData;
+    auto reportMetrics = pManager->queryMetricsForReport(name);
+    for (auto &pMetric: reportMetrics)
+    {
+        auto metricType = pMetric->queryMetricType();
 
+        if (metricType == METRICS_HISTOGRAM)
+        {
+            if (pMetric->queryValue() || !ignoreZeroMetrics)
+            {
+                auto values = pMetric->queryHistogramBucketLimits();
+                auto counts = pMetric->queryHistogramValues();
+                const std::string &histogramName = getMetricReportName(pMetric);
+
+                // retrieve the inf value and remove it from the vector so the counts and values sizes match
+                auto inf = counts.back();
+                counts.pop_back();
+
+                reportData[histogramName]["values"] = values;
+                reportData[histogramName]["counts"] = counts;
+
+                // add the inf value if indicated
+                if (!ignoreZeroMetrics || inf)
+                {
+                    // create an inf name that looks like <name>_<histogramSuffix>_inf<countMetricSuffix>
+                    std::string infName = histogramName;
+                    infName.append("_inf").append(countMetricSuffix);
+                    reportData[infName] = inf;
+                }
+            }
+        }
+        else
+        {
+            auto value = pMetric->queryValue();
+            if (value || !ignoreZeroMetrics)
+                reportData[getMetricReportName(pMetric)] = pMetric->queryValue();
+        }
+    }
+
+    std::string json = reportData.dump();
+
+    // Index if report data is not empty
+    if (!json.empty())
+    {
+        std::string endpoint;
+        endpoint.append("/").append(indexName.str()).append("/_doc");
+        auto resp = pClient->Post(endpoint.c_str(), elasticHeaders, json, "application/json");
+    }
 }
 
 
