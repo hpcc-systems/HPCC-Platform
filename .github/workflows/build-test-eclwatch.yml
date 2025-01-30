@@ -13,7 +13,7 @@ on:
 
 jobs:
   pre_job:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
     steps:
@@ -30,7 +30,7 @@ jobs:
     name: "Check eclwatch and npm"
     needs: pre_job
     if: ${{ needs.pre_job.outputs.eclwatch }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +51,7 @@ jobs:
       - name: Lint
         working-directory: ./esp/src
         run: npm run lint
-      - name: Install Playwright browsers 
+      - name: Install Playwright browsers
         working-directory: ./esp/src
         run: npx playwright install --with-deps
       - name: Build
@@ -60,3 +60,9 @@ jobs:
       - name: Test
         working-directory: ./esp/src
         run: npm run test
+      - name: Upload Playwright test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclwatch-test-results
+          path: ./esp/src/test-results/*
