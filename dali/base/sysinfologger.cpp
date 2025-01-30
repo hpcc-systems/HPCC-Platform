@@ -467,7 +467,7 @@ public:
     }
     virtual bool next() override
     {
-        if (msgIter->next())
+        if (!msgIter->next())
             return false;
         return ensureMatch();
     }
@@ -603,7 +603,6 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     // With visibleOnly/hiddenOnly option, use createSysInfoLoggerMsgFilter()
     if (visibleOnly || hiddenOnly || day)
     {
-        unsigned count = 0;
         Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter(source);
         if (hiddenOnly)
             msgFilter->setHiddenOnly();
