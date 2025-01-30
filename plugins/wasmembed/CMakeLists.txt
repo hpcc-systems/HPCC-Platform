@@ -3,8 +3,11 @@ project(wasmembed)
 if(WASMEMBED)
     ADD_PLUGIN(wasmembed)
     if(MAKE_WASMEMBED)
-
         set(CMAKE_CXX_STANDARD 20)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+        add_subdirectory(component-model)
+
         find_path(WASMTIME_CPP_API_INCLUDE_DIRS "wasmtime-cpp-api/wasmtime.hh"
             PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
         )
@@ -21,6 +24,7 @@ if(WASMEMBED)
         include_directories(
             ${WASMTIME_CPP_API_INCLUDE_DIRS}/wasmtime-c-api
             ${WASMTIME_CPP_API_INCLUDE_DIRS}/wasmtime-cpp-api
+
             ./../../system/include
             ./../../system/jlib
             ./../../rtl/eclrtl
@@ -37,12 +41,12 @@ if(WASMEMBED)
         add_library(wasmembed SHARED 
             wasmembed.cpp
             secure-enclave.cpp
-            abi.cpp
             util.cpp
         )
 
         target_link_libraries(wasmembed
             ${WASMTIME_LIB}
+            component-model-cpp
             eclrtl
             jlib
         )
