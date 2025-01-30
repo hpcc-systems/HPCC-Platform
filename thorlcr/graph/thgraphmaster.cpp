@@ -670,7 +670,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
             curReadCost = calcFileAccessCost(clusterName, 0, curDiskReads);
 
         if (updateFileProps)
-            updateCostAndNumReads(file, curDiskReads);
+            updateCostAndNumReads(file, curDiskReads, curReadCost);
         return curReadCost;
     };
     cost_type readCost = 0;
@@ -693,12 +693,16 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
                 if (super)
                 {
                     unsigned numSubFiles = super->numSubFiles(true);
+                    stat_type curDiskReads = 0;
                     for (unsigned i=0; i<numSubFiles; i++)
                     {
                         IDistributedFile &subFile = super->querySubFile(i, true);
                         readCost += updateReadCosts(useJhtreeCache, &subFile, *fileStats[fileIndex]);
+                        curDiskReads += fileStats[fileIndex]->getStatisticSum(StNumDiskReads);
                         fileIndex++;
                     }
+                    if (updateFileProps)
+                        updateCostAndNumReads(super, curDiskReads, readCost);
                 }
                 else
                 {

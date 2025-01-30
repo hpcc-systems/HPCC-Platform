@@ -5069,7 +5069,57 @@ public:
             atRestCost = calcFileAtRestCost(cluster, sizeGB, fileAgeDays);
         }
         if (attrs)
-            accessCost = getReadCost(*attrs, cluster) + getWriteCost(*attrs, cluster);
+            accessCost = ::getReadCost(*attrs, cluster) + ::getWriteCost(*attrs, cluster);
+    }
+
+    virtual bool getNumReads(stat_type &numReads) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
+            numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
+        else
+            numReads = 0;
+        return true;
+    }
+
+    virtual bool getNumWrites(stat_type &numWrites) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
+            numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
+        else
+            numWrites = 0;
+        return true;
+    }
+
+    virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const override
+    {
+        IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && (attrs->hasProp(getDFUQResultFieldName(DFUQRFreadCost)) ||calculateIfMissing))
+        {
+            StringBuffer clusterName;
+            // getClusterName isn't const function, so need to cast this to non-const
+            const_cast<CDistributedFile *>(this)->getClusterName(0, clusterName);
+            cost = ::getReadCost(*attrs, clusterName.str());
+            return true;
+        }
+        cost = 0;
+        return false;
+    }
+
+    virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && (attrs->hasProp(getDFUQResultFieldName(DFUQRFwriteCost)) || calculateIfMissing))
+        {
+            StringBuffer clusterName;
+            // getClusterName isn't const function, so need to cast this to non-const
+            const_cast<CDistributedFile *>(this)->getClusterName(0, clusterName);
+            cost = ::getWriteCost(*attrs, clusterName.str());
+            return true;
+        }
+        cost = 0;
+        return false;
     }
 };
 
@@ -6336,6 +6386,82 @@ public:
         return true;
     }
 
+    virtual bool getNumReads(stat_type &numReads)  const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
+            numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
+        else
+        {
+            numReads = 0;
+            ForEachItemIn(i,subfiles)
+            {
+                stat_type c;
+                if (!subfiles.item(i).getNumReads(c))
+                    return false;
+                numReads += c;
+            }
+        }
+        return true;
+    }
+
+    virtual bool getNumWrites(stat_type &numWrites) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
+            numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
+        else
+        {
+            numWrites = 0;
+            ForEachItemIn(i,subfiles)
+            {
+                stat_type c;
+                if (!subfiles.item(i).getNumWrites(c))
+                    return false;
+                numWrites += c;
+            }
+        }
+        return true;
+    }
+
+    virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
+            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
+        else
+        {
+            cost = 0;
+            ForEachItemIn(i,subfiles)
+            {
+                cost_type c;
+                if (!subfiles.item(i).getReadCost(c,calculateIfMissing))
+                    return false;
+                cost += c;
+            }
+        }
+        return true;
+    }
+
+    virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
+            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
+        else
+        {
+            cost = 0;
+            ForEachItemIn(i,subfiles)
+            {
+                cost_type c;
+                if (!subfiles.item(i).getWriteCost(c,calculateIfMissing))
+                    return false;
+                cost += c;
+            }
+        }
+        return true;
+    }
+
     virtual IDistributedSuperFile *querySuperFile() override
     {
         return this;
@@ -6562,6 +6688,10 @@ public:
         attrs.removeProp("@minSkew");
         attrs.removeProp("@maxSkewPart");
         attrs.removeProp("@minSkewPart");
+        attrs.removeProp(getDFUQResultFieldName(DFUQRFnumDiskReads));
+        attrs.removeProp(getDFUQResultFieldName(DFUQRFnumDiskWrites));
+        attrs.removeProp(getDFUQResultFieldName(DFUQRFreadCost));
+        attrs.removeProp(getDFUQResultFieldName(DFUQRFwriteCost));
 
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)
@@ -6589,6 +6719,16 @@ public:
             attrs.setPropBin("_record_layout", mb.length(), mb.bufferBase());
         if (getRecordLayout(mb, "_rtlType"))
             attrs.setPropBin("_rtlType", mb.length(), mb.bufferBase());
+        stat_type numReads, numWrites;
+        if (getNumReads(numReads))
+            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), numReads);
+        if (getNumWrites(numWrites))
+            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numWrites); 
+        cost_type readCost, writeCost;
+        if (getReadCost(readCost))
+            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), numReads);
+        if (getWriteCost(writeCost))
+            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), numWrites);
         const char *kind = nullptr;
         Owned<IDistributedFileIterator> subIter = getSubFileIterator(true);
         ForEach(*subIter)
@@ -13407,16 +13547,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
     return new CDFProtectedIterator(owner,notsuper,superonly,defaultTimeout);
 }
 
-const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
-    "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
-    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost", "@maxSkew", "@minSkew", "@maxSkewPart", "@minSkewPart",
-    "@readCost", "@writeCost" };
 
-extern da_decl const char* getDFUQResultFieldName(DFUQResultField field)
-{
-    return DFUQResultFieldNames[field];
-}
 
 IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, DFUQResultField* localFilters, const char* localFilterBuf)
 {

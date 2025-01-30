@@ -236,7 +236,22 @@ public:
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override { return legacyDFSFile->getSkewInfo(maxSkew, minSkew, maxSkewPart, minSkewPart, calculateIfMissing); }
     virtual int getExpire(StringBuffer *expirationDate) override { return legacyDFSFile->getExpire(expirationDate); }
     virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) override { legacyDFSFile->getCost(cluster, atRestCost, accessCost); }
-    
+    virtual bool getNumReads(stat_type &numReads) const override
+    {
+        return legacyDFSFile->getNumReads(numReads);
+    }
+    virtual bool getNumWrites(stat_type &numWrites) const override
+    {
+        return legacyDFSFile->getNumWrites(numWrites);
+    }
+    virtual bool getReadCost(cost_type &cost, bool calculateIfMissing) const override
+    {
+        return legacyDFSFile->getReadCost(cost, calculateIfMissing);
+    }
+    virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing) const override
+    {
+        return legacyDFSFile->getWriteCost(cost, calculateIfMissing);
+    }
 // setters (change file meta data)
     virtual void setPreferredClusters(const char *clusters) override { legacyDFSFile->setPreferredClusters(clusters); }
     virtual void setSingleClusterOnly() override { legacyDFSFile->setSingleClusterOnly(); }
