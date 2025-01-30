@@ -4255,8 +4255,8 @@ void CWsWuFileHelper::readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, con
         logfileextension.set("log");
 
     const char *wuid = cwu->queryWuid();
-    ILogAccessFilter *logFetchFilter = getJobIDLogAccessFilter(wuid);
-    zapLogFilterOptions.logFilter.logFetchOptions.setFilter(logFetchFilter);
+    Owned<ILogAccessFilter> logFetchFilter = getJobIDLogAccessFilter(wuid);
+    zapLogFilterOptions.logFilter.logFetchOptions.setFilter(logFetchFilter.getLink());
 
     if (zapLogFilterOptions.includeRelatedLogs)
     {
@@ -4270,8 +4270,9 @@ void CWsWuFileHelper::readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, con
     ForEach(*iter)
     {
         const char *processName = iter->query().queryProp("@podName");
-        ILogAccessFilter *processLogFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getPodLogAccessFilter(processName), LOGACCESS_FILTER_and);
-        zapLogFilterOptions.logFilter.logFetchOptions.setFilter(processLogFetchFilter);
+        Owned<ILogAccessFilter> podFilter = getPodLogAccessFilter(processName);
+        Owned<ILogAccessFilter> compoundFilter = getCompoundLogAccessFilter(logFetchFilter, podFilter, LOGACCESS_FILTER_and);
+        zapLogFilterOptions.logFilter.logFetchOptions.setFilter(compoundFilter.getClear());
 
         VStringBuffer processLog("%s%c%s-%s-log.%s", path, PATHSEPCHAR, wuid, processName, logfileextension.str());
         readWULogToFile(processLog, winfo, zapLogFilterOptions);

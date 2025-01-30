@@ -3158,6 +3158,16 @@ ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAcce
     return ret;
 }
 
+ILogAccessFilter* getCompoundLogAccessFilter(ILogAccessFilter* arg1, ILogAccessFilter* arg2, LogAccessFilterType type)
+{
+    if (!arg1)
+        return LINK(arg2);
+    if (!arg2)
+        return LINK(arg1);
+    return getBinaryLogAccessFilter(arg1, arg2, type);
+}
+
+
 // LOG ACCESS HELPER METHODS
 
 // Fetches log entries - based on provided filter, via provided IRemoteLogAccess instance
