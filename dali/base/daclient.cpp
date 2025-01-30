@@ -29,6 +29,7 @@
 #include "dautils.hpp"
 
 #include "daclient.hpp"
+#include "sysinfologger.hpp"
 
 extern bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned timeout,DaliClientRole role);
 extern void stopClientProcess();
@@ -141,6 +142,9 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
     covengrp->Release();
     queryLogMsgManager()->setSession(myProcessSession());
 
+    if (getComponentConfigSP()->getPropBool("logging/@enableGlobalSysLog"))
+        UseDaliForOperatorMessages(true);
+
     if (!isContainerized()) // The Environment is bare-metal only
     {
         // auto install environment monitor for server roles
@@ -179,6 +183,7 @@ void removeShutdownHook(IDaliClientShutdown &shutdown)
 
 void closedownClientProcess()
 {
+    UseDaliForOperatorMessages(false);
     if (!daliClientIsActive)
         return;
     while (shutdownHooks.ordinality())

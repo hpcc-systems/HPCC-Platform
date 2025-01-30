@@ -24,6 +24,8 @@ global:
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 80
+    # Enable centralized reporting of important user/operator logging messages (disabled by default)
+    #enableGlobalSysLog: true
 
   # tracing sets the default tracing information for all components. Can be overridden locally
   tracing:

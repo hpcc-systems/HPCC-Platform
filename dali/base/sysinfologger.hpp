@@ -20,6 +20,7 @@
 
 #include "jlog.hpp"
 #include "jutil.hpp"
+#include "daclient.hpp"
 
 #ifdef DALI_EXPORT
  #define SYSINFO_API DECL_EXPORT
@@ -27,7 +28,7 @@
  #define SYSINFO_API DECL_IMPORT
 #endif
 
-interface ISysInfoLoggerMsg
+interface IConstSysInfoLoggerMsg
 {
     virtual bool queryIsHidden() const = 0;
     virtual timestamp_type queryTimeStamp() const = 0;
@@ -37,6 +38,12 @@ interface ISysInfoLoggerMsg
     virtual LogMsgClass queryClass() const = 0;
     virtual unsigned __int64 queryLogMsgId() const = 0;
     virtual const char * queryMsg() const = 0;
+    virtual StringBuffer & getXpath(StringBuffer & xpath) const = 0;
+};
+
+interface ISysInfoLoggerMsg : public IConstSysInfoLoggerMsg
+{
+    virtual void setHidden(bool _hidden) = 0;
 };
 
 interface IConstSysInfoLoggerMsgFilter : public IInterface
@@ -77,8 +84,10 @@ typedef IIteratorOf<ISysInfoLoggerMsg> ISysInfoLoggerMsgIterator;
 
 SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(const char *source=nullptr);
 SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId, const char *source=nullptr);
-SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day, const char *source=nullptr);
-SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IRemoteConnection * conn, IConstSysInfoLoggerMsgFilter * msgFilter, bool updateable = false);
+SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * msgFilter, bool updateable = false);
+SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IRemoteConnection * conn, bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source, bool updateable = false);
+SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source, bool updateable = false);
 
 SYSINFO_API unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts);
 SYSINFO_API unsigned hideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter);
@@ -93,4 +102,6 @@ SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenO
  - nonSysInfoLogMsg flag is used to identify whether or not the message is managed by SysInfoLogger */
 SYSINFO_API unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned seqN, bool nonSysInfoLogMsg=false);
 SYSINFO_API unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned seqN, bool nonSysInfoLogMsg=false);
+SYSINFO_API ILogMsgHandler * getDaliMsgLoggerHandler();
+SYSINFO_API void UseDaliForOperatorMessages(bool use);
 #endif
