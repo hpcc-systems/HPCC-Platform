@@ -4270,7 +4270,8 @@ void CWsWuFileHelper::readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, con
     ForEach(*iter)
     {
         const char *processName = iter->query().queryProp("@podName");
-        ILogAccessFilter *processLogFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getPodLogAccessFilter(processName), LOGACCESS_FILTER_and);
+        Owned<ILogAccessFilter> podFilter = getPodLogAccessFilter(processName);
+        ILogAccessFilter *processLogFetchFilter = getBinaryLogAccessFilter(logFetchFilter, podFilter, LOGACCESS_FILTER_and);
         zapLogFilterOptions.logFilter.logFetchOptions.setFilter(processLogFetchFilter);
 
         VStringBuffer processLog("%s%c%s-%s-log.%s", path, PATHSEPCHAR, wuid, processName, logfileextension.str());
