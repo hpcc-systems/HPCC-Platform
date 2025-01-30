@@ -1933,9 +1933,10 @@ lifecycle:
  {{- if $postRun -}}
   {{- $args = append $args "-p" -}}
  {{- end -}}
- {{- $args = concat $args (list "-d" $prefix "-c" $containerName "--") -}}
+ {{- $args = concat $args (list "-d" $prefix "-c" $containerName) -}}
  {{- $_ := set .lifeCycleCtx "containers" (append .lifeCycleCtx.containers (dict "name" $containerName "process" .process "config" $configCtx.name)) -}}
 {{- end -}}
+{{- $args = append $args "--" -}}
 {{- $args = append $args .process -}}
 {{- $args = append $args (include "hpcc.configArg" $configCtx) -}}
 {{- $args = append $args (include "hpcc.daliArg" .) -}}
