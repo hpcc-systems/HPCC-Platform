@@ -20,7 +20,7 @@
       <primary>ENDEMBED</primary>
     </indexterm>;</emphasis></para>
 
-  <para><emphasis role="bold"></emphasis></para>
+  <para><emphasis role="bold"/></para>
 
   <para><emphasis>resulttype funcname</emphasis> <emphasis
   role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
@@ -28,13 +28,13 @@
   <emphasis role="bold">[: TIME</emphasis>
   [(<emphasis>label</emphasis>)]<emphasis role="bold">]); </emphasis></para>
 
-  <para><emphasis role="bold"></emphasis></para>
+  <para><emphasis role="bold"/></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -94,9 +94,9 @@
   to add in-line <emphasis>language</emphasis> code to your ECL. This is
   similar to the BEGINC++ structure, but available for any
   <emphasis>language</emphasis> with a pluggable language support module
-  installed, such as R, Javascript, and Python. Others may follow or people
-  can write their own using the supplied ones as templates/examples/starting
-  points. This may be used to write Javascript, R, or Python code, but is not
+  installed, such as Javascript and Python. Others may follow or people can
+  write their own using the supplied ones as templates/examples/starting
+  points. This may be used to write Javascript or Python code, but is not
   usable with Java code (use the IMPORT function for Java code).</para>
 
   <para>The parameter types that can be passed and returned will vary by
@@ -140,7 +140,7 @@ addone(3);
 addone(11);
 </programlisting>
 
-  <para></para>
+  <para/>
 
   <programlisting>//Second form: a function
 IMPORT Python3 as Python;
