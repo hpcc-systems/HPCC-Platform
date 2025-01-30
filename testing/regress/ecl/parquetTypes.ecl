@@ -14,7 +14,6 @@
 //class=parquet
 //nothor
 //noroxie
-//Covers data types supported by ECL and Arrow
 //version compressionType='UNCOMPRESSED'
 //version compressionType='Snappy'
 //version compressionType='GZip'
@@ -28,7 +27,9 @@ compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
 IMPORT Std;
 IMPORT Parquet;
 
-dropzoneDirectory := Std.File.GetDefaultDropZone();
+dropzoneDirectory := Std.File.GetDefaultDropZone() + '/regress/parquet';
+
+// Covers data types supported by ECL and Arrow
 
 // ======================== BOOLEAN ========================
 
@@ -55,30 +56,28 @@ booleanResult := IF(COUNT(booleanCompareResult(isEqual = FALSE)) = 0, 'Pass', 'F
 
 // ======================== INTEGER ========================
 
-integerRecord := {UNSIGNED testid, STRING3 testname, INTEGER4 value, UNSIGNED testid1, STRING3 testname1, INTEGER8 value1};
+integerRecord := {UNSIGNED testid, STRING testname, INTEGER1 v1, INTEGER2 v2, INTEGER3 v3, INTEGER4 v4, INTEGER5 v5, INTEGER6 v6, INTEGER7 v7, INTEGER v8};
 
 integerDatasetOut := DATASET([
-    {10, 'min', -2147483648, 10, 'min', -2147483648},
-    {11, 'max', 2147483647, 11, 'max', 2147483647},
-    {12, 'afa', (INTEGER4)32767, 12, 'afa', 32767},
-    {13, 'afb', (INTEGER4)2147483647, 13, 'afb', 2147483647},
-    {14, 'afc', (INTEGER4)2147483647, 14, 'afc', 9223372036854775807},
-    {15, 'afp', (INTEGER4)127, 340, 'afp', (INTEGER8)127},
-    {16, 'afq', (INTEGER4)-128, 341, 'afq', (INTEGER8)-128},
-    {17, 'afr', (INTEGER4)0, 342, 'afr', (INTEGER8)0},
-    {18, 'acg', 1, 110, 'acg', 1},
-    {19, 'acj', 10, 113, 'acj', 10},
-    {20, 'ack', 13, 114, 'ack', 13}
+    {100, 'minvalues', -128, -32768, -8388608, -2147483648, -549755813888, -140737488355328, -36028797018963968, -9223372036854775808},
+    {101, 'maxvalues', 127, 32767, 8388607, 2147483647, 549755813887, 140737488355327, 36028797018963967, 9223372036854775807}
 ], integerRecord);
 
 ParquetIO.Write(integerDatasetOut, dropzoneDirectory + '/IntegerTest.parquet', TRUE, compressionType);
 
 integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + '/IntegerTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} integerJoin (integerDatasetOut a, integerDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} integerJoin (integerDatasetOut a, integerDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value AND a.value1 = b.value1;
+    SELF.isEqual := a.v1 = b.v1 AND
+                    a.v2 = b.v2 AND
+                    a.v3 = b.v3 AND
+                    a.v4 = b.v4 AND
+                    a.v5 = b.v5 AND
+                    a.v6 = b.v6 AND
+                    a.v7 = b.v7 AND
+                    a.v8 = b.v8;
 END;
 
 integerCompareResult := JOIN(integerDatasetOut, integerDatasetIn, LEFT.testid = RIGHT.testid, integerJoin(LEFT, RIGHT), ALL);
@@ -87,25 +86,28 @@ integerResult := IF(COUNT(integerCompareResult(isEqual = FALSE)) = 0, 'Pass', 'F
 
 // ======================== UNSIGNED ========================
 
-unsignedRecord := {UNSIGNED testid, STRING3 testname, UNSIGNED value};
+unsignedRecord := {UNSIGNED testid, STRING testname, UNSIGNED1 v1, UNSIGNED2 v2, UNSIGNED3 v3, UNSIGNED4 v4, UNSIGNED5 v5, UNSIGNED6 v6, UNSIGNED7 v7, UNSIGNED v8};
 
 unsignedDatasetOut := DATASET([
-    {20, 'aan', 0},
-    {21, 'aao', 12345},
-    {22, 'aap', 4294967295},
-    {23, 'afd', (UNSIGNED8)65535},
-    {24, 'afe', (UNSIGNED8)4294967295},
-    {25, 'aff', (UNSIGNED8)18446744073709551615}
+    {200, 'minvalues', 0, 0, 0, 0, 0, 0, 0, 0},
+    {201, 'maxvalues', 255, 65535, 16777215, 4294967295, 1099511627775, 281474976710655, 72057594037927935, 18446744073709551615}
 ], unsignedRecord);
 
 ParquetIO.Write(unsignedDatasetOut, dropzoneDirectory + '/UnsignedTest.parquet', TRUE, compressionType);
 
 unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + '/UnsignedTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} unsignedJoin (unsignedDatasetOut a, unsignedDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} unsignedJoin (unsignedDatasetOut a, unsignedDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value;
+    SELF.isEqual := a.v1 = b.v1 AND
+                    a.v2 = b.v2 AND
+                    a.v3 = b.v3 AND
+                    a.v4 = b.v4 AND
+                    a.v5 = b.v5 AND
+                    a.v6 = b.v6 AND
+                    a.v7 = b.v7 AND
+                    a.v8 = b.v8;
 END;
 
 unsignedCompareResult := JOIN(unsignedDatasetOut, unsignedDatasetIn, LEFT.testid = RIGHT.testid, unsignedJoin(LEFT, RIGHT), ALL);
@@ -114,28 +116,26 @@ unsignedResult := IF(COUNT(unsignedCompareResult(isEqual = FALSE)) = 0, 'Pass', 
 
 // ======================== REAL ========================
 
-realRecord := {UNSIGNED testid, STRING3 testname, REAL value};
+realRecord := {UNSIGNED testid, STRING testname, REAL4 v4, REAL v8};
 
 realDatasetOut := DATASET([
-    {30, 'max', 1.7976931348623157E+308},
-    {31, 'min', 5.0E-324},
-    {32, 'nor', -123.456},
-    {34, 'adk', 1.23D},
-    {35, 'adl', -9.87D},
-    {36, 'ado', -1.41421356237309D},
-    {37, 'afg', (REAL4)1.23},
-    {38, 'afh', (REAL4)-9.87},
-    {39, 'afi', (REAL4)3.14159}
+    {300, 'maxvalues', 3.402823E+038, 1.7976931348623157E+308},
+    {301, 'minvalues', 1.175494E-38, 2.2250738585072014E-308},
+    {302, 'maxdigits', -4.748307D, -1.41421356237309D},
+    {303, 'zero', 0.0D, 0.0D},
+    {304, 'positive', 1.23D, 6735.12485D},
+    {305, 'negative', -9.87D, -234.853D}
 ], realRecord);
 
 ParquetIO.Write(realDatasetOut, dropzoneDirectory + '/RealTest.parquet', TRUE, compressionType);
 
 realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + '/RealTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} realJoin (realDatasetOut a, realDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} realJoin (realDatasetOut a, realDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
-    SELF.isEqual := a.value = b.value;
+    SELF.isEqual := a.v4 = b.v4 AND
+                    a.v8 = b.v8;
 END;
 
 realCompareResult := JOIN(realDatasetOut, realDatasetIn, LEFT.testid = RIGHT.testid, realJoin(LEFT, RIGHT), ALL);
@@ -147,9 +147,9 @@ realResult := IF(COUNT(realCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: R
 decimalRecord := {UNSIGNED testid, STRING3 testname, DECIMAL10_2 value};
 
 decimalDatasetOut := DATASET([
-    {040, 'aax', 12.34D},
-    {041, 'aay', -56.78D},
-    {042, 'abb', 0.00D}
+    {400, 'aax', 12.34D},
+    {401, 'aay', -56.78D},
+    {402, 'abb', 0.00D}
 ], decimalRecord);
 
 ParquetIO.Write(decimalDatasetOut, dropzoneDirectory + '/DecimalTest.parquet', TRUE, compressionType);
@@ -168,18 +168,16 @@ decimalResult := IF(COUNT(decimalCompareResult(isEqual = FALSE)) = 0, 'Pass', 'F
 
 // ======================== STRING ========================
 
-stringRecord := {STRING5 name, STRING value};
+stringRecord := {UNSIGNED testid, STRING5 name, STRING value};
 
 stringDatasetOut := DATASET([
-    {'abc', 'Hello'},
-    {'abd', 'World'},
-    {'abg', 'Types'},
-    {'data1', (STRING)X'0123456789ABCDEF'},
-    {'data2', (STRING)X'FEDCBA9876543210'},
-    {'data3', (STRING)X'00FF00FF00FF00FF'},
-    {'adp', '[\'Set\',\'Of\',\'String\',\'Test\']'},
-    {'adq', '[\'ECL\',\'Data\',\'Types\']'},
-    {'adt', '[\'A\',\'B\',\'C\',\'D\',\'E\']'}
+    {500, 'asciichars', ' !"#$F%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'},
+    {501, 'asciicodes0', '\040\041\042\043\044\045\046\047\050\051\052\053\054\055\056\057\060\061\062\063\064\065\066\067\070'},
+    {502, 'asciicodes1', '\071\072\073\074\075\076\077\100\101\102\103\104\105\106\107\110\111\112\113\114\115\116\117\120\121'},
+    {503, 'asciicodes2', '\122\123\124\125\126\127\130\131\132\133\134\135\136\137\140\141\142\143\144\145\146\147\150\151\152'},
+    {504, 'asciicodes3', '\153\154\155\156\157\160\161\162\163\164\165\166\167\170\171\172\173\174\175\176'},
+    {505, 'data0', (STRING)X'FEDCBA9876543210'},
+    {506, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], stringRecord);
 
 ParquetIO.Write(stringDatasetOut, dropzoneDirectory + '/StringTest.parquet', TRUE, compressionType);
@@ -191,10 +189,7 @@ stringDatasetIn := ParquetIO.Read(stringRecord, dropzoneDirectory + '/StringTest
     SELF.value := a.value = b.value;
 END;
 
-stringCompareResult := JOIN(stringDatasetOut, stringDatasetIn,
-    LEFT.name = RIGHT.name,
-    stringJoin(LEFT, RIGHT),
-    ALL);
+stringCompareResult := JOIN(stringDatasetOut, stringDatasetIn, LEFT.testid = RIGHT.testid, stringJoin(LEFT, RIGHT), ALL);
 
 stringResult := IF(COUNT(stringCompareResult(value = FALSE)) = 0, 'Pass', 'Fail: String data mismatch');
 
@@ -204,6 +199,7 @@ DATA10 REALToBinary(REAL val) := (DATA10)val;
 DATA16 REALToLargeBinary(REAL val) := (DATA16)val;
 
 dataRecord := RECORD
+    UNSIGNED testid;
     STRING5 name;
     DATA value1;
     DATA10 value2;
@@ -211,43 +207,47 @@ dataRecord := RECORD
 END;
 
 dataDatasetOut := DATASET([
-    {'abh', X'0123456789ABCDEF', (DATA10)X'0123456789ABCDEF', (DATA16)X'0123456789ABCDEF01234567'},
-    {'abi', X'FEDCBA9876543210', (DATA10)X'FEDCBA9876543210', (DATA16)X'FEDCBA9876543210FEDCBA98'},
-    {'abl', X'1234567890ABCDEF', (DATA10)X'1234567890ABCDEF', (DATA16)X'1234567890ABCDEF12345678'},
-    {'pos', X'0000000000000000', REALToBinary(3.14159), REALToLargeBinary(3.14159)},
-    {'neg', X'0000000000000000', REALToBinary(-2.71828), REALToLargeBinary(-2.71828)}
+    {600, 'abh', X'0123456789ABCDEF', (DATA10)X'0123456789ABCDEF', (DATA16)X'0123456789ABCDEF01234567'},
+    {601, 'abi', X'FEDCBA9876543210', (DATA10)X'FEDCBA9876543210', (DATA16)X'FEDCBA9876543210FEDCBA98'},
+    {602, 'abl', X'1234567890ABCDEF', (DATA10)X'1234567890ABCDEF', (DATA16)X'1234567890ABCDEF12345678'},
+    {603, 'pos', X'0000000000000000', REALToBinary(3.14159), REALToLargeBinary(3.14159)},
+    {604, 'neg', X'0000000000000000', REALToBinary(-2.71828), REALToLargeBinary(-2.71828)}
 ], dataRecord);
 
 ParquetIO.Write(dataDatasetOut, dropzoneDirectory + '/DataTest.parquet', TRUE, compressionType);
 
 dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + '/DataTest.parquet');
 
-{STRING5 name, BOOLEAN value1, BOOLEAN value2, BOOLEAN value3, BOOLEAN overallValue} dataJoin(dataDatasetOut a, dataDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING5 name, BOOLEAN allEqual} dataJoin(dataDatasetOut a, dataDatasetIn b) := TRANSFORM
+    SELF.testid := a.testid;
     SELF.name := a.name;
-    SELF.value1 := a.value1 = b.value1;
-    SELF.value2 := a.value2 = b.value2;
-    SELF.value3 := a.value3 = b.value3;
-    SELF.overallValue := SELF.value1 AND SELF.value2 AND SELF.value3;
+    SELF.allEqual := a.value1 = b.value1 AND
+                     a.value2 = b.value2 AND
+                     a.value3 = b.value3;
 END;
 
-dataCompareResult := JOIN(dataDatasetOut, dataDatasetIn, LEFT.name = RIGHT.name, dataJoin(LEFT, RIGHT), ALL);
-dataResult := IF(COUNT(dataCompareResult(overallValue = FALSE)) = 0, 'Pass', 'Fail: Data mismatch');
+dataCompareResult := JOIN(dataDatasetOut, dataDatasetIn, LEFT.testid = RIGHT.testid, dataJoin(LEFT, RIGHT), ALL);
+dataResult := IF(COUNT(dataCompareResult(allEqual = FALSE)) = 0, 'Pass', 'Fail: Data mismatch');
 
 // ======================== VARSTRING ========================
 
-varstringRecord := {UNSIGNED testid, STRING3 testname, VARSTRING value};
+varstringRecord := {UNSIGNED testid, STRING testname, VARSTRING value};
 
 varStringDatasetOut := DATASET([
-    {070, 'abm', 'VarString1'},
-    {071, 'abn', ''},
-    {072, 'abo', U'UTF8_测试'}
+    {700, 'asciichars', ' !"#$F%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'},
+    {701, 'asciicodes0', '\040\041\042\043\044\045\046\047\050\051\052\053\054\055\056\057\060\061\062\063\064\065\066\067\070'},
+    {702, 'asciicodes1', '\071\072\073\074\075\076\077\100\101\102\103\104\105\106\107\110\111\112\113\114\115\116\117\120\121'},
+    {703, 'asciicodes2', '\122\123\124\125\126\127\130\131\132\133\134\135\136\137\140\141\142\143\144\145\146\147\150\151\152'},
+    {704, 'asciicodes3', '\153\154\155\156\157\160\161\162\163\164\165\166\167\170\171\172\173\174\175\176'},
+    {705, 'data0', (STRING)X'FEDCBA9876543210'},
+    {706, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], varstringRecord);
 
 ParquetIO.Write(varStringDatasetOut, dropzoneDirectory + '/VarStringTest.parquet', TRUE, compressionType);
 
 varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + '/VarStringTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} varstringJoin (varStringDatasetOut a, varStringDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} varstringJoin (varStringDatasetOut a, varStringDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
     SELF.isEqual := a.value = b.value;
@@ -259,19 +259,22 @@ varstringResult := IF(COUNT(varstringCompareResult(isEqual = FALSE)) = 0, 'Pass'
 
 // ======================== QSTRING ========================
 
-qstringRecord := {UNSIGNED testid, STRING3 testname, QSTRING value};
+qstringRecord := {UNSIGNED testid, STRING testname, QSTRING value};
 
 qStringDatasetOut := DATASET([
-    {080, 'abr', ''},
-    {081, 'abs', 'NormalString'},
-    {082, 'abt', U'Special_字符'}
+    {800, 'asciichars', ' !"#$F%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_'},
+    {801, 'asciicodes0', '\040\041\042\043\044\045\046\047\050\051\052\053\054\055\056\057\060\061\062\063\064\065\066\067\070'},
+    {802, 'asciicodes1', '\071\072\073\074\075\076\077\100\101\102\103\104\105\106\107\110\111\112\113\114\115\116\117\120\121'},
+    {803, 'asciicodes2', '\122\123\124\125\126\127\130\131\132\133\134\135\136\137'},
+    {804, 'data0', (STRING)X'FEDCBA9876543210'},
+    {805, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], qstringRecord);
 
 ParquetIO.Write(qStringDatasetOut, dropzoneDirectory + '/QStringTest.parquet', TRUE, compressionType);
 
 qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + '/QStringTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} qstringJoin (qStringDatasetOut a, qStringDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} qstringJoin (qStringDatasetOut a, qStringDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
     SELF.isEqual := a.value = b.value;
@@ -283,19 +286,19 @@ qstringResult := IF(COUNT(qstringCompareResult(isEqual = FALSE)) = 0, 'Pass', 'F
 
 // ======================== UTF8 ========================
 
-utf8Record := {UNSIGNED testid, STRING3 testname, UTF8 value};
+utf8Record := {UNSIGNED testid, STRING testname, UTF8 value};
 
 utf8DatasetOut := DATASET([
-    {090, 'abu', U'UTF8_Normal'},
-    {091, 'abv', U'UTF8_测试'},
-    {092, 'abw', U''}
+    {900, 'asciichars', U8' !"#$F%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_'},
+    {901, 'extrachars0', U8'\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270'},
+    {902, 'extrachars1', U8'\316\221\316\222\316\223\316\224\316\225\316\226\316\227\316\230\316\231\316\232\316\233\316\234'}
 ], utf8Record);
 
 ParquetIO.Write(utf8DatasetOut, dropzoneDirectory + '/UTF8Test.parquet', TRUE, compressionType);
 
 utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + '/UTF8Test.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} utf8Join (utf8DatasetOut a, utf8DatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} utf8Join (utf8DatasetOut a, utf8DatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
     SELF.isEqual := a.value = b.value;
@@ -307,26 +310,20 @@ utf8Result := IF(COUNT(utf8CompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail: U
 
 // ======================== UNICODE ========================
 
-unicodeRecord := {UNSIGNED testid, STRING3 testname, UNICODE value};
-setOfUnicodeRecord := {UNSIGNED testid, STRING3 testname, SET OF UNICODE value};
+unicodeRecord := {UNSIGNED testid, STRING testname, UNICODE value};
 
 unicodeDatasetOut := DATASET([
-    {100, 'acb', U'Unicode1'}, {101, 'acc', U'Unicode2'}, {102, 'acf', U'Unicode5'}
+    {1000, 'asciichars', U' !"#$F%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_'},
+    {1001, 'emojis0', U'➕️➖️➗️⛳️⛷️⛸️⛹️⛺️🆑🆒🆓🆔🆙🆚🌀🌁🌂🌃🌄🌅🌆🌇🌈🌉🌊🌋🌌🌍🌎🌏'},
+    {1002, 'emojis1', U'🍀🍁🍂🍃🍄🍅🍆🍇🍈🍉🍊🍋🍌🍍🍎🍏📒📓📔📕📖📗📘📙📚📛📜📝📞📟'},
+    {1003, 'adw', U'ᄠᄡᄢᄣᄤᄥᄦᄨᄩᄪᄫᄬᄭᄮᄯᆰᆱᆲᆳᆴᆵᆶᆷᆸᆹᆼᆽᇲᇳᇴᇵᇶᇷᇸ㈸㋄㋅㋆㋇㋈㋉㋊㋋㋌'}
 ], unicodeRecord);
 
-setOfUnicodeDatasetOut := DATASET([
-    {103, 'adw', [U'Á', U'É', U'Í', U'Ó', U'Ú']},
-    {104, 'adx', [U'α', U'β', U'γ', U'δ', U'ε']},
-    {105, 'ady', [U'☀', U'☁', U'☂', U'☃', U'☄']}
-], setOfUnicodeRecord);
-
 ParquetIO.Write(unicodeDatasetOut, dropzoneDirectory + '/UnicodeTest.parquet', TRUE, compressionType);
-ParquetIO.Write(setOfUnicodeDatasetOut, dropzoneDirectory + '/SetOfUnicodeTest.parquet', TRUE, compressionType);
 
 unicodeDatasetIn := ParquetIO.Read(unicodeRecord, dropzoneDirectory + '/UnicodeTest.parquet');
-setOfUnicodeDatasetIn := ParquetIO.Read(setOfUnicodeRecord, dropzoneDirectory + '/SetOfUnicodeTest.parquet');
 
-{UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} unicodeJoin(unicodeDatasetOut a, unicodeDatasetIn b) := TRANSFORM
+{UNSIGNED testid, STRING testname, BOOLEAN isEqual} unicodeJoin(unicodeDatasetOut a, unicodeDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
     SELF.isEqual := a.value = b.value;
@@ -335,6 +332,23 @@ END;
 unicodeCompareResult := JOIN(unicodeDatasetOut, unicodeDatasetIn, LEFT.testid = RIGHT.testid, unicodeJoin(LEFT, RIGHT), ALL);
 unicodeResult := IF(COUNT(unicodeCompareResult(isEqual = FALSE)) = 0, 'Pass', 'Fail');
 
+// ========================= SET ==========================
+
+setRecord := {UNSIGNED testid, STRING testname, SET OF BOOLEAN s0, SET OF INTEGER s1, SET OF UNSIGNED s2, SET OF REAL s3, SET OF DECIMAL s4,
+              SET OF STRING s5, SET OF VARSTRING s6, SET OF QSTRING s7, SET OF UTF8 s8, SET OF UNICODE s9, SET OF DATA s10};
+
+setDatasetOut := DATASET([
+    {1100, 'empty', [], [], [], [], [], [], [], [], [], [], []},
+    {1101, 'single', [TRUE], [1], [1], [1.0], [1.0], ['a'], ['a'], ['a'], [U'a'], [U'a'], [X'FFFF']},
+    {1102, 'multiple', [TRUE, FALSE], [1, 2], [1, 2], [1.0, 2.0], [1.0, 2.0], ['a', 'b'], ['a', 'b'], ['a', 'b'], [U'a', U'b'], [U'a', U'b'], [X'0000', X'FFFF']}
+], setRecord);
+
+ParquetIO.Write(setDatasetOut, dropzoneDirectory + '/SetTest.parquet', TRUE, compressionType);
+
+OUTPUT(ParquetIO.Read(setRecord, dropzoneDirectory + '/SetTest.parquet'), NAMED('SetTest'));
+
+// ======================== OUTPUT ========================
+
 PARALLEL(
     OUTPUT(booleanResult, NAMED('BooleanTest'), OVERWRITE),
     OUTPUT(integerResult, NAMED('IntegerTest'), OVERWRITE),
@@ -342,7 +356,7 @@ PARALLEL(
     OUTPUT(realResult, NAMED('RealTest'), OVERWRITE),
     OUTPUT(decimalResult, NAMED('DecimalTest'), OVERWRITE),
     OUTPUT(stringResult, NAMED('StringTest'), OVERWRITE),
-    OUTPUT(dataResult, NAMED('DataAsStringTest'), OVERWRITE),
+    OUTPUT(dataResult, NAMED('DataTest'), OVERWRITE),
     OUTPUT(varStringResult, NAMED('VarStringTest'), OVERWRITE),
     OUTPUT(qStringResult, NAMED('QStringTest'), OVERWRITE),
     OUTPUT(utf8Result, NAMED('UTF8Test'), OVERWRITE),

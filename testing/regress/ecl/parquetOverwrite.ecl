@@ -13,8 +13,6 @@
 
 //class=parquet
 //fail
-//nothor
-//noroxie
 
 IMPORT Std;
 IMPORT Parquet;
