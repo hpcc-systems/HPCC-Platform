@@ -3158,6 +3158,15 @@ ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAcce
     return ret;
 }
 
+void compoundOwnedFilter(Owned<ILogAccessFilter>& compoundFilter, ILogAccessFilter* extension, LogAccessFilterType operation)
+{
+    if (!compoundFilter)
+        compoundFilter.setown(extension);
+    else if (extension)
+        compoundFilter.setown(getBinaryLogAccessFilterOwn(compoundFilter.getLink(), extension, operation));
+}
+
+
 // LOG ACCESS HELPER METHODS
 
 // Fetches log entries - based on provided filter, via provided IRemoteLogAccess instance

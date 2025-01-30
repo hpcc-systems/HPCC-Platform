@@ -164,7 +164,7 @@ struct WUComponentLogOptions
         if (index + 1 == components.length())
             return getComponentLogAccessFilter(components.item(index));
         else
-            return getBinaryLogAccessFilter
+            return getBinaryLogAccessFilterOwn
                 (
                     getComponentLogAccessFilter(components.item(index)),
                     getOredComponentsLogFilter(components, index+1),
@@ -200,7 +200,7 @@ struct WUComponentLogOptions
 
     void populateLogFilter(const char * wuid, CHttpRequest * zapHttpRequest)
     {
-        ILogAccessFilter * logFetchFilter = getJobIDLogAccessFilter(wuid);
+        Owned<ILogAccessFilter> logFetchFilter = getJobIDLogAccessFilter(wuid);
 
         StringBuffer requestedLogDataFormat;
         zapHttpRequest->getParameter("LogFilter_Format", requestedLogDataFormat);
@@ -249,34 +249,26 @@ struct WUComponentLogOptions
             logFetchOptions.setStartFrom((unsigned)start);
         }
 
-        ILogAccessFilter * componentsFilterObj = nullptr;
         StringBuffer componentsFilterList;
         zapHttpRequest->getParameter("LogFilter_ComponentsFilter", componentsFilterList);
         if (!componentsFilterList.isEmpty())
         {
             StringArray componentsFilter;
             componentsFilter.appendList(componentsFilterList.str(), ",");
-            componentsFilterObj = getOredComponentsLogFilter(componentsFilter);
+            compoundOwnedFilter(logFetchFilter, getOredComponentsLogFilter(componentsFilter), LOGACCESS_FILTER_and);
         }
 
-        if (componentsFilterObj != nullptr)
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, componentsFilterObj, LOGACCESS_FILTER_and);
-
-        ILogAccessFilter * logEventTypeFilterObj = nullptr;
         StringBuffer logType; //"DIS","ERR","WRN","INF","PRO","MET","EVT","ALL"
         zapHttpRequest->getParameter("LogFilter_LogEventType", logType);
         if (!logType.isEmpty() && strcmp(logType.str(), "ALL") != 0)
-            logEventTypeFilterObj = getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str()));
-
-        if (logEventTypeFilterObj != nullptr)
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, logEventTypeFilterObj, LOGACCESS_FILTER_and);
+            compoundOwnedFilter(logFetchFilter, getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str())), LOGACCESS_FILTER_and);
 
         StringBuffer wildCharFilter;
         zapHttpRequest->getParameter("LogFilter_WildcardFilter", wildCharFilter);
         if (!wildCharFilter.isEmpty())
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter.str()), LOGACCESS_FILTER_or);
+            compoundOwnedFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
 
-        logFetchOptions.setFilter(logFetchFilter);
+        logFetchOptions.setFilter(logFetchFilter.getClear());
 
         //"ASC", "DSC"
         StringBuffer sortByTimeDirection;
@@ -315,7 +307,7 @@ struct WUComponentLogOptions
 
     void populateLogFilter(const char * wuid, IConstLogAccessFilter & logFilterReq)
     {
-        ILogAccessFilter * logFetchFilter = getJobIDLogAccessFilter(wuid);
+        Owned<ILogAccessFilter> logFetchFilter = getJobIDLogAccessFilter(wuid);
 
         const char * requestedLogFormat = logFilterReq.getFormat();
         if (!isEmptyString(requestedLogFormat))
@@ -333,26 +325,18 @@ struct WUComponentLogOptions
         logFetchOptions.setLimit(logFilterReq.getLineLimit());
         logFetchOptions.setStartFrom(logFilterReq.getLineStartFrom());
 
-        ILogAccessFilter * componentsFilterObj = nullptr;
         if (logFilterReq.getComponentsFilter().length() > 0)
-            componentsFilterObj = getOredComponentsLogFilter(logFilterReq.getComponentsFilter());
+            compoundOwnedFilter(logFetchFilter, getOredComponentsLogFilter(logFilterReq.getComponentsFilter()), LOGACCESS_FILTER_and);
 
-        if (componentsFilterObj != nullptr)
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, componentsFilterObj, LOGACCESS_FILTER_and);
-
-        ILogAccessFilter * logEventTypeFilterObj = nullptr;
         const char * logType = logFilterReq.getLogEventTypeAsString();
         if (!isEmptyString(logType) && strcmp(logType,"ALL") != 0)
-            logEventTypeFilterObj = getClassLogAccessFilter(LogMsgClassFromAbbrev(logType));
-
-        if (logEventTypeFilterObj != nullptr)
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, logEventTypeFilterObj, LOGACCESS_FILTER_and);
+            compoundOwnedFilter(logFetchFilter, getClassLogAccessFilter(LogMsgClassFromAbbrev(logType)), LOGACCESS_FILTER_and);
 
         const char * wildCharFilter = logFilterReq.getWildcardFilter();
         if (!isEmptyString(wildCharFilter))
-            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
+            compoundOwnedFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
 
-        logFetchOptions.setFilter(logFetchFilter);
+        logFetchOptions.setFilter(logFetchFilter.getClear());
         CSortDirection espSortDirection = logFilterReq.getSortByTimeDirection();
         logFetchOptions.addSortByCondition(LOGACCESS_MAPPEDFIELD_timestamp, "", espSortDirection == CSortDirection_ASC 
                                         ? SORTBY_DIRECTION_ascending : SORTBY_DIRECTION_descending);
