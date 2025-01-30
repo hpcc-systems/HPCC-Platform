@@ -118,7 +118,7 @@
     <para><emphasis role="bold">NOTE</emphasis>: This document focuses
     primarily on the bare-metal implementation, for cloud and containerized
     deployments refer to the <emphasis>Containerized HPCC
-    Systems<superscript>®</superscript> Platform </emphasis>document. </para>
+    Systems<superscript>®</superscript> Platform </emphasis>document.</para>
 
     <sect1 id="Quick_Start">
       <title>Quick Start Guide</title>
@@ -314,66 +314,10 @@ sudo yum install -y &lt;hpccsystems platform rpm package&gt;</programlisting>
         <sect3 id="HPCC_Plug-Ins" role="brk">
           <title>Plugins</title>
 
-          <para>There are several optional plugins that you could choose to
-          add to your installation.</para>
+          <para>As of version 9.10, the plugins are automatically included.
+          There is no need to install separately. </para>
 
-          <para>For RPM based systems, you can install using yum.</para>
-
-          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting></para>
-
-          <para>To install the optional plug ins for a Ubuntu/Debian package,
-          use:</para>
-
-          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
-
-          <para>The optional plugins are:</para>
-
-          <para><informaltable>
-              <tgroup cols="2">
-                <tbody>
-                  <row>
-                    <entry><itemizedlist>
-                        <listitem>
-                          <para>JAVA : javaembed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>JavaScript : v8embed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>R : rembed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>MySql : mysqlembed</para>
-                        </listitem>
-                      </itemizedlist></entry>
-
-                    <entry><itemizedlist>
-                        <listitem>
-                          <para>Kafka : kafka</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>MemCache : memcached</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>Redis : redis</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>SQL Lite : sqlite3embed</para>
-                        </listitem>
-                      </itemizedlist></entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-
-          <para>Some other technologies, such as Python and Cassandra support
-          are included in the platform package.</para>
+          <para/>
         </sect3>
       </sect2>
 
@@ -1967,9 +1911,10 @@ init_start_thor--></property></para>
       </itemizedlist>
 
       <para><?hard-pagebreak ?></para>
-          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ZAP.xml"
-                xpointer="xpointer(//*[@id='ZAP'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ZAP.xml"
+                  xpointer="xpointer(//*[@id='ZAP'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
     </sect1>
 
     <sect1 id="hpcc-init">
@@ -2242,10 +2187,6 @@ sudo /etc/init.d/hpcc-init -c esp start
         <listitem>
           <para>Python (full support is already built-in)</para>
         </listitem>
-
-        <listitem>
-          <para>R</para>
-        </listitem>
       </itemizedlist>
 
       <para>The following sections detail what is required to utilize these
@@ -2491,229 +2432,6 @@ split_words('Once upon a time');
 
         <sect3>
           <title>Python Scope Options</title>
-
-          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - This option
-          allows independent EMBED attributes to share globals with each other
-          if they specify the same name for the GLOBALSCOPE parameter.</para>
-
-          <para><emphasis role="bold">PERSIST</emphasis> - This option
-          controls how long such a shared global scope will persist and
-          exactly how far it will be shared.</para>
-
-          <para>The value passed to GLOBALSCOPE can be any string you like,
-          allowing you to share globals between related EMBED sections while
-          keeping them distinct from unrelated ones.</para>
-
-          <para>PERSIST can take one of the following values:</para>
-
-          <para><emphasis role="bold">global</emphasis> - The values persist
-          indefinitely (until the process terminates) and are shared with any
-          other embeds using the same GLOBALSCOPE value, even in other
-          workunits.</para>
-
-          <para><emphasis role="bold">query</emphasis> - The values persist
-          until the query is unloaded, and are shared with other instances of
-          the query that might be running at the same time in Roxie, but not
-          with other queries.</para>
-
-          <para><emphasis role="bold">workunit</emphasis> - The values persist
-          until the end of the current workunit or the current instance of a
-          Roxie deployed query, and are not shared with other
-          instances.</para>
-        </sect3>
-      </sect2>
-
-      <sect2 id="R" role="brk">
-        <title>R</title>
-
-        <para>The HPCC Systems platform supports embedded R code. To enable R
-        support within The HPCC Systems<superscript>®</superscript>
-        Platform:</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Download the <emphasis role="bold">R Embed</emphasis> plugin
-            available from the HPCC Systems portal.</para>
-
-            <para><ulink
-            url="https://hpccsystems.com/download/hpcc-platform">https://hpccsystems.com/download/hpcc-platform</ulink></para>
-
-            <para>Choose the appropriate plugin for your distribution.</para>
-          </listitem>
-
-          <listitem>
-            <para>Install the plugin.</para>
-
-            <para><emphasis role="bold">RPM-based systems: </emphasis>Install
-            using <emphasis>yum install</emphasis>.</para>
-
-            <para><emphasis role="bold">Debian-based systems:
-            </emphasis>Install using <emphasis>dkpg -i</emphasis> then
-            <emphasis>apt-get</emphasis> <emphasis>install
-            -f</emphasis></para>
-
-            <para>If you use these methods to install the plugins, all the
-            required libraries and dependencies will also be installed.</para>
-          </listitem>
-        </orderedlist>
-
-        <orderedlist continuation="continues">
-          <listitem>
-            <para>Test the R integration.</para>
-
-            <para>R is not multi-thread aware, so the plugin has to wrap all
-            calls to R for critical sections. Scripts are compiled with every
-            call to R. The default runs each embedded R call in a local
-            environment. This environment can persist between embedded R calls
-            in the same environment.</para>
-
-            <para>You can now execute some R code either in your ECL IDE or
-            the ECL Playground.</para>
-
-            <para>For example:</para>
-
-            <para><programlisting>IMPORT R;
-
-integer add1(integer val) := EMBED(R)
-val+1
-ENDEMBED;
-
-string cat(varstring what, string who) := EMBED(R)
-paste(what,who)
-ENDEMBED;
-
-data testData(data val) := EMBED(R)
-val[1] = val[2];
-val;
-ENDEMBED;
-
-set of integer testSet(set of integer val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of unsigned2 testSet0(set of unsigned2 val) := EMBED(R)
-sort(val);
-ENDEMBED;
-
-set of string testSet2(set of string val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of string testSet3(set of string8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of varstring testSet4(set of varstring val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of varstring8 testSet5(set of varstring8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of boolean testSet6(set of boolean val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of real4 testSet7(set of real4 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of real8 testSet8(set of real8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of integer2 testSet9(set of integer2 val) := EMBED(R)
-sort(val);
-ENDEMBED;
-
-add1(10);
-cat('Hello', 'World');
-testData(D'ab');
-testSet([1,2,3]);
-testSet0([30000,40000,50000]);
-testSet2(['one','two','three']);
-testSet3(['uno','dos','tre']);
-testSet4(['un','deux','trois']);
-testSet5(['ein','zwei','drei']);
-testSet6([false,true,false,true]);
-testSet7([1.1,2.2,3.3]);
-testSet8([1.2,2.3,3.4]);
-testSet9([-111,0,113]);
-
-s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
-s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
-SUM(NOFOLD(s1 + s2), a);
-
-s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
-s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
-SUM(NOFOLD(s1b + s2b), a); 
-</programlisting>If this successfully executes, you have correctly set up R to
-            work with your HPCC Systems platform.</para>
-
-            <para>Additional examples of HPCC Systems code can be found
-            at:</para>
-
-            <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR.ecl</ulink></para>
-          </listitem>
-        </orderedlist>
-
-        <para/>
-
-        <sect3 id="R_DataTypes">
-          <title>Mapping Datatypes</title>
-
-          <para>Some additional considerations for mapping data types in
-          R.</para>
-
-          <para>In HPCC Systems the ECL <emphasis
-          role="bold">RECORD</emphasis> maps to an R
-          <emphasis>list</emphasis>.</para>
-
-          <para>An ECL <emphasis role="bold">DATASET</emphasis> including a
-          nested dataset is mapped to an R
-          <emphasis>dataframe</emphasis>.</para>
-
-          <para>An ECL <emphasis role="bold">SET</emphasis> is mapped to an R
-          <emphasis>vector</emphasis>.</para>
-
-          <para>These principals apply to passing data from HPCC Systems to R
-          or data returning to HPCC Systems from R. There are usage examples
-          of these concepts available at:</para>
-
-          <para><ulink
-          url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR2.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR2.ecl</ulink></para>
-
-          <para/>
-        </sect3>
-
-        <sect3>
-          <title>R Scope Options</title>
 
           <para><emphasis role="bold">GLOBALSCOPE</emphasis> - This option
           allows independent EMBED attributes to share globals with each other
