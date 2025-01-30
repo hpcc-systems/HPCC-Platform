@@ -85,7 +85,7 @@ static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." ,"","" };
 static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0", "-g -fPIC  -O0" };
 static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0", "-fPIC  -O0" };
 static const char * CC_OPTION_C[] = { "", "", "" };
-static const char * CC_OPTION_CPP[] = { "", "-std=c++11", "-std=c++11" };
+static const char * CC_OPTION_CPP[] = { "", "-std=c++17", "-std=c++17" };
 
 static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header", " -x c++-header" };
 
