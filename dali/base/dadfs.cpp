@@ -10294,6 +10294,8 @@ class CInitGroups
                     host = node.queryProp("@server");
                 else
                     host = getHostFromClusterEntry(node, cluster.queryProp("@name"));
+                if (isEmptyString(host))
+                    throwStringExceptionV(0, "Cannot construct %s, missing computer spec on node", cluster.queryProp("@name"));
                 switch (groupType)
                 {
                     case grp_roxie:
@@ -10334,86 +10336,95 @@ class CInitGroups
         /* a 'realCluster' is a cluster who's name matches it's nodeGroup
          * if the nodeGroup differs it implies it's sharing the nodeGroup with other thor instance(s).
          */
-        bool realCluster = true;
-        bool oldRealCluster = true;
-        StringBuffer gname, oldGname;
-        const char *defDir = NULL;
-        switch (groupType)
+        try
         {
-            case grp_thor:
-                getClusterGroupName(cluster, gname); // NB: ensures lowercases
-                if (!strieq(cluster.queryProp("@name"), gname.str()))
-                    realCluster = false;
-                if (oldEnvCluster)
-                {
-                    getClusterGroupName(*oldEnvCluster, oldGname); // NB: ensures lowercases
-                    if (!strieq(oldEnvCluster->queryProp("@name"), oldGname.str()))
-                        oldRealCluster = false;
-                }
-                break;
-            case grp_thorspares:
-                getClusterSpareGroupName(cluster, gname); // ensures lowercase
-                oldRealCluster = realCluster = false;
-                break;
-            case grp_roxie:
-                gname.append(cluster.queryProp("@name"));
-                gname.toLowerCase();
-                break;
-            case grp_dropzone:
-                gname.append(cluster.queryProp("@name"));
-                gname.toLowerCase();
-                oldRealCluster = realCluster = false;
-                defDir = cluster.queryProp("@directory");
-                break;
-            default:
-                throwUnexpected();
-        }
-        if (altName)
-            gname.clear().append(altName).toLowerCase();
-
-        IPropertyTree *existingClusterGroup = queryExistingGroup(gname);
-        bool matchOldEnv = false;
-        Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster, true);
-        bool matchExisting = !force && clusterGroupCompare(newClusterGroup, existingClusterGroup);
-        if (oldEnvCluster)
-        {
-            // new matches old, only if neither has changed it's name to mismatch it's nodeGroup name
-            if (realCluster == oldRealCluster)
+            bool realCluster = true;
+            bool oldRealCluster = true;
+            StringBuffer gname, oldGname;
+            const char *defDir = NULL;
+            switch (groupType)
             {
-                Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster, true);
-                matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+                case grp_thor:
+                    getClusterGroupName(cluster, gname); // NB: ensures lowercases
+                    if (!strieq(cluster.queryProp("@name"), gname.str()))
+                        realCluster = false;
+                    if (oldEnvCluster)
+                    {
+                        getClusterGroupName(*oldEnvCluster, oldGname); // NB: ensures lowercases
+                        if (!strieq(oldEnvCluster->queryProp("@name"), oldGname.str()))
+                            oldRealCluster = false;
+                    }
+                    break;
+                case grp_thorspares:
+                    getClusterSpareGroupName(cluster, gname); // ensures lowercase
+                    oldRealCluster = realCluster = false;
+                    break;
+                case grp_roxie:
+                    gname.append(cluster.queryProp("@name"));
+                    gname.toLowerCase();
+                    break;
+                case grp_dropzone:
+                    gname.append(cluster.queryProp("@name"));
+                    gname.toLowerCase();
+                    oldRealCluster = realCluster = false;
+                    defDir = cluster.queryProp("@directory");
+                    break;
+                default:
+                    throwUnexpected();
             }
-            else
-                matchOldEnv = false;
-        }
-        if (!matchExisting)
-        {
-            if (force)
+            if (altName)
+                gname.clear().append(altName).toLowerCase();
+
+            IPropertyTree *existingClusterGroup = queryExistingGroup(gname);
+            bool matchOldEnv = false;
+            Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster, true);
+            bool matchExisting = !force && clusterGroupCompare(newClusterGroup, existingClusterGroup);
+            if (oldEnvCluster)
             {
-                VStringBuffer msg("Forcing new group layout for %s [ matched active = false, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
+                // new matches old, only if neither has changed it's name to mismatch it's nodeGroup name
+                if (realCluster == oldRealCluster)
+                {
+                    Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster, true);
+                    matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+                }
+                else
+                    matchOldEnv = false;
+            }
+            if (!matchExisting)
+            {
+                if (force)
+                {
+                    VStringBuffer msg("Forcing new group layout for %s [ matched active = false, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
+                    UWARNLOG("%s", msg.str());
+                    messages.append(msg).newline();
+                    matchOldEnv = false;
+                }
+                else
+                {
+                    VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
+                    UWARNLOG("%s", msg.str());                                                                        \
+                    messages.append(msg).newline();
+                    if (existingClusterGroup)
+                    {
+                        // NB: not used at moment, but may help spot clusters that have swapped nodes
+                        existingClusterGroup->setPropBool("@mismatched", true);
+                    }
+                }
+            }
+            if ((!existingClusterGroup && (grp_thorspares != groupType)) || (!matchExisting && !matchOldEnv))
+            {
+                VStringBuffer msg("New cluster layout for cluster %s", gname.str());
                 UWARNLOG("%s", msg.str());
                 messages.append(msg).newline();
-                matchOldEnv = false;
-            }
-            else
-            {
-                VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
-                UWARNLOG("%s", msg.str());                                                                        \
-                messages.append(msg).newline();
-                if (existingClusterGroup)
-                {
-                    // NB: not used at moment, but may help spot clusters that have swapped nodes
-                    existingClusterGroup->setPropBool("@mismatched", true);
-                }
+                addClusterGroup(gname.str(), newClusterGroup.getClear(), realCluster);
+                return true;
             }
         }
-        if ((!existingClusterGroup && (grp_thorspares != groupType)) || (!matchExisting && !matchOldEnv))
+        catch (IException *e)
         {
-            VStringBuffer msg("New cluster layout for cluster %s", gname.str());
-            UWARNLOG("%s", msg.str());
-            messages.append(msg).newline();
-            addClusterGroup(gname.str(), newClusterGroup.getClear(), realCluster);
-            return true;
+            VStringBuffer msg("Failed to construct group for cluster %s", cluster.queryProp("@name"));
+            OERRLOG(e, msg.str());
+            e->Release();
         }
         return false;
     }
