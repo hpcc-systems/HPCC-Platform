@@ -315,7 +315,7 @@ sudo yum install -y &lt;hpccsystems platform rpm package&gt;</programlisting>
           <title>Plugins</title>
 
           <para>As of version 9.10, the plugins are automatically included.
-          There is no need to install separately. </para>
+          There is no need to install separately.</para>
 
           <para/>
         </sect3>
@@ -2301,7 +2301,7 @@ add1(10);
         at:</para>
 
         <para><ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl</ulink></para>
       </sect2>
 
       <sect2 id="Add_On_Javascript" role="brk">
@@ -2357,12 +2357,6 @@ ENDEMBED;
 add1(10);
 </programlisting>If this successfully executes, you have correctly set up
             JavaScript to work with your HPCC Systems platform.</para>
-
-            <para>Additional examples of HPCC Systems code can be found
-            at:</para>
-
-            <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
           </listitem>
         </orderedlist>
       </sect2>
