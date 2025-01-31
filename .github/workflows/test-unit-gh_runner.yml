@@ -54,7 +54,12 @@ jobs:
         run: |
           export LANG="en_US.UTF-8"
           sudo update-locale
-          sudo /opt/HPCCSystems/bin/unittests
+          while read test
+          do
+            echo "$test"
+            sudo /opt/HPCCSystems/bin/unittests -e "$test"
+            echo ""
+          done< <(/opt/HPCCSystems/bin/unittests -l | sort )
 
       - name: unittests-logs-artifact
         if: ${{ failure() || cancelled() }}
