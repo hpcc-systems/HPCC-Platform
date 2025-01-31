@@ -272,11 +272,13 @@ extern "C++"
                  */
                 void commitOffset(__int64 offset) const;
 
+#ifndef _CONTAINERIZED
                 /**
                  * If the offset file does not exist, create one with a
                  * default offset
                  */
-                void initFileOffsetIfNotExist() const;
+                void _initFileOffsetIfNotExist() const;
+#endif
 
                 /**
                  * Callback function.  librdkafka will call here, outside of a
@@ -292,7 +294,9 @@ extern "C++"
                 std::string                     brokers;        //!< One or more Kafka bootstrap brokers; comma-delimited; NameOrIP[:port]
                 std::string                     topic;          //!< The name of the topic to consume from
                 std::string                     consumerGroup;  //!< The name of the consumer group for this consumer object
+#ifndef _CONTAINERIZED
                 StringBuffer                    offsetPath;     //!< Full path to the Kafka topic offset file
+#endif
                 RdKafka::Consumer*              consumerPtr;    //!< Pointer to librdkafka consumer object
                 std::atomic<RdKafka::Topic*>    topicPtr;       //!< Pointer to librdkafka topic object
                 CriticalSection                 lock;           //!< Mutex to ensure that only one thread creates the librdkafka object pointers or starts/stops the queue

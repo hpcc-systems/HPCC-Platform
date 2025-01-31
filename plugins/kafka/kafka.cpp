@@ -40,7 +40,11 @@ namespace KafkaPlugin
     //--------------------------------------------------------------------------
 
     // Filename of global Kafka configuration file
-    const char* GLOBAL_CONFIG_FILENAME = "kafka_global.conf";
+#ifdef _CONTAINERIZED
+    const char* GLOBAL_CONFIG_NAME = "global";
+#else
+    const char* GLOBAL_CONFIG_NAME = "kafka_global.conf";
+#endif
 
     // The minimum number of seconds that a cached object can live
     // without activity
@@ -54,24 +58,80 @@ namespace KafkaPlugin
     // Static Methods (internal)
     //--------------------------------------------------------------------------
 
+#ifdef _CONTAINERIZED
+    static void applyConfigProps(IPropertyTree * props, const char* configName, RdKafka::Conf* configPtr)
+    {
+        if (props)
+        {
+            Owned<IPropertyTreeIterator> iter = props->getElements(configName);
+            std::string errStr;
+
+            ForEach(*iter)
+            {
+                IPropertyTree & entry = iter->query();
+                const char* name = entry.queryProp("@name");
+                const char* value = entry.queryProp("@value");
+
+                if (name && *name)
+                {
+                    if (stricmp(name, "metadata.broker.list") != 0)
+                    {
+                        if (value && *value)
+                        {
+                            if (configPtr->set(name, value, errStr) != RdKafka::Conf::CONF_OK)
+                            {
+                                DBGLOG("Kafka: Failed to set config param from entry %s: '%s' = '%s'; error: '%s'", configName, name, value, errStr.c_str());
+                            }
+                            else if (doTrace(traceKafka))
+                            {
+                                DBGLOG("Kafka: Set config param from entry %s: '%s' = '%s'", configName, name, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        DBGLOG("Kafka: Setting '%s' ignored in config %s", name, configName);
+                    }
+                }
+            }
+        }
+    }
+
     /**
-     * Look for an optional configuration file and apply any found configuration
-     * parameters to a librdkafka configuration object.
+     * Look for an optional configuration entry and apply any found parameters
+     * to a librdkafka configuration object.
      *
-     * @param   configFilePath      The path to a configuration file; it is not
-     *                              necessary for the file to exist
-     * @param   globalConfigPtr     A pointer to the configuration object that
+     * @param   configName          The name of the configuration key within plugins/kafka;
+     *                              it is not required for the key to exist
+     * @param   configPtr           A pointer to the configuration object that
      *                              will receive any found parameters
      */
-    static void applyConfig(const char* configFilePath, RdKafka::Conf* globalConfigPtr)
+    static void applyConfig(const char* configName, RdKafka::Conf* configPtr)
     {
-        if (configFilePath && *configFilePath && globalConfigPtr)
+        if (configName && *configName && configPtr)
+        {
+            applyConfigProps(getGlobalConfigSP()->getPropTree("plugins/kafka"), configName, configPtr);
+            applyConfigProps(getComponentConfigSP()->getPropTree("plugins/kafka"), configName, configPtr);
+        }
+    }
+#else
+    /**
+     * Look for an optional configuration file in a bare metal environment and 
+     * apply any found configuration parameters to a librdkafka configuration object.
+     *
+     * @param   configName          The name of the configuration file; it is not
+     *                              necessary for the file to exist
+     * @param   configPtr           A pointer to the configuration object that
+     *                              will receive any found parameters
+     */
+    static void applyConfig(const char* configName, RdKafka::Conf* configPtr)
+    {
+        if (configName && *configName && configPtr)
         {
             std::string errStr;
             StringBuffer fullConfigPath;
 
-            fullConfigPath.append(hpccBuildInfo.configDir).append(PATHSEPSTR).append(configFilePath);
-
+            fullConfigPath.append(hpccBuildInfo.configDir).append(PATHSEPSTR).append(configName);
             Owned<IProperties> properties = createProperties(fullConfigPath.str(), true);
             Owned<IPropertyIterator> props = properties->getIterator();
 
@@ -89,24 +149,25 @@ namespace KafkaPlugin
 
                         if (value && *value)
                         {
-                            if (globalConfigPtr->set(key.str(), value, errStr) != RdKafka::Conf::CONF_OK)
+                            if (configPtr->set(key.str(), value, errStr) != RdKafka::Conf::CONF_OK)
                             {
-                                DBGLOG("Kafka: Failed to set config param from file %s: '%s' = '%s'; error: '%s'", configFilePath, key.str(), value, errStr.c_str());
+                                DBGLOG("Kafka: Failed to set config param from file %s: '%s' = '%s'; error: '%s'", configName, key.str(), value, errStr.c_str());
                             }
                             else if (doTrace(traceKafka))
                             {
-                                DBGLOG("Kafka: Set config param from file %s: '%s' = '%s'", configFilePath, key.str(), value);
+                                DBGLOG("Kafka: Set config param from file %s: '%s' = '%s'", configName, key.str(), value);
                             }
                         }
                     }
                     else
                     {
-                        DBGLOG("Kafka: Setting '%s' ignored in config file %s", key.str(), configFilePath);
+                        DBGLOG("Kafka: Setting '%s' ignored in config file %s", key.str(), configName);
                     }
                 }
             }
         }
     }
+#endif
 
     //--------------------------------------------------------------------------
     // Plugin Classes
@@ -367,7 +428,7 @@ namespace KafkaPlugin
 
                     // Set any global configurations from file, allowing
                     // overrides of above settings
-                    applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig);
+                    applyConfig(GLOBAL_CONFIG_NAME, globalConfig);
 
                     // Set producer callbacks
                     globalConfig->set("event_cb", static_cast<RdKafka::EventCb*>(this), errStr);
@@ -382,7 +443,11 @@ namespace KafkaPlugin
                         RdKafka::Conf* topicConfPtr = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 
                         // Set any topic configurations from file
+#ifdef _CONTAINERIZED
+                        std::string confName = "publisher_topic_" + topic;
+#else
                         std::string confName = "kafka_publisher_topic_" + topic + ".conf";
+#endif
                         applyConfig(confName.c_str(), topicConfPtr);
 
                         // Create the topic
@@ -495,6 +560,7 @@ namespace KafkaPlugin
         consumerPtr = NULL;
         topicPtr = NULL;
 
+#ifndef _CONTAINERIZED
         char cpath[_MAX_DIR];
 
         GetCurrentDirectory(_MAX_DIR, cpath);
@@ -510,6 +576,7 @@ namespace KafkaPlugin
             offsetPath.append(consumerGroup.c_str());
         }
         offsetPath.append(".offset");
+#endif
     }
 
     Consumer::~Consumer()
@@ -536,7 +603,9 @@ namespace KafkaPlugin
 
             if (!topicPtr.load(std::memory_order_relaxed))
             {
+#ifndef _CONTAINERIZED
                 initFileOffsetIfNotExist();
+#endif
 
                 std::string errStr;
                 RdKafka::Conf* globalConfig = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
@@ -551,7 +620,7 @@ namespace KafkaPlugin
 
                     // Set any global configurations from file, allowing
                     // overrides of above settings
-                    applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig);
+                    applyConfig(GLOBAL_CONFIG_NAME, globalConfig);
 
                     // Set consumer callbacks
                     globalConfig->set("event_cb", static_cast<RdKafka::EventCb*>(this), errStr);
@@ -570,16 +639,22 @@ namespace KafkaPlugin
 
                         // Set any topic configurations from file, allowing
                         // overrides of above settings
+#ifdef _CONTAINERIZED
+                        std::string confName = "consumer_topic_" + topic;
+#else
                         std::string confName = "kafka_consumer_topic_" + topic + ".conf";
+#endif
                         applyConfig(confName.c_str(), topicConfPtr);
 
                         // Ensure that some items are set a certain way
                         // by setting them after loading the external conf
                         topicConfPtr->set("auto.commit.enable", "false", errStr);
-                        // Additional settings for updated librdkafka
                         topicConfPtr->set("enable.auto.commit", "false", errStr);
+                        
+#ifndef _CONTAINERIZED
                         topicConfPtr->set("offset.store.method", "file", errStr);
                         topicConfPtr->set("offset.store.path", offsetPath.str(), errStr);
+#endif
 
                         // Create the topic
                         topicPtr.store(RdKafka::Topic::create(consumerPtr, topic, topicConfPtr, errStr), std::memory_order_release);
@@ -633,9 +708,14 @@ namespace KafkaPlugin
     {
         if (offset >= 0)
         {
-            // Not using librdkafka's offset_store because it seems to be broken
-            // topicPtr->offset_store(partitionNum, offset);
+#ifdef _CONTAINERIZED
+            topicPtr.load()->offset_store(partitionNum, offset);
 
+            if (doTrace(traceKafka))
+            {
+                DBGLOG("Kafka: Saved offset %lld", offset);
+            }
+#else
             // Create/overwrite a file using the same naming convention and
             // file contents that librdkafka uses so it can pick up where
             // we left off; NOTE:  librdkafka does not clean the topic name
@@ -648,9 +728,11 @@ namespace KafkaPlugin
             {
                 DBGLOG("Kafka: Saved offset %lld to %s", offset, offsetPath.str());
             }
+#endif
         }
     }
 
+#ifndef _CONTAINERIZED
     void Consumer::initFileOffsetIfNotExist() const
     {
         if (!checkFileExists(offsetPath.str()))
@@ -663,6 +745,7 @@ namespace KafkaPlugin
             }
         }
     }
+#endif
 
     void Consumer::event_cb(RdKafka::Event& event)
     {
@@ -889,7 +972,7 @@ namespace KafkaPlugin
         if (globalConfig)
         {
             // Load global config to pick up any protocol modifications
-            applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig);
+            applyConfig(GLOBAL_CONFIG_NAME, globalConfig);
 
             // rd_kafka_new() takes ownership of the lower-level conf object, which in this case is a
             // pointer currently owned by globalConfig; we need to pass a duplicate
