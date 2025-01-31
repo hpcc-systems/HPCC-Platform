@@ -19,6 +19,8 @@ on:
         required: false
         default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
 
+env:
+  UPLOAD_ARTIFACT: false 
 jobs:
 
   main:
@@ -54,10 +56,42 @@ jobs:
         run: |
           export LANG="en_US.UTF-8"
           sudo update-locale
-          sudo /opt/HPCCSystems/bin/unittests
+          while read test
+          do
+            echo "$test"
+            echo "--------------------------------------"
+            sudo /opt/HPCCSystems/bin/unittests -e "$test"
+            echo " "
+          done< <(/opt/HPCCSystems/bin/unittests -l | sort )
+
+      - name: Check for Core files
+        run: |
+          CORE_FILES=( $(sudo find /opt/HPCCSystems/bin/ /var/lib/HPCCSystems/ -iname 'core*' -type f -print) )
+          echo "NUM_OF_ML_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
+          echo "NUM_OF_ML_CORES=${#CORE_FILES[@]}"
+          if [ ${#CORE_FILES[@]} -ne 0 ]
+          then      
+              mkdir -p $HOME/.config/gdb/
+              echo "set auto-load safe-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set solib-search-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set sysroot /" >> $HOME/.config/gdb/gdbinit
+              for core in ${CORE_FILES[@]}
+              do
+                  coreName=${core##*/}
+                  component=$( echo $coreName | tr '_.' ' ' | awk '{print $2 }' )
+                  compNamePart=$( find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1);
+                  compName=${compNamePart##*/}
+                  echo "component: '${component}', compName: '${compName}', core: '${core}'"
+                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core 2>&1 | sudo tee "$core.trace" 2>&1
+                  cp "$core.trace" /home/runner/HPCCSystems-regression/log/ 
+              done
+              echo "UPLOAD_ARTIFACT=true" >> $GITHUB_ENV
+              exit -1
+          fi
+
 
       - name: unittests-logs-artifact
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || env.UPLOAD_ARTIFACT == 'true'}}
         uses: actions/upload-artifact@v4
         with:
           name: test-unit-${{ inputs.asset-name }}
