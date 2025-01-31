@@ -57,8 +57,9 @@ jobs:
           while read test
           do
             echo "$test"
+            echo "--------------------------------------"
             sudo /opt/HPCCSystems/bin/unittests -e "$test"
-            echo ""
+            echo " "
           done< <(/opt/HPCCSystems/bin/unittests -l | sort )
 
       - name: unittests-logs-artifact
