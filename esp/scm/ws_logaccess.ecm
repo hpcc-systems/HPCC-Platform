@@ -229,10 +229,45 @@ ESPResponse GetLogsResponse
     [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.06"), default_client_version("1.06"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPRequest GetHealthReportRequest
+{
+    bool IncludeConfiguration(false);
+    bool IncludeDebugReport(false);
+    bool IncludeSampleQuery(false);
+};
+
+ESPenum LogAccessStatusCode : int
+{
+    Success(0, "Success"),
+    Warning(1, "Warning"),
+    Fail(2, "Fail")
+};
+
+ESPStruct LogAccessStatus
+{
+    LogAccessStatusCode Code;
+    LogAccessStatusCode Messages;
+};
+
+ESPStruct LogAccessDebugReport
+{
+    string SampleQueryReport;
+    string PluginDebugReport;
+    string ServerDebugReport;
+};
+
+ESPResponse [exceptions_inline] GetHealthReportResponse
+{
+    ESPStruct LogAccessStatus Status;
+    ESPStruct LogAccessDebugReport DebugReport;
+    string Configuration;
+};
+
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.07"), default_client_version("1.07"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
+    ESPmethod [min_ver("1.07")] GetHealthReport(GetHealthReportRequest, GetHealthReportResponse);
 };
 
 SCMexportdef(ws_logaccess);

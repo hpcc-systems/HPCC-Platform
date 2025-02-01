@@ -28,6 +28,7 @@ public:
     virtual ~Cws_logaccessEx();
     virtual bool onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessInfoRequest &req, IEspGetLogAccessInfoResponse &resp);
     virtual bool onGetLogs(IEspContext &context, IEspGetLogsRequest &req, IEspGetLogsResponse & resp);
+    virtual bool onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp);
 };
 
 #endif

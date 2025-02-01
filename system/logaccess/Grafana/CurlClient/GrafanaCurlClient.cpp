@@ -58,17 +58,9 @@ size_t stringCallback(char *contents, size_t size, size_t nmemb, void *userp)
     return size * nmemb;
 }
 
-/*
-* Constructs a curl based client request based on the provided connection string and targetURI
-* The response is reported in the readBuffer
-* Uses stringCallback to handle successfull curl requests
-*/
-void GrafanaLogAccessCurlClient::submitQuery(std::string & readBuffer, const char * targetURI)
+void submit(std::string & readBuffer, const char * url, const char * user, const char * pass)
 {
-    if (isEmptyString(m_grafanaConnectionStr.str()))
-        throw makeStringExceptionV(-1, "%s Cannot submit query, empty connection string detected!", COMPONENT_NAME);
-
-    if (isEmptyString(targetURI))
+    if (isEmptyString(url))
         throw makeStringExceptionV(-1, "%s Cannot submit query, empty request URI detected!", COMPONENT_NAME);
 
     OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
@@ -79,10 +71,8 @@ void GrafanaLogAccessCurlClient::submitQuery(std::string & readBuffer, const cha
         char                    curlErrBuffer[CURL_ERROR_SIZE];
         curlErrBuffer[0] = '\0';
 
-        VStringBuffer requestURL("%s%s%s", m_grafanaConnectionStr.str(), m_dataSourcesAPIURI.str(), targetURI);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_URL, requestURL.str()) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, requestURL.str());
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, url) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, url);
     
         int curloptretcode = curl_easy_setopt(curlHandle, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
         if (curloptretcode != CURLE_OK)
@@ -95,18 +85,10 @@ void GrafanaLogAccessCurlClient::submitQuery(std::string & readBuffer, const cha
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPAUTH':'CURLAUTH_BASIC'!", COMPONENT_NAME);
         }
 
-        //allow annonymous connections??
-        if (isEmptyString(m_grafanaUserName.str()))
-            throw makeStringExceptionV(-1, "%s: Log query request: Empty user name detected!", COMPONENT_NAME);
-
-        //allow non-secure connections??
-        if (isEmptyString(m_grafanaPassword.str()))
-            throw makeStringExceptionV(-1, "%s: Log query request: Empty password detected!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_USERNAME, m_grafanaUserName.str()))
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERNAME, user))
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set  'CURLOPT_USERNAME' option!", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_PASSWORD, m_grafanaPassword.str()))
+        if (curl_easy_setopt(curlHandle, CURLOPT_PASSWORD, pass))
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set  'CURLOPT_PASSWORD' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0) != CURLE_OK)
@@ -152,6 +134,32 @@ void GrafanaLogAccessCurlClient::submitQuery(std::string & readBuffer, const cha
         else if (readBuffer.length() == 0)
             throw makeStringExceptionV(-1, "%s LogQL request: Empty response!", COMPONENT_NAME);
     }
+}
+
+/*
+* Constructs a curl based client request based on the provided connection string and targetURI
+* The response is reported in the readBuffer
+* Uses stringCallback to handle successfull curl requests
+*/
+void GrafanaLogAccessCurlClient::submitQuery(std::string & readBuffer, const char * targetURI, bool targetDataSource)
+{
+    if (isEmptyString(m_grafanaConnectionStr.str()))
+        throw makeStringExceptionV(-1, "%s Cannot submit query, empty connection string detected!", COMPONENT_NAME);
+
+    if (isEmptyString(targetURI))
+        throw makeStringExceptionV(-1, "%s Cannot submit query, empty request URI detected!", COMPONENT_NAME);
+
+    VStringBuffer requestURL("%s%s%s", m_grafanaConnectionStr.str(), targetDataSource ? m_dataSourcesAPIURI.str() : "", targetURI);
+
+    //allow annonymous connections??
+    if (isEmptyString(m_grafanaUserName.str()))
+        throw makeStringExceptionV(-1, "%s: Log query request: Empty user name detected!", COMPONENT_NAME);
+
+    //allow non-secure connections??
+    if (isEmptyString(m_grafanaPassword.str()))
+        throw makeStringExceptionV(-1, "%s: Log query request: Empty password detected!", COMPONENT_NAME);
+
+    submit(readBuffer, requestURL, m_grafanaUserName.str(), m_grafanaPassword.str());
 }
 
 /*
@@ -442,7 +450,7 @@ void GrafanaLogAccessCurlClient::fetchDatasourceByName(const char * targetDataSo
 
     std::string readBuffer;
     VStringBuffer targetURI("/api/datasources/name/%s", targetDataSourceName);
-    submitQuery(readBuffer, targetURI.str());
+    submitQuery(readBuffer, targetURI.str(), true);
     processDatasourceJsonResp(readBuffer);
 }
 
@@ -452,16 +460,35 @@ void GrafanaLogAccessCurlClient::fetchDatasourceByName(const char * targetDataSo
 */
 void GrafanaLogAccessCurlClient::fetchDatasources(std::string & readBuffer)
 {
-    submitQuery(readBuffer, "/");
+    submitQuery(readBuffer, "/api/datasources/", false);
 }
 
+void GrafanaLogAccessCurlClient::fetchDatasourceLabelValues(std::string & readBuffer, const char * label)
+{
+    if (isEmptyString(label))
+        return;
+
+
+    StringBuffer labelValuesURI;
+    labelValuesURI.setf("/label/%s/values", label);
+    submitQuery(readBuffer, labelValuesURI.str(), true);
+}
 /*
 * sumbits a Grafana Loki query to fetch all labels
 * The response is expected to be a JSON formatted list of labels
 */
 void GrafanaLogAccessCurlClient::fetchLabels(std::string & readBuffer)
 {
-    submitQuery(readBuffer, "/label");
+    submitQuery(readBuffer, "/label", true);
+}
+
+/*
+* sumbits a Grafana API query to fetch basic health info
+* The response is expected to be a JSON formatted list of health entries
+*/
+void GrafanaLogAccessCurlClient::fetchHealth(std::string & readBuffer)
+{
+    submitQuery(readBuffer, "/api/health", false);
 }
 
 /*
@@ -707,7 +734,7 @@ bool GrafanaLogAccessCurlClient::fetchLog(LogQueryResultDetails & resultDetails,
         DBGLOG("FetchLog query: %s", fullQuery.str());
 
         std::string readBuffer;
-        submitQuery(readBuffer, fullQuery.str());
+        submitQuery(readBuffer, fullQuery.str(), true);
 
         processQueryJsonResp(resultDetails, readBuffer, returnbuf, format, options.getReturnColsMode(), true);
     }
@@ -731,6 +758,338 @@ void processLogMapConfig(const IPropertyTree * logMapConfig, LogField * targetFi
 
     if (logMapConfig->hasProp(logMapSearchColAtt))
         targetField->name = logMapConfig->queryProp(logMapSearchColAtt);
+}
+
+void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report)
+{
+    LogAccessHealthStatus status = LOGACCESS_STATUS_success;
+
+    try
+    {
+        StringBuffer configuration;
+        if (m_pluginCfg)
+        {
+            if (options.IncludeConfiguration)
+                toJSON(m_pluginCfg, configuration, 0, JSON_Format);
+        }
+        else
+        {
+            status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            status.appendJSONListMessage("Grafana/Loki Pluging Configuration tree is empty!!!");
+        }
+
+        report.Configuration.set(configuration.str()); //this would be empty if !options.IncludeConfiguration
+
+        if (m_grafanaConnectionStr.length() == 0)
+        {
+            status.appendJSONListMessage("Connection String to target Grafana/Loki is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_fail);
+        }
+
+        if (m_grafanaUserName.length() == 0)
+        {
+            status.appendJSONListMessage("Grafana user name is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_warning);
+        }
+
+        if (m_grafanaPassword.length() == 0)
+        {
+            status.appendJSONListMessage("Grafana password is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_warning);
+        }
+
+        if (m_targetDataSource.id.length() == 0)
+        {
+            status.appendJSONListMessage("Target Grafana datasource ID is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_warning);
+        }
+
+        if (m_targetDataSource.name.length() == 0)
+        {
+            status.appendJSONListMessage("Target Grafana datasource Name is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_warning);
+        }
+
+        if (m_targetNamespace.length() == 0)
+        {
+            status.appendJSONListMessage("Target log data namespace is empty!");
+            status.escalateStatusCode(LOGACCESS_STATUS_warning);
+        }
+
+        {
+            StringBuffer debugReport;
+            debugReport.set("{ \"ConnectionInfo\": {");
+            appendJSONStringValue(debugReport, "ConnectionString", m_grafanaConnectionStr.str(), true);
+            appendJSONStringValue(debugReport, "UserName", m_grafanaUserName.str(), false);
+            appendJSONValue(debugReport, "PasswordProvided", !isEmptyString(m_grafanaPassword.str()) ? true : false);
+            appendJSONStringValue(debugReport, "TargetDatasourceID", m_targetDataSource.id.str(), false);
+            appendJSONStringValue(debugReport, "TargetDatasourceName", m_targetDataSource.name.str(), true);
+            appendJSONStringValue(debugReport, "TargetLogsNamespace", m_targetNamespace.str(), true);
+            appendJSONStringValue(debugReport, "ExpectedLogsFormat", m_expectedLogFormat.str(), false);
+            debugReport.append( "}"); //close conninfo
+
+            debugReport.appendf(", \"LogMaps\": {");
+            debugReport.appendf("\"Global\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_globalSearchCol.name.str(), true);
+            appendJSONStringValue(debugReport, "IsStream", m_globalSearchCol.isStream ? "stream" : "", false);
+            debugReport.append(" }"); // end Global
+            debugReport.appendf(", \"Components\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_componentsColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_componentsColumn.isStream ? "stream" : "", false);
+            debugReport.appendf(" }"); // end Components
+            debugReport.appendf(", \"Workunits\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_workunitsColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_workunitsColumn.isStream ? "stream" : "", false);
+            debugReport.append(" }"); // end Workunits
+            debugReport.appendf(", \"Audience\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_audienceColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_audienceColumn.isStream ? "stream" : "", false);
+            debugReport.appendf(" }"); // end Audience
+            debugReport.appendf(", \"Class\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_classColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_classColumn.isStream ? "stream" : "", false);
+            debugReport.appendf(" }"); // end Class
+            debugReport.appendf(", \"Instance\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_instanceColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_instanceColumn.isStream ? "stream" : "", false);
+            debugReport.appendf(" }"); // end Instance
+            debugReport.appendf(", \"Pod\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_podColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_podColumn.isStream ? "stream" : "", false);
+            debugReport.appendf(" }"); // end Pod
+            debugReport.appendf(", \"Container\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_containerColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_containerColumn.isStream ? "stream" : "", false);
+            debugReport.append(" }");
+            debugReport.appendf(", \"Message\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_messageColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_messageColumn.isStream ? "stream" : "", false);
+            debugReport.append(" }");
+            debugReport.appendf(", \"Node\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_nodeColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_nodeColumn.isStream ? "stream" : "", false);
+            debugReport.append(" }");
+            debugReport.appendf(", \"DateTimstamp\": { ");
+            appendJSONStringValue(debugReport, "ColName", m_logDateTimstampColumn.name.str(), true);
+            appendJSONStringValue(debugReport, "Source", m_logDateTimstampColumn.isStream ? "stream" : "", false);
+            debugReport.append(" }");// close DateTimstamp
+            debugReport.append(" }"); //close logmaps
+            debugReport.append(" }"); //close debugreport
+
+            if(options.IncludeDebugReport)
+                report.DebugReport.PluginDebugReport.set(debugReport);
+
+            //debugReport.set("{ \"Health\": "); //overwrite previous section
+            debugReport.set("{ "); //overwrite previous section
+            try
+            {
+                std::string health;
+                fetchHealth(health);
+                if (health.length() != 0)
+                    appendJSONStringValue(debugReport, "GrafanaHealth", health.c_str(), true);
+                else
+                {
+                    //debugReport.appendf("\"Empty GrafanaHealth response\"");
+                    appendJSONStringValue(debugReport, "GrafanaHealth", "Empty GrafanaHealth response", false);
+                    status.appendJSONListMessage("Could not populate GrafanaHealth");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                }
+
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception fetching Grafana health (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                appendJSONStringValue(debugReport, "GrafanaHealth", description.str(), true);
+                status.appendJSONListMessage(description.str());
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                e->Release();
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unknown exception while fetching target Grafana health\"");
+                status.appendJSONListMessage("Unknown exception while fetching target Grafana health");
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+            }
+
+            debugReport.append(", \"AvailableDatasources\": ");
+            try
+            {
+                std::string availableDS;
+                fetchDatasources(availableDS);
+                debugReport.append(availableDS.c_str());
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception fetching available Datasources (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                debugReport.appendf("\"%s\"", description.str());
+                status.appendJSONListMessage(description.str());
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                e->Release();
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unknown exception while fetching available Datasources\"");
+                status.appendJSONListMessage("Unknown exception while fetching available Datasources");
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+            }
+
+            StringArray labels;
+            debugReport.append(", \"AvailableLabels\":");
+            try
+            {
+                std::string availableLabels;
+                fetchLabels(availableLabels);
+
+                Owned<IPropertyTree> labelsResp = createPTreeFromJSONString(availableLabels.c_str());
+                if (!labelsResp)
+                {
+                    debugReport.append("\"Labels response not in expected JSON format!\"");
+                    status.appendJSONListMessage("Labels response not in expected JSON format!");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                }
+                else
+                {
+                    //const char * status = labelsResp->queryProp("status");
+                    //messages.append("Labels request status:");
+                    //messages.append(status);
+                    debugReport.append(" {");
+                    Owned<IPropertyTreeIterator> labelsIter = labelsResp->getElements("data");
+                    bool firstLabel = true;
+                    ForEach(*labelsIter)
+                    {
+                        std::string labelValues;
+                        IPropertyTree & logMap = labelsIter->query();
+                        const char * label = logMap.queryProp(".");
+                        if (firstLabel)
+                            firstLabel = false;
+                        else
+                            debugReport.append(", ");
+
+                        debugReport.appendf("\"%s\": [ ", label);
+                        fetchDatasourceLabelValues(labelValues, label);
+                        Owned<IPropertyTree> labelValResp = createPTreeFromJSONString(labelValues.c_str());
+                        Owned<IPropertyTreeIterator> labelValsIter = labelValResp->getElements("data");
+
+                        bool firstLabelValue = true;
+                        ForEach(*labelValsIter)
+                        {
+                            if (firstLabelValue)
+                                firstLabelValue = false;
+                            else
+                                debugReport.append(", ");
+
+                            debugReport.appendf("\"%s\"", labelValsIter->query().queryProp("."));
+                        }
+                        debugReport.append(" ]");
+                    }
+                    debugReport.append(" }");
+                }
+            }
+
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception fetching available labels (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                debugReport.appendf("\"%s\"", description.str());
+                status.appendJSONListMessage(description.str());
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                e->Release();
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unknown exception while fetching target Grafana/Loki labels\"");
+                status.appendJSONListMessage("Unknown exception while fetching target Grafana/Loki labels");
+                status.escalateStatusCode(LOGACCESS_STATUS_warning);
+            }
+
+            debugReport.append(" }");//close Server
+
+            if(options.IncludeDebugReport)
+                report.DebugReport.ServerDebugReport.set(debugReport);
+        }
+
+        {
+            StringBuffer sampleQuery;
+            sampleQuery.append("{ \"Query\": { ");
+            try
+            {
+                appendJSONStringValue(sampleQuery, "LogFormat", "JSON", false);
+                LogAccessLogFormat outputFormat = LOGACCESS_LOGFORMAT_json;
+                LogAccessConditions queryOptions;
+
+                sampleQuery.appendf(", \"Filter\": { ");
+                appendJSONStringValue(sampleQuery, "type", "byComponent", false);
+                appendJSONStringValue(sampleQuery, "value", "", false);
+                queryOptions.setFilter(getComponentLogAccessFilter(""));
+
+                struct LogAccessTimeRange range;
+                CDateTime endtt;
+                endtt.setNow();
+                range.setEnd(endtt);
+                StringBuffer endstr;
+                endtt.getString(endstr);
+
+                CDateTime startt;
+                startt.setNow();
+                startt.adjustTimeSecs(-60); //an hour ago
+                range.setStart(startt);
+
+                StringBuffer startstr;
+                startt.getString(startstr);
+
+                sampleQuery.append(", \"TimeRange\": { ");
+                appendJSONStringValue(sampleQuery, "Start", startstr.str(), false);
+                appendJSONStringValue(sampleQuery, "End", endstr.str(), false);
+                sampleQuery.append(" }, "); //end TimeRange
+                queryOptions.setTimeRange(range);
+                appendJSONStringValue(sampleQuery, "Limit", "5", false);
+                appendJSONStringValue(sampleQuery, "TargetNameSpace", m_targetNamespace.str(), false);
+
+                sampleQuery.append(" }, ");//end filter
+                queryOptions.setLimit(5);
+
+                StringBuffer logs;
+                LogQueryResultDetails  resultDetails;
+                fetchLog(resultDetails, queryOptions, logs, outputFormat);
+                appendJSONValue(sampleQuery, "ResultCount", resultDetails.totalReceived);
+                if (resultDetails.totalReceived == 0)
+                {
+                    status = LOGACCESS_STATUS_warning;
+                    status.appendJSONListMessage("Sample query returned zero log records!");
+                }
+
+                sampleQuery.appendf(", \"Results\": %s", logs.length() == 0 ? "Sample query returned zero log records!" : logs.str());
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception while executing sample query (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                appendJSONStringValue(sampleQuery, "Results", description.str(), true);
+                status.appendJSONListMessage(description.str());
+                e->Release();
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            catch(...)
+            {
+                appendJSONStringValue(sampleQuery, "Results", "Unknown exception while executing samplequery", false);
+                status.appendJSONListMessage("Unknown exception while executing samplequery");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            sampleQuery.append(" }}"); //close sample query object and top level json container
+
+            if (options.IncludeSampleQuery)
+                report.DebugReport.SampleQueryReport.set(sampleQuery);
+        }
+    }
+    catch(...)
+    {
+        status.appendJSONListMessage("Encountered unexpected exception during health report");
+        status = LOGACCESS_STATUS_fail;
+    }
+
+    report.status = status;
 }
 
 GrafanaLogAccessCurlClient::GrafanaLogAccessCurlClient(IPropertyTree & logAccessPluginConfig)
