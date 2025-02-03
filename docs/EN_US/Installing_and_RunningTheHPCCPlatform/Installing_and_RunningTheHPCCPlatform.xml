@@ -2357,12 +2357,6 @@ ENDEMBED;
 add1(10);
 </programlisting>If this successfully executes, you have correctly set up
             JavaScript to work with your HPCC Systems platform.</para>
-
-            <para>Additional examples of HPCC Systems code can be found
-            at:</para>
-
-            <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl</ulink></para>
           </listitem>
         </orderedlist>
       </sect2>
