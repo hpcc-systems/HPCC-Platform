@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -17,9 +17,11 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
+      bem-vindos e podem ser enviados por e-mail para <email/></para>
 
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      <para role="syntax">
+        <email>docfeedback@hpccsystems.com</email>
+      </para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -39,23 +41,23 @@
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
 
-      <para></para>
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml" xpointer="DateVer"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -101,17 +103,10 @@
       para facilitar a filtragem de registros de interesse do cluster
       HPCC.</para>
 
-      <para>O repositório git inclui dois exemplos na pasta
-      Examples/src/main/scala folder. Os exemplos
-      (<emphasis>org.hpccsystems.spark_examples.Dataframe_Iris_LR</emphasis> e
-      <emphasis>org.hpccsystems.spark_examples.Iris_LR</emphasis>) são Scala
-      Objects com uma função main(). Ambos os exemplos usam o dataset clássico
-      da Iris. O dataset pode ser obtido de uma variedade de fontes, incluindo
-      o repositório HPCC-Systems/ecl-ml. IrisDs.ecl (pode ser encontrado na
-      pasta ML/Tests/Explanatory: <ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl">https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl</ulink>)
-      pode ser executado para gerar o dataset Iris no HPCC. Um passo a passo
-      dos exemplos é fornecido na seção Exemplos.</para>
+      <!--following-text-needs-better-translation-->
+
+      <para>O repositório git inclui dois exemplos na pasta Examples folder.
+      Um passo a passo dos exemplos é fornecido na seção Exemplos.</para>
 
       <para>O conector distribuído Spark-HPCCSystems também suporta o PySpark.
       Ele usa as mesmas classes/API que o Java.</para>
@@ -121,14 +116,14 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <colspec colwidth="49.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
                 <entry>
-                  <graphic fileref="images/tip.jpg" />
+                  <graphic fileref="images/tip.jpg"/>
                 </entry>
 
                 <entry>
@@ -137,7 +132,7 @@
                   TLS precisarão importar os certificados apropriados para o
                   keystore Java local.</para>
 
-                  <para />
+                  <para/>
 
                   <para>*Uma maneira de fazer isso é usar o keytool fornecido
                   com as instalações Java. Consulte a documentação do keytool
