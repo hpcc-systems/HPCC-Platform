@@ -30,7 +30,8 @@
 #define DAFSCLIENT_API DECL_IMPORT
 #endif
 
-#define DAFILESRV_METAINFOVERSION 2
+// NB: this is the version of the metainfo structure created by the WsDfu service and sent by a dafilesrv client
+#define DAFILESRV_METAINFOVERSION 3
 
 #define DAFILESRV_STREAMREAD_MINVERSION 22
 #define DAFILESRV_STREAMGENERAL_MINVERSION 25
