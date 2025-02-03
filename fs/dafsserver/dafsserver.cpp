@@ -2619,14 +2619,24 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
 
     bool isSigned = metaInfoBlob.length() != 0;
     if (authorizedOnly && !isSigned)
-        throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: unathorized");
+    {
+        const char *fileGroup = metaInfoEnvelope->queryProp("group");
+        if (!fileGroup)
+            fileGroup = "(undefined)";
+        throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: unauthorized (file group=%s)", fileGroup);
+    }
 
     if (isSigned)
     {
         metaInfo.setown(createPTree(metaInfoBlob));
+        const char *keyPairName = metaInfo->queryProp("keyPairName");
+        dbgassertex(keyPairName); // because it's signed cannot be missing
+        const char *fileGroup = metaInfo->queryProp("group");
+        if (!fileGroup) // conceivably an older esp service constructed this metainfo without this field
+            fileGroup = "(undefined)";
         StringBuffer metaInfoSignature;
-        if (!metaInfoEnvelope->getProp("signature", metaInfoSignature))
-            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing signature");
+        if (!metaInfoEnvelope->getProp("signature", metaInfoSignature)) // should not be possible (metaInfoBlob and signature are set at same time)
+            throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing signature (file group=%s, keyPairName=%s)", fileGroup, keyPairName);
 
 #ifdef _CONTAINERIZED
         /* This public key that is sent with request will be verified as being issued by same CA
@@ -2634,22 +2644,20 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
          */
         const char *certificate = metaInfoEnvelope->queryProp("certificate");
         if (isEmptyString(certificate))
-            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing certificate");
+            throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing certificate (file group=%s, keyPairName=%s)", fileGroup, keyPairName);
         Owned<CLoadedKey> publicKey = loadPublicKeyFromCertMemory(certificate);
 #else
-        const char *keyPairName = metaInfo->queryProp("keyPairName");
-
         VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
         IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
         if (!keyPair)
-            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing key pair definition");
+            throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing key pair definition (file group=%s, keyPairName=%s)", fileGroup, keyPairName);
         const char *publicKeyFName = keyPair->queryProp("@publicKey");
         if (isEmptyString(publicKeyFName))
-            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing public key definition");
+            throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing public key definition (file group=%s, keyPairName=%s)", fileGroup, keyPairName);
         Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName); // NB: if cared could cache loaded keys
 #endif
         if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
-            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: signature verification failed");
+            throw createDafsExceptionV(DAFSERR_cmd_unauthorized, "createRemoteActivity: signature verification failed (file group=%s, keyPairName=%s)", fileGroup, keyPairName);
         checkExpiryTime(*metaInfo);
     }
     else
