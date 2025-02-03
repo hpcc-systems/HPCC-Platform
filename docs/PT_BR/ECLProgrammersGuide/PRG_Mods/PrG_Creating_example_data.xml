@@ -9,9 +9,7 @@
 
     <para>Todo o código de exemplo do <emphasis>Guia do Programador</emphasis>
     está disponível para download no site do HPCC Systems na mesma página do
-    PDF (<ulink url="http://hpccsystems.com/download/docs/learning-ecl">clique
-    aqui</ulink>) Para disponibilizar o código para uso no ECL IDE,
-    basta:</para>
+    PDF. Para disponibilizar o código para uso no ECL IDE, basta:</para>
 
     <orderedlist>
       <listitem>

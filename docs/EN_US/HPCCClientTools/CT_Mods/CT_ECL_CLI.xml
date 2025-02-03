@@ -32,9 +32,7 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
-
-            <colspec />
+            <colspec align="left" colwidth="125.55pt"/>
 
             <tbody>
               <row>
@@ -46,7 +44,7 @@
               <row>
                 <entry><emphasis role="bold">Arguments</emphasis></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -197,14 +195,14 @@ resultLimit=200
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><graphic fileref="images/caution.png" scale="noin"
-                    xml:base="../../" /></entry>
+                    xml:base="../../"/></entry>
 
                     <entry>We do not recommend storing your password in the
                     INI file or environment variable (which is clear text).
@@ -258,18 +256,18 @@ ECL_RESULT_LIMIT
 ECLCC_PATH
 </programlisting>
 
-          <para></para>
+          <para/>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><graphic fileref="images/caution.png" scale="noin"
-                    xml:base="../../" /></entry>
+                    xml:base="../../"/></entry>
 
                     <entry>We do not recommend storing your password in an
                     Environment Variable.</entry>
@@ -471,9 +469,9 @@ ecl deploy roxie - --job-name=FindPersonService
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -539,7 +537,7 @@ ecl deploy roxie - --job-name=FindPersonService
                 <row>
                   <entry><emphasis role="bold">ECL Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -603,7 +601,7 @@ ecl deploy roxie - --job-name=FindPersonService
                   <entry><emphasis role="bold">eclcc
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -664,7 +662,7 @@ ecl deploy roxie - --job-name=FindPersonService
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -802,9 +800,9 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -860,7 +858,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1010,13 +1008,13 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1074,7 +1072,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 <row>
                   <entry><emphasis role="bold">ECL Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1138,7 +1136,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                   <entry><emphasis role="bold">eclcc
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1212,7 +1210,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1319,13 +1317,13 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
 ecl unpublish roxie "FindpersonService*"
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1337,7 +1335,7 @@ ecl unpublish roxie "FindpersonService*"
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1380,7 +1378,7 @@ ecl unpublish roxie "FindpersonService*"
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1515,9 +1513,9 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1529,7 +1527,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry><emphasis role="bold">Arguments</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1597,7 +1595,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
@@ -1630,7 +1628,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry><emphasis role="bold">ECL Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1694,7 +1692,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry><emphasis role="bold">eclcc
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1755,7 +1753,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -1863,13 +1861,13 @@ ecl run thor findperson.ecl -I C:\MyECL\
 ecl results W20170519-142920 --noroot --exception-level=error
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1916,7 +1914,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2021,13 +2019,13 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
         <programlisting>ecl activate roxie FindpersonService.4</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2040,7 +2038,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 <row>
                   <entry><emphasis role="bold">Arguments</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2060,7 +2058,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2165,13 +2163,13 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
         <programlisting>ecl deactivate roxie FindpersonService</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2203,7 +2201,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2304,20 +2302,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
         <para><emphasis role="bold">ecl queries list
         [&lt;queryset&gt;][--target=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
 
-        <para><emphasis role="bold"></emphasis></para>
+        <para><emphasis role="bold"/></para>
 
         <para>Examples:</para>
 
         <programlisting>ecl queries list roxie
 ecl queries list roxie --target=roxie --show=A </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2396,7 +2394,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2523,9 +2521,9 @@ SuperFiles used:
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2551,7 +2549,7 @@ SuperFiles used:
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2658,13 +2656,13 @@ SuperFiles used:
 ecl queries copy //192.168.1.10:8010/thor/findperson thor
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2807,7 +2805,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
@@ -2855,7 +2853,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -2914,7 +2912,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3022,13 +3020,13 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 ecl queries copy-set roxie1 roxie2 --all
 ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -3152,7 +3150,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3211,7 +3209,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3317,13 +3315,13 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
         <programlisting>ecl queries config thor findperson --wait=1000
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -3370,7 +3368,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
@@ -3413,7 +3411,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3519,13 +3517,13 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
         <programlisting>ecl queries recreate roxie findpeople 
 ecl queries recreate roxie findpeople roxie2</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -3712,13 +3710,13 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3777,7 +3775,7 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -3884,13 +3882,13 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
         <programlisting>ecl queries import roxie1 myqueryset.xml
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4009,7 +4007,7 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4068,7 +4066,7 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4174,13 +4172,13 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
         <programlisting>ecl queries export roxie1 --output=myqueryset.xml
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4239,7 +4237,7 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4347,13 +4345,13 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4472,7 +4470,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4531,7 +4529,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4637,13 +4635,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <programlisting>ecl packagemap delete roxie mypackagemap
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="175.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4665,7 +4663,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4692,7 +4690,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4797,13 +4795,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <programlisting>ecl packagemap activate roxie mypackagemap.pkg</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="175.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4842,7 +4840,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -4947,13 +4945,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <programlisting>ecl packagemap deactivate roxie mypackagemap.pkg</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="175.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -4991,7 +4989,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5097,13 +5095,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <programlisting>ecl packagemap list roxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -5136,7 +5134,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5242,13 +5240,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <programlisting>ecl packagemap info roxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -5282,7 +5280,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5393,9 +5391,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="175.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -5512,7 +5510,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5571,7 +5569,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5680,9 +5678,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para>The get-part command fetches the given part from the given
         package map <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="175.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -5740,7 +5738,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -5849,13 +5847,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para>The remove-part command will remove the given part from the
         given package map</para>
 
-        <para></para>
+        <para/>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="175.55pt" />
+            <colspec align="left" colwidth="175.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -5911,7 +5909,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry><emphasis role="bold">Common Options</emphasis></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -6045,9 +6043,9 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
         to validate the files for a single query. <informaltable colsep="1"
             frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="155.55pt" />
+              <colspec align="left" colwidth="155.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6144,7 +6142,7 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6255,9 +6253,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6359,7 +6357,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6418,7 +6416,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6536,13 +6534,13 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <programlisting>ecl roxie attach myroxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6556,14 +6554,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6669,13 +6667,13 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <programlisting>ecl roxie detach myroxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6689,14 +6687,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6802,13 +6800,13 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <programlisting>ecl roxie reload myroxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6822,14 +6820,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -6935,13 +6933,13 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <programlisting>ecl roxie check myroxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -6955,14 +6953,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -7054,7 +7052,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
               </tbody>
             </tgroup>
-          </informaltable><parameter></parameter></para>
+          </informaltable><parameter/></para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLRoxiexref" role="brk">
@@ -7096,9 +7094,9 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7131,14 +7129,14 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
 
                   <entry>Maximum time (in milliseconds) to wait for cluster
                   finish updating. Any value lower than the minimum of 1000 is
-                  ignored. </entry>
+                  ignored.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -7230,7 +7228,7 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 </row>
               </tbody>
             </tgroup>
-          </informaltable><parameter></parameter></para>
+          </informaltable><parameter/></para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleDepends" role="brk">
@@ -7244,13 +7242,13 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
         <programlisting>ecl bundle depends mybundle
 ecl bundle depends mybundle --version=2</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7310,13 +7308,13 @@ ecl bundle depends mybundle --version=2</programlisting>
 ecl bundle info https://github.com/hpcc-systems/ecl-bundles.git
 ecl bundle info mybundle --version=2</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7393,13 +7391,13 @@ ecl bundle install mybundle --dryrun
 ecl bundle install mybundle --update
 ecl bundle install mybundle --keepprior</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7484,7 +7482,7 @@ ecl bundle install mybundle --keepprior</programlisting>
         the server. Using a bundle in the ECL Playground also requires
         installation on the ECLCC Server node.</para>
 
-        <para></para>
+        <para/>
 
         <orderedlist>
           <listitem>
@@ -7512,7 +7510,7 @@ ecl bundle install mybundle --keepprior</programlisting>
           </listitem>
         </orderedlist>
 
-        <para></para>
+        <para/>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
@@ -7528,13 +7526,13 @@ ecl bundle install mybundle --dryrun
 ecl bundle install mybundle --update
 ecl bundle install mybundle --keepprior</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7602,13 +7600,13 @@ ecl bundle install mybundle --keepprior</programlisting>
 ecl bundle list myb*
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7662,13 +7660,13 @@ ecl bundle list myb*
         <programlisting>ecl bundle use myBundle --version 2
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7722,13 +7720,13 @@ ecl bundle list myb*
         <programlisting>ecl roxie unused-files myroxie
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7789,7 +7787,7 @@ ecl bundle list myb*
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -7895,13 +7893,13 @@ ecl bundle list myb*
         <programlisting>ecl abort -wu W20150516-111213
 ecl abort -n MyJob</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -7914,7 +7912,7 @@ ecl abort -n MyJob</programlisting>
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -7934,7 +7932,7 @@ ecl abort -n MyJob</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -8040,13 +8038,13 @@ ecl abort -n MyJob</programlisting>
         <programlisting>ecl status -wu W20150516-111213
 ecl status -n MyJob</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -8077,7 +8075,7 @@ ecl status -n MyJob</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -8183,13 +8181,13 @@ ecl status -n MyJob</programlisting>
         <programlisting>ecl getwuid -n MyJobName
 ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -8219,7 +8217,7 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -8333,13 +8331,13 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 ecl getname -wu W201407*
 </programlisting>
 
-        <para></para>
+        <para/>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -8370,7 +8368,7 @@ ecl getname -wu W201407*
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -8485,9 +8483,9 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -8536,7 +8534,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                   <entry><emphasis role="bold">Common
                   Options</emphasis></entry>
 
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -8639,9 +8637,9 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -8697,15 +8695,15 @@ ecl url-secret-name http://example.com --username jimi
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="180.50pt" />
+            <colspec colwidth="180.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
                 <entry><emphasis>Options</emphasis></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -8736,15 +8734,15 @@ ecl url-secret-name http://example.com --username jimi
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="180.50pt" />
+            <colspec colwidth="180.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
                 <entry><emphasis>Options</emphasis></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
@@ -8773,15 +8771,15 @@ ecl url-secret-name http://example.com --username jimi
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="180.50pt" />
+            <colspec colwidth="180.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
                 <entry><emphasis>Options</emphasis></entry>
 
-                <entry></entry>
+                <entry/>
               </row>
 
               <row>
