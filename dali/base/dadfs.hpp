@@ -304,16 +304,8 @@ enum DFUQResultField
 };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField field);
-constexpr const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
-    "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
-    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost", "@maxSkew", "@minSkew", "@maxSkewPart", "@minSkewPart",
-    "@readCost", "@writeCost" };
+extern da_decl const char* getDFUQResultFieldName(DFUQResultField field);
 
-extern da_decl constexpr const char* getDFUQResultFieldName(DFUQResultField field)
-{
-    return DFUQResultFieldNames[field];
-}
 /**
  * File operations can be included in a transaction to ensure that multiple
  * updates are handled atomically. This is the interface to a transaction
@@ -908,6 +900,20 @@ constexpr bool defaultNonPrivilegedUser = false;
 
 extern da_decl void configurePreferredPlanes();
 
+template<typename Source>
+inline cost_type calcReadCost(const IPropertyTree & fileAttr, Source source)
+{
+    // Calculate legacy read cost from numDiskReads
+    // (However, it is not possible to accurately calculate read cost for key
+    // files, as the reads may have been from page cache and not from disk.)
+    if (!isFileKey(fileAttr) && source)
+    {
+        stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+        return calcFileAccessCost(source, 0, numDiskReads);
+    }
+    return 0;
+}
+
 // Get read cost from readCost field or calculate legacy read cost
 // - migrateLegacyCost: if true, update readCost field with legacy read cost
 template<typename Source>
@@ -917,19 +923,11 @@ inline cost_type getReadCost(IPropertyTree & fileAttr, Source source, bool migra
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
     {
-        // Calculate legacy read cost from numDiskReads
-        // (However, it is not possible to accurately calculate read cost for key
-        // files, as the reads may have been from page cache and not from disk.)
-        if (!isFileKey(fileAttr) && source)
-        {
-            stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-            cost_type readCost = calcFileAccessCost(source, 0, numDiskReads);
-            if (migrateLegacyCost)
-                fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
-            return readCost;
-        }
+        cost_type readCost = calcReadCost(fileAttr, source);
+        if (migrateLegacyCost)
+            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
+        return readCost;
     }
-    return 0;
 }
 
 // Get read cost from readCost field or calculate legacy read cost
@@ -939,15 +937,16 @@ inline cost_type getReadCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
+        return calcReadCost(fileAttr, source);
+}
+
+template<typename Source>
+inline cost_type calcWriteCost(const IPropertyTree & fileAttr, Source source)
+{
+    if (source)
     {
-        // Calculate legacy read cost from numDiskReads
-        // (However, it is not possible to accurately calculate read cost for key
-        // files, as the reads may have been from page cache and not from disk.)
-        if (!isFileKey(fileAttr) && source)
-        {
-            stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-            return calcFileAccessCost(source, 0, numDiskReads);
-        }
+        stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+        return calcFileAccessCost(source, numDiskWrites, 0);
     }
     return 0;
 }
@@ -961,17 +960,11 @@ inline cost_type getWriteCost(IPropertyTree & fileAttr, Source source, bool migr
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
     {
-        // Calculate legacy write cost from numDiskWrites
-        if (source)
-        {
-            stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
-            cost_type writeCost = calcFileAccessCost(source, numDiskWrites, 0);
-            if (migrateLegacyCost)
-                fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
-            return writeCost;
-        }
+        cost_type writeCost = calcWriteCost(fileAttr, source);
+        if (migrateLegacyCost)
+            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+        return writeCost;
     }
-    return 0;
 }
 
 // Get write cost from writeCost field or calculate legacy write cost
@@ -981,15 +974,7 @@ inline cost_type getWriteCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
-    {
-        // Calculate legacy write cost from numDiskWrites
-        if (source)
-        {
-            stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
-            return calcFileAccessCost(source, numDiskWrites, 0);
-        }
-    }
-    return 0;
+        return calcWriteCost(fileAttr, source);
 }
 
 extern da_decl bool doesPhysicalMatchMeta(IPartDescriptor &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize);
