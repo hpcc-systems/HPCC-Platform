@@ -127,7 +127,7 @@
 #define THOROPT_LOOKAHEAD_COMPRESSIONTOTALK "readAheadCompressionTotalK"          // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
 #define THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY "readAheadTempFileGranularity"     // Splitter temp file granularity (default = 1GB)
 #define THOROPT_ROXIEMEM_GLOBALSORT_PARTITION "useRoxieMemGlobalSortPartition"    // Use roxiemem for global sort partitioning (default = true)
-
+#define THOROPT_JOBINFO_CAPTURE_BEHAVIOUR "jobInfoCaptureBehaviour"               // controls behaviour of job info collection (default = 0)
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000 // max of row matches before selfjoin emits warning
 
 #define THOR_SEM_RETRY_TIMEOUT 2
@@ -710,6 +710,23 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 constexpr unsigned thorDetailedLogLevel = 200;
 constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo(thorDetailedLogLevel));
 
+enum class JobInfoCaptureType : byte
+{
+    none   = 0x0000,
+    logs   = 0x0001,
+    stacks = 0x0002,
+};
+BITMASK_ENUM(JobInfoCaptureType);
+
+enum class JobInfoCaptureBehaviour : byte
+{
+    none      = 0x0000,
+    onFailure = 0x0001,
+    always    = 0x0002, // NB: would cause every thor workflow graph to generate a job info capture
+    clearLogs = 0x0004,
+};
+BITMASK_ENUM(JobInfoCaptureBehaviour);
+
 class graph_decl CThorPerfTracer : protected PerfTracer
 {
     PerfTracer perf;
@@ -725,5 +742,5 @@ extern graph_decl void saveWuidToFile(const char *wuid);
 
 extern graph_decl bool hasTLK(IDistributedFile &file, CActivityBase *activity);
 extern graph_decl std::vector<std::string> captureDebugInfo(const char *dir, const char *prefix, const char *suffix);
-
+extern graph_decl StringBuffer &addInstanceContextPaths(StringBuffer &dst);
 #endif

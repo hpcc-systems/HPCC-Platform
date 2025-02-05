@@ -1761,6 +1761,17 @@ void CJobMaster::sendQuery()
 void CJobMaster::jobDone()
 {
     if (!querySent) return;
+
+    if (isContainerized())
+    {
+        if (hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::always) ||
+        (aborted && hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::onFailure)))
+        {
+            captureJobInfo(queryWorkUnit(), JobInfoCaptureType::logs);
+        }
+    }
+    // else - BM does not setup a postmortem log handler, and all logging is typically local and to persistent storage
+
     CMessageBuffer msg;
     msg.append(QueryDone);
     msg.append(queryKey());
@@ -1819,6 +1830,118 @@ void CJobMaster::saveSpills()
         }
     }
     PROGLOG("Paused, %d spill(s) saved.", numSavedSpills);
+}
+
+void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
+{
+    StringBuffer dir;
+    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
+    {
+        if (!isContainerized())
+        {
+            appendCurrentDirectory(dir, false);
+            addPathSepChar(dir);
+            dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
+        }
+        else
+        {
+            IWARNLOG("Failed to get debug directory");
+            return;
+        }
+    }
+    addPathSepChar(dir);
+    dir.append(queryWuid());
+    addPathSepChar(dir);
+    CDateTime now;
+    timestamp_type nowTime = getTimeStampNowValue();
+    now.setTimeStamp(nowTime);
+    unsigned year, month, day, hour, minute, second, nano;
+    now.getDate(year, month, day);
+    now.getTime(hour, minute, second, nano);
+    unsigned hundredths = ((unsigned __int64)nano) * 100 / 1000000000;
+    VStringBuffer dateStr("%04u%02u%02u-%02u%02u%02u.%02u", year, month, day, hour, minute, second, hundredths);
+    dir.append(dateStr);
+
+    auto managerCaptureFunc = [this, &dir, &flags]()
+    {
+        StringBuffer instanceDir(dir);
+        std::vector<std::string> capturedFiles;
+        if (isContainerized())
+        {
+            addInstanceContextPaths(instanceDir);
+            if (hasMask(flags, JobInfoCaptureType::logs))
+            {
+                StringBuffer logFilename(instanceDir);
+                addPathSepChar(logFilename);
+                logFilename.append("thormanager.log");
+                copyPostMortemLogging(logFilename, hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::clearLogs));
+                capturedFiles.push_back(logFilename.str());
+            }
+        }
+        if (hasMask(flags, JobInfoCaptureType::stacks))
+        {
+            std::vector<std::string> result = captureDebugInfo(instanceDir, "thormanager", nullptr);
+            capturedFiles.insert(capturedFiles.end(), result.begin(), result.end());
+        }
+        return capturedFiles;
+    };
+    std::future<std::vector<std::string>> managerResultsFuture = std::async(std::launch::async, managerCaptureFunc);
+
+    std::vector<std::string> capturedFiles;
+    auto responseFunc = [&capturedFiles](unsigned worker, MemoryBuffer &mb)
+    {
+        bool res;
+        mb.read(res);
+        if (!res)
+        {
+            Owned<IException> e = deserializeException(mb);
+            VStringBuffer msg("Failed to get debug info from worker %u", worker);
+            IWARNLOG(e, msg);
+        }
+        StringAttr file;
+        while (true)
+        {
+            mb.read(file);
+            if (file.isEmpty())
+                break;
+            capturedFiles.push_back(file.get());
+        }
+    };
+    VStringBuffer cmd("<debuginfo dir=\"%s\" flags=\"%u\"/>", dir.str(), (byte)flags);
+    issueWorkerDebugCmd(cmd, 0, responseFunc);
+    std::vector<std::string> managerResults = managerResultsFuture.get();
+    capturedFiles.insert(capturedFiles.end(), managerResults.begin(), managerResults.end());
+
+    VStringBuffer description("debuginfo-%s", dateStr.str());
+    if (isContainerized())
+    {
+        VStringBuffer archiveFilename("debuginfo-%s.tar.gz", dateStr.str());
+        VStringBuffer tarCmd("cd %s && tar -czf %s --exclude=%s --remove-files *", dir.str(), archiveFilename.str(), archiveFilename.str());
+        if (0 != system(tarCmd))
+        {
+            OWARNLOG("Failed to create tarball of debuginfo");
+            return;
+        }
+        Owned<IWorkUnit> lw = &wu.lock();
+        Owned<IWUQuery> query = lw->updateQuery();
+        VStringBuffer archiveFilePath("%s/%s", dir.str(), archiveFilename.str());
+        query->addAssociatedFile(FileTypePostMortem, archiveFilePath, "localhost", description, 0, 0, 0);
+    }
+    else
+    {
+        Owned<IWorkUnit> lw = &wu.lock();
+        Owned<IWUQuery> query = lw->updateQuery();
+        for (auto &file: capturedFiles)
+        {
+            RemoteFilename rfn;
+            rfn.setRemotePath(file.c_str());
+            StringBuffer localPath;
+            rfn.getLocalPath(localPath);
+            StringBuffer host;
+            rfn.queryEndpoint().getEndpointHostText(host);
+            query->addAssociatedFile(FileTypeLog, localPath, host, description, 0, 0, 0);
+        }
+    }
 }
 
 bool CJobMaster::go()
@@ -1891,100 +2014,7 @@ bool CJobMaster::go()
                     job.pause(abort);
                 }
                 else if (action==WUActionGenerateDebugInfo)
-                {
-                    StringBuffer dir;
-                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
-                    {
-                        if (!isContainerized())
-                        {
-                            appendCurrentDirectory(dir, false);
-                            addPathSepChar(dir);
-                            dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
-                        }
-                        else
-                        {
-                            IWARNLOG("Failed to get debug directory");
-                            return;
-                        }
-                    }
-                    addPathSepChar(dir);
-                    dir.append(job.queryWuid());
-                    if (isContainerized())
-                    {
-                        addPathSepChar(dir);
-                        dir.append(k8s::queryMyJobName());
-                    }
-                    addPathSepChar(dir);
-                    CDateTime now;
-                    now.setNow();
-                    unsigned year, month, day, hour, minute, second, nano;
-                    now.getDate(year, month, day);
-                    now.getTime(hour, minute, second, nano);
-                    VStringBuffer dateStr("%04d%02d%02d-%02d%02d%02d", year, month, day, hour, minute, second);
-                    dir.append(dateStr);
-
-                    auto managerCaptureFunc = [&dir]()
-                    {
-                        return captureDebugInfo(dir, "thormanager", nullptr);
-                    };
-                    std::future<std::vector<std::string>> managerResultsFuture = std::async(std::launch::async, managerCaptureFunc);
-
-                    std::vector<std::string> capturedFiles;
-                    auto responseFunc = [&capturedFiles](unsigned worker, MemoryBuffer &mb)
-                    {
-                        bool res;
-                        mb.read(res);
-                        if (!res)
-                        {
-                            Owned<IException> e = deserializeException(mb);
-                            VStringBuffer msg("Failed to get stack trace from worker %u", worker);
-                            IWARNLOG(e, msg);
-                        }
-                        StringAttr file;
-                        while (true)
-                        {
-                            mb.read(file);
-                            if (file.isEmpty())
-                                break;
-                            capturedFiles.push_back(file.get());
-                        }
-                    };
-                    VStringBuffer cmd("<debuginfo dir=\"%s\"/>", dir.str());
-                    job.issueWorkerDebugCmd(cmd, 0, responseFunc);
-                    std::vector<std::string> managerResults = managerResultsFuture.get();
-                    capturedFiles.insert(capturedFiles.end(), managerResults.begin(), managerResults.end());
-
-                    VStringBuffer description("debuginfo-%s", dateStr.str());
-                    if (isContainerized())
-                    {
-                        VStringBuffer archiveFilename("debuginfo-%s.tar.gz", dateStr.str());
-                        VStringBuffer tarCmd("cd %s && tar -czf %s --exclude=%s --remove-files *", dir.str(), archiveFilename.str(), archiveFilename.str());
-                        if (0 != system(tarCmd))
-                        {
-                            OWARNLOG("Failed to create tarball of debuginfo");
-                            return;
-                        }
-                        Owned<IWorkUnit> lw = &wu.lock();
-                        Owned<IWUQuery> query = lw->updateQuery();
-                        VStringBuffer archiveFilePath("%s/%s", dir.str(), archiveFilename.str());
-                        query->addAssociatedFile(FileTypePostMortem, archiveFilePath, "localhost", description, 0, 0, 0);
-                    }
-                    else
-                    {
-                        Owned<IWorkUnit> lw = &wu.lock();
-                        Owned<IWUQuery> query = lw->updateQuery();
-                        for (auto &file: capturedFiles)
-                        {
-                            RemoteFilename rfn;
-                            rfn.setRemotePath(file.c_str());
-                            StringBuffer localPath;
-                            rfn.getLocalPath(localPath);
-                            StringBuffer host;
-                            rfn.queryEndpoint().getEndpointHostText(host);
-                            query->addAssociatedFile(FileTypeLog, localPath, host, description, 0, 0, 0);
-                        }
-                    }
-                }
+                    job.captureJobInfo(wu, JobInfoCaptureType::logs|JobInfoCaptureType::stacks);
             }
         }
     } workunitStateChangeHandler(*this, *workunit);

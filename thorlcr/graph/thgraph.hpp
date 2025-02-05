@@ -895,6 +895,7 @@ protected:
     memsize_t keyNodeCacheBytes = 0;
     memsize_t keyLeafCacheBytes = 0;
     memsize_t keyBlobCacheBytes = 0;
+    JobInfoCaptureBehaviour jobInfoCaptureBehaviour = JobInfoCaptureBehaviour::onFailure;
 
 
     class CThorPluginCtx : public SimplePluginCtx

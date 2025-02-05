@@ -2755,6 +2755,7 @@ void CJobBase::init()
     failOnLeaks = getOptBool(THOROPT_FAIL_ON_LEAKS);
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
     soapTraceLevel = getOptInt(THOROPT_SOAP_TRACE_LEVEL, 1);
+    jobInfoCaptureBehaviour = static_cast<JobInfoCaptureBehaviour>(getOptInt(THOROPT_JOBINFO_CAPTURE_BEHAVIOUR, (int)JobInfoCaptureBehaviour::onFailure));
     StringBuffer tmpSepString;
     getOpt(THOROPT_SOAP_LOG_SEP_STRING, tmpSepString);
     setSoapSepString(tmpSepString.str());

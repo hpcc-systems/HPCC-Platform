@@ -1913,21 +1913,38 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
             StringBuffer dir;
             if (!req->getProp("@dir", dir))
                 throw makeStringException(0, "deguginfo command missing 'dir' attribute");
+            JobInfoCaptureType captureFlags = (JobInfoCaptureType)req->getPropInt("@flags", 0);
             // NB: stacks are for all channels, but file naming is based on 1st channel
             rank_t myRank = queryJobChannel(0).queryMyRank();
             StringBuffer suffix;
             suffix.append((unsigned)myRank);
 
-            std::vector<std::string> capturedFiles = captureDebugInfo(dir, "thorworker", suffix);
             msg.append(true);
-            // this info is not really needed by containerized, where all files will be on same mount point
-            for (auto &file : capturedFiles)
+
+            StringBuffer instanceDir(dir);
+            std::vector<std::string> capturedFiles;
+            if (isContainerized())
             {
-                RemoteFilename rfn;
-                rfn.setLocalPath(file.c_str());
-                StringBuffer fullPath;
-                rfn.getRemotePath(fullPath);
-                msg.append(fullPath.str());
+                addInstanceContextPaths(instanceDir);
+                if (hasMask(captureFlags, JobInfoCaptureType::logs))
+                {
+                    StringBuffer logFilename(instanceDir);
+                    addPathSepChar(logFilename);
+                    logFilename.appendf("thorworker.%s.log", suffix.str());
+                    copyPostMortemLogging(logFilename, hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::clearLogs));
+                }
+            }
+            if (hasMask(captureFlags, JobInfoCaptureType::stacks))
+            {
+                std::vector<std::string> capturedFiles = captureDebugInfo(instanceDir, "thorworker", suffix);
+                for (auto &file : capturedFiles)
+                {
+                    RemoteFilename rfn;
+                    rfn.setLocalPath(file.c_str());
+                    StringBuffer fullPath;
+                    rfn.getRemotePath(fullPath);
+                    msg.append(fullPath.str());
+                }
             }
             msg.append("");
         }
