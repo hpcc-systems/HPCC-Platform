@@ -369,6 +369,7 @@ public:
 };
 
 using TableColumns = std::unordered_map<std::string, std::shared_ptr<arrow::Array>>;
+using NamedFileReader = std::tuple<std::string, std::shared_ptr<parquet::arrow::FileReader>>;
 
 /**
  * @brief Opens and reads Parquet files and partitioned datasets. The ParquetReader processes a file
@@ -422,7 +423,7 @@ private:
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;                           // RecordBatchReader reads a dataset one record batch at a time. Must be kept alive for rbatchItr.
     arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;                              // Iterator of RecordBatches when reading a partitioned dataset.
     std::vector<__int64> fileTableCounts;                                                       // Count of RowGroups in each open file to get the correct row group when reading specific parts of the file.
-    std::vector<std::shared_ptr<parquet::arrow::FileReader>> parquetFileReaders;                // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
+    std::vector<NamedFileReader> parquetFileReaders;                                            // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
     std::shared_ptr<parquet::FileMetaData> currentTableMetadata = nullptr;                      // Parquet metadata for the current table.
     TableColumns parquetTable;                                                                  // The current table being read broken up into columns. Unordered map where the left side is a string of the field name and the right side is an array of the values.
     std::vector<std::string> partitionFields;                                                   // The partitioning schema for reading Directory Partitioned files.

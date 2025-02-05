@@ -14,12 +14,11 @@
 //class=parquet
 //fail
 //nothor
-//noroxe
+//noroxie
 
 //This ECL code reads a potentially corrupt Parquet file, handling the case where it might be corrupt
 //by outputting either the file contents or a single informative record if the file can't be read.
 
-IMPORT Std;
 IMPORT Parquet;
 
 RECORDDEF := RECORD
@@ -28,12 +27,10 @@ RECORDDEF := RECORD
     STRING director;
 END;
 
-filePath2 := Std.File.GetDefaultDropZone() + '/corrupt.parquet';
+string basePath := '' : STORED('OriginalTextFilesOsPath');
 
-CORRUPT_PARQUET := ParquetIO.Read(RECORDDEF, filePath2);
+filePath := basePath + '/download/corrupt.parquet';
 
-CORRUPT_RESULT := IF(COUNT(CORRUPT_PARQUET) = 0,
-                     DATASET([{0, 'Corrupt Parquet File', ''}], RECORDDEF),
-                     CORRUPT_PARQUET);
+CORRUPT_PARQUET := ParquetIO.Read(RECORDDEF, filePath);
 
-OUTPUT(CORRUPT_RESULT);
+OUTPUT(CORRUPT_PARQUET);

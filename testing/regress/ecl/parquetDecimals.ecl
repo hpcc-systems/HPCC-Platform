@@ -14,8 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+
 //class=parquet
-//nothor,noroxie
+//nothor
+//noroxie
 
 IMPORT STD;
 IMPORT PARQUET;
@@ -39,7 +41,7 @@ decimalData := DATASET([{(DECIMAL) '0.12345678901234567890123456789012',
 
 overwriteOption := TRUE;
 dropzoneDirectory := Std.File.GetDefaultDropZone();
-parquetFilePath := dropzoneDirectory + '/regress/decimal.parquet';
+parquetFilePath := dropzoneDirectory + '/regress/parquet/decimal.parquet';
 
 ParquetIO.Write(decimalData, parquetFilePath, overwriteOption);
 
