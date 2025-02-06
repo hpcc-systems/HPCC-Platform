@@ -313,7 +313,7 @@
               <row>
                 <entry>-S</entry>
 
-                <entry>Generate c++ output, but don't compile</entry>
+                <entry>Generate C++ output, but don't compile</entry>
               </row>
 
               <row>
@@ -331,7 +331,7 @@
               <row>
                 <entry>-Wc,xx</entry>
 
-                <entry>Pass option xx to the c++ compiler</entry>
+                <entry>Pass option xx to the C++ compiler</entry>
               </row>
 
               <row>
@@ -343,19 +343,19 @@
               <row>
                 <entry>-Wa,xx</entry>
 
-                <entry>Pass straight through to c++ compiler</entry>
+                <entry>Pass straight through to C++ compiler</entry>
               </row>
 
               <row>
                 <entry>-Wp,xx</entry>
 
-                <entry>Pass straight through to c++ compiler</entry>
+                <entry>Pass straight through to C++ compiler</entry>
               </row>
 
               <row>
                 <entry>-save-cpps</entry>
 
-                <entry>Do not delete generated c++ files (implied if
+                <entry>Do not delete generated C++ files (implied if
                 -g)</entry>
               </row>
 
@@ -442,11 +442,11 @@
 
                 <entry>Allow use of named feature. (e.g., cpp, pipe,
                 all)<para><emphasis role="bold">cpp</emphasis>: Allow embedded
-                code within ECL (e.g., c++, JAVA, Javascript, Python, R,
+                code within ECL (e.g., C++, JAVA, Python,
                 etc.)</para><para><emphasis role="bold">pipe</emphasis>: Allow
                 the PIPE command to send data to an external
                 program.</para><para><emphasis role="bold">userECL</emphasis>:
-                Allow code that is not found via the ecl include
+                Allow code that is not found via the ECL include
                 paths</para><para><emphasis role="bold">datafile</emphasis>:
                 Allow access to datafiles from ECL. </para><para><emphasis
                 role="bold">extern</emphasis>: Allow access to an external
@@ -517,10 +517,9 @@
 
                 <entry>Disallow use of named feature<para><emphasis
                 role="bold">cpp</emphasis>: Disallow embedded code within ECL
-                (e.g., c++, JAVA, Javascript, Python, R,
-                etc.)</para><para><emphasis role="bold">pipe</emphasis>:
-                Disallow the PIPE command to send data to an external
-                program.</para></entry>
+                (e.g., C++, JAVA, Python, etc.)</para><para><emphasis
+                role="bold">pipe</emphasis>: Disallow the PIPE command to send
+                data to an external program.</para></entry>
               </row>
 
               <row>
