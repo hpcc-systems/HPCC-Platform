@@ -152,7 +152,7 @@ jobs:
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=delegated \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=delegated \
               ${{ steps.vars.outputs.docker_tag }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
+              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DVCPKG_FILES_DIR=/hpcc-dev -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 
