@@ -51,7 +51,7 @@ const Step: React.FunctionComponent<StepProps> = ({
             margin: "16px 0 0 0",
             fontSize: "0.875rem",
             fontWeight: 500,
-            fontFamily: "\"Roboto\", \"Helvetica\", \"Arial\", \"sans-serif\""
+            fontFamily: "'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif",
         },
         connector: {
             top: "12px",

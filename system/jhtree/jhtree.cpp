@@ -2651,8 +2651,16 @@ public:
     }
     inline ~NodeCacheLookupTimer()
     {
-        if (ctx)
-            ctx->noteStatistic(StCycleIndexCacheBlockedCycles, get_cycles_now() - startCycles);
+        try
+        {
+            if (ctx)
+                ctx->noteStatistic(StCycleIndexCacheBlockedCycles, get_cycles_now() - startCycles);
+        }
+        catch (IException * e)
+        {
+            //If a query is being aborted, noteStatistic can throw an abort exception.  Throw it away instead.
+            ::Release(e);
+        }
     }
 
     //Call this function to avoid the destructor having to call get_cycles_now()
