@@ -722,7 +722,10 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
-            readCost = updateReadCosts(true, file, statsCollection);
+        {
+            bool useJhtreeCache = (TAKindexread == container.getKind());
+            readCost = updateReadCosts(useJhtreeCache, file, statsCollection);
+        }
     }
     return readCost;
 }
