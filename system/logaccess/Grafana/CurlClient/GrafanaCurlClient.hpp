@@ -94,7 +94,9 @@ public:
     void fetchDatasourceByName(const char * targetDataSourceName);
     void fetchDatasources(std::string & readBuffer);
     void fetchLabels(std::string & readBuffer);
-    void submitQuery(std::string & readBuffer, const char * targetURI);
+    void fetchHealth(std::string & readBuffer);
+    void fetchDatasourceLabelValues(std::string & readBuffer, const char * label);
+    void submitQuery(std::string & readBuffer, const char * targetURI, bool targetDataSource);
 
     void populateQueryFilterAndStreamSelector(StringBuffer & queryString, StringBuffer & streamSelector, const ILogAccessFilter * filter);
     static void timestampQueryRangeString(StringBuffer & range, std::time_t from, std::time_t to);
@@ -107,4 +109,5 @@ public:
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;
     virtual bool supportsResultPaging() const override { return false;}
+    virtual void healthReport(LogAccessHealthReportOptions options, LogAccessHealthReportDetails & report) override;
 };

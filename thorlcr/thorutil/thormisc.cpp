@@ -96,10 +96,10 @@ const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicA
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
-const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
-const StatisticsMapping hashDedupActivityStatistics({}, diskWriteRemoteStatistics, basicActivityStatistics);
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
+const StatisticsMapping hashDedupActivityStatistics({}, hashDistribActivityStatistics, diskWriteRemoteStatistics);
+const StatisticsMapping indexDistribActivityStatistics({}, hashDistribActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
 const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizeGraphSpill, StSizePeakTempDisk, StSizePeakEphemeralDisk, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory}, executeStatistics);
 const StatisticsMapping tempFileStatistics({StNumSpills}, diskRemoteStatistics);
