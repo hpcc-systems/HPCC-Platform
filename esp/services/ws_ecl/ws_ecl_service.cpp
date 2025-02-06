@@ -13,7 +13,8 @@
 #include "jsonhelpers.hpp"
 #include "securesocket.hpp"
 
-#define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
+#include "TpWrapper.hpp"
+
 
 #define     WSECL_ACCESS      "WsEclAccess"
 static const char* WSECL_ACCESS_DENIED = "WsEcl access permission denied.";
@@ -178,30 +179,6 @@ static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped)
     }
 }
 
-static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTree &server, const char *daliAddress, const char *farmerPort)
-{
-    //just in case, for backward compatability with old environment.xml files, allow server rather than farmer to specify port
-    const char *port = server.queryProp("@port");
-    if (!port)
-        port = farmerPort;
-    if (port && streq(port, "0")) //0 == roxie listening on queue rather than port
-        return;
-
-    const char *netAddress = server.queryProp("@netAddress");
-    if (!netAddress && server.hasProp("@computer"))
-    {
-        VStringBuffer xpath("Hardware/Computer[@name='%s']/@netAddress", server.queryProp("@computer"));
-        netAddress = env.queryProp(xpath.str());
-    }
-    if ((!netAddress || *netAddress=='.') && daliAddress && *daliAddress)
-        netAddress = daliAddress;
-    if (!netAddress || !*netAddress)
-        return;
-    if (s.length())
-        s.append('|');
-    s.append(netAddress).append(':').append(port ? port : "9876");
-}
-
 class WsEclSocketFactory : public CSmartSocketFactory
 {
 public:
@@ -234,7 +211,7 @@ void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
 }
 
 #ifndef _CONTAINERIZED
-void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap, IPropertyTree *serviceTree, const char *daliAddress)
+void initWsEclBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap, IPropertyTree *serviceTree, const char *daliAddress)
 {
     IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
@@ -283,29 +260,10 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         }
         else
         {
-            const char *farmerPort = nullptr;
             VStringBuffer xpath("Software/RoxieCluster[@name='%s'][1]", process.str());
             IPropertyTree *roxieCluster = pRoot->queryPropTree(xpath.str());
             if (roxieCluster)
-            {
-                //port and TLS config come from farmer, node addresses come from server
-                Owned<IPropertyTreeIterator> farmers = roxieCluster->getElements("RoxieFarmProcess");
-                ForEach(*farmers)
-                {
-                    IPropertyTree &farmer = farmers->query();
-                    const char *port = farmer.queryProp("@port");
-                    if (!port || streq(port, "0"))
-                        continue;
-                    farmerPort = port;
-                    const char *protocol = farmer.queryProp("@protocol");
-                    if (protocol && streq(protocol, "ssl"))
-                        tlsConfig.setown(createSecureSocketConfig(farmer.queryProp("@certificateFileName"), farmer.queryProp("@privateKeyFileName"), nullptr, true));
-                    break; //use the first one without port==0
-                }
-                Owned<IPropertyTreeIterator> servers = roxieCluster->getElements("RoxieServerProcess");
-                ForEach(*servers)
-                    appendServerAddress(list, *pRoot, servers->query(), daliAddress, farmerPort);
-            }
+                getAddressesAndTlsConfigForRoxieProcess(*pRoot, *roxieCluster, list, tlsConfig, daliAddress);
         }
         if (list.length())
         {
@@ -359,7 +317,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
 #ifdef _CONTAINERIZED
     initContainerRoxieTargets(connMap);
 #else
-    initBareMetalRoxieTargets(connMap, serviceTree, daliAddress.str());
+    initWsEclBareMetalRoxieTargets(connMap, serviceTree, daliAddress.str());
 #endif
     translator = new wsEclTypeTranslator();
 
