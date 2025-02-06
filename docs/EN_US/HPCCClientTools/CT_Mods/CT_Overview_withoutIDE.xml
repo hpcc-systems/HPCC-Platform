@@ -9,9 +9,9 @@
 
   <informaltable colsep="0" frame="none" rowsep="0">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -103,7 +103,7 @@
         <listitem>
           <para>From the HPCC Systems<superscript>®</superscript> download
           page, <ulink
-          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+          url="http://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
           System. (available for RPM-Based systems, Debian-Based systems, Mac
@@ -167,7 +167,7 @@
           Systems<superscript>®</superscript> download page:</para>
 
           <para><ulink
-          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+          url="https://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
 
           <variablelist>
             <varlistentry>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -29,13 +29,13 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para/>
     </legalnotice>
 
     <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. All rights
     reserved</releaseinfo>
 
-    <date><emphasis role="bold"></emphasis></date>
+    <date><emphasis role="bold"/></date>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -46,7 +46,7 @@
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
+        <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -70,14 +70,14 @@
         <?dbfo keep-together="always"?>
 
         <tgroup cols="2">
-          <colspec colwidth="49.50pt" />
+          <colspec colwidth="49.50pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
               <entry><inlinegraphic
-              fileref="../../images/OSSgr3.png" /></entry>
+              fileref="../../images/OSSgr3.png"/></entry>
 
               <entry>To compile and run ECL code locally on your Windows
               machine, you will need the Microsoft Visual Studio 2008 C++
@@ -143,9 +143,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -222,14 +222,13 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <colspec colwidth="49.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
-                <entry><inlinegraphic
-                fileref="../../images/tip.jpg" /></entry>
+                <entry><inlinegraphic fileref="../../images/tip.jpg"/></entry>
 
                 <entry><emphasis role="bold">NOTE: </emphasis>If there are
                 spaces in the path you specify, put it in quotes. For example:
@@ -245,9 +244,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -298,7 +297,7 @@
 
       <?hard-pagebreak ?>
 
-      <para></para>
+      <para/>
 
       <para>C++ options:</para>
 
@@ -306,9 +305,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -384,9 +383,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -427,9 +426,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -466,7 +465,7 @@
                 <entry>-fisComplexCompile</entry>
 
                 <entry>Prevents attempts to compile as a child process when a
-                query is complex. </entry>
+                query is complex.</entry>
               </row>
 
               <row>
@@ -574,9 +573,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -723,7 +722,7 @@
           </tgroup>
         </informaltable></para>
 
-      <para></para>
+      <para/>
     </sect1>
 
     <sect1 id="compiled_options">
@@ -739,9 +738,9 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -897,7 +896,7 @@ OUTPUT(repo.optionXX);</programlisting>
 
         <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
   </chapter>
