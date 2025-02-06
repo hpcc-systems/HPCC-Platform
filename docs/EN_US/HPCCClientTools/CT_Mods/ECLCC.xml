@@ -442,7 +442,7 @@
 
                 <entry>Allow use of named feature. (e.g., cpp, pipe,
                 all)<para><emphasis role="bold">cpp</emphasis>: Allow embedded
-                code within ECL (e.g., c++, JAVA, Javascript, Python, R,
+                code within ECL (e.g., c++, JAVA, Python,
                 etc.)</para><para><emphasis role="bold">pipe</emphasis>: Allow
                 the PIPE command to send data to an external
                 program.</para><para><emphasis role="bold">userECL</emphasis>:
@@ -517,10 +517,9 @@
 
                 <entry>Disallow use of named feature<para><emphasis
                 role="bold">cpp</emphasis>: Disallow embedded code within ECL
-                (e.g., c++, JAVA, Javascript, Python, R,
-                etc.)</para><para><emphasis role="bold">pipe</emphasis>:
-                Disallow the PIPE command to send data to an external
-                program.</para></entry>
+                (e.g., c++, JAVA, Python, etc.)</para><para><emphasis
+                role="bold">pipe</emphasis>: Disallow the PIPE command to send
+                data to an external program.</para></entry>
               </row>
 
               <row>
