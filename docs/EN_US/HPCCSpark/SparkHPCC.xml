@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -37,23 +37,23 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml" xpointer="DateVer"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -118,13 +118,13 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <colspec colwidth="49.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
-                <entry><graphic fileref="images/tip.jpg" /></entry>
+                <entry><graphic fileref="images/tip.jpg"/></entry>
 
                 <entry><para>As is common in Java client communication over
                 TLS, Spark-HPCC connectors targeting an HPCC cluster over TLS
@@ -383,11 +383,10 @@ write.df(df, source = "hpcc",
       <para>We have provided some examples of utilizing a Spark environment.
       The examples provided are dependent on the Spark shell.</para>
 
-      <para>You can refer to the examples in the Github repository: </para>
+      <para>You can refer to the examples in the Github repository:</para>
 
       <para><ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples</ulink>
-      </para>
+      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples</ulink></para>
     </sect1>
   </chapter>
 </book>

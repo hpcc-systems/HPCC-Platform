@@ -57,6 +57,7 @@ protected:
     static bool convertPatternToSuffix(const char *pattern, StringBuffer &suffix);
     bool validateIndex();
     void intializeElasticClient();
+    const std::string & getMetricReportName(const std::shared_ptr<hpccMetrics::IMetric> &pMetric);
 
 protected:
     StringBuffer indexName;
@@ -75,4 +76,6 @@ protected:
     bool configurationValid = false;
     std::shared_ptr<httplib::Client> pClient;
     httplib::Headers elasticHeaders;
+    std::map<unsigned int, std::string> metricReportNames;
+    std::string indexDocEndpoint;
 };

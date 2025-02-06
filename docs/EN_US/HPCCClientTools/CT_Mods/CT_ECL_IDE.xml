@@ -156,7 +156,7 @@
 
         <para>To create or edit configuration files:</para>
 
-        <para><graphic fileref="../../images/CT02.jpg" /></para>
+        <para><graphic fileref="../../images/CT02.jpg"/></para>
 
         <para>Press the <emphasis role="bold">Preferences</emphasis> button on
         the Orb button drop menu.</para>
@@ -182,7 +182,7 @@
               enter the IP address of the ESP in the Server field, but do not
               include the port details:</para>
 
-              <para><graphic fileref="../../images/CT03.jpg" /></para>
+              <para><graphic fileref="../../images/CT03.jpg"/></para>
             </listitem>
 
             <listitem>
@@ -214,8 +214,7 @@
               role="bold">Match</emphasis> button to find the best
               match.</para>
 
-              <para><graphic
-              fileref="../../images/CT03a.jpg" /><parameter></parameter></para>
+              <para><graphic fileref="../../images/CT03a.jpg"/></para>
             </listitem>
 
             <listitem>
@@ -229,8 +228,6 @@
               as the <emphasis role="bold">Target</emphasis> before pressing
               <emphasis role="bold">Submit</emphasis> on the <emphasis
               role="bold">Builder</emphasis> window.</para>
-
-              <!-- -->
 
               <para>If you are running under Windows and want to compile
               locally, install the Microsoft VS 2008 C++ compiler (either
@@ -297,7 +294,7 @@
           <para>Check the <emphasis role="bold">Advanced</emphasis> box to use
           Advanced Mode.</para>
 
-          <para><graphic fileref="../../images/CT03.jpg" /></para>
+          <para><graphic fileref="../../images/CT03.jpg"/></para>
 
           <para>The Server settings, can only be changed by accessing the
           preferences through the Login window.</para>
@@ -311,13 +308,13 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="52.60pt" />
+              <colspec colwidth="52.60pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                   <entry>Press the <emphasis role="bold">Locate</emphasis>
                   button to find the folder containing a configuration file
@@ -337,9 +334,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -455,13 +452,13 @@
           configure the text, foreground and background colors to your
           preference. There are several predefined color schemes or you can
           also choose to customize the color scheme to your preference.
-          <graphic fileref="../../images/CT04.jpg" vendor="IDE-SS" /></para>
+          <graphic fileref="../../images/CT04.jpg" vendor="IDE-SS"/></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -519,7 +516,7 @@
             </tgroup>
           </informaltable>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_ResultsTab">
@@ -530,9 +527,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -571,13 +568,13 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="52.60pt" />
+              <colspec colwidth="52.60pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                   <entry>If you are running under Windows and want to compile
                   locally, you need to install the Microsoft VS 2008 C++
@@ -597,9 +594,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -641,7 +638,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry>The Arrows next to the ECL Folder allow you to move
                   folders up and down in appearance in the workspace</entry>
@@ -662,7 +659,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
                 </row>
 
                 <row>
@@ -684,9 +681,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -750,7 +747,7 @@
                   Limit</emphasis></entry>
 
                   <entry>The maximum number of days WUs are allowed to
-                  persist. </entry>
+                  persist.</entry>
                 </row>
 
                 <row>
@@ -758,7 +755,7 @@
                   </emphasis></entry>
 
                   <entry>Check this box to disable checking for available
-                  updates. </entry>
+                  updates.</entry>
                 </row>
 
                 <row>
@@ -795,19 +792,19 @@
               information) if it cannot connect properly as shown
               below.</para>
 
-              <para><graphic fileref="../../images/CT01a.jpg" /></para>
+              <para><graphic fileref="../../images/CT01a.jpg"/></para>
             </listitem>
           </itemizedlist></para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="52.60pt" />
+              <colspec colwidth="52.60pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                   <entry>The title bar of the login window also displays the
                   version of the ECL IDE.</entry>
@@ -828,7 +825,7 @@
         <para>In this manual, you will see screen representations using the
         locations of toolboxes pinned right.</para>
 
-        <para><graphic fileref="../../images/CT06.jpg" /></para>
+        <para><graphic fileref="../../images/CT06.jpg"/></para>
 
         <sect3 id="CT_ECLIDE_UsingTheRibbon">
           <title>Using the Ribbon</title>
@@ -836,7 +833,7 @@
           <para>The Ribbon makes the commands that you need to use to complete
           a task easy to find.</para>
 
-          <para><graphic fileref="../../images/CT07.jpg" /></para>
+          <para><graphic fileref="../../images/CT07.jpg"/></para>
 
           <para>Commands are organized in similar groups contained in a tab.
           Each tab contains commands that relates to a type of activity, such
@@ -848,13 +845,13 @@
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="52.50pt" />
+                <colspec colwidth="52.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
-                    <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                    <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                     <entry>After you have learned the locations of commonly
                     used commands, you can gain more available space by
@@ -869,10 +866,9 @@
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic
-              fileref="../../images/CT08.png" /> button on the right side of
-              the <emphasis role="bold">Quick Access Toolbar.
-              </emphasis></para>
+              <para>Press the <inlinegraphic fileref="../../images/CT08.png"/>
+              button on the right side of the <emphasis role="bold">Quick
+              Access Toolbar. </emphasis></para>
             </listitem>
           </itemizedlist>
 
@@ -898,17 +894,16 @@
           want on the toolbar. You can also choose to display it beneath the
           Ribbon.</para>
 
-          <para><graphic fileref="../../images/CT10.jpg" /></para>
+          <para><graphic fileref="../../images/CT10.jpg"/></para>
 
           <para><emphasis role="bold">To customize the Quick Access
           Toolbar:</emphasis></para>
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic
-              fileref="../../images/CT08.png" /> button on the right side of
-              the <emphasis role="bold">Quick Access Toolbar.
-              </emphasis></para>
+              <para>Press the <inlinegraphic fileref="../../images/CT08.png"/>
+              button on the right side of the <emphasis role="bold">Quick
+              Access Toolbar. </emphasis></para>
             </listitem>
 
             <listitem>
@@ -916,7 +911,7 @@
             </listitem>
           </itemizedlist>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_WorkingWithToolBoxes" role="brk">
@@ -934,7 +929,7 @@
           ungrouped. AutoHide mode (unpinned state) also acts upon the
           group.</para>
 
-          <para><graphic fileref="../../images/CT11.jpg" /></para>
+          <para><graphic fileref="../../images/CT11.jpg"/></para>
 
           <para>In the upper right corner, two toolboxes (Workunits and Active
           Workunits) are shown grouped. Navigate between grouped toolboxes by
@@ -952,7 +947,7 @@
           <emphasis role="bold">Reset Docked Windows </emphasis>sub-menu on
           the View menu.</para>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_RepositoryToolbox" role="brk">
@@ -965,7 +960,7 @@
           ESDL, KEL, SALT, and others. To help differentiate the files are
           color coded according to the type of file they are.</para>
 
-          <para><graphic fileref="../../images/CT12.jpg" /></para>
+          <para><graphic fileref="../../images/CT12.jpg"/></para>
 
           <para>In addition to folders, plugin service libraries are also
           displayed at the bottom of the repository. These special folders are
@@ -998,12 +993,12 @@
           Expand any folder to see the ECL files within it. The number of
           results is displayed in blue.</para>
 
-          <para><graphic fileref="../../images/CT13.jpg" /><informaltable
+          <para><graphic fileref="../../images/CT13.jpg"/><informaltable
               colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1103,7 +1098,7 @@
               </tgroup>
             </informaltable></para>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_WorkUnitsToolbox">
@@ -1132,12 +1127,12 @@
           <para>This toolbox allows you to search online Workunits in the
           environment to which you are connected.</para>
 
-          <para><graphic fileref="../../images/CT14.jpg" /> <informaltable
+          <para><graphic fileref="../../images/CT14.jpg"/> <informaltable
               colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1197,7 +1192,7 @@
               </tgroup>
             </informaltable></para>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_DataSetsToobox">
@@ -1210,7 +1205,7 @@
           Right-click to copy the label of the file to paste into your
           code.</para>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_FindDatasetsToolbox">
@@ -1219,12 +1214,12 @@
           <para>This toolbox allows you to search for Logical files in the
           environment to which you are connected.</para>
 
-          <para><graphic fileref="../../images/CT15.jpg" /> <informaltable
+          <para><graphic fileref="../../images/CT15.jpg"/> <informaltable
               colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1282,7 +1277,7 @@
           <para>For example, referencing an ECL file which has not yet been
           defined will display a syntax error as shown below.</para>
 
-          <para><graphic fileref="../../images/CT16.jpg" /></para>
+          <para><graphic fileref="../../images/CT16.jpg"/></para>
 
           <para>DOUBLE-CLICK on any error displayed to take you to the line
           containing the error. If the error is in a different attribute, a
@@ -1300,19 +1295,19 @@
           without WRITE permission will display an access denied error as
           shown below:</para>
 
-          <para><graphic fileref="../../images/CT17.png" /></para>
+          <para><graphic fileref="../../images/CT17.png"/></para>
 
-          <para></para>
+          <para/>
 
           <para><informaltable colsep="1" frame="all" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="52.55pt" />
+                <colspec colwidth="52.55pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
-                    <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                    <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                     <entry>You can copy the error message text using the
                     right-click pop up menu option.</entry>
@@ -1321,9 +1316,9 @@
               </tgroup>
             </informaltable></para>
 
-          <para></para>
+          <para/>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CT_ECLIDE_statusbar" role="brk">
@@ -1332,18 +1327,18 @@
           <para>The Status Bar displays useful information about the current
           file, current server, compiler, and target.</para>
 
-          <para><graphic fileref="../../images/CT_statusbar.jpg" /></para>
+          <para><graphic fileref="../../images/CT_statusbar.jpg"/></para>
 
-          <para></para>
+          <para/>
 
           <para>You can select the items you want displayed by right-clicking
           on the status bar. Check the boxes of the items you want
           displayed.</para>
 
           <para><graphic
-          fileref="../../images/CT_statusbarConfig.jpg" /></para>
+          fileref="../../images/CT_statusbarConfig.jpg"/></para>
 
-          <para></para>
+          <para/>
         </sect3>
       </sect2>
 
@@ -1353,7 +1348,7 @@
         <sect3 id="CT_ECLIDE_OrbMenu">
           <title>Orb Menu</title>
 
-          <para><graphic fileref="../../images/CT02.jpg" /></para>
+          <para><graphic fileref="../../images/CT02.jpg"/></para>
 
           <para>The Orb button menu provides a list of basic actions enabling
           you to create and gain access to files and workspaces. It also
@@ -1363,9 +1358,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1455,14 +1450,14 @@
           </informaltable>
 
           <para><emphasis role="bold"> </emphasis> <emphasis
-          role="bold"></emphasis></para>
+          role="bold"/></para>
         </sect3>
       </sect2>
 
       <sect2 id="Ribbon_Tabs">
         <title>Ribbon Tabs</title>
 
-        <para></para>
+        <para/>
 
         <sect3 id="CT_ECLIDE_RibbonCurrentTab">
           <title>Current Tab</title>
@@ -1472,15 +1467,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="181pt" />
+              <colspec colwidth="181pt"/>
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="95.00pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT20.png" /></entry>
+                  <entry><graphic fileref="../../images/CT20.png"/></entry>
 
                   <entry><emphasis role="bold">Submit</emphasis></entry>
 
@@ -1489,7 +1484,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/IDE03.jpg" /></entry>
+                  <entry><graphic fileref="../../images/IDE03.jpg"/></entry>
 
                   <entry><emphasis role="bold">Submit drop
                   list</emphasis></entry>
@@ -1517,7 +1512,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT21.png" /></entry>
+                  <entry><graphic fileref="../../images/CT21.png"/></entry>
 
                   <entry><emphasis role="bold">Locate</emphasis></entry>
 
@@ -1537,15 +1532,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="90pt"/>
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="95.00pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT22.png" /></entry>
+                  <entry><graphic fileref="../../images/CT22.png"/></entry>
 
                   <entry><emphasis role="bold">Paste</emphasis></entry>
 
@@ -1553,7 +1548,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT23.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT23.jpg"/></entry>
 
                   <entry><emphasis role="bold">Cut</emphasis></entry>
 
@@ -1561,7 +1556,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT24.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT24.jpg"/></entry>
 
                   <entry><emphasis role="bold">Copy</emphasis></entry>
 
@@ -1581,15 +1576,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="90pt"/>
 
-              <colspec colwidth="165pt" />
+              <colspec colwidth="165pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT25.png" /></entry>
+                  <entry><graphic fileref="../../images/CT25.png"/></entry>
 
                   <entry><emphasis role="bold">Undo</emphasis></entry>
 
@@ -1600,7 +1595,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT26.png" /></entry>
+                  <entry><graphic fileref="../../images/CT26.png"/></entry>
 
                   <entry><emphasis role="bold">Redo</emphasis></entry>
 
@@ -1611,7 +1606,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT28.png" /></entry>
+                  <entry><graphic fileref="../../images/CT28.png"/></entry>
 
                   <entry><emphasis role="bold">Select All</emphasis></entry>
 
@@ -1620,7 +1615,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT27.png" /></entry>
+                  <entry><graphic fileref="../../images/CT27.png"/></entry>
 
                   <entry><emphasis role="bold">Delete</emphasis></entry>
 
@@ -1629,7 +1624,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT29.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT29.jpg"/></entry>
 
                   <entry><emphasis role="bold">Record\Stop</emphasis></entry>
 
@@ -1638,7 +1633,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT30.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT30.jpg"/></entry>
 
                   <entry><emphasis role="bold">Play</emphasis></entry>
 
@@ -1648,7 +1643,7 @@
 
                 <row>
                   <entry><graphic fileref="../../images/CT81.jpg"
-                  scale="50" /></entry>
+                  scale="50"/></entry>
 
                   <entry><emphasis role="bold">Advanced...</emphasis></entry>
 
@@ -1656,7 +1651,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Complete Word</emphasis></programlisting></entry>
 
@@ -1666,7 +1661,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Match Brace</emphasis></programlisting></entry>
 
@@ -1677,7 +1672,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Select to Brace</emphasis></programlisting></entry>
 
@@ -1688,7 +1683,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Toggle Comment</emphasis></programlisting></entry>
 
@@ -1697,7 +1692,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Box Comment</emphasis></programlisting></entry>
 
@@ -1706,7 +1701,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Uppercase</emphasis></programlisting></entry>
 
@@ -1715,7 +1710,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Lowercase</emphasis></programlisting></entry>
 
@@ -1724,7 +1719,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Line Numbers</emphasis></programlisting></entry>
 
@@ -1732,7 +1727,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Word Wrap</emphasis></programlisting></entry>
 
@@ -1740,7 +1735,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Set Tab Size</emphasis></programlisting></entry>
 
@@ -1748,7 +1743,7 @@
                 </row>
 
                 <row>
-                  <entry></entry>
+                  <entry/>
 
                   <entry><programlisting role="tab"><emphasis role="bold">   Toggle Whitespace Chars</emphasis></programlisting></entry>
 
@@ -1768,15 +1763,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="90pt"/>
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="95.00pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT33.png" /></entry>
+                  <entry><graphic fileref="../../images/CT33.png"/></entry>
 
                   <entry><emphasis role="bold">Find </emphasis></entry>
 
@@ -1785,7 +1780,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT090.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT090.jpg"/></entry>
 
                   <entry><emphasis role="bold">Goto</emphasis></entry>
 
@@ -1795,7 +1790,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT34.png" /></entry>
+                  <entry><graphic fileref="../../images/CT34.png"/></entry>
 
                   <entry><emphasis role="bold">Find Next</emphasis></entry>
 
@@ -1804,7 +1799,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT35.png" /></entry>
+                  <entry><graphic fileref="../../images/CT35.png"/></entry>
 
                   <entry><emphasis role="bold">Find
                   Previous</emphasis></entry>
@@ -1814,7 +1809,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT36.png" /></entry>
+                  <entry><graphic fileref="../../images/CT36.png"/></entry>
 
                   <entry><emphasis role="bold">Replace</emphasis></entry>
 
@@ -1834,15 +1829,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="90pt"/>
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="95.00pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT37.png" /></entry>
+                  <entry><graphic fileref="../../images/CT37.png"/></entry>
 
                   <entry><emphasis role="bold">Check Syntax</emphasis></entry>
 
@@ -1851,7 +1846,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT38.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT38.jpg"/></entry>
 
                   <entry><emphasis role="bold">Next Error</emphasis></entry>
 
@@ -1860,7 +1855,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT39.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT39.jpg"/></entry>
 
                   <entry><emphasis role="bold">Previous
                   Error</emphasis></entry>
@@ -1870,7 +1865,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT40.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT40.jpg"/></entry>
 
                   <entry><emphasis role="bold">Clear Errors</emphasis></entry>
 
@@ -1890,13 +1885,13 @@
           <para>The <emphasis role="bold">ECL Tab</emphasis> contains the
           following selections:</para>
 
-          <para><graphic fileref="../../images/CT41.png" /></para>
+          <para><graphic fileref="../../images/CT41.png"/></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1957,26 +1952,24 @@
           <para>The <emphasis role="bold">Bookmarks Tab</emphasis> contains
           the following selections:</para>
 
-          <para><graphic fileref="../../images/CT060.jpg" /></para>
+          <para><graphic fileref="../../images/CT060.jpg"/></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic
-                  fileref="../../images/CT060-0.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT060-0.jpg"/></entry>
 
                   <entry>Press the <emphasis role="bold">Bookmarks</emphasis>
                   icon to access the Bookmarks panel.</entry>
                 </row>
 
                 <row>
-                  <entry><graphic
-                  fileref="../../images/CT061-1.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT061-1.jpg"/></entry>
 
                   <entry>Press the lower half of the Bookmarks icon to access
                   the submenu:<programlisting role="tab"> <emphasis
@@ -1989,15 +1982,13 @@
                 </row>
 
                 <row>
-                  <entry><graphic
-                  fileref="../../images/CT060-2.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT060-2.jpg"/></entry>
 
                   <entry>Next bookmark</entry>
                 </row>
 
                 <row>
-                  <entry><graphic
-                  fileref="../../images/CT060-3.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT060-3.jpg"/></entry>
 
                   <entry>Previous bookmark</entry>
                 </row>
@@ -2027,15 +2018,15 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="90pt"/>
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="95.00pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
-                  <entry><graphic fileref="../../images/CT45.png" /></entry>
+                  <entry><graphic fileref="../../images/CT45.png"/></entry>
 
                   <entry><emphasis role="bold">Stop</emphasis></entry>
 
@@ -2043,7 +2034,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT46.png" /></entry>
+                  <entry><graphic fileref="../../images/CT46.png"/></entry>
 
                   <entry><emphasis role="bold">Refresh</emphasis></entry>
 
@@ -2052,7 +2043,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT42.png" /></entry>
+                  <entry><graphic fileref="../../images/CT42.png"/></entry>
 
                   <entry><emphasis role="bold">Launch New
                   Window</emphasis></entry>
@@ -2062,7 +2053,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT43.png" /></entry>
+                  <entry><graphic fileref="../../images/CT43.png"/></entry>
 
                   <entry><emphasis role="bold">Back</emphasis></entry>
 
@@ -2070,7 +2061,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT44.png" /></entry>
+                  <entry><graphic fileref="../../images/CT44.png"/></entry>
 
                   <entry><emphasis role="bold">Forward</emphasis></entry>
 
@@ -2090,13 +2081,13 @@
           <para>The <emphasis role="bold">Window </emphasis>Tab contains
           general actions for controlling open windows on the desktop.</para>
 
-          <graphic fileref="../../images/CT48.png" />
+          <graphic fileref="../../images/CT48.png"/>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2151,9 +2142,9 @@
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -2188,7 +2179,7 @@
         <sect3 id="CT_ECLIDE_WorkSpaceTab" role="brk">
           <title>Workspace(s) Tab</title>
 
-          <graphic fileref="../../images/CT82.jpg" />
+          <graphic fileref="../../images/CT82.jpg"/>
 
           <para>The <emphasis role="bold">Workspace Tab </emphasis>tab allows
           you to preserve the workspace you are using for future use or remove
@@ -2207,7 +2198,7 @@
         <sect3 id="CT_ECLIDE_ViewTab">
           <title>View Tab</title>
 
-          <para><graphic fileref="../../images/CT47.jpg" /></para>
+          <para><graphic fileref="../../images/CT47.jpg"/></para>
 
           <para>The <emphasis role="bold">View </emphasis>tab allows you to
           choose which toolboxes to view. In addition, it has options to reset
@@ -2223,7 +2214,7 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
               <tbody>
                 <row>
@@ -2244,7 +2235,7 @@
             </tgroup>
           </informaltable>
 
-          <para></para>
+          <para/>
         </sect3>
       </sect2>
 
@@ -2260,7 +2251,7 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
               <tbody>
                 <row>
@@ -2395,7 +2386,7 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="130.40pt" />
+              <colspec align="left" colwidth="130.40pt"/>
 
               <tbody>
                 <row>
@@ -2547,7 +2538,7 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="130.40pt" />
+              <colspec align="left" colwidth="130.40pt"/>
 
               <tbody>
                 <row>
@@ -2847,7 +2838,7 @@ OUTPUT(ProgGuide.Person.file(personid IN
 ENDMACRO;
 </programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
       </sect2>
 
@@ -2859,9 +2850,9 @@ ENDMACRO;
 
         <para><informaltable>
             <tgroup cols="2">
-              <colspec align="left" colwidth="140 pt" />
+              <colspec align="left" colwidth="140 pt"/>
 
-              <colspec align="left" />
+              <colspec align="left"/>
 
               <thead>
                 <row>
@@ -3189,7 +3180,7 @@ ENDMACRO;
             </tgroup>
           </informaltable></para>
 
-        <para></para>
+        <para/>
       </sect2>
 
       <sect2 id="ECL_Builder_Window" role="brk">
@@ -3199,7 +3190,7 @@ ENDMACRO;
         also shows results and Workunit information for each Workunit created
         by submitting the ECL code.</para>
 
-        <para><graphic fileref="../../images/CT49.jpg" /></para>
+        <para><graphic fileref="../../images/CT49.jpg"/></para>
 
         <itemizedlist>
           <listitem>
@@ -3246,7 +3237,7 @@ ENDMACRO;
           <para>When working in the IDE builder window you may find that you
           have numerous tabs open. Right-click on any of the open tabs to
           display tab options. <graphic
-          fileref="../../images/IDE0101.jpg" /></para>
+          fileref="../../images/IDE0101.jpg"/></para>
 
           <para>Select the desired action to perform on the tabs.</para>
 
@@ -3290,7 +3281,7 @@ ENDMACRO;
           display the advanced options. Press the <emphasis
           role="bold">Less</emphasis> button to close this area.</para>
 
-          <para><graphic fileref="../../images/CT50.jpg" /></para>
+          <para><graphic fileref="../../images/CT50.jpg"/></para>
 
           <para>The <emphasis role="bold">Submit </emphasis>button submits the
           workunit. Select the options you want to use when running the
@@ -3338,7 +3329,7 @@ ENDMACRO;
 
         <para>The Builder Window also supports editing ECL files.</para>
 
-        <para><graphic fileref="../../images/CT49.jpg" /></para>
+        <para><graphic fileref="../../images/CT49.jpg"/></para>
 
         <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
@@ -3359,7 +3350,7 @@ ENDMACRO;
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
                 <tbody>
                   <row>
@@ -3532,11 +3523,11 @@ ENDMACRO;
         <para>Enter the code into your workspace in the builder window then
         save.</para>
 
-        <para><graphic fileref="../../images/IDE-BM01.jpg" />Your bookmark
+        <para><graphic fileref="../../images/IDE-BM01.jpg"/>Your bookmark
         appears in the bookmarks window right below your builder
         window.</para>
 
-        <para><graphic fileref="../../images/IDE-BM02.jpg" /></para>
+        <para><graphic fileref="../../images/IDE-BM02.jpg"/></para>
 
         <para>To return to your bookmarked place, double-click on the
         corresponding bookmark in the bookmarks panel.</para>
@@ -3574,7 +3565,7 @@ ENDMACRO;
 
             <para>Autosize one column or all columns.</para>
 
-            <para><graphic fileref="../../images/CT53.jpg" /></para>
+            <para><graphic fileref="../../images/CT53.jpg"/></para>
           </listitem>
         </itemizedlist>
 
@@ -3582,9 +3573,9 @@ ENDMACRO;
         sorting, you are asked to confirm before the download begins. This is
         particularly useful when large record sets are returned.</para>
 
-        <para></para>
+        <para/>
 
-        <para><graphic fileref="../../images/CT54.jpg" /></para>
+        <para><graphic fileref="../../images/CT54.jpg"/></para>
       </sect2>
 
       <sect2 id="versioncontrol">
@@ -3597,7 +3588,7 @@ ENDMACRO;
         The IDE's integration extends that to the context menu of the
         Repository toolbox in the IDE.</para>
 
-        <para></para>
+        <para/>
 
         <orderedlist>
           <listitem>
@@ -3620,7 +3611,7 @@ ENDMACRO;
             role="bold">Compiler</emphasis> tab of the <emphasis
             role="bold">Preferences</emphasis> dialog.</para>
 
-            <para><graphic fileref="../../images/IDE_eclfolders.jpg" /></para>
+            <para><graphic fileref="../../images/IDE_eclfolders.jpg"/></para>
           </listitem>
 
           <listitem>
@@ -3633,8 +3624,7 @@ ENDMACRO;
             <para>Right-click on the folder in the Repository toolbox, and
             choose your Git command from the TortoiseGit menu.</para>
 
-            <para><graphic
-            fileref="../../images/IDE_tortoisegit.jpg" /></para>
+            <para><graphic fileref="../../images/IDE_tortoisegit.jpg"/></para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -3668,9 +3658,9 @@ ENDMACRO;
           </listitem>
         </itemizedlist>
 
-        <para></para>
+        <para/>
 
-        <graphic fileref="../../images/CT55.jpg" scalefit="1" />
+        <graphic fileref="../../images/CT55.jpg" scalefit="1"/>
       </sect2>
 
       <sect2 id="ECLWatch_View" role="brk">
@@ -3686,20 +3676,20 @@ ENDMACRO;
         the various Workunit Detail tabs.</para>
 
         <para><graphic fileref="../../images/ECLIDE_WuDetails.jpg"
-        scalefit="1" /></para>
+        scalefit="1"/></para>
 
         <para>You can also perform actions on the workunit using the Workunit
         Action buttons.</para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="52.60pt" />
+            <colspec colwidth="52.60pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
-                <entry><graphic fileref="../../images/tip.jpg" /></entry>
+                <entry><graphic fileref="../../images/tip.jpg"/></entry>
 
                 <entry>You can copy a Workunit's ECL Watch URL by rt-clicking
                 on the <emphasis role="bold">Open in New Page</emphasis> icon

@@ -464,6 +464,11 @@ IPropertyTree *createDFUFileMetaInfo(const char *fileName, IFileDescriptor *file
     Owned<IPropertyTree> metaInfo = createPTree();
 
     metaInfo->setProp("logicalFilename", fileName);
+
+    // "group" is for info. only. dafilesrv's may use it to show context in error messages.
+    const char *fileGroup = fileDesc->queryProperties().queryProp("@group");
+    metaInfo->setProp("group", nullText(fileGroup)); // NB: should never be missing
+
     if (!isEmptyString(requestId))
         metaInfo->setProp("requestId", requestId);
     metaInfo->setProp("accessType", accessType);

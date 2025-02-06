@@ -97,7 +97,7 @@ POST_MORTEM_DIR="$directory"
 if [[ -n "${workunit}" ]]; then
   POST_MORTEM_DIR="${directory}/${workunit}"
 fi
-POST_MORTEM_DIR=${POST_MORTEM_DIR}/${container}/${process}/$(hostname)/$(date -Iseconds)
+POST_MORTEM_DIR=${POST_MORTEM_DIR}/$(date -Iseconds)/$(hostname)/${container}/${process}
 mkdir -p ${POST_MORTEM_DIR}
 echo "Post-mortem info gathered in $POST_MORTEM_DIR"
 

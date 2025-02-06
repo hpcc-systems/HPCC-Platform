@@ -150,22 +150,30 @@ jobs:
           # Install Chrome browser
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+          CHROME_MAJOR_VERSION=$( echo $CHROME_VERSION | cut -d '.' -f 1)
+          echo "CHROME_VERSION: $CHROME_VERSION, CHROME_MAJOR_VERSION: $CHROME_MAJOR_VERSION"
 
           # Install Chrome Driver
-          wget https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/linux64/chromedriver-linux64.zip
+          DRIVER_VERSION=$( curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_$CHROME_MAJOR_VERSION")
+          echo "DRIVER_VERSION: $DRIVER_VERSION"
+          wget https://storage.googleapis.com/chrome-for-testing-public/$DRIVER_VERSION/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip -d chromedriver
           sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
 
+          # Install Java modules
           wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
           wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.17.0/jackson-annotations-2.17.0.jar
           wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.17.0/jackson-core-2.17.0.jar
           wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.17.0/jackson-databind-2.17.0.jar
           wget https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
-          wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.22.0/selenium-java-4.22.0.zip
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar
+
+          # Install Selenium
+          wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.22.0/selenium-java-4.22.0.zip
           unzip selenium-java-4.22.0.zip -d selenium-libs
 
       - name: Run ECL Watch UI Tests

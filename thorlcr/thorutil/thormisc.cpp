@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "jcontainerized.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
 #include "jmisc.hpp"
@@ -95,10 +96,10 @@ const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicA
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
-const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
-const StatisticsMapping hashDedupActivityStatistics({}, diskWriteRemoteStatistics, basicActivityStatistics);
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
+const StatisticsMapping hashDedupActivityStatistics({}, hashDistribActivityStatistics, diskWriteRemoteStatistics);
+const StatisticsMapping indexDistribActivityStatistics({}, hashDistribActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
 const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizeGraphSpill, StSizePeakTempDisk, StSizePeakEphemeralDisk, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory}, executeStatistics);
 const StatisticsMapping tempFileStatistics({StNumSpills}, diskRemoteStatistics);
@@ -1787,4 +1788,18 @@ std::vector<std::string> captureDebugInfo(const char *_dir, const char *prefix, 
         return { };
     }
     return { stacksFName.str() }; // JCSMORE capture/return other files
+}
+
+// NB: this mirrors the directory structure formed in collect_postmortem.sh
+StringBuffer &addInstanceContextPaths(StringBuffer &dst)
+{
+    addPathSepChar(dst);
+    dst.append(k8s::queryMyPodName());
+    addPathSepChar(dst);
+    dst.append(k8s::queryMyContainerName());
+    addPathSepChar(dst);
+    RemoteFilename rfn;
+    rfn.setLocalPath(queryCurrentProcessPath());
+    rfn.getTail(dst);
+    return dst;
 }
