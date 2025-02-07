@@ -2852,7 +2852,7 @@ void CMPServer::flush(mptag_t tag)
     } nfy(tag);
     unsigned count = receiveq.flush(nfy);
     if (count) 
-        PROGLOG("CMPServer::flush(%d) discarded %u buffers",(int)tag,count);
+        DBGLOG("CMPServer::flush(%d) discarded %u buffers",(int)tag,count);
 }
 
 void CMPServer::cancel(const SocketEndpoint *ep, mptag_t tag)
