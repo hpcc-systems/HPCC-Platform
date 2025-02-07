@@ -842,6 +842,8 @@ thor:
   #  cpu: "1"
   #  memory: "2G"
   #egress: engineEgress
+  logging:
+    detail: 50
 
 eclscheduler:
 - name: eclscheduler
