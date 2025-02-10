@@ -674,9 +674,13 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
         return curReadCost;
     };
     cost_type readCost = 0;
+    ThorActivityKind actKind = container.getKind();
+    bool isIndexActivity = (TAKindexread == actKind) || (TAKkeyedjoin == actKind) || (TAKindexnormalize == actKind)
+                          || (TAKindexaggregate == actKind) || (TAKindexcount == actKind) || (TAKindexgroupaggregate == actKind)
+                          || (TAKindexgroupexists == actKind) || (TAKindexgroupcount == actKind);
+
     if (fileStats.size()>0)
     {
-        ThorActivityKind activityKind = container.getKind();
         unsigned fileIndex = 0;
         diskAccessCost = 0;
         for (unsigned i=0; i<readFiles.size(); i++)
@@ -685,7 +689,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
             bool useJhtreeCache = false;
             // Index uses jhtree caches, so use actual fetches to calculate cost
             // To determine entry is an index file entry, use the test (i==0) because index file is always the first file
-            if ((TAKindexread == activityKind) || ((TAKkeyedjoin == activityKind) && (0 == i)))
+            if (isIndexActivity && (!(TAKkeyedjoin == actKind) || (0 == i)))
                 useJhtreeCache = true;
             if (file)
             {
@@ -716,7 +720,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
-            readCost = updateReadCosts(true, file, statsCollection);
+            readCost = updateReadCosts(isIndexActivity, file, statsCollection);
     }
     return readCost;
 }
