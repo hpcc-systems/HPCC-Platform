@@ -75,7 +75,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         const state = { ...defaultUIState };
         if (selection.length) {
             state.hasSelection = true;
-            if (!selection.filter(item => item.hasOwnProperty("children")).length) {
+            if (!selection.filter(item => "children" in item).length) {
                 state.canDelete = true;
             } else {
                 state.categorySelected = true;

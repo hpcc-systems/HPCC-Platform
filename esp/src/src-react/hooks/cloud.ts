@@ -49,7 +49,7 @@ export function usePods(): [Pod[], () => void] {
             setRetVal(pods
                 .filter(pod => {
                     const labels = pod?.metadata?.labels ?? {};
-                    return labels.hasOwnProperty("app.kubernetes.io/part-of") && labels["app.kubernetes.io/part-of"] === "HPCC-Platform";
+                    return "app.kubernetes.io/part-of" in labels && labels["app.kubernetes.io/part-of"] === "HPCC-Platform";
                 })
                 .map(pod => {
                     const started = new Date(pod.metadata?.creationTimestamp);

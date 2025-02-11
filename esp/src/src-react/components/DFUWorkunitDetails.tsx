@@ -99,7 +99,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
             setSourceFormatMessage(`(${nlsHPCC.CSV})`);
         } else if (sourceFormatMsg === "fixed") {
             setSourceFormatMessage(`(${nlsHPCC.Fixed})`);
-        } else if (!!workunit?.RowTag) {
+        } else if (workunit?.RowTag) {
             setSourceFormatMessage(`(${nlsHPCC.XML}/${nlsHPCC.JSON})`);
         }
 

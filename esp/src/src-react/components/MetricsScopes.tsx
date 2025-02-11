@@ -43,12 +43,12 @@ export class ScopesTable extends Table {
             if (field) {
                 const value: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
                 const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return value?.indexOf(filterValue.substring(colonIdx + 1)) >= 0 ?? false;
+                return value && value?.indexOf(filterValue.substring(colonIdx + 1)) >= 0;
             }
             for (const field in row) {
                 const value: string = !matchCase ? row[field].toString().toLowerCase() : row[field].toString();
                 const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return value?.indexOf(filterValue) >= 0 ?? false;
+                return value && value?.indexOf(filterValue) >= 0;
             }
             return false;
         }
