@@ -341,6 +341,7 @@ void CThorKeyArray::createSortedPartition(unsigned pn)
     keys.swap(newrows);
 }
 
+#define VALIDATE_KEY_BOUNDARIES
 int CThorKeyArray::binchopPartition(const void * row,bool lt)
 {
     int n = (int)ordinality();
@@ -349,7 +350,7 @@ int CThorKeyArray::binchopPartition(const void * row,bool lt)
     int a = 0;
     int b = n;
     int cmp = 0;
-#ifdef _TESTING
+#ifdef VALIDATE_KEY_BOUNDARIES
 try {
 #endif
     while (a<b)
@@ -362,7 +363,7 @@ try {
         {
             if (cmp==0)
             {
-#ifdef _TESTING
+#ifdef VALIDATE_KEY_BOUNDARIES
                 a = m;
                 while ((a<n)&&(keyCompare(m,a)==0))
                     a++;
@@ -371,7 +372,7 @@ try {
 #endif
                 while ((m>0)&&(keyCompare(m-1,m)==0))
                     m--;
-#ifdef _TESTING
+#ifdef VALIDATE_KEY_BOUNDARIES
                 if (m>0) 
                     assertex(keyRowCompare((unsigned)m-1,row)<0);
 #endif
@@ -382,7 +383,7 @@ try {
             a = m+1;
         }
     }
-#ifdef _TESTING
+#ifdef VALIDATE_KEY_BOUNDARIES
     if (lt)
     {
         if (a<n) 
@@ -417,7 +418,7 @@ catch (IException *e)
     DBGLOG("a=%d, b=%d, cmp=%d",a,b,cmp);
     throw;
 }
-#endif
+#endif // VALIDATE_KEY_BOUNDARIES
     while (lt&&a&&(keyRowCompare((unsigned)a-1,row)==0))
         a--;
     return a-1;
