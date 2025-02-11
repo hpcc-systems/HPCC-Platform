@@ -77,6 +77,7 @@ static const unsigned defaultStrandBlockSize = 512;
 static const unsigned defaultForceNumStrands = 0;
 
 static const char **cmdArgs;
+static ILogMsgHandler *logHandler = nullptr;
 
 static void replyError(unsigned errorCode, const char *errorMsg)
 {
@@ -152,6 +153,15 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 
         Owned<IPropertyTree> mergedComponentConfig = createPTreeFromIPT(globals);
         mergeConfiguration(*mergedComponentConfig, *masterComponentConfig);
+        if (masterComponentConfig->hasProp("logging/@thorworkerdetail"))
+        {
+            unsigned workerDetailLevel = masterComponentConfig->getPropInt("logging/@thorworkerdetail");
+            mergedComponentConfig->setPropInt("logging/@detail", workerDetailLevel);
+            ILogMsgFilter *existingLogFilter = queryLogMsgManager()->queryMonitorFilter(logHandler);
+            dbgassertex(existingLogFilter);
+            if (existingLogFilter->queryMaxDetail() != workerDetailLevel)
+                verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogFilter->queryAudienceMask(), existingLogFilter->queryClassMask(), workerDetailLevel)));
+        }
         replaceComponentConfig(mergedComponentConfig, masterGlobalConfig);
         globals.set(mergedComponentConfig);
 #ifdef _DEBUG
@@ -330,9 +340,8 @@ public:
 #endif
 
 
-ILogMsgHandler *startSlaveLog()
+void startSlaveLog()
 {
-    ILogMsgHandler *logHandler = nullptr;
     if (!isContainerized())
     {
         StringBuffer fileName("thorslave");
@@ -363,7 +372,6 @@ ILogMsgHandler *startSlaveLog()
 
     //setupContainerizedStorageLocations();
     PROGLOG("Build %s", hpccBuildInfo.buildTag);
-    return logHandler;
 }
 
 int main( int argc, const char *argv[]  )
@@ -406,6 +414,13 @@ int main( int argc, const char *argv[]  )
         cmdArgs = argv+1;
 #ifdef _CONTAINERIZED
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
+        // pickup the default logging level from the thor default config yaml
+        if (globals->hasProp("logging/@thorworkerdetail"))
+        {
+            unsigned workerDetailLevel = globals->getPropInt("logging/@thorworkerdetail");
+            globals->setPropInt("logging/@detail", workerDetailLevel);
+            // NB: may be overridden by Thor config settings during RegisterSelf
+        }
 #else
         globals.setown(loadConfiguration(globals, nullptr, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #endif
@@ -420,7 +435,7 @@ int main( int argc, const char *argv[]  )
         mySlaveNum = globals->getPropInt("@slavenum", NotFound);
         if (!isContainerized() && (NotFound == mySlaveNum))
             throw makeStringException(0, "Slave number not specified (@slavenum)");
-        ILogMsgHandler *slaveLogHandler = startSlaveLog();
+        startSlaveLog(); // configures 'logHandler'
 
         // In container world, SLAVE= will not be used
         const char *slave = globals->queryProp("@slave");
@@ -593,7 +608,7 @@ int main( int argc, const char *argv[]  )
                 dafsThread.setown(new CServerThread);
 #endif
             installDefaultFileHooks(globals);
-            slaveMain(jobListenerStopped, slaveLogHandler);
+            slaveMain(jobListenerStopped, logHandler);
         }
 
         DBGLOG("ThorSlave terminated OK");
