@@ -99,7 +99,7 @@
 </xsl:template>
 <!--================ENDOFSPECIAL_tocSauce==============================-->
 
-
+<!--========Processing-Instructions===========-->
 <xsl:template match="processing-instruction('hard-pagebreak')">
    <fo:block break-after='page'/>
 </xsl:template>
@@ -107,7 +107,8 @@
 <xsl:template match="processing-instruction('linebreak')">
   <fo:block/>
 </xsl:template>  
-  
+
+<!--===============Specialized-ROLE-Attriburtes=======================-->  
 <xsl:template match="programlisting[@role='tab']">
   <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
    <xsl:attribute name="font-family">sans-serif</xsl:attribute>
@@ -116,13 +117,44 @@
   </fo:block>
 </xsl:template>
 
-<!--sans-serif-para-role-->
+<!--===programlisting-FONT-size-Roles===-->
+
+<xsl:template match="programlisting[@role='font7']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties" background-color="#E0E0E0">
+    <xsl:attribute name="font-size">7pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="programlisting[@role='font6']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties" background-color="#E0E0E0">
+    <xsl:attribute name="font-size">6pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="programlisting[@role='font5']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties" background-color="#E0E0E0">
+    <xsl:attribute name="font-size">5pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="programlisting[@role='font4']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties" background-color="#E0E0E0">
+    <xsl:attribute name="font-size">4pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<!--sans-serif-para-roles-->
 <xsl:template match="para[@role='sans']">
   <fo:block>
    <xsl:attribute name="font-family">sans-serif</xsl:attribute>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
+
 <xsl:template match="para[@role='serif']">
   <fo:block>
    <xsl:attribute name="font-family">serif</xsl:attribute>
@@ -130,12 +162,14 @@
   </fo:block>
 </xsl:template>
 
+<!--monospace-para-roles-->
 <xsl:template match="para[@role='wsig']">
   <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
       <xsl:attribute name="font-size">10pt</xsl:attribute>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
+
 <xsl:template match="programlisting[@role='wsig']">
   <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
       <xsl:attribute name="font-size">10pt</xsl:attribute>
@@ -143,7 +177,8 @@
   </fo:block>
 </xsl:template>
 
-<!--para-syntax-role-elim-hyph-17-->
+
+<!--para-syntax-role-rm-hyph-17-->
 <xsl:template match="para[@role='syntax']">
   <fo:block space-after="6pt" space-before="12pt" space-before.precedence="1">
    <xsl:attribute name="hyphenate">false</xsl:attribute>
@@ -153,14 +188,14 @@
 </xsl:template>
 
 
-
-
+<!--====Generalized-Attriburtes-ALLDOCS======-->
 <xsl:attribute-set name="monospace.verbatim.properties">
  <xsl:attribute name="font-size">
    0.83em
   </xsl:attribute>
 </xsl:attribute-set>
 
+<!--Section-Titles-->
 <xsl:attribute-set name="section.title.level1.properties">
  <xsl:attribute name="font-size">
     <xsl:value-of select="$body.font.master * 2.425"></xsl:value-of>
@@ -265,7 +300,7 @@
     	</xsl:choose>
     </xsl:template>
     
- <!--VarListVariation-->
+ <!--VariableList-Properties-->
  <xsl:template match="varlistentry/term">
         <fo:inline font-family="sans-serif" font-weight="bold">
           <xsl:apply-templates/>
@@ -353,7 +388,7 @@
       </fo:inline>
   </xsl:template>
 
-<!--NEW-inline_monospace-8-12-->
+<!--Inline_monospace-8-12-->
 <xsl:template match="emphasis[@role='code']">
        <fo:inline font-family="monospace">
          <xsl:apply-templates/>
@@ -365,6 +400,7 @@
          <xsl:apply-templates/>
        </fo:inline>
 </xsl:template>
+
 <xsl:template match="ulink">
      <fo:inline color="blue" text-decoration="underline">
              <xsl:apply-templates/>
@@ -372,6 +408,7 @@
 </xsl:template>
 
 <!--Special-TABLE-Striping-TEMPLATE-->
+<!--SetTabstyle=striped-OR-greyhead-for-Alternate-Table-styles-->
 <xsl:template name="table.row.properties">
   <xsl:variable name="tabstyle">
     <xsl:call-template name="tabstyle"/>
