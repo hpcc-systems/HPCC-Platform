@@ -1319,7 +1319,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
         status.appendJSONListMessage("Encountered unexpected exception during health report");
     }
 
-    report.status = status;
+    report.status = std::move(status);
 }
 
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
