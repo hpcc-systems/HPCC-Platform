@@ -8631,6 +8631,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
 static CriticalSection configCS;
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
+static Owned<IPropertyTree> nullConfiguration;
 static StringBuffer componentName;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -8643,11 +8644,97 @@ MODULE_EXIT()
     globalConfiguration.clear();
 }
 
+static IPropertyTree *createNullPTreeImpl()
+{
+    class NullIPropertyTree : implements IPropertyTree
+    {
+    public:
+        virtual void Link() const override {}
+        virtual bool Release() const override { return false; }
+
+        virtual void serialize(MemoryBuffer &tgt) override {}
+        virtual void deserialize(MemoryBuffer &src) override {}
+
+        virtual bool hasProp(const char *xpath) const override { return false; }
+        virtual bool isBinary(const char *xpath=NULL) const override { return false; }
+        virtual bool isCompressed(const char *xpath=NULL) const override { return false; }
+        virtual bool renameProp(const char *xpath, const char *newName) override { return false; }
+        virtual bool renameTree(IPropertyTree *tree, const char *newName) override { return false; }
+
+        virtual bool getProp(const char *xpath, StringBuffer &ret) const override { return false; }
+        virtual const char *queryProp(const char * xpath) const override { return nullptr; }
+        virtual void setProp(const char *xpath, const char *val) override {}
+        virtual void addProp(const char *xpath, const char *val) override {}
+        virtual void appendProp(const char *xpath, const char *val) override {}
+
+        virtual bool getPropBool(const char *xpath, bool dft=false) const override { return dft; }
+        virtual void setPropBool(const char *xpath, bool val) override {}
+        virtual void addPropBool(const char *xpath, bool val) override {}
+
+        virtual int  getPropInt(const char *xpath, int dft=0) const override { return dft; }
+        virtual void setPropInt(const char *xpath, int val) override {}
+        virtual void addPropInt(const char *xpath, int val) override {}
+
+        virtual __int64 getPropInt64(const char *xpath, __int64 dft=0) const override { return dft; }
+        virtual void setPropInt64(const char *xpath, __int64 val) override {}
+        virtual void addPropInt64(const char *xpath, __int64 val) override {}
+
+        virtual void setPropReal(const char *xpath, double val) override {}
+        virtual void addPropReal(const char *xpath, double val) override {}
+        virtual double getPropReal(const char *xpath, double dft=0.0) const override { return dft; }
+
+        virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const override { return false; }
+        virtual void setPropBin(const char *xpath, size32_t size, const void *data) override {}
+        virtual void addPropBin(const char *xpath, size32_t size, const void *data) override {}
+        virtual void appendPropBin(const char *xpath, size32_t size, const void *data) override {}
+
+        virtual IPropertyTree *getPropTree(const char *xpath) const override { return nullptr; }
+        virtual IPropertyTree *queryPropTree(const char *xpath) const override { return nullptr; }
+        virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val) override { return nullptr; }
+        virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) override { return nullptr; }
+
+        virtual IPropertyTree *setPropTree(const char *xpath) override { return nullptr; }
+        virtual IPropertyTree *addPropTree(const char *xpath) override { return nullptr; }
+
+        virtual bool removeProp(const char *xpath) override { return false; }
+        virtual bool removeTree(IPropertyTree *child) override { return false; }
+        virtual aindex_t queryChildIndex(IPropertyTree *child) override { return 0; }
+
+        virtual StringBuffer &getName(StringBuffer &ret) const override { return ret; }
+        virtual const char *queryName() const override { return nullptr; }
+
+        virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override { return nullptr; }
+        virtual IAttributeIterator *getAttributes(bool sorted=false) const override { return nullptr; }
+
+        virtual IPropertyTree *getBranch(const char *xpath) const override { return nullptr; }
+        virtual IPropertyTree *queryBranch(const char *xpath) const override { return nullptr; }
+        virtual bool hasChildren() const override { return false; }
+        virtual unsigned numUniq() const override { return 0; }
+        virtual unsigned numChildren() const override { return 0; }
+        virtual bool isCaseInsensitive() const override { return false; }
+        virtual bool IsShared() const override { return false; }
+        virtual void localizeElements(const char *xpath, bool allTail=false) override {}
+        virtual unsigned getCount(const char *xpath) const override { return 0; }
+        virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) override { return nullptr; }
+        virtual bool isArray(const char *xpath=NULL) const override { return false; }
+        virtual unsigned getAttributeCount() const override { return 0; }
+    };
+    return new NullIPropertyTree;
+}
+
 IPropertyTree * getComponentConfig()
 {
     CriticalBlock b(configCS);
     if (!componentConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        if (!nullConfiguration)
+        {
+            PrintStackReport(); // deliberately emitting here, so only reported once per process
+            nullConfiguration.setown(createNullPTreeImpl());
+        }
+        IERRLOG(99, "getComponentConfig() called - configuration file has not yet been processed");
+        return nullConfiguration.getLink();
+    }
     return componentConfiguration.getLink();
 }
 
@@ -8655,8 +8742,27 @@ IPropertyTree * getGlobalConfig()
 {
     CriticalBlock b(configCS);
     if (!globalConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        if (!nullConfiguration)
+        {
+            PrintStackReport(); // deliberately emitting here, so only reported once per process
+            nullConfiguration.setown(createNullPTreeImpl());
+        }
+        IERRLOG(99, "getGlobalConfig() called - configuration file has not yet been processed");
+        return nullConfiguration.getLink();
+    }
     return globalConfiguration.getLink();
+}
+
+void initNullConfiguration()
+{
+    CriticalBlock b(configCS);
+    if (componentConfiguration || globalConfiguration)
+        throw makeStringException(99, "Configuration has already been initialised");
+    if (!nullConfiguration)
+        nullConfiguration.setown(createNullPTreeImpl());
+    componentConfiguration.set(nullConfiguration);
+    globalConfiguration.set(nullConfiguration);
 }
 
 Owned<IPropertyTree> getComponentConfigSP()
@@ -9203,16 +9309,6 @@ void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *ne
     configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
 }
 
-void initNullConfiguration()
-{
-    if (componentConfiguration || globalConfiguration)
-        throw makeStringException(99, "Configuration has already been initialised");
-
-    assertex(configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
-    Owned<IPropertyTree> newComponentConfig(createPTree());
-    Owned<IPropertyTree> newGlobalConfig(createPTree());
-    configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
-}
 
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
 {
