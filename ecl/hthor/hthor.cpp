@@ -358,6 +358,8 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     StringBuffer defaultCluster;
     if (isIndex)
         getDefaultIndexBuildStoragePlane(defaultCluster);
+    else if (dwHelper && (TDWpersist & dwHelper->getFlags()))
+        getDefaultPersistPlane(defaultCluster);
     else
         getDefaultStoragePlane(defaultCluster);
     Owned<CHThorClusterWriteHandler> clusterHandler;

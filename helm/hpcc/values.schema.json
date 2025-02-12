@@ -35,9 +35,17 @@
         "remote": {
           "$ref": "#/definitions/remoteStorage"
         },
+        "spillPlane": {
+          "$ref": "#/definitions/spillPlane"
+        },
         "indexBuildPlane": {
-          "type": "string",
-          "description": "Default plane for index builds"
+          "$ref": "#/definitions/indexBuildPlane"
+        },
+        "persistPlane": {
+          "$ref": "#/definitions/persistPlane"
+        },
+        "jobTempPlane": {
+          "$ref": "#/definitions/jobTempPlane"
         }
       },
       "additionalProperties": false
@@ -181,14 +189,6 @@
             "prefix": {
               "type": "string",
               "description": "The (optional) file prefix to add to relative filenames"
-            },
-            "dataPlane": {
-              "description": "The default storage plane to write data files to",
-              "type": "string"
-            },
-            "spillPlane": {
-              "description": "The storage plane to write spill files to",
-              "type": "string"
             },
             "required": [ "name" ]
           }
@@ -1676,12 +1676,19 @@
           "$ref": "#/definitions/tracing"
         },
         "dataPlane": {
-          "description": "The default storage plane to write data files to",
-          "type": "string"
+          "$ref": "#/definitions/dataPlane"
+        },
+        "spillPlane": {
+          "$ref": "#/definitions/spillPlane"
         },
         "indexBuildPlane": {
-          "description": "The default storage plane to write index files to",
-          "type": "string"
+          "$ref": "#/definitions/indexBuildPlane"
+        },
+        "persistPlane": {
+          "$ref": "#/definitions/persistPlane"
+        },
+        "jobTempPlane": {
+          "$ref": "#/definitions/jobTempPlane"
         },
         "annotations": {
           "type": "object",
@@ -1782,22 +1789,25 @@
           "type": "array",
           "items": { "$ref": "#/definitions/roxieservice" }
         },
-        "dataPlane": {
-          "description": "The default storage plane to write data files to",
-          "type": "string"
-        },
         "directAccessPlanes": {
           "description": "A list of storage planes suitable for roxie to read from directly and not have roxie copy the data to roxie's default plane",
           "type": "array",
           "items": { "type": "string" }
         },
+        "dataPlane": {
+          "$ref": "#/definitions/dataPlane"
+        },
         "spillPlane": {
-          "description": "The storage plane to write spill files to",
-          "type": "string"
+          "$ref": "#/definitions/spillPlane"
         },
         "indexBuildPlane": {
-          "description": "The default storage plane to write index files to",
-          "type": "string"
+          "$ref": "#/definitions/indexBuildPlane"
+        },
+        "persistPlane": {
+          "$ref": "#/definitions/persistPlane"
+        },
+        "jobTempPlane": {
+          "$ref": "#/definitions/jobTempPlane"
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -2649,16 +2659,19 @@
           "$ref": "#/definitions/tracing"
         },
         "dataPlane": {
-          "description": "The default storage plane to write data files to",
-          "type": "string"
+          "$ref": "#/definitions/dataPlane"
         },
         "spillPlane": {
-          "description": "The storage plane to write spill files to",
-          "type": "string"
+          "$ref": "#/definitions/spillPlane"
         },
         "indexBuildPlane": {
-          "description": "The default storage plane to write index files to",
-          "type": "string"
+          "$ref": "#/definitions/indexBuildPlane"
+        },
+        "persistPlane": {
+          "$ref": "#/definitions/persistPlane"
+        },
+        "jobTempPlane": {
+          "$ref": "#/definitions/jobTempPlane"
         },
         "annotations": {
           "type": "object",
@@ -3535,6 +3548,26 @@
     "expert": {
       "description": "Settings for developers, debugging and testing",
       "type": "object"
+    },
+    "dataPlane": {
+      "description": "The default storage plane to write data files to",
+      "type": "string"
+    },
+    "spillPlane": {
+      "description": "The storage plane to write spill files to",
+      "type": "string"
+    },
+    "indexBuildPlane": {
+      "type": "string",
+      "description": "Default plane for index builds"
+    },
+    "persistPlane": {
+      "type": "string",
+      "description": "Default plane for persist files"
+    },
+    "jobTempPlane": {
+      "type": "string",
+      "description": "Default plane for persisted temporary job files"
     }
-  }
+}
 }
