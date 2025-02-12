@@ -3,7 +3,7 @@
 Documentation in this directory is targeted to end-users of the HPCC Systems Platform.
 This is less-formal documentation intended to be produced and released more quickly than the published HPCC documentation. See [HPCC documentation](https://github.com/hpcc-systems/HPCC-Platform/tree/master/docs) if you would like to contribute to our official docs.
 
-## Directory structure under devdoc
+## Directory structure under userdoc
 ::: info
  -  **userdoc/troubleshoot:** Information related to troubleshooting particular components
  -  **userdoc/azure:** Useful information about Azure Cloud portal and cli
@@ -17,6 +17,7 @@ This is less-formal documentation intended to be produced and released more quic
 -   [Client Tools Installation issues](./troubleshoot/ClientsToolIssues.md): An explanation of how to resolve common cient tool installation issues.
 -   [EclWatch 9 overview](https://hpccsystems.com/resources/nifty-features-in-ecl-watch-version-9-0/): Helpful hints to help the transition to the new eclwatch.
 -   [RoxieFAQ](./roxie/FAQ.md): Q&A for Roxie.
+-   [JIRA Creation Guideline](./JiraGuidelines.md): Useful guide for creating JIRA tickets.
 
 
 ## HPCC Website documentation
