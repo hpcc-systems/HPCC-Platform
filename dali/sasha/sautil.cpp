@@ -4,9 +4,45 @@
 #include "jptree.hpp"
 #include "jsuperhash.hpp"
 #include "jregexp.hpp"
+#include "jfile.hpp"
 
 
 #include "sautil.hpp"
+
+unsigned planesToGroups(const StringArray &cmplst, StringArray &cnames, StringArray &groups)
+{
+    Owned<IPropertyTreeIterator> planes = getPlanesIterator(nullptr, nullptr);
+    if (planes)
+    {
+        ForEachItemIn(i, cmplst)
+        {
+            const char *s = cmplst.item(i);
+            assertex(s);
+            ForEach(*planes)
+            {
+                IPropertyTree &plane = planes->query();
+                const char *name = plane.queryProp("@name");
+                if (name && *name && WildMatch(name, s, true))
+                {
+                    const char *group = plane.queryProp("@hostGroup");
+                    if (!group || !*group)
+                        group = name;
+                    bool found = false;
+                    ForEachItemIn(j, groups)
+                        if (strcmp(groups.item(j), group) == 0)
+                            found = true;
+                    if (!found)
+                    {
+                        cnames.append(name);
+                        groups.append(group);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return groups.ordinality();
+}
 
 unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &cnames,StringArray &groups,bool *done)
 {

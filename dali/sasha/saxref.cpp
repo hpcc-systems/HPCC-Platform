@@ -803,7 +803,12 @@ public:
         rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
         clusters.append(gname.str());
         clusterscsl.append(',').append(gname.str());
-        if (basedir.length()==0) {
+        if (isContainerized())
+        {
+            rootdir.set(getStoragePlane(_clustname)->queryProp("@prefix"));
+            assert(!rootdir.isEmpty());
+        }
+        else if (basedir.length()==0) {
             const char *ddir = "thor";
             const char *rdir = "thor";
             StringBuffer datadir;
@@ -2086,14 +2091,9 @@ public:
                 list.remove(i0);
             }
         }
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn) {
-            OERRLOG("Could not connect to /Environment/Software");
-            return;
-        }
         StringArray groups;
         StringArray cnames;
-        clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
+        planesToGroups(list,cnames,groups);
         IArrayOf<IGroup> groupsdone;
         StringArray dirsdone;
         ForEachItemIn(i,groups) {
@@ -2178,9 +2178,13 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
-        if (!props)
-            props.setown(createPTree("DfuXRef"));
+        #ifdef _CONTAINERIZED
+            Linked<IPropertyTree> props = serverConfig;
+        #else
+            Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
+            if (!props)
+                props.setown(createPTree("DfuXRef"));
+        #endif
         bool eclwatchprovider = props->getPropBool("@eclwatchProvider");
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");

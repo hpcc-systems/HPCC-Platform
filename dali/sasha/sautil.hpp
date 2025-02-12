@@ -126,5 +126,6 @@ extern void operationFinished(const char *msg);
 
 extern unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &cnames,StringArray &groups,bool *done);
 extern unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &groups,bool *done);
+extern unsigned planesToGroups(const StringArray &cmplst, StringArray &cnames, StringArray &groups);
 
 #endif

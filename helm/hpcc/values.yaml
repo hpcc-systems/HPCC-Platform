@@ -511,6 +511,12 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
+  xref:
+    eclwatchProvider: true
+    checkSuperFiles: false
+    #disabled: true
+    #interval: 1
+    #user: sasha
 
 dfuserver:
 - name: dfuserver
