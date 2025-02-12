@@ -529,8 +529,6 @@ int main(int argc, const char *argv[])
     StringArray args;
     unsigned slaveNum = 0;
 
-    initNullConfiguration();
-
     unsigned argNo = 1;
     while ((int)argNo<argc)
     {

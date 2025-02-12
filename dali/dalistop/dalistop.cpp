@@ -59,7 +59,6 @@ int main(int argc, const char* argv[])
         }
         else
         {
-            initNullConfiguration();
             server = argv[1];
             port = DALI_SERVER_PORT;
         }
