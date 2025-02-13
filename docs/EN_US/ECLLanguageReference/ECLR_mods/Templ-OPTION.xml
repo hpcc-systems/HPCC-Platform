@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="75.80pt" />
+        <colspec colwidth="75.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -47,9 +47,9 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="78.10pt" />
+          <colspec colwidth="78.10pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -131,11 +131,11 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
-          <colspec colwidth="178.45pt" />
+          <colspec colwidth="178.45pt"/>
 
-          <colspec colwidth="65.60pt" />
+          <colspec colwidth="65.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -646,7 +646,7 @@
             <row>
               <entry><emphasis>timeLimit</emphasis></entry>
 
-              <entry></entry>
+              <entry/>
 
               <entry>For Roxie queries. Maximum run time (in ms) for a
               query.</entry>
@@ -664,7 +664,7 @@
             <row>
               <entry><emphasis>analyzeWorkunit</emphasis></entry>
 
-              <entry></entry>
+              <entry/>
 
               <entry>Overrides the setting in ECL Agent to analyze workunits
               after ECL queries are executed (Thor only). This allows a
@@ -704,11 +704,11 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
-          <colspec colwidth="178.45pt" />
+          <colspec colwidth="178.45pt"/>
 
-          <colspec colwidth="65.60pt" />
+          <colspec colwidth="65.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -882,7 +882,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Show estimates of generated c++ size in the graph</entry>
+              <entry>Show estimates of generated C++ size in the graph</entry>
             </row>
 
             <row>
@@ -904,21 +904,21 @@
         </tgroup>
 
         <tgroup cols="1">
-          <colspec colwidth="441.90pt" />
+          <colspec colwidth="441.90pt"/>
 
           <tbody>
             <row>
-              <entry><emphasis></emphasis></entry>
+              <entry><emphasis/></entry>
             </row>
           </tbody>
         </tgroup>
 
         <tgroup cols="3">
-          <colspec colwidth="178.45pt" />
+          <colspec colwidth="178.45pt"/>
 
-          <colspec colwidth="65.60pt" />
+          <colspec colwidth="65.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1069,11 +1069,11 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
-          <colspec colwidth="178.45pt" />
+          <colspec colwidth="178.45pt"/>
 
-          <colspec colwidth="65.60pt" />
+          <colspec colwidth="65.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1210,11 +1210,11 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
-          <colspec colwidth="178.45pt" />
+          <colspec colwidth="178.45pt"/>
 
-          <colspec colwidth="65.60pt" />
+          <colspec colwidth="65.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1455,7 +1455,7 @@
 
               <entry>Default 4 for eclccserver and 1 for eclcc</entry>
 
-              <entry>Number of compiler instances to compile the c++</entry>
+              <entry>Number of compiler instances to compile the C++</entry>
             </row>
 
             <row>
@@ -1463,7 +1463,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Report warnings from c++ compilation</entry>
+              <entry>Report warnings from C++ compilation</entry>
             </row>
 
             <row>
@@ -1471,7 +1471,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Retain the generated c++ files</entry>
+              <entry>Retain the generated C++ files</entry>
             </row>
 
             <row>
@@ -1479,7 +1479,7 @@
 
               <entry>Default: true</entry>
 
-              <entry>Generate a work unit in multiple c++ files</entry>
+              <entry>Generate a work unit in multiple C++ files</entry>
             </row>
 
             <row>
@@ -1487,7 +1487,7 @@
 
               <entry>Default 500 for Linux or 800 for Windows</entry>
 
-              <entry>Number of activities in each c++ file (requires
+              <entry>Number of activities in each C++ file (requires
               spanMultipleCpp)</entry>
             </row>
 
@@ -1510,11 +1510,11 @@
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
-        <colspec colwidth="178.45pt" />
+        <colspec colwidth="178.45pt"/>
 
-        <colspec colwidth="78.60pt" />
+        <colspec colwidth="78.60pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -1583,7 +1583,7 @@ d := DATASET([{ 'PORTLY', 'STUART' , '39'},
 OUTPUT(d(d.age &gt; ' 1'), {lname, fname, age} );
 </programlisting></para>
 
-    <para></para>
+    <para/>
 
     <para><programlisting lang="ECL" role="notrunnable">//************************************
 //This example demonstrates Logical Graphs and
