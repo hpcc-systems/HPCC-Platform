@@ -367,6 +367,7 @@ struct CWsWuZAPInfoReq
     bool sendEmail, attachZAPReportToEmail;
     bool includeRelatedLogs = true, includePerComponentLogs = false;
     unsigned maxAttachmentSize, port;
+    bool hasLogsAccess = false;
 
     WUComponentLogOptions logFilter;
 
@@ -888,15 +889,14 @@ class CWsWuFileHelper
     IFile *createWorkingFolder(IEspContext &context, const char *wuid, const char *namePrefix,
         StringBuffer &namePrefixStr, StringBuffer &folderName);
 
-    void createZAPInfoFile(const char *url, const char *espIP, const char *thorIP, const char *problemDesc,
-        const char *whatChanged, const char *timing, IConstWorkUnit *cwu, const char *pathNameStr);
+    void createZAPInfoFile(CWsWuZAPInfoReq &request, IConstWorkUnit *cwu, const char *pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
     void createZAPECLQueryArchiveFiles(IConstWorkUnit *cwu, const char *pathNameStr);
-    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles);
+    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles, bool hasLogsAccess);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
 #ifndef _CONTAINERIZED
-    void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
-    void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
+    void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path, bool hasLogsAccess);
+    void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, bool hasLogsAccess);
 #endif
     LogAccessLogFormat getComponentLogFormatFromLogName(const char *log);
     void readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq &zapLogFilterOptions);
