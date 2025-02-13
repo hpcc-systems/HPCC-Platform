@@ -123,10 +123,11 @@ MetricsManager::MetricsManager()
     try
     {
         nameValidator = "^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$";
+        metaDataValidator = "^[A-Za-z0-9]+$";
     }
     catch (std::regex_error &regex_error)
     {
-        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager initialized name validator regex with invalid expression, code=%d, what=%s",
+        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager initialized metric name or metadata validator regex with invalid expression, code=%d, what=%s",
                                    regex_error.code(), regex_error.what());
     }
 }
@@ -162,43 +163,62 @@ bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
         {
             auto metaData = pMetric->queryMetaData();
             std::unique_lock<std::mutex> lock(metricVectorMutex);
+            bool metaDataOk = true;
             for (auto &metaDataIt: metaData)
             {
-                name.append(".").append(metaDataIt.value);
-            }
-
-            auto it = metrics.find(name);
-            if (it == metrics.end())
-            {
-                metrics.insert({name, pMetric});
-                rc = true;
-            }
-            else
-            {
-                // If there is a match only report an error if the metric has not been destroyed in the meantime
-                auto match = it->second.lock();
-                if (match)
+                if (std::regex_match(metaDataIt.value, metaDataValidator))
                 {
-#ifdef _DEBUG
-                    // In debug throw an exception so the developer knows when a duplicate metric name is being added
-                    throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
-#else
-                    // In release notify the operator of the error, but don't prevent the system from loading
-                    OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
-#endif
+                    name.append(".").append(metaDataIt.value);
                 }
                 else
                 {
-                    rc = true;  // old metric no longer present, so it's considered unique
+                    metaDataOk = false;
+#ifdef _DEBUG
+                    // In debug throw an exception to notify the developer of the invalid metadata value
+                    throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add metric with invalid metadata '%s' for metric '%s'", metaDataIt.value.c_str(), name.c_str());
+#else
+                    // In release notify the operator of the error, but don't prevent the system from loading
+                    OERRLOG("addMetric - Metric metadata '%s' is not valid for metric '%s', metric not added", metaDataIt.value.c_str(), name.c_str());
+                    break;
+#endif
                 }
-                it->second = pMetric;
+            }
+
+            if (metaDataOk)
+            {
+                auto it = metrics.find(name);
+                if (it == metrics.end())
+                {
+                    metrics.insert({name, pMetric});
+                    rc = true;
+                }
+                else
+                {
+                    // If there is a match only report an error if the metric has not been destroyed in the meantime
+                    auto match = it->second.lock();
+                    if (match)
+                    {
+#ifdef _DEBUG
+                        // In debug throw an exception so the developer knows when a duplicate metric name is being added
+                        throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
+#else
+                        // In release notify the operator of the error, but don't prevent the system from loading
+                        OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
+#endif
+                    }
+                    else
+                    {
+                        rc = true;  // old metric no longer present, so it's considered unique
+                    }
+                    it->second = pMetric;  // overwrite the old metric (if it's still there) with the new one
+                }
             }
         }
         else
         {
 #ifdef _DEBUG
             // In debug throw an exception to notify the developer of the invalid name
-            throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add metric with invalid name ('%s')", name.c_str());
+            throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add metric with invalid name '%s'", name.c_str());
 #else
             // In release notify the operator of the error, but don't prevent the system from loading
             OERRLOG("addMetric - Metric name is not valid '%s', metric not added", name.c_str());
@@ -211,11 +231,11 @@ bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
     {
 #ifdef _DEBUG
         // In debug throw an exception so the developer knows there is a regex error
-        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager failed to validate metric name, regex match error, code=%d, what=%s",
+        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager failed to validate metric name or metadata, regex match error, code=%d, what=%s",
                                    regex_error.code(), regex_error.what());
 #else
         // In release notify the operator of the error, but don't prevent the system from loading
-        OERRLOG("addMetric - Regex match failed validating metric '%s'", name.c_str());
+        OERRLOG("addMetric - Regex match failed validating metric name or metadata for metric '%s'", name.c_str());
 #endif
     }
 

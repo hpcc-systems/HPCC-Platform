@@ -67,6 +67,8 @@ public:
 
     CPPUNIT_TEST_SUITE(MetricFrameworkTests);
         CPPUNIT_TEST(Test_valid_and_invalid_metric_names);
+        CPPUNIT_TEST(Test_valid_and_invalid_metaData);
+        CPPUNIT_TEST(Test_invalid_named_metric_returns_metric);
         CPPUNIT_TEST(Test_counter_metric_increments_properly);
         CPPUNIT_TEST(Test_gauge_metric_updates_properly);
         CPPUNIT_TEST(Test_custom_metric);
@@ -121,6 +123,84 @@ protected:
             bool added = frameworkTestManager.addMetric(pCounter);
             CPPUNIT_ASSERT(added);
         }
+    }
+
+    void Test_valid_and_invalid_metaData()
+    {
+        std::vector<MetricMetaData> inValidMetaData = {
+            {{"key1", "bad_value"}},
+            {{"key1", "bad.value"}},
+            {{"key1", "bad&*^%$#@)(-value"}}
+        };
+
+        for (const auto &metaDataIt: inValidMetaData)
+        {
+            std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("metricName", "description", SMeasureCount, metaDataIt);
+            bool added = false;
+            try
+            {
+                added = frameworkTestManager.addMetric(pCounter);
+            }
+            catch (IException *e)
+            {
+                added = false;
+                e->Release();
+            }
+            CPPUNIT_ASSERT(!added);
+        }
+
+
+        std::vector<MetricMetaData> validMetaData = {
+            {{"key1", "goodValue"}},
+            {{"key1", "9200"}},
+            {{"key1", "agoodvalue"}}
+        };
+
+        for (const auto &metaDataIt: validMetaData)
+        {
+            std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("metricName", "description", SMeasureCount, metaDataIt);
+            bool added = false;
+            try
+            {
+                added = frameworkTestManager.addMetric(pCounter);
+            }
+            catch (IException *e)
+            {
+                added = false;
+                e->Release();
+            }
+            CPPUNIT_ASSERT(added);
+        }
+    }
+
+    void Test_invalid_named_metric_returns_metric()
+    {
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("badly_named_metric", "description", SMeasureCount);
+        bool added = false;
+        try
+        {
+            added = frameworkTestManager.addMetric(pCounter);
+        }
+        catch (IException *e)
+        {
+            added = false;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(!added);
+
+        //
+        // Test that the metric can be incremented
+        int expectedValue = 0;
+        pCounter->inc(1);
+        expectedValue++;
+        int counterValue = pCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(expectedValue, counterValue);
+
+        //
+        // Test that the metric is not in the set of metrics to report (was not added to the manager)
+        int numAdded = 0;   // Should be 0 since the metric was not added
+        int numMetrics = frameworkTestManager.queryMetricsForReport("testsink").size();
+        CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
     }
 
     void Test_counter_metric_increments_properly()
