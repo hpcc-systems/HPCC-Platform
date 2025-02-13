@@ -212,7 +212,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             blockSize = defaultStrandBlockSize;
             globals->setPropInt(xpath, defaultStrandBlockSize);
         }
-        PROGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
+        DBGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
 
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";

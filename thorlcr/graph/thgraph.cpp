@@ -2428,7 +2428,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         Owned<IException> e;
                         try
                         {
-                            PROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
+                            DBGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
                             graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
                         }
                         catch (IException *_e)
@@ -2550,7 +2550,7 @@ public:
             }
         }
         job.markWuDirty();
-        PROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
+        DBGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
 
         while (toRun.ordinality())
         {
@@ -2804,13 +2804,13 @@ void CJobBase::startJob()
     setNodeCacheMem(keyNodeCacheBytes);
     setLeafCacheMem(keyLeafCacheBytes);
     setBlobCacheMem(keyBlobCacheBytes);
-    PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
+    DBGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
     if (!keyFileCacheLimit)
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
-    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+    DBGLOG("Key file cache size set to: %d", keyFileCacheLimit);
 
     // NB: these defaults match defaults in jfile rename retry mechanism
     constexpr unsigned defaultNumRenameRetries = 4;
