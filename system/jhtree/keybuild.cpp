@@ -598,14 +598,28 @@ protected:
         return head;
     }
 
-    virtual unsigned __int64 getDuplicateCount() const override { return duplicateCount; };
-    virtual unsigned __int64 getNumLeafNodes() const override { return numLeaves; };
-    virtual unsigned __int64 getNumBranchNodes() const override { return numBranches; }
-    virtual unsigned __int64 getNumBlobNodes() const override { return numBlobs; }
-    virtual unsigned __int64 getOffsetBranches() const override { return offsetBranches; }
-    virtual unsigned __int64 getBranchMemorySize() const override { return indexCompressor->queryBranchMemorySize(); }
-    virtual unsigned __int64 getLeafMemorySize() const override { return indexCompressor->queryLeafMemorySize(); }
-
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        switch (kind)
+        {
+        case StNumDuplicateKeyCount:
+            return duplicateCount;
+        case StSizeOffsetBranches:
+            return offsetBranches;
+        case StSizeBranchMemory:
+            return indexCompressor->queryBranchMemorySize();
+        case StSizeLeafMemory:
+            return indexCompressor->queryLeafMemorySize();
+        case StNumLeafCacheAdds:
+            return numLeaves;
+        case StNumNodeCacheAdds:
+            return numBranches;
+        case StNumBlobCacheAdds:
+            return numBlobs;
+        default:
+            return out->getStatistic(kind);
+        }
+    }
 protected:
     void writeMetadata(char const * data, size32_t size)
     {
