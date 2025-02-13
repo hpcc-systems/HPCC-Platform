@@ -2746,6 +2746,7 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
             break;
         }
         case 2: // serialized compact IFileDescriptor
+        case 3: // same as v2 with additional 'group' meta info within metaInfo
         {
             IPropertyTree *fileInfo = metaInfo->queryPropTree("FileInfo");
 
@@ -2761,7 +2762,7 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
             break;
         }
         default:
-            throwUnexpected();
+            throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "createRemoteActivity: unsupported meta info version %u", metaInfoVersion);
     }
 
     verifyex(actNode.removeProp("metaInfo")); // no longer needed

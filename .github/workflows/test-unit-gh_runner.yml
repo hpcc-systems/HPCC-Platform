@@ -41,6 +41,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ${{ inputs.dependencies }}
           sudo apt-get install -y gdb
+          echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+          ulimit -c unlimited
+          ulimit -c
 
       - name: Install Package
         shell: "bash"
@@ -52,9 +55,59 @@ jobs:
         timeout-minutes: 10 # generous, expected time is approx 1 min.
         shell: "bash"
         run: |
+          set +e     # Ignore intermediate error(s) in this step
+          ulimit -c unlimited
+          ulimit -c
+
           export LANG="en_US.UTF-8"
           sudo update-locale
-          sudo /opt/HPCCSystems/bin/unittests
+          while read test
+          do
+            echo "$test"
+            echo "--------------------------------------"
+            /opt/HPCCSystems/bin/unittests -e "$test"
+            echo " "
+          done< <(/opt/HPCCSystems/bin/unittests -l | sort )
+
+      - name: Check for Core files
+        shell: "bash"
+        run: |
+          set +e     # Ignore intermediate error(s) in this step
+
+          mkdir -p /home/runner/HPCCSystems-regression/log
+          ls -l
+          shopt -s nullglob
+          CORE_FILES=(core_*)
+          echo "NUM_OF_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
+          echo "NUM_OF_CORES=${#CORE_FILES[@]}"
+          echo "cores: $(sudo find / -iname 'core_*.[0-9]*' -type f -print 2>&1 )"
+          #CORE_FILES=$(sudo find / -iname 'core_*.[0-9]*' -type f -print)
+          #echo "NUM_OF_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
+          #echo "NUM_OF_CORES=${#CORE_FILES[@]}"
+          echo "${CORE_FILES[*]}"
+          echo "Let's go...."
+          if [[ ${#CORE_FILES[@]} -ne 0 ]]
+          then
+              mkdir -p $HOME/.config/gdb/
+              echo "set auto-load safe-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set solib-search-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set sysroot /" >> $HOME/.config/gdb/gdbinit
+              for core in ${CORE_FILES[@]}
+              do
+                  echo "$core"
+                  coreName=${core##*/}
+                  component=$( echo $coreName | tr '_.' ' ' | awk '{print $2 }' )
+                  compNamePart=$( find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1);
+                  compName=${compNamePart##*/}
+                  echo "component: '${component}', compName: '${compName}', core: '${core}'"
+                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core 2>&1 | sudo tee "$core.trace" 2>&1
+                  sudo chown $USER:$USER $core.trace
+                  ls -l $core.trace
+                  cp -v "$core.trace" /home/runner/HPCCSystems-regression/log/ 
+              done
+              exit -1
+          fi
+          echo "  End."
 
       - name: unittests-logs-artifact
         if: ${{ failure() || cancelled() }}

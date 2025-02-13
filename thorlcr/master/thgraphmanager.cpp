@@ -494,6 +494,13 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
     Owned<IException> exception;
     try
     {
+        unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
+        unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", defaultConfigLogLevel);
+        ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
+        dbgassertex(existingLogHandler);
+        if (existingLogHandler->queryMaxDetail() != maxLogDetail)
+            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+
         if (!workunit) // check workunit is available and ready to run.
             throw MakeStringException(0, "Could not locate workunit %s", wuid);
         if (workunit->getCodeVersion() == 0)
@@ -785,12 +792,6 @@ void CJobManager::run()
                 Owned<IWorkUnit> w = &workunit->lock();
                 addTimeStamp(w, wfid, graphName, StWhenDequeued);
             }
-
-            unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
-            unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", defaultConfigLogLevel);
-            ILogMsgFilter *existingLogFilter = queryLogMsgManager()->queryMonitorFilter(logHandler);
-            dbgassertex(existingLogFilter);
-            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogFilter->queryAudienceMask(), existingLogFilter->queryClassMask(), maxLogDetail)));
 
             allDone = execute(workunit, wuid, graphName, agentep);
             daliLock.clear();
