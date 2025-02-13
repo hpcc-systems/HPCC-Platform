@@ -2295,7 +2295,6 @@ EintrRetry:
             {
                 if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==JSE_CONNREFUSED))
                     break; // ignore
-                LOGERR2(err,7,"write");
                 if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)
 #ifndef _WIN32
                     ||(err==EPIPE)||(err==JSE_TIMEDOUT)  // linux can raise these on broken pipe
