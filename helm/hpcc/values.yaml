@@ -511,9 +511,7 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
-  xref:
-    eclwatchProvider: true
-    checkSuperFiles: false
+  xref: {} # NB: no properties defined, use defaults
     #disabled: true
     #interval: 1
     #user: sasha

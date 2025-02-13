@@ -9,37 +9,28 @@
 
 #include "sautil.hpp"
 
-unsigned planesToGroups(const StringArray &cmplst, StringArray &cnames, StringArray &groups)
+unsigned planesToGroups(const char *cmplst, StringArray &cnames, StringArray &groups)
 {
-    Owned<IPropertyTreeIterator> planes = getPlanesIterator(nullptr, nullptr);
-    if (planes)
+    StringBuffer plane;
+    const char *lastCopied = cmplst;
+    while (cmplst&&*cmplst)
     {
-        ForEachItemIn(i, cmplst)
+        if (*cmplst==',')
         {
-            const char *s = cmplst.item(i);
-            assertex(s);
-            ForEach(*planes)
-            {
-                IPropertyTree &plane = planes->query();
-                const char *name = plane.queryProp("@name");
-                if (name && *name && WildMatch(name, s, true))
-                {
-                    const char *group = plane.queryProp("@hostGroup");
-                    if (!group || !*group)
-                        group = name;
-                    bool found = false;
-                    ForEachItemIn(j, groups)
-                        if (strcmp(groups.item(j), group) == 0)
-                            found = true;
-                    if (!found)
-                    {
-                        cnames.append(name);
-                        groups.append(group);
-                        break;
-                    }
-                }
-            }
+            plane.append(cmplst-lastCopied, lastCopied);
+            assertex(getStoragePlane(plane.str()));
+            lastCopied = cmplst+1;
+            cnames.append(plane.str());
+            groups.append(plane.str());
+            plane.clear();
         }
+        cmplst++;
+    }
+    if (lastCopied != cmplst) {
+        plane.append(cmplst-lastCopied, lastCopied);
+        assertex(getStoragePlane(plane.str()));
+        cnames.append(plane.str());
+        groups.append(plane.str());
     }
     return groups.ordinality();
 }
