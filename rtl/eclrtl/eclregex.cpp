@@ -233,7 +233,13 @@ public:
 #define DEFAULT_CACHE_MAX_SIZE 500
 static CLRUCache<hash64_t, std::shared_ptr<RegexCacheEntry>> compiledStrRegExprCache(DEFAULT_CACHE_MAX_SIZE);
 static CriticalSection compiledStrRegExprLock;
-static bool compiledCacheEnabled = true;
+enum class CompiledCacheState : int
+{
+    Uninitialized = 0,
+    Disabled = 1,
+    Enabled = 2
+};
+static std::atomic<CompiledCacheState> compiledCacheState = CompiledCacheState::Uninitialized;
 
 /**
  * @brief Provide an optional override to the maximum cache size for regex patterns.
@@ -242,7 +248,7 @@ static bool compiledCacheEnabled = true;
  * <Software/Globals> section for an optional "regex" subsection with a "cacheSize" attribute
  * By default, the maximum cache size is set to 500 patterns.  Override with 0 to disable caching.
  */
-static void initMaxCacheSize()
+static void initMaxCacheSize() // NB: called when compiledStrRegExprLock held
 {
 #ifdef _CONTAINERIZED
     Owned<IPropertyTree> expert;
@@ -281,11 +287,26 @@ static void initMaxCacheSize()
     }
 
     if (cacheMaxSize > 0)
+    {
         compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize);
+        compiledCacheState = CompiledCacheState::Enabled;
+    }
     else
-        compiledCacheEnabled = false;
+        compiledCacheState = CompiledCacheState::Disabled;
 }
 
+inline bool isCacheEnabled()
+{
+    if (likely(CompiledCacheState::Enabled == compiledCacheState)) // common case
+        return true;
+    else if (compiledCacheState == CompiledCacheState::Uninitialized)
+    {
+        CriticalBlock b(compiledStrRegExprLock);
+        if (CompiledCacheState::Uninitialized == compiledCacheState) // check again now have crit
+            initMaxCacheSize();
+    }
+    return CompiledCacheState::Enabled == compiledCacheState;
+}
 //---------------------------------------------------------------------------
 
 class CStrRegExprFindInstance final : implements IStrRegExprFindInstance
@@ -762,7 +783,7 @@ public:
  */
 CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledStrRegExpr * compiledObjPtr = nullptr;
         uint32_t options = (_isCaseSensitive ? 0 : PCRE2_CASELESS);
@@ -863,7 +884,7 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
  */
 CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledStrRegExpr * compiledObjPtr = nullptr;
         unsigned int regexSize = rtlUtf8Size(_regexLength, _regex);
@@ -1356,7 +1377,7 @@ public:
  */
 CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledUStrRegExpr * compiledObjPtr = nullptr;
         unsigned int regexSize = _regexLength * sizeof(UChar);
@@ -1470,7 +1491,6 @@ MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
     pcre2CompileContext16 = pcre2_compile_context_create_16(pcre2GeneralContext16);
     pcre2MatchContext16 = pcre2_match_context_create_16(pcre2GeneralContext16);
 #endif // _USE_ICU
-    initMaxCacheSize();
     return true;
 }
 
