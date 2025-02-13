@@ -216,10 +216,13 @@ public:
                 break;
             }
             case 2: // serialized compact IFileDescriptor
+            case 3: // same as v2 with additional 'group' meta info within metaInfo
             {
                 fileDesc.setown(deserializeFileDescriptorTree(fileInfo));
                 break;
             }
+            default:
+                throwDsFsClientExceptionV(DaFsClient_InvalidMetaInfo, "Unsupported metaInfo version %u", metaInfoVersion);
         }
 
         if (isFileKey(fileDesc))
