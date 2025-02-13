@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="UsingHPCC4J_BM">
+  <title>Using HPCC4J with HPCC on Bare Metal</title>
+
+  <sect1 id="configuring-rowservice-signing-keys-in-hpcc-systems" role="nobrk">
+    <title>Configuring Rowservice Signing Keys in HPCC Systems</title>
+
+    <para>This guide provides steps to generate and configure rowservice
+    signing keys to allow for secure communication between an HPCC Systems
+    cluster and external clients. These signing keys are required for
+    authentication and secure reading and writing of data between HPCC4J
+    clients and HPCC Systems clusters and must be properly configured on
+    target HPCC Systems clusters.</para>
+
+    <sect2 id="step-1-generate-signing-keys">
+      <title>Step 1: Generate Signing Keys</title>
+
+      <para>If signing keys do not already exist, they must be generated and
+      placed in a directory that is accessible to the <emphasis
+      role="strong">hpcc</emphasis> user. The default directory <emphasis
+      role="strong">/home/hpcc/certificate</emphasis> will be used in the
+      example configuration below, but on multi-node clusters it likely makes
+      sense to change this directory.</para>
+
+      <sect3 id="generate-signing-keys">
+        <title>Generate Signing Keys</title>
+
+        <programlisting language="bash">sudo /opt/HPCCSystems/etc/init.d/setupPKI </programlisting>
+
+        <para>This command generates a pair of signing keys:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="strong">Private Key:</emphasis>
+            <literal>/home/hpcc/certificate/key.pem</literal></para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="strong">Public Key:</emphasis>
+            <literal>/home/hpcc/certificate/public.key.pem</literal></para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-2-configure-signing-keys-in-the-hpcc-systems-environment">
+      <title>Step 2: Configure Signing Keys in the HPCC Systems
+      Environment</title>
+
+      <para>Once the keys are generated, they need to be referenced in the
+      HPCC Systems environment.xml configuration file.</para>
+
+      <sect3 id="add-keys-configuration-section">
+        <title>Add Keys Configuration Section</title>
+
+        <para>Modify the <literal>environment.xml</literal> file located at
+        <literal>/etc/HPCCSystems/environment.xml</literal> to include the
+        following under the <literal>&lt;EnvSettings&gt;</literal>
+        node:</para>
+
+        <programlisting language="xml" role="font7">&lt;EnvSettings&gt; 
+  &lt;Keys&gt;
+    &lt;ClusterGroup keyPairName="mythor" name="thorcluster_1"/&gt;
+    &lt;ClusterGroup keyPairName="mythor" name="thorcluster_2"/&gt;
+    &lt;KeyPair name="mythor" privateKey="/home/hpcc/certificate/key.pem" publicKey="/home/hpcc/certificate/public.key.pem"/&gt; 
+  &lt;/Keys&gt;</programlisting>
+      </sect3>
+
+      <sect3 id="explanation">
+        <title>Explanation:</title>
+
+        <itemizedlist spacing="compact">
+          <listitem>
+            <para><literal>&lt;ClusterGroup&gt;</literal> entries define which
+            Thor clusters will use the specified key pair.</para>
+          </listitem>
+
+          <listitem>
+            <para><literal>&lt;KeyPair&gt;</literal> defines the key pair used
+            for signing and must reference the correct file paths.</para>
+          </listitem>
+
+          <listitem>
+            <para>Each Thor cluster in the HPCC system must have an associated
+            <literal>&lt;ClusterGroup&gt;</literal> entry specifying the
+            <literal>keyPairName</literal>.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-3-synchronize-configuration-and-keys-across-the-cluster">
+      <title>Step 3: Synchronize Configuration and Keys Across the
+      Cluster</title>
+
+      <para>After updating the configuration, ensure that all nodes within the
+      cluster have the updated <literal>environment.xml</literal> file and the
+      necessary key files.</para>
+
+      <sect3 id="sync-environment.xml-to-all-nodes">
+        <title>Sync <literal>environment.xml</literal> to All Nodes</title>
+
+        <programlisting language="bash">scp /etc/HPCCSystems/environment.xml hpccadmin@nodeX:/etc/HPCCSystems/environment.xml </programlisting>
+
+        <para>Repeat this step for each node in the HPCC cluster.</para>
+      </sect3>
+
+      <sect3 id="sync-signing-keys-across-the-cluster">
+        <title>Sync Signing Keys Across the Cluster</title>
+
+        <programlisting language="bash">scp /home/hpcc/certificate/key.pem hpccadmin@nodeX:/home/hpcc/certificate/key.pem 
+scp /home/hpcc/certificate/public.key.pem hpccadmin@nodeX:/home/hpcc/certificate/public.key.pem </programlisting>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-4-verify-key-synchronization">
+      <title>Step 4: Verify Key Synchronization</title>
+
+      <para>To ensure that the signing keys have been correctly synchronized
+      across all nodes, compute the MD5 hash of the key files and compare
+      them.</para>
+
+      <sect3 id="check-md5-hash-of-keys">
+        <title>Check MD5 Hash of Keys</title>
+
+        <para>Run the following command on each node:</para>
+
+        <programlisting language="bash"> md5sum /home/hpcc/certificate/key.pem /home/hpcc/certificate/public.key.pem </programlisting>
+
+        <para>Compare the output across all nodes. If the MD5 hash values are
+        identical, the keys have been correctly synchronized. If there are
+        discrepancies, re-sync the keys and verify again.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-5-restart-hpcc-rowservice-and-esp">
+      <title>Step 5: Restart HPCC Rowservice and ESP</title>
+
+      <para>Once the configuration and keys are updated across the cluster,
+      the ESP and Dafilesrv services need to be restarted for these changes to
+      take affect.</para>
+
+      <programlisting language="bash">sudo /etc/init.d/dafilesrv restart 
+sudo /etc/init.d/hpcc-init -c myesp restart </programlisting>
+    </sect2>
+
+    <sect2 id="testing-configuration" role="brk">
+      <title>Testing Configuration</title>
+
+      <para>The above configuration can be tested by using the FileUtility in
+      the HPCC4j dfsclient library to attempt to read a file from the
+      configured HPCC Systems cluster. The latest copy of the dfsclient jar
+      can be found here:
+      https://mvnrepository.com/artifact/org.hpccsystems/dfsclient</para>
+
+      <para>The following command will attempt to read
+      <quote>example::hpccsystems::file</quote> from
+      <quote>http://your_cluster:8010</quote>, the should be updated to an
+      already existing file on your target cluster and the URL of your HPCC
+      Systems ESP respectively.</para>
+
+      <programlisting language="bash"> java
+    -Dotel.service.name=DFSClient.FileUtility \ 
+    -cp dfsclient-9.10.1-0-jar-with-dependencies.jar \
+    org.hpccsystems.dfs.client.FileUtility \ 
+    -read_test example::hpccsystems::file \ 
+    -url http://your_cluster:8010
+    </programlisting>
+
+      <para>If the keys have been successfully configured, you will see a
+      similar result to the following indicating the example file was
+      successfully read.</para>
+
+      <programlisting language="json">[{ 
+  "bytesWritten": 0, "Read Bandwidth":
+  "6.70 MB/s", "Write Bandwidth": "0.00 MB/s", "warns": [],
+  "recordsWritten": 0, "recordsRead": 6250000, "bytesRead": 100000000,
+  "time": "14.92 s", "operation":
+  "FileUtility.ReadTest_example::hpccsystems::file", "errors": [],
+  "successful": true 
+}] </programlisting>
+    </sect2>
+
+    <sect2 id="conclusion">
+      <title>Conclusion</title>
+
+      <para>Following these steps ensures that HPCC Systems can securely
+      authenticate HPCC4j clients and allow them to read and write data within
+      the target HPCC systems cluster.</para>
+    </sect2>
+  </sect1>
+</chapter>
