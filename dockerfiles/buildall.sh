@@ -41,8 +41,8 @@ if [[ -n ${INPUT_LN_USERNAME} ]] ; then
   PUSH_LN=1
 fi
 
-BUILD_ML=    # all or ml,gnn,gnn-gpu
-[[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
+BUILD_EXTRA=    # all or ml,gnn,gnn-gpu,test
+[[ -n ${INPUT_BUILD_EXTRA} ]] && BUILD_EXTRA=${INPUT_BUILD_EXTRA}
 
 BUILD_LN=
 [[ -n ${INPUT_BUILD_LN} ]] && BUILD_LN=${INPUT_BUILD_LN}
@@ -52,28 +52,29 @@ LNB_TOKEN=
 
 set -e
 
-ml_features=(
+extra_features=(
   'ml'
   'gnn'
   'gnn-gpu'
+  'test'
 )
 
-build_ml_images() {
-  [ -z "$BUILD_ML" ] && return
+build_extra_images() {
+  [ -z "$BUILD_EXTRA" ] && return
 
   local label=$1
   [[ -z ${label} ]] && label=$BUILD_LABEL
   features=()
-  if [ "$BUILD_ML" = "all" ]
+  if [ "$BUILD_EXTRA" = "all" ]
   then
-    features=(${ml_features[@]})
+    features=(${extra_features[@]})
   else
-    for feature in $(echo ${BUILD_ML} | sed 's/,/ /g')
+    for feature in $(echo ${BUILD_EXTRA} | sed 's/,/ /g')
     do
       found=false
-      for ml_feature in ${ml_features[@]}
+      for extra_feature in ${extra_features[@]}
       do
-        if [[ $ml_feature == $feature ]]
+        if [[ $extra_feature == $feature ]]
 	then
 	  features+=(${feature})
 	  found=true
@@ -82,14 +83,14 @@ build_ml_images() {
       done
       if [ "$found" = "false" ]
       then
-	      printf "\nUnknown ML feature %s\n" "$feature"
+	      printf "\nUnknown extra feature %s\n" "$feature"
       fi
     done
   fi
 
   for feature in ${features[@]}
   do
-     echo "build_ml $feature"
+     echo "build_extra $feature"
      build_image "platform-$feature"
   done
 }
@@ -100,12 +101,12 @@ if [[ -n "$BUILD_LN" ]]; then
   lnBuildTag=${BUILD_TAG/community_/internal_}
   build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
   build_image platform-core-ln ${BUILD_LABEL} ${lnBuildTag} --build-arg BUILD_TAG_OVERRIDE=${HPCC_LONG_TAG}
-elif [[ -z "$BUILD_ML" ]]; then
+elif [[ -z "$BUILD_EXTRA" ]]; then
   build_image platform-build
   build_image platform-core
 else
   docker pull ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
-  build_ml_images
+  build_extra_images
 fi
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
