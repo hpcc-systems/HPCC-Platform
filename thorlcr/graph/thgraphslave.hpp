@@ -85,7 +85,6 @@ public:
     inline void dataLinkIncrement() { dataLinkIncrement(1); }
     inline void dataLinkIncrement(rowcount_t v)
     {
-#ifdef _TESTING
         assertex(hasStarted());
 #ifdef OUTPUT_RECORDSIZE
         if (count==THORDATALINK_STARTED)
@@ -93,7 +92,6 @@ public:
             size32_t rsz = parent.queryRowMetaData(this)->getMinRecordSize();
             parent.ActPrintLog("Record size %s= %d", parent.queryRowMetaData(this)->isVariableSize()?"(min) ":"",rsz);
         }
-#endif
 #endif
         icount += v;
         count += v;

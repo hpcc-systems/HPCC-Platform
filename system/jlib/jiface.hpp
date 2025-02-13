@@ -33,13 +33,9 @@ __declspec(noreturn) void jlib_decl raiseAssertCore(const char *assertion, const
 #undef assert
 #undef assertex
 
-#if defined(_DEBUG)||defined(_TESTING)
- #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
- #define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
-#else
- #define assertex(p)
- #define verifyex(p) ((void) (p))
-#endif
+// NB: assertex should be a NOP in release really, but changing now may have undesirable side-effects
+#define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
+#define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
 
 #ifdef _DEBUG
  #define dbgassertex(x) assertex(x)   //Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
