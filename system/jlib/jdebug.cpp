@@ -2948,8 +2948,14 @@ public:
         hook.set(_hook);
         term = false;
         latestCPU = 0;
+
         // UDP stats reported unless explicitly disabled
-        if (queryEnvironmentConf().getPropBool("udp_stats", true))
+        if (isContainerized())
+        {
+            if (getConfigBool("expert/@udpStats", true))
+                traceMode |= PerfMonUDP;
+        }
+        else if (queryEnvironmentConf().getPropBool("udp_stats", true))
             traceMode |= PerfMonUDP;
 #ifdef _WIN32
         primaryfs.append("C:");
