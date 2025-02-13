@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import { Editor, ECLEditor, XMLEditor, JSONEditor, SQLEditor, ICompletion } from "@hpcc-js/codemirror";
+import { Editor, ECLEditor, XMLEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -12,7 +12,7 @@ import { ShortVerticalDivider } from "./Common";
 
 import "eclwatch/css/cmDarcula.css";
 
-type ModeT = "ecl" | "xml" | "json" | "text" | "sql";
+type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml";
 
 class SQLEditorEx extends SQLEditor {
 
@@ -47,6 +47,8 @@ function newEditor(mode: ModeT) {
             return new JSONEditor();
         case "sql":
             return new SQLEditorEx();
+        case "yaml":
+            return new YAMLEditor();
         case "text":
         default:
             return new Editor();
@@ -275,7 +277,8 @@ interface FetchEditor {
     wuid?: string;
     readonly?: boolean;
     toolbar?: boolean;
-    mode?: "ecl" | "xml" | "text";
+    noDataMsg?: string;
+    mode?: "ecl" | "xml" | "text" | "yaml";
 }
 
 export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
@@ -283,6 +286,7 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
     wuid,
     readonly = true,
     toolbar,
+    noDataMsg = "",
     mode = "text"
 }) => {
 
@@ -294,14 +298,16 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
             wu.fetchQuery().then(function (query) {
                 setText(query?.Text ?? "");
             });
-        } else {
+        } else if (url) {
             fetch(url).then(response => {
                 return response.text();
             }).then(content => {
                 setText(content);
             });
+        } else {
+            setText(noDataMsg);
         }
-    }, [url, wuid]);
+    }, [noDataMsg, url, wuid]);
 
     return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode={mode}></SourceEditor>;
 };

@@ -45,7 +45,7 @@
     "@fluentui/react-icons-mdl2": "1.3.82",
     "@fluentui/react-migration-v8-v9": "9.6.48",
     "@hpcc-js/chart": "2.86.0",
-    "@hpcc-js/codemirror": "2.64.0",
+    "@hpcc-js/codemirror": "2.65.0",
     "@hpcc-js/common": "2.73.0",
     "@hpcc-js/comms": "2.99.0",
     "@hpcc-js/dataflow": "8.1.7",

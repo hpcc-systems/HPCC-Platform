@@ -293,6 +293,8 @@ export function useWorkunitArchive(wuid: string): [string, Workunit, WUStateID, 
 
 export interface HelperRow {
     id: string;
+    Name?: string;
+    Path?: string;
     Type: string;
     Description?: string;
     FileSize?: number;
@@ -302,9 +304,14 @@ export interface HelperRow {
 
 function mapHelpers(workunit: Workunit, helpers: WsWorkunits.ECLHelpFile[] = []): HelperRow[] {
     return helpers.map((helper, i): HelperRow => {
+        const _path = helper.Name.split("\\").join("/").split("/");
+        _path.pop();
+        const helperPath = _path.join("/");
         return {
             id: "H:" + i,
+            Name: helper.Name,
             Type: helper.Type,
+            Path: helperPath,
             Description: Utility.pathTail(helper.Name),
             FileSize: helper.FileSize,
             Orig: helper,

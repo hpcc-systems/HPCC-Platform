@@ -1,23 +1,17 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { TreeItemValue } from "@fluentui/react-components";
 import * as ESPRequest from "src/ESPRequest";
 import nlsHPCC from "src/nlsHPCC";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
+import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { SearchParams } from "../util/hashUrl";
-import { hashHistory } from "../util/history";
+import { FlatItem, HelpersTree } from "./HelpersTree";
+import { FetchEditor } from "./SourceEditor";
 
-function canShowContent(type: string) {
-    switch (type) {
-        case "dll":
-            return false;
-    }
-    return true;
-}
-
-function getURL(item: HelperRow, option) {
+function getURL(item: HelperRow, option?) {
     let params = "";
 
     const uriEncodedParams: { [key: string]: any } = {
@@ -82,165 +76,198 @@ function getURL(item: HelperRow, option) {
     return ESPRequest.getBaseURL() + params + (option ? `&Option=${encodeURIComponent(option)}` : "&Option=1");
 }
 
-function getTarget(id, row: HelperRow) {
-    if (canShowContent(row.Type)) {
-        let sourceMode = "text";
-        switch (row.Type) {
-            case "ECL":
-                sourceMode = "ecl";
-                break;
-            case "Workunit XML":
-            case "Archive Query":
-            case "xml":
-                sourceMode = "xml";
-                break;
-        }
-        return {
-            sourceMode,
-            url: getURL(row, id)
-        };
-    }
-    return null;
-}
-
-const defaultUIState = {
-    hasSelection: false,
-    canShowContent: false
-};
-
 interface HelpersProps {
     wuid: string;
+    mode?: "ecl" | "xml" | "text" | "yaml";
+    url?: string;
+    parentUrl?: string;
 }
 
 export const Helpers: React.FunctionComponent<HelpersProps> = ({
-    wuid
+    wuid,
+    mode,
+    url,
+    parentUrl = `/workunits/${wuid}/helpers`
 }) => {
 
-    const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [fullscreen, setFullscreen] = React.useState<boolean>(false);
+    const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [helpers, refreshData] = useWorkunitHelpers(wuid);
-    const [data, setData] = React.useState<any[]>([]);
-    const {
-        selection, setSelection,
-        setTotal,
-        refreshTable } = useFluentStoreState({});
+    const [noDataMsg, setNoDataMsg] = React.useState("");
+    const [checkedRows, setCheckedRows] = React.useState([]);
+    const [checkedItems, setCheckedItems] = React.useState([]);
+    const [selection, setSelection] = React.useState<HelperRow>();
+    const [treeItems, setTreeItems] = React.useState<FlatItem[]>([]);
+    const [openItems, setOpenItems] = React.useState<Iterable<TreeItemValue>>([]);
 
-    //  Grid ---
-    const columns = React.useMemo((): FluentColumns => {
-        return {
-            sel: {
-                width: 27,
-                selectorType: "checkbox"
-            },
-            Type: {
-                label: nlsHPCC.Type,
-                width: 160,
-                formatter: (Type, row) => {
-                    const target = getTarget(row.id, row);
-                    if (target) {
-                        const searchParams = new SearchParams(hashHistory.location.search);
-                        searchParams.param("mode", encodeURIComponent(target.sourceMode));
-                        searchParams.param("src", encodeURIComponent(target.url));
-                        const linkText = Type.replace("Slave", "Worker") + (row?.Description ? " (" + row.Description + ")" : "");
-                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?${searchParams.serialize()}`}>{linkText}</Link>;
-                    }
-                    return Type;
-                }
-            },
-            Description: {
-                label: nlsHPCC.Description
-            },
-            FileSize: {
-                label: nlsHPCC.FileSize,
-                width: 90,
-                justify: "right"
+    React.useEffect(() => {
+        helpers.forEach(helper => {
+            helper.Orig = {
+                url: getURL(helper),
+                ...helper.Orig
+            };
+        });
+    }, [helpers]);
+
+    React.useEffect(() => {
+        setSelection(helpers.filter(item => url === getURL(item))[0]);
+    }, [helpers, url]);
+
+    React.useEffect(() => {
+        if (helpers.length && selection !== undefined) {
+            setNoDataMsg(selection?.Type === "dll" ? nlsHPCC.CannotDisplayBinaryData : "");
+        }
+    }, [helpers, selection]);
+
+    React.useEffect(() => {
+        const rows = [];
+        checkedItems.forEach(value => {
+            const filtered = helpers.filter(row => row.id === value || row?.Name?.indexOf(value) > -1)[0];
+            if (treeItems.filter(item => item.value === value)[0].url && filtered) {
+                rows.push(filtered);
             }
-        };
-    }, []);
+        });
+        setCheckedRows(rows);
+    }, [checkedItems, helpers, treeItems]);
+
+    React.useEffect(() => {
+        const flatTreeItems: FlatItem[] = [];
+        helpers.forEach(helper => {
+            let parentValue;
+            const helperPath = helper.Path?.replace("/var/lib/HPCCSystems/", "");
+            const fileName = helper.Name?.split("/").pop();
+            if (helperPath) {
+                const pathDirs = helperPath.split("/");
+                let parentFolder;
+                let folderName;
+                for (let i = 0; i < pathDirs.length; i++) {
+                    folderName = parentFolder ? parentFolder + "/" + pathDirs[i] : pathDirs[i];
+                    if (flatTreeItems.filter(item => item.value === folderName).length === 0) {
+                        flatTreeItems.push({
+                            value: folderName,
+                            content: pathDirs[i],
+                            parentValue: parentFolder,
+                            url: ""
+                        });
+                    }
+                    if (!parentFolder) {
+                        parentFolder = pathDirs[i];
+                    } else {
+                        parentFolder += "/" + pathDirs[i];
+                    }
+                }
+                flatTreeItems.push({
+                    value: helperPath + "/" + fileName,
+                    content: fileName,
+                    fileSize: helper.FileSize,
+                    parentValue: parentFolder,
+                    url: helper.Orig.url
+                });
+            } else {
+                flatTreeItems.push({
+                    value: helper.id,
+                    parentValue: parentValue ?? undefined,
+                    content: helper.Description ?? helper.Name ?? helper.Type,
+                    fileSize: helper.FileSize,
+                    url: helper.Orig.url
+                });
+            }
+        });
+        setTreeItems(flatTreeItems.sort((a, b) => {
+            if (a.parentValue === undefined && b.parentValue === undefined) return 0;
+            if (a.parentValue === undefined) return -1;
+            if (b.parentValue === undefined) return 1;
+            return a.parentValue?.toString().localeCompare(b.parentValue?.toString(), undefined, { ignorePunctuation: false });
+        }));
+        setOpenItems(flatTreeItems.map(item => item.value));
+    }, [helpers]);
+
+    const treeItemLeafNodes = React.useMemo(() => {
+        return treeItems.filter(item => item.url !== "");
+    }, [treeItems]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshData()
+            onClick: () => {
+                refreshData();
+                pushUrl(`${parentUrl}`);
+            }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "open", text: nlsHPCC.Open, disabled: !uiState.canShowContent, iconProps: { iconName: "WindowEdit" },
+            key: "selectAll", text: checkedItems.length === treeItemLeafNodes.length ? nlsHPCC.DeselectAll : nlsHPCC.SelectAll, iconProps: { iconName: checkedItems.length === treeItemLeafNodes.length ? "Checkbox" : "CheckboxComposite" },
             onClick: () => {
-                if (selection.length === 1) {
-                    const target = getTarget(selection[0].id, selection[0]);
-                    if (target) {
-                        window.location.href = `#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}`;
-                    }
+                if (checkedItems.length < treeItemLeafNodes.length) {
+                    setCheckedItems(treeItemLeafNodes.map(i => i.value));
                 } else {
-                    for (let i = 0; i < selection.length; ++i) {
-                        const target = getTarget(selection[i].id, selection[i]);
-                        if (target) {
-                            window.open(`#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}`, "_blank");
-                        }
-                    }
+                    setCheckedItems([]);
                 }
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "file", text: nlsHPCC.File, disabled: !uiState.hasSelection, iconProps: { iconName: "Download" },
+            key: "file", text: nlsHPCC.File, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
-                selection.forEach(item => {
+                checkedRows.forEach(item => {
                     window.open(getURL(item, 1));
                 });
             }
         },
         {
-            key: "zip", text: nlsHPCC.Zip, disabled: !uiState.hasSelection, iconProps: { iconName: "Download" },
+            key: "zip", text: nlsHPCC.Zip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
-                selection.forEach(item => {
+                checkedRows.forEach(item => {
                     window.open(getURL(item, 2));
                 });
             }
         },
         {
-            key: "gzip", text: nlsHPCC.GZip, disabled: !uiState.hasSelection, iconProps: { iconName: "Download" },
+            key: "gzip", text: nlsHPCC.GZip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
-                selection.forEach(item => {
+                checkedRows.forEach(item => {
                     window.open(getURL(item, 3));
                 });
             }
         }
+    ], [checkedItems, checkedRows, parentUrl, refreshData, treeItemLeafNodes]);
 
-    ], [refreshData, selection, uiState.canShowContent, uiState.hasSelection]);
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
+            onClick: () => setFullscreen(!fullscreen)
+        }
+    ], [fullscreen]);
 
-    const copyButtons = useCopyButtons(columns, selection, "helpers");
+    const setSelectedItem = React.useCallback((selId: string) => {
+        pushUrl(`${parentUrl}/${selId}`);
+    }, [parentUrl]);
 
-    //  Selection  ---
     React.useEffect(() => {
-        const state = { ...defaultUIState };
-
-        selection.forEach(row => {
-            state.hasSelection = true;
-            if (canShowContent(row.Type)) {
-                state.canShowContent = true;
+        if (dockpanel) {
+            //  Should only happen once on startup  ---
+            const layout: any = dockpanel.layout();
+            if (Array.isArray(layout?.main?.sizes) && layout.main.sizes.length === 2) {
+                layout.main.sizes = [0.3, 0.7];
+                dockpanel.layout(layout).lazyRender();
             }
-        });
-        setUIState(state);
-    }, [selection]);
-
-    React.useEffect(() => {
-        setData(helpers);
-    }, [helpers]);
+        }
+    }, [dockpanel]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={rightButtons} />}
         main={
-            <FluentGrid
-                data={data}
-                primaryID={"id"}
-                alphaNumColumns={{ Value: true }}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
+            <DockPanel hideSingleTabs onCreate={setDockpanel}>
+                <DockPanelItem key="helpersTable" title="Helpers">
+                    {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
+                        helpers?.length &&
+                        <HelpersTree treeItems={treeItems} openItems={openItems} setOpenItems={setOpenItems} checkedItems={checkedItems} setCheckedItems={setCheckedItems} setSelectedItem={setSelectedItem} selectedUrl={url} />
+                    }
+                </DockPanelItem>
+                <DockPanelItem key="helperEditor" title="Helper" padding={4} location="split-right" relativeTo="helpersTable">
+                    <FetchEditor url={helpers && selection?.Type && selection?.Type !== "dll" ? url : null} mode={mode} noDataMsg={noDataMsg}></FetchEditor>
+                </DockPanelItem>
+            </DockPanel>
         }
     />;
 };
