@@ -715,6 +715,8 @@ ECLRTL_API unsigned rtlConcatUtf8ToUtf8(unsigned tlen, char * tgt, unsigned idx,
 ECLRTL_API void rtlUtf8SpaceFill(unsigned tlne, char * tgt, unsigned idx);
 
 
+ECLRTL_API bool rtlSyntaxCheckStrRegExpr(int regExprLength, const char * regExpr);
+ECLRTL_API bool rtlSyntaxCheckStrRegExpr(const char * regExpr);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
@@ -722,6 +724,8 @@ ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExprTimed(ISectionTimer 
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
+ECLRTL_API bool rtlSyntaxCheckU8StrRegExpr(int regExprLength, const char * regExpr);
+ECLRTL_API bool rtlSyntaxCheckU8StrRegExpr(const char * regExpr);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTimer * timer, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
@@ -729,6 +733,8 @@ ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExprTimed(ISectionTime
 ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
+ECLRTL_API bool rtlSyntaxCheckUStrRegExpr(int regExprLength, const UChar * regExpr);
+ECLRTL_API bool rtlSyntaxCheckUStrRegExpr(const UChar * regExpr);
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExprTimed(ISectionTimer * timer, const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive);
