@@ -54,13 +54,26 @@ inline rowidx_t validRIDX(T X)
     #define CATCHALL DummyCatchAll
 #endif
 
+// differentiate defaults in containerized vs BM (BM will use DefaultDetail unless overridden)
+#ifdef _CONTAINERIZED
 constexpr const char * thorDefaultConfigYaml = R"!!(
 version: 1.0
 thor:
   daliServers: dali
   watchdogEnabled: true
   watchdogProgressEnabled: true
+  logging:
+    detail: 50
+    thorworkerdetail: 20 // default = WarnMsgThreshold
 )!!";
-
+#else
+constexpr const char * thorDefaultConfigYaml = R"!!(
+    version: 1.0
+    thor:
+      daliServers: dali
+      watchdogEnabled: true
+      watchdogProgressEnabled: true
+    )!!";
+#endif
 
 #endif

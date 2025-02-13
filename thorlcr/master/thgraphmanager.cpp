@@ -788,9 +788,9 @@ void CJobManager::run()
 
             unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
             unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", defaultConfigLogLevel);
-            ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
-            dbgassertex(existingLogHandler);
-            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+            ILogMsgFilter *existingLogFilter = queryLogMsgManager()->queryMonitorFilter(logHandler);
+            dbgassertex(existingLogFilter);
+            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogFilter->queryAudienceMask(), existingLogFilter->queryClassMask(), maxLogDetail)));
 
             allDone = execute(workunit, wuid, graphName, agentep);
             daliLock.clear();
