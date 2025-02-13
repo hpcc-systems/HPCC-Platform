@@ -133,7 +133,7 @@ class Regression:
         if numOfThreads == -1:
             if (ver['main'] >= 2) and (ver['minor'] >= 7):
                 if 'linux' in sys.platform :
-                    command = "grep 'core\|processor' /proc/cpuinfo | awk '{print $3}' | sort -nru | head -1"
+                    command = "grep 'core\\|processor' /proc/cpuinfo | awk '{print $3}' | sort -nru | head -1"
                     cpuInfo = os.popen(command).read()
                     if cpuInfo == "":
                         self.numOfCpus = 1
