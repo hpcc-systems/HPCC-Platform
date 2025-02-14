@@ -108,22 +108,27 @@ jobs:
         run: |
           branch_label_1=${{ github.base_ref }}
           branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
-          echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
+          branch_label=${branch_label_1:-$branch_label_2}
+          echo "branch_label=$branch_label" >> $GITHUB_OUTPUT
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
+          docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:$branch_label" >> $GITHUB_OUTPUT
 
       - name: Print vars
         shell: "bash"
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
-      - uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Pull Build Image
         run: |
           docker pull ${{ steps.vars.outputs.docker_tag }} || true
+          docker pull ${{ steps.vars.outputs.docker_tag_candidate_base }} || true
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -134,6 +139,23 @@ jobs:
             docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
             docker-${{ inputs.os }}-${{ inputs.build-type }}-
             docker-${{ inputs.os }}-
+
+      - name: Docker build image
+        uses: docker/build-push-action@v5
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: HPCC-Platform/dockerfiles/vcpkg/${{ inputs.os }}.dockerfile
+          context: HPCC-Platform/dockerfiles/vcpkg/.
+          push: false
+          load: true
+          build-args: |
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+          tags: |
+            ${{ steps.vars.outputs.docker_tag }}
+            ${{ steps.vars.outputs.docker_tag_candidate_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
 
       - name: CMake Configure and Build
         shell: "bash"
