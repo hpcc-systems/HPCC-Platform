@@ -616,7 +616,7 @@ public:
             mb.append(partCrc);
             mb.append(uncompressedSize);
             mb.append(originalBlobSize);
-
+            mb.append(inactiveStats.getStatisticValue(StSizeOffsetBranches));
             if (!singlePartKey && firstNode() && buildTlk)
             {
                 mb.append(tlkCrc);
