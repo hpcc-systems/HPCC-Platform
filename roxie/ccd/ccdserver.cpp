@@ -12839,7 +12839,7 @@ public:
                 }
                 reccount++;
             }
-            duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
+            duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
             numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
