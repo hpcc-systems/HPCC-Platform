@@ -26,17 +26,26 @@ if(WSSQL_SERVICE)
     find_package(Java REQUIRED)
     find_package(ANTLR REQUIRED)
 
+    if (WIN32)
+        find_library(ANTLR_LIB NAMES antlr3c.dll
+            PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
+        )
+    else()
+        find_library(ANTLR_LIB NAMES antlr3c
+            PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
+        )
+    endif()
+
+
     include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
     include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
     include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
-
-    include(antlr3c.cmake)
 
     antlr_target(sql2ecl
         GRAMMAR_PREFIX HPCCSQL
         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
         GRAMMAR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/SQL2ECL/ANTLR3c/HPCCSQL.g"
-        )
+    )
 
     set(SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/ws_sqlPlugin.cpp
@@ -120,7 +129,7 @@ if(WSSQL_SERVICE)
         xmllib
         esphttp
         dalibase
-        libantlr3c
+        ${ANTLR_LIB}
         wuwebview
         ${COMMON_ESP_SERVICE_LIBS}
         )
@@ -137,5 +146,6 @@ ENDIF()
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR}
         COMPONENT Runtime
+        CALC_DEPS
         )
 endif()
