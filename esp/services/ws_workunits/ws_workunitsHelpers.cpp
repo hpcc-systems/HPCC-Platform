@@ -45,6 +45,12 @@
 
 namespace ws_workunits {
 
+#ifdef _CONTAINERIZED
+static const char* LOG_ACCESS_FEATURE = "WsLogAccess";
+#else
+static const char* LOG_ACCESS_FEATURE = "ClusterTopologyAccess";
+#endif
+
 const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
 const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
@@ -3992,13 +3998,12 @@ void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
 }
 
 #ifndef _CONTAINERIZED
-void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* process, const char* path)
+void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* process, const char* path, bool hasLogsAccess)
 {
     BoolHash uniqueProcesses;
     Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
     ForEach (*procs)
     {
-        StringBuffer logSpec;
         IPropertyTree& proc = procs->query();
         const char* processName = proc.queryName();
         if (isEmpty(processName))
@@ -4022,11 +4027,17 @@ void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo,
                 pid.appendf("%d", proc.getPropInt("@pid"));
 
                 fileName.append("_eclagent.log");
+                if (!hasLogsAccess)
+                    throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+
                 winfo.getWorkunitEclAgentLog(processName, nullptr, pid.str(), mb, fileName.str());
             }
             else if (strieq(process, "Thor"))
             {
                 fileName.append("_thormaster.log");
+                if (!hasLogsAccess)
+                    throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+
                 winfo.getWorkunitThorMasterLog(processName, nullptr, mb, fileName.str());
             }
         }
@@ -4034,14 +4045,14 @@ void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo,
         {
             StringBuffer s;
             e->errorMessage(s);
-            IERRLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
+            IERRLOG("Error accessing Process Log file %s: %s", processName, s.str());
             writeToFile(fileName.str(), s.length(), s.str());
             e->Release();
         }
     }
 }
 
-void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* path)
+void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* path, bool hasLogsAccess)
 {
     if (cwu->getWuidVersion() == 0)
         return;
@@ -4053,6 +4064,18 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
     if (!clusterInfo)
     {
         OWARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
+        return;
+    }
+
+    // Since there is not already a handler inserting exceptions into the thor slave log,
+    // make a simple case here to insert a message about permission failure and write it to
+    // a file that could be recognized as a thor slave log.
+    if (!hasLogsAccess)
+    {
+        StringBuffer msg;
+        msg.appendf("Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+        VStringBuffer fileName("%s%cthorslave.log", path, PATHSEPCHAR);
+        writeToFile(fileName.str(), msg.length(), msg.str());
         return;
     }
 
@@ -4097,8 +4120,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 }
 #endif
 
-void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const char* thor, const char* problemDesc,
-    const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* tempDirName)
+void CWsWuFileHelper::createZAPInfoFile(CWsWuZAPInfoReq &request, IConstWorkUnit* cwu, const char* tempDirName)
 {
     VStringBuffer fileName("%s%c%s.txt", tempDirName, PATHSEPCHAR, cwu->queryWuid());
     Owned<IFileIOStream> outFile = createBufferedIOStreamFromFile(fileName.str(), IFOcreate);
@@ -4110,11 +4132,11 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const 
     sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
     sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
     sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
-    sb.append("ESP:          ").append(esp).append("\r\n");
-    if (!isEmptyString(url))
-        sb.append("URL:          ").append(url).append("\r\n");
-    if (!isEmptyString(thor))
-        sb.append("Thor:         ").append(thor).append("\r\n");
+    sb.append("ESP:          ").append(request.esp).append("\r\n");
+    if (!isEmptyString(request.url))
+        sb.append("URL:          ").append(request.url).append("\r\n");
+    if (!isEmptyString(request.thor))
+        sb.append("Thor:         ").append(request.thor).append("\r\n");
     outFile->write(sb.length(), sb.str());
 
     //Exceptions/Warnings/Info
@@ -4148,9 +4170,9 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const 
     }
 
     //User provided Information
-    writeZAPWUInfoToIOStream(outFile, "Problem:      ", problemDesc);
-    writeZAPWUInfoToIOStream(outFile, "What Changed: ", whatChanged);
-    writeZAPWUInfoToIOStream(outFile, "Timing:       ", timing);
+    writeZAPWUInfoToIOStream(outFile, "Problem:      ", request.problemDesc);
+    writeZAPWUInfoToIOStream(outFile, "What Changed: ", request.whatChanged);
+    writeZAPWUInfoToIOStream(outFile, "Timing:       ", request.whereSlow);
 }
 
 void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const char* name, SCMStringBuffer& value)
@@ -4282,6 +4304,8 @@ void CWsWuFileHelper::readWULogToFile(const char *logFileName, WsWuInfo &winfo, 
 {
     try
     {
+        if (!zapLogFilterOptions.hasLogsAccess)
+            throw makeStringExceptionV(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
         winfo.readWorkunitComponentLogs(logFileName, zapLogFilterOptions);
     }
     catch(IException* e)
@@ -4522,14 +4546,14 @@ int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFi
 void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu, CWsWuZAPInfoReq& request,
     const char* tempDirName, StringBuffer& zapFileName, StringBuffer& zipFileNameWithFullPath, unsigned _thorSlaveLogThreadPoolSize)
 {
+    request.hasLogsAccess = context.validateFeatureAccess(LOG_ACCESS_FEATURE, SecAccess_Read, false);
     setZAPReportName(request.zapFileName, cwu->queryWuid(), zapFileName);
 
     zipFileNameWithFullPath.set(tempDirName).append(PATHSEPCHAR).append("zapreport.zip");
     thorSlaveLogThreadPoolSize = _thorSlaveLogThreadPoolSize;
 
-    //create WU ZAP files
-    createZAPInfoFile(request.url.str(), request.esp.str(), request.thor.str(), request.problemDesc.str(), request.whatChanged.str(),
-        request.whereSlow.str(), cwu, tempDirName);
+//create WU ZAP files
+    createZAPInfoFile(request, cwu, tempDirName);
     createZAPECLQueryArchiveFiles(cwu, tempDirName);
 
     WsWuInfo winfo(context, cwu);
@@ -4537,12 +4561,12 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     createZAPWUGraphProgressFile(request.wuid.str(), tempDirName);
 
     StringArray localFiles;
-    createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles);
+    createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles, request.hasLogsAccess);
 #ifndef _CONTAINERIZED
-    createProcessLogfile(cwu, winfo, "EclAgent", tempDirName);
-    createProcessLogfile(cwu, winfo, "Thor", tempDirName);
-    if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
-        createThorSlaveLogfile(cwu, winfo, tempDirName);
+        createProcessLogfile(cwu, winfo, "EclAgent", tempDirName, request.hasLogsAccess);
+        createProcessLogfile(cwu, winfo, "Thor", tempDirName, request.hasLogsAccess);
+        if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
+            createThorSlaveLogfile(cwu, winfo, tempDirName, request.hasLogsAccess);
 #else
     if (request.includeRelatedLogs || request.includePerComponentLogs)
         readWULogToFiles(cwu, winfo, tempDirName, request);
@@ -4552,7 +4576,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     zipAllZAPFiles(tempDirName, localFiles, request.password, zipFileNameWithFullPath);
 }
 
-void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* tempDirName, StringArray& localFiles)
+void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* tempDirName, StringArray& localFiles, bool hasLogsAccess)
 {
     Owned<IConstWUQuery> query = cwu->getQuery();
     if (!query)
@@ -4572,6 +4596,21 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
         RemoteFilename rfn;
         SocketEndpoint ep(ip.str());
         rfn.setPath(ep, name.str());
+        StringBuffer fileName(name.str());
+        getFileNameOnly(fileName, false);
+
+        VStringBuffer outFileName("%s%c%s", tempDirName, PATHSEPCHAR, fileName.str());
+
+        // Since users are only accustomed to seeing error messages replacing log file contents,
+        // special case an access denied error message for the one log file processed here.
+        if (!hasLogsAccess && endsWith(name.str(), ".eclcc.log"))
+        {
+            StringBuffer msg;
+            msg.appendf("Access to log files is denied. You are missing permission %s:READ - check with your system admin.", LOG_ACCESS_FEATURE);
+            writeToFile(outFileName.str(), msg.length(), msg.str());
+            continue;
+        }
+
         if (rfn.isLocal())
         {
             localFiles.append(name.str());
@@ -4584,11 +4623,6 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
             IERRLOG("Cannot open %s on %s.", name.str(), ip.str());
             continue;
         }
-
-        StringBuffer fileName(name.str());
-        getFileNameOnly(fileName, false);
-
-        VStringBuffer outFileName("%s%c%s", tempDirName, PATHSEPCHAR, fileName.str());
 
         OwnedIFile outFile = createIFile(outFileName);
         if (!outFile)

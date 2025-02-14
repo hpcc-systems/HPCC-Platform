@@ -40,7 +40,7 @@
  *              CEspHttpServer Implementation
  ***************************************************************************/
 
-CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
+CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort& apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
     m_request.setown(new CHttpRequest(sock));
     IEspContext* ctx = createEspContext(createHttpSecureContext(m_request.get()));
@@ -48,9 +48,9 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool 
     m_response.setown(new CHttpResponse(sock));
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
-    m_apport = apport;
-    if (apport->getDefaultBinding())
-        m_defaultBinding.set(apport->getDefaultBinding()->queryBinding());
+    m_apport = &apport;
+    if (apport.getDefaultBinding())
+        m_defaultBinding.set(apport.getDefaultBinding()->queryBinding());
     m_viewConfig=viewConfig;
 }
 
@@ -430,8 +430,6 @@ int CEspHttpServer::processRequest()
                     espGetMethod = EspGetMethod::Unhandled;
             }
         }
-        else if (!m_apport)
-            wantTracing = false;
         Owned<ISpan> serverSpan;
         if (wantTracing)
         {
@@ -525,134 +523,131 @@ int CEspHttpServer::processRequest()
             }
         }
 
-        if(m_apport != NULL)
+        int ordinality=m_apport->getBindingCount();
+        bool isSubService = false;
+        EspHttpBinding* exactBinding = nullptr;
+        bool exactIsSubService = false;
+        if (ordinality>0)
         {
-            int ordinality=m_apport->getBindingCount();
-            bool isSubService = false;
-            EspHttpBinding* exactBinding = nullptr;
-            bool exactIsSubService = false;
-            if (ordinality>0)
+            if (ordinality==1)
             {
-                if (ordinality==1)
-                {
-                    CEspBindingEntry *entry = m_apport->queryBindingItem(0);
-                    thebinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
+                CEspBindingEntry *entry = m_apport->queryBindingItem(0);
+                thebinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
 
-                    bool isSoapPost=(strieq(method.str(), POST_METHOD) && m_request->isSoapMessage());
-                    if (thebinding && !isSoapPost && !thebinding->isValidServiceName(*ctx, serviceName.str()))
-                        thebinding=NULL;
-                }
-                else
-                {
-                    EspHttpBinding* lbind=NULL;
-                    for (int index=0; !exactBinding && index<ordinality; index++)
-                    {
-                        CEspBindingEntry *entry = m_apport->queryBindingItem(index);
-                        lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
-                        if (lbind)
-                        {
-                            if (lbind->isValidServiceName(*ctx, serviceName.str()))
-                            {
-                                if (!thebinding)
-                                {
-                                    thebinding=lbind;
-                                    StringBuffer bindSvcName;
-                                    if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
-                                        isSubService = true;
-                                }
-                                if (methodName.length() != 0 && lbind->isMethodInService(*ctx, serviceName.str(), methodName.str()))
-                                {
-                                    exactBinding = lbind;
-                                    StringBuffer bindSvcName;
-                                    if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
-                                        exactIsSubService = true;
-                                }
-                            }                           
-                        }
-                    }
-                }
-                if (exactBinding)
-                {
-                    thebinding = exactBinding;
-                    isSubService = exactIsSubService;
-                }
-                if (!thebinding && m_defaultBinding)
-                    thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
-            }
-
-            if (thebinding)
-                theBindingHolder.set(dynamic_cast<IInterface*>(thebinding));
-
-            checkSetCORSAllowOrigin(thebinding, m_request, m_response);
-
-            if (thebinding && thebinding->isUnrestrictedSSType(stype))
-            {
-                //Avoid creating a span for unrestrictedSSType requests
-                thebinding->onGetUnrestricted(m_request.get(), m_response.get(), serviceName.str(), methodName.str(), stype);
-                ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
-                return 0;
-            }
-
-            if (thebinding!=NULL)
-            {
-                if(stricmp(method.str(), POST_METHOD)==0)
-                {
-                    traceRequest(ctx, POST_METHOD);
-                    thebinding->handleHttpPost(m_request.get(), m_response.get());
-                }
-                else if(!stricmp(method.str(), GET_METHOD))
-                {
-                    traceRequest(ctx, GET_METHOD);
-                    if (stype==sub_serv_index_redirect)
-                    {
-                        StringBuffer url;
-                        if (isSubService)
-                        {
-                            StringBuffer qSvcName;
-                            thebinding->qualifySubServiceName(*ctx,serviceName,NULL, qSvcName, NULL);
-                            url.append(qSvcName);
-                        }
-                        else
-                            thebinding->getServiceName(url);
-                        url.append('/');
-                        const char* parms = m_request->queryParamStr();
-                        if (parms && *parms)
-                            url.append('?').append(parms);
-                        m_response->redirect(*m_request.get(),url);
-                    }
-                    else
-                    {
-                        if (strieq(methodName.str(), "files_") && !checkHttpPathStaysWithinBounds(pathEx))
-                        {
-                            AERRLOG("Get File %s: attempted access outside of %sfiles/", pathEx.str(), getCFD());
-                            m_response->setStatus(HTTP_STATUS_NOT_FOUND);
-                            m_response->send();
-                            return 0;
-                        }
-                        thebinding->onGet(m_request.get(), m_response.get());
-                    }
-                }
-                else
-                    unsupported(method);
+                bool isSoapPost=(strieq(method.str(), POST_METHOD) && m_request->isSoapMessage());
+                if (thebinding && !isSoapPost && !thebinding->isValidServiceName(*ctx, serviceName.str()))
+                    thebinding=NULL;
             }
             else
             {
-                serverSpan->setSpanAttribute("http.unbound_target", 1);
-                if(!stricmp(method.str(), POST_METHOD))
+                EspHttpBinding* lbind=NULL;
+                for (int index=0; !exactBinding && index<ordinality; index++)
                 {
-                    traceRequest(ctx, POST_METHOD);
-                    onPost();
+                    CEspBindingEntry *entry = m_apport->queryBindingItem(index);
+                    lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
+                    if (lbind)
+                    {
+                        if (lbind->isValidServiceName(*ctx, serviceName.str()))
+                        {
+                            if (!thebinding)
+                            {
+                                thebinding=lbind;
+                                StringBuffer bindSvcName;
+                                if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
+                                    isSubService = true;
+                            }
+                            if (methodName.length() != 0 && lbind->isMethodInService(*ctx, serviceName.str(), methodName.str()))
+                            {
+                                exactBinding = lbind;
+                                StringBuffer bindSvcName;
+                                if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
+                                    exactIsSubService = true;
+                            }
+                        }
+                    }
                 }
-                else if(!stricmp(method.str(), GET_METHOD))
+            }
+            if (exactBinding)
+            {
+                thebinding = exactBinding;
+                isSubService = exactIsSubService;
+            }
+            if (!thebinding && m_defaultBinding)
+                thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+        }
+
+        if (thebinding)
+            theBindingHolder.set(dynamic_cast<IInterface*>(thebinding));
+
+        checkSetCORSAllowOrigin(thebinding, m_request, m_response);
+
+        if (thebinding && thebinding->isUnrestrictedSSType(stype))
+        {
+            //Avoid creating a span for unrestrictedSSType requests
+            thebinding->onGetUnrestricted(m_request.get(), m_response.get(), serviceName.str(), methodName.str(), stype);
+            ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
+            return 0;
+        }
+
+        if (thebinding!=NULL)
+        {
+            if(stricmp(method.str(), POST_METHOD)==0)
+            {
+                traceRequest(ctx, POST_METHOD);
+                thebinding->handleHttpPost(m_request.get(), m_response.get());
+            }
+            else if(!stricmp(method.str(), GET_METHOD))
+            {
+                traceRequest(ctx, GET_METHOD);
+                if (stype==sub_serv_index_redirect)
                 {
-                    traceRequest(ctx, GET_METHOD);
-                    onGet();
+                    StringBuffer url;
+                    if (isSubService)
+                    {
+                        StringBuffer qSvcName;
+                        thebinding->qualifySubServiceName(*ctx,serviceName,NULL, qSvcName, NULL);
+                        url.append(qSvcName);
+                    }
+                    else
+                        thebinding->getServiceName(url);
+                    url.append('/');
+                    const char* parms = m_request->queryParamStr();
+                    if (parms && *parms)
+                        url.append('?').append(parms);
+                    m_response->redirect(*m_request.get(),url);
                 }
                 else
-                    unsupported(method);
+                {
+                    if (strieq(methodName.str(), "files_") && !checkHttpPathStaysWithinBounds(pathEx))
+                    {
+                        AERRLOG("Get File %s: attempted access outside of %sfiles/", pathEx.str(), getCFD());
+                        m_response->setStatus(HTTP_STATUS_NOT_FOUND);
+                        m_response->send();
+                        return 0;
+                    }
+                    thebinding->onGet(m_request.get(), m_response.get());
+                }
             }
-            ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
+            else
+                unsupported(method);
         }
+        else
+        {
+            serverSpan->setSpanAttribute("http.unbound_target", 1);
+            if(!stricmp(method.str(), POST_METHOD))
+            {
+                traceRequest(ctx, POST_METHOD);
+                onPost();
+            }
+            else if(!stricmp(method.str(), GET_METHOD))
+            {
+                traceRequest(ctx, GET_METHOD);
+                onGet();
+            }
+            else
+                unsupported(method);
+        }
+        ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
     }
     catch(IEspHttpException* e)
     {

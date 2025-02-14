@@ -32,14 +32,9 @@ class IndexWriteActivityMaster : public CMasterActivity
     rowcount_t recordsProcessed;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;
-    unsigned __int64 numLeafNodes = 0;
-    unsigned __int64 numBlobNodes = 0;
-    unsigned __int64 numBranchNodes = 0;
     offset_t compressedFileSize = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
-    offset_t branchMemorySize = 0;
-    offset_t leafMemorySize = 0;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -262,13 +257,17 @@ public:
             props.setProp("@kind", "key");
             props.setPropInt64("@uncompressedSize", uncompressedSize);
             props.setPropInt64("@size", compressedFileSize);
-            props.setPropInt64("@numLeafNodes", numLeafNodes);
-            props.setPropInt64("@numBranchNodes", numBranchNodes);
+            props.setPropInt64("@numLeafNodes", statsCollection.getStatisticSum(StNumLeafCacheAdds));
+            stat_type numBlobNodes = statsCollection.getStatisticSum(StNumBlobCacheAdds);
             props.setPropInt64("@numBlobNodes", numBlobNodes);
             if (numBlobNodes)
                 props.setPropInt64("@originalBlobSize", originalBlobSize);
+            props.setPropInt64("@numBranchNodes", statsCollection.getStatisticSum(StNumNodeCacheAdds));
+
+            stat_type branchMemorySize = statsCollection.getStatisticSum(StSizeBranchMemory);
             if (branchMemorySize)
                 props.setPropInt64("@branchMemorySize", branchMemorySize);
+            stat_type leafMemorySize = statsCollection.getStatisticSum(StSizeLeafMemory);
             if (leafMemorySize)
                 props.setPropInt64("@leafMemorySize", leafMemorySize);
 
@@ -346,34 +345,17 @@ public:
                 mb.read(crc);
                 props.setPropInt64("@fileCrc", crc);
 
-                unsigned __int64 slaveNumLeafNodes;
-                unsigned __int64 slaveNumBlobNodes;
-                unsigned __int64 slaveNumBranchNodes;
-                offset_t slaveOffsetBranches;
                 offset_t slaveUncompressedSize;
                 offset_t slaveOriginalBlobSize;
-                offset_t slaveBranchMemorySize;
-                offset_t slaveLeafMemorySize;
-                mb.read(slaveNumLeafNodes);
-                mb.read(slaveNumBlobNodes);
-                mb.read(slaveNumBranchNodes);
-                mb.read(slaveOffsetBranches);
                 mb.read(slaveUncompressedSize);
                 mb.read(slaveOriginalBlobSize);
-                mb.read(slaveBranchMemorySize);
-                mb.read(slaveLeafMemorySize);
 
                 compressedFileSize += size;
-                numLeafNodes += slaveNumLeafNodes;
-                numBlobNodes += slaveNumBlobNodes;
-                numBranchNodes += slaveNumBranchNodes;
                 uncompressedSize += slaveUncompressedSize;
                 originalBlobSize += slaveOriginalBlobSize;
-                branchMemorySize += slaveBranchMemorySize;
-                leafMemorySize += slaveLeafMemorySize;
 
                 props.setPropInt64("@uncompressedSize", slaveUncompressedSize);
-                props.setPropInt64("@offsetBranches", slaveOffsetBranches);
+                props.setPropInt64("@offsetBranches", statsCollection.getStatisticSum(StSizeOffsetBranches));
 
                 //Read details for the TLK if it has been generated
                 if (!singlePartKey && 0 == slaveIdx && buildTlk)

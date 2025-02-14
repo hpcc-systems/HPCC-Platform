@@ -233,7 +233,13 @@ public:
 #define DEFAULT_CACHE_MAX_SIZE 500
 static CLRUCache<hash64_t, std::shared_ptr<RegexCacheEntry>> compiledStrRegExprCache(DEFAULT_CACHE_MAX_SIZE);
 static CriticalSection compiledStrRegExprLock;
-static bool compiledCacheEnabled = true;
+enum class CompiledCacheState : int
+{
+    Uninitialized = 0,
+    Disabled = 1,
+    Enabled = 2
+};
+static std::atomic<CompiledCacheState> compiledCacheState = CompiledCacheState::Uninitialized;
 
 /**
  * @brief Provide an optional override to the maximum cache size for regex patterns.
@@ -242,7 +248,7 @@ static bool compiledCacheEnabled = true;
  * <Software/Globals> section for an optional "regex" subsection with a "cacheSize" attribute
  * By default, the maximum cache size is set to 500 patterns.  Override with 0 to disable caching.
  */
-static void initMaxCacheSize()
+static void initMaxCacheSize() // NB: called when compiledStrRegExprLock held
 {
 #ifdef _CONTAINERIZED
     Owned<IPropertyTree> expert;
@@ -281,11 +287,26 @@ static void initMaxCacheSize()
     }
 
     if (cacheMaxSize > 0)
+    {
         compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize);
+        compiledCacheState = CompiledCacheState::Enabled;
+    }
     else
-        compiledCacheEnabled = false;
+        compiledCacheState = CompiledCacheState::Disabled;
 }
 
+inline bool isCacheEnabled()
+{
+    if (likely(CompiledCacheState::Enabled == compiledCacheState)) // common case
+        return true;
+    else if (compiledCacheState == CompiledCacheState::Uninitialized)
+    {
+        CriticalBlock b(compiledStrRegExprLock);
+        if (CompiledCacheState::Uninitialized == compiledCacheState) // check again now have crit
+            initMaxCacheSize();
+    }
+    return CompiledCacheState::Enabled == compiledCacheState;
+}
 //---------------------------------------------------------------------------
 
 class CStrRegExprFindInstance final : implements IStrRegExprFindInstance
@@ -425,15 +446,15 @@ class CCompiledStrRegExpr final : implements ICompiledStrRegExpr
 private:
     std::shared_ptr<pcre2_code_8> compiledRegex = nullptr;
     bool isUTF8Enabled = false;
+    Owned<IException> deferredException;
 
 public:
-    CCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
-    : isUTF8Enabled(_enableUTF8)
+    static pcre2_code_8 * compileRegex(int _regexLength, const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
     {
         int errNum = 0;
         PCRE2_SIZE errOffset;
         uint32_t options = ((_isCaseSensitive ? 0 : PCRE2_CASELESS) | (_enableUTF8 ? PCRE2_UTF : 0));
-        size32_t regexSize = (isUTF8Enabled ? rtlUtf8Size(_regexLength, _regex) : _regexLength);
+        size32_t regexSize = (_enableUTF8 ? rtlUtf8Size(_regexLength, _regex) : _regexLength);
 
         pcre2_code_8 * newCompiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, regexSize, options, &errNum, &errOffset, pcre2CompileContext8);
 
@@ -442,7 +463,21 @@ public:
             failWithPCRE2Error(errNum, "Error in regex pattern: ", std::string(_regex, _regexLength), errOffset);
         }
 
-        compiledRegex = std::shared_ptr<pcre2_code_8>(newCompiledRegex, pcre2_code_free_8);
+        return newCompiledRegex;
+    }
+
+public:
+    CCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive, bool _enableUTF8, bool _throwOnError = false)
+    : isUTF8Enabled(_enableUTF8)
+    {
+        try
+        {
+            compiledRegex = std::shared_ptr<pcre2_code_8>(compileRegex(_regexLength, _regex, _isCaseSensitive, _enableUTF8), pcre2_code_free_8);
+        }
+        catch (IException *e)
+        {
+            deferredException.setown(e);
+        }
     }
 
     CCompiledStrRegExpr(const RegexCacheEntry& cacheEntry, bool _enableUTF8)
@@ -455,6 +490,9 @@ public:
 
     void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         outlen = 0;
         PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
@@ -535,6 +573,9 @@ public:
     // it's here more for completeness, in case we ever implement some version of it
     void replaceFixed(size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         if (tlen == 0)
             return;
 
@@ -670,6 +711,9 @@ public:
 
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         CStrRegExprFindInstance * findInst = new CStrRegExprFindInstance(compiledRegex, str, from, len, needToKeepSearchString);
         return findInst;
     }
@@ -682,6 +726,9 @@ public:
 
     void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const char * _subject)
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         rtlRowBuilder out;
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
@@ -772,7 +819,7 @@ public:
  */
 CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledStrRegExpr * compiledObjPtr = nullptr;
         uint32_t options = (_isCaseSensitive ? 0 : PCRE2_CASELESS);
@@ -794,13 +841,16 @@ CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(ISectionTimer * sectionTime
 
             // Create a new compiled pattern object
             compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, false);
-            // Create a cache entry for the new object
-            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(_regexLength, _regex, options, compiledObjPtr->getCompiledRegex()));
-            // Note a cache miss (add-to-cache)
-            if (sectionTimer)
+            if (compiledObjPtr->getCompiledRegex())
             {
-                sectionTimer->addStatistic(StNumCacheAdds, 1);
-                sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+                // Create a cache entry for the new object
+                compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(_regexLength, _regex, options, compiledObjPtr->getCompiledRegex()));
+                // Note a cache miss (add-to-cache)
+                if (sectionTimer)
+                {
+                    sectionTimer->addStatistic(StNumCacheAdds, 1);
+                    sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+                }
             }
         }
 
@@ -813,6 +863,18 @@ CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(ISectionTimer * sectionTime
 }
 
 //---------------------------------------------------------------------------
+
+ECLRTL_API bool rtlSyntaxCheckStrRegExpr(int regExprLength, const char * regExpr)
+{
+    pcre2_code_8 * compiled = CCompiledStrRegExpr::compileRegex(regExprLength, regExpr, false, false);
+    pcre2_code_free_8(compiled);
+    return true;
+}
+
+ECLRTL_API bool rtlSyntaxCheckStrRegExpr(const char * regExpr)
+{
+    return rtlSyntaxCheckStrRegExpr(strlen(regExpr), regExpr);
+}
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
@@ -868,7 +930,7 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
  */
 CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const char * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledStrRegExpr * compiledObjPtr = nullptr;
         unsigned int regexSize = rtlUtf8Size(_regexLength, _regex);
@@ -891,13 +953,16 @@ CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(ISectionTimer * sectionTi
 
             // Create a new compiled pattern object
             compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, true);
-            // Create a cache entry for the new object
-            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, _regex, options, compiledObjPtr->getCompiledRegex()));
-            // Note a cache miss (add-to-cache)
-            if (sectionTimer)
+            if (compiledObjPtr->getCompiledRegex())
             {
-                sectionTimer->addStatistic(StNumCacheAdds, 1);
-                sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+                // Create a cache entry for the new object
+                compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, _regex, options, compiledObjPtr->getCompiledRegex()));
+                // Note a cache miss (add-to-cache)
+                if (sectionTimer)
+                {
+                    sectionTimer->addStatistic(StNumCacheAdds, 1);
+                    sectionTimer->mergeStatistic(StNumPeakCacheObjects, compiledStrRegExprCache.getCacheSize());
+                }
             }
         }
 
@@ -910,6 +975,18 @@ CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(ISectionTimer * sectionTi
 }
 
 //---------------------------------------------------------------------------
+
+ECLRTL_API bool rtlSyntaxCheckU8StrRegExpr(int regExprLength, const char * regExpr)
+{
+    pcre2_code_8 * compiled = CCompiledStrRegExpr::compileRegex(regExprLength, regExpr, false, true);
+    pcre2_code_free_8(compiled);
+    return true;
+}
+
+ECLRTL_API bool rtlSyntaxCheckU8StrRegExpr(const char * regExpr)
+{
+    return rtlSyntaxCheckU8StrRegExpr(rtlUtf8Length(regExpr), regExpr);
+}
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
@@ -1058,9 +1135,10 @@ class CCompiledUStrRegExpr final : implements ICompiledUStrRegExpr
 {
 private:
     std::shared_ptr<pcre2_code_16> compiledRegex = nullptr;
+    Owned<IException> deferredException;
 
 public:
-    CCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive = false)
+    static pcre2_code_16 * compileRegex(int _regexLength, const UChar * _regex, bool _isCaseSensitive)
     {
         int errNum = 0;
         PCRE2_SIZE errOffset;
@@ -1073,7 +1151,20 @@ public:
             failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, _regexLength, errOffset);
         }
 
-        compiledRegex = std::shared_ptr<pcre2_code_16>(newCompiledRegex, pcre2_code_free_16);
+        return newCompiledRegex;
+    }
+
+public:
+    CCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive = false)
+    {
+        try
+        {
+            compiledRegex = std::shared_ptr<pcre2_code_16>(compileRegex(_regexLength, _regex, _isCaseSensitive), pcre2_code_free_16);
+        }
+        catch (IException *e)
+        {
+            deferredException.setown(e);
+        }
     }
 
     CCompiledUStrRegExpr(const RegexCacheEntry& cacheEntry)
@@ -1084,6 +1175,9 @@ public:
 
     void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * rstr) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         outlen = 0;
         PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
@@ -1156,6 +1250,9 @@ public:
 
     void replaceFixed(size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         if (tlen == 0)
             return;
 
@@ -1260,6 +1357,9 @@ public:
 
     IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         CUStrRegExprFindInstance * findInst = new CUStrRegExprFindInstance(compiledRegex, str, from, len);
         return findInst;
     }
@@ -1272,6 +1372,9 @@ public:
 
     void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const UChar * _subject)
     {
+        if (deferredException)
+            throw deferredException.getLink();
+        
         rtlRowBuilder out;
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
@@ -1360,7 +1463,7 @@ public:
  */
 CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(ISectionTimer * sectionTimer, int _regexLength, const UChar * _regex, bool _isCaseSensitive)
 {
-    if (compiledCacheEnabled)
+    if (isCacheEnabled())
     {
         CCompiledUStrRegExpr * compiledObjPtr = nullptr;
         unsigned int regexSize = _regexLength * sizeof(UChar);
@@ -1383,11 +1486,14 @@ CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(ISectionTimer * sectionTi
 
             // Create a new compiled pattern object
             compiledObjPtr = new CCompiledUStrRegExpr(_regexLength, _regex, _isCaseSensitive);
-            // Create a cache entry for the new object
-            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, reinterpret_cast<const char *>(_regex), options, compiledObjPtr->getCompiledRegex()));
-            // Note a cache miss (add-to-cache)
-            if (sectionTimer)
-                sectionTimer->addStatistic(StNumCacheAdds, 1);
+            if (compiledObjPtr->getCompiledRegex())
+            {
+                // Create a cache entry for the new object
+                compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, reinterpret_cast<const char *>(_regex), options, compiledObjPtr->getCompiledRegex()));
+                // Note a cache miss (add-to-cache)
+                if (sectionTimer)
+                    sectionTimer->addStatistic(StNumCacheAdds, 1);
+            }
         }
 
         return compiledObjPtr;
@@ -1399,6 +1505,18 @@ CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(ISectionTimer * sectionTi
 }
 
 //---------------------------------------------------------------------------
+
+ECLRTL_API bool rtlSyntaxCheckUStrRegExpr(int regExprLength, const UChar * regExpr)
+{
+    pcre2_code_16 * compiled = CCompiledUStrRegExpr::compileRegex(regExprLength, regExpr, false);
+    pcre2_code_free_16(compiled);
+    return true;
+}
+
+ECLRTL_API bool rtlSyntaxCheckUStrRegExpr(const UChar * regExpr)
+{
+    return rtlSyntaxCheckUStrRegExpr(rtlUnicodeStrlen(regExpr), regExpr);
+}
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
@@ -1465,7 +1583,6 @@ MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
     pcre2CompileContext16 = pcre2_compile_context_create_16(pcre2GeneralContext16);
     pcre2MatchContext16 = pcre2_match_context_create_16(pcre2GeneralContext16);
 #endif // _USE_ICU
-    initMaxCacheSize();
     return true;
 }
 

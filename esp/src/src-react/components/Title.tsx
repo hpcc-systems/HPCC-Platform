@@ -233,18 +233,30 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     React.useEffect(() => {
         if (!features.timestamp) return;
+        let ancient = 90;
+        let veryOld = 60;
+        let old = 30;
+        if (features.maturity === "trunk") {
+            ancient = 360;
+            veryOld = 180;
+            old = 90;
+        } else if (features.maturity === "rc") {
+            ancient = 28;
+            veryOld = 21;
+            old = 14;
+        }
         const age = Math.floor((Date.now() - features.timestamp.getTime()) / DAY);
         const message = nlsHPCC.PlatformBuildIsNNNDaysOld.replace("NNN", `${age}`);
-        if (age > 90) {
+        if (age > ancient) {
             logger.alert(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
-        } else if (age > 60) {
+        } else if (age > veryOld) {
             logger.error(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
-        } else if (age > 30) {
+        } else if (age > old) {
             logger.warning(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
         } else {
             logger.info(message);
         }
-    }, [features.timestamp]);
+    }, [features.maturity, features.timestamp]);
 
     React.useEffect(() => {
         if (!currentUser.username) return;

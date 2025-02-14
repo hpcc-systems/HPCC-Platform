@@ -41,6 +41,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     Owned<IPartDescriptor> partDesc, tlkDesc;
     IHThorIndexWriteArg *helper;
     Owned<IKeyBuilder> builder;
+    mutable CriticalSection builderCS;
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
@@ -53,12 +54,8 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned __int64 totalCount;
 
     size32_t lastRowSize, firstRowSize, maxRecordSizeSeen, keyedSize;
-    unsigned __int64 duplicateKeyCount;
-    offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
-    offset_t branchMemorySize = 0;
-    offset_t leafMemorySize = 0;
 
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
@@ -98,7 +95,6 @@ public:
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", isContainerized())));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
-        duplicateKeyCount = 0;
         container.queryJob().getWorkUnitValue("defaultIndexCompression", defaultIndexCompression);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -245,13 +241,6 @@ public:
                 if (tmpBuilder)
                 {
                     tmpBuilder->finish(metadata, &crc, maxRecordSizeSeen);
-                    if (!isTLK)
-                    {
-                        duplicateKeyCount = tmpBuilder->getDuplicateCount();
-                        offsetBranches = tmpBuilder->getOffsetBranches();
-                        branchMemorySize = tmpBuilder->getBranchMemorySize();
-                        leafMemorySize = tmpBuilder->getLeafMemorySize();
-                    }
                     mergeStats(inactiveStats, tmpBuilder, indexWriteActivityStatistics);
                 }
             }
@@ -614,7 +603,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
-        mb.append(duplicateKeyCount);
+        mb.append(inactiveStats.getStatisticValue(StNumDuplicateKeyCount));
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;
@@ -626,14 +615,8 @@ public:
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
             mb.append(partCrc);
-            mb.append(inactiveStats.getStatisticValue(StNumLeafCacheAdds));
-            mb.append(inactiveStats.getStatisticValue(StNumBlobCacheAdds));
-            mb.append(inactiveStats.getStatisticValue(StNumNodeCacheAdds));
-            mb.append(offsetBranches);
             mb.append(uncompressedSize);
             mb.append(originalBlobSize);
-            mb.append(branchMemorySize);
-            mb.append(leafMemorySize);
 
             if (!singlePartKey && firstNode() && buildTlk)
             {

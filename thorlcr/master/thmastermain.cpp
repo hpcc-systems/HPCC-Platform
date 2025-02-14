@@ -711,6 +711,8 @@ int main( int argc, const char *argv[]  )
 #ifndef _CONTAINERIZED
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
+            if (globals->hasProp("logging/@detail"))
+                lf->setMaxDetail(globals->getPropInt("logging/@detail"));
             lf->setName("thormaster");//override default filename
             lf->setCreateAliasFile(false);
             logHandler = lf->beginLogging();

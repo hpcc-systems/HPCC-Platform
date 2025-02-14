@@ -609,6 +609,14 @@ protected:
     {
         switch (kind)
         {
+        case StNumDuplicateKeyCount:
+            return duplicateCount;
+        case StSizeOffsetBranches:
+            return offsetBranches;
+        case StSizeBranchMemory:
+            return indexCompressor->queryBranchMemorySize();
+        case StSizeLeafMemory:
+            return indexCompressor->queryLeafMemorySize();
         case StNumLeafCacheAdds:
             return numLeaves;
         case StNumNodeCacheAdds:

@@ -391,6 +391,7 @@ protected:
     std::map<std::string, std::weak_ptr<IMetric>> metrics;
     std::mutex metricVectorMutex;
     std::regex nameValidator;
+    std::regex metaDataValidator;
 };
 
 jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());

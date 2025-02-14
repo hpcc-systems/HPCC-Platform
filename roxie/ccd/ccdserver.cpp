@@ -12839,16 +12839,16 @@ public:
                 }
                 reccount++;
             }
-            duplicateKeyCount = builder->getDuplicateCount();
+            duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
-            numLeafNodes = builder->getNumLeafNodes();
-            numBranchNodes = builder->getNumBranchNodes();
-            numBlobNodes = builder->getNumBlobNodes();
-            offsetBranches = builder->getOffsetBranches();
+            numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
+            numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);
+            numBlobNodes = builder->getStatistic(StNumBlobCacheAdds);
+            offsetBranches = builder->getStatistic(StSizeOffsetBranches);
             originalBlobSize = bc.queryTotalSize();
-            branchMemorySize = builder->getBranchMemorySize();
-            leafMemorySize = builder->getLeafMemorySize();
+            branchMemorySize = builder->getStatistic(StSizeBranchMemory);
+            leafMemorySize = builder->getStatistic(StSizeLeafMemory);
 
             builder.clear();
             out.clear();

@@ -11,7 +11,7 @@
   role="bold">) := BEGINC++<indexterm>
       <primary>BEGINC++</primary>
     </indexterm></emphasis><emphasis role="bold">
-  </emphasis><emphasis></emphasis></para>
+  </emphasis><emphasis/></para>
 
   <para><emphasis> code</emphasis><emphasis role="bold"> </emphasis></para>
 
@@ -21,9 +21,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -223,7 +223,7 @@ isUpper('JIM');
   }
 ENDEMBED;</programlisting></para>
 
-    <para>If the result of a c++ function is a streamed dataset, then it needs
+    <para>If the result of a C++ function is a streamed dataset, then it needs
     to return an instance of an IRowStream interface. The function will also
     be passed an extra implicit parameter:</para>
 
@@ -310,9 +310,9 @@ ENDEMBED;
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt" />
+        <colspec align="left" colwidth="122.40pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>

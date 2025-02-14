@@ -394,7 +394,7 @@ void ElasticMetricSink::doCollection()
                     // create an inf name that looks like <name>_<histogramSuffix>_inf<countMetricSuffix>
                     std::string infName = histogramName;
                     infName.append("_inf").append(countMetricSuffix);
-                    reportData[infName] = inf;
+                    reportData[std::move(infName)] = inf;
                 }
             }
         }

@@ -10721,22 +10721,19 @@ IException * checkRegexSyntax(IHqlExpression * expr)
             {
                 if (isUTF8Type(expr->queryType()))
                 {
-                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(rtlUtf8Length(value->getSize(), value->queryValue()), (const char *)value->queryValue(), false);
-                    rtlDestroyCompiledU8StrRegExpr(compiled);
+                    rtlSyntaxCheckU8StrRegExpr(rtlUtf8Length(value->getSize(), value->queryValue()), (const char *)value->queryValue());
                 }
                 else if (isUnicodeType(expr->queryType()))
                 {
                     Owned<ITypeInfo> unknownVarUnicodeType = makeVarUnicodeType(UNKNOWN_LENGTH, nullptr);
                     Owned<IValue> castValue = value->castTo(unknownVarUnicodeType);
-                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr((const UChar *)castValue->queryValue(), false);
-                    rtlDestroyCompiledUStrRegExpr(compiled);
+                    rtlSyntaxCheckUStrRegExpr((const UChar *)castValue->queryValue());
                 }
                 else
                 {
                     Owned<ITypeInfo> unknownVarStringType = makeVarStringType(UNKNOWN_LENGTH);
                     Owned<IValue> castValue = value->castTo(unknownVarStringType);
-                    ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExpr((const char *)castValue->queryValue(), false);
-                    rtlDestroyCompiledStrRegExpr(compiled);
+                    rtlSyntaxCheckStrRegExpr((const char *)castValue->queryValue());
                 }
             }
             catch (IException * e)
