@@ -228,9 +228,9 @@ extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& cluster
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clustName);
 
 /**
- * Get pipe-delimited list of roxie server addresses and TLS config from environment configuration for the roxie process named `process`.
+ * Get pipe-delimited list of roxie server addresses and TLS config from roxie process `roxieCluster` configuration.
  * @param env           environment configuration
- * @param process       roxie process name
+ * @param roxieCluster  roxie process configuration to get addresses and TLS config from
  * @param addrList      pipe-delimited list of roxie server addresses
  * @param tlsConfig     TLS configuration
  * @param daliAddress   optional dali address to use for ws_ecl service if `@netAddress` not found in `server` configuration
