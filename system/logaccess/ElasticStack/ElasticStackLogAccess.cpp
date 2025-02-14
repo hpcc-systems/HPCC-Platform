@@ -519,7 +519,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
         status.appendJSONListMessage("Encountered unexpected exception during health report");
     }
 
-    report.status = status;
+    report.status = std::move(status);
  }
 
 /*
