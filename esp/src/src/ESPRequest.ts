@@ -135,7 +135,7 @@ class RequestHelper {
 
     send(service, action, params?): Promise<any> {
         if (!this.isSessionCall(service, action) && (!this.hasServerSetCookie() || (this.hasAuthentication() && !this.isAuthenticated()))) {
-            // @ts-ignore
+            // @ts-expect-error
             window.location.reload(true);
             return new Promise((resolve, reject) => { });
         }

@@ -934,7 +934,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "choicegroup":
-                field.value !== undefined ? field.value : "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -1013,7 +1013,6 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 }
                 break;
             case "link":
-                field.href = field.href;
                 retVal.push({
                     id: fieldID,
                     label: field.label,

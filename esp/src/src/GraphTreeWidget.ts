@@ -16,10 +16,10 @@ import * as registry from "dijit/registry";
 
 import * as entities from "dojox/html/entities";
 
-// @ts-ignore
+// @ts-expect-error
 import * as tree from "../dgrid/tree";
 
-// @ts-ignore
+// @ts-expect-error
 import * as _Widget from "hpcc/_Widget";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
@@ -27,7 +27,7 @@ import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 
-// @ts-ignore
+// @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/GraphTreeWidget.html";
 
 import "dijit/Dialog";
