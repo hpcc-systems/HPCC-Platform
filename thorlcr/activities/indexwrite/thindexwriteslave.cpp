@@ -45,7 +45,6 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
-    mutable CriticalSection builderCS;
 
     bool buildTlk, active;
     bool sizeSignalled;
