@@ -1280,7 +1280,7 @@ void CHThorIndexWriteActivity::execute()
             reccount++;
         }
         builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
-        duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
+        duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
         cummulativeDuplicateKeyCount += duplicateKeyCount;
         numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
         numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);
