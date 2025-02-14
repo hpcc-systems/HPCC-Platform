@@ -85,6 +85,11 @@ if (USE_PARQUET)
 endif()
 
 #  vcpkg.json options  ---
+set(VCPKG_ANTLR3 "${VCPKG_SUPPRESS}")
+if (WSSQL_SERVICE)
+    set(VCPKG_ANTLR3 "${VCPKG_INCLUDE}")
+endif()
+
 set(VCPKG_APR "${VCPKG_SUPPRESS}")
 if (USE_APR)
     set(VCPKG_APR "${VCPKG_INCLUDE}")
