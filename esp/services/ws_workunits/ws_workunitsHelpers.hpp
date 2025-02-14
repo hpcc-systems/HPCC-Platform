@@ -255,18 +255,25 @@ struct WUComponentLogOptions
         {
             StringArray componentsFilter;
             componentsFilter.appendList(componentsFilterList.str(), ",");
-            compoundOwnedFilter(logFetchFilter, getOredComponentsLogFilter(componentsFilter), LOGACCESS_FILTER_and);
+            Owned<ILogAccessFilter> filterClause = getOredComponentsLogFilter(componentsFilter);
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_and));
         }
 
         StringBuffer logType; //"DIS","ERR","WRN","INF","PRO","MET","EVT","ALL"
         zapHttpRequest->getParameter("LogFilter_LogEventType", logType);
         if (!logType.isEmpty() && strcmp(logType.str(), "ALL") != 0)
-            compoundOwnedFilter(logFetchFilter, getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str())), LOGACCESS_FILTER_and);
+        {
+            Owned<ILogAccessFilter> filterClause(getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str())));
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_and));
+        }
 
         StringBuffer wildCharFilter;
         zapHttpRequest->getParameter("LogFilter_WildcardFilter", wildCharFilter);
         if (!wildCharFilter.isEmpty())
-            compoundOwnedFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
+        {
+            Owned<ILogAccessFilter> filterClause(getWildCardLogAccessFilter(wildCharFilter.str()));
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_or));
+        }
 
         logFetchOptions.setFilter(logFetchFilter.getClear());
 
@@ -326,15 +333,24 @@ struct WUComponentLogOptions
         logFetchOptions.setStartFrom(logFilterReq.getLineStartFrom());
 
         if (logFilterReq.getComponentsFilter().length() > 0)
-            compoundOwnedFilter(logFetchFilter, getOredComponentsLogFilter(logFilterReq.getComponentsFilter()), LOGACCESS_FILTER_and);
+        {
+            Owned<ILogAccessFilter> filterClause = getOredComponentsLogFilter(logFilterReq.getComponentsFilter());
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_and));
+        }
 
         const char * logType = logFilterReq.getLogEventTypeAsString();
         if (!isEmptyString(logType) && strcmp(logType,"ALL") != 0)
-            compoundOwnedFilter(logFetchFilter, getClassLogAccessFilter(LogMsgClassFromAbbrev(logType)), LOGACCESS_FILTER_and);
+        {
+            Owned<ILogAccessFilter> filterClause(getClassLogAccessFilter(LogMsgClassFromAbbrev(logType)));
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_and));
+        }
 
         const char * wildCharFilter = logFilterReq.getWildcardFilter();
         if (!isEmptyString(wildCharFilter))
-            compoundOwnedFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
+        {
+            Owned<ILogAccessFilter> filterClause(getWildCardLogAccessFilter(wildCharFilter));
+            logFetchFilter.setown(getCompoundLogAccessFilter(logFetchFilter, filterClause, LOGACCESS_FILTER_or));
+        }
 
         logFetchOptions.setFilter(logFetchFilter.getClear());
         CSortDirection espSortDirection = logFilterReq.getSortByTimeDirection();

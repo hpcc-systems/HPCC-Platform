@@ -1705,25 +1705,10 @@ extern jlib_decl ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience a
 extern jlib_decl ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
+extern jlib_decl ILogAccessFilter * getCompoundLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getWildCardLogAccessFilter();
 extern jlib_decl ILogAccessFilter * getWildCardLogAccessFilter(const char * wildcardfilter);
 extern jlib_decl ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value);
-
-/**
- * @brief Logically combine a new filter with an existing compound filter.
- *
- * Given an existing filter, an extension filter is logically combined with it based on a
- * requested logical operation. The existing filter is replaced by the combined filter.
- *
- * If the existing filter is NULL, it is assigned to the extension. If the extension is NULL,
- * the existing filter is unchanged.
- *
- * @param compoundFilter The existing filter to be logically combined with the extension.
- * @param extension The new filter to be logically combined with the existing filter.
- *                  Ownership of the given reference is transferred to the function.
- * @param operation The logical operation to be performed on the existing and new filters.
- */
-extern jlib_decl void compoundOwnedFilter(Owned<ILogAccessFilter> & compoundFilter, ILogAccessFilter * extension, LogAccessFilterType operation);
 
 // Helper functions to actuate log access query
 extern jlib_decl bool fetchLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format, unsigned int & totalReceived, unsigned int & totalAvailable);

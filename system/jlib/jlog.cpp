@@ -3158,12 +3158,13 @@ ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAcce
     return ret;
 }
 
-void compoundOwnedFilter(Owned<ILogAccessFilter>& compoundFilter, ILogAccessFilter* extension, LogAccessFilterType operation)
+ILogAccessFilter* getCompoundLogAccessFilter(ILogAccessFilter* arg1, ILogAccessFilter* arg2, LogAccessFilterType type)
 {
-    if (!compoundFilter)
-        compoundFilter.setown(extension);
-    else if (extension)
-        compoundFilter.setown(getBinaryLogAccessFilterOwn(compoundFilter.getLink(), extension, operation));
+    if (!arg1)
+        return LINK(arg2);
+    if (!arg2)
+        return LINK(arg1);
+    return getBinaryLogAccessFilter(arg1, arg2, type);
 }
 
 
