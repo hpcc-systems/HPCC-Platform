@@ -4724,6 +4724,7 @@ public:
         x tally;
         for (unsigned activityId = 1; activityId <= NumIters; activityId++)
         {
+            //coverity[overflow_const : SUPPRESS] - deliberate overflow use case
             value = value * 0x100000001b3ULL + 99;
             tally.noteTime(activityId, value);
         }
@@ -4738,6 +4739,7 @@ public:
         x tally;
         for (unsigned activityId = 1; activityId <= NumIters; activityId++)
         {
+            //coverity[overflow_const : SUPPRESS] - deliberate overflow use case
             value = value * 0x100000001b3ULL + 99;
             tally.noteTime2(activityId, value);
         }
