@@ -326,7 +326,6 @@ enum StatisticKind
     StNumPeakCacheObjects,              // Peak number of objects in a generic cache
     StNumCacheDuplicates,
     StNumCacheEvictions,
-    StNumDuplicateKeyCount,
     StSizeOffsetBranches,
     StSizeBranchMemory,
     StSizeLeafMemory,
