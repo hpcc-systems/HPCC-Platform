@@ -28,6 +28,11 @@ your installation by creating a topic and interacting with it.
 
 ## Plugin Configuration
 
+*Expand the section that matches your runtime environment (bare metal vs containerized)*
+
+<details>
+<summary>Configuring in a Bare Metal Environment</summary>
+
 The Apache Kafka plugin uses sensible default configuration values but these can
 be modified via configuration files.
 
@@ -82,6 +87,96 @@ overriding their normal default values:
     queued.max.messages.kbytes=10000000
     fetch.message.max.bytes=10000000
     auto.offset.reset=smallest
+</details>
+
+<details>
+<summary>Configuring in a Containerized Environment</summary>
+
+The Apache Kafka plugin uses sensible default configuration values but these can
+be modified via configuration entries in the HPCC Systems Helm chart.
+
+Configuration entries can be placed in the global section of your Helm chart (which
+means that the settings are applied everywhere) or they can be placed within
+a component (meaning, they apply to only that component). The latter is useful
+for settings things differently for differently-configured Thors, for instance.
+
+Note that global and per-component configuration settings are **merged**. Per-
+component settings override global settings. Further details regarding the merge
+are at the end of this section.
+
+There are two types of configurations:  Global and per-topic.  Some
+configuration parameters are applicable only to publishers (producers, in Apache
+Kafka's terminology), others only to consumers, and some to both.  Details on
+the supported configuration parameters can be found on the [librdkafka
+configuration
+page](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md).
+
+A configuration block is a Helm entry with a series of key/value
+parameters, formatted like this:
+
+    plugins:
+      kafka:
+        global:
+          - name: key
+            value: value
+          - name: key
+            value: value
+          ...
+          - name: key
+            value: value
+
+This block can be added to the globals section of the Helm chart or
+to a specific component. 
+
+Whenever a new connection is created (either publisher or consumer) the plugin
+will scan for configuration entries.  The global
+configuration block should be named `global`.  Per-topic configuration
+blocks are also supported, and they can be different for a publisher or a
+consumer.  For a publisher, the naming convention is
+`publisher_topic_<TopicName>` and for a consumer it is
+`consumer_topic_<TopicName>`.  In both cases, `<TopicName>` is the
+name of the topic you are publishing to or consuming from.
+
+Settings that affect the protocol used to connect to the Kafka broker (such as
+using SSL) should be placed only in the global configuration block, not in
+any per-topic configuration block.
+
+Configuration parameters loaded from a Helm chart override those set by the plugin
+with one exception:  the `metadata.broker.list` setting, if found in a
+configuration block, is ignored.  Apache Kafka brokers are always set in ECL.
+
+If configuration blocks are found in multiple locations, their keys/values are **merged**.
+The order of merging is:
+
+    1. Kafka global settings from the chart's Global/plugins section
+    2. Kafka global settings from the per-component section
+    3. Kafka consumer/producer settings from the chart's Global/plugins section
+    4. Kafka consumer/producer settings from the per-component section
+
+The following configuration parameters are set by the plugin for publishers,
+overriding their normal default values:
+
+    - name: queue.buffering.max.messages
+      value: 1000000
+    - name: compression.codec
+      value: snappy
+    - name: message.send.max.retries
+      value: 3
+    - name: retry.backoff.ms
+      value: 500
+
+The following configuration parameters are set by the plugin for consumers,
+overriding their normal default values:
+
+    - name: compression.codec
+      value: snappy
+    - name: queued.max.messages.kbytes
+      value: 10000000
+    - name: fetch.message.max.bytes
+      value: 10000000
+    - name: auto.offset.reset
+      value: smallest
+</details>
 
 ## Publishing messages with the plugin
 
@@ -299,11 +394,11 @@ Topic partitioning is covered in Apache Kafka's
 is a performance relationship between the number of partitions in a topic and
 the size of the HPCC cluster when consuming messages.  Ideally, the number of
 partitions will exactly equal the number of HPCC nodes consuming messages.  For
-Thor, this means the total number of slaves rather than the number of nodes, as
-that can be different in a multi-slave setup.  For Roxie, the number is always
-one.  If there are fewer partitions than nodes (slaves) then not all of your
+Thor, this means the total number of workers rather than the number of nodes, as
+that can be different in a multi-worker setup.  For Roxie, the number is always
+one.  If there are fewer partitions than nodes (workers) then not all of your
 cluster will be utilized when consuming messages; if there are more partitions
-than nodes (slaves) then some nodes will be performing extra work, consuming
+than nodes (workers) then some nodes will be performing extra work, consuming
 from multiple partitions.  In either mismatch case, you may want to consider
 using the ECL DISTRIBUTE() function to redistribute your data before processing.
 
@@ -345,19 +440,21 @@ long as needed.
 
 ### Saved Topic Offsets
 
-By default, consumers save to a file the offset of the last-read message from a
-given topic, consumer group, and partition combination.  The offset is saved so
-that the next time the consumer is fired up for that particular connection
-combination, the consumption process can pick up where it left off.  The file is
-saved to the HPCC engine's data directory which is typically
+By default, in a bare-metal environment, consumers save to a file the offset of the
+last-read message from a given topic, consumer group, and partition combination.
+The offset is saved so that the next time the consumer is fired up for that
+particular connection combination, the consumption process can pick up where it left
+off.  The file is saved to the HPCC engine's data directory which is typically
 `/var/lib/HPCCSystems/mythor/`, `/var/lib/HPCCSystems/myroxie/` or
 `/var/lib/HPCCSystems/myeclagent/` depending on the engine you're using (the
 exact path may be different if you have named an engine differently in your HPCC
 configuration).  The format of the saved offset filename is
 `<TopicName>-<PartitionNum>-<ConsumerGroup>.offset`.
 
-Note that saving partition offsets is engine-specific.  One practical
-consideration of this is that you cannot have one engine (e.g. Thor) consume
-from a given topic and then have another engine (e.g. Roxie) consume the next
-set of messages from that topic.  Both engines can consume messages without a
-problem, but they will not track each other's last-read positions.
+Note that saving partition offsets is engine-specific in a bare-metal environment.
+One practical consideration of this is that you cannot have one engine (e.g. Thor)
+consume from a given topic and then have another engine (e.g. Roxie) consume the
+next set of messages from that topic.  Both engines can consume messages without a
+problem, but they will not track each other's last-read positions. Note that in a
+containerized environment different engines will use each others' offsets provided
+that they use the same consumer group.
