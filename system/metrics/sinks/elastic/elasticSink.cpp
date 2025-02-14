@@ -418,7 +418,7 @@ void ElasticMetricSink::doCollection()
             httplib::Error err = resp.error();
             WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
         }
-        else if (resp->status != 200 || resp->status != 201)
+        else if (resp->status != 200 && resp->status != 201)
         {
             WARNLOG("ElasticMetricSink: Error response status = %d reporting metrics to Index '%s'", resp->status, indexName.str());
         }
