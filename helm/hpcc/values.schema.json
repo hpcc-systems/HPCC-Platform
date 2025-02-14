@@ -3528,6 +3528,6 @@
       "description": "plugin configurations",
       "type": "object",
       "additionalProperties": true
-	}
+    }
   }
 }
