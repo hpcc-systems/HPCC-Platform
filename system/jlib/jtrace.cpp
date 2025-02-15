@@ -38,6 +38,8 @@
 #include "opentelemetry/sdk/trace/exporter.h"
 #include "opentelemetry/sdk/trace/span_data.h"
 
+#include "opentelemetry/sdk/common/global_log_handler.h"
+
 // NB: undefine after opentelemetry includes, and before HPCC includes where we define.
 #undef ForEach //opentelemetry defines ForEach
 #undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
@@ -58,6 +60,36 @@ namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;
 
 using namespace ln_uid;
+
+
+class CustomOTELLogHandler : public opentelemetry::sdk::common::internal_log::LogHandler
+{
+    void Handle(opentelemetry::sdk::common::internal_log::LogLevel level,const char * file, int line, const char * msg,
+                const opentelemetry::sdk::common::AttributeMap &attributes) noexcept override
+    {
+        if (!isEmptyString(msg))
+        {
+            const LogMsgCategory * logCategory = nullptr;
+            switch(level)
+            {
+                case opentelemetry::sdk::common::internal_log::LogLevel::Error:
+                    logCategory = &MCoperatorError;
+                    break;
+                case opentelemetry::sdk::common::internal_log::LogLevel::Warning:
+                    logCategory = &MCoperatorWarning;
+                    break;
+                case opentelemetry::sdk::common::internal_log::LogLevel::Info:
+                    logCategory = &MCoperatorInfo;
+                    break;
+                case opentelemetry::sdk::common::internal_log::LogLevel::Debug:
+                default:
+                    logCategory = &MCdebugInfo;
+                    break;
+            }
+            LOG(*logCategory, "JTrace: %s", msg);
+        }
+    }
+};
 
 /*
 NoopSpanExporter is a SpanExporter that does not do anything.
@@ -1395,7 +1427,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
                 processors.push_back(std::move(processor));
         }
 
-        enableDefaultLogExporter = traceConfig->getPropBool("enableDefaultLogExporter", enableDefaultLogExporter);
+        enableDefaultLogExporter = traceConfig->getPropBool("@enableDefaultLogExporter", enableDefaultLogExporter);
     }
 
     if (enableDefaultLogExporter)
@@ -1415,6 +1447,15 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
 
     // Set the global trace provider
     opentelemetry::trace::Provider::SetTracerProvider(provider);
+
+    //capture OTEL logs
+    opentelemetry::v1::nostd::shared_ptr<opentelemetry::v1::sdk::common::internal_log::LogHandler> logHandler(new CustomOTELLogHandler);
+    opentelemetry::sdk::common::internal_log::GlobalLogHandler::SetLogHandler(logHandler);
+    opentelemetry::sdk::common::internal_log::GlobalLogHandler::SetLogLevel(
+        traceConfig->getPropBool("@enableOTELDebugLogging", false) ? 
+        opentelemetry::sdk::common::internal_log::LogLevel::Debug :
+        opentelemetry::sdk::common::internal_log::LogLevel::Warning
+    );
 }
 
 /*
