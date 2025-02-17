@@ -199,7 +199,7 @@ public:
         return new CDistributedSuperFileIterator(dfsFile, superOwners);
     }
     virtual bool isCompressed(bool *blocked=NULL) override { return legacyDFSFile->isCompressed(blocked); }
-    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) override { return legacyDFSFile->getClusterName(clusternum,name); }
+    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) const override { return legacyDFSFile->getClusterName(clusternum,name); }
     virtual unsigned getClusterNames(StringArray &clusters) override { return legacyDFSFile->getClusterNames(clusters); }                                                                                      // (use findCluster)
     virtual unsigned numClusters() override { return legacyDFSFile->numClusters(); }
     virtual unsigned findCluster(const char *clustername) override { return legacyDFSFile->findCluster(clustername); }

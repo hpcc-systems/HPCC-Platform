@@ -384,7 +384,7 @@ interface IDistributedFile: extends IInterface
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
 
-    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) = 0;
+    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) const = 0;
     virtual unsigned getClusterNames(StringArray &clusters)=0;                  // returns ordinality
                                                                                       // (use findCluster)
     virtual unsigned numClusters()=0;
@@ -901,7 +901,7 @@ constexpr bool defaultNonPrivilegedUser = false;
 extern da_decl void configurePreferredPlanes();
 
 template<typename Source>
-inline cost_type calcReadCost(const IPropertyTree & fileAttr, Source source)
+inline cost_type calcLegacyReadCost(const IPropertyTree & fileAttr, Source source)
 {
     // Calculate legacy read cost from numDiskReads
     // (However, it is not possible to accurately calculate read cost for key
@@ -923,7 +923,7 @@ inline cost_type getReadCost(IPropertyTree & fileAttr, Source source, bool migra
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
     {
-        cost_type readCost = calcReadCost(fileAttr, source);
+        cost_type readCost = calcLegacyReadCost(fileAttr, source);
         if (migrateLegacyCost)
             fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
         return readCost;
@@ -937,11 +937,11 @@ inline cost_type getReadCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
-        return calcReadCost(fileAttr, source);
+        return calcLegacyReadCost(fileAttr, source);
 }
 
 template<typename Source>
-inline cost_type calcWriteCost(const IPropertyTree & fileAttr, Source source)
+inline cost_type calcLegacyWriteCost(const IPropertyTree & fileAttr, Source source)
 {
     if (source)
     {
@@ -960,7 +960,7 @@ inline cost_type getWriteCost(IPropertyTree & fileAttr, Source source, bool migr
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
     {
-        cost_type writeCost = calcWriteCost(fileAttr, source);
+        cost_type writeCost = calcLegacyWriteCost(fileAttr, source);
         if (migrateLegacyCost)
             fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
         return writeCost;
@@ -974,7 +974,7 @@ inline cost_type getWriteCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
-        return calcWriteCost(fileAttr, source);
+        return calcLegacyWriteCost(fileAttr, source);
 }
 
 extern da_decl bool doesPhysicalMatchMeta(IPartDescriptor &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize);
