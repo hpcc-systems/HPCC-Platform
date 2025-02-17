@@ -486,7 +486,7 @@ int main( int argc, const char *argv[]  )
             if (err)
             {
                 IException *e = makeErrnoExceptionV(-1, "Failed to change dir to '%s'", thorPath.str());
-                FLLOG(MCexception(e), e);
+                OERRLOG(e);
                 throw e;
             }
 
@@ -495,7 +495,15 @@ int main( int argc, const char *argv[]  )
 
             StringBuffer str;
             if (globals->getProp("@externalProgDir", str.clear()))
-                _mkdir(str.str());
+            {
+                int err = _mkdir(str.str());
+                if (err)
+                {
+                    IException *e = makeErrnoExceptionV(-1, "Failed to create dir '%s'", str.str());
+                    OERRLOG(e);
+                    throw e;
+                }
+            }
             else
                 globals->setProp("@externalProgDir", thorPath);
 
