@@ -1,12 +1,17 @@
 import logging
 import os
-import requests
 import time
 import glob
 from datetime import datetime,  timedelta
 
 # Configure logger
 logger = logging.getLogger('cleanup') 
+
+try:
+    import requests
+except ImportError:
+    requests = None
+    logger = logging.getLogger('RegressionTestEngine')
 
 # Custom logger formatter for serial numbering of log records
 class SerialNumberFormatter(logging.Formatter):
@@ -95,7 +100,11 @@ def deleteWorkunit(url):
         logger.error("Error occurred while deleting workunit %s: %s.\n   URL: %s", wuid, str(e), url)
 
 # Main function to instantiate custom logger and initiate workunit detail extraction
-def doCleanup(logDir, cleanupMode, startTime):  
-    logDirPath = os.path.expanduser(logDir)
-    buildCleanupLogger(logDirPath, logger)
-    getRegressLogs(cleanupMode, logDirPath, startTime)
+def doCleanup(logDir, cleanupMode, startTime):
+    if requests != None:
+        logDirPath = os.path.expanduser(logDir)
+        buildCleanupLogger(logDirPath, logger)
+        getRegressLogs(cleanupMode, logDirPath, startTime)
+    else:
+        logger.warning("The 'requests' library not found, clean-up functionality disabled.\n")
+
