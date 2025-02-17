@@ -6940,6 +6940,7 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+            verifyex(!_transaction);
             localtrans.set(_transaction);
         }
         else
