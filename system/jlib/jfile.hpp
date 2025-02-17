@@ -47,7 +47,7 @@ enum IFSHmode { IFSHnone, IFSHread=0x8, IFSHfull=0x10};   // sharing modes
 enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN };    // seek mode
 enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
 enum IFEflags { IFEnone=0x0, IFEnocache=0x1, IFEcache=0x2, IFEsync=0x4, IFEsyncAtClose=0x8 }; // mask
-constexpr offset_t unknownFileSize = -1;
+constexpr offset_t unknownFileSize = (offset_t)-1;
 
 class CDateTime;
 

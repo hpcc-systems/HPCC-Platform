@@ -1167,6 +1167,14 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual ICodeContext *queryCodeContext()=0;
 };
 
+static IDistributedFileTransactionExt *queryTransactionExt(IDistributedFileTransaction *transaction)
+{
+    IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+    verifyex(_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                            //  are IDistributedFileTransactionExtinstances.
+    return _transaction;
+}
+
 class CDistributedFileDirectory: implements IDistributedFileDirectory, public CInterface
 {
     Owned<IUserDescriptor> defaultudesc;
@@ -5611,7 +5619,7 @@ protected:
                         subfile.setown(queryDistributedFileDirectory().createNewSuperFile(dummySuperRoot, subname));
                         if (transaction)
                         {
-                            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+                            IDistributedFileTransactionExt *_transaction = queryTransactionExt(transaction);
                             _transaction->ensureFile(subfile);
                         }
                     }
@@ -6805,8 +6813,7 @@ public:
         Linked<IDistributedFileTransactionExt> localtrans;
         if (transaction)
         {
-            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            localtrans.set(_transaction);
+            localtrans.set(queryTransactionExt(transaction));
         }
         else
             localtrans.setown(new CDistributedFileTransaction(udesc, this));
@@ -6852,8 +6859,7 @@ public:
         Linked<IDistributedFileTransactionExt> localtrans;
         if (transaction)
         {
-            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            localtrans.set(_transaction);
+            localtrans.set(queryTransactionExt(transaction));
         }
         else
             localtrans.setown(new CDistributedFileTransaction(udesc, this));
@@ -6909,8 +6915,7 @@ public:
         Linked<IDistributedFileTransactionExt> localtrans;
         if (transaction)
         {
-            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            localtrans.set(_transaction);
+            localtrans.set(queryTransactionExt(transaction));
         }
         else
             localtrans.setown(new CDistributedFileTransaction(udesc, this));
@@ -6939,8 +6944,7 @@ public:
         Linked<IDistributedFileTransactionExt> localtrans;
         if (transaction)
         {
-            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            localtrans.set(_transaction);
+            localtrans.set(queryTransactionExt(transaction));
         }
         else
             localtrans.setown(new CDistributedFileTransaction(udesc, this));
@@ -8954,8 +8958,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     Linked<IDistributedFileTransactionExt> localtrans;
     if (transaction)
     {
-        IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-        localtrans.set(_transaction);
+        localtrans.set(queryTransactionExt(transaction));
     }
     else
         localtrans.setown(new CDistributedFileTransaction(user));
@@ -8992,8 +8995,7 @@ void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool d
     Linked<IDistributedFileTransactionExt> localtrans;
     if (transaction)
     {
-        IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-        localtrans.set(_transaction);
+        localtrans.set(queryTransactionExt(transaction));
     }
     else
         localtrans.setown(new CDistributedFileTransaction(user));
@@ -9014,8 +9016,7 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
     Linked<IDistributedFileTransactionExt> localtrans;
     if (transaction)
     {
-        IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-        localtrans.set(_transaction);
+        localtrans.set(queryTransactionExt(transaction));
     }
     else
         localtrans.setown(new CDistributedFileTransaction(user));
@@ -9068,8 +9069,7 @@ void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     Linked<IDistributedFileTransactionExt> localtrans;
     if (transaction)
     {
-        IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-        localtrans.set(_transaction);
+        localtrans.set(queryTransactionExt(transaction));
     }
     else
         localtrans.setown(new CDistributedFileTransaction(user));
