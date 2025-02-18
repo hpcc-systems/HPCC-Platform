@@ -602,7 +602,7 @@ protected:
     {
         switch (kind)
         {
-        case StNumDuplicateKeyCount:
+        case StNumDuplicateKeys:
             return duplicateCount;
         case StSizeOffsetBranches:
             return offsetBranches;
