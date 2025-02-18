@@ -6940,7 +6940,8 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            verifyex(!_transaction);
+            verifyex(!_transaction); // _transaction cannot be non-null as all IDistributedFileTransaction instances
+                                     //  are IDistributedFileTransactionExtinstances.
             localtrans.set(_transaction);
         }
         else
