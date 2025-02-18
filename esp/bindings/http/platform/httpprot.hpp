@@ -43,9 +43,9 @@ private:
     Owned<ISocket> m_socket;
     CEspApplicationPort* m_apport = nullptr;
     StringAttr m_context;
-    int m_MaxRequestEntityLength;
-    bool m_is_ssl;
-    ISecureSocketContext* m_ssctx;
+    int m_MaxRequestEntityLength = DEFAULT_MAX_REQUEST_ENTITY_LENGTH;
+    bool m_is_ssl = false;
+    ISecureSocketContext* m_ssctx = nullptr;
     IPersistentHandler* m_persistentHandler = nullptr;
     bool m_shouldClose = false;
     IHttpServerService* m_httpserver = nullptr;
@@ -86,7 +86,7 @@ private:
     CEspApplicationPort* m_apport;
     bool m_viewConfig;
     StringAttr m_context;
-    int m_MaxRequestEntityLength;
+    int m_MaxRequestEntityLength = DEFAULT_MAX_REQUEST_ENTITY_LENGTH;
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
