@@ -208,7 +208,6 @@ protected:
     MemoryBuffer *outBufMb = nullptr; // used when dynamic output buffer (when open() used)
     size32_t outBufStart = 0;
     byte *inbuf = nullptr;
-    size32_t inmax = 0;         // remaining
     size32_t inlen = 0;
     size32_t inlenblk = 0;      // set to COMMITTED when so
     bool trailing = false;
@@ -225,7 +224,6 @@ protected:
         outlen = sizeof(size32_t);
         inlen = 0;
         inlenblk = COMMITTED;
-        setinmax();
     }
 
     bool hc = false;
@@ -262,6 +260,7 @@ protected:
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override
     {
+        throwUnexpected();
         if (!initialSize)
             initialSize = FCMP_BUFFER_SIZE; // 1MB
         wrmax = initialSize;
@@ -292,7 +291,11 @@ protected:
             inlen = inlenblk; // transaction failed
             inlenblk = COMMITTED;
         }
-        flushcommitted();
+
+        if (flushcommitted(inlen) == inlen)
+            inlen = 0;
+
+        //Any remaining data is copied uncompressed.
         size32_t totlen = outlen+sizeof(size32_t)+inlen;
         assertex(blksz>=totlen);
         size32_t *tsize = (size32_t *)(outbuf+outlen);
@@ -311,44 +314,44 @@ protected:
     size32_t write(const void *buf,size32_t len) override
     {
         // no more than wrmax per write (unless dynamically sizing)
-        size32_t lenb = wrmax;
-        byte *b = (byte *)buf;
+        const byte * buffer = (const byte *)buf;
         size32_t written = 0;
+
+        //Keep looping until all data is written and we can guarantee that the remaining data will fit into the
+        //buffer uncompressed - so that we can guarantee the data will be written fully.
+
         while (len)
         {
-            if (len < lenb)
-                lenb = len;
-            if (lenb+inlen>inmax)
+            size32_t originalLen = inlen;
+            size32_t remaining = blksz - inlen;
+            size32_t toCopy = remaining>len ? len : remaining;
+            //Fill the input buffer with as much data as will fit
+            if (toCopy)
             {
-                if (trailing)
-                    return written;
-
-                if (inlen == inmax)
-                    flushcommitted();
-
-                if (lenb+inlen>inmax)
-                {
-                    if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
-                    {
-                        blksz += len > FCMP_BUFFER_SIZE ? len : FCMP_BUFFER_SIZE;
-                        verifyex(inma.ensureCapacity(blksz));
-                        blksz = inma.capacity();
-                        inbuf = (byte *)inma.bufferBase();
-                        wrmax = blksz;
-                        setinmax();
-                    }
-                    lenb = inmax-inlen;
-                    if (len < lenb)
-                        lenb = len;
-                }
+                memcpy(inbuf+inlen, buffer, toCopy);
+                buffer += toCopy;
+                len -= toCopy;
+                inlen += toCopy;
             }
-            if (lenb == 0)
+
+            //How much data can be stored uncompressed in the buffer?
+            size32_t uncompressedMax = blksz-outlen-sizeof(size32_t)*2;
+            if ((inlen == blksz) || (inlen > uncompressedMax))
+            {
+                size32_t sizeToWrite = inlen;
+                size32_t sizeWritten = flushcommitted(originalLen); // Pass originalLen to ensure that is always committed.
+                written += (sizeWritten - originalLen);
+                inlen = 0; // either all written, or this write will return a partial success - no room left
+
+                //If failed to write a complete block then return data actually written
+                if (sizeWritten != sizeToWrite)
+                    return written;
+            }
+            else
+            {
+                written += (inlen - originalLen);
                 return written;
-            memcpy(inbuf+inlen,b,lenb);
-            b += lenb;
-            inlen += lenb;
-            len -= lenb;
-            written += lenb;
+            }
         }
         return written;
     }
@@ -370,22 +373,6 @@ protected:
     }
 
 protected:
-    void setinmax()
-    {
-        if (blksz <= outlen+sizeof(size32_t))
-            trailing = true;    // too small to bother compressing
-        else
-        {
-            trailing = false;
-            inmax = blksz-outlen-sizeof(size32_t);
-            size32_t slack = LZ4_COMPRESSBOUND(inmax) - inmax;
-            if (inmax <= (slack + sizeof(size32_t)))
-                trailing = true;
-            else
-                inmax = inmax - (slack + sizeof(size32_t));
-        }
-    }
-
     virtual bool adjustLimit(size32_t newLimit) override
     {
         assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
@@ -397,53 +384,48 @@ protected:
             return false;
 
         blksz = newLimit;
-        setinmax();
         return true;
     }
 
-    void flushcommitted()
+    size32_t flushcommitted(size32_t minToWrite)
     {
         // only does non trailing
-        if (trailing)
-            return;
         size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
         if (toflush == 0)
-            return;
+            return 0;
 
-        size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
-        if (!dynamicOutSz)
-            assertex(outSzRequired<=blksz);
-        else
-        {
-            if (outSzRequired>dynamicOutSz)
-            {
-                verifyex(outBufMb->ensureCapacity(outBufStart+outSzRequired));
-                dynamicOutSz = outBufMb->capacity();
-                outbuf = ((byte *)outBufMb->bufferBase()+outBufStart);
-            }
-        }
+        size32_t spaceLeft = blksz - outlen - sizeof(size32_t)*2;
+        assertex(!dynamicOutSz);
+
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
 
+        int outSize;
+        int numWritten = toflush;
         if (hc)
-            *cmpsize = LZ4_compress_HC((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush), hcLevel);
-        else
-            *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
-        if (*cmpsize && *cmpsize<toflush)
         {
-            *(size32_t *)outbuf += toflush;
-            outlen += *cmpsize+sizeof(size32_t);
-            if (inlenblk==COMMITTED)
-                inlen = 0;
-            else
-            {
-                inlen -= inlenblk;
-                memmove(inbuf,inbuf+toflush,inlen);
-            }
-            setinmax();
-            return;
+            LZ4_streamHC_t * ctx = LZ4_createStreamHC();
+            outSize = LZ4_compress_HC_destSize(ctx, (const char *)inbuf, (char *)out, &numWritten, spaceLeft, hcLevel);
+            LZ4_freeStreamHC(ctx);
         }
-        trailing = true;
+        else
+        {
+            outSize = LZ4_compress_destSize((const char *)inbuf, (char *)out, &numWritten, spaceLeft);
+        }
+
+        //Catch the weird situation, where compressing the data takes up more room, so it the data must be stored uncompressed.
+        if ((size32_t)numWritten < minToWrite)
+            return 0;
+
+        *cmpsize = outSize;
+        if (outSize > 0)
+        {
+            //Any data that could not be compressed into the current block is
+            *(size32_t *)outbuf += outSize;
+            outlen += outSize+sizeof(size32_t);
+            return numWritten;
+        }
+        return 0;
     }
 
 
