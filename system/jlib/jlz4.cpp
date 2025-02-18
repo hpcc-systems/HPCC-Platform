@@ -197,6 +197,351 @@ public:
     }
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class CLZ4NewCompressor final : public CSimpleInterfaceOf<ICompressor>
+{
+protected:
+    size32_t blksz = 0;
+    size32_t bufalloc = 0;
+    MemoryBuffer inma;      // equals blksize len
+    MemoryBuffer *outBufMb = nullptr; // used when dynamic output buffer (when open() used)
+    size32_t outBufStart = 0;
+    byte *inbuf = nullptr;
+    size32_t inmax = 0;         // remaining
+    size32_t inlen = 0;
+    size32_t inlenblk = 0;      // set to COMMITTED when so
+    bool trailing = false;
+    byte *outbuf = nullptr;
+    size32_t outlen = 0;
+    size32_t wrmax = 0;
+    size32_t dynamicOutSz = 0;
+    size32_t originalMax = 0;
+
+    void initCommon(size32_t initialSize)
+    {
+        blksz = initialSize;
+        *(size32_t *)outbuf = 0;
+        outlen = sizeof(size32_t);
+        inlen = 0;
+        inlenblk = COMMITTED;
+        setinmax();
+    }
+
+    bool hc = false;
+    int hcLevel = LZ4HC_CLEVEL_DEFAULT;
+
+
+protected:
+    virtual void open(void *buf,size32_t max) override
+    {
+        wrmax = max;
+        originalMax = max;
+        if (buf)
+        {
+            if (bufalloc)
+                free(outbuf);
+            bufalloc = 0;
+            outbuf = (byte *)buf;
+        }
+        else if (max>bufalloc)
+        {
+            if (bufalloc)
+                free(outbuf);
+            outbuf = (byte *)malloc(max);
+            if (!outbuf)
+                throw MakeStringException(-1,"CFcmpCompressor::open - out of memory, requesting %d bytes", max);
+            bufalloc = max;
+        }
+        outBufMb = NULL;
+        outBufStart = 0;
+        dynamicOutSz = 0;
+        inbuf = (byte *)inma.ensureCapacity(max);
+        initCommon(max);
+    }
+
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
+    {
+        if (!initialSize)
+            initialSize = FCMP_BUFFER_SIZE; // 1MB
+        wrmax = initialSize;
+        if (bufalloc)
+        {
+            free(outbuf);
+            bufalloc = 0;
+        }
+        inbuf = (byte *)inma.ensureCapacity(initialSize);
+        outBufMb = &mb;
+        outBufStart = mb.length();
+        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+        dynamicOutSz = outBufMb->capacity();
+        initCommon(initialSize);
+    }
+
+    virtual void close() override
+    {
+        //Protect against close() being called more than once on a compressor
+        if (!inbuf)
+        {
+            if (isDebugBuild())
+                throwUnexpectedX("CFCmpCompressor::close() called more than once");
+            return;
+        }
+        if (inlenblk!=COMMITTED)
+        {
+            inlen = inlenblk; // transaction failed
+            inlenblk = COMMITTED;
+        }
+        flushcommitted();
+        size32_t totlen = outlen+sizeof(size32_t)+inlen;
+        assertex(blksz>=totlen);
+        size32_t *tsize = (size32_t *)(outbuf+outlen);
+        *tsize = inlen;
+        memcpy(tsize+1,inbuf,inlen);
+        outlen = totlen;
+        *(size32_t *)outbuf += inlen;
+        inbuf = NULL;
+        if (outBufMb)
+        {
+            outBufMb->setWritePos(outBufStart+outlen);
+            outBufMb = NULL;
+        }
+    }
+
+    size32_t write(const void *buf,size32_t len) override
+    {
+        // no more than wrmax per write (unless dynamically sizing)
+        size32_t lenb = wrmax;
+        byte *b = (byte *)buf;
+        size32_t written = 0;
+        while (len)
+        {
+            if (len < lenb)
+                lenb = len;
+            if (lenb+inlen>inmax)
+            {
+                if (trailing)
+                    return written;
+
+                if (inlen == inmax)
+                    flushcommitted();
+
+                if (lenb+inlen>inmax)
+                {
+                    if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
+                    {
+                        blksz += len > FCMP_BUFFER_SIZE ? len : FCMP_BUFFER_SIZE;
+                        verifyex(inma.ensureCapacity(blksz));
+                        blksz = inma.capacity();
+                        inbuf = (byte *)inma.bufferBase();
+                        wrmax = blksz;
+                        setinmax();
+                    }
+                    lenb = inmax-inlen;
+                    if (len < lenb)
+                        lenb = len;
+                }
+            }
+            if (lenb == 0)
+                return written;
+            memcpy(inbuf+inlen,b,lenb);
+            b += lenb;
+            inlen += lenb;
+            len -= lenb;
+            written += lenb;
+        }
+        return written;
+    }
+
+    virtual void * bufptr() override
+    {
+        assertex(!inbuf);  // i.e. closed
+        return outbuf;
+    }
+
+    virtual void startblock() override
+    {
+        inlenblk = inlen;
+    }
+
+    virtual void commitblock() override
+    {
+        inlenblk = COMMITTED;
+    }
+
+protected:
+    void setinmax()
+    {
+        if (blksz <= outlen+sizeof(size32_t))
+            trailing = true;    // too small to bother compressing
+        else
+        {
+            trailing = false;
+            inmax = blksz-outlen-sizeof(size32_t);
+            size32_t slack = LZ4_COMPRESSBOUND(inmax) - inmax;
+            if (inmax <= (slack + sizeof(size32_t)))
+                trailing = true;
+            else
+                inmax = inmax - (slack + sizeof(size32_t));
+        }
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(inlenblk == COMMITTED);            // not inside a transaction
+        assertex(newLimit <= originalMax);
+
+        //Reject the limit change if it is too small for the data already committed.
+        if (newLimit < LZ4_COMPRESSBOUND(inlen) + outlen + sizeof(size32_t))
+            return false;
+
+        blksz = newLimit;
+        setinmax();
+        return true;
+    }
+
+    void flushcommitted()
+    {
+        // only does non trailing
+        if (trailing)
+            return;
+        size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+        if (toflush == 0)
+            return;
+
+        size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
+        if (!dynamicOutSz)
+            assertex(outSzRequired<=blksz);
+        else
+        {
+            if (outSzRequired>dynamicOutSz)
+            {
+                verifyex(outBufMb->ensureCapacity(outBufStart+outSzRequired));
+                dynamicOutSz = outBufMb->capacity();
+                outbuf = ((byte *)outBufMb->bufferBase()+outBufStart);
+            }
+        }
+        size32_t *cmpsize = (size32_t *)(outbuf+outlen);
+        byte *out = (byte *)(cmpsize+1);
+
+        if (hc)
+            *cmpsize = LZ4_compress_HC((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush), hcLevel);
+        else
+            *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
+        if (*cmpsize && *cmpsize<toflush)
+        {
+            *(size32_t *)outbuf += toflush;
+            outlen += *cmpsize+sizeof(size32_t);
+            if (inlenblk==COMMITTED)
+                inlen = 0;
+            else
+            {
+                inlen -= inlenblk;
+                memmove(inbuf,inbuf+toflush,inlen);
+            }
+            setinmax();
+            return;
+        }
+        trailing = true;
+    }
+
+
+    size32_t buflen() override
+    {
+        if (inbuf)
+        {
+            //calling flushcommitted() would mean everything is serialized as trailing
+            size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+            return outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
+        }
+        return outlen;
+    }
+
+    virtual bool supportsBlockCompression() const override { return true; }
+    virtual bool supportsIncrementalCompression() const override { return false; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        if (destSize <= 3 * sizeof(size32_t))
+            return 0;
+
+        //General format for lz4 compressed data is
+        //total-uncompressed-size, (compressed size, compressedData)* (trailing-uncompressed size, trailing data)
+        //This function will always store 0 as the trailing size.
+        size32_t * ptrUnSize = (size32_t *)dest;
+        size32_t * ptrCmpSize = ptrUnSize+1;
+        byte * remaining = (byte *)(ptrCmpSize+1);
+        size32_t remainingSize = destSize - 3 * sizeof(size32_t);
+        int compressedSize;
+        if (hc)
+            compressedSize = LZ4_compress_HC((const char *)src, (char *)remaining, srcSize, remainingSize, hcLevel);
+        else
+            compressedSize = LZ4_compress_default((const char *)src, (char *)remaining, srcSize, remainingSize);
+
+        if (compressedSize == 0)
+            return 0;
+
+        *ptrUnSize = srcSize;
+        *ptrCmpSize = compressedSize;
+
+        //Should be improved - currently appends a block of memcpy data.  Unnecessary if all data is
+        //compressed, or that is implemented elsewhere.
+        *(size32_t *)(remaining + compressedSize) = 0;
+
+        return compressedSize + 3 * sizeof(size32_t);
+    }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        dbgassertex(srcSize != 0);
+        int compressedSize;
+        if (numCompressed)
+        {
+            //Write as much data as possible into the target buffer - update numCompressed with size actually written
+            int numRead = srcSize;
+            if (hc)
+            {
+                MemoryAttr state(LZ4_sizeofStateHC());
+                compressedSize = LZ4_compress_HC_destSize(state.mem(), (const char *)src, (char *)dest, &numRead, destSize, hcLevel);
+            }
+            else
+            {
+                compressedSize = LZ4_compress_destSize((const char *)src, (char *)dest, &numRead, destSize);
+            }
+            *numCompressed = numRead;
+        }
+        else
+        {
+            if (hc)
+                compressedSize = LZ4_compress_HC((const char *)src, (char *)dest, srcSize, destSize, hcLevel);
+            else
+                compressedSize = LZ4_compress_default((const char *)src, (char *)dest, srcSize, destSize);
+        }
+
+        return compressedSize;
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4HC : COMPRESS_METHOD_LZ4; }
+public:
+    CLZ4NewCompressor(const char * options, bool _hc) : hc(_hc)
+    {
+        auto processOption = [this](const char * option, const char * value)
+        {
+            if (strieq(option, "hclevel"))
+                hcLevel = atoi(value);
+        };
+        processOptionString(options, processOption);
+    }
+    virtual ~CLZ4NewCompressor()
+    {
+        if (bufalloc)
+            free(outbuf);
+    }
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class jlib_decl CLZ4Expander : public CFcmpExpander
 {
@@ -415,7 +760,7 @@ void LZ4DecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
 
 ICompressor *createLZ4Compressor(const char * options, bool hc)
 {
-    return new CLZ4Compressor(options, hc);
+    return new CLZ4NewCompressor(options, hc);
 }
 
 IExpander *createLZ4Expander()
