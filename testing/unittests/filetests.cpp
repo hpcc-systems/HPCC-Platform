@@ -24,6 +24,8 @@
 #include <memory>
 #include <chrono>
 #include <algorithm>
+#include <random>
+
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -49,6 +51,7 @@ public:
     CPPUNIT_TEST_SUITE(JlibFileTest);
         CPPUNIT_TEST(testCompressed);
         CPPUNIT_TEST(testAppendCompressed);
+        CPPUNIT_TEST(testCompressWrite);
         CPPUNIT_TEST(cleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -210,6 +213,53 @@ public:
         readCompressed(false, 0x400000);
         readCompressed(false, 0x4000000);
     }
+
+    void testCompressWrite(const char * srcFilename, offset_t sizeToWrite, CompressionMethod compMethod)
+    {
+        Owned<IFile> srcFile(createIFile(srcFilename));
+        if (!srcFile->exists())
+            return;
+
+        offset_t srcSize = srcFile->size();
+        Owned<IFileIO> srcIO(srcFile->open(IFOread));
+        Owned<IFileIOStream> srcStream(createBufferedIOStream(srcIO, 0x100000));
+
+        std::mt19937 randomGenerator; // Use the default seed, do not re-initialize
+
+        CCycleTimer timer;
+        Owned<IFile> file(createIFile(testFilename));
+        Owned<IFileIO> io(createCompressedFileWriter(file, false, false, nullptr, compMethod, 0x10000, -1, IFEnone));
+
+        offset_t offset = 0;
+        constexpr size32_t maxReadSize = 0x20000;
+        MemoryAttr buffer(maxReadSize);
+        while (offset < sizeToWrite)
+        {
+            offset_t thisSize = randomGenerator() % 0x20000;
+            offset_t thisOffset = randomGenerator() % (srcSize - thisSize);
+
+            srcStream->seek(thisOffset, IFSbegin);
+            srcStream->read(thisSize, buffer.mem());
+            io->write(offset, thisSize, buffer.mem());
+            offset += thisSize;
+        }
+        io->flush();
+        io->close();
+
+        //MORE: Also write uncompressed and compare the contents.
+
+        DBGLOG("Compressed %s file size = %llu -> %llu took %ums", translateFromCompMethod(compMethod), sizeToWrite, file->size(), timer.elapsedMs());
+    }
+
+    void testCompressWrite()
+    {
+        const char * sampleSrc = "/home/gavin/dev/hpcc/testing/regress/download/pge0112.txt";
+        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZ4);
+        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZ4HC3);
+        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZW);
+        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_ZSTDS);
+    }
+
     void cleanup()
     {
         Owned<IFile> file(createIFile(testFilename));
