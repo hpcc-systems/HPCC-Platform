@@ -613,22 +613,28 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         unsigned id = s.id;
         VStringBuffer binfile("%s_%s_%u.bin", filename.str(), type, id);
         VStringBuffer label("%s_%u_txt_start", type, id);
+
+        //Note on targets where the @ character is the start of a comment (eg ARM) then another character is used instead. For example the ARM port uses the % character.
+#if defined(__arm__) || defined(__aarch64__)
+        const char typePrefix = '%';
+#else
+        const char typePrefix = '@';
+#endif
+
         if (compilerType == ClangCppCompiler)
         {
 #ifdef __APPLE__
             if (id <= 1200)  // There is a limit of 255 sections before linker complains - and some are used elsewhere
-#endif
                 fprintf(f, " .section __TEXT,%s_%u\n", type, id);
+#else
+            fprintf(f, " .section .text.%s_%u,\"a\",%cprogbits\n", type, id, typePrefix);
+#endif
             fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
             fprintf(f, "_%s:\n", label.str());
         }
         else
         {
-#if defined(__linux__) && defined(__GNUC__) && defined(__arm__)
-            fprintf(f, " .section .note.GNU-stack,\"\",%%progbits\n");   // Prevent the stack from being marked as executable
-#else
-            fprintf(f, " .section .note.GNU-stack,\"\",@progbits\n");   // Prevent the stack from being marked as executable
-#endif
+            fprintf(f, " .section .note.GNU-stack,\"\",%cprogbits\n", typePrefix);   // Prevent the stack from being marked as executable
             fprintf(f, " .section %s_%u,\"a\"\n", type, id);
             fprintf(f, " .global %s\n", label.str());
             fprintf(f, " .type %s,STT_OBJECT\n", label.str());
