@@ -366,8 +366,11 @@ public:
         {
             try
             {
+                unsigned __int64 startCycles = get_cycles_now();
                 size32_t ret = active->read(pos, len, data);
                 lastAccess = nsTick();
+                if (doTrace(traceAllFileAccess))
+                    queryFileAccessRecorder().noteAccess(fileIdx, pos, len, get_cycles_now()-startCycles, AccessType::AccessTypeDisk );
                 if (cached && !remote)
                     cached->noteRead(fileIdx, pos, ret);
                 return ret;
@@ -1041,7 +1044,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     unsigned trackCache(const char *filename, unsigned channel)
     {
         // NOTE - called from openFile, with crit already held
-        if (!activeCacheReportingBuffer)
+        // This index/info is used to identify the file in the cache warming information and in 
+        // any tracing of file access patterns.
+        if (!activeCacheReportingBuffer && !doTrace(traceAllFileAccess))
             return (unsigned) -1;
         cacheIndexes.append(filename);
         cacheIndexChannels.append(channel);

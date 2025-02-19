@@ -410,6 +410,7 @@ constexpr TraceFlags traceFilters = TraceFlags::flag6;
 constexpr TraceFlags traceKafka = TraceFlags::flag7;
 constexpr TraceFlags traceJava = TraceFlags::flag8;
 constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
+constexpr TraceFlags traceAllFileAccess = TraceFlags::flag10;       // roxie, but referenced from jhtree code too
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -468,6 +469,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
     TRACEOPT(traceAcknowledge),
+    TRACEOPT(traceAllFileAccess),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
@@ -497,5 +499,22 @@ extern jlib_decl TraceFlags queryDefaultTraceFlags();
 // See also the workunit-variant in workunit.hpp
 
 extern jlib_decl TraceFlags loadTraceFlags(const IPropertyTree * globals, const std::initializer_list<TraceOption> & y, TraceFlags dft);
+
+// Interface for tracking all file access for subsequent analysis
+
+enum class AccessType : unsigned
+{
+    AccessTypeDisk = 0,
+    AccessTypeNodeCacheLookup = 1,
+};
+
+interface IFileAccessRecorder : public IInterface
+{
+    virtual void noteAccess(unsigned fileIdx, offset_t page, size32_t len, unsigned __int64 cycles, AccessType type) = 0;
+    virtual void flush() = 0;
+};
+
+// Retrieve file access recorder the active thread
+extern jlib_decl IFileAccessRecorder &queryFileAccessRecorder();
 
 #endif

@@ -2776,6 +2776,86 @@ TraceFlags queryDefaultTraceFlags()
 
 //---------------------------
 
+class DummyFileAccessRecorder : public CInterfaceOf<IFileAccessRecorder>
+{
+    virtual void noteAccess(unsigned fileIdx, offset_t page, size32_t len, unsigned __int64 cycles, AccessType type) override {}
+    virtual void flush() override {}
+} dummyFileAccessRecorder;
+
+static thread_local IFileAccessRecorder *threadFileAccessRecorder = nullptr;
+
+class FileAccessRecorder : public CInterfaceOf<IFileAccessRecorder>
+{
+    struct FileAccessRecord
+    {
+        unsigned fileIdx;
+        offset_t page;
+        size32_t len;
+        unsigned __int64 cycles;
+        AccessType type;
+    };
+
+    FileAccessRecord *currentBuffer = nullptr;
+    unsigned numStored = 0;
+    static constexpr unsigned capacity = 1000000;
+public:
+    FileAccessRecorder()
+    {
+        currentBuffer = new FileAccessRecord[capacity];
+    }
+
+    virtual void noteAccess(unsigned fileIdx, offset_t page, size32_t len, unsigned __int64 cycles, AccessType type)
+    {
+        if (numStored == capacity)
+            flush();
+        currentBuffer[numStored].fileIdx = fileIdx;
+        currentBuffer[numStored].page = page;
+        currentBuffer[numStored].len = len;
+        currentBuffer[numStored].cycles = cycles;
+        currentBuffer[numStored].type = type;
+        numStored++;
+    }
+    virtual void flush() override 
+    {
+        // write out the current info to a file, ideally asynchronously. We can allocate a new buffer and return immediately
+        // translate info from cycles to nanoseconds as we do so (and potentially compress the info a bit).
+        numStored = 0;
+    }
+};
+
+// Retrieve file access recorder the active thread. Should never return null 
+static bool releaseFileAccessRecorder(bool isPooled)
+{
+    if (!isPooled)
+    {
+        if (threadFileAccessRecorder && threadFileAccessRecorder != &dummyFileAccessRecorder)
+        {
+            threadFileAccessRecorder->flush();
+            ::Release(threadFileAccessRecorder);
+            threadFileAccessRecorder = nullptr;            
+        }
+        return true;
+    }
+    return false;
+}
+
+IFileAccessRecorder &queryFileAccessRecorder()
+{
+    if (!threadFileAccessRecorder)
+    {
+        if (doTrace(traceAllFileAccess))
+        {
+            threadFileAccessRecorder = new FileAccessRecorder;
+            addThreadTermFunc(releaseFileAccessRecorder);
+        }
+        else
+            threadFileAccessRecorder = &dummyFileAccessRecorder;
+    }
+    return *threadFileAccessRecorder;
+}
+
+//---------------------------
+
 LogContextScope::LogContextScope(const IContextLogger *ctx)
 {
     prevFlags = threadTraceFlags;
