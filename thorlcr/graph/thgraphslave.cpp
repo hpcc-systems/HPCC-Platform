@@ -1910,8 +1910,8 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
     {
         try
         {
-            StringBuffer dir;
-            if (!req->getProp("@dir", dir))
+            StringBuffer instanceDir;
+            if (!req->getProp("@dir", instanceDir))
                 throw makeStringException(0, "deguginfo command missing 'dir' attribute");
             JobInfoCaptureType captureFlags = (JobInfoCaptureType)req->getPropInt("@flags", 0);
             // NB: stacks are for all channels, but file naming is based on 1st channel
@@ -1921,7 +1921,6 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
 
             msg.append(true);
 
-            StringBuffer instanceDir(dir);
             std::vector<std::string> capturedFiles;
             if (isContainerized())
             {
