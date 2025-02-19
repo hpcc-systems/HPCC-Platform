@@ -100,42 +100,6 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
     return tail;
 }
 
-// NB: there's strtoll under Linux
-static unsigned __int64 hextoll(const char *str, bool &error)
-{
-    unsigned len = strlen(str);
-    if (!len)
-    {
-        error = true;
-        return 0;
-    }
-
-    unsigned __int64 factor = 1;
-    unsigned __int64 rolling = 0;
-    char *ptr = (char *)str+len-1;
-    for (;;) {
-        char c = *ptr;
-        unsigned v;
-        if (isdigit(c))
-            v = c-'0';
-        else if (c>='A' && c<='F')
-            v = 10+(c-'A');
-        else if (c>='a' && c<='f')
-            v = 10+(c-'a');
-        else {
-            error = true;
-            return 0;
-        }
-        rolling += v * factor;
-        factor <<= 4;
-        if (ptr == str)
-            break;
-        --ptr;
-    }
-    error = false;
-    return rolling;
-}
-
 void setDaliConnectTimeoutMs(unsigned timeoutMs)
 {
     daliConnectTimeoutMs = timeoutMs;
