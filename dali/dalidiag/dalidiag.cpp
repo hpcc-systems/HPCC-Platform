@@ -471,42 +471,6 @@ static bool begins(const char *&ln,const char *pat)
     return false;
 }
 
-// NB: there's strtoll under Linux
-static unsigned __int64 hextoll(const char *str, bool *error=NULL)
-{
-    unsigned len = strlen(str);
-    if (!len) return 0;
-
-    unsigned __int64 factor = 1;
-    unsigned __int64 rolling = 0;
-    char *ptr = (char *)str+len-1;
-    for (;;)
-    {
-        char c = *ptr;
-        unsigned v;
-        if (isdigit(c))
-            v = c-'0';
-        else if (c>='A' && c<='F')
-            v = 10+(c-'A');
-        else if (c>='a' && c<='f')
-            v = 10+(c-'a');
-        else
-        {
-            if (error)
-                *error = true;
-            return 0;
-        }
-        rolling += v * factor;
-        factor <<= 4;
-        if (ptr == str)
-            break;
-        --ptr;
-    }
-    if (error)
-        *error = false;
-    return rolling;
-}
-
 int main(int _argc, char* argv[])
 {
     unsigned argc = _argc;
@@ -614,7 +578,7 @@ int main(int _argc, char* argv[])
                 if ((i+1<argc)&&(stricmp(arg,"unlock")==0)) {
                     MemoryBuffer mb;
                     __int64 connectionId;
-                    connectionId = hextoll(argv[i+1]);
+                    connectionId = strtoll(argv[i+1], nullptr, 16);
                     bool disconnect = (i+2<argc && 0==stricmp("close", argv[i+2]));
                     mb.append("unlock").append(connectionId).append(disconnect);
                     getDaliDiagnosticValue(mb);
