@@ -119,6 +119,20 @@ static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 unittests:
   name: unittests
+global:
+  storage:
+    planes:
+    - name: mystorageplane
+      storageClass: ""
+      storageSize: 1Gi
+      prefix: "/var/lib/HPCCSystems/hpcc-data"
+      category: data
+    - name: mystripedplane
+      storageClass: ""
+      storageSize: 1Gi
+      prefix: "/var/lib/HPCCSystems/hpcc-data-two"
+      numDevices: 111
+      category: data
 )!!";
 
 int main(int argc, const char *argv[])
@@ -136,7 +150,7 @@ int main(int argc, const char *argv[])
     bool useDefaultLocations = true;
     bool unloadDlls = false;
 
-    //NB: not actually used for now, but required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
+    //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
     Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
 
     for (int argNo = 1; argNo < argc; argNo++)
