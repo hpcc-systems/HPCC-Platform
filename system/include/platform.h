@@ -18,8 +18,6 @@
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
-#define _TESTING // this should remain set for the near future
-
 // **** Architecture detection ****
 // Ref: http://sourceforge.net/p/predef/wiki/Architectures/
 // Following GNU, ARMCC, ICC and MSVS macros only

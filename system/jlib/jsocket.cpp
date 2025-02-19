@@ -130,9 +130,8 @@
 //#define EPOLLTRACE
 #endif
 
-#ifdef _TESTING
+// comment out this definition to suppress all low-level jsocket error logging
 #define _TRACE
-#endif
 
 #ifdef _TRACE
 #define LOGERR(err,ref,info) LogErr(err,ref,info,__LINE__,NULL)

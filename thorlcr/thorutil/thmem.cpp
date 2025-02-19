@@ -50,7 +50,6 @@
 #include "thmem.hpp"
 
 #ifdef _DEBUG
-//#define _TESTING
 #define ASSERTEX(c) assertex(c)
 #else
 #define ASSERTEX(c)
