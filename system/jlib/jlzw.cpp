@@ -2437,13 +2437,17 @@ public:
             data = (const byte *)data+done;
             if (len==0)
                 break;
-            flush();
+            doFlush(true);
         }
         return ret;
     }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override { UNIMPLEMENTED; }
     virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
     virtual void flush() override
+    {
+        doFlush(false);
+    }
+    void doFlush(bool fillThisBlock)
     {   
         try
         {
@@ -2462,6 +2466,11 @@ public:
                     size32_t fl = (size32_t)(p-trailer.indexPos);
                     memset(fill.allocate(fl),0xff,fl);
                     checkedwrite(trailer.indexPos,fl,fill.get());
+                }
+                if (fillThisBlock && (trailer.blockSize != compblklen))
+                {
+                    memset(compblkptr+compblklen,0xff,trailer.blockSize-compblklen);
+                    compblklen = trailer.blockSize;
                 }
                 checkedwrite(p,compblklen,compblkptr);
                 p += compblklen;
