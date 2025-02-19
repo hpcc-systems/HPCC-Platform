@@ -438,8 +438,3 @@ JWTUserCache& JWTUserCache::clear()
 
     return *this;
 }
-
-unsigned int JWTUserCache::count() const
-{
-    return userPermMap.size();
-}

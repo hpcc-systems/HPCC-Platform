@@ -144,7 +144,7 @@ private:
     StringArray m_hostArray;
     Mutex       m_HMMutex;
     unsigned    m_curHostIdx;
-    bool        m_populated;
+    std::atomic<bool> m_populated;
 
 public:
     CHostManager()
@@ -209,6 +209,7 @@ public:
 
     int queryNumHosts()
     {
+        synchronized block(m_HMMutex);
         return m_hostArray.ordinality();
     }
 
@@ -220,6 +221,7 @@ public:
 
     void rejectHost(const char * rejectedHost)
     {
+        synchronized block(m_HMMutex);
         if (m_hostArray.ordinality() == 1)
         {
             DBGLOG("Cannot reject the only configured LDAP AD server %s", m_hostArray.item(m_curHostIdx));
@@ -227,7 +229,6 @@ public:
         }
 
         //If rejectedHost is not already rejected, do so
-        synchronized block(m_HMMutex);
         if (0 == strcmp(rejectedHost, m_hostArray.item(m_curHostIdx)))
         {
             DBGLOG("Temporarily rejecting LDAP AD server %s", m_hostArray.item(m_curHostIdx));
