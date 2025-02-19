@@ -206,6 +206,7 @@ public:
     //Non-standard functions:
     void *          reserve(unsigned size);
     void            truncate();                     // truncates (i.e. minimizes allocation) to current size
+    [[ gnu::returns_nonnull ]]
     void *          reserveTruncate(unsigned size); // reserves and truncates to that size
     void *          insertDirect(unsigned offset, size32_t len); // insert len bytes at offset returning address to area inserted
     inline void     Release() const                         { delete this; }    // for consistency even though not link counted
