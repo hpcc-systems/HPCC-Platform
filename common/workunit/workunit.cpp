@@ -5248,6 +5248,18 @@ IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *a
     IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
     ret->setDebugValue("CREATED_BY", app, true);
     ret->setDebugValue("CREATED_FOR", scope, true);
+    if (secuser)
+    {
+        //Record employee ids and numbers in the workunit if they are available.
+        //Future: This should probably be stored in an un-modifiable attribute and set by setUser()
+        const char * id = secuser->getEmployeeID();
+        if (!isEmptyString(id))
+            ret->setDebugValue("CREATOR_EMPLOYEE_ID", id, true);
+
+        const char * number = secuser->getEmployeeNumber();
+        if (!isEmptyString(number))
+            ret->setDebugValue("CREATOR_EMPLOYEE_NUMBER", number, true);
+    }
     return ret;
 }
 
