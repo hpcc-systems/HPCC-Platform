@@ -82,6 +82,7 @@ std::atomic<unsigned __int64> leafSearchCycles{0};
 static cycle_t traceCacheLockingFrequency{0};
 static cycle_t traceNodeLoadFrequency{0};
 static cycle_t traceNodeLoadThreshold{0};
+static unsigned traceKeyMergeThreshold{1000};  // Report merges of > 1000 cursor positions
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
@@ -2853,6 +2854,8 @@ void setIndexWarningThresholds(IPropertyTree * options)
         traceNodeLoadFrequency = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadFrequencyNs"));
     if (options->hasProp("@traceNodeLoadThresholdNs"))
         traceNodeLoadThreshold = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadThresholdNs"));
+    if (options->hasProp("@traceKeyMergeThreshold"))
+        traceKeyMergeThreshold = options->getPropInt("@traceKeyMergeThreshold");
 }
 
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo)
@@ -3381,7 +3384,11 @@ public:
         if (activekeys>0) 
         {
             if (ctx)
+            {
                 ctx->noteStatistic(StNumIndexMerges, activekeys);
+                if (traceKeyMergeThreshold && activekeys > traceKeyMergeThreshold)
+                    ctx->CTXLOG("Key merger with %u active keys detected", activekeys);
+            }
             cursors = cursorArray.getArray();
             mergeheap = mergeHeapArray.getArray();
             /* Permute mergeheap to establish the heap property
