@@ -5612,6 +5612,8 @@ protected:
                         if (transaction)
                         {
                             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+                            verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                                     //  are IDistributedFileTransactionExtinstances.
                             _transaction->ensureFile(subfile);
                         }
                     }
@@ -6806,6 +6808,8 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+            verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                     //  are IDistributedFileTransactionExtinstances.
             localtrans.set(_transaction);
         }
         else
@@ -6853,6 +6857,8 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+            verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                     //  are IDistributedFileTransactionExtinstances.
             localtrans.set(_transaction);
         }
         else
@@ -6910,6 +6916,8 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+            verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                     //  are IDistributedFileTransactionExtinstances.
             localtrans.set(_transaction);
         }
         else
@@ -6940,7 +6948,7 @@ public:
         if (transaction)
         {
             IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
-            verifyex(!_transaction); // _transaction cannot be non-null as all IDistributedFileTransaction instances
+            verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
                                      //  are IDistributedFileTransactionExtinstances.
             localtrans.set(_transaction);
         }
@@ -8957,6 +8965,8 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     if (transaction)
     {
         IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+        verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                 //  are IDistributedFileTransactionExtinstances.
         localtrans.set(_transaction);
     }
     else
@@ -8995,6 +9005,8 @@ void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool d
     if (transaction)
     {
         IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+        verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                 //  are IDistributedFileTransactionExtinstances.
         localtrans.set(_transaction);
     }
     else
@@ -9017,6 +9029,8 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
     if (transaction)
     {
         IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+        verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                 //  are IDistributedFileTransactionExtinstances.
         localtrans.set(_transaction);
     }
     else
@@ -9071,6 +9085,8 @@ void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     if (transaction)
     {
         IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+        verifyex(!_transaction); // _transaction cannot be null as all IDistributedFileTransaction instances
+                                 //  are IDistributedFileTransactionExtinstances.
         localtrans.set(_transaction);
     }
     else
