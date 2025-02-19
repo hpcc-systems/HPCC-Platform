@@ -30,6 +30,10 @@ struct CacheInfoEntry
         PageTypeDisk = 3,
     };
 
+    static_assert((unsigned) PageType::PageTypeBranch == (unsigned) NodeBranch);
+    static_assert((unsigned) PageType::PageTypeLeaf == (unsigned) NodeLeaf);
+    static_assert((unsigned) PageType::PageTypeBlob == (unsigned) NodeBlob);
+
     union
     {
         struct
