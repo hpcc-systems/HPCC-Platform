@@ -355,7 +355,10 @@ void * MemoryBuffer::reserveTruncate(unsigned size)
     curLen += size;
     _reallocExact(newLen);
     truncate();
-    return buffer + curLen - size;
+    if (buffer)
+        return buffer + curLen - size;
+    else
+        return nullptr;
 }
 
 void MemoryBuffer::truncate()
