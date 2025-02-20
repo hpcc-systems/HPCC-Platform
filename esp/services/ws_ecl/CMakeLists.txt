@@ -52,6 +52,8 @@ include_directories (
          ./../../../common/fileview2
          ./../../../dali/base
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
+         ${HPCC_SOURCE_DIR}/dali/sasha
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
@@ -77,6 +79,7 @@ target_link_libraries ( ws_ecl
          hql
          fileview2
          xmllib
+         SMCLib
          ${COMMON_ESP_SERVICE_LIBS}
     )
 
