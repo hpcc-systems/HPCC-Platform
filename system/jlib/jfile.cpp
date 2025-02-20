@@ -3125,10 +3125,14 @@ static inline bool isPCFlushAllowed()
     CriticalBlock block(flushsect);
     if (gbl_flush_allowed == FLUSH_INIT)
     {
-        if (queryEnvironmentConf().getPropBool("allow_pgcache_flush", true))
+        gbl_flush_allowed = FLUSH_DISALLOWED;
+        if (isContainerized())
+        {
+            if (getConfigBool("expert/@allowPGCacheFlush", true))
+                gbl_flush_allowed = FLUSH_ALLOWED;
+        }
+        else if (queryEnvironmentConf().getPropBool("allow_pgcache_flush", true))
             gbl_flush_allowed = FLUSH_ALLOWED;
-        else
-            gbl_flush_allowed = FLUSH_DISALLOWED;
     }
     if (gbl_flush_allowed == FLUSH_ALLOWED)
         return true;
