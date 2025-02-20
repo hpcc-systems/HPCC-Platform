@@ -1167,6 +1167,10 @@
           "type": "boolean",
           "description": "If true, creates a trace exporter outputting to the log using the default options"
         },
+        "enableOTELDebugLogging": {
+          "type": "boolean",
+          "description": "If true, sets OTEL library logging to debug level (otherwise set to warning)"
+        },
         "exporters": {
           "type": "array",
           "description": "List of trace exporters",
