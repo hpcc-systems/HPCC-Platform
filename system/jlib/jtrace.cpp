@@ -89,6 +89,18 @@ public:
     }
 
    /**
+   * Export all spans that have been exported.
+   * @param timeout an optional timeout, the default timeout means that no
+   * timeout is applied.
+   * @return return true when all data are exported, and false when timeout
+   */
+    virtual bool ForceFlush(
+        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return true;
+    }
+
+   /**
    * Shut down the exporter. NoopSpanExporter does not need to do anything here.
    * @param timeout an optional timeout.
    * @return return the status of the operation.
@@ -275,6 +287,18 @@ public:
             e->Release();
             return opentelemetry::sdk::common::ExportResult::kFailure;
         }
+    }
+
+   /**
+   * Export all spans that have been exported.
+   * @param timeout an optional timeout, the default timeout means that no
+   * timeout is applied.
+   * @return return true when all data are exported, and false when timeout
+   */
+    virtual bool ForceFlush(
+      std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return true;
     }
 
    /**
