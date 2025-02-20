@@ -64,11 +64,27 @@ jobs:
       asset-name: 'docker-package'
     secrets: inherit
 
+  build-docker-ubuntu-24_04-arm:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-24.04
+      tag_postfix: "-arm"
+    secrets: inherit
+
   build-docker-ubuntu-24_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
+    secrets: inherit
+
+  build-docker-ubuntu-22_04-arm:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-22.04
+      tag_postfix: "-arm"
     secrets: inherit
 
   build-docker-ubuntu-22_04:

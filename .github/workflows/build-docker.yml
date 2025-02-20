@@ -58,6 +58,11 @@ on:
         description: 'Asset Name (if upload-package is true)'
         required: false
         default: 'build-docker-package'
+      tag_postfix:
+        type: string
+        description: 'Either -arm or empty string'
+        required: false
+        default: ''
     secrets:
       LNB_TOKEN:
         required: false
@@ -65,7 +70,7 @@ on:
 jobs:
 
   build-docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04${{ inputs.tag_postfix }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -112,7 +117,7 @@ jobs:
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short${{ inputs.tag_postfix }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         shell: "bash"
@@ -128,12 +133,12 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           save: ${{ inputs.update-cache == true }}
-          key: docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys: |
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-
-            docker-${{ inputs.os }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-
 
       - name: CMake Configure and Build
         shell: "bash"
