@@ -1,12 +1,10 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import { join, scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as ESPQuery from "src/ESPQuery";
 import * as WsTopology from "src/WsTopology";
 import { useWorkunitResults } from "../hooks/workunit";
-import { pivotItemStyle } from "../layouts/pivot";
 import { IFrame } from "./IFrame";
 import { pushUrl } from "../util/history";
 import { XMLSourceEditor } from "./SourceEditor";
@@ -18,6 +16,8 @@ const buildFrameUrl = (url, suffix) => {
     const src = decodeURIComponent(urlParts[1]);
     return urlParts[0] + "&src=" + encodeURIComponent(join(src, suffix));
 };
+
+const frameStyle = { position: "absolute", zIndex: 0, padding: 4, overflow: "none", inset: "44px 0 4px 0" } as React.CSSProperties;
 
 interface QueryTestsProps {
     querySet: string;
@@ -99,43 +99,41 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
         setResultNames(names);
     }, [wuResults]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
-        <Pivot
-            overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-            onLinkClick={evt => {
-                pushUrl(`/queries/${querySet}/${queryId}/testPages/${evt.props.itemKey}`);
-            }}
-        >
-            <PivotItem headerText={nlsHPCC.Form} itemKey="form" style={pivotItemStyle(size, 0)}>
-                <IFrame src={formUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.SOAP} itemKey="soap" style={pivotItemStyle(size)} >
-                <IFrame src={soapUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.JSON} itemKey="json" style={pivotItemStyle(size, 0)}>
-                <IFrame src={jsonUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.WSDL} itemKey="wsdl" style={pivotItemStyle(size, 0)}>
-                <IFrame src={wsdlUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.RequestSchema} itemKey="requestSchema" style={pivotItemStyle(size, 0)}>
-                <IFrame src={requestSchemaUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.ResponseSchema} itemKey="responseSchema" style={pivotItemStyle(size, 0)}>
-                {responseSchemas.map((schema, idx) => <XMLSourceEditor key={`responseSchema_${idx}`} text={schema} readonly={true} />)}
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.SampleRequest} itemKey="sampleRequest" style={pivotItemStyle(size, 0)}>
-                <IFrame src={exampleRequestUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.SampleResponse} itemKey="sampleResponse" style={pivotItemStyle(size, 0)}>
-                <IFrame src={exampleResponseUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.ParameterXML} itemKey="parameterXml" style={pivotItemStyle(size, 0)}>
-                <IFrame src={parameterXmlUrl} height="99%" />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Links} itemKey="links" style={pivotItemStyle(size, 0)}>
-                <IFrame src={linksUrl} height="99%" />
-            </PivotItem>
-        </Pivot>
-    }</SizeMe>;
+    return <Pivot
+        overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
+        onLinkClick={evt => {
+            pushUrl(`/queries/${querySet}/${queryId}/testPages/${evt.props.itemKey}`);
+        }}
+    >
+        <PivotItem headerText={nlsHPCC.Form} itemKey="form" style={frameStyle}>
+            <IFrame src={formUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.SOAP} itemKey="soap" style={frameStyle} >
+            <IFrame src={soapUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.JSON} itemKey="json" style={frameStyle}>
+            <IFrame src={jsonUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.WSDL} itemKey="wsdl" style={frameStyle}>
+            <IFrame src={wsdlUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.RequestSchema} itemKey="requestSchema" style={frameStyle}>
+            <IFrame src={requestSchemaUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.ResponseSchema} itemKey="responseSchema" style={frameStyle}>
+            {responseSchemas.map((schema, idx) => <XMLSourceEditor key={`responseSchema_${idx}`} text={schema} readonly={true} />)}
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.SampleRequest} itemKey="sampleRequest" style={frameStyle}>
+            <IFrame src={exampleRequestUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.SampleResponse} itemKey="sampleResponse" style={frameStyle}>
+            <IFrame src={exampleResponseUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.ParameterXML} itemKey="parameterXml" style={frameStyle}>
+            <IFrame src={parameterXmlUrl} />
+        </PivotItem>
+        <PivotItem headerText={nlsHPCC.Links} itemKey="links" style={frameStyle}>
+            <IFrame src={linksUrl} />
+        </PivotItem>
+    </Pivot>;
 };
