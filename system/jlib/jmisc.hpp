@@ -174,9 +174,9 @@ inline  void _cpyrev8(void * _tgt, const void * _src) {
     *(unsigned __int64 *)_tgt = value;
 }
 inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src+len; 
-    for (;len;len--) {
-        *tgt++ = *--src;
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+    for (unsigned i = 0; i < len; i++) {
+        tgt[i] = src[len - i - 1];
     }
 }
 

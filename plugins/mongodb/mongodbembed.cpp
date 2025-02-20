@@ -27,7 +27,6 @@
 #include <cstdint>
 
 #include "mongocxx/options/client.hpp"
-#include "mongocxx/stdx.hpp"
 #include "mongocxx/cursor.hpp"
 #include "bsoncxx/json.hpp"
 #include "bsoncxx/builder/stream/helpers.hpp"
@@ -36,7 +35,6 @@
 #include "bsoncxx/builder/stream/array.hpp"
 #include "bsoncxx/document/value.hpp"
 #include "bsoncxx/document/view.hpp"
-#include "bsoncxx/stdx/make_unique.hpp"
 #include "bsoncxx/stdx/optional.hpp"
 #include "bsoncxx/stdx/string_view.hpp"
 #include "bsoncxx/builder/basic/array.hpp"
@@ -465,7 +463,7 @@ namespace mongodbembed
         size32_t utf8chars;
         char *utf8;
         rtlUnicodeToUtf8X(utf8chars, utf8, chars, value);
-        query->build()->append(kvp(std::string(field->name), bsoncxx::types::b_utf8{utf8}));
+        query->build()->append(kvp(std::string(field->name), bsoncxx::types::b_string{utf8}));
     }
 
     /**
@@ -678,7 +676,7 @@ namespace mongodbembed
     }
 
     /**
-     * @brief Binds an ECL Data param to a bsoncxx::types::b_utf8
+     * @brief Binds an ECL Data param to a bsoncxx::types::b_string
      *
      * @param name Name of the parameter.
      * @param len Length of the value.
@@ -786,7 +784,7 @@ namespace mongodbembed
     }
 
     /**
-     * @brief Binds an ECL String param to a bsoncxx::types::b_utf8.
+     * @brief Binds an ECL String param to a bsoncxx::types::b_string.
      *
      * @param name Name of the parameter.
      * @param len Number of chars in string.
@@ -799,11 +797,11 @@ namespace mongodbembed
         rtlDataAttr utf8;
         rtlStrToUtf8X(utf8Chars, utf8.refstr(), len, val);
 
-        query->build()->append(kvp(std::string(name), bsoncxx::types::b_utf8{std::string(utf8.getstr(), rtlUtf8Size(utf8Chars, utf8.getdata()))}));
+        query->build()->append(kvp(std::string(name), bsoncxx::types::b_string{std::string(utf8.getstr(), rtlUtf8Size(utf8Chars, utf8.getdata()))}));
     }
 
     /**
-     * @brief Binds an ECL VString param to a bsoncxx::types::b_utf8.
+     * @brief Binds an ECL VString param to a bsoncxx::types::b_string.
      *
      * @param name Name of the parameter.
      * @param val VString value.
@@ -815,11 +813,11 @@ namespace mongodbembed
         rtlDataAttr utf8;
         rtlStrToUtf8X(utf8Chars, utf8.refstr(), strlen(val), val);
 
-        query->build()->append(kvp(std::string(name), bsoncxx::types::b_utf8{std::string(utf8.getstr(), rtlUtf8Size(utf8Chars, utf8.getdata()))}));
+        query->build()->append(kvp(std::string(name), bsoncxx::types::b_string{std::string(utf8.getstr(), rtlUtf8Size(utf8Chars, utf8.getdata()))}));
     }
 
     /**
-     * @brief Binds an ECL UTF8 param to a bsoncxx::types::b_utf8.
+     * @brief Binds an ECL UTF8 param to a bsoncxx::types::b_string.
      *
      * @param name Name of the parameter.
      * @param chars Number of chars in string.
@@ -829,11 +827,11 @@ namespace mongodbembed
     {
         checkNextParam(name);
 
-        query->build()->append(kvp(std::string(name), bsoncxx::types::b_utf8{std::string(val, rtlUtf8Size(chars, val))}));
+        query->build()->append(kvp(std::string(name), bsoncxx::types::b_string{std::string(val, rtlUtf8Size(chars, val))}));
     }
 
     /**
-     * @brief Binds an ECL Unicode param to a bsoncxx::types::b_utf8.
+     * @brief Binds an ECL Unicode param to a bsoncxx::types::b_string.
      *
      * @param name Name of the parameter.
      * @param chars Number of chars in string.
@@ -846,7 +844,7 @@ namespace mongodbembed
         rtlDataAttr utf8;
         rtlUnicodeToUtf8X(utf8chars, utf8.refstr(), chars, val);
 
-        query->build()->append(kvp(std::string(name), bsoncxx::types::b_utf8{std::string(utf8.getstr(), rtlUtf8Size(utf8chars, utf8.getdata()))}));
+        query->build()->append(kvp(std::string(name), bsoncxx::types::b_string{std::string(utf8.getstr(), rtlUtf8Size(utf8chars, utf8.getdata()))}));
     }
 
     /**
@@ -863,7 +861,7 @@ namespace mongodbembed
                             bsoncxx::stdx::string_view) noexcept {}
         };
 
-        auto instance = bsoncxx::stdx::make_unique<mongocxx::instance>(bsoncxx::stdx::make_unique<noop_logger>());
+        auto instance = std::make_unique<mongocxx::instance>(std::make_unique<noop_logger>());
 
         MongoDBConnection::createInstance().configure(std::move(instance));
     }
@@ -1111,7 +1109,7 @@ namespace mongodbembed
         {
             builder << param << ele.get_double().value;
         }
-        else if (ele.type() == bsoncxx::type::k_utf8)
+        else if (ele.type() == bsoncxx::type::k_string)
         {
             builder << param << ele.get_string().value;
         }
@@ -1147,7 +1145,7 @@ namespace mongodbembed
         {
             ctx << ele.get_double().value;
         }
-        else if (ele.type() == bsoncxx::type::k_utf8)
+        else if (ele.type() == bsoncxx::type::k_string)
         {
             ctx << ele.get_string().value;
         }
@@ -1196,7 +1194,7 @@ namespace mongodbembed
             }
             else
             {
-                if (view[key].type() == bsoncxx::type::k_utf8)
+                if (view[key].type() == bsoncxx::type::k_string)
                 {
                     insertValue(builder, std::string(view[key].get_string().value), view[value.substr(1)]);
                 }
@@ -1323,7 +1321,7 @@ namespace mongodbembed
             }
             else
             {
-                if (view[key].type() == bsoncxx::type::k_utf8)
+                if (view[key].type() == bsoncxx::type::k_string)
                 {
                     builder << key << open_document << [&](key_context<> ctx) {
                         buildDocument(ctx, view, ++start);
@@ -1338,7 +1336,7 @@ namespace mongodbembed
         {
             if (!isRsvd)
             {
-                if (view[key].type() == bsoncxx::type::k_utf8)
+                if (view[key].type() == bsoncxx::type::k_string)
                     key = std::string{view[key].get_string().value};
                 else
                     failx("Key must be type String.");
