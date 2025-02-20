@@ -208,10 +208,10 @@ ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
     if (!binaryfilter)
         return nullptr;
     
-    ILogAccessFilter * leftFilter = nullptr;
+    Owned<ILogAccessFilter> leftFilter;
     if (binaryfilter->getLeftBinaryFilter().ordinality() == 0)
     {
-        leftFilter = buildLogFilter(&binaryfilter->getLeftFilter());
+        leftFilter.setown(buildLogFilter(&binaryfilter->getLeftFilter()));
     }
     else
     {
@@ -221,7 +221,7 @@ ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
         if (!isLogFilterEmpty(&binaryfilter->getLeftFilter()))
             throw makeStringException(-1, "WsLogAccess: Cannot submit leftFilter and leftBinaryFilter!");
 
-        leftFilter = buildBinaryLogFilter(&binaryfilter->getLeftBinaryFilter().item(0));
+        leftFilter.setown(buildBinaryLogFilter(&binaryfilter->getLeftBinaryFilter().item(0)));
     }
 
     if (!leftFilter)
@@ -233,14 +233,14 @@ ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
     case LogAccessFilterOperator_Undefined: //no operator found
         //if (rightFilter != nullptr)
         //     WARNLOG("right FILTER ENCOUNTERED but no valid operator");
-        return leftFilter;
+        return leftFilter.getClear();
     case CLogAccessFilterOperator_AND:
     case CLogAccessFilterOperator_OR:
     {
-        ILogAccessFilter * rightFilter = nullptr;
+        Owned<ILogAccessFilter> rightFilter;
         if (binaryfilter->getRightBinaryFilter().ordinality() == 0)
         {
-            rightFilter = buildLogFilter(&binaryfilter->getRightFilter());
+            rightFilter.setown(buildLogFilter(&binaryfilter->getRightFilter()));
         }
         else
         {
@@ -250,13 +250,13 @@ ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
             if (!isLogFilterEmpty(&binaryfilter->getRightFilter()))
                 throw makeStringException(-1, "WsLogAccess: Cannot submit rightFilter and rightBinaryFilter!");
 
-            rightFilter = buildBinaryLogFilter(&binaryfilter->getRightBinaryFilter().item(0));
+            rightFilter.setown(buildBinaryLogFilter(&binaryfilter->getRightBinaryFilter().item(0)));
         }
 
         if (!rightFilter)
             throw makeStringExceptionV(-1, "WsLogAccess: Empty RIGHT filter encountered");
 
-        return getBinaryLogAccessFilterOwn(leftFilter, rightFilter, cLogAccessFilterOperator2LogAccessFilterType(binaryfilter->getOperator()));
+        return getBinaryLogAccessFilter(leftFilter, rightFilter, cLogAccessFilterOperator2LogAccessFilterType(binaryfilter->getOperator()));
     }
 
     default:
