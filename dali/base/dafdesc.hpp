@@ -412,6 +412,8 @@ extern da_decl void disableStoragePlanesDaliUpdates();
 extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern da_decl bool getDefaultSpillPlane(StringBuffer &ret);
 extern da_decl bool getDefaultIndexBuildStoragePlane(StringBuffer &ret);
+extern da_decl bool getDefaultPersistPlane(StringBuffer &ret);
+extern da_decl bool getDefaultJobTempPlane(StringBuffer &ret);
 extern da_decl IStoragePlane * getDataStoragePlane(const char * name, bool required);
 extern da_decl IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
 extern da_decl IStoragePlane * createStoragePlane(IPropertyTree *meta);

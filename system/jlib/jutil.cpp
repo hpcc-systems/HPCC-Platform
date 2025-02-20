@@ -2640,7 +2640,7 @@ bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char
     if (!isContainerized())
         throwUnexpectedX("getDefaultPlane() called from non-container system");
     // If the plane is specified for the component, then use that
-    if (getComponentConfigSP()->getProp(componentOption, ret))
+    if (!isEmptyString(componentOption) && getComponentConfigSP()->getProp(componentOption, ret))
         return true;
 
     //Otherwise check what the default plane for data storage is configured to be

@@ -12161,7 +12161,11 @@ protected:
         else
         {
             StringBuffer defaultCluster;
-            if (getDefaultStoragePlane(defaultCluster))
+            if (TDWpersist & helper.getFlags())
+                getDefaultPersistPlane(defaultCluster);
+            else
+                getDefaultStoragePlane(defaultCluster);
+            if (defaultCluster.length())
             {
                 clusters.append(defaultCluster);
                 Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);

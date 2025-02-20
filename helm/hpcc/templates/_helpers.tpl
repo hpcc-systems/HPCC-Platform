@@ -213,6 +213,12 @@ storage:
 {{- if hasKey $storage "indexBuildPlane" }}
   indexBuildPlane: {{ $storage.indexBuildPlane }}
 {{- end }}
+{{- if hasKey $storage "persistPlane" }}
+  persistPlane: {{ $storage.persistPlane }}
+{{- end }}
+{{- if hasKey $storage "jobTempPlane" }}
+  jobTempPlane: {{ $storage.jobTempPlane }}
+{{- end }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes }}

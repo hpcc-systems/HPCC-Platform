@@ -213,7 +213,13 @@ void CWriteMasterBase::init()
             else
             {
                 StringBuffer defaultCluster;
-                if (getDefaultStoragePlane(defaultCluster))
+                if (TDWpersist & diskHelperBase->getFlags())
+                    getDefaultPersistPlane(defaultCluster);
+                else if (TDXjobtemp & diskHelperBase->getFlags())
+                    getDefaultJobTempPlane(defaultCluster);
+                else
+                    getDefaultStoragePlane(defaultCluster);
+                if (defaultCluster.length())
                 {
                     clusters.append(defaultCluster);
                     Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
