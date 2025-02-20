@@ -1193,6 +1193,17 @@
               statement to indicate how many TRACE statement to write to log
               file. See <link linkend="TRACE">TRACE</link>.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>maxlogdetail</emphasis></entry>
+
+              <entry/>
+
+              <entry>Overrides the the default logging level for a single
+              workunit. This allows logging levels to be set to a low level by
+              default, but allow jobs to be resubmitted with a higher logging
+              level for investigation.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
