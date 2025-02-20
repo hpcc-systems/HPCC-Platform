@@ -1086,10 +1086,10 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
     catch(...)
     {
         status.appendJSONListMessage("Encountered unexpected exception during health report");
-        status = LOGACCESS_STATUS_fail;
+        status.escalateStatusCode(LOGACCESS_STATUS_fail);
     }
 
-    report.status = status;
+    report.status = std::move(status);
 }
 
 GrafanaLogAccessCurlClient::GrafanaLogAccessCurlClient(IPropertyTree & logAccessPluginConfig)
