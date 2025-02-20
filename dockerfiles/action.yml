@@ -34,8 +34,8 @@ inputs:
   github_token:
     description: 'The github token associated with the current build'
     required: false
-  build_ml:
-    description: 'What to build ml - all, or combination of ml,gnn,gnn-gpu separated by comma'
+  build_extra:
+    description: 'What to build extra features - all, or combination of ml,gnn,gnn-gpu,test separated by comma'
     required: false
   lnb_token:
     description: 'Token to build LN images'
