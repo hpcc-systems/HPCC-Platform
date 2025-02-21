@@ -285,6 +285,8 @@ public:
 
 protected:
     unsigned getDataSize(bool includePayload);
+    unsigned getCompressedPayloadSize() const { return sizeCompressedPayload ? sizeCompressedPayload : compressor.buflen(); }
+
     bool recompressAll(unsigned maxSize);
 
 protected:
