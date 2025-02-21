@@ -8631,6 +8631,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
 static CriticalSection configCS;
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
+static Owned<IPropertyTree> nullConfiguration;
 static StringBuffer componentName;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -8647,7 +8648,15 @@ IPropertyTree * getComponentConfig()
 {
     CriticalBlock b(configCS);
     if (!componentConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        if (!nullConfiguration)
+        {
+            PrintStackReport(); // deliberately emitting here, so only reported once per process
+            nullConfiguration.setown(createPTree());
+        }
+        IERRLOG(99, "getComponentConfig() called - configuration file has not yet been processed");
+        return nullConfiguration.getLink();
+    }
     return componentConfiguration.getLink();
 }
 
@@ -8655,8 +8664,27 @@ IPropertyTree * getGlobalConfig()
 {
     CriticalBlock b(configCS);
     if (!globalConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        if (!nullConfiguration)
+        {
+            PrintStackReport(); // deliberately emitting here, so only reported once per process
+            nullConfiguration.setown(createPTree());
+        }
+        IERRLOG(99, "getGlobalConfig() called - configuration file has not yet been processed");
+        return nullConfiguration.getLink();
+    }
     return globalConfiguration.getLink();
+}
+
+void initNullConfiguration()
+{
+    CriticalBlock b(configCS);
+    if (componentConfiguration || globalConfiguration)
+        throw makeStringException(99, "Configuration has already been initialised");
+    if (!nullConfiguration)
+        nullConfiguration.setown(createPTree());
+    componentConfiguration.set(nullConfiguration);
+    globalConfiguration.set(nullConfiguration);
 }
 
 Owned<IPropertyTree> getComponentConfigSP()
@@ -9227,16 +9255,6 @@ void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *ne
     configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
 }
 
-void initNullConfiguration()
-{
-    if (componentConfiguration || globalConfiguration)
-        throw makeStringException(99, "Configuration has already been initialised");
-
-    assertex(configFileUpdater); // NB: replaceComponentConfig should always be called after configFileUpdater is initialized
-    Owned<IPropertyTree> newComponentConfig(createPTree());
-    Owned<IPropertyTree> newGlobalConfig(createPTree());
-    configFileUpdater->refreshConfiguration(newComponentConfig, newGlobalConfig);
-}
 
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
 {
