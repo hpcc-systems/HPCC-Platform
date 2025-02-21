@@ -3073,6 +3073,22 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
+    class CLZ4SCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "LZ4S"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4S; }
+        virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, false); }
+        virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
+    };
+    class CLZ4SHCCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "LZ4SHC"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4SHC; }
+        virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, true); }
+        virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
+    };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -3140,6 +3156,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
     defaultCompressor.set(lz4Compressor);
     addCompressorHandler(lz4Compressor);
+    addCompressorHandler(new CLZ4SCompressHandler());
+    addCompressorHandler(new CLZ4SHCCompressHandler());
     return true;
 }
 
@@ -3203,6 +3221,10 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZ4HC;
         else if (strieq("LZ4", compStr))
             compMethod = COMPRESS_METHOD_LZ4;
+        else if (strieq("LZ4SHC", compStr))
+            compMethod = COMPRESS_METHOD_LZ4SHC;
+        else if (strieq("LZ4S", compStr))
+            compMethod = COMPRESS_METHOD_LZ4S;
         //else // default is LZ4
     }
     return compMethod;
@@ -3224,6 +3246,10 @@ const char *translateFromCompMethod(unsigned compMethod)
             return "LZ4";
         case COMPRESS_METHOD_LZ4HC:
             return "LZ4HC";
+        case COMPRESS_METHOD_LZ4S:
+            return "LZ4S";
+        case COMPRESS_METHOD_LZ4SHC:
+            return "LZ4SHC";
         case COMPRESS_METHOD_LZMA:
             return "LZMA";
         default:
