@@ -20,6 +20,7 @@
 #define JSTATS_H
 
 #include "jlib.hpp"
+#include "jexcept.hpp"
 #include "jmutex.hpp"
 #include <vector>
 #include <initializer_list>
@@ -560,7 +561,7 @@ class jlib_decl CRuntimeStatisticCollection
 {
 public:
     CRuntimeStatisticCollection(const StatisticsMapping & _mapping, bool _ignoreUnknown = false) : mapping(_mapping)
-#ifdef _DEBUG
+#ifdef _TESTING
     ,ignoreUnknown(_ignoreUnknown)
 #endif
     {
@@ -573,9 +574,12 @@ public:
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
         unsigned index = queryMapping().getIndex(kind);
-#ifdef _DEBUG
-        if (!ignoreUnknown)
-            dbgassertex(index < mapping.numStatistics());
+#ifdef _TESTING
+        if (!ignoreUnknown && (index >= mapping.numStatistics()))
+        {
+            VStringBuffer errMsg("Unknown mapping kind: %u", (unsigned)kind);
+            throwUnexpectedX(errMsg.str());
+        }
 #endif
         return values[index];
     }
@@ -589,9 +593,12 @@ public:
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
-#ifdef _DEBUG
-        if (!ignoreUnknown)
-            dbgassertex(index < mapping.numStatistics());
+#ifdef _TESTING
+        if (!ignoreUnknown && (index >= mapping.numStatistics()))
+        {
+            VStringBuffer errMsg("Unknown mapping kind: %u", (unsigned)kind);
+            throwUnexpectedX(errMsg.str());
+        }
 #endif
         return values[index];
     }
@@ -670,7 +677,7 @@ protected:
     CRuntimeStatistic * values;
     std::atomic<CNestedRuntimeStatisticMap *> nested {nullptr};
     static CriticalSection nestlock;
-#ifdef _DEBUG
+#ifdef _TESTING
     bool ignoreUnknown = false;
 #endif
 };

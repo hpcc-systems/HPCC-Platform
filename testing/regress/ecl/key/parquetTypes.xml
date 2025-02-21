@@ -36,3 +36,8 @@
 <Dataset name='UnicodeTest'>
  <Row><UnicodeTest>Pass</UnicodeTest></Row>
 </Dataset>
+<Dataset name='SetTest'>
+ <Row><testid>1100</testid><testname>empty</testname><s0></s0><s1></s1><s2></s2><s3></s3><s4></s4><s5></s5><s6></s6><s7></s7><s8></s8><s9></s9><s10></s10></Row>
+ <Row><testid>1101</testid><testname>single</testname><s0><Item>true</Item></s0><s1><Item>1</Item></s1><s2><Item>1</Item></s2><s3><Item>1.0</Item></s3><s4><Item>1</Item></s4><s5><Item>a</Item></s5><s6><Item>a</Item></s6><s7><Item>A</Item></s7><s8><Item>a</Item></s8><s9><Item>a</Item></s9><s10><Item>FFFF</Item></s10></Row>
+ <Row><testid>1102</testid><testname>multiple</testname><s0><Item>true</Item><Item>false</Item></s0><s1><Item>1</Item><Item>2</Item></s1><s2><Item>1</Item><Item>2</Item></s2><s3><Item>1.0</Item><Item>2.0</Item></s3><s4><Item>1</Item><Item>2</Item></s4><s5><Item>a</Item><Item>b</Item></s5><s6><Item>a</Item><Item>b</Item></s6><s7><Item>A</Item><Item>B</Item></s7><s8><Item>a</Item><Item>b</Item></s8><s9><Item>a</Item><Item>b</Item></s9><s10><Item>0000</Item><Item>FFFF</Item></s10></Row>
+</Dataset>

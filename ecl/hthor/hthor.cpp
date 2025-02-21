@@ -358,6 +358,8 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     StringBuffer defaultCluster;
     if (isIndex)
         getDefaultIndexBuildStoragePlane(defaultCluster);
+    else if (dwHelper && (TDWpersist & dwHelper->getFlags()))
+        getDefaultPersistPlane(defaultCluster);
     else
         getDefaultStoragePlane(defaultCluster);
     Owned<CHThorClusterWriteHandler> clusterHandler;
@@ -1280,7 +1282,7 @@ void CHThorIndexWriteActivity::execute()
             reccount++;
         }
         builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
-        duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
+        duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
         cummulativeDuplicateKeyCount += duplicateKeyCount;
         numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
         numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);

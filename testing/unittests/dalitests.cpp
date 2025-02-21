@@ -3142,7 +3142,7 @@ class DaliSysInfoLoggerTester : public CppUnit::TestFixture
             Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(visibleOnly, hiddenOnly, year, month, day, SOURCE_COMPONENT_UNITTEST);
             ForEach(*iter)
             {
-                const ISysInfoLoggerMsg & sysInfoMsg = iter->query();
+                const IConstSysInfoLoggerMsg & sysInfoMsg = iter->query();
 
                 if (strcmp(sysInfoMsg.querySource(), SOURCE_COMPONENT_UNITTEST)!=0)
                     continue; // not a message written by this unittest so ignore

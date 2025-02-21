@@ -190,6 +190,10 @@ Pass in root as .
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 {{- $security := .Values.security | default dict -}}
+{{- if .Values.global.plugins -}}
+plugins:
+{{- toYaml .Values.global.plugins | nindent 2 }}
+{{ end -}}
 deploymentName: {{ (include "hpcc.fullname" (dict "root" $)) }}
 mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $)) }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
@@ -212,6 +216,12 @@ storage:
   dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
 {{- if hasKey $storage "indexBuildPlane" }}
   indexBuildPlane: {{ $storage.indexBuildPlane }}
+{{- end }}
+{{- if hasKey $storage "persistPlane" }}
+  persistPlane: {{ $storage.persistPlane }}
+{{- end }}
+{{- if hasKey $storage "jobTempPlane" }}
+  jobTempPlane: {{ $storage.jobTempPlane }}
 {{- end }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}

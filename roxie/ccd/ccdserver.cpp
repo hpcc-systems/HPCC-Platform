@@ -12161,7 +12161,11 @@ protected:
         else
         {
             StringBuffer defaultCluster;
-            if (getDefaultStoragePlane(defaultCluster))
+            if (TDWpersist & helper.getFlags())
+                getDefaultPersistPlane(defaultCluster);
+            else
+                getDefaultStoragePlane(defaultCluster);
+            if (defaultCluster.length())
             {
                 clusters.append(defaultCluster);
                 Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
@@ -12839,7 +12843,7 @@ public:
                 }
                 reccount++;
             }
-            duplicateKeyCount = builder->getStatistic(StNumDuplicateKeyCount);
+            duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
             numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);

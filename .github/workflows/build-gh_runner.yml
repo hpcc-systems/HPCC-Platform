@@ -208,7 +208,7 @@ jobs:
           for plugin in "${plugins[@]}"; do
             rm -f ./build/CMakeCache.txt
             rm -rf ./build/CMakeFiles
-            cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
+            cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DTESTING=ON -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
             cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config RelWithDebInfo' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
           done
 

@@ -746,6 +746,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
          add_definitions (-D_CONTAINERIZED)
       ENDIF(CONTAINERIZED)
 
+      IF (TESTING)
+         add_definitions (-D_TESTING)
+      ENDIF(TESTING)
+
       IF (USE_ICU)
         find_package(ICU COMPONENTS data i18n io tu uc)
         IF (ICU_FOUND)

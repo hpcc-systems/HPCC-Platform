@@ -602,7 +602,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
-        mb.append(inactiveStats.getStatisticValue(StNumDuplicateKeyCount));
+        mb.append(inactiveStats.getStatisticValue(StNumDuplicateKeys));
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;
@@ -616,7 +616,7 @@ public:
             mb.append(partCrc);
             mb.append(uncompressedSize);
             mb.append(originalBlobSize);
-
+            mb.append(inactiveStats.getStatisticValue(StSizeOffsetBranches));
             if (!singlePartKey && firstNode() && buildTlk)
             {
                 mb.append(tlkCrc);

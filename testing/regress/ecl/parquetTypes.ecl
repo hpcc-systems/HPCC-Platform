@@ -21,6 +21,7 @@
 //version compressionType='LZ4'
 //version compressionType='ZSTD'
 
+import STD.File AS FileServices;
 import ^ as root;
 compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
 
@@ -40,9 +41,7 @@ booleanDatasetOut := DATASET([
     {001, 'aab', FALSE}
 ], booleanRecord);
 
-ParquetIO.Write(booleanDatasetOut, dropzoneDirectory + '/BooleanTest.parquet', TRUE, compressionType);
-
-booleanDatasetIn := ParquetIO.Read(booleanRecord, dropzoneDirectory + '/BooleanTest.parquet');
+booleanDatasetIn := ParquetIO.Read(booleanRecord, dropzoneDirectory + 'BooleanTest.parquet');
 
 {UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} booleanJoin (booleanDatasetOut a, booleanDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -63,7 +62,7 @@ integerDatasetOut := DATASET([
     {101, 'maxvalues', 127, 32767, 8388607, 2147483647, 549755813887, 140737488355327, 36028797018963967, 9223372036854775807}
 ], integerRecord);
 
-ParquetIO.Write(integerDatasetOut, dropzoneDirectory + '/IntegerTest.parquet', TRUE, compressionType);
+integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + 'IntegerTest.parquet');
 
 integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + '/IntegerTest.parquet');
 
@@ -93,7 +92,7 @@ unsignedDatasetOut := DATASET([
     {201, 'maxvalues', 255, 65535, 16777215, 4294967295, 1099511627775, 281474976710655, 72057594037927935, 18446744073709551615}
 ], unsignedRecord);
 
-ParquetIO.Write(unsignedDatasetOut, dropzoneDirectory + '/UnsignedTest.parquet', TRUE, compressionType);
+unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + 'UnsignedTest.parquet');
 
 unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + '/UnsignedTest.parquet');
 
@@ -127,7 +126,7 @@ realDatasetOut := DATASET([
     {305, 'negative', -9.87D, -234.853D}
 ], realRecord);
 
-ParquetIO.Write(realDatasetOut, dropzoneDirectory + '/RealTest.parquet', TRUE, compressionType);
+realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + 'RealTest.parquet');
 
 realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + '/RealTest.parquet');
 
@@ -152,9 +151,7 @@ decimalDatasetOut := DATASET([
     {402, 'abb', 0.00D}
 ], decimalRecord);
 
-ParquetIO.Write(decimalDatasetOut, dropzoneDirectory + '/DecimalTest.parquet', TRUE, compressionType);
-
-decimalDatasetIn := ParquetIO.Read(decimalRecord, dropzoneDirectory + '/DecimalTest.parquet');
+decimalDatasetIn := ParquetIO.Read(decimalRecord, dropzoneDirectory + 'DecimalTest.parquet');
 
 {UNSIGNED testid, STRING3 testname, BOOLEAN isEqual} decimalJoin (decimalDatasetOut a, decimalDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -180,9 +177,7 @@ stringDatasetOut := DATASET([
     {506, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], stringRecord);
 
-ParquetIO.Write(stringDatasetOut, dropzoneDirectory + '/StringTest.parquet', TRUE, compressionType);
-
-stringDatasetIn := ParquetIO.Read(stringRecord, dropzoneDirectory + '/StringTest.parquet');
+stringDatasetIn := ParquetIO.Read(stringRecord, dropzoneDirectory + 'StringTest.parquet');
 
 {STRING5 name, BOOLEAN value} stringJoin (stringDatasetOut a, stringDatasetIn b) := TRANSFORM
     SELF.name := a.name;
@@ -214,13 +209,16 @@ dataDatasetOut := DATASET([
     {604, 'neg', X'0000000000000000', REALToBinary(-2.71828), REALToLargeBinary(-2.71828)}
 ], dataRecord);
 
-ParquetIO.Write(dataDatasetOut, dropzoneDirectory + '/DataTest.parquet', TRUE, compressionType);
+dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + 'DataTest.parquet');
 
 dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + '/DataTest.parquet');
 
 {UNSIGNED testid, STRING5 name, BOOLEAN allEqual} dataJoin(dataDatasetOut a, dataDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.name := a.name;
+    SELF.allEqual := a.value1 = b.value1 AND
+                     a.value2 = b.value2 AND
+                     a.value3 = b.value3;
     SELF.allEqual := a.value1 = b.value1 AND
                      a.value2 = b.value2 AND
                      a.value3 = b.value3;
@@ -243,7 +241,7 @@ varStringDatasetOut := DATASET([
     {706, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], varstringRecord);
 
-ParquetIO.Write(varStringDatasetOut, dropzoneDirectory + '/VarStringTest.parquet', TRUE, compressionType);
+varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + 'VarStringTest.parquet');
 
 varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + '/VarStringTest.parquet');
 
@@ -270,7 +268,7 @@ qStringDatasetOut := DATASET([
     {805, 'data1', (STRING)X'00FF00FF00FF00FF'}
 ], qstringRecord);
 
-ParquetIO.Write(qStringDatasetOut, dropzoneDirectory + '/QStringTest.parquet', TRUE, compressionType);
+qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + 'QStringTest.parquet');
 
 qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + '/QStringTest.parquet');
 
@@ -294,7 +292,7 @@ utf8DatasetOut := DATASET([
     {902, 'extrachars1', U8'\316\221\316\222\316\223\316\224\316\225\316\226\316\227\316\230\316\231\316\232\316\233\316\234'}
 ], utf8Record);
 
-ParquetIO.Write(utf8DatasetOut, dropzoneDirectory + '/UTF8Test.parquet', TRUE, compressionType);
+utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + 'UTF8Test.parquet');
 
 utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + '/UTF8Test.parquet');
 

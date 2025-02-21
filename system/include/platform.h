@@ -18,7 +18,11 @@
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
-#define _TESTING // this should remain set for the near future
+#ifdef _DEBUG
+ #ifndef _TESTING
+  #define _TESTING
+ #endif
+#endif
 
 // **** Architecture detection ****
 // Ref: http://sourceforge.net/p/predef/wiki/Architectures/

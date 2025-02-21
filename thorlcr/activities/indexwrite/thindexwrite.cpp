@@ -347,15 +347,17 @@ public:
 
                 offset_t slaveUncompressedSize;
                 offset_t slaveOriginalBlobSize;
+                offset_t offsetBranches;
                 mb.read(slaveUncompressedSize);
                 mb.read(slaveOriginalBlobSize);
+                mb.read(offsetBranches);
 
                 compressedFileSize += size;
                 uncompressedSize += slaveUncompressedSize;
                 originalBlobSize += slaveOriginalBlobSize;
 
                 props.setPropInt64("@uncompressedSize", slaveUncompressedSize);
-                props.setPropInt64("@offsetBranches", statsCollection.getStatisticSum(StSizeOffsetBranches));
+                props.setPropInt64("@offsetBranches", offsetBranches);
 
                 //Read details for the TLK if it has been generated
                 if (!singlePartKey && 0 == slaveIdx && buildTlk)
