@@ -8669,6 +8669,30 @@ Owned<IPropertyTree> getGlobalConfigSP()
     return getGlobalConfig();
 }
 
+template <typename T>
+static T getConfigValue(const char *xpath, T defaultValue, T (IPropertyTree::*getPropFunc)(const char *, T) const)
+{
+    return (getComponentConfigSP()->*getPropFunc)(xpath, (getGlobalConfigSP()->*getPropFunc)(xpath, defaultValue));
+}
+
+bool getConfigBool(const char *xpath, bool defaultValue)
+{
+    return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropBool);
+}
+
+__int64 getConfigInt64(const char *xpath, __int64 defaultValue)
+{
+    return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropInt64);
+}
+
+bool getConfigString(const char *xpath, StringBuffer &result)
+{
+    if (getComponentConfigSP()->getProp(xpath, result))
+        return true;
+    else
+        return getGlobalConfigSP()->getProp(xpath, result);
+}
+
 const char * queryComponentName()
 {
     //componentName is thread safe, since initialised when config is first loaded, and not modified afterwards
