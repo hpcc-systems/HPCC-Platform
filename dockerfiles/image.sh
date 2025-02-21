@@ -15,7 +15,9 @@ globals() {
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
     set +e
-    export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    if [ -f $ROOT_DIR/.env ]; then
+        export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    fi
     set -e
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
@@ -46,7 +48,7 @@ globals() {
 
 create_build_image() {
     echo "--- Create 'build-$BUILD_OS:$VCPKG_REF' image---"
-    docker build --rm -f "$SCRIPT_DIR/vcpkg/$BUILD_OS.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-$BUILD_OS.dockerfile" \
         -t build-$BUILD_OS:$VCPKG_REF \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
@@ -56,14 +58,14 @@ create_build_image() {
 create_platform_core_image() {
     local base=$1
     echo "--- Create 'platform-core:release' image ---"
-    docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-$BUILD_OS.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-platform-core-$BUILD_OS.dockerfile" \
         -t platform-core:release \
         --build-arg BASE_IMAGE=$base \
             "$SCRIPT_DIR/vcpkg/." 
 
     if [ "$MODE" = "debug" ]; then
         echo "--- Create 'platform-core:debug' image ---"
-        docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-debug-$BUILD_OS.dockerfile" \
+        docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:debug \
             --build-arg BASE_IMAGE=platform-core:release \
                 "$SCRIPT_DIR/vcpkg/."
