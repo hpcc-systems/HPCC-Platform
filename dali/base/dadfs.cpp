@@ -3488,7 +3488,6 @@ protected:
             for (i1=0;i1<n;i1++) {
                 if (parts.item(i1).clearDirty()||force) {
                     MemoryBuffer mb;
-                    CriticalBlock block (sect);
                     ForEachItemIn(i2,parts)
                         serializePartAttr(mb,parts.item(i2).queryAttr());
                     root->setPropBin("Parts",mb.length(),mb.toByteArray());
