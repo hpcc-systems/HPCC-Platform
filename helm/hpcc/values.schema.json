@@ -431,6 +431,9 @@
           "type": "object",
           "additionalProperties": { "type": "string" },
           "description": "Global component annotations, generated into all components"
+        },
+        "plugins": {
+          "$ref": "#/definitions/plugins"
         }
       },
       "additionalProperties": false
@@ -693,7 +696,7 @@
               "description": "Secret id",
               "type": "string"
             },
-      	    "containers": {
+            "containers": {
               "type": "array",
               "description": "List of containers",
               "items": {
@@ -1166,6 +1169,10 @@
         "enableDefaultLogExporter": {
           "type": "boolean",
           "description": "If true, creates a trace exporter outputting to the log using the default options"
+        },
+        "enableOTELDebugLogging": {
+          "type": "boolean",
+          "description": "If true, sets OTEL library logging to debug level (otherwise set to warning)"
         },
         "exporters": {
           "type": "array",
@@ -1740,6 +1747,9 @@
           "type": "boolean",
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
+        "plugins": {
+          "$ref": "#/definitions/plugins"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -2471,6 +2481,9 @@
         "hpa": {
           "$ref": "#/definitions/hpa"
         },
+        "plugins": {
+          "$ref": "#/definitions/plugins"
+        },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
@@ -2735,6 +2748,9 @@
           "type": "boolean",
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
+        "plugins": {
+          "$ref": "#/definitions/plugins"
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
@@ -3552,6 +3568,11 @@
     "expert": {
       "description": "Settings for developers, debugging and testing",
       "type": "object"
+    },
+    "plugins": {
+      "description": "plugin configurations",
+      "type": "object",
+      "additionalProperties": true
     },
     "dataPlane": {
       "description": "The default storage plane to write data files to",

@@ -225,10 +225,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     }
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "helpers"} size={size}>
-                    {state?.helpers ?
-                        <FetchEditor mode={queryParams.helpers?.mode as any} url={queryParams.helpers?.src as string} wuid={queryParams.helpers?.mode?.toLowerCase() === "ecl" ? wuid : ""} /> :
-                        <Helpers wuid={wuid} />
-                    }
+                    <Helpers wuid={wuid} mode={queryParams.helpers?.mode as any} url={queryParams.helpers?.src as string} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "logs"} size={size}>
                     <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
