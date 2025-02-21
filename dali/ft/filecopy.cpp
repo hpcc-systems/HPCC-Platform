@@ -2396,7 +2396,7 @@ void FileSprayer::insertHeaders()
                 idx++;
             }
         }
-        if (footer)
+        if (footer && (idx != 0))
         {
             addHeaderFooter(footer, idx-1, false);
             idx++;
