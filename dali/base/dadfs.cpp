@@ -9292,9 +9292,11 @@ public:
                         partincluded[i] = true;
                     start = 0;
                 }
+                else if (pn == 0)
+                    throw makeStringExceptionV(0, "Invalid part filter: %s", filter);
                 else
-                    partincluded[pn-1] = true;
-                if (*s==0)
+                    partincluded[pn - 1] = true;
+                if (*s == 0)
                     break;
                 pn = 0;
             }
