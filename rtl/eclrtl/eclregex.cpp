@@ -288,7 +288,7 @@ static void initMaxCacheSize() // NB: called when compiledStrRegExprLock held
 
     if (cacheMaxSize > 0)
     {
-        compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize);
+        compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize); // NOTE: Called from init code - no need to lock
         compiledCacheState = CompiledCacheState::Enabled;
     }
     else

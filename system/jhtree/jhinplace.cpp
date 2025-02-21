@@ -2712,6 +2712,8 @@ class InplaceIndexTest : public CppUnit::TestFixture
 
         unsigned searchLen = strlen(search);
         unsigned trimLen = rtlTrimStrLen(searchLen, search);
+        if (!trimLen)
+            return;
         StringBuffer text;
         text.clear().append(search).setCharAt(trimLen-1, ' '); callback(text);
         text.clear().append(search).setCharAt(trimLen-1, 'a'); callback(text);
