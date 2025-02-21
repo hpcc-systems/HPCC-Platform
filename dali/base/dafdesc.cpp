@@ -3845,40 +3845,67 @@ void disableStoragePlanesDaliUpdates()
 
 bool getDefaultStoragePlane(StringBuffer &ret)
 {
-#ifdef _CONTAINERIZED
+    if (!isContainerized())
+        return false;
     if (getDefaultPlane(ret, "@dataPlane", "data"))
         return true;
 
     throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
-#else
-    return false;
-#endif
 }
 
 bool getDefaultSpillPlane(StringBuffer &ret)
 {
-#ifdef _CONTAINERIZED
-    if (getDefaultPlane(ret, "@spillPlane", "spill"))
+    if (!isContainerized())
+        return false;
+    if (getComponentConfigSP()->getProp("@spillPlane", ret))
+        return true;
+    else if (getGlobalConfigSP()->getProp("storage/@spillPlane", ret))
+        return true;
+    else if (getDefaultPlane(ret, nullptr, "spill"))
         return true;
 
     throwUnexpectedX("Default spill plane not specified"); // The default should always have been configured by the helm charts
-#else
-    return false;
-#endif
 }
 
 bool getDefaultIndexBuildStoragePlane(StringBuffer &ret)
 {
-#ifdef _CONTAINERIZED
+    if (!isContainerized())
+        return false;
     if (getComponentConfigSP()->getProp("@indexBuildPlane", ret))
         return true;
     else if (getGlobalConfigSP()->getProp("storage/@indexBuildPlane", ret))
         return true;
     else
         return getDefaultStoragePlane(ret);
-#else
-    return false;
-#endif
+}
+
+bool getDefaultPersistPlane(StringBuffer &ret)
+{
+    if (!isContainerized())
+        return false;
+    if (getComponentConfigSP()->getProp("@persistPlane", ret))
+        return true;
+    else if (getGlobalConfigSP()->getProp("storage/@persistPlane", ret))
+        return true;
+    else
+        return getDefaultStoragePlane(ret);
+}
+
+bool getDefaultJobTempPlane(StringBuffer &ret)
+{
+    if (!isContainerized())
+        return false;
+    if (getComponentConfigSP()->getProp("@jobTempPlane", ret))
+        return true;
+    else if (getGlobalConfigSP()->getProp("storage/@jobTempPlane", ret))
+        return true;
+    else
+    {
+        // NB: In hthor jobtemps are written to the spill plane and hence ephemeral storage by default
+        // In Thor they are written to the default data storage plane by default.
+        // This is because HThor doesn't need them persisted beyond the lifetime of the process, but Thor does.
+        return getDefaultStoragePlane(ret);
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
