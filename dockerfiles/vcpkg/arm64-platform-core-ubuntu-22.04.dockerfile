@@ -58,19 +58,19 @@ RUN apt-get install -y \
     gdb \
     nano 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/arm64/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 
-RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.6.1_amd64.deb/download && \
-    dpkg -i download && \
-    rm download
+RUN curl -LO http://ports.ubuntu.com/pool/universe/g/git-lfs/git-lfs_3.0.2-1_arm64.deb && \
+    dpkg -i git-lfs_3.0.2-1_arm64.deb && \
+    rm git-lfs_3.0.2-1_arm64.deb
 
 # Set the locale
 RUN locale-gen en_US.UTF-8
-ENV LANG=en_US.UTF-8  
-ENV LANGUAGE=en_US:en  
-ENV LC_ALL=en_US.UTF-8     
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8     
 
 RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -m -r -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc

@@ -11,11 +11,14 @@ trapFunc() {
 trap 'trapFunc "${LINENO}/${BASH_LINENO}" "$?" "$BASH_COMMAND"' ERR
 
 globals() {
+    detect_arch
     SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )"
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
     set +e
-    export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    if [ -f $ROOT_DIR/.env ]; then
+        export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    fi
     set -e
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
@@ -24,6 +27,10 @@ globals() {
     pushd $ROOT_DIR/vcpkg
     VCPKG_REF=$(git rev-parse --short=8 HEAD)
     popd
+    if [ "$ARCH" == "arm64" ]; then
+        VCPKG_REF="$VCPKG_REF-arm"
+        RELEASE_BASE_IMAGE="arm64v8/$RELEASE_BASE_IMAGE"
+    fi
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
     CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
@@ -265,6 +272,10 @@ build() {
         exit 1
     fi
 
+    if [ "$ARCH" == "arm64" ]; then
+        base="$base"
+    fi
+
     if [ "$RECONFIGURE" -eq 1 ]; then
         reconfigure
     fi
@@ -331,6 +342,25 @@ function cleanup() {
     fi
 }
 
+function detect_arch() {
+    if [ -z "$ARCH" ]; then
+        if [ "$(uname -m)" == "x86_64" ]; then
+            ARCH="x64"
+        elif [ "$(uname -m)" == "aarch64" ]; then
+            ARCH="arm64"
+        elif [ "$(uname -m)" == "arm64" ]; then
+            ARCH="arm64"
+        else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
+        fi
+    fi
+    if [ "$ARCH" != "x64" ] && [ "$ARCH" != "arm64" ]; then
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+    fi
+}
+
 trap cleanup EXIT
 
 status() {
@@ -344,7 +374,9 @@ status() {
     echo "MODE: $MODE"
     echo "RECONFIGURE: $RECONFIGURE"
     echo "BUILD_OS: $BUILD_OS"
+    echo "RELEASE_BASE_IMAGE: $RELEASE_BASE_IMAGE"
     echo "HPCC_BUILD: $HPCC_BUILD"
+    echo "ARCH: $ARCH"
 }
 
 # Print usage information
@@ -361,6 +393,7 @@ usage() {
     echo "  -t, --tag               tag the build volume with the current branch ref"
     echo "                          will preserve build state per branch"
     echo "  -r, --reconfigure       reconfigure CMake before building"
+    echo "  -a, --architecture      override default architecture (x64 or arm64)"
 }
 
 # Set default values
@@ -369,8 +402,9 @@ MODE="release"
 RECONFIGURE=0
 DEB_FILE=""
 BUILD_OS="ubuntu-22.04"
-RELEASE_BASE_IMAGE="ubuntu:jammy-20230308" # Matches vcpkg base image (does not need to be an exact match)
+RELEASE_BASE_IMAGE="ubuntu:22.04" # Matches vcpkg base image (does not need to be an exact match)
 TAG_BUILD=0
+ARCH=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -412,6 +446,11 @@ case $key in
     -r|--reconfigure)
         RECONFIGURE=1
         shift # past argument
+        ;;
+    -a|--architecture)
+        ARCH="$2"
+        shift # past argument
+        shift # past value
         ;;
     -h|--help)
         usage
