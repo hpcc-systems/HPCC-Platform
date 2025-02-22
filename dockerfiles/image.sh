@@ -11,6 +11,7 @@ trapFunc() {
 trap 'trapFunc "${LINENO}/${BASH_LINENO}" "$?" "$BASH_COMMAND"' ERR
 
 globals() {
+    detect_arch
     SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )"
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
@@ -26,6 +27,10 @@ globals() {
     pushd $ROOT_DIR/vcpkg
     VCPKG_REF=$(git rev-parse --short=8 HEAD)
     popd
+    if [ "$ARCH" == "arm64" ]; then
+        VCPKG_REF="$VCPKG_REF-arm"
+        RELEASE_BASE_IMAGE="arm64v8/$RELEASE_BASE_IMAGE"
+    fi
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
     CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
@@ -48,7 +53,7 @@ globals() {
 
 create_build_image() {
     echo "--- Create 'build-$BUILD_OS:$VCPKG_REF' image---"
-    docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-$BUILD_OS.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/vcpkg/$BUILD_OS.dockerfile" \
         -t build-$BUILD_OS:$VCPKG_REF \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
@@ -58,14 +63,14 @@ create_build_image() {
 create_platform_core_image() {
     local base=$1
     echo "--- Create 'platform-core:release' image ---"
-    docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-platform-core-$BUILD_OS.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-$BUILD_OS.dockerfile" \
         -t platform-core:release \
         --build-arg BASE_IMAGE=$base \
             "$SCRIPT_DIR/vcpkg/." 
 
     if [ "$MODE" = "debug" ]; then
         echo "--- Create 'platform-core:debug' image ---"
-        docker build --rm -f "$SCRIPT_DIR/vcpkg/arm64-platform-core-debug-$BUILD_OS.dockerfile" \
+        docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:debug \
             --build-arg BASE_IMAGE=platform-core:release \
                 "$SCRIPT_DIR/vcpkg/."
@@ -267,6 +272,10 @@ build() {
         exit 1
     fi
 
+    if [ "$ARCH" == "arm64" ]; then
+        base="$base"
+    fi
+
     if [ "$RECONFIGURE" -eq 1 ]; then
         reconfigure
     fi
@@ -333,6 +342,25 @@ function cleanup() {
     fi
 }
 
+function detect_arch() {
+    if [ -z "$ARCH" ]; then
+        if [ "$(uname -m)" == "x86_64" ]; then
+            ARCH="x64"
+        elif [ "$(uname -m)" == "aarch64" ]; then
+            ARCH="arm64"
+        elif [ "$(uname -m)" == "arm64" ]; then
+            ARCH="arm64"
+        else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
+        fi
+    fi
+    if [ "$ARCH" != "x64" ] && [ "$ARCH" != "arm64" ]; then
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+    fi
+}
+
 trap cleanup EXIT
 
 status() {
@@ -346,7 +374,9 @@ status() {
     echo "MODE: $MODE"
     echo "RECONFIGURE: $RECONFIGURE"
     echo "BUILD_OS: $BUILD_OS"
+    echo "RELEASE_BASE_IMAGE: $RELEASE_BASE_IMAGE"
     echo "HPCC_BUILD: $HPCC_BUILD"
+    echo "ARCH: $ARCH"
 }
 
 # Print usage information
@@ -363,6 +393,7 @@ usage() {
     echo "  -t, --tag               tag the build volume with the current branch ref"
     echo "                          will preserve build state per branch"
     echo "  -r, --reconfigure       reconfigure CMake before building"
+    echo "  -a, --architecture      override default architecture (x64 or arm64)"
 }
 
 # Set default values
@@ -371,8 +402,9 @@ MODE="release"
 RECONFIGURE=0
 DEB_FILE=""
 BUILD_OS="ubuntu-22.04"
-RELEASE_BASE_IMAGE="ubuntu:jammy-20230308" # Matches vcpkg base image (does not need to be an exact match)
+RELEASE_BASE_IMAGE="ubuntu:22.04" # Matches vcpkg base image (does not need to be an exact match)
 TAG_BUILD=0
+ARCH=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -414,6 +446,11 @@ case $key in
     -r|--reconfigure)
         RECONFIGURE=1
         shift # past argument
+        ;;
+    -a|--architecture)
+        ARCH="$2"
+        shift # past argument
+        shift # past value
         ;;
     -h|--help)
         usage
