@@ -28,7 +28,7 @@ compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
 IMPORT Std;
 IMPORT Parquet;
 
-dropzoneDirectory := Std.File.GetDefaultDropZone() + '/regress/parquet';
+dropzoneDirectory := Std.File.GetDefaultDropZone() + '/regress/parquet/' + WORKUNIT + '-';
 
 // Covers data types supported by ECL and Arrow
 
@@ -64,8 +64,6 @@ integerDatasetOut := DATASET([
 
 integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + 'IntegerTest.parquet');
 
-integerDatasetIn := ParquetIO.Read(integerRecord, dropzoneDirectory + '/IntegerTest.parquet');
-
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} integerJoin (integerDatasetOut a, integerDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
@@ -93,8 +91,6 @@ unsignedDatasetOut := DATASET([
 ], unsignedRecord);
 
 unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + 'UnsignedTest.parquet');
-
-unsignedDatasetIn := ParquetIO.Read(unsignedRecord, dropzoneDirectory + '/UnsignedTest.parquet');
 
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} unsignedJoin (unsignedDatasetOut a, unsignedDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -127,8 +123,6 @@ realDatasetOut := DATASET([
 ], realRecord);
 
 realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + 'RealTest.parquet');
-
-realDatasetIn := ParquetIO.Read(realRecord, dropzoneDirectory + '/RealTest.parquet');
 
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} realJoin (realDatasetOut a, realDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -211,14 +205,9 @@ dataDatasetOut := DATASET([
 
 dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + 'DataTest.parquet');
 
-dataDatasetIn := ParquetIO.Read(dataRecord, dropzoneDirectory + '/DataTest.parquet');
-
 {UNSIGNED testid, STRING5 name, BOOLEAN allEqual} dataJoin(dataDatasetOut a, dataDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.name := a.name;
-    SELF.allEqual := a.value1 = b.value1 AND
-                     a.value2 = b.value2 AND
-                     a.value3 = b.value3;
     SELF.allEqual := a.value1 = b.value1 AND
                      a.value2 = b.value2 AND
                      a.value3 = b.value3;
@@ -242,8 +231,6 @@ varStringDatasetOut := DATASET([
 ], varstringRecord);
 
 varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + 'VarStringTest.parquet');
-
-varStringDatasetIn := ParquetIO.Read(varstringRecord, dropzoneDirectory + '/VarStringTest.parquet');
 
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} varstringJoin (varStringDatasetOut a, varStringDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -270,8 +257,6 @@ qStringDatasetOut := DATASET([
 
 qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + 'QStringTest.parquet');
 
-qStringDatasetIn := ParquetIO.Read(qstringRecord, dropzoneDirectory + '/QStringTest.parquet');
-
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} qstringJoin (qStringDatasetOut a, qStringDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
@@ -294,8 +279,6 @@ utf8DatasetOut := DATASET([
 
 utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + 'UTF8Test.parquet');
 
-utf8DatasetIn := ParquetIO.Read(utf8Record, dropzoneDirectory + '/UTF8Test.parquet');
-
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} utf8Join (utf8DatasetOut a, utf8DatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
     SELF.testname := a.testname;
@@ -317,9 +300,7 @@ unicodeDatasetOut := DATASET([
     {1003, 'adw', U'ᄠᄡᄢᄣᄤᄥᄦᄨᄩᄪᄫᄬᄭᄮᄯᆰᆱᆲᆳᆴᆵᆶᆷᆸᆹᆼᆽᇲᇳᇴᇵᇶᇷᇸ㈸㋄㋅㋆㋇㋈㋉㋊㋋㋌'}
 ], unicodeRecord);
 
-ParquetIO.Write(unicodeDatasetOut, dropzoneDirectory + '/UnicodeTest.parquet', TRUE, compressionType);
-
-unicodeDatasetIn := ParquetIO.Read(unicodeRecord, dropzoneDirectory + '/UnicodeTest.parquet');
+unicodeDatasetIn := ParquetIO.Read(unicodeRecord, dropzoneDirectory + 'UnicodeTest.parquet');
 
 {UNSIGNED testid, STRING testname, BOOLEAN isEqual} unicodeJoin(unicodeDatasetOut a, unicodeDatasetIn b) := TRANSFORM
     SELF.testid := a.testid;
@@ -341,22 +322,52 @@ setDatasetOut := DATASET([
     {1102, 'multiple', [TRUE, FALSE], [1, 2], [1, 2], [1.0, 2.0], [1.0, 2.0], ['a', 'b'], ['a', 'b'], ['a', 'b'], [U'a', U'b'], [U'a', U'b'], [X'0000', X'FFFF']}
 ], setRecord);
 
-ParquetIO.Write(setDatasetOut, dropzoneDirectory + '/SetTest.parquet', TRUE, compressionType);
-
-OUTPUT(ParquetIO.Read(setRecord, dropzoneDirectory + '/SetTest.parquet'), NAMED('SetTest'));
+setResult := ParquetIO.Read(setRecord, dropzoneDirectory + 'SetTest.parquet');
 
 // ======================== OUTPUT ========================
 
-PARALLEL(
-    OUTPUT(booleanResult, NAMED('BooleanTest'), OVERWRITE),
-    OUTPUT(integerResult, NAMED('IntegerTest'), OVERWRITE),
-    OUTPUT(unsignedResult, NAMED('UnsignedTest'), OVERWRITE),
-    OUTPUT(realResult, NAMED('RealTest'), OVERWRITE),
-    OUTPUT(decimalResult, NAMED('DecimalTest'), OVERWRITE),
-    OUTPUT(stringResult, NAMED('StringTest'), OVERWRITE),
-    OUTPUT(dataResult, NAMED('DataTest'), OVERWRITE),
-    OUTPUT(varStringResult, NAMED('VarStringTest'), OVERWRITE),
-    OUTPUT(qStringResult, NAMED('QStringTest'), OVERWRITE),
-    OUTPUT(utf8Result, NAMED('UTF8Test'), OVERWRITE),
-    OUTPUT(unicodeResult, NAMED('UnicodeTest'), OVERWRITE)
+SEQUENTIAL(
+    // Set up test files
+    PARALLEL(
+        ParquetIO.Write(booleanDatasetOut, dropzoneDirectory + 'BooleanTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(integerDatasetOut, dropzoneDirectory + 'IntegerTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(unsignedDatasetOut, dropzoneDirectory + 'UnsignedTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(realDatasetOut, dropzoneDirectory + 'RealTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(decimalDatasetOut, dropzoneDirectory + 'DecimalTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(stringDatasetOut, dropzoneDirectory + 'StringTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(dataDatasetOut, dropzoneDirectory + 'DataTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(varStringDatasetOut, dropzoneDirectory + 'VarStringTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(qStringDatasetOut, dropzoneDirectory + 'QStringTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(utf8DatasetOut, dropzoneDirectory + 'UTF8Test.parquet', TRUE, compressionType),
+        ParquetIO.Write(unicodeDatasetOut, dropzoneDirectory + 'UnicodeTest.parquet', TRUE, compressionType),
+        ParquetIO.Write(setDatasetOut, dropzoneDirectory + 'SetTest.parquet', TRUE, compressionType)
+    ),
+    // Read and compare results
+    OUTPUT(booleanResult, NAMED('BooleanTest')),
+    OUTPUT(integerResult, NAMED('IntegerTest')),
+    OUTPUT(unsignedResult, NAMED('UnsignedTest')),
+    OUTPUT(realResult, NAMED('RealTest')),
+    OUTPUT(decimalResult, NAMED('DecimalTest')),
+    OUTPUT(stringResult, NAMED('StringTest')),
+    OUTPUT(dataResult, NAMED('DataTest')),
+    OUTPUT(varStringResult, NAMED('VarStringTest')),
+    OUTPUT(qStringResult, NAMED('QStringTest')),
+    OUTPUT(utf8Result, NAMED('UTF8Test')),
+    OUTPUT(unicodeResult, NAMED('UnicodeTest')),
+    OUTPUT(setResult, NAMED('SetTest')),
+    // Clean up temporary files
+    PARALLEL(
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'BooleanTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'IntegerTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UnsignedTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'RealTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'DecimalTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'StringTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'DataTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'VarStringTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'QStringTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UTF8Test.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UnicodeTest.parquet'),
+        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'SetTest.parquet')
+    )
 );
