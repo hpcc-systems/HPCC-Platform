@@ -89,8 +89,6 @@ interface IRoxieServerContext;
 interface IRoxieAgentContext;
 interface IStrandJunction;
 
-class ClusterWriteHandler;
-
 enum class RoxieSourceCharacteristics : byte
 {
     none = 0,

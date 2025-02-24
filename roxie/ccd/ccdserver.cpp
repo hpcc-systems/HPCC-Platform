@@ -12625,7 +12625,6 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 {
     IHThorIndexWriteArg &helper;
     bool overwrite;
-    Owned<ClusterWriteHandler> clusterHandler;
     Owned<IRoxieWriteHandler> writer;
     unsigned __int64 reccount;
     unsigned int fileCrc;
@@ -12663,8 +12662,6 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
                         result->setResultLogicalName(lfn.str());
                     }
                 }
-                if(clusterHandler)
-                    clusterHandler->finish(writer->queryFile());
                 CTXLOG("Created roxie index file %s", lfn.str());
             }
         }
@@ -12906,15 +12903,10 @@ public:
         // Now publish to name services
         StringBuffer dir, base;
         offset_t compressedFileSize = writer->queryFile()->size();
-        if(clusterHandler)
-            clusterHandler->getDirAndFilename(dir, base);
 
         //properties of the first file part.
         Owned<IPropertyTree> attrs;
-        if(clusterHandler)
-            attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
-        else
-            attrs.set(&desc->queryPart(0)->queryProperties());
+        attrs.set(&desc->queryPart(0)->queryProperties());
         attrs->setPropInt64("@uncompressedSize", uncompressedSize + originalBlobSize);
         attrs->setPropInt64("@size", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
@@ -12930,9 +12922,6 @@ public:
         modifiedTime.getString(timestr);
         if(timestr.length())
             attrs->setProp("@modified", timestr.str());
-
-        if(clusterHandler)
-            clusterHandler->setDescriptorParts(desc, base.str(), attrs);
 
         // properties of the logical file
         IPropertyTree & properties = desc->queryProperties();
