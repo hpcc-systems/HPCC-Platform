@@ -2999,11 +2999,11 @@ public:
         CTimeMon tm(timeout);
         bool first = true;
         bool needstop = false;
+        StringBuffer path;
         StringBuffer opath;
         while (!stopping) {
             // first lock semaphore to write
-            StringBuffer path;
-            path.appendf("/Locks/Mutex[@name=\"%s\"]",name.get());
+            path.setf("/Locks/Mutex[@name=\"%s\"]",name.get());
             conn.setown(querySDS().connect(path.str(),mysession,RTM_LOCK_WRITE,SDS_CONNECT_TIMEOUT));
             if (conn) {
                 SessionId oid = (SessionId)conn->queryRoot()->getPropInt64("Owner",0);
