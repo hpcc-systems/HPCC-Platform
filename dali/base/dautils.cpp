@@ -2999,6 +2999,7 @@ public:
         CTimeMon tm(timeout);
         bool first = true;
         bool needstop = false;
+        StringBuffer opath;
         while (!stopping) {
             // first lock semaphore to write
             StringBuffer path;
@@ -3007,7 +3008,7 @@ public:
             if (conn) {
                 SessionId oid = (SessionId)conn->queryRoot()->getPropInt64("Owner",0);
                 if (!oid||querySessionManager().sessionStopped(oid,0)) {
-                    StringBuffer opath(path);
+                    opath.set(path);
                     opath.append("/Owner");
                     oconn.setown(querySDS().connect(opath.str(),mysession,RTM_CREATE|RTM_LOCK_WRITE|RTM_DELETE_ON_DISCONNECT,SDS_CONNECT_TIMEOUT));
                     if (!oconn)
