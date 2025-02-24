@@ -75,6 +75,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ${{ inputs.dependencies }}
           sudo apt-get install -y gdb
+          echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
 
       - name: Install Package
         shell: "bash"
@@ -98,6 +99,8 @@ jobs:
         working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
+          ulimit -c unlimited
+          ulimit -c
           /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
               ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
@@ -124,11 +127,39 @@ jobs:
         working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
+          ulimit -c unlimited
+          ulimit -c
           # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
           /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
           ./ecl-test query --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${{ steps.select-tests.outputs.queries }}
           grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
           if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+
+      - name: Check for Core files
+        shell: "bash"
+        run: |
+          CORE_FILES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -type f -print) )
+          echo "NUM_OF_CORES=${#CORE_FILES[@]}" >> $GITHUB_ENV
+          echo "NUM_OF_CORES=${#CORE_FILES[@]}"
+          if [ ${#CORE_FILES[@]} -ne 0 ]
+          then
+              mkdir -p $HOME/.config/gdb/
+              echo "set auto-load safe-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set solib-search-path /" >> $HOME/.config/gdb/gdbinit
+              echo "set sysroot /" >> $HOME/.config/gdb/gdbinit
+              for core in ${CORE_FILES[@]}
+              do
+                  coreName=${core##*/}
+                  component=$( echo $coreName | tr '_.' ' ' | awk '{print $2 }' )
+                  compNamePart=$( find /opt/HPCCSystems/bin/ -iname "$component*" -type f -print | head -n 1);
+                  compName=${compNamePart##*/}
+                  echo "component: '${component}', compName: '${compName}', core: '${core}'"
+                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${compName}" $core 2>&1 | sudo tee "$core.trace" 2>&1
+                  cp "$core.trace" /home/runner/HPCCSystems-regression/log/
+              done
+              exit -1
+          fi
+
 
       - name: regression-run-logs-artifact
         if: ${{ failure() || cancelled() }}
