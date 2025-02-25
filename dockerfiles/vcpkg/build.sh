@@ -50,7 +50,7 @@ function doBuild() {
 
     rm -f ./vcpkg/vcpkg 
     mkdir -p ./build-$1
-    if [ "$1" == "centos-7*" ]; then
+    if [ "$1" == "centos-7" ] || [ "$1" == "centos-7-rh-python38" ]; then
         CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     elif [ "$1" == "amazonlinux" ]; then
         CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
