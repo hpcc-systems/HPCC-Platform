@@ -343,7 +343,8 @@ protected:
                 written += (sizeWritten - originalLen);
                 inlen = 0; // either all written, or this write will return a partial success - no room left
 
-                //If failed to write a complete block then return data actually written
+                //If failed to write a complete block then return data actually written.
+                //write() will be called again with the remainder of the data.
                 if (sizeWritten != sizeToWrite)
                     return written;
             }
@@ -414,18 +415,15 @@ protected:
         }
 
         //Catch the weird situation, where compressing the data takes up more room, so it the data must be stored uncompressed.
-        if ((size32_t)numWritten < minToWrite)
+        if ((outSize == 0) || (size32_t)numWritten < minToWrite)
             return 0;
 
         *cmpsize = outSize;
-        if (outSize > 0)
-        {
-            //Any data that could not be compressed into the current block is
-            *(size32_t *)outbuf += outSize;
-            outlen += outSize+sizeof(size32_t);
-            return numWritten;
-        }
-        return 0;
+
+        //Any data that could not be compressed into the current block is
+        *(size32_t *)outbuf += numWritten;
+        outlen += outSize+sizeof(size32_t);
+        return numWritten;
     }
 
 
