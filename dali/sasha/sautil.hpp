@@ -10,8 +10,6 @@ class CSashaSchedule
     bool atenabled;
     unsigned mininterval;
     unsigned last;
-    CriticalSection sect;
-    bool triggered;
     unsigned maxduration;
     unsigned throttle;
 public:
@@ -21,14 +19,12 @@ public:
         mininterval = 0;
         last = 0;
         atenabled = false;
-        triggered = false;
         maxduration = 0;
         throttle = 0;
     }
 
     void init(IPropertyTree *props, unsigned definterval, unsigned initinterval=0)
     {
-        CriticalBlock block(sect);
         StringBuffer ats;
         atenabled = false;
         if (props->getProp("@at",ats)) {
@@ -57,38 +53,26 @@ public:
 
     bool ready()
     {
-        CriticalBlock block(sect);
-        if (triggered) 
-            triggered = false;
-        else {
-            if (!mininterval)
-                return false;
-            if (last&&((msTick()-last)/(60*60*1000)<mininterval))
-                return false;
-            if (atenabled) {
-                CDateTime atnow;
-                atnow.setNow();
-                time_t now = atnow.getSimple();
-                time_t next = atnext.getSimple();
-                if (now<next) {
-                    if (next-now>30) 
-                        return false;
-                    // 
-                    Sleep((unsigned)(next-now)*1000);
-                }
-                at.next(atnow,atnext,true);
+        if (!mininterval)
+            return false;
+        if (last&&((msTick()-last)/(60*60*1000)<mininterval))
+            return false;
+        if (atenabled) {
+            CDateTime atnow;
+            atnow.setNow();
+            time_t now = atnow.getSimple();
+            time_t next = atnext.getSimple();
+            if (now<next) {
+                if (next-now>30)
+                    return false;
+                Sleep((unsigned)(next-now)*1000);
             }
+            at.next(atnow,atnext,true);
         }
         last = msTick();
         if (last==0)
             last++;
         return true;
-    }
-
-    void triggerNow()
-    {
-        CriticalBlock block(sect);
-        triggered = true;
     }
 
     bool checkDurationAndThrottle(unsigned start,unsigned start1, std::atomic<bool> &stopped)
