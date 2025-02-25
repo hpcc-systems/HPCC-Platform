@@ -514,7 +514,8 @@ sasha:
   xref: {} # NB: no properties defined, use defaults
     #disabled: true
     #interval: 1
-    #user: sasha
+    #suspendCoalescerDuringXref: false
+    #ignoreLazyLost: false
 
 dfuserver:
 - name: dfuserver

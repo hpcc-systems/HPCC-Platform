@@ -4,36 +4,9 @@
 #include "jptree.hpp"
 #include "jsuperhash.hpp"
 #include "jregexp.hpp"
-#include "jfile.hpp"
 
 
 #include "sautil.hpp"
-
-unsigned planesToGroups(const char *cmplst, StringArray &cnames, StringArray &groups)
-{
-    StringBuffer plane;
-    const char *lastCopied = cmplst;
-    while (cmplst&&*cmplst)
-    {
-        if (*cmplst==',')
-        {
-            plane.append(cmplst-lastCopied, lastCopied);
-            assertex(getStoragePlane(plane.str()));
-            lastCopied = cmplst+1;
-            cnames.append(plane.str());
-            groups.append(plane.str());
-            plane.clear();
-        }
-        cmplst++;
-    }
-    if (lastCopied != cmplst) {
-        plane.append(cmplst-lastCopied, lastCopied);
-        assertex(getStoragePlane(plane.str()));
-        cnames.append(plane.str());
-        groups.append(plane.str());
-    }
-    return groups.ordinality();
-}
 
 unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &cnames,StringArray &groups,bool *done)
 {

@@ -801,21 +801,29 @@ public:
         clusters.kill();
         clusterscsl.clear().append(grpstr);
         clusters.append(grpstr.str());
-        Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
-        StringBuffer gname;
-        ForEach(*giter) {
-            giter->get(gname.clear());
-            if (strcmp(grpname,gname.str())!=0) {
-                clusters.append(gname.str());
-                clusterscsl.append(',').append(gname.str());
+        if (!isContainerized()) {
+            // This code is locating all other groups that are a subset of the group being scanned.
+            // and builds this list up into 'clustercsl', which is used when XREF identifies a lost
+            // file, tagging them with this list, as possible candidate clusters it may be part of.
+            Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
+            StringBuffer gname;
+            ForEach(*giter) {
+                giter->get(gname.clear());
+                if (strcmp(grpname,gname.str())!=0) {
+                    clusters.append(gname.str());
+                    clusterscsl.append(',').append(gname.str());
+                }
             }
+            // add the first IP also
+            rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
+            clusters.append(gname.str());
+            clusterscsl.append(',').append(gname.str());
         }
-        // add the first IP also
-        rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
-        clusters.append(gname.str());
-        clusterscsl.append(',').append(gname.str());
         if (isContainerized()) {
-            rootdir.set(getStoragePlane(_clustname)->queryProp("@prefix"));
+            Owned<IPropertyTree> plane = getStoragePlane(_clustname);
+            if (!plane)
+                throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
+            rootdir.set(plane->queryProp("@prefix"));
             assert(!rootdir.isEmpty());
         }
         else if (basedir.length()==0) {
@@ -2089,20 +2097,30 @@ public:
             return;
         CSuspendAutoStop suspendstop;
         PROGLOG(LOGPFX "Started %s",clustcsl);
+        StringArray list;
+        getFileGroups(clustcsl, list);
+        bool checksuperfiles=false;
+        ForEachItemInRev(i0,list) {
+            if (strcmp(list.item(i0),"SuperFiles")==0) {
+                checksuperfiles = true;
+                list.remove(i0);
+            }
+        }
+        // Revisit: XREF should really be plane centric only
         StringArray groups;
         StringArray cnames;
-        bool checksuperfiles=false;
-        if (isContainerized())
-            planesToGroups(clustcsl,cnames,groups);
-        else {
-            StringArray list;
-            getFileGroups(clustcsl, list);
-            ForEachItemInRev(i0,list) {
-                if (strcmp(list.item(i0),"SuperFiles")==0) {
-                    checksuperfiles = true;
-                    list.remove(i0);
-                }
+        if (isContainerized()) {
+            // NB: must be a list of planes only
+            ForEachItemIn(i, list) {
+                const char *planeName = list.item(i);
+                Owned<IPropertyTree> plane = getStoragePlane(planeName);
+                if (!plane)
+                    throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
+                groups.append(planeName);
+                cnames.append(planeName);
             }
+        }
+        else {
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
             if (!conn) {
                 OERRLOG("Could not connect to /Environment/Software");
@@ -2195,9 +2213,10 @@ public:
     int run()
     {
         Owned<IPropertyTree> props;
-        if(isContainerized())
-            props = serverConfig;
-        else {
+        if (isContainerized())
+            props.setown(getComponentConfig());
+        else
+        {
             props.setown(serverConfig->getPropTree("DfuXRef"));
             if (!props)
                 props.setown(createPTree("DfuXRef"));
@@ -2206,7 +2225,8 @@ public:
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");
         StringBuffer clusttmp;
-        if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true)) {
+        if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true))
+        {
             if (!clusters||!*clusters)
                 clusters = "SuperFiles";
             else
@@ -2220,7 +2240,7 @@ public:
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval) 
+        if (interval)
             schedule.init(props,interval,initinterval);
         initinterval *= 60*60*1000; // ms
         unsigned started = msTick();
@@ -2231,7 +2251,8 @@ public:
                 break;
             StringBuffer cname;
             bool byscheduler=false;
-            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear())) {         
+            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear()))
+            {
                 if (!interval||((started!=(unsigned)-1)&&(msTick()-started<initinterval)))
                     continue;
                 started = (unsigned)-1;
@@ -2239,7 +2260,8 @@ public:
                     continue;
                 byscheduler = true;
             }
-            try {
+            try
+            {
                 runXRef(cname.length()?cname.str():clusters,true,byscheduler);
                 cname.clear();
             }
