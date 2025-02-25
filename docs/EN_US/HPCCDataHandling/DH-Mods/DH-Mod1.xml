@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
   <title>Data Handling Components</title>
@@ -34,6 +34,73 @@
     that server to enable file sprays and desprays.</para>
   </sect1>
 
+  <sect1 id="FileMovement">
+    <title>File Movement</title>
+
+    <para>The ESP file service can request whether an import (spray), despray,
+    or copy command is a <emphasis role="bold">push</emphasis> or a <emphasis
+    role="bold">pull</emphasis> command.</para>
+
+    <para>These processes run as DFU workunits and communicate with service
+    components, either running as dynamically launched ftslave processes (the
+    default behavior on Bare-Metal deployments), or as tasks running on a
+    dafilesrv service (the only option on a Containerized deployment).</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">pull</emphasis> means that the commands
+        will notionally run per target part and pull from the source.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">push</emphasis> means the commands will
+        notionally run per source part and push to the target.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>In Bare-Metal deployments, where the compute is coupled to the data,
+    ftslave processes are launched on either the source or the target nodes
+    depending on whether pushing or pulling.</para>
+
+    <para>In a Containerized system, the commands always run on a dedicated
+    dafilesrv spray-service where neither the source nor the target are
+    local.</para>
+
+    <para>The default setting in a bare-metal system is useFtSlave=true, an
+    option of dfuserver, but can be configured off so Bare-Metal will use
+    dafilesrv as a service, too.</para>
+
+    <para>It is generally recommended to leave the decision to whether to pull
+    or push up to the platform. In Bare-Metal, it may decide that it has to
+    push because running ftslave on the target side is not supported such as
+    when the the Landing Zone is a Windows server. It may also choose to pull
+    when it concludes it is more efficient to do so. In a Containerized
+    system, some target planes may not support multiple processes writing
+    concurrently, and therefore pull is forced. If you implicitly request pull
+    or push and the platform cannot satisfy the request, it will warn and
+    continue with the method that is supported.</para>
+
+    <para>In addition, the <emphasis role="bold">noCommon</emphasis> option is
+    available. The noCommon option prevents the job/dfuserver from "commoning
+    up" the individual partition commands into a single request. Commoning up
+    means a single ftslave or service command will process multiple partitions
+    sequentially. Not commoning up, means multiple concurrent partitions, that
+    would otherwise be grouped, will operate in parallel as individual
+    ftslaves or individual spray service commands.</para>
+
+    <para>In Bare-Metal, noCommon is on by default, and will mean that any
+    partition command that is destined for the same host, that would otherwise
+    be grouped into a single command, will be left as multiple concurrent
+    commands. For example, if spraying a file to a Thor cluster in Bare-Metal,
+    and the Thor group has several partitions per node (because
+    slavesPerNode&gt;1), then with the default noCommon=true and pull mode,
+    each of the multiple partition pull commands for each node would run in
+    parallel.</para>
+
+    <para>In Containerized deployments, noCommon is currently not supported
+    and will be ignored.</para>
+  </sect1>
+
   <sect1 id="Working_with_a_data_file">
     <title>Working with data files</title>
 
@@ -66,14 +133,14 @@
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="../../images/caution.png" /></entry>
+                    fileref="../../images/caution.png"/></entry>
 
                     <entry>Your IP address could be different from the ones
                     provided in the example images. Please use the IP address
@@ -99,7 +166,7 @@
               <mediaobject>
                 <imageobject>
                   <imagedata fileref="../../images/LZimg03-1.jpg"
-                             vendor="eclwatchSS" />
+                             vendor="eclwatchSS"/>
                 </imageobject>
               </mediaobject>
             </figure>A system file dialog opens. Browse and select the file to
@@ -112,7 +179,7 @@
               <mediaobject>
                 <imageobject>
                   <imagedata fileref="../../images/LZimg04.jpg"
-                             vendor="eclwatchSS" />
+                             vendor="eclwatchSS"/>
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -146,9 +213,9 @@
 
             <para><informaltable colsep="1" rowsep="1">
                 <tgroup cols="2">
-                  <colspec colwidth="80pt" />
+                  <colspec colwidth="80pt"/>
 
-                  <colspec colwidth="100pt" />
+                  <colspec colwidth="100pt"/>
 
                   <tbody>
                     <row>
@@ -235,7 +302,7 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="../../images/IMDB_01.jpg" />
+                    <imagedata fileref="../../images/IMDB_01.jpg"/>
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -291,7 +358,7 @@
         entries in the Dali Server's Distributed File System.</para>
 
         <para><graphic fileref="../../images/DHMan-3.jpg"
-        vendor="eclwatchSS" /></para>
+        vendor="eclwatchSS"/></para>
 
         <para>From this page, you can despray or copy any file.</para>
       </listitem>
@@ -328,9 +395,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -474,9 +541,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="1*" />
+                <colspec colwidth="1*"/>
 
-                <colspec colwidth="3*" />
+                <colspec colwidth="3*"/>
 
                 <tbody>
                   <row>
@@ -680,9 +747,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -838,9 +905,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -998,9 +1065,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -1145,9 +1212,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -1271,7 +1338,7 @@
           button.</para>
 
           <para><graphic fileref="../../images/DHMan-3a.jpg"
-          vendor="eclwatchSS" /></para>
+          vendor="eclwatchSS"/></para>
         </listitem>
 
         <listitem>
@@ -1280,9 +1347,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="333.00pt"/>
 
                 <tbody>
                   <row>
@@ -1373,9 +1440,9 @@
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt" />
+              <colspec colwidth="122.40pt"/>
 
-              <colspec colwidth="333.00pt" />
+              <colspec colwidth="333.00pt"/>
 
               <tbody>
                 <row>
@@ -1499,9 +1566,9 @@
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt" />
+              <colspec colwidth="122.40pt"/>
 
-              <colspec colwidth="333.00pt" />
+              <colspec colwidth="333.00pt"/>
 
               <tbody>
                 <row>
