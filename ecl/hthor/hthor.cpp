@@ -8542,14 +8542,16 @@ void CHThorDiskReadBaseActivity::closepart()
             {
                 if (superfile)
                 {
-                    unsigned subfile, lnum;
-                    if (superfile->mapSubPart(previousPartNum, subfile, lnum))
+                    unsigned subfileNum, lnum;
+                    if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
                     {
-                        IDistributedSuperFile *super = dFile->querySuperFile();
-                        dFile = &(super->querySubFile(subfile, true));
+                        IDistributedSuperFile * super = dFile->querySuperFile();
+                        IDistributedFile & subfile = super->querySubFile(subfileNum, true);
+                        updateCostAndNumReads(&subfile, curDiskReads);
                     }
                 }
-                updateCostAndNumReads(dFile, curDiskReads);
+                else
+                    updateCostAndNumReads(dFile, curDiskReads);
             }
             numDiskReads += curDiskReads;
         }
