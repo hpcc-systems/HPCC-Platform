@@ -32,6 +32,7 @@
 #include "rmtfile.hpp"
 #include "dautils.hpp"
 #include "jptree.hpp"
+#include "jcontainerized.hpp"
 
 #include "XRefNodeManager.hpp"
 
@@ -647,7 +648,7 @@ struct CLogicalNameEntry: public CInterface
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
                 const char *dir = file.queryProp("@directory");
-                if (dir&&*dir) 
+                if (dir&&*dir)
                     tmp.append(dir).append(getPathSepChar(dir));
             }
             tmp.append(partmask);
@@ -655,6 +656,17 @@ struct CLogicalNameEntry: public CInterface
         tmp.toLowerCase();
         substnum(tmp,"$n$",max);
         dirpartmask.set(tmp.str());
+        replicateOffset = file.getPropInt("@replicateOffset",1);
+        lfnHash = file.getPropInt("@lfnHash");
+        plane.setown(getDataStoragePlane(grpname, false));
+        if (!plane)
+            manager.error(_lname, "Plane definition \"%s\" is missing for File", grpname.str());
+        prefix = plane->queryPrefix();
+        if (prefix.isEmpty())
+            manager.error(_lname, "Prefix definition for plane \"%s\" is missing for File", grpname.str());
+        // Get dir-per-part # from file metadata or storage plane info
+        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(file.getPropInt("Attr/@flags"));
+        dirPerPart = FileDescriptorFlags::none != (flags & FileDescriptorFlags::dirperpart) ? true : max>1?plane->queryDirPerPart():false;
     }
     ~CLogicalNameEntry()
     {
@@ -757,6 +769,16 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
+    RemoteFilename &constructPartFilename(unsigned partNo, bool replicate, RemoteFilename &rfn)
+    {
+        if (!plane)
+            throw makeStringExceptionV(0, "Plane definition \"%s\" is missing for File", grpname.str());
+        unsigned numDevices = plane->numDevices();
+        bool r = replicate?1:0;
+
+        return ::constructPartFilename(grp, partNo, r, max, lfnHash, replicateOffset, dirPerPart, lname, prefix, pmask, numDevices, rfn);
+    }
+
     void resolve(CFileEntry *entry);
     IPropertyTree *addFileBranch(IPropertyTree *dst,unsigned flags);
 
@@ -793,6 +815,11 @@ struct CLogicalNameEntry: public CInterface
     bool grouped;
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
+    bool dirPerPart;
+    int replicateOffset;
+    unsigned lfnHash;
+    StringAttr prefix;
+    Owned<IStoragePlane> plane;
 };
 
 
@@ -913,54 +940,6 @@ static void constructPartname(const char *filename,unsigned n, StringBuffer &pn,
         }
     }
 }
-
-static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,bool &replicate)
-{
-    // takes filename and creates mask filename with $P$ extension
-    StringBuffer nonrepdir;
-    replicate = setReplicateDir(name,nonrepdir,false);
-    if (replicate) 
-        name = nonrepdir.str();
-    num = 0;
-    max = 0;
-    for (;;) {
-        char c=*name;
-        if (!c)
-            break;
-        if ((c=='.')&&(name[1]=='_')) {
-            unsigned pn = 0;
-            const char *s = name+2;
-            while (*s&&isdigit(*s)) {
-                pn = pn*10+(*s-'0');
-                s++;
-            }
-            if (pn&&(memicmp(s,"_of_",4)==0)) {
-                unsigned mn = 0;
-                s += 4;
-                while (*s&&isdigit(*s)) {
-                    mn = mn*10+(*s-'0');
-                    s++;
-                }
-                if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn)) {          // NB allow trailing extension
-                    mname.append("._$P$_of_").append(mn);
-                    if (*s)
-                        mname.append(s);
-                    num = pn;
-                    max = mn;
-                    return true;
-                }
-            }
-        }
-        mname.append(c);
-        name++;
-    }
-    return false;
-}           
-
-        
-
-
-
 class COrphanEntry: public CInterface
 {
 public:
@@ -1517,18 +1496,14 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
             }
             else {
                 bool replicate=false;
-                const char *partname = part.queryProp("@name");
-                const char *partmask = file.queryProp("@partmask");
-                const char *partdir = file.queryProp("@directory");
-                int replicateoffset = file.getPropInt("@replicateOffset",1);
                 for (;;) {
-                    RemoteFilename rfn; 
+                    RemoteFilename rfn;
                     IGroup *grp = lnentry->queryGroup();
                     if (!grp) {
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    constructPartFilename(grp,partno,numparts,partname,partmask,partdir,replicate,replicateoffset,rfn);
+                    lnentry->constructPartFilename(partno, replicate, rfn);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
@@ -1544,9 +1519,9 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (dirmatch)                       {
                             rfn.getRemotePath(remotename.clear());
                             remotename.toLowerCase();
-                            
+
                             CFileEntry *entry= new CFileEntry(remotename.str(),lnentry,partno,replicate,part.getPropInt64("@size", -1),part.getPropInt("@rowCompression", 0)!=0,part.getPropInt("@compressedSize", -1));
-                                                        
+
                             CFileEntry *oldentry= manager.filemap.find(remotename.str());
                             if (oldentry)
                             {
@@ -1569,7 +1544,6 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                             else {
                                 manager.filemap.add(*entry);
                             }
-                            
                         }
                         else {
                             lnentry->outsidedir++;
@@ -1581,32 +1555,31 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (lnentry->outsidenodes.find(rep)==NotFound)
                             lnentry->outsidenodes.append(rep);
                     }
+                    if (isContainerized())
+                    {
+                        // NB: Replication not supported in containerized version
+                        break;
+                    }
                     if (replicate)
                         break;
                     replicate = true;
-                }               
+                }
             }
         }
 
     } scanner(manager,grp,numdirs,dirbaselist);
-    
+
     manager.log("Loading Files branch from SDS");
 
     Owned<IRemoteConnection> conn = querySDS().connect(SDS_DFS_ROOT,myProcessSession(),RTM_LOCK_READ, INFINITE);
     if (!conn) {
         throw MakeStringException(-1,"Could not connect to Files");
-        
     }
     conn->changeMode(RTM_NONE);
     manager.log("Files loaded, scanning");
     scanner.scan(conn);
     manager.log("Scanning done");
-
 }
-
-
-
-    
 
 class CPhysicalXREF
 {
@@ -1685,13 +1658,14 @@ public:
             StringBuffer orphanname;
             unsigned m;
             unsigned n;
+            unsigned stripeNum;
+            unsigned dirPerPart;
             bool replicate;
-            parseFileName(fullname,orphanname,n,m,replicate);
-            if (n>m) 
-                manager.error(fullname, "Part %d: number greater than max %d",n+1,m);
-            else {
-                orphanname.toLowerCase();
 
+            try
+            {
+                parseFileName(fullname,orphanname,n,m,stripeNum,dirPerPart,replicate);
+                orphanname.toLowerCase();
 
                 COrphanEntryPtr *entryp = manager.orphanmap.getValue(orphanname.str());
                 COrphanEntryPtr entry;
@@ -1708,6 +1682,13 @@ public:
                 if (n)
                     n--;
                 entry->add(ep,n,replicate,sz);
+            }
+            catch (IException *e)
+            {
+                StringBuffer s;
+                e->errorMessage(s.clear());
+                e->Release();
+                manager.error(fullname, "%s", s.str());
             }
         }
     }
@@ -1867,7 +1848,11 @@ class CXRefManager: public CXRefManagerBase
                     Owned<IPropertyTree> results;
                     {
                         CriticalUnblock unblock(manager.logsect);
-                        unsigned short port = getDafsPort(node.endpoint(),numfails,&crit);
+                        unsigned short port = 0;
+                        // localhost signifies that this is a locally hosted or mounted storage
+                        // which is standard in the cloud and otherwise needs to be reached via dafilesrv
+                        if (!strieq(msg, "localhost"))
+                            port = getDafsPort(node.endpoint(),numfails,&crit);
                         results.setown(getDirectory(dirlist,&node,port));
                     }
                     manager.log("Crossreferencing %s",msg.str());
@@ -2596,59 +2581,93 @@ public:
         msgcallback.set(_msgcallback);
 
         IPropertyTree *out=NULL;
-        
-        Owned<IGroup> g;
-        unsigned j;
-        if (!nclusters) {
-            error("XREF","No clusters specified\n");
+
+        if (!nclusters)
+        {
+            error("XREF","No storage planes specified\n");
             return NULL;
         }
-        if (!numdirs) {
+        if (!numdirs)
+        {
             error("XREF","No directories specified\n");
             return NULL;
         }
-        for (j=0;j<nclusters;j++) {
-            Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
-            if (!gsub) {
-                error(clusters[j],"Could not find cluster group");
-                return NULL;
-            }
-            if (!g)
-                g.set(gsub.get());
-            else
-                g.setown(g->combine(gsub.get()));
-        }
-        totalSizeOrphans =0;
-        totalNumOrphans = 0;
 
+        totalSizeOrphans = 0;
+        totalNumOrphans = 0;
 
         logicalnamelist.kill();
         dirlist.kill();
         orphanlist.kill();
-        
-        const char* cluster = clusters[0];
-        loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
 
-        xrefRemoteDirectories(g,numdirs,dirbaselist,numthreads);
+        if (!isContainerized())
+        {
+            Owned<IGroup> g;
+            unsigned j;
+
+            for (j=0;j<nclusters;j++)
+            {
+                Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
+                if (!gsub)
+                {
+                    error(clusters[j], "Could not find cluster group");
+                    return NULL;
+                }
+                if (!g)
+                    g.set(gsub.get());
+                else
+                    g.setown(g->combine(gsub.get()));
+            }
+
+            const char* cluster = clusters[0];
+            loadFromDFS(*this, g, numdirs, dirbaselist, cluster);
+            xrefRemoteDirectories(g, numdirs, dirbaselist, numthreads);
+        }
+        else
+        {
+            const char *storageDir[1];
+            for (int i = 0; i < nclusters; i++)
+            {
+                DBGLOG("CONTAINERIZED(CXRefManager::process)");
+
+                const char *storagePlaneName = clusters[i]; // clusters holds a list of storage plane names
+                Owned<IPropertyTree> storagePlane = getStoragePlane(storagePlaneName);
+                if (!storagePlane)
+                {
+                    error("XREF", "Could not find storage plane definition for %s", storagePlaneName);
+                    return NULL;
+                }
+                Owned<IGroup> g = queryNamedGroupStore().lookup(storagePlaneName);
+                if (!g)
+                {
+                    error("XREF", "Could not find cluster group for storage plane %s", storagePlaneName);
+                    return NULL;
+                }
+                storageDir[0] = storagePlane->queryProp("@prefix");
+                loadFromDFS(*this, g, 1, storageDir, storagePlaneName);
+                xrefRemoteDirectories(g, 1, storageDir, numthreads);
+            }
+        }
+
         StringBuffer filename;
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
-        
-        if (flags&PMtextoutput) 
+
+        if (flags&PMtextoutput)
             outputTextReport(filename.str());
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
 
-        if (flags&PMcsvoutput) 
+        if (flags&PMcsvoutput)
             outputCsvReport(filename.str());
 
-        if (flags&PMbackupoutput) 
+        if (flags&PMbackupoutput)
             outputBackupReport();
 
-        if (flags&PMtreeoutput) 
-            out = outputTree(); 
+        if (flags&PMtreeoutput)
+            out = outputTree();
 
         logicalnamemap.kill();
         filemap.kill();
@@ -2678,12 +2697,11 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
 #endif
     // assume all nodes same OS
     Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-#ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
-#else
-    if (group)
+    if (isContainerized())
+        WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
+    else if (group)
         islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-#endif
+
     dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
     dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
     numdirs = 2;
@@ -2904,3 +2922,182 @@ IPropertyTree * RunProcess(XRefCmd cmd, unsigned nclusters,const char **clusters
     }
     return nullptr;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
+class DFUXrefLibTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DFUXrefLibTests);
+    CPPUNIT_TEST(TestParseFileName);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    void TestParseFileName()
+    {
+        StringBuffer mname;
+        unsigned num;
+        unsigned max;
+        unsigned stripeNum;
+        unsigned dirPerPart;
+        bool replicate;
+
+        // Standard file name with multiple parts
+        parseFileName("/var/lib/HPCCSystems/hpcc-data/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data/test/myname._$P$_of_3",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)1,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)3,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)0,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)0,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Standard file name with multiple parts is striped across directories, storage plane has numDevices set to 111
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._10_of_30", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_30",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)10,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)30,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)0,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Standard file name with multiple parts is striped across directories and each part has its own directory, storage plane has numDevices set to 111
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)42,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)42,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // Test a longer part number
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d110/test/12345/myname._12345_of_100000", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100000",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)12345,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100000,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)110,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)12345,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // A file without a storage plane throws an exception
+        try
+        {
+            parseFileName("/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Could not find matching prefix in plane definition for file /test/myname._1_of_3",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/d/test/myname.42_of_100",msg.str());
+        }
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/datadir/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/datadir/test/myname.42_of_100",msg.str());
+        }
+
+        // A file where the stripe number is equal to numDevices(111) throws an exception
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d111/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Stripe number in file /var/lib/HPCCSystems/hpcc-data-two/d111/test/myname.42_of_100 is greater than numDevices in storage plane definition",msg.str());
+        }
+
+        // A file where the dir-per-part number does not match the part number
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Dir-per-part # does not match part # of file /var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100",msg.str());
+        }
+
+        // A file where the part number is greater than the max part number
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Incorrect max part number(100) and part number (1000) in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100",msg.str());
+        }
+
+        // A file where the part number is missing
+        try
+        {
+            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_EQUAL_STR("Missing part number in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._of_100",msg.str());
+        }
+
+        printf("All parseFileName tests passed\n");
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DFUXrefLibTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DFUXrefLibTests, "DFUXrefLibTests");
+
+#endif // _USE_CPPUNIT
