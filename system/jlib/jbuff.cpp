@@ -354,8 +354,11 @@ void * MemoryBuffer::reserveTruncate(unsigned size)
     unsigned newLen = checkMemoryBufferOverflow(curLen, size);
     curLen += size;
     _reallocExact(newLen);
-    truncate();
-    return buffer + curLen - size;
+    truncate(); // can set buffer to null.
+    if (buffer)
+        return buffer + curLen - size;
+    else
+        return nullptr;
 }
 
 void MemoryBuffer::truncate()
