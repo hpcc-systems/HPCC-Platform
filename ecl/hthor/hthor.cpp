@@ -1299,6 +1299,9 @@ void CHThorIndexWriteActivity::execute()
         out->flush();
         out.clear();
         io->close();
+
+        stat_type maxLeafSize = builder->getStatistic(StSizeLargestExpandedLeaf);
+        DBGLOG("Maximum size of expanded leaf = %llu compression ratio = %.2fx", maxLeafSize, ((double)maxLeafSize / nodeSize));
     }
 
     if(clusterHandler)

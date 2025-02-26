@@ -160,6 +160,7 @@ struct SplitNodeHdr
 interface IWritableNode
 {
     virtual void write(IFileIOStream *, CRC32 *crc) = 0;
+    virtual size32_t getMemorySize() const = 0; // only valid after a write, return 0 if unknown
 };
 
 class jhtree_decl CKeyHdr : public CInterface
@@ -216,6 +217,7 @@ class CWriteKeyHdr : public CKeyHdr, implements IWritableNode
 {
 public:
     virtual void write(IFileIOStream *, CRC32 *crc) override;
+    virtual size32_t getMemorySize() const override { return 0; }
 };
 
 // Data structures representing nodes in an index (other than the header)
@@ -451,6 +453,7 @@ public:
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
     virtual const void *getLastKeyValue() const override;
     virtual unsigned __int64 getLastSequence() const override { return firstSequence + hdr.numKeys; }
+    virtual size32_t getMemorySize() const override { return 0; }
 };
 
 
@@ -459,6 +462,7 @@ class jhtree_decl CLegacyWriteNode : public CWriteNode
 private:
     KeyCompressor lzwcomp;
     unsigned keyLen = 0;
+    size32_t memorySize = 0;
     char *lastKeyValue = nullptr;
     unsigned __int64 lastSequence = 0;
 
@@ -471,6 +475,7 @@ public:
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
     virtual const void *getLastKeyValue() const override { return lastKeyValue; }
     virtual unsigned __int64 getLastSequence() const override { return lastSequence; }
+    virtual size32_t getMemorySize() const override { return memorySize; }
 };
 
 class jhtree_decl CBlobWriteNode : public CWriteNodeBase
@@ -483,6 +488,7 @@ public:
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     unsigned __int64 add(const char * &data, size32_t &size);
+    virtual size32_t getMemorySize() const override { return 0; }
 };
 
 class jhtree_decl CMetadataWriteNode : public CWriteNodeBase
@@ -490,6 +496,7 @@ class jhtree_decl CMetadataWriteNode : public CWriteNodeBase
 public:
     CMetadataWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
     size32_t set(const char * &data, size32_t &size);
+    virtual size32_t getMemorySize() const override { return 0; }
 };
 
 class jhtree_decl CBloomFilterWriteNode : public CWriteNodeBase
@@ -499,6 +506,7 @@ public:
     size32_t set(const byte * &data, size32_t &size);
     void put4(unsigned val);
     void put8(__int64 val);
+    virtual size32_t getMemorySize() const override { return 0; }
 };
 
 enum KeyExceptionCodes
