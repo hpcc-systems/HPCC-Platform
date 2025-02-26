@@ -26,7 +26,6 @@ The following repositories should be checked out in a directory reserved for mer
 ```
 git clone git@github.com:hpcc-systems/eclide.git
 git clone git@github.com:hpcc-systems/hpcc4j.git HPCC-JAPIs
-git clone git@github.com:hpcc-systems/Spark-HPCC.git
 git clone git@github.com:hpcc-systems/LN.git ln
 git clone git@github.com:hpcc-systems/HPCC-Platform.git hpcc
 git clone git@github.com:hpcc-systems/helm-chart.git
