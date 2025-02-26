@@ -1002,7 +1002,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(OffsetBranches), "The 1st branch node offset position in the index" },
     { SIZESTAT(BranchMemory), "The estimated size of the branch nodes when stored in memory" },
     { SIZESTAT(LeafMemory), "The estimated size of the leaf nodes when stored in memory"},
-
+    { SIZESTAT(LargestExpandedLeaf), "The size of the largest leaf node when expanded in memory"},
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -3141,6 +3141,7 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
     case StNumMatchLeftRowsMax:
     case StNumMatchRightRowsMax:
     case StNumMatchCandidatesMax:
+    case StSizeLargestExpandedLeaf:
         //These only make sense for individual nodes, the aggregated value is meaningless
         return false;
     }

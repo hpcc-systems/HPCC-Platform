@@ -73,6 +73,18 @@ public:
             total += nodeStats[n]->getValue(index);
         return total;
     }
+    stat_type getStatisticMax(StatisticKind kind)
+    {
+        stat_type result = 0;
+        unsigned index = mapping.getIndex(kind);
+        for (unsigned n=0; n < nodeStats.size(); n++) // NB: size is = queryClusterWidth()
+        {
+            stat_type value = nodeStats[n]->getValue(index);
+            if (value > result)
+                result = value;
+        }
+        return result;
+    }
 };
 
 class graphmaster_decl CThorEdgeCollection : public CThorStatsCollection
