@@ -13,7 +13,7 @@ fi
 k8sFiles=$(ls *.k8s 2>/dev/null)
 
 if [ -n "$k8sFiles" ]; then
-  echo "Deleting k8s job resources"
+  #echo "HPCC-LOCAL-LOG: Deleting k8s job resources"
   for filename in $k8sFiles; do
     IFS=, read componentName resourceType jobName graceTime <<< $(basename ${filename} .k8s)
     resourceName="${componentName}-${resourceType}-${jobName}"
@@ -21,7 +21,7 @@ if [ -n "$k8sFiles" ]; then
     if [[ $graceTime -ne 0 ]]; then
       graceOpt="--grace-period=${graceTime}"
     fi
-    echo Performing: kubectl delete $resourceType/$resourceName $graceOpt
+    #echo "HPCC-LOCAL-LOG: Performing: kubectl delete $resourceType/$resourceName $graceOpt"
     kubectl delete $resourceType/$resourceName $graceOpt
     rm -f $filename
   done

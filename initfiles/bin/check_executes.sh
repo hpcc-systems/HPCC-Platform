@@ -111,9 +111,9 @@ if [ "$PMD_POSTRUN" = "true" ]; then
   if [ -f ${runningFilename} ] || [ -f ${stoppedFilename} ]; then
     echo "${runningFilename} and/or ${stoppedFilename} already exists. It suggests this container restarted quickly (postrun sidecar hasn't spotted and cleared up yet)"
     secs=40
-    echo "Waiting ${secs} seconds for postrun sidecar to spot and collate postmortem."
+    #echo "HPCC-LOCAL-LOG: Waiting ${secs} seconds for postrun sidecar to spot and collate postmortem."
     sleep ${secs}
-    echo "Continuing..."
+    #echo "HPCC-LOCAL-LOG: Continuing..."
   fi
 fi
 
@@ -155,14 +155,12 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
     extraArgs+=("--workunit=$PMD_WORKUNIT")
   fi
   if [[ -n "$PMD_DIRECTORYBASE" ]]; then
-    echo "Collecting post mortem info"
     collect_postmortem.sh "--directory=${PMD_DIRECTORYBASE}" "--daliServer=${PMD_DALISERVER}" "--container=${PMD_CONTAINERNAME}" "--process=${PMD_PROGNAME}" "${extraArgs[@]}"
-    echo "Post mortem collection completed"
   else
-    echo "Post mortem directory not provided, unable to collect post mortem info"
+    #echo "HPCC-LOCAL-LOG: Post mortem directory not provided, unable to collect post mortem info"
   fi
 else
-  echo "Process exited cleanly (code=0)"
+  #echo "HPCC-LOCAL-LOG: Process exited cleanly (code=0)"
 fi
 k8s_postjob_clearup.sh
 exit $retVal
