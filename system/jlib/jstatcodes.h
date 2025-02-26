@@ -329,6 +329,7 @@ enum StatisticKind
     StSizeOffsetBranches,
     StSizeBranchMemory,
     StSizeLeafMemory,
+    StSizeLargestExpandedLeaf,
     StMax,
 
     //For any quantity there is potentially the following variants.

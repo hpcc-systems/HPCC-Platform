@@ -2445,6 +2445,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                 data.append((unsigned short)payloadLengths.item(i));
         }
 
+        leafMemorySize = 0;
         if (keyLen != keyCompareLen)
         {
             unsigned startPayloadOffset = data.length(); 
@@ -2476,18 +2477,20 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                     if (payloadCompression != COMPRESS_METHOD_RANDROW)
                     {
                         //Calculate the size of the payload when expanded
-                        ctx.leafMemorySize += (totalUncompressedSize - (keyCompareLen * hdr.numKeys));
+                        leafMemorySize += (totalUncompressedSize - (keyCompareLen * hdr.numKeys));
 
                         //Subtract the compressed length because that is no longer kept in memory)
-                        ctx.leafMemorySize -= (data.length() - startPayloadOffset);
+                        leafMemorySize -= (data.length() - startPayloadOffset);
                     }
                     break;
                 }
             }
         }
 
+        leafMemorySize += data.length();
+
         ctx.totalDataSize += data.length();
-        ctx.leafMemorySize += data.length();
+        ctx.leafMemorySize += leafMemorySize;
         assertex(data.length() == getDataSize(true));
     }
 
