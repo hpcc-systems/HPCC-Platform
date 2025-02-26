@@ -2363,7 +2363,6 @@ public:
             if (stopped)
                 break;
             const char *lfn = expirylist.item(i);
-            PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try
             {
                 /* NB: 0 timeout, meaning fail and skip, if there is any locking contention.
@@ -2374,7 +2373,7 @@ public:
             }
             catch (IException *e) // may want to just detach if fails
             {
-                EXCLOG(e, LOGPFX2 "remove");
+                OWARNLOG(e, LOGPFX2 "remove");
                 e->Release();
             }
         }
