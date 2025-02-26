@@ -942,7 +942,7 @@ int main(int argc, char* argv[])
     try {
 
         CDfsLogicalFileName dlfn;
-        dlfn.setValidate("foreign::10.173.28.12:7070::thor_data400::in::uccv2::20061115::nyc::party",true);
+        verifyex(dlfn.setValidate("foreign::10.173.28.12:7070::thor_data400::in::uccv2::20061115::nyc::party",true));
 
 
         StringBuffer cmd;

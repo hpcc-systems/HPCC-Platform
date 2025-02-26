@@ -58,6 +58,7 @@ static unsigned nIter = 1;
 //#define TEST_COPYFILE
 //#define TEST_DEADLOCK
 //#define TEST_THREADS
+#define TEST_MEMTHREADS
 #define MDELAY 100
 
 static void addTestFile(const char *name,unsigned n)
@@ -3255,15 +3256,15 @@ public:
                 memset(ptrs[i],i,0x10000);
                 res+=0x10000;
             }
-            while (--i) 
-                free(ptrs[i]);
-            printf("allocated %x",res);
+            while (i) 
+                free(ptrs[--i]);
+            printf("allocated %x\n",res);
         }
         catch (IException *e) {
             pexception("Exception",e);
         }
         catch (...) {
-            printf("unknown exception!");
+            printf("unknown exception!\n");
         }
         return 0;
     }
