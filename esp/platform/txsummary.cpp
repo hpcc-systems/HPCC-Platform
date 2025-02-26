@@ -24,9 +24,7 @@
 
 #define MATCH_ENTRY [&](const EntryValue& e) {return strieq(e.get()->name, pathPart);}
 
-#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
 static auto pRequestCount = hpccMetrics::registerCounterMetric("esp.requests.received", "Number of requests received", SMeasureCount);
-#endif
 
 inline bool validate(const char* k)
 {
@@ -333,9 +331,7 @@ StringBuffer& CTxSummary::TxEntryObject::serialize(StringBuffer& buf, const LogL
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
 {
-#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
     pRequestCount->inc(1);
-#endif
 }
 
 CTxSummary::~CTxSummary()
