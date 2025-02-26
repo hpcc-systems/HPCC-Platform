@@ -1833,6 +1833,7 @@ extern jlib_decl ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience a
 extern jlib_decl ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
+extern jlib_decl ILogAccessFilter * getCompoundLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getWildCardLogAccessFilter();
 extern jlib_decl ILogAccessFilter * getWildCardLogAccessFilter(const char * wildcardfilter);
 extern jlib_decl ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value);
