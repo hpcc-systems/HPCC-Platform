@@ -108,7 +108,7 @@ public:
     const char *    privateKey;
     const char *    passPhrase;
 
-    _securitySettingsServer()
+    void init()
     {
         queryDafsSecSettings(&connectMethod, &daFileSrvPort, &daFileSrvSSLPort, &certificate, &privateKey, &passPhrase);
     }
@@ -120,6 +120,14 @@ public:
     }
 
 } securitySettings;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    // initialize after other dependent (in jlib) objects are initialized.
+    securitySettings.init();
+    return true;
+}
+
 #endif
 
 static CriticalSection              secureContextCrit;
