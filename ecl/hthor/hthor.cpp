@@ -352,16 +352,20 @@ private:
     }
 };
 
-ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend, bool isIndex)
+ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
 {
     //In the containerized system, the default data plane for this component is in the configuration
     StringBuffer defaultCluster;
-    if (isIndex)
+    if (iwHelper)
         getDefaultIndexBuildStoragePlane(defaultCluster);
-    else if (dwHelper && (TDWpersist & dwHelper->getFlags()))
-        getDefaultPersistPlane(defaultCluster);
     else
-        getDefaultStoragePlane(defaultCluster);
+    {
+        dbgassertex(dwHelper); // NB: either iwHelper, or dwHelper must be non-null
+        if (TDWpersist & dwHelper->getFlags())
+            getDefaultPersistPlane(defaultCluster);
+        else
+            getDefaultStoragePlane(defaultCluster);
+    }
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
 
@@ -543,7 +547,7 @@ void CHThorDiskWriteActivity::resolve()
                 throw MakeStringException(99, "Could not resolve DFS Logical file %s", lfn.str());
             }
 
-            clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend, false));
+            clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend));
             StringBuffer planeName;
             if (clusterHandler)
             {
@@ -1145,7 +1149,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
                 throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
         }
     }
-    clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false, true));
+    clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
     defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
     agent.queryWorkUnit()->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
