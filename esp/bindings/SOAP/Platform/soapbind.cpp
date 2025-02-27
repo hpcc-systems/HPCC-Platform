@@ -37,9 +37,7 @@
 #include "jmetrics.hpp"
 
 static std::once_flag metricsInitialized;
-#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
 static std::shared_ptr<hpccMetrics::CounterMetric> pSoapRequestCount;
-#endif
 
 
 #define ESP_FACTORY DECL_EXPORT
@@ -78,11 +76,9 @@ CHttpSoapBinding::CHttpSoapBinding(IPropertyTree* cfg, const char *bindname, con
 : EspHttpBinding(cfg, bindname, procname)
 {
     log_level_=level;
-#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
     std::call_once(metricsInitialized, [](){
         pSoapRequestCount = hpccMetrics::registerCounterMetric("esp.soap.requests.received", "Number of JSON and SOAP POST requests received", SMeasureCount);
     });
-#endif
 }
 
 CHttpSoapBinding::~CHttpSoapBinding()
@@ -109,9 +105,7 @@ static CSoapFault* makeSoapFault(CHttpRequest* request, IMultiException* me, con
 
 int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
-#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
     pSoapRequestCount->inc(1);
-#endif
     IEspContext* ctx = request->queryContext();
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
