@@ -2,6 +2,8 @@ import { IScope } from "@hpcc-js/comms";
 import { XMLNode, xml2json } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 
+export const UNNAMED_QUERY = "<unnamed query>";
+
 export class Archive {
     build: string = "";
     eclVersion: string = "";
@@ -125,7 +127,7 @@ export class Archive {
     }
 
     content(attrId: string) {
-        const attr = this.attribute(attrId);
+        const attr = attrId === UNNAMED_QUERY ? this.query : this.attribute(attrId);
         return attr?.content ?? "";
     }
 

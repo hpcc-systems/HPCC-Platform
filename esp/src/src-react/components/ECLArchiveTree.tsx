@@ -1,7 +1,7 @@
 import * as React from "react";
 import { FlatTree, useHeadlessFlatTree_unstable, HeadlessFlatTreeItemProps, TreeItem, TreeItemLayout, CounterBadge } from "@fluentui/react-components";
 import { FluentIconsProps, FolderOpen20Regular, Folder20Regular, FolderOpen20Filled, Folder20Filled, Document20Regular, Document20Filled, Important16Regular } from "@fluentui/react-icons";
-import { Archive, isAttribute } from "../util/metricArchive";
+import { Archive, isAttribute, UNNAMED_QUERY } from "../util/metricArchive";
 
 type FlatItem = HeadlessFlatTreeItemProps & { fileTimePct?: number, content: string };
 
@@ -57,6 +57,9 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
                 fileTimePct: isAttribute(modAttr) && Math.round((archive?.sourcePathTime(modAttr.sourcePath) / archive?.timeTotalExecute) * 100),
             });
         });
+        if (archive?.query.content) {
+            flatTreeItems.push({ value: UNNAMED_QUERY, parentValue: undefined, content: UNNAMED_QUERY });
+        }
         setFlatTreeItems(flatTreeItems.sort((a, b) => a.value.toString().localeCompare(b.value.toString(), undefined, { sensitivity: "base" })));
     }, [archive, archive?.modAttrs, archive?.timeTotalExecute]);
 
@@ -65,6 +68,8 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
         const modAttr = archive?.modAttrs.find(modAttr => modAttr.id === attrId);
         if (modAttr?.type === "Attribute") {
             setSelectedItem(attrId, archive.metricIDs(attrId));
+        } else if (attrId === UNNAMED_QUERY) {
+            setSelectedItem(attrId, []);
         }
     }, [archive, setSelectedItem]);
 
