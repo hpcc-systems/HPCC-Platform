@@ -75,41 +75,11 @@
       reading in parallel by the Spark cluster.</para>
 
       <para>In the GitHub repository (<ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC">https://github.com/hpcc-systems/Spark-HPCC</ulink>)
-      you can find the source code and examples. There are several artifacts
-      in the DataAccess/src/main/java folder of primary interest. The
-      <emphasis>org.hpccsystems.spark.HpccFile</emphasis> class is the façade
-      of a file on an HPCC Cluster. The
-      <emphasis>org.hpccsystems.spark.HpccRDD</emphasis> is a resilient
-      distributed dataset derived from the data on the HPCC Cluster and is
-      created by the
-      <emphasis>org.hpccsystems.spark.HpccFile.getRDD</emphasis>(…) method.
-      The <emphasis>HpccFile</emphasis> class supports loading data to
-      construct a <emphasis>Dataset&lt;Row&gt;</emphasis> object for the Spark
-      interface. This will first load the data into an RDD&lt;Row&gt; and then
-      convert this RDD to a Dataset&lt;Row&gt; through internal Spark
-      mechanisms.</para>
+      url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink>)
+      you can find the source code and examples.</para>
 
-      <para>There are several additional artifacts of some interest. The
-      <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> class is
-      provided to enable retrieving only the columns of interest from the HPCC
-      Cluster. The <emphasis>targetCluster</emphasis> artifact allows you to
-      specify the HPCC cluster on which the target file exists. The
-      <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> class is
-      provided to facilitate filtering records of interest from the HPCC
-      Cluster.</para>
-
-      <para>The git repository includes two examples under the
-      Examples/src/main/scala folder. The examples
-      (<emphasis>org.hpccsystems.spark_examples.Dataframe_Iris_LR</emphasis>
-      and <emphasis>org.hpccsystems.spark_examples.Iris_LR</emphasis>) are
-      Scala Objects with a main() function. Both examples use the classic Iris
-      dataset. The dataset can be obtained from a variety of sources,
-      including the HPCC-Systems/ecl-ml repository. IrisDs.ecl (can be found
-      under the ML/Tests/Explanatory folder: <ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl">https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl</ulink>)
-      can be executed to generate the Iris dataset in HPCC. A walk-through of
-      the examples is provided in the Examples section.</para>
+      <para>A walk-through of the examples is provided in the Examples
+      section.</para>
 
       <para>The Spark-HPCCSystems Distributed Connector also supports PySpark.
       It uses the same classes/API as Java does.</para>
@@ -386,7 +356,7 @@ write.df(df, source = "hpcc",
       <para>You can refer to the examples in the Github repository:</para>
 
       <para><ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples</ulink></para>
+      url="https://github.com/hpcc-systems/hpcc4j/tree/master/spark-hpcc/Examples">https://github.com/hpcc-systems/hpcc4j/tree/master/spark-hpcc/Examples</ulink></para>
     </sect1>
   </chapter>
 </book>
