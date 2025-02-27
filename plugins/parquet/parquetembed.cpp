@@ -816,8 +816,12 @@ arrow::Status ParquetWriter::fieldToNode(const RtlFieldInfo *field, std::vector<
         }
         break;
     case type_decimal:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), arrow::decimal(field->type->getDecimalDigits(), field->type->getDecimalPrecision())));
+    {
+        int32_t precision = field->type->getDecimalDigits();
+        int32_t scale = field->type->getDecimalPrecision();
+        arrowFields.push_back(std::make_shared<arrow::Field>(name.str(), precision <= arrow::Decimal128Type::kMaxPrecision ? arrow::decimal128(precision, scale) : arrow::decimal256(precision, scale)));
         break;
+    }
     case type_data:
         if (field->type->length > 0)
         {
@@ -1927,22 +1931,43 @@ void ParquetRecordBinder::processReal(double value, const RtlFieldInfo *field)
 void ParquetRecordBinder::addDecimalFieldToBuilder(rtlDataAttr *decText, size32_t bytes, int32_t digits, int32_t precision, const RtlFieldInfo *field)
 {
     arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field);
-    if (fieldBuilder->type()->id() == arrow::Type::DECIMAL128)
+    switch (fieldBuilder->type()->id())
+    {
+    case arrow::Type::DECIMAL32:
+    {
+        arrow::Decimal32Builder *decimal32Builder = static_cast<arrow::Decimal32Builder *>(fieldBuilder);
+        arrow::Decimal32 decimal32;
+        reportIfFailure(arrow::Decimal32::FromString(std::string_view(decText->getstr(), bytes), &decimal32, &digits, &precision));
+        reportIfFailure(decimal32Builder->Append(decimal32));
+        break;
+    }
+    case arrow::Type::DECIMAL64:
+    {
+        arrow::Decimal64Builder *decimal64Builder = static_cast<arrow::Decimal64Builder *>(fieldBuilder);
+        arrow::Decimal64 decimal64;
+        reportIfFailure(arrow::Decimal64::FromString(std::string_view(decText->getstr(), bytes), &decimal64, &digits, &precision));
+        reportIfFailure(decimal64Builder->Append(decimal64));
+        break;
+    }
+    case arrow::Type::DECIMAL128:
     {
         arrow::Decimal128Builder *decimal128Builder = static_cast<arrow::Decimal128Builder *>(fieldBuilder);
         arrow::Decimal128 decimal128;
         reportIfFailure(arrow::Decimal128::FromString(std::string_view(decText->getstr(), bytes), &decimal128, &digits, &precision));
         reportIfFailure(decimal128Builder->Append(decimal128));
+        break;
     }
-    else if (fieldBuilder->type()->id() == arrow::Type::DECIMAL256)
+    case arrow::Type::DECIMAL256:
     {
         arrow::Decimal256Builder *decimal256Builder = static_cast<arrow::Decimal256Builder *>(fieldBuilder);
         arrow::Decimal256 decimal256;
         reportIfFailure(arrow::Decimal256::FromString(std::string_view(decText->getstr(), bytes), &decimal256, &digits, &precision));
         reportIfFailure(decimal256Builder->Append(decimal256));
+        break;
     }
-    else
+    default:
         failx("Incorrect type for Decimal field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
+    }
 }
 
 /**

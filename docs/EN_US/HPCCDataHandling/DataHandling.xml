@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -37,39 +37,41 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
 
   <chapter id="Data_Handling">
-    <title><emphasis>HPCC Systems<superscript>®</superscript> Data Handling</emphasis></title>
+    <title><emphasis>HPCC Systems<superscript>®</superscript> Data
+    Handling</emphasis></title>
 
     <sect1 id="Introduction" role="nobrk">
       <title>Introduction</title>
 
       <para>There are a number of different ways in which data may be
-      transferred to, from, or within an HPCC Systems cluster. For each of these data
-      transfers, there are a few key parameters that must be known.</para>
+      transferred to, from, or within an HPCC Systems cluster. For each of
+      these data transfers, there are a few key parameters that must be
+      known.</para>
 
       <sect2 id="Prerequisites-for-most-file-movements">
         <title><emphasis role="bold">Prerequisites for most file
@@ -132,23 +134,28 @@
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Terms'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='FileMovement'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Working_with_a_data_file'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Methods'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Using_ECL-Watch'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 
   <chapter id="HPCC_DataBackups">
-    <title><emphasis>HPCC Systems<superscript>®</superscript> Data Backups</emphasis></title>
+    <title><emphasis>HPCC Systems<superscript>®</superscript> Data
+    Backups</emphasis></title>
 
     <sect1 id="Introduction2DataBackup" role="nobrk">
       <title>Introduction</title>
@@ -247,9 +254,9 @@
 
             <para>This starts the backup process.</para>
 
-            <para></para>
+            <para/>
 
-            <graphic fileref="images/backupnode.jpg" />
+            <graphic fileref="images/backupnode.jpg"/>
 
             <para>Wait until completion. It will say "backupnode finished" as
             shown above.</para>
@@ -289,7 +296,7 @@
 
         <programlisting>sudo crontab -l</programlisting>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
 

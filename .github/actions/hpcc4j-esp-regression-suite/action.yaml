@@ -30,7 +30,7 @@ runs:
         cd ./HPCC4j
         mvn -B --activate-profiles jenkins-on-demand -Dmaven.gpg.skip=true \
               -Dmaven.javadoc.skip=true -Dmaven.test.failure.ignore=true -Dhpccconn=https://eclwatch.default:8010 \
-              -Dwssqlconn=https://sql2ecl.default:8510 -DHPCC30117=open -pl '!dfsclient' install
+              -Dwssqlconn=https://sql2ecl.default:8510 -DHPCC30117=open -pl commons-hpcc -pl wsclient install
 
     - name: Process errors
       env:

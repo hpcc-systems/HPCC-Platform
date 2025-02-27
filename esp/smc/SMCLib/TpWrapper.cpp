@@ -2093,7 +2093,7 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
-void appendServerAddress(StringBuffer& list, IPropertyTree& env, IPropertyTree& server, const char* farmerPort)
+void appendServerAddress(StringBuffer& list, IPropertyTree& env, IPropertyTree& server, const char* farmerPort, const char* daliAddress)
 {
     //just in case, for backward compatability with old environment.xml files, allow server rather than farmer to specify port
     const char *port = server.queryProp("@port");
@@ -2108,6 +2108,8 @@ void appendServerAddress(StringBuffer& list, IPropertyTree& env, IPropertyTree& 
         VStringBuffer xpath("Hardware/Computer[@name='%s']/@netAddress", server.queryProp("@computer"));
         netAddress = env.queryProp(xpath.str());
     }
+    if ((!netAddress || *netAddress=='.') && daliAddress && *daliAddress)
+        netAddress = daliAddress;
     if (!netAddress || !*netAddress)
         return;
     if (list.length())
@@ -2131,36 +2133,40 @@ extern TPWRAPPER_API void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSoc
 
         StringBuffer addressList;
         StringBuffer port("");
-        Owned<IPropertyTree> tlsConfig = createPTree("none");
+        Owned<IPropertyTree> tlsConfig;
+        getAddressesAndTlsConfigForRoxieProcess(*envRoot, roxieCluster, addressList, tlsConfig, nullptr);
 
-        Owned<IPropertyTreeIterator> roxieFarms = roxieCluster.getElements("RoxieFarmProcess");
-        ForEach(*roxieFarms)
-        {
-            IPropertyTree& farm = roxieFarms->query();
-            const char* farmPort = farm.queryProp("@port");
-            if (!isEmptyString(farmPort) && !streq(farmPort, "0"))
-            {
-                const char *protocol = farm.queryProp("@protocol");
-                if (!isEmptyString(protocol) && strieq(protocol, "ssl"))
-                {
-                    port.set(farmPort);
-                    tlsConfig.setown(createSecureSocketConfig(farm.queryProp("@certificateFileName"), farm.queryProp("@privateKeyFileName"), nullptr, true));
-                    break;
-                }
-                else if (isEmptyString(port.str()))
-                {
-                    port.set(farmPort);
-                }
-            }
-        }
-
-        Owned<IPropertyTreeIterator> roxieServers = roxieCluster.getElements("RoxieServerProcess");
-        ForEach(*roxieServers)
-            appendServerAddress(addressList, *envRoot, roxieServers->query(), port.str());
-
-        Owned<ISmartSocketFactory> sf = streq(tlsConfig->queryName(), "ssl") ? createSecureSmartSocketFactory(addressList, tlsConfig) : createSmartSocketFactory(addressList);
+        Owned<ISmartSocketFactory> sf = tlsConfig.get() != nullptr ? createSecureSmartSocketFactory(addressList, tlsConfig) : createSmartSocketFactory(addressList);
         connMap.setValue(name, sf.get());
     }
+}
+
+extern TPWRAPPER_API void getAddressesAndTlsConfigForRoxieProcess(IPropertyTree& env, IPropertyTree& roxieCluster, StringBuffer& addrList, Owned<IPropertyTree> & tlsConfig, const char* daliAddress)
+{
+    StringBuffer preferredPort;
+    Owned<IPropertyTreeIterator> roxieFarms = roxieCluster.getElements("RoxieFarmProcess");
+    ForEach(*roxieFarms)
+    {
+        IPropertyTree& farm = roxieFarms->query();
+        const char* farmPort = farm.queryProp("@port");
+        if (!isEmptyString(farmPort) && !streq(farmPort, "0"))
+        {
+            const char *protocol = farm.queryProp("@protocol");
+            if (!isEmptyString(protocol) && strieq(protocol, "ssl"))
+            {
+                preferredPort.set(farmPort);
+                tlsConfig.setown(createSecureSocketConfig(farm.queryProp("@certificateFileName"), farm.queryProp("@privateKeyFileName"), nullptr, true));
+                break;
+            }
+            else if (isEmptyString(preferredPort.str()))
+            {
+                preferredPort.set(farmPort);
+            }
+        }
+    }
+    Owned<IPropertyTreeIterator> roxieServers = roxieCluster.getElements("RoxieServerProcess");
+    ForEach(*roxieServers)
+        appendServerAddress(addrList, env, roxieServers->query(), preferredPort.str(), daliAddress);
 }
 
 extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names)
