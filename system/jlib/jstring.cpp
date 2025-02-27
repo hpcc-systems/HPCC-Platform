@@ -2843,6 +2843,12 @@ bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnE
     return ok;
 }
 
+
+//Support option1=value1,option2(value2),option3,option4(nested=value,nested(value))
+// option1: value1
+// option2: value2
+// option3: 1
+// option4: nested=value,nested(value)
 void processOptionString(const char * options, optionCallback callback)
 {
     if (!options || !callback)
@@ -2852,33 +2858,61 @@ void processOptionString(const char * options, optionCallback callback)
     StringBuffer value;
     while (true)
     {
-        const char * comma = strchr(options, ',');
-        const char * eq = strchr(options, '=');
-        if (comma && eq)
+        const char * start = options;
+        const char * endname = nullptr;
+        const char * end = nullptr;
+        const char * comma = nullptr;
+        unsigned nesting = 0;
+        for (;;)
         {
-            if (comma < eq)
-                eq = nullptr;
-            else
+            byte next = *options;
+            if (next == '\0')
+                break;
+            else if (next == '(')
             {
-                //Could optionally see if the value is quoted, and if so scan for the terminator to allow quoted commas
-                //but then you may have problems with quoted quotes... so leave as-is for the moment
+                if ((nesting++ == 0) && !endname)
+                    endname = options;
             }
+            else if (next == ')')
+            {
+                if (nesting && --nesting==0 && !end)
+                {
+                    end = options;
+                    //All text after the closing ) until a comma is ignored.
+                }
+            }
+            else if (next == '=')
+            {
+                if (!nesting && !endname)
+                {
+                    endname = options;
+                }
+            }
+            else if (next == ',' && nesting == 0)
+            {
+                if (!end)
+                    end = options;
+                comma = options;
+                break;
+            }
+            options++;
         }
+
         option.clear();
         value.clear();
-        if (eq)
+        if (endname)
         {
-            option.append(eq-options, options);
-            if (comma)
-                value.append(comma-(eq+1), eq+1);
+            option.append(endname-start, start);
+            if (end)
+                value.append(end-(endname+1), endname+1);
             else
-                value.append(eq+1);
+                value.append(endname+1);
         }
         else
         {
             value.append("1");
-            if (comma)
-                option.append(comma-options, options);
+            if (end)
+                option.append(end-start, start);
             else
                 option.append(options);
         }

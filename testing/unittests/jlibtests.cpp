@@ -5082,6 +5082,7 @@ public:
     CPPUNIT_TEST_SUITE(JLibStringTest);
         CPPUNIT_TEST(testStristr);
         CPPUNIT_TEST(testMemMem);
+        CPPUNIT_TEST(testProcessOptions);
     CPPUNIT_TEST_SUITE_END();
 
     void testStristr()
@@ -5113,6 +5114,37 @@ public:
         CPPUNIT_ASSERT_EQUAL((const void*)(nullptr), jmemmem(8, haystack, 1, "i"));
         CPPUNIT_ASSERT_EQUAL((const void*)(nullptr), jmemmem(9, haystack, 2, "ij"));
         CPPUNIT_ASSERT_EQUAL((const void*)(haystack+8), jmemmem(10, haystack, 2, "ij"));
+    }
+
+    void testOption(const char * text, const std::initializer_list<std::pair<const char *, const char *>> & expected)
+    {
+        StringArray options;
+        StringArray values;
+
+        auto processOption = [this,&options,&values](const char * option, const char * value)
+        {
+            options.append(option);
+            values.append(value);
+        };
+
+        processOptionString(text, processOption);
+
+        CPPUNIT_ASSERT_EQUAL(options.ordinality(), (unsigned)expected.size());
+        ForEachItemIn(i, options)
+        {
+            CPPUNIT_ASSERT_EQUAL(std::string(expected.begin()[i].first), std::string(options.item(i)));
+            CPPUNIT_ASSERT_EQUAL(std::string(expected.begin()[i].second), std::string(values.item(i)));
+        }
+    }
+
+    void testProcessOptions()
+    {
+        testOption("name=boris", {{"name", "boris"}});
+        testOption("name(boris)", {{"name", "boris"}});
+        testOption("name=boris,age(99)", {{"name", "boris"}, {"age", "99"}});
+        testOption("name=boris", {{"name", "boris"}});
+        testOption("option1=value1,option2(value2),option3,option4(nested=value,nested(value))",
+                    {{"option1", "value1"}, {"option2", "value2"}, {"option3", "1"}, {"option4", "nested=value,nested(value)"}});
     }
 };
 
