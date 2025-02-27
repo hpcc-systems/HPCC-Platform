@@ -37,6 +37,9 @@ class LoggingMockAgentTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testGetTransactionId_Bad);
     CPPUNIT_TEST_SUITE_END();
 public:
+#define checkHasService(agent, type, expected) \
+    CPPUNIT_ASSERT_EQUAL(expected, agent->hasService(type))
+
     void testHasService_None()
     {
         const char* agentConfig = R"!!!(
@@ -44,9 +47,9 @@ public:
         )!!!";
         Owned<IEspLogAgent> agent(createAgent(agentConfig));
 
-        checkHasService("hasService-none/seed", agent, LGSTGetTransactionSeed, false);
-        checkHasService("hasService-none/update", agent, LGSTUpdateLOG, false);
-        checkHasService("hasService-none/id", agent, LGSTGetTransactionID, false);
+        checkHasService(agent, LGSTGetTransactionSeed, false);
+        checkHasService(agent, LGSTUpdateLOG, false);
+        checkHasService(agent, LGSTGetTransactionID, false);
     }
     void testHasService_All()
     {
@@ -59,9 +62,9 @@ public:
         )!!!";
         Owned<IEspLogAgent> agent(createAgent(agentConfig));
 
-        checkHasService("hasService-all/seed", agent, LGSTGetTransactionSeed, true);
-        checkHasService("hasService-all/update", agent, LGSTUpdateLOG, true);
-        checkHasService("hasService-all/id", agent, LGSTGetTransactionID, true);
+        checkHasService(agent, LGSTGetTransactionSeed, true);
+        checkHasService(agent, LGSTUpdateLOG, true);
+        checkHasService(agent, LGSTGetTransactionID, true);
     }
 
     void testGetTransactionSeed_True()
@@ -152,77 +155,32 @@ public:
         agent->initVariants(config);
         return agent.getClear();
     }
-    void checkHasService(const char* test, IEspLogAgent* agent, LOGServiceType type, bool expected)
-    {
-        if (agent->hasService(type) != expected)
-        {
-            fprintf(stdout, "\nTest(%s) hasService(%d) expected %s but got %s\n", test, type, (expected ? "true" : "false"), (expected ? "false" : "true"));
-            CPPUNIT_ASSERT(false);
-        }
-    }
     void checkGetTransactionSeed(const char* test, IEspLogAgent* agent, bool expectResult, const char* expectSeedId, int expectStatusCode, const char* expectStatusMessage)
     {
         Owned<IEspGetTransactionSeedRequest> req(createGetTransactionSeedRequest());
         Owned<IEspGetTransactionSeedResponse> resp(createGetTransactionSeedResponse());
-        bool result = agent->getTransactionSeed(*req, *resp);
-        bool pass = true;
 
-        if (result != expectResult)
-        {
-            fprintf(stdout, "\nTest(%s) expected result %s but got %s\n", test, (expectResult ? "true" : "false"), (result ? "true" : "false"));
-            pass = false;
-        }
-        if (!streq(resp->getSeedId(), expectSeedId))
-        {
-            fprintf(stdout, "\nTest(%s) expected SeedId '%s' but got '%s'\n", test, expectSeedId, resp->getSeedId());
-            pass = false;
-        }
-        if (resp->getStatusCode() != expectStatusCode)
-        {
-            fprintf(stdout, "\nTest(%s) expected StatusCode %d but got %d\n", test, expectStatusCode, resp->getStatusCode());
-            pass = false;
-        }
-        if (!streq(resp->getStatusMessage(), expectStatusMessage))
-        {
-            fprintf(stdout, "\nTest(%s) expected StatusMessage '%s' but got '%s'\n", test, expectStatusMessage, resp->getStatusMessage());
-            pass = false;
-        }
-        CPPUNIT_ASSERT(pass);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, expectResult, agent->getTransactionSeed(*req, *resp));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, std::string(expectSeedId), std::string(resp->getSeedId()));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, expectStatusCode, resp->getStatusCode());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, std::string(expectStatusMessage), std::string(resp->getStatusMessage()));
     }
     void checkUpdateLog(const char* test, IEspLogAgent* agent, const char* expectResponse, int expectStatusCode, const char* expectStatusMessage)
     {
         Owned<IEspUpdateLogRequestWrap> req(new CUpdateLogRequestWrap(nullptr, nullptr, nullptr));
         Owned<IEspUpdateLogResponse>    resp(createUpdateLogResponse());
-        bool pass = true;
 
         agent->updateLog(*req, *resp);
-        if (!streq(resp->getResponse(), expectResponse))
-        {
-            fprintf(stdout, "\nTest(%s) expected Response '%s' but got '%s'\n", test, expectResponse, resp->getResponse());
-            pass = false;
-        }
-        if (resp->getStatusCode() != expectStatusCode)
-        {
-            fprintf(stdout, "\nTest(%s) expected StatusCode %d but got %d\n", test, expectStatusCode, resp->getStatusCode());
-            pass = false;
-        }
-        if (!streq(resp->getStatusMessage(), expectStatusMessage))
-        {
-            fprintf(stdout, "\nTest(%s) expected StatusMessage '%s' but got '%s'\n", test, expectStatusMessage, resp->getStatusMessage());
-            pass = false;
-        }
-        CPPUNIT_ASSERT(pass);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, std::string(expectResponse), std::string(resp->getResponse()));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, expectStatusCode, resp->getStatusCode());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, std::string(expectStatusMessage), std::string(resp->getStatusMessage()));
     }
     void checkGetTransactionId(const char* test, IEspLogAgent* agent, const char* expect)
     {
         StringBuffer actual;
 
         agent->getTransactionID(nullptr, actual);
-        if (!streq(actual, expect))
-        {
-            fprintf(stdout, "\nTest(%s) expected '%s' but got '%s'\n", test, expect, actual.str());
-            CPPUNIT_ASSERT(false);
-        }
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(test, std::string(expect), std::string(actual.str()));
     }
 };
 
@@ -309,10 +267,9 @@ public:
     {
         Owned<IPTree> config(createPTreeFromXMLString(managerConfig));
         Owned<ILoggingManager> manager(m_loader.create(*config));
-        if (!manager)
-            CPPUNIT_FAIL("Could not create logging manager");
 
-        manager->init(config, "unittest");
+        CPPUNIT_ASSERT(manager.get());
+        CPPUNIT_ASSERT(manager->init(config, "unittest"));
         return manager.getClear();
     }
 
@@ -334,19 +291,9 @@ public:
             group = "";
 
         manager->hasFilteredService(service, wrapper);
-        if (pass.size() != expectedPass || fail.size() != expectedFail)
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected pass/fail of %u/%u but got %zu/%zu\n", test, group, expectedPass, expectedFail, pass.size(), fail.size());
-            CPPUNIT_ASSERT(false);
-        }
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("group '%s', pass (%u/%zu), fail (%u/%zu)", group, expectedPass, pass.size(), expectedFail, fail.size()), pass.size() == expectedPass && fail.size() == expectedFail);
         for (const Linked<const IEspLogAgentVariant>& v : pass)
-        {
-            if (!streq(v->getGroup(), group))
-            {
-                fprintf(stdout, "\nTest(%s) group '%s' passed variant (%s/%s)\n", test, group, v->getName(), v->getGroup());
-                CPPUNIT_ASSERT(false);
-            }
-        }
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s', variant '%s/%s'", group, v->getName(), v->getGroup()), std::string(group), std::string(v->getGroup()));
     }
     void checkHasFilteredServiceForGroup(const char* test, ILoggingManager* manager, LOGServiceType service, const char* group, bool expectedResult)
     {
@@ -355,12 +302,7 @@ public:
         
         VariantGroupFilter groupFilter(group);
 
-        bool actual = manager->hasFilteredService(service, groupFilter);
-        if (actual != expectedResult)
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected result %s but got %s", test, group, (expectedResult ? "true" : "false"), (actual ? "true" : "false"));
-            CPPUNIT_ASSERT(false);
-        }
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s'", group), expectedResult, manager->hasFilteredService(service, groupFilter));
     }
     void checkGetFilteredTransactionSeedForGroup(const char* test, const char* group, bool expectedResult, const char* expectedSeed, const char* expectedStatus)
     {
@@ -369,24 +311,10 @@ public:
         
         Owned<ILoggingManager> manager(createManager());
         StringBuffer actualSeed, actualStatus;
-        bool actualResult = manager->getFilteredTransactionSeed(actualSeed, actualStatus, VariantGroupFilter(group));
-        bool pass = true;
-        if (actualResult != expectedResult)
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected result %s but got %s", test, group, (expectedResult ? "true" : "false"), (actualResult ? "true" : "false"));
-            pass = false;
-        }
-        if (!streq(actualSeed, expectedSeed))
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected seed %s but got %s", test, group, expectedSeed, actualSeed.str());
-            pass = false;
-        }
-        if (!hasPrefix(actualStatus, expectedStatus, true))
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected status starting with %s but got %s", test, group, expectedStatus, actualStatus.str());
-            pass = false;
-        }
-        CPPUNIT_ASSERT(pass);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s'", group), expectedResult, manager->getFilteredTransactionSeed(actualSeed, actualStatus, VariantGroupFilter(group)));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s'", group), std::string(expectedSeed), std::string(actualSeed.str()));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("group '%s'", group), hasPrefix(actualStatus, expectedStatus, true));
     }
     void checkGetFilteredTransactionIdForGroup(const char* test, const char* group, bool expectedResult, const char* expectedId, const char* expectedStatus)
     {
@@ -395,24 +323,10 @@ public:
         
         Owned<ILoggingManager> manager(createManager());
         StringBuffer actualId, actualStatus;
-        bool actualResult = manager->getFilteredTransactionID(nullptr, actualId, actualStatus, VariantGroupFilter(group));
-        bool pass = true;
-        if (actualResult != expectedResult)
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected result %s but got %s", test, group, (expectedResult ? "true" : "false"), (actualResult ? "true" : "false"));
-            pass = false;
-        }
-        if (!streq(actualId, expectedId))
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected ID %s but got %s", test, group, expectedId, actualId.str());
-            pass = false;
-        }
-        if (!hasPrefix(actualStatus, expectedStatus, true))
-        {
-            fprintf(stdout, "\nTest(%s) group '%s' expected status starting with %s but got %s", test, group, expectedStatus, actualStatus.str());
-            pass = false;
-        }
-        CPPUNIT_ASSERT(pass);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s'", group), expectedResult, manager->getFilteredTransactionID(nullptr, actualId, actualStatus, VariantGroupFilter(group)));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("group '%s'", group), std::string(expectedId), std::string(actualId.str()));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("group '%s'", group), hasPrefix(actualStatus, expectedStatus, true));
     }
 };
 
