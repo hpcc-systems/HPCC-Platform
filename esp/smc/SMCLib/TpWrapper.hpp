@@ -227,6 +227,16 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
 extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& clusters);
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clustName);
 
+/**
+ * Get pipe-delimited list of roxie server addresses and TLS config from roxie process `roxieCluster` configuration.
+ * @param env           environment configuration
+ * @param roxieCluster  roxie process configuration to get addresses and TLS config from
+ * @param addrList      pipe-delimited list of roxie server addresses
+ * @param tlsConfig     TLS configuration
+ * @param daliAddress   optional dali address to use for ws_ecl service if `@netAddress` not found in `server` configuration
+ * @return void
+ */
+extern TPWRAPPER_API void getAddressesAndTlsConfigForRoxieProcess(IPropertyTree& env, IPropertyTree& roxieCluster, StringBuffer& addrList, Owned<IPropertyTree> & tlsConfig, const char* daliAddress);
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap);
 extern TPWRAPPER_API void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap);
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames);
