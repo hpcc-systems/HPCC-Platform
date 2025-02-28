@@ -513,6 +513,11 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
+  xref: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 1
+    #suspendCoalescerDuringXref: false
+    #ignoreLazyLost: false
 
 dfuserver:
 - name: dfuserver
