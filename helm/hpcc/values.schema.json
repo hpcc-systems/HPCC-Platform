@@ -1171,6 +1171,25 @@
           "type": "boolean",
           "description": "If true, sets OTEL library logging to debug level (otherwise set to warning)"
         },
+        "sampler": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["AlwaysOff", "AlwaysOn", "Ratio"],
+              "description": "Name of the Head Sampling type AlwaysOff|AlwaysOn|Ratio"
+            },
+            "argument" : {
+              "type": "string",
+              "description": "Optional sampler type configuration value"
+            },
+            "parentBased" : {
+              "type": "boolean",
+              "description": "Optional sets the sampling decision based on the Span’s parent, or absence of parent, to know which secondary sampler to use."
+            },
+            "additionalProperties": false
+          }
+        },
         "exporters": {
           "type": "array",
           "description": "List of trace exporters",
