@@ -3884,7 +3884,7 @@ cost_type FileSprayer::updateSourceProperties()
                     totalReadCost += calcFileAccessCost(distributedSource, 0, curProgress.numReads);
                 }
             }
-            return updateCostAndNumReads(distributedSource, totalNumReads, totalReadCost);
+            return totalReadCost;
         }
         else
         {
