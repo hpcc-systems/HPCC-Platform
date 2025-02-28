@@ -75,6 +75,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
 
         void duplicatePortSameService()
         {
+            // Testing binding two ESP Services of the same type on the same port as invalid
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test1.xml"))
             {
                 Status status;
@@ -94,6 +95,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
 
         void portConflictSameHWInstance()
         {
+            // Testing two ESP processes with a port collision on an instance
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test3.xml"))
             {
                 Status status;
@@ -105,6 +107,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
 
         void portConflictAccrossProcesses()
         {
+            // Testing two processes with a port collision on an instance
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test4.xml"))
             {
                 Status status;

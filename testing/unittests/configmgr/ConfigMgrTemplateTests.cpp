@@ -181,6 +181,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
 
         void Test_LoadingTemplates()
         {
+            // ConfigMgr 2.0 - testing only loading templates
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");
 
@@ -226,6 +227,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
 
 
         void Test_Inputs() {
+            // ConfigMgr 2.0 - testing templates inputs
             std::string msg;
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");
@@ -389,6 +391,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
 
         void Test_SubstitutionTests()
         {
+            // ConfigMgr 2.0 - testing templates variable substitution
             std::string msg;
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");
@@ -408,6 +411,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
 
         void Test_OperationsTests()
         {
+            // ConfigMgr 2.0 - test execution of templates
             std::string msg;
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");
@@ -454,6 +458,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         // Tests the action find_node
         void Test_FindNodeTests()
         {
+            // ConfigMgr 2.0 test finding nodes
             std::string msg;
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");
@@ -471,6 +476,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         // Tests the action find_node
         void Test_CreateNodeTests()
         {
+            // ConfigMgr 2.0 - test creating nodes
             std::string msg;
             bool rc = false;
             CreateEnvironmentManager("Simple.xsd");

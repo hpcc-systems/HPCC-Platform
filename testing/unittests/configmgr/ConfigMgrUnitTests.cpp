@@ -49,6 +49,7 @@ class ConfigMgr2ValidateXSDs : public CppUnit::TestFixture
 
         void LoadAndParse()
         {
+            // ConfigMgr 2.0 - Load and parse tests - verify configuration XSDs are compliant
             //
             // Standard configuration for HPCC
             std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
