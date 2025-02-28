@@ -84,10 +84,20 @@ static unsigned readWriteTimeout = 60000;
 #define DEFAULT_LCIDLE_RATE 1          // 1 write transactions per idle period. <= this rate is deemed idle (suitable for save)
 #define STORENOTSAVE_WARNING_PERIOD 72 // hours
 
-static auto pSdsRequestsReceived = hpccMetrics::registerCounterMetric("dali.sds.requests.received", "The total number of Dali SDS requests received", SMeasureCount);
-static auto pSdsRequestsStarted = hpccMetrics::registerCounterMetric("dali.sds.requests.started", "The total number of Dali SDS requests started", SMeasureCount);
-static auto pSdsRequestsCompleted = hpccMetrics::registerCounterMetric("dali.sds.requests.completed", "The total number of Dali SDS requests completed", SMeasureCount);
-static auto pSdsRequestsPending = hpccMetrics::registerGaugeFromCountersMetric("dali.sds.requests.pending", "Current number of pending SDS requests", SMeasureCount, pSdsRequestsReceived, pSdsRequestsStarted);
+static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsReceived;
+static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsStarted;
+static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsCompleted;
+static std::shared_ptr<hpccMetrics::GaugeMetricFromCounters> pSdsRequestsPending;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    pSdsRequestsReceived = hpccMetrics::registerCounterMetric("dali.sds.requests.received", "The total number of Dali SDS requests received", SMeasureCount);
+    pSdsRequestsStarted = hpccMetrics::registerCounterMetric("dali.sds.requests.started", "The total number of Dali SDS requests started", SMeasureCount);
+    pSdsRequestsCompleted = hpccMetrics::registerCounterMetric("dali.sds.requests.completed", "The total number of Dali SDS requests completed", SMeasureCount);
+    pSdsRequestsPending = hpccMetrics::registerGaugeFromCountersMetric("dali.sds.requests.pending", "Current number of pending SDS requests", SMeasureCount, pSdsRequestsReceived, pSdsRequestsStarted);
+    return true;
+}
+
 
 // #define TEST_NOTIFY_HANDLER
 
