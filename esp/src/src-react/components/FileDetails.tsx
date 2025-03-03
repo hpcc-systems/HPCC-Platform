@@ -48,7 +48,6 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             replaceUrl(`/files/${file.NodeGroup}/${logicalFile}`);
         }
     }, [cluster, file?.NodeGroup, file?.isSuperfile, logicalFile]);
-    const [defFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.def);
     const [xmlFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.xml);
 
     const onTabSelect = React.useCallback((tab: TabInfo) => {
@@ -69,9 +68,6 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         }, {
             id: "ecl",
             label: nlsHPCC.ECL,
-        }, {
-            id: "def",
-            label: nlsHPCC.DEF,
         }, {
             id: "xml",
             label: nlsHPCC.XML,
@@ -129,9 +125,6 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "ecl"} size={size}>
                     <SourceEditor text={file?.Ecl} mode="ecl" readonly={true} />
-                </DelayLoadedPanel>
-                <DelayLoadedPanel visible={tab === "def"} size={size}>
-                    <XMLSourceEditor text={defFile} readonly={true} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "xml"} size={size}>
                     <XMLSourceEditor text={xmlFile} readonly={true} />
