@@ -40,6 +40,7 @@
 #include "saarch.hpp"
 #include "saverify.hpp"
 #include "saxref.hpp"
+#include "sadbghk.hpp"
 #include "saqmon.hpp"
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
