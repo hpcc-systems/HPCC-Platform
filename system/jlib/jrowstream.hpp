@@ -48,7 +48,7 @@ class MemoryBuffer;
 class MemoryBufferBuilder;
 
 //An interface for reading rows - which can request the row in the most efficient way for the caller.
-interface IDiskRowStream : extends IRowStream
+interface ILogicalRowStream : extends IRowStream
 {
 // Defined in IRowStream, here for documentation:
 // Request a row which is owned by the caller, and must be freed once it is finished with.
@@ -76,6 +76,6 @@ interface IDiskRowStream : extends IRowStream
 };
 
 
-extern jlib_decl IDiskRowStream * queryNullDiskRowStream();
+extern jlib_decl ILogicalRowStream * queryNullDiskRowStream();
 
 #endif

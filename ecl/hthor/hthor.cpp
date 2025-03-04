@@ -11149,7 +11149,7 @@ bool CHThorNewDiskReadBaseActivity::openNextPart(bool prevWasMissing)
 void CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const char * filename)
 {
     activeReader = reader;
-    inputRowStream = reader->queryAllocatedRowStream(rowAllocator);
+    inputRowStream = reader->queryAllocatedRowStream();
 
     StringBuffer report("Reading file ");
     report.append(filename);
@@ -11162,17 +11162,17 @@ void CHThorNewDiskReadBaseActivity::setEmptyStream()
     finishedParts = true;
 }
 
-IDiskRowReader * CHThorNewDiskReadBaseActivity::ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * formatOptions)
+IDiskRowReader * CHThorNewDiskReadBaseActivity::ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * providerOptions, const IPropertyTree * formatOptions)
 {
     Owned<IRowReadFormatMapping> mapping = createRowReadFormatMapping(getLayoutTranslationMode(), format, actualCrc, actual, expectedCrc, expected, projectedCrc, projected, formatOptions);
 
     ForEachItemIn(i, readers)
     {
         IDiskRowReader & cur = readers.item(i);
-        if (cur.matches(format, streamRemote, mapping))
+        if (cur.matches(format, streamRemote, mapping, providerOptions))
             return &cur;
     }
-    IDiskRowReader * reader = createDiskReader(format, streamRemote, mapping);
+    IDiskRowReader * reader = createDiskReader(format, streamRemote, mapping, providerOptions, rowAllocator);
     readers.append(*reader);
     return reader;
 }
@@ -11185,8 +11185,8 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(const char * filename)
 
     unsigned expectedCrc = helper.getDiskFormatCrc();
     unsigned projectedCrc = helper.getProjectedFormatCrc();
-    IDiskRowReader * reader = ensureRowReader(readFormat, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, expectedCrc, *expectedDiskMeta, fileInfo->formatOptions);
-    if (reader->setInputFile(filename, logicalFileName, 0, offsetOfPart, fileInfo->providerOptions, fieldFilters))
+    IDiskRowReader * reader = ensureRowReader(readFormat, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, expectedCrc, *expectedDiskMeta, fileInfo->providerOptions, fileInfo->formatOptions);
+    if (reader->setInputFile(filename, logicalFileName, 0, offsetOfPart, fieldFilters))
     {
         initStream(reader, filename);
         return true;
@@ -11241,8 +11241,8 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
         {
             StringBuffer path;
             rfn.getPath(path);
-            IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
-            if (reader->setInputFile(path.str(), logicalFileName, whichPart, offsetOfPart, fileInfo->providerOptions, fieldFilters))
+            IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->providerOptions, fileInfo->formatOptions);
+            if (reader->setInputFile(path.str(), logicalFileName, whichPart, offsetOfPart, fieldFilters))
             {
                 initStream(reader, path.str());
                 return true;
@@ -11264,8 +11264,8 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             filenamelist.append('\n').append(filename);
             try
             {
-                IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
-                if (reader->setInputFile(rfilename, logicalFileName, whichPart, offsetOfPart, fileInfo->providerOptions, fieldFilters))
+                IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->providerOptions, fileInfo->formatOptions);
+                if (reader->setInputFile(rfilename, logicalFileName, whichPart, offsetOfPart, fieldFilters))
                 {
                     initStream(reader, filename);
                     return true;

@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class NullDiskRowStream : public CInterfaceOf<IDiskRowStream>
+class NullDiskRowStream : public CInterfaceOf<ILogicalRowStream>
 {
     virtual bool getCursor(MemoryBuffer & cursor) override
     {
@@ -50,7 +50,7 @@ class NullDiskRowStream : public CInterfaceOf<IDiskRowStream>
 };
 
 static NullDiskRowStream nullDiskRowStream;
-IDiskRowStream * queryNullDiskRowStream()
+ILogicalRowStream * queryNullDiskRowStream()
 {
     return &nullDiskRowStream;
 }
