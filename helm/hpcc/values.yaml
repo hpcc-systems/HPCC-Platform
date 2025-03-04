@@ -515,11 +515,10 @@ sasha:
 
   debug-housekeeping: {} # NB: no properties defined, use defaults
     #disabled: true
-    plane: sasha
     #interval: 1
     #at: "* 3 * * *"
-    #expiryDefault: 4
-    user: sasha
+    #expiryDefault: 7
+    #user: sasha
 
 
 dfuserver:

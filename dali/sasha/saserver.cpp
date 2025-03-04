@@ -76,6 +76,7 @@ static void AddServers()
     servers.append(*createSashaDaFSMonitorServer());
     servers.append(*createSashaQMonitorServer());
     servers.append(*createSashaFileExpiryServer()); 
+    servers.append(*createSashaDebugHousekeepingServer());
     // add new servers here
 }
 #endif
@@ -436,6 +437,8 @@ int main(int argc, const char* argv[])
                     servers.append(*createSashaFileExpiryServer());
                 else if (strieq(service, "thor-qmon"))
                     servers.append(*createSashaQMonitorServer());
+                else if (strieq(service, "debug-housekeeping"))
+                    servers.append(*createSashaDebugHousekeepingServer());
                 //else if (strieq(service, "xref")) // TODO
                 //    servers.append(*createSashaXrefServer());
                 else
