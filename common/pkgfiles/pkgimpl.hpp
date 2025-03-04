@@ -124,7 +124,12 @@ protected:
         const char *val = queryEnv("control:enableFieldTranslation");
         if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
+        {
+            // if val is empty or "true" use global default
+            if (isEmptyString(val) || strToBool(val))
+                return getSysFieldTranslationEnabled();
             return getTranslationMode(val, false);
+        }
         else
             return getSysFieldTranslationEnabled();
     }
