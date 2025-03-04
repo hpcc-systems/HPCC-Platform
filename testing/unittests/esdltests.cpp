@@ -368,6 +368,8 @@ public:
             scriptContext->setTraceToStdout(false);
             runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname);
 
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("Expected exception %d not thrown", code), code, 0);
+
             StringBuffer output;
             scriptContext->toXML(output.clear(), ESDLScriptCtxSection_FinalRequest);
 
@@ -381,9 +383,9 @@ public:
         {
           StringBuffer m;
           int actualErrorCode = E->errorCode();
-          VStringBuffer comparison("Expected Exception: code=%d \nActual Exception: code=%d, message=%s", code, actualErrorCode, E->errorMessage(m).str());
+          VStringBuffer message("Exception message: %s", E->errorMessage(m).str());
           E->Release();
-          CPPUNIT_ASSERT_EQUAL_MESSAGE(comparison.str(), code, actualErrorCode);
+          CPPUNIT_ASSERT_EQUAL_MESSAGE(message.str(), code, actualErrorCode);
         }
     }
 
@@ -535,11 +537,12 @@ public:
         </config>
       )!!";
 
+      // The previous version of this test was incorrect in asserting the implicit 'n' prefix was required.
+      // "implicit-prefix" shows that it can be used.
       runTest("implicit-prefix", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
 
-      // The implicit 'n' prefix is required if the content has a namespace defined
-      // with no prefix. This test is expected to throw an exception.
-      runTest("implicit-prefix-not-used", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
+      // "implicit-prefix-not-used" shows that it is optional.
+      runTest("implicit-prefix-not-used", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 0);
     }
 
     void testEsdlTransformRequestNamespaces()
