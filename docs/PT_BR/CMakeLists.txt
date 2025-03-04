@@ -28,7 +28,6 @@
 #
 
 
-cmake_minimum_required(VERSION 2.8)
 PROJECT(docs_pt_br)
 
 #define_property(GLOBAL PROPERTY DOC_TARGETS BRIEF_DOCS "docs_pt_br" FULL_DOCS "docs_pt_br")
