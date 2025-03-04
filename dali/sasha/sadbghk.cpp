@@ -99,6 +99,24 @@ public:
         PROGLOG(LOGDBGHK "Started");
         unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
         
+        Owned<IPropertyTree> globals;
+        StringBuffer dir;
+        if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
+        {
+            if (!isContainerized())
+            {
+                appendCurrentDirectory(dir, false);
+                addPathSepChar(dir);
+                dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
+            }
+            else
+            {
+                IWARNLOG("Failed to get debug directory");
+                return;
+            }
+        }
+        addPathSepChar(dir);
+
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*", udesc, true, false);
         ForEach(*iter)
