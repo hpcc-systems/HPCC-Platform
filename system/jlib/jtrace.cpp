@@ -1591,7 +1591,11 @@ ActiveSpanScope::ActiveSpanScope(ISpan * _ptr, ISpan * _prev) : span(_ptr), prev
 ActiveSpanScope::~ActiveSpanScope()
 {
     ISpan* current = queryThreadedActiveSpan();
-    if (current != span)
+
+    // NOTE: need to handle span == nullptr differently because queryThreadActiveSpan returns the cNullSpan in this case 
+    bool currentHasChanged = (span != nullptr && current != span)
+                          || (span == nullptr && current != queryNullSpan());
+    if (currentHasChanged)
     {
         const char* currSpanID = current->querySpanId();
         const char* expectedSpanID = span != nullptr ? span->querySpanId() : "0000000000000000";
