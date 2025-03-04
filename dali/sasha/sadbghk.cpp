@@ -4,25 +4,25 @@
 
 #include "jlib.hpp"
 #include "jiface.hpp"
-#include "jstring.hpp"
+//#include "jstring.hpp"
 #include "jptree.hpp"
-#include "jmisc.hpp"
-#include "jregexp.hpp"
-#include "jset.hpp"
+//#include "jmisc.hpp"
+//#include "jregexp.hpp"
+//#include "jset.hpp"
 
-#include "mpbase.hpp"
-#include "mpcomm.hpp"
-#include "daclient.hpp"
+//#include "mpbase.hpp"
+//#include "mpcomm.hpp"
+//#include "daclient.hpp"
 #include "dadfs.hpp"
-#include "dautils.hpp"
-#include "dasds.hpp"
+//#include "dautils.hpp"
+//#include "dasds.hpp"
 #include "dalienv.hpp"
-#include "rmtfile.hpp"
+//#include "rmtfile.hpp"
 
 #include "saserver.hpp"
 #include "sautil.hpp"
-#include "sacoalescer.hpp"
-#include "sacmd.hpp"
+//#include "sacoalescer.hpp"
+//#include "sacmd.hpp"
 
 #define DEFAULT_MAXDIRTHREADS 500
 #define DEFAULT_MAXMEMORY 4096
@@ -98,6 +98,7 @@ public:
             return;
         PROGLOG(LOGDBGHK "Started");
         unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
+        
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*", udesc, true, false);
         ForEach(*iter)
