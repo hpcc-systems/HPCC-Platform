@@ -70,13 +70,13 @@
       (Thor Manager, ECLCC Server, and ECL Agent). The UI checkbox “Include
       worker logs” controls the inclusion of the Thor Worker log files.</para>
 
-      <para>In a containerized environment, you can exclude all logs by
-      de-selecting the UI check boxes. Containerized deployments allow this
-      flexibility because logs require a remote log reader component which may
-      not be configured on your system. Cloud-based logging can lead to
-      additional expenses for data collection and downloads compared to
-      traditional bare metal systems, which is why some cloud deployments may
-      have logging disabled.</para>
+      <para>In a containerized environment, you can choose to exclude all the
+      logs. Deselect the UI check boxes for the inclusion of the logs.
+      Containerized deployments allow this flexibility because logs require a
+      remote log reader component which may not be configured on your system.
+      Cloud-based logging can lead to additional expenses for data collection
+      and downloads compared to traditional bare metal systems, which is why
+      some cloud deployments may have logging disabled.</para>
     </sect3>
 
     <sect3 id="ZAP-IncludeLogs">
@@ -103,12 +103,7 @@
       to be able to include logs. Additionally the user must have the feature
       permission <emphasis>WsLogAccess:Read</emphasis> or the logs will be
       excluded and instead contain an error message indicating which
-      permission is required. </para>
-
-      <para>For example in a containerized deployment, requiring the
-      WsLogAccess permission that message would state:</para>
-
-      <programlisting>"Logs: Excluded due to no access, need WsLogAccess:Read"</programlisting>
+      permission is required.</para>
 
       <para>If a "no access" message is present in the ZAP file and there are
       no log files, the permission value specified in the error message must
