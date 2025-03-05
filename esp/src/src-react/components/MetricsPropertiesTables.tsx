@@ -1,17 +1,18 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { Palette } from "@hpcc-js/common";
-import { IScope } from "@hpcc-js/comms";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { formatDecimal } from "src/Utility";
+import { formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
+import { IScopeEx } from "../hooks/metrics";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 
 Palette.rainbow("StdDevs", ["white", "white", "#fff0f0", "#ffC0C0", "#ff8080", "#ff0000", "#ff0000"]);
 
 export interface MetricsPropertiesTablesProps {
     scopesTableColumns?: string[];
-    scopes?: IScope[];
+    scopes?: IScopeEx[];
 }
 
 export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesTablesProps> = ({
@@ -44,6 +45,9 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         const props = [];
         scopes.forEach((item, idx) => {
             const scopeProps = [];
+            for (const exception of item.__exceptions ?? []) {
+                scopeProps.push([exception.Severity, exception.Message, `${formatTwoDigits(+exception.Priority / 1000)}s`, "", "", "", "", "", "", "", "", 6]);
+            }
             for (const key in item.__groupedProps) {
                 const row = item.__groupedProps[key];
                 scopeProps.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
