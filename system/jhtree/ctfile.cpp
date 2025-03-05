@@ -446,6 +446,7 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     memcpy(lastKeyValue, indata, insize);
     lastSequence = sequence;
     hdr.numKeys++;
+    memorySize += insize + sizeof(pos);
     return true;
 }
 
