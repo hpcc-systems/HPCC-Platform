@@ -28,104 +28,6 @@
 #endif
 #include "jlzw.hpp"
 
-CByteInputStream::CByteInputStream()
-{
-    eofseen = false;
-    pushedback = false;
-    ungot = 0;
-}
-
-bool CByteInputStream::eof()
-{
-    try
-    {
-        unget(readByte());
-    }
-    catch (IException *c)
-    {
-        c->Release();
-        return true;
-    }
-    return eofseen;
-}
-
-int CByteInputStream::readByte()
-{
-    if (pushedback)
-    {
-        pushedback = false;
-        return ungot;
-    }
-    if (eofseen)
-        return -1;
-    int ret = readNext();
-    if (ret==-1)
-        eofseen = true;
-    return ret;
-}
-
-int CByteInputStream::readBytes(void *vbuf, int size)
-{
-    int read = 0;
-    if (eofseen)
-        return 0;
-    char *buf = (char *) vbuf;
-    while (read < size)
-    {
-        char c = readByte();
-        if (eofseen)
-            return read;
-        buf[read] = c;
-        read++;
-    }
-    return read;
-}
-
-void CByteInputStream::unget(int c)
-{
-    assertex(!pushedback);
-    pushedback = true;
-    ungot = c;
-}
-
-//================================================================================
-
-CStringBufferInputStream::CStringBufferInputStream(const char *s) : pos(0), str(s)
-{
-}
-
-int CStringBufferInputStream::readNext()
-{
-    if (pos < str.length())
-        return str.charAt(pos++);
-    else
-        return -1;
-}
-
-extern jlib_decl IByteInputStream *createInputStream(const char *string)
-{
-    return new CStringBufferInputStream(string);
-}
-
-//================================================================================
-
-CUserStringBufferInputStream::CUserStringBufferInputStream(StringBuffer &s) : pos(0), str(s)
-{
-}
-
-int CUserStringBufferInputStream::readNext()
-{
-    if (pos < str.length())
-        return str.charAt(pos++);
-    else
-        return -1;
-}
-
-extern jlib_decl IByteInputStream *createInputStream(StringBuffer &from)
-{
-    return new CUserStringBufferInputStream(from);
-}
-
 //================================================================================
 void CStringBufferOutputStream::writeByte(byte b)
 {
@@ -140,50 +42,6 @@ void CStringBufferOutputStream::writeBytes(const void * data, int len)
 extern jlib_decl IByteOutputStream *createOutputStream(StringBuffer &to)
 {
     return new CStringBufferOutputStream(to);
-}
-//================================================================================
-
-CSocketInputStream::CSocketInputStream(ISocket *s)
-{
-    sock = s;
-    s->Link();
-    remaining = 0;
-    next = 0;
-}
-
-CSocketInputStream::~CSocketInputStream()
-{
-    sock->Release();
-}
-
-void CSocketInputStream::refill()
-{
-    if (!eofseen)
-    {
-        next = 0;
-        sock->read(buffer, 1, sizeof(buffer), remaining);
-        if (remaining <= 0)
-        {
-            remaining = 0;
-            eofseen = true;
-        }
-    }
-}
-
-int CSocketInputStream::readNext()
-{
-    if (!remaining)
-        refill();
-    if (eofseen)
-        return -1;
-    else
-    {
-        int ret = buffer[next];
-        assertex(ret != -1);
-        next++;
-        remaining--;
-        return ret;
-    }
 }
 
 //===========================================================================
@@ -236,53 +94,6 @@ extern jlib_decl IByteOutputStream *createOutputStream(int handle)
 {
     return new CFileOutputStream(handle);
 }
-
-//===========================================================================
-
-CFileInputStream::CFileInputStream(int _handle)
-{
-    handle = _handle;
-    remaining = 0;
-}
-
-void CFileInputStream::refill()
-{
-    if (!eofseen)
-    {
-        next = 0;
-        remaining = _read(handle, buffer, sizeof(buffer));
-        if(remaining == 0)
-            eofseen = true;
-        else if (remaining < 0)
-        {
-            remaining = 0;
-            perror("error reading:");
-            eofseen = true;
-        }
-    }
-}
-
-int CFileInputStream::readNext()
-{
-    if (!remaining)
-        refill();
-    if (eofseen)
-        return -1;
-    else
-    {
-        int ret = buffer[next];
-        assertex(ret != -1);
-        next++;
-        remaining--;
-        return ret;
-    }
-}
-
-IByteInputStream *createInputStream(int handle)
-{
-    return new CFileInputStream(handle);
-}
-
 
 //===========================================================================
 

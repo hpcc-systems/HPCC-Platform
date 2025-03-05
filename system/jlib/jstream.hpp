@@ -30,17 +30,6 @@ interface jlib_decl IByteOutputStream : public IInterface
     virtual void writeString(const char *str) = 0;
 };
 
-interface jlib_decl IByteInputStream : public IInterface
-{
-    virtual bool eof() = 0;
-    virtual int readByte() = 0;
-    virtual int readBytes(void *buf, int size) = 0;
-    virtual void unget(int c) = 0;
-};
-
-extern jlib_decl IByteInputStream *createInputStream(const char *string);
-extern jlib_decl IByteInputStream *createInputStream(StringBuffer &from);
-extern jlib_decl IByteInputStream *createInputStream(int handle);
 extern jlib_decl IByteOutputStream *createOutputStream(StringBuffer &to);
 extern jlib_decl IByteOutputStream *createOutputStream(int handle);
 
