@@ -1421,7 +1421,7 @@ public:
             }
         }
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
-        ISerialStream *stream = reader->queryDirectStreamReader();
+        IBufferedSerialInputStream *stream = reader->queryDirectStreamReader();
         while (!aborted)
         {
             size32_t thisLineLength = csvSplitter.splitLine(stream, maxRowSize);
@@ -2043,7 +2043,7 @@ public:
         RtlDynamicRowBuilder finalBuilder(rowAllocator, false);
         if (deserializer)
         {
-            Owned<ISerialStream> stream = createMemoryBufferSerialStream(m);
+            Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(m);
             CThorStreamDeserializerSource rowSource(stream);
 
             while (m.remaining())
@@ -2309,7 +2309,7 @@ public:
     {
         CriticalBlock b(parCrit); // MORE - use a spinlock
         MemoryBuffer &m = d.data;
-        Owned<ISerialStream> stream = createMemoryBufferSerialStream(m);
+        Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(m);
         CThorStreamDeserializerSource rowSource(stream);
         while (m.remaining())
         {
@@ -3705,7 +3705,7 @@ protected:
     IHThorFetchBaseArg *helper;
     const CRoxieFetchActivityFactory *factory;
     Owned<IFileIO> rawFile;
-    Owned<ISerialStream> rawStream;
+    Owned<IBufferedSerialInputStream> rawStream;
     offset_t base;
     char *inputData;
     char *inputLimit;
@@ -4478,7 +4478,7 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieAgentActivity
     const char *inputData;
     Linked<ITranslatorSet> translators;
     Linked<IFileIOArray> files;
-    Owned<ISerialStream> rawStream;
+    Owned<IBufferedSerialInputStream> rawStream;
     CThorContiguousRowBuffer prefetchSource;
     Owned<ISourceRowPrefetcher> prefetcher;
     const IDynamicTransform *translator = nullptr;

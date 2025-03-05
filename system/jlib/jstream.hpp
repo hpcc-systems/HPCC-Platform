@@ -57,18 +57,13 @@ interface ISerialInputStream : extends IInterface
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
-interface ISerialStream : extends ISerialInputStream
+interface IBufferedSerialInputStream : extends ISerialInputStream
 {
     virtual const void * peek(size32_t wanted, size32_t &got) = 0;   // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
 };
-interface IBufferedSerialInputStream : extends ISerialStream
-{
-    virtual void replaceInput(ISerialInputStream * newInput) = 0;
-};
-
-/* example of reading a nul terminated string using ISerialStream peek and skip
+/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip
 {
     for (;;) {
         const char *s = peek(1,got);

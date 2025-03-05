@@ -52,7 +52,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
     {
         Linked<IEngineRowAllocator> allocator;
         CCsvReadSlaveActivity &activity;
-        Owned<ISerialStream> inputStream;
+        Owned<IBufferedSerialInputStream> inputStream;
         OwnedIFileIO iFileIO;
         CSVSplitter csvSplitter;
         CRC32 inputCRC;
@@ -62,7 +62,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         bool readFinished;
         bool processHeaderLines = false;
 
-        unsigned splitLine(ISerialStream *inputStream, size32_t maxRowSize)
+        unsigned splitLine(IBufferedSerialInputStream *inputStream, size32_t maxRowSize)
         {
             if (processHeaderLines)
             {

@@ -1740,7 +1740,7 @@ public:
 class IFlatFetchHandlerCallback
 {
 public:
-    virtual void processFetch(FetchRequest const * fetch, offset_t pos, ISerialStream *rawStream) = 0;
+    virtual void processFetch(FetchRequest const * fetch, offset_t pos, IBufferedSerialInputStream *rawStream) = 0;
 };
 
 class IXmlFetchHandlerCallback
@@ -1755,7 +1755,7 @@ class FetchPartHandlerBase
 {
 protected:
     Owned<IFileIO> rawFile;
-    Owned<ISerialStream> rawStream;
+    Owned<IBufferedSerialInputStream> rawStream;
     offset_t base;
     offset_t top;
     bool blockcompressed;
@@ -2395,7 +2395,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void processFetch(FetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
+    virtual void processFetch(FetchRequest const * fetch, offset_t pos, IBufferedSerialInputStream *rawStream)
     {
         CThorContiguousRowBuffer prefetchSource;
         prefetchSource.setStream(rawStream);
@@ -2542,7 +2542,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void processFetch(FetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
+    virtual void processFetch(FetchRequest const * fetch, offset_t pos, IBufferedSerialInputStream *rawStream)
     {
         rawStream->reset(pos, UnknownOffset);
         CriticalBlock procedure(transformCrit);
@@ -3330,7 +3330,7 @@ public:
 class IKeyedJoinFetchHandlerCallback
 {
 public:
-    virtual void processFetch(KeyedJoinFetchRequest const * fetch, offset_t pos, ISerialStream *rawStream) = 0;
+    virtual void processFetch(KeyedJoinFetchRequest const * fetch, offset_t pos, IBufferedSerialInputStream *rawStream) = 0;
 };
 
 class KeyedJoinFetchPartHandler : public FetchPartHandlerBase, public ThreadedPartHandler<KeyedJoinFetchRequest>
@@ -3588,7 +3588,7 @@ public:
         return new KeyedJoinFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, prefetcher, rowAllocator);
     }
 
-    virtual void processFetch(KeyedJoinFetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
+    virtual void processFetch(KeyedJoinFetchRequest const * fetch, offset_t pos, IBufferedSerialInputStream *rawStream)
     {
         CThorContiguousRowBuffer prefetchSource;
         prefetchSource.setStream(rawStream);

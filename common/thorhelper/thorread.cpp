@@ -241,7 +241,7 @@ protected:
     virtual offset_t getLocalOffset();
 
 protected:
-    Owned<ISerialStream> inputStream;
+    Owned<IBufferedSerialInputStream> inputStream;
     Owned<IFileIO> inputfileio;
     CThorContiguousRowBuffer inputBuffer;    // more: move to derived classes.
     Owned<IEngineRowAllocator> outputAllocator;
@@ -1317,9 +1317,9 @@ bool MarkupDiskRowReader::checkOpen()
 {
     class CSimpleStream : public CSimpleInterfaceOf<ISimpleReadStream>
     {
-        Linked<ISerialStream> stream;
+        Linked<IBufferedSerialInputStream> stream;
     public:
-        CSimpleStream(ISerialStream *_stream) : stream(_stream)
+        CSimpleStream(IBufferedSerialInputStream *_stream) : stream(_stream)
         {
         }
     // ISimpleReadStream impl.
@@ -1530,7 +1530,7 @@ public:
 
     //Specify where the raw binary input for a particular file is coming from, together with its actual format.
     //Does this make sense, or should it be passed a filename?  an actual format?
-    //Needs to specify a filename rather than a ISerialStream so that the interface is consistent for local and remote
+    //Needs to specify a filename rather than a IBufferedSerialInputStream so that the interface is consistent for local and remote
     virtual void clearInput() override
     {
         directReader->clearInput();

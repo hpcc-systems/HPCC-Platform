@@ -4,12 +4,12 @@
 #include "junicode.hpp"
 #include "rtlcommon.hpp"
 
-CContiguousRowBuffer::CContiguousRowBuffer(ISerialStream * _in) : in(_in)
+CContiguousRowBuffer::CContiguousRowBuffer(IBufferedSerialInputStream * _in) : in(_in)
 {
     clearBuffer();
 }
 
-void CContiguousRowBuffer::setStream(ISerialStream *_in)
+void CContiguousRowBuffer::setStream(IBufferedSerialInputStream *_in)
 {
     in = _in;
     clearBuffer();
@@ -48,7 +48,7 @@ void CContiguousRowBuffer::peekBytesDirect(unsigned maxSize)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CThorContiguousRowBuffer::CThorContiguousRowBuffer(ISerialStream * _in) : CContiguousRowBuffer(_in)
+CThorContiguousRowBuffer::CThorContiguousRowBuffer(IBufferedSerialInputStream * _in) : CContiguousRowBuffer(_in)
 {
     readOffset = 0;
 }

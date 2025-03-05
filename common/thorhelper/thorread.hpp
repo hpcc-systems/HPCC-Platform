@@ -102,7 +102,7 @@ public:
 
     //Specify where the raw binary input for a particular file is coming from, together with its actual format.
     //Does this make sense, or should it be passed a filename?  an actual format?
-    //Needs to specify a filename rather than a ISerialStream so that the interface is consistent for local and remote
+    //Needs to specify a filename rather than a IBufferedSerialInputStream so that the interface is consistent for local and remote
     virtual void clearInput() = 0;
 
     //MORE: It may be better to only have the first of these functions and have the other two functions as global functions that wrap this function

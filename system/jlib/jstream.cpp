@@ -405,11 +405,6 @@ public:
         input->reset(_offset, _flen);
     }
 
-    virtual void replaceInput(ISerialInputStream * newInput) override
-    {
-        input.set(newInput);
-    }
-
 protected:
     inline byte * data(size32_t offset) { return (byte *)buffer.get() + offset; }
     inline size32_t available() const { return dataLength - bufferOffset; }

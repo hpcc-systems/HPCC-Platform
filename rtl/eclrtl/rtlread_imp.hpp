@@ -29,10 +29,10 @@
 class ECLRTL_API CThorStreamDeserializerSource : implements IRowDeserializerSource
 {
 public:
-    CThorStreamDeserializerSource(ISerialStream * _in = NULL);
+    CThorStreamDeserializerSource(IBufferedSerialInputStream * _in = NULL);
     CThorStreamDeserializerSource(size32_t len, const void * data); // a short cut for creating a createMemorySerialStream()
 
-    inline void setStream(ISerialStream *_in) { in.set(_in); }
+    inline void setStream(IBufferedSerialInputStream *_in) { in.set(_in); }
 
     virtual const byte * peek(size32_t maxSize);
     virtual offset_t beginNested();
@@ -91,7 +91,7 @@ private:
 
 
 protected:
-    Linked<ISerialStream> in;           // could use a CStreamSerializer class (with inlines to improve)
+    Linked<IBufferedSerialInputStream> in;           // could use a CStreamSerializer class (with inlines to improve)
 };
 
 class ECLRTL_API COutputStreamSerializer : public CSimpleInterfaceOf<IRowSerializerTarget>

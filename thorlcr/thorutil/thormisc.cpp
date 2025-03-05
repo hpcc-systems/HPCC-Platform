@@ -1242,7 +1242,7 @@ class CRowStreamFromNode : public CSimpleInterface, implements IRowStream
     bool eos;
     const bool &abortSoon;
     mptag_t mpTag, replyTag;
-    Owned<ISerialStream> bufferStream;
+    Owned<IBufferedSerialInputStream> bufferStream;
     CThorStreamDeserializerSource memDeserializer;
     CMessageBuffer msg;
 

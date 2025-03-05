@@ -71,7 +71,7 @@ class CWriteIntercept : public CSimpleInterface
     IThorRowInterfaces *rowIf;
     Owned<CFileOwner> dataFile, idxFile;
     Owned<IFileIO> dataFileIO, idxFileIO;
-    Owned<ISerialStream> dataFileStream;
+    Owned<IBufferedSerialInputStream> dataFileStream;
     Linked<IFileIOStream> idxFileStream;
     CThorStreamDeserializerSource dataFileDeserializerSource;
     unsigned interval;

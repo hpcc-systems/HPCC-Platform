@@ -427,7 +427,7 @@ typedef IArrayOf<InMemoryIndex> InMemoryIndexSet;
  *     (the file boundaries are the only place we are sure there are record boundaries - fixed size case could do better in theory)
  *   The disk case gives an empty set to all but the first thread - could certainly do better
  * How it should work
- *   IDirectReader should be derived from ISerialStream (with the addition of the ptr to offset mapping functions)
+ *   IDirectReader should be derived from IBufferedSerialInputStream (with the addition of the ptr to offset mapping functions)
  *   We should not peek past end of a single file
  *   We are then free to use memory-mapped files and/or existing fileIO stream code, and IDirectReader is much simpler, 
  *   just handling the move from one file to the next and the PtrToOffset stuff
@@ -562,7 +562,7 @@ public:
         pos = (memsize_t) _readPos;
     }
 
-    // Interface ISerialStream
+    // Interface IBufferedSerialInputStream
 
     virtual const void * peek(size32_t wanted,size32_t &got) override
     {
@@ -672,7 +672,7 @@ public:
     offset_t thisFileStartPos;
     offset_t completedStreamsSize;
     Owned<IFileIO> thisPart;
-    Owned<ISerialStream> curStream;
+    Owned<IBufferedSerialInputStream> curStream;
     unsigned thisPartIdx;
 
     BufferedDirectReader(const RowFilter &_postFilter, bool _grouped, offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts, const ITranslatorSet *_translators)

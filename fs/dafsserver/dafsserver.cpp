@@ -1348,7 +1348,7 @@ class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity, implements
     typedef CRemoteDiskBaseActivity PARENT;
 
 protected:
-    Owned<ISerialStream> inputStream;
+    Owned<IBufferedSerialInputStream> inputStream;
     Owned<IFileIO> iFileIO;
     unsigned __int64 chooseN = 0;
     unsigned __int64 startPos = 0;
@@ -1964,9 +1964,9 @@ class CRemoteMarkupReadActivity : public CRemoteExternalFormatReadActivity, impl
 
         class CSimpleStream : public CSimpleInterfaceOf<ISimpleReadStream>
         {
-            Linked<ISerialStream> stream;
+            Linked<IBufferedSerialInputStream> stream;
         public:
-            CSimpleStream(ISerialStream *_stream) : stream(_stream)
+            CSimpleStream(IBufferedSerialInputStream *_stream) : stream(_stream)
             {
             }
         // ISimpleReadStream impl.
