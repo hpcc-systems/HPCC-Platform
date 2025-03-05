@@ -241,9 +241,6 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createDiskReadActivity(agent, activityId, subgraphId, (IHThorDiskReadArg &)arg, kind, graph, node);
     case TAKnewdiskread:
         {
-            bool isGeneric = (((IHThorNewDiskReadArg &)arg).getFlags() & TDXgeneric) != 0;
-            if (isGeneric)
-                return createGenericDiskReadActivity(agent, activityId, subgraphId, (IHThorNewDiskReadArg &)arg, kind, graph, node);
             return createNewDiskReadActivity(agent, activityId, subgraphId, (IHThorNewDiskReadArg &)arg, kind, graph, node);
         }
     case TAKdisknormalize:
