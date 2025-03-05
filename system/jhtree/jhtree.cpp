@@ -82,7 +82,10 @@ std::atomic<unsigned __int64> leafSearchCycles{0};
 static cycle_t traceCacheLockingFrequency{0};
 static cycle_t traceNodeLoadFrequency{0};
 static cycle_t traceNodeLoadThreshold{0};
-static unsigned traceKeyMergeThreshold{1000};  // Report merges of > 1000 cursor positions
+static unsigned traceKeyMergeThreshold{1000};       // Report merges of > 1000 cursor positions
+static RelaxedAtomic<unsigned> mergeThresholdExceededSuppressed {0};
+static RelaxedAtomic<unsigned> maxActiveKeys {0};   
+static unsigned lastMergeThresholdReport = 0;   
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
@@ -3384,10 +3387,30 @@ public:
         if (activekeys>0) 
         {
             if (ctx)
-            {
                 ctx->noteStatistic(StNumIndexMerges, activekeys);
-                if (traceKeyMergeThreshold && activekeys > traceKeyMergeThreshold)
-                    ctx->CTXLOG("Key merger with %u active keys detected", activekeys);
+            if (traceKeyMergeThreshold && activekeys > traceKeyMergeThreshold)
+            {
+                unsigned now = msTick();
+                if (now - lastMergeThresholdReport > 60000)
+                {
+                    if (mergeThresholdExceededSuppressed)
+                    {
+                        // Report skipped
+                        DBGLOG("%u large key mergers detected with up to %u active keys", mergeThresholdExceededSuppressed.load(), maxActiveKeys.load());
+                        lastMergeThresholdReport = now;
+                        mergeThresholdExceededSuppressed = 0;
+                        maxActiveKeys = 0;
+                    }
+                    // Report this
+                    DBGLOG("Large key merger detected with %u active keys", activekeys);
+                }
+                else
+                {
+                    // Record skipped
+                    mergeThresholdExceededSuppressed++;
+                    if (activekeys > maxActiveKeys)
+                        maxActiveKeys = activekeys;
+                }
             }
             cursors = cursorArray.getArray();
             mergeheap = mergeHeapArray.getArray();
