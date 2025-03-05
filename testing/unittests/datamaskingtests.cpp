@@ -48,7 +48,7 @@ class DataMaskingEngineTests : public CppUnit::TestFixture
   CPPUNIT_ASSERT_EQUAL_MESSAGE("domain count mismatch", size_t(expected), size_t(engine->domainCount()));
 
 #define assertHasDomain(engine, id, expected) \
-  CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("hasDomain mismatch for '%s'", id).str(), expected, engine->hasDomain(id));
+  CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("hasDomain mismatch for '%s'", id), expected, engine->hasDomain(id));
 
     using Engine = DataMasking::CEngine;
     using Checker = DataMasking::CCompatibilityChecker;
@@ -464,11 +464,11 @@ public:
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        CPPUNIT_FAIL(VStringBuffer("exception checking compatibility [%s]", msg.str()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception checking compatibility [%s]", msg.str()));
       }
       catch (const std::exception& e)
       {
-        CPPUNIT_FAIL(VStringBuffer("exception checking compatibility [%s]", e.what()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception checking compatibility [%s]", e.what()));
       }
       catch (...)
       {
@@ -489,7 +489,7 @@ protected:
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        CPPUNIT_FAIL(VStringBuffer("exception parsing '%s' [%s]", cfgTxt, msg.str()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception parsing '%s' [%s]", cfgTxt, msg.str()));
       }
       return cfg.getClear();
     }
@@ -530,7 +530,7 @@ protected:
           expected.set(e);
       }
       engine->getDomainVersions(domain, actual);
-      CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("domain version mismatch for '%s'", domain).str(), expected.to_string(), actual.to_string());
+      CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("domain version mismatch for '%s'", domain), expected.to_string(), actual.to_string());
     }
 
     void assertTextIterator(ITextIterator* it, const std::set<std::string>& expectedValues, const char* label)
@@ -551,7 +551,7 @@ protected:
       if (expected != actual)
       {
         for (const std::string& v : expected)
-          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("missing expected %s '%s'", label, v.c_str()), actual.find(v) == actual.end());
+          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("missing expected %s '%s'", label, v.c_str()), actual.find(v) != actual.end());
       }
     }
 
@@ -572,28 +572,28 @@ protected:
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        CPPUNIT_FAIL(VStringBuffer("exception querying profile for '%s' version %hhu [%s]", domain, version, msg.str()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception querying profile for '%s' version %hhu [%s]", domain, version, msg.str()));
       }
       if (profile)
       {
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected profile for domain '%s'", domain).str(), expected);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected profile for domain '%s'", domain), expected);
         const IDataMaskerInspector& inspector = profile->inspector();
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("domain mismatch for domain '%s'", domain).str(), isEmptyString(domain) || inspector.acceptsDomain(domain));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("domain mismatch for domain '%s'", domain), isEmptyString(domain) || inspector.acceptsDomain(domain));
         if (version)
-          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("version %hhu not in range %hhu..%hhu for domain '%s'", version, inspector.queryMinimumVersion(), inspector.queryMaximumVersion(), domain).str(), inspector.queryMinimumVersion() <= version && version <= inspector.queryMaximumVersion());
+          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("version %hhu not in range %hhu..%hhu for domain '%s'", version, inspector.queryMinimumVersion(), inspector.queryMaximumVersion(), domain), inspector.queryMinimumVersion() <= version && version <= inspector.queryMaximumVersion());
       }
       else
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("didn't find profile for domain '%s' and version %hhu", domain, version).str(), !expected);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("didn't find profile for domain '%s' and version %hhu", domain, version), !expected);
     }
 
     void assertQueriedProfile(Engine* engine, const char* requestedDomain, uint8_t requestedVersion, const char* expectedDomain, uint8_t expectedVersion)
     {
       IDataMaskingProfile* profile = engine->queryProfile(requestedDomain, requestedVersion);
-      CPPUNIT_ASSERT_MESSAGE(VStringBuffer("no profile match for '%s' version %hhu", requestedDomain, requestedVersion).str(), profile);
+      CPPUNIT_ASSERT_MESSAGE(VStringBuffer("no profile match for '%s' version %hhu", requestedDomain, requestedVersion), profile);
       const IDataMaskerInspector& inspector = profile->inspector();
       CPPUNIT_ASSERT_EQUAL(std::string(inspector.queryDefaultDomain()), std::string(expectedDomain));
       if (expectedVersion)
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("got profile '%s' spanning %hhu..%hhu", inspector.queryDefaultDomain(), inspector.queryMinimumVersion(), inspector.queryMaximumVersion()).str(), expectedVersion >= inspector.queryMinimumVersion() && inspector.queryMaximumVersion() >= expectedVersion);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("got profile '%s' spanning %hhu..%hhu", inspector.queryDefaultDomain(), inspector.queryMinimumVersion(), inspector.queryMaximumVersion()), expectedVersion >= inspector.queryMinimumVersion() && inspector.queryMaximumVersion() >= expectedVersion);
     }
 };
 
@@ -995,7 +995,7 @@ protected:
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        CPPUNIT_FAIL(VStringBuffer("exception parsing '%s' [%s]", cfgTxt, msg.str()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception parsing '%s' [%s]", cfgTxt, msg.str()));
       }
       IPTree* pRoot = cfg->queryBranch("profile");
       Owned<ITracer> tracer(createTracer());
@@ -1020,9 +1020,9 @@ protected:
       if (expectedId && actualId)
         CPPUNIT_ASSERT_EQUAL(std::string(expectedId), std::string(actualId));
       else if (expectedId)
-        CPPUNIT_FAIL(VStringBuffer("expected default domain '%s'", expectedId).str());
+        CPPUNIT_FAIL(VStringBuffer("expected default domain '%s'", expectedId));
       else if (actualId)
-        CPPUNIT_FAIL(VStringBuffer("unexpected default domain '%s'", actualId).str());
+        CPPUNIT_FAIL(VStringBuffer("unexpected default domain '%s'", actualId));
     }
 
     void assertAcceptedDomains(Profile* profile, const std::set<std::string>& expectedIds)
@@ -1037,8 +1037,8 @@ protected:
       ForEach(*it)
       {
         std::string value(it->query());
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual %s '%s'", label, value.c_str()).str(), actualValues.insert(value).second);
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual %s '%s'", label, value.c_str()).str(), expectedValues.find(value) != expectedValues.end());
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual %s '%s'", label, value.c_str()), actualValues.insert(value).second);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual %s '%s'", label, value.c_str()), expectedValues.find(value) != expectedValues.end());
       }
       assertStringSets(actualValues, expectedValues, label);
     }
@@ -1048,7 +1048,7 @@ protected:
       if (expected != actual)
       {
         for (const std::string& v : expected)
-          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("missing expected %s '%s'", label, v.c_str()).str(), actual.find(v) != actual.end());
+          CPPUNIT_ASSERT_MESSAGE(VStringBuffer("missing expected %s '%s'", label, v.c_str()), actual.find(v) != actual.end());
       }
     }
 
@@ -1088,12 +1088,12 @@ protected:
     {
       if (context)
       {
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected context for version %hhu", context->queryVersion()).str(), expectedVersion);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected context for version %hhu", context->queryVersion()), expectedVersion);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("context version mismatch", expectedVersion, context->queryVersion());
       }
       else
       {
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("context creation failure for version %hhu", expectedVersion).str(), !expectedVersion);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("context creation failure for version %hhu", expectedVersion), !expectedVersion);
       }
     }
 
@@ -1110,8 +1110,8 @@ protected:
       ForEach(*it)
       {
         std::string value(it->query().queryName());
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual %s '%s'", label, value.c_str()).str(), actual.insert(value).second);
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual %s '%s'", label, value.c_str()).str(), expected.find(value) != expected.end());
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual %s '%s'", label, value.c_str()), actual.insert(value).second);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual %s '%s'", label, value.c_str()), expected.find(value) != expected.end());
       }
       assertStringSets(actual, expected, "value type name");
     }
@@ -1122,7 +1122,7 @@ protected:
       if (vt)
         assertEntityIterator(vt->getMaskStyles(context), expectedNames, "mask style name");
       else
-        CPPUNIT_FAIL(VStringBuffer("unrecognized value type '%s'", valueType).str());
+        CPPUNIT_FAIL(VStringBuffer("unrecognized value type '%s'", valueType));
     }
 
     void assertAcceptedProperties(IDataMaskingProfileContext* context, const std::set<std::string>& expectedNames)
@@ -1146,7 +1146,7 @@ protected:
       else
       {
         CPPUNIT_ASSERT_MESSAGE("unexpected rule", !inspector.hasRule(contentType));
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected rule count %zu", inspector.countOfRules(contentType)).str(), !inspector.countOfRules(contentType));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected rule count %zu", inspector.countOfRules(contentType)), !inspector.countOfRules(contentType));
       }
     }
 
@@ -1203,13 +1203,13 @@ protected:
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        CPPUNIT_FAIL(VStringBuffer("exception masking '%s' [%s]", input, msg.str()).str());
+        CPPUNIT_FAIL(VStringBuffer("exception masking '%s' [%s]", input, msg.str()));
         free(buffer);
       }
       catch (...)
       {
         free(buffer);
-        CPPUNIT_FAIL(VStringBuffer("unknown exception masking '%s'", input).str());
+        CPPUNIT_FAIL(VStringBuffer("unknown exception masking '%s'", input));
       }
       free(buffer);
     }
@@ -1217,16 +1217,16 @@ protected:
     {
       if (input && expected)
       {
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("no mask update reported for input '%s' using %s", input, qualifiers).str(), op(buffer));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("masked value mismatch for input '%s' using %s", input, qualifiers).str(), std::string(expected), std::string(buffer));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("no mask update reported for input '%s' using %s", input, qualifiers), op(buffer));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("masked value mismatch for input '%s' using %s", input, qualifiers), std::string(expected), std::string(buffer));
       }
       else if (input)
       {
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("mask update reported for input '%s' using %s", input, qualifiers).str(), !op(buffer));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("masked value mismatch for input '%s' using %s", input, qualifiers).str(), std::string(input), std::string(buffer));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("mask update reported for input '%s' using %s", input, qualifiers), !op(buffer));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("masked value mismatch for input '%s' using %s", input, qualifiers), std::string(input), std::string(buffer));
       }
       else
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("mask update reported for no input using %s", qualifiers).str(), !op(buffer));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("mask update reported for no input using %s", qualifiers), !op(buffer));
     }
 
     void assertContextProperties(IDataMaskingProfileContext* context, const std::set<std::string>& accepted)
@@ -1234,10 +1234,10 @@ protected:
       for (const std::string& a : accepted)
       {
         const char* name = a.c_str();
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("setProperty(\"%s\", \"foo\"", name).str(), context->setProperty(name, "foo"));
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("hasProperty(\"%s\")", name).str(), context->hasProperty(name));
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("queryProperty(\"%s\")", name).str(), context->queryProperty(name));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("queryProperty(\"%s\")", name).str(), std::string("foo"), std::string(context->queryProperty(name)));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("setProperty(\"%s\", \"foo\")", name), context->setProperty(name, "foo"));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("hasProperty(\"%s\")", name), context->hasProperty(name));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("queryProperty(\"%s\")", name), context->queryProperty(name));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("queryProperty(\"%s\")", name), std::string("foo"), std::string(context->queryProperty(name)));
       }
       CPPUNIT_ASSERT_EQUAL(!accepted.empty(), context->hasProperties());
       Owned<IDataMaskingContextPropertyIterator> actual(context->inspector().getProperties());
@@ -1246,13 +1246,13 @@ protected:
       {
         const IDataMaskingContextProperty& prop = actual->query();
         const char* name = prop.queryName();
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual property '%s'", name).str(), sanityCheck.insert(name).second);
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual property '%s'", name).str(), accepted.find(name) != accepted.end());
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("duplicate actual property '%s'", name), sanityCheck.insert(name).second);
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("unexpected actual property '%s'", name), accepted.find(name) != accepted.end());
       }
       for (const std::string& a : accepted)
       {
         const char* name = a.c_str();
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("removeProperty(\"%s\")", name).str(), context->removeProperty(name));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("removeProperty(\"%s\")", name), context->removeProperty(name));
       }
     }
 
@@ -1264,7 +1264,7 @@ protected:
       for (uint8_t version = minVersion; version <= maxVersion; version++)
       {
         Owned<IDataMaskingProfileContext> context(profile->createContext(version, nullptr));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property acceptance mismatch for '%s' and version %hhu", name, version).str(), expected[version - minVersion], context->inspector().acceptsProperty(name));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property acceptance mismatch for '%s' and version %hhu", name, version), expected[version - minVersion], context->inspector().acceptsProperty(name));
       }
     }
 
@@ -1276,7 +1276,7 @@ protected:
       for (uint8_t version = minVersion; version <= maxVersion; version++)
       {
         Owned<IDataMaskingProfileContext> context(profile->createContext(version, nullptr));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property usage mismatch for '%s' and version %hhu", name, version).str(), expected[version - minVersion], context->inspector().usesProperty(name));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property usage mismatch for '%s' and version %hhu", name, version), expected[version - minVersion], context->inspector().usesProperty(name));
       }
     }
 };
