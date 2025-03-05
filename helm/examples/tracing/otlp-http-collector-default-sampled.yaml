@@ -1,0 +1,10 @@
+global:
+  tracing:
+    sampling:
+      type: Ratio       #Head sampling based on simple ratio
+      ratio: 0.1        #only sample 10% of traces/spans
+      parentBased: true #Sampling strategy based on parent's sampling
+    exporters:
+    - type: OTLP-HTTP
+      endpoint: "localhost:4318/v1/traces"
+      consoleDebug: true

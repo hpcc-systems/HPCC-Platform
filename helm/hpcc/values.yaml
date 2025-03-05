@@ -31,6 +31,11 @@ global:
     alwaysCreateTraceIds: true
     resourceAttributes: # used to declare OTEL Resource Attribute config values
       deploymentEnvironment: development # used to anotate tracing spans' environment identifier (development/production/statiging/etc)
+    sampling:
+      type: Ratio       #Head sampling based on simple ratio
+      ratio: 0.1        #only sample 10% of traces/spans
+      parentBased: true #Sampling strategy based on parent's sampling
+
 
   ## resource settings for stub components
   #stubInstanceResources:
