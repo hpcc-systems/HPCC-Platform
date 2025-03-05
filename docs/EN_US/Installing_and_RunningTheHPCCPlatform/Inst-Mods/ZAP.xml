@@ -102,13 +102,17 @@
       <para>A containerized deployment must have logging properly configured
       to be able to include logs. Additionally the user must have the feature
       permission <emphasis>WsLogAccess:Read</emphasis> or the logs will be
-      excluded and instead contain the error message:</para>
+      excluded and instead contain an error message indicating which
+      permission is required. </para>
+
+      <para>For example in a containerized deployment, requiring the
+      WsLogAccess permission that message would state:</para>
 
       <programlisting>"Logs: Excluded due to no access, need WsLogAccess:Read"</programlisting>
 
-      <para>If this message is present in the ZAP info file (&lt;WUID&gt;.txt)
-      the WsLogAccess permission value must be set to Read to ensure the logs
-      are included in the ZAP report.</para>
+      <para>If a "no access" message is present in the ZAP file and there are
+      no log files, the permission value specified in the error message must
+      be set to ensure the logs are included in the ZAP report.</para>
 
       <para>See the <link linkend="Containerized_Logging">Containerized
       Logging</link> section in the <ulink
