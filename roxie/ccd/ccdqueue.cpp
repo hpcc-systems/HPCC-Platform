@@ -147,7 +147,6 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
     {
     case 0: ret.append("IBYTI"); break;
     case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
-    case ROXIE_PING: ret.append("ROXIE_PING"); break;
     case ROXIE_TRACEINFO: ret.append("ROXIE_TRACEINFO"); break;
     case ROXIE_DEBUGREQUEST: ret.append("ROXIE_DEBUGREQUEST"); break;
     case ROXIE_DEBUGCALLBACK: ret.append("ROXIE_DEBUGCALLBACK"); break;
@@ -1060,40 +1059,6 @@ struct PingRecord
     unsigned __int64 originalTopoHash;
 };
 
-void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
-{
-    const RoxiePacketHeader &header = packet->queryHeader();
-    const IpAddress serverIP = header.serverId.getIpAddress();
-    unsigned contextLength = packet->getContextLength();
-    if (contextLength != sizeof(PingRecord))
-    {
-        StringBuffer s;
-        throw MakeStringException(ROXIE_UNKNOWN_SERVER, "Unexpected data size %d (expected %d) in PING: %s", contextLength, (unsigned) sizeof(PingRecord), header.toString(s).str());
-    }
-    const PingRecord *data = (const PingRecord *) packet->queryContextData();
-    if (!serverIP.ipequals(data->senderIP))
-    {
-        StringBuffer s;
-        throw MakeStringException(ROXIE_UNKNOWN_SERVER, "Message received from unknown Roxie server %s", header.toString(s).str());
-    }
-    if (originalTopologyHash != data->originalTopoHash)
-    {
-        StringBuffer s;
-        EXCLOG(MCoperatorError,"ERROR: Configuration file mismatch detected with Roxie server %s", header.toString(s).str());
-    }
-    if (currentTopologyHash != data->currentTopoHash)
-    {
-        StringBuffer s;
-        DBGLOG("WARNING: Temporary configuration mismatch detected with Roxie server %s", header.toString(s).str());
-    }
-    RoxiePacketHeader newHeader(header, ROXIE_PING, 0);  // subchannel not relevant
-    Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
-    void *ret = output->getBuffer(contextLength, false);
-    memcpy(ret, data, contextLength);
-    output->putBuffer(ret, contextLength, false);
-    output->flush();
-}
-
 //=================================================================================
 
 static ThreadId roxiePacketReaderThread = 0;
@@ -1781,10 +1746,6 @@ public:
                         if ((header.activityId & ~ROXIE_PRIORITY_MASK) == ROXIE_UNLOAD)
                         {
                             doUnload(packet, logctx);
-                        }
-                        else if ((header.activityId & ~ROXIE_PRIORITY_MASK) == ROXIE_PING)
-                        {
-                            doPing(packet, logctx);
                         }
                         else if ((header.activityId & ~ROXIE_PRIORITY_MASK) == ROXIE_DEBUGREQUEST)
                         {
@@ -3891,153 +3852,3 @@ IPacketDiscarder *createPacketDiscarder()
     packetDiscarder->start();
     return packetDiscarder;
 }
-
-
-//================================================================================================================================
-
-// There are various possibly interesting ways to reply to a ping:
-// Reply as soon as receive, or put it on the queue like other messages?
-// Reply for every channel, or just once for every agent?
-// Should I send on channel 0 or round-robin the channels?
-// My gut feeling is that knowing what channels and agents are responding is useful so should reply on every unsuspended channel
-// Don't use IBYTI mechanism or ack/retry mechanism.
-
-
-class PingTimer : public Thread
-{
-    bool aborted;
-    Owned<IRowManager> rowManager;
-    Owned<IMessageCollator> mc;
-    StringContextLogger logctx;
-
-    void sendPing(unsigned priorityMask)
-    {
-        try
-        {
-            RemoteActivityId pingId(ROXIE_PING | priorityMask, 0);
-            RoxiePacketHeader header(pingId, RUID_PING, 0, 0);
-
-            MemoryBuffer mb;
-            mb.append(sizeof(RoxiePacketHeader), &header);
-            mb.append((char) LOGGING_FLAGSPRESENT);
-            mb.append("PING");
-
-            PingRecord data;
-            data.senderIP.ipset(myNode.getIpAddress());
-            data.tick = usTick();
-            data.originalTopoHash = originalTopologyHash;
-            data.currentTopoHash = currentTopologyHash;
-            mb.append(sizeof(PingRecord), &data);
-            if (doTrace(traceRoxiePings))
-                DBGLOG("PING sent");
-            Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
-            ROQ->sendPacket(packet, logctx);
-        }
-        catch (IException *E)
-        {
-            EXCLOG(E);
-            E->Release();
-        }
-    }
-
-public:
-    PingTimer() : logctx("PingTimer")
-    {
-        aborted = false;
-    };
-
-    ~PingTimer()
-    {
-        if (mc)
-            ROQ->queryReceiveManager()->detachCollator(mc);
-        mc.clear();
-    }
-
-    virtual int run()
-    {
-        rowManager.setown(roxiemem::createRowManager(1, NULL, queryDummyContextLogger(), NULL, false));
-        mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_PING));
-        unsigned pingsReceived = 0;
-        unsigned pingsElapsed = 0;
-        sendPing(ROXIE_HIGH_PRIORITY);
-        while (!aborted)
-        {
-            bool anyActivity = false;
-            Owned<IMessageResult> mr = mc->getNextResult(pingInterval*1000, anyActivity);
-            if (mr)
-            {
-                unsigned headerLen;
-                const RoxiePacketHeader *header = mr->getMessageHeader(headerLen);
-                Owned<IMessageUnpackCursor> mu = mr->getCursor(rowManager);
-                if (header->activityId == ROXIE_PING)
-                {
-                    PingRecord *answer = (PingRecord *) mu->getNext(sizeof(PingRecord));
-                    if (answer && mu->atEOF() && headerLen==sizeof(RoxiePacketHeader))
-                    {
-                        unsigned elapsed = usTick() - answer->tick;
-                        pingsReceived++;
-                        pingsElapsed += elapsed;
-                        if (doTrace(traceRoxiePings, TraceFlags::Max))
-                            DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
-                    }
-                    else
-                    {
-                        StringBuffer s;
-                        DBGLOG("PING reply, garbled result %s", header->toString(s).str());
-                    }
-                    ReleaseRoxieRow(answer);
-                }
-                else
-                {
-                    StringBuffer s;
-                    DBGLOG("PING reply, unexpected result %s", header->toString(s).str());
-                }
-            }
-            else if (!anyActivity)
-            {
-                if (!pingsReceived && roxieMulticastEnabled)
-                    DBGLOG("PING: NO replies received! Please check multicast settings, and that your network supports multicast.");
-                else if (doTrace(traceRoxiePings))
-                    DBGLOG("PING: %d replies received, average delay %uus", pingsReceived, pingsReceived ? pingsElapsed / pingsReceived : 0);
-                pingsReceived = 0;
-                pingsElapsed = 0;
-                sendPing(ROXIE_HIGH_PRIORITY);  // MORE - we could think about alternating the priority or sending pings on high and low at the same time...
-            }
-        }
-        return 0;
-    }
-
-    void stop()
-    {
-        if (mc)
-            mc->interrupt();
-        aborted = true;
-    }
-
-    static CriticalSection crit;
-} *pingTimer;
-
-CriticalSection PingTimer::crit;
-
-extern void startPingTimer()
-{
-    CriticalBlock b(PingTimer::crit);
-    if (!pingTimer)
-    {
-        pingTimer = new PingTimer();
-        pingTimer->start(false);
-    }
-}
-
-extern void stopPingTimer()
-{
-    CriticalBlock b(PingTimer::crit);
-    if (pingTimer)
-    {
-        pingTimer->stop();
-        pingTimer->join();
-        delete pingTimer;
-        pingTimer = NULL;
-    }
-}
-

@@ -185,7 +185,6 @@ unsigned defaultHeapFlags = roxiemem::RHFnone;
 
 unsigned agentQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
-unsigned pingInterval = 60;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -1209,7 +1208,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
-        pingInterval = topology->getPropInt("@pingInterval", pingInterval);
         socketCheckInterval = topology->getPropInt("@socketCheckInterval", runOnce ? 0 : 5000);
         const char *totalMemoryString = topology->queryProp("@totalMemoryLimit");
         memsize_t totalMemoryLimit = totalMemoryString ? friendlyStringToSize(totalMemoryString) : 0;
@@ -1723,8 +1721,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     }
                 }
                 DBGLOG("Waiting for queries");
-                if (pingInterval)
-                    startPingTimer();
                 LocalIAbortHandler abortHandler(waiter);
                 waiter.wait();
             }
@@ -1741,8 +1737,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         stopTopoThread();
         ::Release(globalPackageSetManager);
         globalPackageSetManager = NULL;
-        if (pingInterval)
-            stopPingTimer();
         setSEHtoExceptionHandler(NULL);
         while (socketListeners.isItem(0))
         {
