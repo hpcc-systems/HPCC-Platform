@@ -1002,6 +1002,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(OffsetBranches), "The 1st branch node offset position in the index" },
     { SIZESTAT(BranchMemory), "The estimated size of the branch nodes when stored in memory" },
     { SIZESTAT(LeafMemory), "The estimated size of the leaf nodes when stored in memory"},
+    { TIMESTAT(Delayed), "Time spent waiting for minimum query execution period" },
+    { CYCLESTAT(Delayed) },
 
 };
 
