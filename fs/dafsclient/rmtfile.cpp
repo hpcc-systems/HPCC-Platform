@@ -2242,7 +2242,7 @@ public:
     IMPLEMENT_IINTERFACE_O_USING(CRemoteBase);
 
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
-    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    // Sometime should refactor to be based on IBufferedSerialInputStream instead - or maybe IRowStream.
     CRemoteFilteredFileIOBase(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
         : CRemoteBase(ep, filename)
     {
@@ -2476,7 +2476,7 @@ class CRemoteFilteredFileIO : public CRemoteFilteredFileIOBase
 {
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
-    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    // Sometime should refactor to be based on IBufferedSerialInputStream instead - or maybe IRowStream.
     CRemoteFilteredFileIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
         : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
     {
@@ -2541,7 +2541,7 @@ class CRemoteFilteredKeyIO : public CRemoteFilteredFileIOBase
 {
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
-    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    // Sometime should refactor to be based on IBufferedSerialInputStream instead - or maybe IRowStream.
     CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
         : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
     {
@@ -2554,7 +2554,7 @@ class CRemoteFilteredKeyCountIO : public CRemoteFilteredFileIOBase
 {
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
-    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    // Sometime should refactor to be based on IBufferedSerialInputStream instead - or maybe IRowStream.
     CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
         : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
     {
@@ -2569,7 +2569,7 @@ class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
     offset_t pos = 0;
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer;
-    Owned<ISerialStream> strm;
+    Owned<IBufferedSerialInputStream> strm;
     bool pending = false;
     SocketEndpoint ep;
     StringAttr filename;

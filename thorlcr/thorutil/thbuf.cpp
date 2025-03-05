@@ -2057,7 +2057,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         }
         else
         {
-            Owned<ISerialStream> stream = createFileSerialStream(tempFileIO, chunk.offset);
+            Owned<IBufferedSerialInputStream> stream = createFileSerialStream(tempFileIO, chunk.offset);
 #ifdef TRACE_WRITEAHEAD
             unsigned diskChunkNum;
             stream->get(sizeof(diskChunkNum), &diskChunkNum);

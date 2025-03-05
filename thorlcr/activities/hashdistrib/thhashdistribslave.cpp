@@ -1298,7 +1298,7 @@ public:
         {
             ::ActPrintLog(activity, thorDetailedLogLevel, "Read loop start");
             CMessageBuffer recvMb;
-            Owned<ISerialStream> stream = createMemoryBufferSerialStream(tempMb);
+            Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(tempMb);
             CThorStreamDeserializerSource rowSource;
             rowSource.setStream(stream);
             unsigned left=numnodes-1;
@@ -1728,7 +1728,7 @@ class CRowPullDistributor: public CDistributorBase
             dszs = new CThorStreamDeserializerSource[numnodes];
             for (unsigned node=0; node < numnodes; node++)
             {
-                Owned<ISerialStream> stream = createMemoryBufferSerialStream(bufs[node]);
+                Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(bufs[node]);
                 dszs[node].setStream(stream);
             }
             expander.setown(parent.getExpander()); // NB: must be created before this passed to createRowStreamMerger

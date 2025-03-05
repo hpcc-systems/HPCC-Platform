@@ -1948,7 +1948,7 @@ class CHThorWorkunitReadActivity : public CHThorSimpleActivityBase
 
     Owned<IOutputRowDeserializer> rowDeserializer;  
     MemoryBuffer resultBuffer;
-    Owned<ISerialStream> bufferStream;
+    Owned<IBufferedSerialInputStream> bufferStream;
     CThorStreamDeserializerSource deserializer;         
 
 public:
@@ -2261,7 +2261,7 @@ protected:
     IHThorDiskReadBaseArg &helper;
     OwnedIFile inputfile;
     OwnedIFileIO inputfileio;
-    Owned<ISerialStream> inputstream;
+    Owned<IBufferedSerialInputStream> inputstream;
     StringAttr tempFileName;
     Owned<IDistributedFilePartIterator> dfsParts;
     Owned<ILocalOrDistributedFile> ldFile;

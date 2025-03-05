@@ -811,7 +811,7 @@ struct PartIO
     IFileIO *iFileIO = nullptr;
     ITranslator *translator = nullptr;
     ISourceRowPrefetcher *prefetcher = nullptr;
-    ISerialStream *stream = nullptr;
+    IBufferedSerialInputStream *stream = nullptr;
 };
 
 class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implements roxiemem::IBufferedRowCallback
@@ -2052,7 +2052,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 {
                     mb.read(totalRowSz);
 
-                    Owned<ISerialStream> stream = createMemorySerialStream(mb.readDirect(totalRowSz), totalRowSz);
+                    Owned<IBufferedSerialInputStream> stream = createMemorySerialStream(mb.readDirect(totalRowSz), totalRowSz);
                     rowSource.setStream(stream);
                 }
 
@@ -3526,7 +3526,7 @@ public:
             Linked<IRowInterfaces> rowIf;
             CThorContiguousRowBuffer prefetchBuffer;
             Owned<ISourceRowPrefetcher> prefetcher;
-            Owned<ISerialStream> strm;
+            Owned<IBufferedSerialInputStream> strm;
             IOutputRowDeserializer *deserializer = nullptr;
             IEngineRowAllocator *allocator = nullptr;
             std::vector<CJoinGroup::SpillMarker> spillMarkers;

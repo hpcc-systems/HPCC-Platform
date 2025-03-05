@@ -1521,7 +1521,7 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     Owned<IRowWriter> resultWriter = result->getWriter();
 
     MemoryBuffer mb;
-    Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+    Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(mb);
     CThorStreamDeserializerSource rowSource(stream);
 
     for (;;)

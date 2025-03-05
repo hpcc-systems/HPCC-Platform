@@ -2372,7 +2372,7 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
             results.item(n)->kill();
         rank_t sender;
         MemoryBuffer mb;
-        Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+        Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(mb);
         CThorStreamDeserializerSource rowSource(stream);
         unsigned todo = numSlaves;
 

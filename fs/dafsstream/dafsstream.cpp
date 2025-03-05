@@ -643,7 +643,7 @@ public:
     }
 };
 
-class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReader, implements ISerialStream
+class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReader, implements IBufferedSerialInputStream
 {
     typedef CDaFileSrvClientBase PARENT;
 
@@ -855,7 +855,7 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
         }
         ensureAvailable(0, nullptr); // reads from replyMb
     }
-// ISerialStream impl.
+// IBufferedSerialInputStream impl.
     virtual const void *peek(size32_t wanted, size32_t &got) override
     {
         if (bufRemaining >= wanted)

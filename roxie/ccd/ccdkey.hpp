@@ -33,7 +33,7 @@ typedef IArrayOf<IKeySegmentMonitor> SegMonitorArray;
  * IDirectReader (this remains TBD at this point)
  *
  */
-interface IDirectStreamReader : extends ISerialStream, extends ISimpleReadStream
+interface IDirectStreamReader : extends IBufferedSerialInputStream, extends ISimpleReadStream
 {
     virtual unsigned queryFilePart() const = 0; // used by CSV
     virtual unsigned __int64 makeFilePositionLocal(offset_t pos) = 0; // used by XML

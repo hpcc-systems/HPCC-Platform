@@ -92,7 +92,7 @@ class CSocketRowStream: public CSimpleInterface, implements IRowStream
     Linked<IEngineRowAllocator> allocator;
     Linked<IOutputRowDeserializer> deserializer;
     Linked<ISocket> socket;
-    Owned<ISerialStream> bufferStream;
+    Owned<IBufferedSerialInputStream> bufferStream;
     CThorStreamDeserializerSource dsz;
     unsigned id;
     bool stopped;

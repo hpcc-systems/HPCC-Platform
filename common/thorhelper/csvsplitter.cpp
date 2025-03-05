@@ -304,7 +304,7 @@ void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned c
     lengths[curColumn] = (size32_t)(internalBuffer + internalOffset - data[curColumn]);
 }
 
-unsigned CSVSplitter::splitLine(ISerialStream *stream, size32_t maxRowSize)
+unsigned CSVSplitter::splitLine(IBufferedSerialInputStream *stream, size32_t maxRowSize)
 {
     if (stream->eos())
         return 0;

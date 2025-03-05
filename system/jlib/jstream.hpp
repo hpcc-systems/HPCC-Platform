@@ -30,17 +30,6 @@ interface jlib_decl IByteOutputStream : public IInterface
     virtual void writeString(const char *str) = 0;
 };
 
-interface jlib_decl IByteInputStream : public IInterface
-{
-    virtual bool eof() = 0;
-    virtual int readByte() = 0;
-    virtual int readBytes(void *buf, int size) = 0;
-    virtual void unget(int c) = 0;
-};
-
-extern jlib_decl IByteInputStream *createInputStream(const char *string);
-extern jlib_decl IByteInputStream *createInputStream(StringBuffer &from);
-extern jlib_decl IByteInputStream *createInputStream(int handle);
 extern jlib_decl IByteOutputStream *createOutputStream(StringBuffer &to);
 extern jlib_decl IByteOutputStream *createOutputStream(int handle);
 
@@ -57,18 +46,13 @@ interface ISerialInputStream : extends IInterface
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
-interface ISerialStream : extends ISerialInputStream
+interface IBufferedSerialInputStream : extends ISerialInputStream
 {
     virtual const void * peek(size32_t wanted, size32_t &got) = 0;   // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
 };
-interface IBufferedSerialInputStream : extends ISerialStream
-{
-    virtual void replaceInput(ISerialInputStream * newInput) = 0;
-};
-
-/* example of reading a nul terminated string using ISerialStream peek and skip
+/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip
 {
     for (;;) {
         const char *s = peek(1,got);

@@ -4376,7 +4376,7 @@ private:
 
     // this is only used to avoid recreating a bufferStream for each row.  A better solution may be needed
     MemoryBuffer tempRowBuffer;     
-    Owned<ISerialStream> bufferStream;
+    Owned<IBufferedSerialInputStream> bufferStream;
     CThorStreamDeserializerSource rowSource;
 
 protected:

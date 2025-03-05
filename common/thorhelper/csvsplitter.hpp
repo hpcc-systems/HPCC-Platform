@@ -57,7 +57,7 @@
  * char, while the RFC mentions re-using quotes (""). We implement both.
  */
 
-interface ISerialStream;
+interface IBufferedSerialInputStream;
 class THORHELPER_API CSVSplitter
 {
 public:
@@ -77,7 +77,7 @@ public:
     void init(unsigned maxColumns, size32_t maxCsvSize, const char *quotes, const char *separators, const char *terminators, const char *escapes, bool preserveWhitespace);
     void reset();
     size32_t splitLine(size32_t maxLen, const byte * start);
-    size32_t splitLine(ISerialStream *stream, size32_t maxRowSize);
+    size32_t splitLine(IBufferedSerialInputStream *stream, size32_t maxRowSize);
 
     inline unsigned * queryLengths() const { return lengths; }
     inline const byte * * queryData() const { return data; }

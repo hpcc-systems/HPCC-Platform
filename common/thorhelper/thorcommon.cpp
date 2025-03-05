@@ -991,7 +991,7 @@ protected:
     Linked<IMemoryMappedFile> mmfile;
     Linked<IOutputRowDeserializer> deserializer;
     Linked<IEngineRowAllocator> allocator;
-    Owned<ISerialStream> strm;
+    Owned<IBufferedSerialInputStream> strm;
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer;
     unsigned __int64 progress = 0;

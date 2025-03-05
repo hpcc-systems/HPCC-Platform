@@ -29,7 +29,7 @@ class CWuidReadSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    Owned<ISerialStream> replyStream;
+    Owned<IBufferedSerialInputStream> replyStream;
     CThorStreamDeserializerSource rowSource;
     IHThorWorkunitReadArg *helper;
     bool grouped;

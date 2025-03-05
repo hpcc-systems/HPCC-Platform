@@ -128,7 +128,7 @@ public:
     }
 
 protected:
-    Owned<ISerialStream> pipeStream;
+    Owned<IBufferedSerialInputStream> pipeStream;
     CThorStreamDeserializerSource rowSource;
     IEngineRowAllocator * rowAllocator;
 };

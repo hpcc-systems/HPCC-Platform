@@ -344,7 +344,7 @@ public:
                     {
                         Linked<IOutputRowDeserializer> deserializer = ::queryRowDeserializer(input);
                         CMessageBuffer mb;
-                        Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+                        Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(mb);
                         CThorStreamDeserializerSource rowSource;
                         rowSource.setStream(stream);
                         bool successSR;
