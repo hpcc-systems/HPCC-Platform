@@ -162,22 +162,22 @@ void CDistributedFileSystem::transfer(IFileDescriptor * from, IFileDescriptor * 
 offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget, bool dontsetattr)
 {
     //MORE: Should this be done on multiple threads??? (NH: probably)
-    offset_t totalSize = forceget?-1:file->queryAttributes().getPropInt64("@size",-1);
-    if (totalSize == -1) {
+    offset_t totalSize = forceget?-1:file->queryAttributes().getPropInt64("@size", unknownFileSize);
+    if (totalSize == unknownFileSize) {
         unsigned numParts = file->numParts();
         totalSize = 0;
         for (unsigned idx=0; idx < numParts; idx++)
         {
             Owned<IDistributedFilePart> part = file->getPart(idx);
             offset_t partSize = getSize(part,forceget,dontsetattr);
-            if (partSize == (offset_t)-1)
+            if (partSize == unknownFileSize)
             {
-                totalSize = (offset_t)-1;
+                totalSize = unknownFileSize;
                 break;
             }
             totalSize += partSize;
         }
-        if (((totalSize != -1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
+        if (((totalSize != unknownFileSize)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
             DistributedFilePropertyLock lock(file);
             lock.queryAttributes().setPropInt64("@size", totalSize);
