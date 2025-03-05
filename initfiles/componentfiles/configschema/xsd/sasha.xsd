@@ -136,6 +136,15 @@
                                   hpcc:presetValue="0" hpcc:tooltip="minimum idle time before job will switch queues. (in minutes, 0 disables)"/>
                 </xs:attributeGroup>
 
+                <xs:attributeGroup name="dbgHk" hpcc:groupByName="DbgHk" hpcc:docid="sh.t5">
+                    <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" hpcc:displayName="Expiry Interval (hours)"
+                                  hpcc:presetValue="24" hpcc:tooltip="minimum interval between checking for distributed file expiry (in hours, 0 disables)"/>
+                    <xs:attribute name="ExpiryAt" type="cronSchedule" hpcc:displayName="Expiry Schedule (cron format)"
+                                  hpcc:presetValue="* 3 * * *" hpcc:tooltip="schedule to check to remove post-mortem files (cron format)"/>
+                    <xs:attribute name="ExpiryDefault" type="xs:nonNegativeInteger" hpcc:displayName="Expiry Default (days)"
+                                  hpcc:presetValue="14" hpcc:tooltip="Default number of days passed that post-mortem files are deleted after their associated workunit was completed"/>
+                </xs:attributeGroup>
+
                 <xs:attributeGroup name="dfsrvmon" hpcc:groupbyName="DaFileSrvMonitor" hpcc:docid="sh.t7">
                     <xs:attribute name="dafsmonInterval" type="xs:nonNegativeInteger" hpcc:displayName="DaFileSrv Mon Interval (hours)"
                                   hpcc:presetValue="0" hpcc:tooltip="minimum interval between running DaFileSrv monitor (in hours, 0 disables)"/>
@@ -180,6 +189,7 @@
                 <xs:attributeGroup ref="dfuxref"/>
                 <xs:attributeGroup ref="dfuexpiry"/>
                 <xs:attributeGroup ref="thorqmon"/>
+                <xs:attributeGroup ref="dbgHk"/>
                 <xs:attributeGroup ref="dfsrvmon"/>
             </xs:complexType>
         </xs:element>

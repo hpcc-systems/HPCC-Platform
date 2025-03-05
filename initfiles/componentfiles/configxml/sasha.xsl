@@ -260,6 +260,19 @@
                    <xsl:value-of select="@thorQMonSwitchMinTime"/>
                 </xsl:attribute>
             </xsl:element>
+            <xsl:element name="DbgHk">
+                <xsl:attribute name="interval">
+                   <xsl:value-of select="@ExpiryInterval"/>
+                </xsl:attribute>
+                <xsl:attribute name="at">
+                   <xsl:value-of select="@ExpiryAt"/>
+                </xsl:attribute>
+                <xsl:if test="string(@ExpiryDefault) != ''">
+                    <xsl:attribute name="expiryDefault">
+                       <xsl:value-of select="@ExpiryDefault"/>
+                    </xsl:attribute>
+                </xsl:if>
+            </xsl:element>
             <xsl:element name="DaFileSrvMonitor">
                 <xsl:attribute name="interval">
                    <xsl:value-of select="@dafsmonInterval"/>

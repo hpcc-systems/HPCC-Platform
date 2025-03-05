@@ -513,6 +513,13 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
+  debug-housekeeping: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 1
+    #at: "* 3 * * *"
+    #expiryDefault: 7
+    #user: sasha
+
 
 dfuserver:
 - name: dfuserver
