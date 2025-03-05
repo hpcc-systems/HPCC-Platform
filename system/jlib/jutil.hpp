@@ -42,7 +42,9 @@ bool jlib_decl getEnvVar(const char * varName, StringBuffer & varValue);
 interface IPropertyTree;
 interface IProperties;
 
-void jlib_decl MilliSleep(unsigned milli);
+extern jlib_decl void MilliSleep(unsigned milli);
+extern jlib_decl void NanoSleep(__uint64 ns);
+
 long jlib_decl atolong_l(const char * s,int l);
 int  jlib_decl atoi_l(const char * s,int l);
 __int64 jlib_decl atoi64_l(const char * s,int l);

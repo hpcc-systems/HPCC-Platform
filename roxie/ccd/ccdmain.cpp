@@ -168,6 +168,7 @@ unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
 unsigned defaultTimeLimit[3] = {0, 0, 0};
 unsigned defaultWarnTimeLimit[3] = {0, 5000, 5000};
+unsigned defaultMinTimeLimit[3] = {0, 0, 0};
 unsigned defaultThorConnectTimeout;
 
 unsigned defaultParallelJoinPreload = 0;
@@ -1182,6 +1183,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         defaultWarnTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeWarning", 0);
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
+        defaultMinTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeMinimum", 0);
+        defaultMinTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeMinimum", 0);
+        defaultMinTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeMinimum", 0);
         defaultThorConnectTimeout = (unsigned) topology->getPropInt64("@defaultThorConnectTimeout", 60);
         continuationCompressThreshold = (unsigned) topology->getPropInt64("@continuationCompressThreshold", 1024);
 
