@@ -2687,19 +2687,6 @@ private:
                 perf.traceFor(perfTime);
                 reply.append(perf.queryResult().str());
             }
-            else if (stricmp(queryName, "control:pingInterval")==0)
-            {
-                unsigned newInterval = (unsigned) control->getPropInt64("@val", 0);
-                if (newInterval && !pingInterval)
-                {
-                    pingInterval = newInterval; // best to set before the start...
-                    startPingTimer();
-                }
-                else if (pingInterval && !newInterval)
-                    stopPingTimer();  // but after the stop
-                pingInterval = newInterval;
-                topology->setPropInt64("@pingInterval", pingInterval);
-            }
             else if (stricmp(queryName, "control:preabortIndexReadsThreshold")==0)
             {
                 preabortIndexReadsThreshold = control->getPropInt("@val", 100);

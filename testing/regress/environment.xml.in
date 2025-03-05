@@ -114,7 +114,6 @@
                 numDataCopies="1"
                 parallelAggregate="0"
                 perChannelFlowLimit="10"
-                pingInterval="60"
                 pluginsPath="${PLUGINS_PATH}"
                 preabortIndexReadsThreshold="100"
                 preabortKeyedJoinsThreshold="100"

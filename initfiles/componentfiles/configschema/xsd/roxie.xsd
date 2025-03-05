@@ -446,9 +446,6 @@
                     <xs:attribute name="perChannelFlowLimit" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Per Channel Flow Limit" hpcc:presetValue="10"
                                   hpcc:tooltip="Number of pending queries permitted per channel (per active activity) before blocking"/>
-                    <xs:attribute name="pingInterval" type="xs:nonNegativeInteger" hpcc:displayName="Ping Interval (s)"
-                                  hpcc:presetValue="60"
-                                  hpcc:tooltip="Interval (in seconds) between Roxie server ping tests"/>
                     <xs:attribute name="preabortIndexReadsThreshold" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Pre Abort Index Reads Threshold" hpcc:presetValue="100"
                                   hpcc:tooltip="Use seek to precheck keyed limits (i.e. assume ,COUNT) on index reads if limit greater than this value"/>

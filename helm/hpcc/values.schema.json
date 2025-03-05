@@ -2418,12 +2418,6 @@
           "minimum": 1,
           "description": "Number of pending queries permitted per channel (per active activity) before blocking"
         },
-        "pingInterval": { 
-          "type": "integer",
-          "default": 60,
-          "minimum" : 0,
-          "description": "Interval (in seconds) between Roxie server ping tests"
-        },
         "preabortIndexReadsThreshold": { 
           "type": "integer",
           "default": 100,

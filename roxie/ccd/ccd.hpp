@@ -97,7 +97,6 @@ static constexpr int queryMaxPriorityValue = QUERY_SLA_PRIORITY_VALUE;
 #define ROXIE_UNLOAD 0x3ffffff6u
 #define ROXIE_DEBUGREQUEST 0x3ffffff7u
 #define ROXIE_DEBUGCALLBACK 0x3ffffff8u
-#define ROXIE_PING 0x3ffffff9u
 #define ROXIE_TRACEINFO 0x3ffffffau
 #define ROXIE_FILECALLBACK 0x3ffffffbu
 #define ROXIE_ALIVE 0x3ffffffcu
@@ -342,7 +341,6 @@ extern unsigned maxLockAttempts;
 extern bool enableHeartBeat;
 extern bool checkVersion;
 extern unsigned memoryStatsInterval;
-extern unsigned pingInterval;
 extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
 extern unsigned defaultTimeLimit[3];
