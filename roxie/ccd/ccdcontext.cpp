@@ -2623,12 +2623,11 @@ protected:
     {
         logctx.mergeStats(0, globalStats);
         unsigned __int64 elapsed = elapsedTimer.elapsedNs();
-        DBGLOG("Minimum time limit is %u", options.minTimeLimit);
         if (nanoToMilli(elapsed) < options.minTimeLimit)
         {
             unsigned delay = options.minTimeLimit - nanoToMilli(elapsed);
             MilliSleep(delay);
-            logctx.setStatistic(StTimeDelayed, delay);
+            logctx.noteStatistic(StTimeDelayed, delay);
         }
         logctx.setStatistic(StTimeTotalExecute, elapsed);  // Should this include delay?
         if (factory)
@@ -4057,6 +4056,7 @@ public:
             GlobalCodeContextExtra gctx(this, 0);
             p->perform(&gctx, 0);
         }
+        doPostProcess();
     }
 };
 
