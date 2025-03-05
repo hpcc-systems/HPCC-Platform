@@ -1,7 +1,8 @@
 import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { AccessService, AccountService, WsAccount } from "@hpcc-js/comms";
-import { cookieKeyValStore } from "src/KeyValStore";
+import { cookieKeyValStore, sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
+import { useSessionStore, useUserStore } from "./store";
 
 declare const dojoConfig;
 
@@ -117,3 +118,21 @@ export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAd
 
 }
 
+export const STORE_START_PAGE_ID = "startPage";
+const STORE_START_PAGE_REDIRECTION = "redirectToStartPage";
+
+export function resetStartPage() {
+    const store = userKeyValStore();
+    return store?.delete(STORE_START_PAGE_ID);
+}
+
+export function useUserStartPage(): { startPage: string, setStartPage: (value) => void, shouldRedirect: string, setShouldRedirect: (value) => void } {
+    const sessionStore = sessionKeyValStore();
+    const initialShouldRedirect = (!!window.sessionStorage.getItem(STORE_START_PAGE_REDIRECTION) || "true").toString();
+    const [startPage, setStartPage] = useUserStore(STORE_START_PAGE_ID, "/activities", true);
+    const [shouldRedirect, setShouldRedirect] = useSessionStore(STORE_START_PAGE_REDIRECTION, initialShouldRedirect, true);
+    React.useEffect(() => {
+        sessionStore.set(STORE_START_PAGE_REDIRECTION, String(shouldRedirect));
+    }, [sessionStore, shouldRedirect]);
+    return { startPage, setStartPage, shouldRedirect, setShouldRedirect };
+}

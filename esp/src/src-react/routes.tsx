@@ -49,9 +49,12 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: [],
-        name: "reset",
-        path: "/reset",
-        action: (ctx) => import("./components/Reset").then(_ => <_.ResetDialog />)
+        name: "settings",
+        path: "/settings",
+        children: [
+            { path: "", action: (ctx) => import("./components/Settings").then(_ => <_.Settings tab={"general"} />) },
+            { path: "/reset", action: (ctx) => import("./components/Settings").then(_ => <_.Settings tab={"reset"} />) },
+        ]
     },
     //  Main  ---
     {
@@ -410,15 +413,15 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/sasha",
-                        children: [
-                            {
-                                path: "", action: (ctx, params) => import("./components/Sasha").then(_ => {
-                                    return <_.Sasha />;
-                                })
-                            },
-                        ]
+                children: [
+                    {
+                        path: "", action: (ctx, params) => import("./components/Sasha").then(_ => {
+                            return <_.Sasha />;
+                        })
                     },
                 ]
+            },
+        ]
     },
     {
         mainNav: ["operations"],
