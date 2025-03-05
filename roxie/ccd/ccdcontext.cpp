@@ -2622,7 +2622,15 @@ protected:
     void doPostProcess()
     {
         logctx.mergeStats(0, globalStats);
-        logctx.setStatistic(StTimeTotalExecute, elapsedTimer.elapsedNs());
+        unsigned __int64 elapsed = elapsedTimer.elapsedNs();
+        DBGLOG("Minimum time limit is %u", options.minTimeLimit);
+        if (nanoToMilli(elapsed) < options.minTimeLimit)
+        {
+            unsigned delay = options.minTimeLimit - nanoToMilli(elapsed);
+            MilliSleep(delay);
+            logctx.setStatistic(StTimeDelayed, delay);
+        }
+        logctx.setStatistic(StTimeTotalExecute, elapsed);  // Should this include delay?
         if (factory)
         {
             factory->mergeStats(logctx);
@@ -2707,6 +2715,7 @@ protected:
         }
         options.timeLimit = 0;
         options.warnTimeLimit = 0;
+        options.minTimeLimit = 0;
     }
 
 public:
@@ -2960,7 +2969,7 @@ public:
         rowManager->reportPeakStatistics(statsTarget, 0);
     }
 
-    virtual void done(bool failed)
+    virtual void done(bool failed) override
     {
         if (debugContext)
             debugContext->debugTerminate();
