@@ -1582,7 +1582,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
             StringBuffer m;
-            VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_FAIL(exceptionMessage);
         }
@@ -1730,7 +1730,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
             StringBuffer m;
-            VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_FAIL(exceptionMessage);
         }
@@ -1795,7 +1795,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
           StringBuffer m;
-          VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
           E->Release();
           CPPUNIT_FAIL(exceptionMessage);
         }
@@ -1925,7 +1925,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
           StringBuffer m;
-          VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
           E->Release();
           CPPUNIT_FAIL(exceptionMessage);
         }
@@ -1939,7 +1939,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       json actual = json::parse(actualText.str());
       if (expected != actual)
       {
-        VStringBuffer comparison("\nTest(TxSummary-%s-%s)\n    expected: '%s'\n    actual: '%s'\n", prefix, test, expectedText, actualText.str());
+        VStringBuffer comparison("Test(TxSummary-%s-%s) expected: '%s'\n    actual: '%s'", prefix, test, expectedText, actualText.str());
         // Timer values are not guaranteed. The delay operation ensures a minimum elapsed time
         // but cannot guarantee a maximum. While object equality is preferred, ensuring that at
         // least the expected times passed are is necessarily sufficient.
@@ -1949,7 +1949,6 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           CPPUNIT_ASSERT_MESSAGE(comparison, actual.contains(it.key()));
           CPPUNIT_ASSERT_MESSAGE(comparison, actual[it.key()] >= it.value());
         }
-        DBGLOG("\nTxSummary-%s-%s) '%s' close enough to '%s'\n", prefix, test, actualText.str(), expectedText);
       }
     }
 
@@ -2221,7 +2220,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         // Only create the large message if we are going to fail the test
         if (sink->history.size() != expected.size())
         {
-          StringBuffer accumulatedMessage("Expected and actual results of different sizes");
+          VStringBuffer accumulatedMessage("Size mismatch- expected %ld, actual %ld", expected.size(), sink->history.size());
           unsigned idx = 0;
           accumulatedMessage.append("\nExpected:\n");
           for (const HistoricalEvent& he : expected)
@@ -2236,7 +2235,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
             VStringBuffer msg("    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
             accumulatedMessage.append(msg);
           }
-          CPPUNIT_ASSERT_EQUAL_MESSAGE(accumulatedMessage.str(), expected.size(), sink->history.size());
+          CPPUNIT_FAIL(accumulatedMessage.str());
         }
 
         for (History::iterator aIt = sink->history.begin(), eIt = expected.begin(); eIt != expected.end(); ++aIt, ++eIt)
@@ -2248,7 +2247,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       catch (IException *E)
       {
         StringBuffer m;
-        VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+        VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
         E->Release();
         CPPUNIT_FAIL(exceptionMessage);
       }
@@ -2263,7 +2262,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       catch (IException* E)
       {
         StringBuffer m;
-        VStringBuffer exceptionMessage("Unexpected Exception in createMaskingConfiguration: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+        VStringBuffer exceptionMessage("Exception in createMaskingConfiguration: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
         E->Release();
         CPPUNIT_FAIL(exceptionMessage);
       }
@@ -2418,7 +2417,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
             StringBuffer m;
-            VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_FAIL(exceptionMessage);
         }
@@ -2646,7 +2645,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
             StringBuffer m;
-            VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_FAIL(exceptionMessage);
         }
@@ -2808,7 +2807,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         catch (IException *E)
         {
             StringBuffer m;
-            VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_FAIL(exceptionMessage);
         }
@@ -3318,7 +3317,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       catch(IException *E)
       {
           StringBuffer m;
-          VStringBuffer exceptionMessage("Unexpected Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
           E->Release();
           CPPUNIT_FAIL(exceptionMessage);
       }
