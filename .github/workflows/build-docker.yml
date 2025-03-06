@@ -58,6 +58,11 @@ on:
         description: 'Asset Name (if upload-package is true)'
         required: false
         default: 'build-docker-package'
+      tag_postfix:
+        type: string
+        description: 'Either -arm or empty string'
+        required: false
+        default: ''
     secrets:
       LNB_TOKEN:
         required: false
@@ -65,7 +70,7 @@ on:
 jobs:
 
   build-docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04${{ inputs.tag_postfix }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -113,8 +118,8 @@ jobs:
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:$branch_label" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short${{ inputs.tag_postfix }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:$branch_label${{ inputs.tag_postfix }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         shell: "bash"
@@ -133,12 +138,12 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           save: ${{ inputs.update-cache == true }}
-          key: docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys: |
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
-            docker-${{ inputs.os }}-${{ inputs.build-type }}-
-            docker-${{ inputs.os }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-
+            docker${{ inputs.tag_postfix }}-${{ inputs.os }}-
 
       - name: Docker build image
         uses: docker/build-push-action@v5
@@ -149,7 +154,7 @@ jobs:
           push: false
           load: true
           build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.tag_postfix }}
           tags: |
             ${{ steps.vars.outputs.docker_tag }}
             ${{ steps.vars.outputs.docker_tag_candidate_base }}
@@ -174,7 +179,7 @@ jobs:
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=delegated \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=delegated \
               ${{ steps.vars.outputs.docker_tag }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DVCPKG_FILES_DIR=/hpcc-dev -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
+              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 

@@ -19,18 +19,24 @@
 # ANTLR_FOUND - ANTLR found in local system
 # ANTLR_BUILDTIME_JAR - The jar needed to build/generate ANTLR Lexers and Parsers
 # ANTLR_RUNTIME_JAR - The jar needed to build/generate ANTLR Lexers and Parsers
+# ANTLR_LIB - The runtime library needed by the generated ANTLR Lexers and Parsers
 ################################################################################
 
 include(UseJava)
 
-set(ANTLR_BUILDTIME_DEP "antlr-3.4-complete" CACHE STRING "ANTLR buildtime jar file name.")
-set(ANTLR_RUNTIME_DEP "antlr-runtime-3.4" CACHE STRING "ANTLR runtime jar file name.")
-set(ANTLR_PATH "${HPCC_SOURCE_DIR}/esp/services/ws_sql/libantlr3c" CACHE PATH "Location of ANTLR jar files.")
-set(ANTLR_PKG_FIND_ERROR_MSG "Could not locate jars.\nPlease run `git submodule update --init --recursive`\n")
+set(ANTLR_PKG_FIND_ERROR_MSG "Could not locate jars.\nPlease check vcpkg configure completed without issue.\n")
 
+find_library(ANTLR_LIB NAMES antlr3c
+    PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
+)
 
-find_jar(ANTLR_BUILDTIME_JAR ${ANTLR_BUILDTIME_DEP} PATHS ${ANTLR_PATH})
-find_jar(ANTLR_RUNTIME_JAR ${ANTLR_RUNTIME_DEP} PATHS ${ANTLR_PATH})
+find_file(ANTLR_BUILDTIME_JAR "share/antlr3/antlr-3.4-complete.jar"
+    PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
+)
+
+find_file(ANTLR_RUNTIME_JAR "share/antlr3/antlr-runtime-3.4.jar"
+    PATHS ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}
+)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
