@@ -3570,21 +3570,20 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
 
 void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
 {
-    // Check that storage plane does not already have a definition
-    VStringBuffer xpath("planes[@name='%s']", name.str());
-    IPropertyTree * plane = storage->queryPropTree(xpath);
-    if (!plane || (copy != 0))
-    {
-        plane = storage->addPropTree("planes");
-        plane->setPropBool("@fromGroup", true);
-    }
-
     StringBuffer mirrorname;
     const char * planeName = name;
     if (copy != 0)
         planeName = mirrorname.append(name).append("_mirror");
 
-    plane->setProp("@name", planeName);
+    // Check that storage plane does not already have a definition
+    VStringBuffer xpath("planes[@name='%s']", planeName);
+    IPropertyTree * plane = storage->queryPropTree(xpath);
+    if (!plane)
+    {
+        plane = storage->addPropTree("planes");
+        plane->setProp("@name", planeName);
+        plane->setPropBool("@fromGroup", true);
+    }
 
     //URL style drop zones don't generate a host entry, and will have a single device
     if (ordinality() != 0)
