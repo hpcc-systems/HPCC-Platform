@@ -1455,13 +1455,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="pingInterval" type="xs:nonNegativeInteger" use="optional" default="60">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Interval (in seconds) between Roxie server ping tests</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="preabortIndexReadsThreshold" type="xs:nonNegativeInteger" use="optional" default="100">
       <xs:annotation>
         <xs:appinfo>
