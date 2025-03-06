@@ -3474,7 +3474,7 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress };
 public:
     void initCompressionBuffer(MemoryBuffer & src, size32_t & rowSz)
     {
@@ -3515,6 +3515,7 @@ public:
         Owned<ICompressor> compressor = handler.getCompressor(options);
 
         MemoryBuffer compressed;
+        UnsignedArray sizes;
         CCycleTimer timer;
         const byte * ptr = src;
         switch (opt)
@@ -3566,6 +3567,35 @@ public:
                 compressToBuffer(compressed, srcLen, ptr, handler.queryMethod(), options);
                 break;
             }
+            case FixedBlockCompress:
+            {
+                static constexpr size32_t blocksize = 32768;
+                MemoryAttr buffer(blocksize);
+
+                compressor->open(buffer.bufferBase(), blocksize);
+                const byte *ptrEnd = ptr + srcLen;
+                while (ptr != ptrEnd)
+                {
+                    size32_t written = compressor->write(ptr, rowSz);
+                    if (written != rowSz)
+                    {
+                        compressor->close();
+                        size32_t size = compressor->buflen();
+                        sizes.append(size);
+                        compressed.append(size, buffer.bufferBase());
+                        compressor->open(buffer.bufferBase(), blocksize);
+                        size32_t next = compressor->write(ptr+written, rowSz-written);
+                        assertex(next == rowSz - written);
+                    }
+
+                    ptr += rowSz;
+                }
+                compressor->close();
+                size32_t size = compressor->buflen();
+                sizes.append(size);
+                compressed.append(size, buffer.bufferBase());
+                break;
+            }
         }
 
         cycle_t compressCycles = timer.elapsedCycles();
@@ -3575,6 +3605,18 @@ public:
         if (opt==CompressToBuffer)
         {
             decompressToBuffer(tgt, compressed, options);
+        }
+        else if (opt == FixedBlockCompress)
+        {
+            const byte * cur = compressed.bytes();
+            ForEachItemIn(i, sizes)
+            {
+                size32_t size = sizes.item(i);
+                size32_t required = expander->init(cur);
+                void * target = tgt.reserve(required);
+                expander->expand(target);
+                cur += size;
+            }
         }
         else
         {
@@ -3590,6 +3632,8 @@ public:
         StringBuffer name(handler.queryType());
         if (opt == CompressToBuffer)
             name.append("-c2b");
+        else if (opt == FixedBlockCompress)
+            name.append("-fb");
         if (options && *options)
             name.append("-").append(options);
 
@@ -3621,6 +3665,7 @@ public:
 class JlibCompressionStandardTest : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
+        CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3648,12 +3693,20 @@ public:
             {
                 ICompressHandler &handler = iter->query();
                 const char * type = handler.queryType();
+                const char * options = streq("AES", handler.queryType()) ? aesKey: "";
                 //Ignore unusual compressors with no expanders...
+                if (strieq(type, "diff"))
+                    continue;
                 if (strieq(type, "randrow"))
                     continue;
-                const char * options = streq("AES", handler.queryType()) ? aesKey: "";
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
+                {
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                    continue;
+                }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
            }
         }
         catch (IException *e)
@@ -3663,6 +3716,18 @@ public:
         }
     }
 
+    void testSingle()
+    {
+        MemoryBuffer src;
+        size32_t rowSz = 0;
+        initCompressionBuffer(src, rowSz);
+
+
+        const char * compression = "lz4s";
+        const char * options = nullptr;
+        ICompressHandler * handler = queryCompressHandler(compression);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionStandardTest );
