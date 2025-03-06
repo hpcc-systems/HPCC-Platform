@@ -44,6 +44,7 @@
     "@localValue",
     "@mapFlags",
     "@maxActivity",
+    "@maxLeafMemorySize"
     "@minActivity",
     "@modified",
     "@nodeSize"
