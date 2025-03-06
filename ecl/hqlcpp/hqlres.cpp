@@ -626,11 +626,14 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
 #ifdef __APPLE__
             if (id <= 1200)  // There is a limit of 255 sections before linker complains - and some are used elsewhere
                 fprintf(f, " .section __TEXT,%s_%u\n", type, id);
-#else
-            fprintf(f, " .section .text.%s_%u,\"a\",%cprogbits\n", type, id, typePrefix);
-#endif
+
             fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
             fprintf(f, "_%s:\n", label.str());
+#else
+            fprintf(f, " .section %s_%u,\"a\",%cprogbits\n", type, id, typePrefix);
+            fprintf(f, " .global %s\n", label.str());
+            fprintf(f, "%s:\n", label.str());
+#endif
         }
         else
         {
