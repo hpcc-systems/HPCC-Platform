@@ -1,62 +1,81 @@
+.eclwatch_MetricGraphWidget {
+    /* fill: var(--colorNeutralBackground1); */
+    background-color: red;
+    stroke: var(--colorNeutralForeground1);
+}
+
+.eclwatch_MetricGraphWidget rect.zoomBackground {
+    fill: var(--colorNeutralBackground1);
+    stroke: none;
+}
+
+.eclwatch_MetricGraphWidget text {
+    fill: var(--colorNeutralForeground1);
+    stroke: none;
+}
+
 .eclwatch_MetricGraphWidget .cluster>polygon {
-    stroke: darkgray;
+    stroke: var(--colorPalettePlatinumForeground2);
 }
 
 .eclwatch_MetricGraphWidget .cluster.started>polygon {
-    stroke: darkorange;
+    stroke: var(--colorStatusWarningForeground1);
 }
 
 .eclwatch_MetricGraphWidget .cluster.completed>polygon {
-    stroke: darkgreen;
+    stroke: var(--colorStatusSuccessForeground1);
 }
 
 .eclwatch_MetricGraphWidget .node>path {
-    stroke: darkgray;
+    stroke: var(--colorPalettePlatinumForeground2);
 }
 
 .eclwatch_MetricGraphWidget .node>polygon {
-    stroke: darkgray;
+    stroke: var(--colorPalettePlatinumForeground2);
 }
 
 .eclwatch_MetricGraphWidget .node.started>path {
-    stroke: darkorange;
+    stroke: var(--colorStatusWarningForeground1);
 }
 
 .eclwatch_MetricGraphWidget .node.started>polygon {
-    stroke: darkorange;
+    stroke: var(--colorStatusWarningForeground1);
 }
 
 .eclwatch_MetricGraphWidget .node.completed>path {
-    stroke: darkgreen;
+    stroke: var(--colorStatusSuccessForeground1);
 }
 
 .eclwatch_MetricGraphWidget .node.completed>polygon {
-    stroke: darkgreen;
+    stroke: var(--colorStatusSuccessForeground1);
+}
+
+.eclwatch_MetricGraphWidget .node.warning>text.warning {
+    font-size: 32px;
+    fill: var(--colorStatusWarningForeground1);
+    stroke-width: 0px;
 }
 
 .eclwatch_MetricGraphWidget .edge>path {
-    stroke: darkgray;
+    stroke: var(--colorPalettePlatinumForeground2);
 }
 
 .eclwatch_MetricGraphWidget .edge>polygon {
-    stroke: darkgray;
-    fill: darkgray;
+    stroke: var(--colorPalettePlatinumForeground2);
 }
 
 .eclwatch_MetricGraphWidget .edge.started>path {
-    stroke: darkorange;
+    stroke: var(--colorStatusWarningForeground1);
 }
 
 .eclwatch_MetricGraphWidget .edge.started>polygon {
-    stroke: darkorange;
-    fill: darkorange;
+    stroke: var(--colorStatusWarningForeground1);
 }
 
 .eclwatch_MetricGraphWidget .edge.completed>path {
-    stroke: darkgreen;
+    stroke: var(--colorStatusSuccessForeground1);
 }
 
 .eclwatch_MetricGraphWidget .edge.completed>polygon {
-    stroke: darkgreen;
-    fill: darkgreen;
+    stroke: var(--colorStatusSuccessForeground1);
 }

@@ -1,9 +1,8 @@
 import { d3Event, select as d3Select, SVGZoomWidget } from "@hpcc-js/common";
-import type { IScope } from "@hpcc-js/comms";
 import { graphviz } from "@hpcc-js/graph";
 import { Graph2, hashSum, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
-import { MetricsView } from "../hooks/metrics";
+import { IScopeEx, MetricsView } from "../hooks/metrics";
 
 import "/src-react/util/metricGraph.css";
 
@@ -41,7 +40,7 @@ const KindShape = {
     196: "cylinder",        //  Spill Write
 };
 
-function shape(v: IScope) {
+function shape(v: IScopeEx) {
     return TypeShape[v.type] ?? KindShape[v.Kind] ?? "rectangle";
 }
 
@@ -71,16 +70,17 @@ function encodeLabel(label: string) {
         ;
 }
 
-interface IScopeEdge extends IScope {
+interface IScopeEdge extends IScopeEx {
     IdSource: string;
     IdTarget: string;
 }
 
 type ScopeStatus = "unknown" | "started" | "completed";
+type ExceptionStatus = "warning" | "error";
 
-export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
+export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
 
-    protected _index: { [name: string]: IScope } = {};
+    protected _index: { [name: string]: IScopeEx } = {};
     protected _activityIndex: { [id: string]: string } = {};
 
     constructor() {
@@ -114,7 +114,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return scopeName;
     }
 
-    protected ensureLineage(_scope: IScope): IScope {
+    protected ensureLineage(_scope: IScopeEx): IScopeEx {
         let scope = this._index[_scope.name];
         if (!scope) {
             scope = _scope;
@@ -142,7 +142,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return scope;
     }
 
-    protected ensureGraphLineage(scope: IScope) {
+    protected ensureGraphLineage(scope: IScopeEx) {
         let parent = this._index[scope.__parentName];
         if (parent === scope) {
             parent = undefined;
@@ -155,8 +155,8 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         }
     }
 
-    lineage(scope: IScope): IScope[] {
-        const retVal: IScope[] = [];
+    lineage(scope: IScopeEx): IScopeEx[] {
+        const retVal: IScopeEx[] = [];
         while (scope) {
             retVal.push(scope);
             scope = this._index[scope.__parentName];
@@ -164,15 +164,15 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return retVal.reverse();
     }
 
-    load(data: IScope[]): this {
+    load(data: IScopeEx[]): this {
         this.clear();
 
         //  Index all items  ---
-        data.forEach((scope: IScope) => {
+        data.forEach((scope: IScopeEx) => {
             this.ensureLineage(scope);
         });
 
-        data.forEach((scope: IScope) => {
+        data.forEach((scope: IScopeEx) => {
             const parentScope = this._index[scope.__parentName];
             this.ensureGraphLineage(scope);
             switch (scope.type) {
@@ -190,7 +190,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
             }
         });
 
-        data.forEach((scope: IScope) => {
+        data.forEach((scope: IScopeEx) => {
             if (scope.type === "edge" && scope.IdSource !== undefined && scope.IdTarget !== undefined) {
                 if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdSource]))
                     logger.warning(`Missing vertex:  ${(scope as IScopeEdge).IdSource}`);
@@ -216,14 +216,15 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return id.replace(/\s/, "_");
     }
 
-    vertexLabel(v: IScope, options: MetricsView): string {
+    vertexLabel(v: IScopeEx, options: MetricsView): string {
         return v.type === "activity" ? format(options.activityTpl, v) :
             v.type === "function" ? v.id + "()" :
                 v.type === "operation" && v.id.charAt(0) === ">" ? v.id.substring(1) :
                     v.Label || v.id;
     }
 
-    vertexStatus(v: IScope): ScopeStatus {
+    vertexStatus(v: IScopeEx): string {
+        const retVal: Array<ScopeStatus | ExceptionStatus> = [];
         const tally: { [id: string]: number } = { "unknown": 0, "started": 0, "completed": 0 };
         let outEdges = this.vertexInternalOutEdges(v);
         if (outEdges.length === 0) {
@@ -231,25 +232,41 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         }
         outEdges.forEach(e => ++tally[this.edgeStatus(e)]);
         if (outEdges.length === tally["completed"]) {
-            return "completed";
+            retVal.push("completed");
         } else if (tally["started"] || tally["completed"]) {
-            return "started";
+            retVal.push("started");
+        } else {
+            retVal.push("unknown");
         }
-        return "unknown";
+        if (v.__exceptions) {
+            const severity: { [id: string]: number } = {};
+            v.__exceptions.forEach(ex => {
+                if (!severity[ex.Severity]) {
+                    severity[ex.Severity] = 0;
+                }
+                severity[ex.Severity]++;
+            });
+            if (severity["Error"]) {
+                retVal.push("error");
+            } else if (severity["Warning"]) {
+                retVal.push("warning");
+            }
+        }
+        return retVal.join(" ");
     }
 
-    vertexInternalOutEdges(v: IScope): IScopeEdge[] {
+    vertexInternalOutEdges(v: IScopeEx): IScopeEdge[] {
         return this.outEdges(v.name).filter(e => e.__parentName === v.__parentName);
     }
 
     protected _dedupVertices: { [scopeName: string]: boolean } = {};
-    vertexTpl(v: IScope, options: MetricsView): string {
+    vertexTpl(v: IScopeEx, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
         return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}"]`;
     }
 
-    hiddenTpl(v: IScope, options: MetricsView): string {
+    hiddenTpl(v: IScopeEx, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
         return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}" rank="min"]`;
@@ -293,7 +310,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}" ${ltail} ${lhead}]`;
     }
 
-    subgraphStatus(sg: IScope): ScopeStatus {
+    subgraphStatus(sg: IScopeEx): ScopeStatus {
         const tally: { [id: string]: number } = { "unknown": 0, "started": 0, "completed": 0 };
         const finalVertices = this.subgraphVertices(sg.name).filter(v => this.vertexInternalOutEdges(v).length === 0);
         finalVertices.forEach(v => ++tally[this.vertexStatus(v)]);
@@ -306,7 +323,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     protected _dedupSubgraphs: { [scopeName: string]: boolean } = {};
-    subgraphTpl(sg: IScope, options: MetricsView): string {
+    subgraphTpl(sg: IScopeEx, options: MetricsView): string {
         if (this._dedupSubgraphs[sg.id] === true) return "";
         this._dedupSubgraphs[sg.id] = true;
         const childTpls: string[] = [];
@@ -324,6 +341,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         });
         return `\
 subgraph cluster_${encodeID(sg.id)} {
+    color="black";
     fillcolor="white";
     style="${sg.type === "child" ? "dashed" : "filled"}";
     id="${encodeID(sg.name)}";
@@ -335,7 +353,7 @@ subgraph cluster_${encodeID(sg.id)} {
 }`;
     }
 
-    graphTpl(items: IScope[] = [], options: MetricsView) {
+    graphTpl(items: IScopeEx[] = [], options: MetricsView) {
         this._dedupSubgraphs = {};
         this._dedupVertices = {};
         this._dedupEdges = {};
@@ -375,13 +393,10 @@ subgraph cluster_${encodeID(sg.id)} {
         return `\
 digraph G {
     compound=true;
-    oredering=in;
-    graph [fontname="arial"];// fontsize=11.0];
-    // graph [rankdir=TB];
-    // node [shape=rect fontname=arial fontsize=11.0 fixedsize=true];
-    node [color="" fontname="arial" fillcolor="whitesmoke" style="filled" margin=0.2]
-    edge []
-    // edge [fontname=arial fontsize=11.0];
+    ordering=in;
+    graph [fontname="arial" fillcolor="white" style="filled"];
+    node [fontname="arial" color="black" fillcolor="whitesmoke" style="filled" margin=0.2];
+    edge [];
 
     ${childTpls.join("\n")}
 
@@ -577,12 +592,10 @@ export class MetricGraphWidget extends SVGZoomWidget {
             .each(function () {
                 d3Select(this).selectAll("path,polygon,ellipse")
                     .style("stroke", () => {
-                        return context._selection[decodeID(this.id)] ? context.selectionGlowColor() : undefined;
+                        return context._selection[decodeID(this.id)] ? "var(--colorBrandForegroundOnLightSelected)" : undefined;
                     })
-                    ;
-                d3Select(this).selectAll("path,polygon,ellipse")
                     .style("fill", () => {
-                        return context._selection[decodeID(this.id)] ? "LightCyan" : undefined;
+                        return context._selection[decodeID(this.id)] ? "var(--colorBrandBackground2Pressed)" : undefined;
                     })
                     ;
             })
@@ -627,8 +640,16 @@ export class MetricGraphWidget extends SVGZoomWidget {
         return this;
     }
 
+    enter(domNode, element) {
+        super.enter(domNode, element);
+    }
+
     update(domNode, element) {
         super.update(domNode, element);
+    }
+
+    exit(domNode, element) {
+        super.exit(domNode, element);
     }
 
     async renderSVG(svg: string): Promise<void> {
@@ -636,7 +657,11 @@ export class MetricGraphWidget extends SVGZoomWidget {
             this._selection = {};
             const startPos = svg.indexOf("<g id=");
             const endPos = svg.indexOf("</svg>");
-            this._renderElement.html(svg.substring(startPos, endPos));
+            this._renderElement.html(svg.substring(startPos, endPos)
+                .replace(/"black"/g, "var(--colorNeutralForeground1)")
+                .replace(/"white"/g, "var(--colorNeutralBackground1)")
+                .replace(/"whitesmoke"/g, "var(--colorNeutralBackground2)")
+            );
             setTimeout(() => {
                 this
                     .zoomToFit(0)
@@ -649,7 +674,19 @@ export class MetricGraphWidget extends SVGZoomWidget {
                             context.clearSelection();
                         }
                         context.toggleSelection(decodeID(this.id), true);
-                    });
+                    })
+                    ;
+                this._renderElement.selectAll(".node.warning,node.error")
+                    .each(function (this: SVGGElement) {
+                        const pos = this.getBBox();
+                        d3Select(this).append("text")
+                            .classed("warning", true)
+                            .attr("x", pos.x + pos.width - 32)
+                            .attr("y", pos.y + 24)
+                            .text("⚠")
+                            ;
+                    })
+                    ;
                 resolve();
             }, 0);
         });
