@@ -71,7 +71,6 @@ define([
         contentWidget: null,
         dataPatternsWidget: null,
         sourceWidget: null,
-        defWidget: null,
         xmlWidget: null,
         filePartsWidget: null,
         queriesWidget: null,
@@ -95,7 +94,6 @@ define([
             this.contentWidget = registry.byId(this.id + "_Content");
             this.dataPatternsWidget = registry.byId(this.id + "_DataPatterns");
             this.sourceWidget = registry.byId(this.id + "_Source");
-            this.defWidget = registry.byId(this.id + "_DEF");
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.filePartsWidget = registry.byId(this.id + "_FileParts");
             this.queriesWidget = registry.byId(this.id + "_Queries");
@@ -306,13 +304,6 @@ define([
                     this.sourceWidget.init({
                         ECL: this.logicalFile.Ecl
                     });
-                } else if (currSel.id === this.defWidget.id) {
-                    var context = this;
-                    this.logicalFile.fetchDEF(function (response) {
-                        context.defWidget.init({
-                            ECL: response
-                        });
-                    });
                 } else if (currSel.id === this.xmlWidget.id) {
                     var context = this;
                     this.logicalFile.fetchXML(function (response) {
@@ -403,7 +394,6 @@ define([
                 }
                 this.contentWidget.reset();
                 this.sourceWidget.reset();
-                this.defWidget.reset();
                 this.xmlWidget.reset();
                 this.filePartsWidget.reset();
                 this.widget._Queries.reset();
