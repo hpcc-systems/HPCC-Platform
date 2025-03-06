@@ -276,7 +276,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
     virtual void reportError(IException *e)
     {
         StringBuffer s;
-        reportError(e->errorMessage(s).str(), 2);
+        e->errorMessage(s);
+        Owned<IError> error = createError(CategoryError, SeverityError, e->errorCode(), s.str(), 0, nullptr);
+        addWorkunitException(workunit, error, false);
+        IERRLOG("%s", s.str());
     }
 
     virtual void reportError(const char *errStr, unsigned retcode)
