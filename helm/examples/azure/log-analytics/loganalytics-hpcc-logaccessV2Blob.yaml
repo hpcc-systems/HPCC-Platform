@@ -22,58 +22,19 @@ global:
       columnType: "dynamic"
       columnMode: "MIN"
       timeStampColumn: "TimeGenerated"
-    - type: "workunits"
-      searchColumn: "LogMessage"
-      columnMode: "DEFAULT"
-      columnType: "string"
     - type: "components"
       storeName: "ContainerLogV2"
       searchColumn: "ContainerName" # Container name happens to coincide with component name
       keyColumn: "ContainerName"
       columnMode: "DEFAULT"
       columnType: "string"
-    - type: "audience"
-      searchColumn: "LogMessage"
-      enumValues:
-      - code: OPR
-      - code: USR
-      - code: PRO
-      - code: ADT
-      - code: MON
-      columnMode: "DEFAULT"
-      columnType: "enum"
-    - type: "class"
-      searchColumn: "LogMessage"
-      enumValues:
-      - code: DIS
-      - code: ERR
-      - code: WRN
-      - code: INF
-      - code: PRO
-      - code: MET
-      - code: EVT
-      columnMode: "DEFAULT"
-      columnType: "enum"
     - type: "instance"
       columnMode: "DEFAULT"
       searchColumn: "Computer"
-      columnMode: "ALL"
       columnType: "string"
     - type: "message"
       searchColumn: "LogMessage"
       columnMode: "MIN"
-      columnType: "string"
-    - type: "logid"
-      searchColumn: "LogMessage"
-      columnMode: "DEFAULT"
-      columnType: "string"
-    - type: "processid"
-      searchColumn: "LogMessage"
-      columnMode: "ALL"
-      columnType: "string"
-    - type: "threadid"
-      searchColumn: "LogMessage"
-      columnMode: "DEFAULT"
       columnType: "string"
     - type: "timestamp"
       searchColumn: "LogMessage"
@@ -81,14 +42,6 @@ global:
       columnType: "string"
     - type: "pod"
       searchColumn: "PodName"
-      columnMode: "DEFAULT"
-      columnType: "string"
-    - type: "spanid"
-      searchColumn: "LogMessage"
-      columnMode: "DEFAULT"
-      columnType: "string"
-    - type: "traceid"
-      searchColumn: "LogMessage"
       columnMode: "DEFAULT"
       columnType: "string"
 secrets:
