@@ -8390,20 +8390,22 @@ private:
 
 };
 
-static CNamedGroupStore *groupStore = NULL;
+static std::atomic<CNamedGroupStore *> groupStore{nullptr};
 static CriticalSection groupsect;
 
 bool CNamedGroupIterator::match()
 {
     if (conn.get()) {
         if (matchgroup.get()) {
-            if (!groupStore)
+            CLeavableCriticalBlock block3(groupsect);
+            if (!groupStore.load())
                 return false;
             const char *name = pe->query().queryProp("@name");
             if (!name||!*name)
                 return false;
             GroupType dummy;
-            Owned<IGroup> lgrp = groupStore->dolookup(name, conn, NULL, dummy);
+            Owned<IGroup> lgrp = groupStore.load()->dolookup(name, conn, NULL, dummy);
+            block3.leave();
             if (lgrp) {
                 if (exactmatch)
                     return lgrp->equals(matchgroup);
@@ -8417,14 +8419,13 @@ bool CNamedGroupIterator::match()
     return false;
 }
 
-INamedGroupStore  &queryNamedGroupStore()
+INamedGroupStore &queryNamedGroupStore()
 {
-    if (!groupStore) {
-        CriticalBlock block(groupsect);
-        if (!groupStore)
-            groupStore = new CNamedGroupStore();
+    CriticalBlock block(groupsect);
+    if (!groupStore.load()) {
+        groupStore.store(new CNamedGroupStore());
     }
-    return *groupStore;
+    return *(groupStore.load());
 }
 
 // --------------------------------------------------------
@@ -9395,8 +9396,8 @@ void closedownDFS()  // called by dacoven
     }
     DFdir = NULL;
     CriticalBlock block2(groupsect);
-    ::Release(groupStore);
-    groupStore = NULL;
+    ::Release(groupStore.load());
+    groupStore.store(nullptr);
 }
 
 class CDFPartFilter : implements IDFPartFilter, public CInterface
