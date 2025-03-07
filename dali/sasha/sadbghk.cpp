@@ -1,28 +1,15 @@
-// TBD check min time from when *finished*
-
 #include "platform.h"
 
 #include "jlib.hpp"
 #include "jiface.hpp"
-// #include "jstring.hpp"
 #include "jptree.hpp"
-// #include "jmisc.hpp"
 #include "jregexp.hpp"
-// #include "jset.hpp"
 
-// #include "mpbase.hpp"
-// #include "mpcomm.hpp"
-// #include "daclient.hpp"
 #include "dadfs.hpp"
-// #include "dautils.hpp"
-// #include "dasds.hpp"
 #include "dalienv.hpp"
-// #include "rmtfile.hpp"
 
 #include "saserver.hpp"
 #include "sautil.hpp"
-// #include "sacoalescer.hpp"
-// #include "sacmd.hpp"
 
 #define DEFAULT_MAXDIRTHREADS 500
 #define DEFAULT_MAXMEMORY 4096
@@ -115,26 +102,6 @@ public:
         verifyex(getConfigurationDirectory(nullptr, "temp", nullptr, "debug", debugDir));
 #endif
 
-/*
-        Owned<IPropertyTree> globals;
-        StringBuffer debugDir;
-        if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), debugDir))
-        {
-            if (!isContainerized())
-            {
-                appendCurrentDirectory(debugDir, false);
-                addPathSepChar(debugDir);
-                debugDir.append("debuginfo"); // use ./debuginfo in non-containerized mode
-            }
-            else
-            {
-                IWARNLOG("Failed to get debug directory");
-                return;
-            }
-        }
-        addPathSepChar(debugDir);
-*/
-
         // iterate debug plane selecting post-mortem directories for housekeeping
         StringArray expiryFolderlist;
         Owned<IDirectoryIterator> pDirIter = createDirectoryIterator(debugDir.str(), "*", false, true);
@@ -150,7 +117,7 @@ public:
             if (!dir || !*dir)
                 continue;
     
-            // Process directories, but not the "." and ".." directories
+            // Process directories, but not the "." and ".." and non post-mortem and not expired post-mortem directories
             if (iFile.isDirectory()==fileBool::foundYes && *dir != '.' && isPostMortemDir(dir) && isExpiredDir(dir, defaultExpireDays))
             {
                 StringBuffer path(debugDir);
@@ -235,7 +202,7 @@ private:
         }
         else
         {
-            PROGLOG(LOGDBGHK "Non-post-mortem dir: %s", dir);
+            PROGLOG(LOGDBGHK "Non post-mortem dir: %s", dir);
 
             return false;
         }
