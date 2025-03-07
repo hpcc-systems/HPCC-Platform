@@ -3139,8 +3139,8 @@ protected:
     virtual void analyseGraph(IHqlExpression * expr) override;
 
     void buildFormatOption(BuildCtx & ctx, IHqlExpression * name, IHqlExpression * value);
-    void buildFormatOptions(BuildCtx & fixedCtx, BuildCtx & dynCtx, IHqlExpression * expr);
-    void buildFormatOptions(IHqlExpression * expr);
+    void buildFormatOptions(BuildCtx & fixedCtx, IHqlExpression * expr);
+    void buildFormatOptionsFunction(IHqlExpression * expr);
 };
 
 
@@ -3261,7 +3261,7 @@ void DiskReadBuilder::buildFormatOption(BuildCtx & ctx, IHqlExpression * name, I
     }
 }
 
-void DiskReadBuilder::buildFormatOptions(BuildCtx & fixedCtx, BuildCtx & dynCtx, IHqlExpression * expr)
+void DiskReadBuilder::buildFormatOptions(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * pluggableFileTypeAtom = expr->queryAttribute(fileTypeAtom); // null if pluggable file type not used
     
@@ -3276,24 +3276,21 @@ void DiskReadBuilder::buildFormatOptions(BuildCtx & fixedCtx, BuildCtx & dynCtx,
             OwnedHqlExpr name = createConstant(str(cur->queryName()));
             if (cur->numChildren())
             {
-                BuildCtx & ctx = cur->isConstant() ? fixedCtx : dynCtx;
                 ForEachChild(c, cur)
                     buildFormatOption(ctx, name, cur->queryChild(c));
             }
             else
-                translator.buildXmlSerializeScalar(fixedCtx, queryBoolExpr(true), name);
+                translator.buildXmlSerializeScalar(ctx, queryBoolExpr(true), name);
         }
     }
 }
 
-void DiskReadBuilder::buildFormatOptions(IHqlExpression * expr)
+void DiskReadBuilder::buildFormatOptionsFunction(IHqlExpression * expr)
 {
-    MemberFunction fixedFunc(translator, instance->createctx, "virtual void getFormatOptions(IXmlWriter & out) override", MFopt);
-    MemberFunction dynFunc(translator, instance->startctx, "virtual void getFormatDynOptions(IXmlWriter & out) override", MFopt);
+    MemberFunction formatFunc(translator, instance->createctx, "virtual void getFormatOptions(IXmlWriter & out) override", MFopt);
 
-    buildFormatOptions(fixedFunc.ctx, dynFunc.ctx, expr);
-
-    if (!dynFunc.isEmpty())
+    buildFormatOptions(formatFunc.ctx, expr);
+    if (!expr->isConstant())
         hasDynamicOptions = true;
 }
 
@@ -3336,7 +3333,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
     }
 
     if (genericDiskRead)
-        buildFormatOptions(mode);
+        buildFormatOptionsFunction(mode);
 
     MemberFunction func(translator, instance->startctx);
     if ((instance->kind == TAKdiskread) || (instance->kind == TAKspillread) || (instance->kind == TAKnewdiskread))

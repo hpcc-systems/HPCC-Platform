@@ -2966,7 +2966,7 @@ protected:
         unsigned actualCrc;
     };
 
-    IHThorNewDiskReadBaseArg &helper;
+    IHThorGenericDiskReadBaseArg &helper;
     IHThorCompoundBaseArg & segHelper;
     IDiskRowReader * activeReader = nullptr;
     IArrayOf<IDiskRowReader> readers;
@@ -3015,8 +3015,19 @@ protected:
 
     bool isGeneric() const { return (helperFlags & TDXgeneric) != 0; }
 
+    const char * queryReadFormat()
+    {
+        if (!isGeneric())
+            return "flat";
+        const char * readFormat = helper.queryFormat();
+        //MORE: Later this should return null, and use the type of the file if it is a distibuted file
+        if (!readFormat)
+            readFormat = "flat";
+        return readFormat;
+    }
+
 public:
-    CHThorNewDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *node, EclGraph & _graph);
+    CHThorNewDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *node, EclGraph & _graph);
     ~CHThorNewDiskReadBaseActivity();
     IMPLEMENT_IINTERFACE
 
