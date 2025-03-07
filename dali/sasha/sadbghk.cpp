@@ -4,25 +4,25 @@
 
 #include "jlib.hpp"
 #include "jiface.hpp"
-//#include "jstring.hpp"
+// #include "jstring.hpp"
 #include "jptree.hpp"
-//#include "jmisc.hpp"
-//#include "jregexp.hpp"
-//#include "jset.hpp"
+// #include "jmisc.hpp"
+#include "jregexp.hpp"
+// #include "jset.hpp"
 
-//#include "mpbase.hpp"
-//#include "mpcomm.hpp"
-//#include "daclient.hpp"
+// #include "mpbase.hpp"
+// #include "mpcomm.hpp"
+// #include "daclient.hpp"
 #include "dadfs.hpp"
-//#include "dautils.hpp"
-//#include "dasds.hpp"
+// #include "dautils.hpp"
+// #include "dasds.hpp"
 #include "dalienv.hpp"
-//#include "rmtfile.hpp"
+// #include "rmtfile.hpp"
 
 #include "saserver.hpp"
 #include "sautil.hpp"
-//#include "sacoalescer.hpp"
-//#include "sacmd.hpp"
+// #include "sacoalescer.hpp"
+// #include "sacmd.hpp"
 
 #define DEFAULT_MAXDIRTHREADS 500
 #define DEFAULT_MAXMEMORY 4096
@@ -98,16 +98,33 @@ public:
             return;
         PROGLOG(LOGDBGHK "Started");
         unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
-        
+
+        // get debug plane dir
+        StringBuffer debugDir;
+#ifdef _CONTAINERIZED
+        StringBuffer planeName;
+        if (!getDefaultPlane(planeName, "@debugPlane", "debug"))
+        {
+            WARNLOG("Exception handlers configured, but debug plane is missing");
+            return;
+        }
+        Owned<IPropertyTree> plane = getStoragePlane(planeName);
+        assertex(plane);
+        verifyex(plane->getProp("@prefix", debugDir));
+#else
+        verifyex(getConfigurationDirectory(nullptr, "temp", nullptr, "debug", debugDir));
+#endif
+
+/*
         Owned<IPropertyTree> globals;
-        StringBuffer dir;
-        if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
+        StringBuffer debugDir;
+        if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), debugDir))
         {
             if (!isContainerized())
             {
-                appendCurrentDirectory(dir, false);
-                addPathSepChar(dir);
-                dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
+                appendCurrentDirectory(debugDir, false);
+                addPathSepChar(debugDir);
+                debugDir.append("debuginfo"); // use ./debuginfo in non-containerized mode
             }
             else
             {
@@ -115,50 +132,40 @@ public:
                 return;
             }
         }
-        addPathSepChar(dir);
+        addPathSepChar(debugDir);
+*/
 
-        StringArray expirylist;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*", udesc, true, false);
-        ForEach(*iter)
-        {
-            IPropertyTree &attr = iter->query();
-            if (attr.hasProp("@expireDays"))
-            {
-                unsigned expireDays = attr.getPropInt("@expireDays");
-                const char *name = attr.queryProp("@name");
-                const char *lastAccessed = attr.queryProp("@accessed");
-                if (lastAccessed && name && *name)
-                {
-                    CDateTime now;
-                    now.setNow();
-                    CDateTime expires;
-                    try
-                    {
-                        expires.setString(lastAccessed);
-                        expires.adjustTime(60 * 24 * expireDays);
-                        if (now.compare(expires, false) > 0)
-                        {
-                            expirylist.append(name);
-                            StringBuffer expiresStr;
-                            expires.getString(expiresStr);
-                            PROGLOG(LOGDBGHK "%s expired on %s", name, expiresStr.str());
-                        }
-                    }
-                    catch (IException *e)
-                    {
-                        StringBuffer s;
-                        EXCLOG(e, LOGDBGHK "setdate");
-                        e->Release();
-                    }
-                }
-            }
-        }
-        iter.clear();
-        ForEachItemIn(i, expirylist)
+        // iterate debug plane selecting post-mortem directories for housekeeping
+        StringArray expiryFolderlist;
+        Owned<IDirectoryIterator> pDirIter = createDirectoryIterator(debugDir.str(), "*", false, true);
+        addPathSepChar(debugDir);
+        ForEach(*pDirIter)
         {
             if (stopped)
                 break;
-            const char *lfn = expirylist.item(i);
+
+            IFile& iFile = pDirIter->query();
+            const char* dir = iFile.queryFilename();
+    
+            if (!dir || !*dir)
+                continue;
+    
+            // Process directories, but not the "." and ".." directories
+            if (iFile.isDirectory()==fileBool::foundYes && *dir != '.' && isPostMortemDir(dir) && isExpiredDir(dir, defaultExpireDays))
+            {
+                StringBuffer path(debugDir);
+                path.append(dir);
+
+                expiryFolderlist.append(path);
+            }
+        }
+        pDirIter.clear();
+
+        ForEachItemIn(i, expiryFolderlist)
+        {
+            if (stopped)
+                break;
+            const char *lfn = expiryFolderlist.item(i);
             PROGLOG(LOGDBGHK "Deleting %s", lfn);
             try
             {
@@ -174,6 +181,7 @@ public:
                 e->Release();
             }
         }
+
         PROGLOG(LOGDBGHK "%s", stopped ? "Stopped" : "Done");
     }
 
@@ -212,6 +220,56 @@ public:
         }
         PROGLOG(LOGDBGHK "Exit");
         return 0;
+    }
+
+private:
+    bool isPostMortemDir(const char *dir)
+    {
+        // Expecting a directory name like "W20250225-101112"
+        RegExpr RE("^W[0-9]{8}-[0-9]{6}$");
+        if (RE.find(dir))
+        {
+            PROGLOG(LOGDBGHK "Post-mortem dir: %s", dir);
+
+            return true;
+        }
+        else
+        {
+            PROGLOG(LOGDBGHK "Non-post-mortem dir: %s", dir);
+
+            return false;
+        }
+    }
+
+    bool isExpiredDir(const char *dir, const unsigned &defaultExpireDays)
+    {
+        // Directory name is like "W20250225-101112"
+        StringBuffer formattedDateTimeString;
+        formattedDateTimeString.appendf("%c%c%c%c-%c%c-%c%cT%c%c:%c%c:%c%c",
+             dir[1], dir[2], dir[3], dir[4],
+             dir[5], dir[6],
+             dir[7], dir[8],
+             dir[10], dir[11],
+             dir[13], dir[14],
+             dir[15], dir[16]);
+
+        CDateTime now;
+        now.setNow();
+
+        CDateTime expires;
+        expires.setString(formattedDateTimeString.str());
+        expires.adjustTime(60 * 24 * defaultExpireDays);
+
+        if (now.compare(expires, false) > 0)
+        {
+            PROGLOG(LOGDBGHK "Post-mortem dir: %s has expired", dir);
+
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 } *sashaDebugHousekeepingServer = NULL;
