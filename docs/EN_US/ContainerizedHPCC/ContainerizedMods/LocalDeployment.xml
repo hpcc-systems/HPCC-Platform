@@ -99,6 +99,7 @@ dali.sasha.coalescer
 sasha.dfurecovery-archiver
 sasha.dfuwu-archiver
 sasha.file-expiry
+sasha.debug-housekeeping
 sasha.wu-archiver</programlisting></para>
 
     <para>Notice the warning about ephemeral planes. This is because this

@@ -512,6 +512,16 @@ sasha:
     resources:
       cpu: "1"
       memory: "4Gi"
+      
+  debug-housekeeping:
+    #disabled: true
+    #interval: 1
+    #at: "* 3 * * *"
+    #expiryDefault: 7
+    #user: sasha
+    resources:
+      cpu: "1"
+      memory: "4Gi"
 
 dfuserver:
 - name: dfuserver

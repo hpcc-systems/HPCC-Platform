@@ -3058,6 +3058,35 @@
       },
       "additionalProperties": false
     },
+    "sasha-debug-housekeeping": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+      "properties": {
+        "expiryDefault": {
+          "type": "integer",
+          "description": "Default number of days passed that post-mortem files are deleted after their associated workunit was completed",
+          "default": "14"
+        },
+        "user": {
+          "type": "string",
+          "description": "A username authorized to access and remove post-mortem files"
+        },
+        "disabled": {},
+        "interval": {},
+        "service": {},
+        "at" : {},
+        "throttle": {},
+        "image": {},
+        "plane": {},
+        "resources": {},
+        "annotations": {},
+        "labels": {},
+        "egress": {},
+        "expert": {},
+        "terminationGracePeriodSeconds": {}
+      },
+      "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3081,6 +3110,9 @@
             },
             "thor-qmon": {
               "$ref": "#/definitions/sasha-thor-qmon"
+            },
+            "debug-housekeeping": {
+              "$ref": "#/definitions/sasha-debug-housekeeping"
             },
             "disabled": {
               "type": "boolean"

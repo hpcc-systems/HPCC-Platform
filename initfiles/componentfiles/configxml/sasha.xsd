@@ -136,6 +136,7 @@
             <xs:attributeGroup ref="DfuXRef"/>
             <xs:attributeGroup ref="DfuExpiry"/>
             <xs:attributeGroup ref="ThorQMon"/>
+            <xs:attributeGroup ref="DbgHk"/>
             <xs:attributeGroup ref="DaFileSrvMonitor"/>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
@@ -530,6 +531,35 @@
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>minimum idle time before job will switch queues. (in minutes, 0 disables)</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DbgHk">
+    <!--DOC-Autobuild-code-->
+     <xs:annotation>
+        <xs:appinfo>
+           <docid>sh.t5</docid>
+        </xs:appinfo>
+     </xs:annotation>  
+        <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" default="24">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between checking to remove post-mortem files (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ExpiryAt" type="xs:string" use="optional" default="* 3 * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to check to remove post-mortem files (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ExpiryDefault" type="xs:nonNegativeInteger" use="optional" default="14">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Default number of days passed that post-mortem files are deleted after their associated workunit was completed</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
