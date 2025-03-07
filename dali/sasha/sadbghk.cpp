@@ -11,19 +11,11 @@
 #include "saserver.hpp"
 #include "sautil.hpp"
 
-#define DEFAULT_MAXDIRTHREADS 500
-#define DEFAULT_MAXMEMORY 4096
+#define DEFAULT_EXPIRY_INTERVAL 24 // hours
 
-#define SDS_CONNECT_TIMEOUT (1000 * 60 * 60 * 2) // better than infinite
-#define SDS_LOCK_TIMEOUT 300000
-
-#define DEFAULT_EXPIRY_INTERVAL 0 // TODO:24 // hours
-
-#define DEFAULT_EXPIRYDAYS 0 // TODO:7
+#define DEFAULT_EXPIRYDAYS 7
 
 #define LOGDBGHK "DEBUGHOUSEKEEPING: "
-
-#define DEFAULT_RECENT_CUTOFF_DAYS 0 // TODO:1
 
 // Debug Housekeeping monitor
 
