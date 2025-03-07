@@ -157,9 +157,11 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   if [[ -n "$PMD_DIRECTORYBASE" ]]; then
     collect_postmortem.sh "--directory=${PMD_DIRECTORYBASE}" "--daliServer=${PMD_DALISERVER}" "--container=${PMD_CONTAINERNAME}" "--process=${PMD_PROGNAME}" "${extraArgs[@]}"
   else
+    : #null statment so the else is valid
     #echo "HPCC-LOCAL-LOG: Post mortem directory not provided, unable to collect post mortem info"
   fi
 else
+  : #null statment so the else is valid
   #echo "HPCC-LOCAL-LOG: Process exited cleanly (code=0)"
 fi
 k8s_postjob_clearup.sh
