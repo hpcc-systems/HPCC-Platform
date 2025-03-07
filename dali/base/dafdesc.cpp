@@ -3570,53 +3570,65 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
 
 void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
 {
-    // Check that storage plane does not already have a definition
-    VStringBuffer xpath("planes[@name='%s']", name.str());
-    if (storage->hasProp(xpath))
-        return;
-
-    IPropertyTree * plane = storage->addPropTree("planes");
     StringBuffer mirrorname;
     const char * planeName = name;
     if (copy != 0)
         planeName = mirrorname.append(name).append("_mirror");
 
-    plane->setProp("@name", planeName);
+    // Check that storage plane does not already have a definition
+    VStringBuffer xpath("planes[@name='%s']", planeName);
+    IPropertyTree * plane = storage->queryPropTree(xpath);
+    if (!plane)
+    {
+        plane = storage->addPropTree("planes");
+        plane->setProp("@name", planeName);
+        plane->setPropBool("@fromGroup", true);
+    }
 
     //URL style drop zones don't generate a host entry, and will have a single device
     if (ordinality() != 0)
     {
-        if (container)
+        if (!plane->hasProp("@hostGroup"))
         {
-            const char * containerName = container->name;
-            if (copy != 0)
-                containerName = mirrorname.clear().append(containerName).append("_mirror");
-            //hosts will be expanded by normalizeHostGroups
-            plane->setProp("@hostGroup", containerName);
-        }
-        else
-        {
-            //Host group has been created that matches the name of the storage plane
-            plane->setProp("@hostGroup", planeName);
+            if (container)
+            {
+                const char * containerName = container->name;
+                if (copy != 0)
+                    containerName = mirrorname.clear().append(containerName).append("_mirror");
+                //hosts will be expanded by normalizeHostGroups
+                plane->setProp("@hostGroup", containerName);
+            }
+            else
+            {
+                //Host group has been created that matches the name of the storage plane
+                plane->setProp("@hostGroup", planeName);
+            }
         }
 
-        if (ordinality() > 1)
+        if (!plane->hasProp("@numDevices"))
         {
-            plane->setPropInt("@numDevices", ordinality());
-            if (dropZoneIndex == 0)
-                plane->setPropInt("@defaultSprayParts", ordinality());
+            if (ordinality() > 1)
+            {
+                plane->setPropInt("@numDevices", ordinality());
+                if (dropZoneIndex == 0)
+                    plane->setPropInt("@defaultSprayParts", ordinality());
+            }
         }
     }
 
-    if (dir.length())
-        plane->setProp("@prefix", dir);
-    else
-        plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
+    if (!plane->hasProp("@prefix"))
+    {
+        if (dir.length())
+            plane->setProp("@prefix", dir);
+        else
+            plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
+    }
 
-    const char * category = (dropZoneIndex != 0) ? "lz" : "data";
-    plane->setProp("@category", category);
-
-    plane->setPropBool("@fromGroup", true);
+    if (!plane->hasProp("@category"))
+    {
+        const char * category = (dropZoneIndex != 0) ? "lz" : "data";
+        plane->setProp("@category", category);
+    }
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
