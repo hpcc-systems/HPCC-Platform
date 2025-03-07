@@ -373,8 +373,9 @@ CriticalSection CInputBasePartitioner::openfilecachesect;
 CInputBasePartitioner::~CInputBasePartitioner()
 {
     inStream.clear();
-    if (openfilecache) {
-        CriticalBlock block(openfilecachesect);
+    CriticalBlock block(openfilecachesect);
+    if (openfilecache)
+    {
         if (openfilecache->Release())
             openfilecache = NULL;
     }
@@ -1704,8 +1705,9 @@ CJsonInputPartitioner::~CJsonInputPartitioner()
 {
     json.clear();
     inStream.clear();
-    if (openfilecache) {
-        CriticalBlock block(openfilecachesect);
+    CriticalBlock block(openfilecachesect);
+    if (openfilecache)
+    {
         if (openfilecache->Release())
             openfilecache = NULL;
     }
