@@ -29,6 +29,7 @@
 #include <jencrypt.hpp>
 #include "jutil.hpp"
 #include "jsecrets.hpp"
+#include "jevent.hpp"
 #include "udptopo.hpp"
 
 #include "rtlformat.hpp"
@@ -1162,6 +1163,15 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             multicastTTL = ttlTmp;
 
+        if (topology->getPropBool("@recordAllEvents", false))
+        {
+            const char * recordEventOptions = topology->queryProp("@recordEventOptions");
+            const char * optRecordEventFilename = topology->queryProp("@recordEventFilename");
+            if (!recordEventOptions)
+                recordEventOptions = "threadid,stack";
+            queryRecorder().startRecording(recordEventOptions, optRecordEventFilename);
+        }
+
         workunitGraphCacheEnabled = topology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
@@ -1766,6 +1776,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
+    queryRecorder().stopRecording();
     cleanupPlugins();
     unloadHpccProtocolPlugin();
     closeMulticastSockets();
