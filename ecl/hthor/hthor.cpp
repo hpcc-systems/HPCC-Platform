@@ -1302,6 +1302,9 @@ void CHThorIndexWriteActivity::execute()
         out->flush();
         out.clear();
         io->close();
+
+        stat_type maxLeafSize = builder->getStatistic(StSizeLargestExpandedLeaf);
+        DBGLOG("Maximum size of expanded leaf = %llu compression ratio = %.2fx", maxLeafSize, ((double)maxLeafSize / nodeSize));
     }
 
     if(clusterHandler)
@@ -8545,14 +8548,16 @@ void CHThorDiskReadBaseActivity::closepart()
             {
                 if (superfile)
                 {
-                    unsigned subfile, lnum;
-                    if (superfile->mapSubPart(previousPartNum, subfile, lnum))
+                    unsigned subfileNum, lnum;
+                    if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
                     {
-                        IDistributedSuperFile *super = dFile->querySuperFile();
-                        dFile = &(super->querySubFile(subfile, true));
+                        IDistributedSuperFile * super = dFile->querySuperFile();
+                        IDistributedFile & subfile = super->querySubFile(subfileNum, true);
+                        updateCostAndNumReads(&subfile, curDiskReads);
                     }
                 }
-                updateCostAndNumReads(dFile, curDiskReads);
+                else
+                    updateCostAndNumReads(dFile, curDiskReads);
             }
             numDiskReads += curDiskReads;
         }

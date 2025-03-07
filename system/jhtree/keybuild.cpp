@@ -136,6 +136,7 @@ private:
     RelaxedAtomic<__uint64> numLeaves{0};
     RelaxedAtomic<__uint64> numBranches{0};
     RelaxedAtomic<__uint64> numBlobs{0};
+    unsigned __int64 maxNodeMemorySize = 0;
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
     CBlobWriteNode *activeBlobNode = nullptr;
@@ -362,6 +363,10 @@ protected:
         }
         else
             node->write(out, nullptr);
+
+        size32_t memorySize = node->getMemorySize();
+        if (memorySize > maxNodeMemorySize)
+            maxNodeMemorySize = memorySize;
     }
 
     void flushNode(CWriteNode *node, NodeInfoArray &nodeInfo)
@@ -616,6 +621,8 @@ protected:
             return numBranches;
         case StNumBlobCacheAdds:
             return numBlobs;
+        case StSizeLargestExpandedLeaf:
+            return maxNodeMemorySize;
         default:
             return out->getStatistic(kind);
         }

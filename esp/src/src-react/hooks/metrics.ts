@@ -263,6 +263,10 @@ export interface useMetricsResult {
     refresh: () => void;
 }
 
+export interface IScopeEx extends IScope {
+    __exceptions?: WsWorkunits.ECLException[],
+}
+
 export function useWorkunitMetrics(
     wuid: string,
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
@@ -270,7 +274,7 @@ export function useWorkunitMetrics(
 ): useMetricsResult {
 
     const [workunit, state] = useWorkunit(wuid);
-    const [data, setData] = React.useState<IScope[]>([]);
+    const [data, setData] = React.useState<IScopeEx[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
     const [activities, setActivities] = React.useState<WsWorkunits.Activity2[]>([]);
     const [properties, setProperties] = React.useState<WsWorkunits.Property2[]>([]);
@@ -281,40 +285,58 @@ export function useWorkunitMetrics(
 
     React.useEffect(() => {
         if (wuid && workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
             const fetchDetailsNormalized = singletonDebounce(workunit, "fetchDetailsNormalized");
             setStatus(FetchStatus.STARTED);
-            fetchDetailsNormalized({
-                ScopeFilter: scopeFilter,
-                NestedFilter: nestedFilter,
-                PropertiesToReturn: {
-                    AllScopes: true,
-                    AllAttributes: true,
-                    AllProperties: true,
-                    AllNotes: true,
-                    AllStatistics: true,
-                    AllHints: true
-                },
-                ScopeOptions: {
-                    IncludeId: true,
-                    IncludeScope: true,
-                    IncludeScopeType: true,
-                    IncludeMatchedScopesInResults: true
-                },
-                PropertyOptions: {
-                    IncludeName: true,
-                    IncludeRawValue: true,
-                    IncludeFormatted: true,
-                    IncludeMeasure: true,
-                    IncludeCreator: false,
-                    IncludeCreatorType: false
+            Promise.all([
+                fetchInfo({ IncludeExceptions: true }),
+                fetchDetailsNormalized({
+                    ScopeFilter: scopeFilter,
+                    NestedFilter: nestedFilter,
+                    PropertiesToReturn: {
+                        AllScopes: true,
+                        AllAttributes: true,
+                        AllProperties: true,
+                        AllNotes: true,
+                        AllStatistics: true,
+                        AllHints: true
+                    },
+                    ScopeOptions: {
+                        IncludeId: true,
+                        IncludeScope: true,
+                        IncludeScopeType: true,
+                        IncludeMatchedScopesInResults: true
+                    },
+                    PropertyOptions: {
+                        IncludeName: true,
+                        IncludeRawValue: true,
+                        IncludeFormatted: true,
+                        IncludeMeasure: true,
+                        IncludeCreator: false,
+                        IncludeCreatorType: false
+                    }
+                })
+            ]).then(([info, response]) => {
+                const exceptionsMap: { [scope: string]: WsWorkunits.ECLException[] } = {};
+                for (const exception of info?.Workunit?.Exceptions?.ECLException ?? []) {
+                    if (exception.Scope) {
+                        if (!exceptionsMap[exception.Scope]) {
+                            exceptionsMap[exception.Scope] = [];
+                        }
+                        exceptionsMap[exception.Scope].push(exception);
+                    }
                 }
-            }).then(response => {
-                setData(response?.data);
+                setData(response?.data.map(row => {
+                    if (exceptionsMap[row.name]) {
+                        row.__exceptions = exceptionsMap[row.name];
+                    }
+                    return row;
+                }));
                 setColumns(response?.columns);
-                setActivities(response?.meta?.Activities?.Activity || []);
-                setProperties(response?.meta?.Properties?.Property || []);
-                setMeasures(response?.meta?.Measures?.Measure || []);
-                setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
+                setActivities(response?.meta?.Activities?.Activity ?? []);
+                setProperties(response?.meta?.Properties?.Property ?? []);
+                setMeasures(response?.meta?.Measures?.Measure ?? []);
+                setScopeTypes(response?.meta?.ScopeTypes?.ScopeType ?? []);
             }).catch(e => {
                 logger.error(e);
             }).finally(() => {

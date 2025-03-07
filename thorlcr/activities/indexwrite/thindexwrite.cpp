@@ -271,6 +271,10 @@ public:
             if (leafMemorySize)
                 props.setPropInt64("@leafMemorySize", leafMemorySize);
 
+            stat_type maxLeafMemorySize = statsCollection.getStatisticMax(StSizeLargestExpandedLeaf);
+            if (maxLeafMemorySize)
+                props.setPropInt64("@maxLeafMemorySize", maxLeafMemorySize);
+
             Owned<IPropertyTree> metadata;
             buildUserMetadata(metadata, *helper);
             unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;

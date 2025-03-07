@@ -5,6 +5,7 @@
    <exporters consoleDebug="true" endpoint="http://localhost:4318/v1/traces" type="OTLP-HTTP">
     <batch enabled="false" maxQueueSize="4095" scheduledDelayMillis="6001" maxExportBatchSize="511"/>
    </exporters>
+   <sampling type="Ratio" ratio="0.1" parentBased="true"/>
   </tracing>
  </Software>
 </Environment>

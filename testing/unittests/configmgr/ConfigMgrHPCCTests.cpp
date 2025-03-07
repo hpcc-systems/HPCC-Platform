@@ -75,7 +75,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
 
         void duplicatePortSameService()
         {
-            printf("\nTesting binding two ESP Services of the same type on the same port as invalid...");
+            // Testing binding two ESP Services of the same type on the same port as invalid
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test1.xml"))
             {
                 Status status;
@@ -83,9 +83,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
                 auto msgs = status.getMessages(statusMsg::error, false, "", "port");
                 CPPUNIT_ASSERT_MESSAGE("Port conflict was NOT detected", !msgs.empty());
             }
-            printf("Test Complete.\n");
 
-            printf("\n\nTesting binding two ESP Services of the same type on different ports as valid...");
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test2.xml"))
             {
                 Status status;
@@ -93,12 +91,11 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
                 auto msgs = status.getMessages(statusMsg::error, false, "", "port");
                 CPPUNIT_ASSERT_MESSAGE("Port conflict was detected when there are none", msgs.empty());
             }
-            printf("Test Complete.\n");
         }
 
         void portConflictSameHWInstance()
         {
-            printf("\nTesting two ESP processes with a port collision on an instance...");
+            // Testing two ESP processes with a port collision on an instance
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test3.xml"))
             {
                 Status status;
@@ -106,12 +103,11 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
                 auto msgs = status.getMessages(statusMsg::error, false, "", "");
                 CPPUNIT_ASSERT_MESSAGE("Port conflict was NOT detected", !msgs.empty());
             }
-            printf("Test Complete.\n");
         }
 
         void portConflictAccrossProcesses()
         {
-            printf("\nTesting two processes with a port collision on an instance...");
+            // Testing two processes with a port collision on an instance
             if (loadEnvironment(m_xmlEnvDir + "hpcc_port_conflict_test4.xml"))
             {
                 Status status;
@@ -119,7 +115,6 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
                 auto msgs = status.getMessages(statusMsg::error, false, "", "");
                 CPPUNIT_ASSERT_MESSAGE("Port conflict was NOT detected", !msgs.empty());
             }
-            printf("Test Complete.\n");
         }
 
 

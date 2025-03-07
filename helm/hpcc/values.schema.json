@@ -1174,6 +1174,25 @@
           "type": "boolean",
           "description": "If true, sets OTEL library logging to debug level (otherwise set to warning)"
         },
+        "sampling": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["AlwaysOff", "AlwaysOn", "Ratio"],
+              "description": "Name of the Head Sampling type AlwaysOff|AlwaysOn|Ratio"
+            },
+            "ratio" : {
+              "type": "number",
+              "description": "Required if sampling type set to Ratio - Represents the sampling ratio value."
+            },
+            "parentBased" : {
+              "type": "boolean",
+              "description": "Optional - Determines if the sampling policy honors the remote root span sampled flag."
+            },
+            "additionalProperties": false
+          }
+        },
         "exporters": {
           "type": "array",
           "description": "List of trace exporters",
@@ -2417,12 +2436,6 @@
           "default": 10,
           "minimum": 1,
           "description": "Number of pending queries permitted per channel (per active activity) before blocking"
-        },
-        "pingInterval": { 
-          "type": "integer",
-          "default": 60,
-          "minimum" : 0,
-          "description": "Interval (in seconds) between Roxie server ping tests"
         },
         "preabortIndexReadsThreshold": { 
           "type": "integer",

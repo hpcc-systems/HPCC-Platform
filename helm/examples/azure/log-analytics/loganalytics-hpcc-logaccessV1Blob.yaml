@@ -22,10 +22,6 @@ global:
       columnType: "string"
       columnMode: "MIN"
       timeStampColumn: "TimeGenerated"
-    - type: "workunits"
-      searchColumn: "LogEntry"
-      columnMode: "DEFAULT"
-      columnType: "string"
     - type: "components"
       storeName: "ContainerInventory"
       searchColumn: "Name"
@@ -34,28 +30,6 @@ global:
       columnType: "string"
       timeStampColumn: "TimeGenerated"
       disableJoins: false #Potentially expensive join operations needed to fetch a certain column can be disabled
-    - type: "audience"
-      searchColumn: "LogEntry"
-      enumValues:
-      - code: OPR
-      - code: USR
-      - code: PRO
-      - code: ADT
-      - code: MON
-      columnMode: "DEFAULT"
-      columnType: "enum"
-    - type: "class"
-      searchColumn: "LogEntry"
-      enumValues:
-      - code: DIS
-      - code: ERR
-      - code: WRN
-      - code: INF
-      - code: PRO
-      - code: MET
-      - code: EVT
-      columnMode: "DEFAULT"
-      columnType: "enum"
     - type: "instance"
       columnMode: "DEFAULT"
       searchColumn: "Computer"
@@ -65,34 +39,10 @@ global:
       searchColumn: "LogEntry"
       columnMode: "MIN"
       columnType: "string"
-    - type: "logid"
-      searchColumn: "LogEntry"
-      columnMode: "DEFAULT"
-      columnType: "string"
-    - type: "processid"
-      searchColumn: "LogEntry"
-      columnMode: "ALL"
-      columnType: "string"
-    - type: "threadid"
-      searchColumn: "LogEntry"
-      columnMode: "DEFAULT"
-      columnType: "string"
     - type: "timestamp"
       searchColumn: "TimeGenerated"
       columnMode: "MIN"
       columnType: "Timestamp"
-    #- type: "pod"
-    #  searchColumn: "PodName"
-    #  columnMode: "DEFAULT"
-    #  columnType: "string"
-    - type: "spanid"
-      searchColumn: "LogEntry"
-      columnMode: "DEFAULT"
-      columnType: "string"
-    - type: "traceid"
-      searchColumn: "LogEntry"
-      columnMode: "DEFAULT"
-      columnType: "string"
 secrets:
   esp:
     azure-logaccess: "azure-logaccess"

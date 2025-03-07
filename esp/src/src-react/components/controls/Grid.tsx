@@ -123,6 +123,7 @@ const gridStyles = (height: string): Partial<IDetailsListStyles> => {
             selectors: {
                 ".ms-DetailsHeader-cellName": { fontSize: "13.5px" },
                 ".ms-DetailsRow": { userSelect: "text", borderBottom: "1px solid var(--colorNeutralBackground5)" },
+                ".ms-DetailsRow-cell": { borderRight: "1px solid var(--colorNeutralBackground5)" },
                 ".ms-DetailsRow-cell:has(.bgFilled)": { color: "white", boxShadow: "inset 1px 0 var(--colorNeutralBackground1), inset -1px 1px var(--colorNeutralBackground1)" },
                 ".ms-DetailsRow-cell:has(.bgGreen)": { background: "green" },
                 ".ms-DetailsRow-cell:has(.bgOrange)": { background: "orange" },

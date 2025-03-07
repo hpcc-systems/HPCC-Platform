@@ -254,6 +254,7 @@ public:
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
     virtual void write(IFileIOStream *, CRC32 *crc) override;
+    virtual size32_t getMemorySize() const override { return nodeSize; }
 
 protected:
     unsigned getDataSize();
@@ -282,9 +283,12 @@ public:
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
     virtual void write(IFileIOStream *, CRC32 *crc) override;
+    virtual size32_t getMemorySize() const override { return leafMemorySize; }
 
 protected:
     unsigned getDataSize(bool includePayload);
+    unsigned getCompressedPayloadSize() const { return sizeCompressedPayload ? sizeCompressedPayload : compressor.buflen(); }
+
     bool recompressAll(unsigned maxSize);
 
 protected:
@@ -301,6 +305,7 @@ protected:
     size32_t keyLen = 0;
     size32_t firstUncompressed = 0;
     size32_t sizeCompressedPayload = 0; // Set from closed compressor
+    size32_t leafMemorySize = 0;
     offset_t totalUncompressedSize = 0;
     bool isVariable = false;
     bool rowCompression = false;

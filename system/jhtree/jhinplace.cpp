@@ -2160,6 +2160,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     LeafFilepositionInfo savedPositionInfo = positionInfo;
     const byte * data = (const byte *)_data;
     unsigned oldSize = getDataSize(true);
+    size32_t oldCompressedSize = getCompressedPayloadSize();
     builder.add(keyCompareLen, data);
 
     if (positions.ordinality())
@@ -2217,22 +2218,27 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         size32_t maxSizePayloadLength = sizePacked(maxBytes);
         size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0) + (ctx.options.recompress ? 1 : 0);
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
-        if (hasSpace)
+        if (maxBytes < maxUsedSpace)
+            hasSpace = false;
+        else if (useCompressedPayload && !ctx.options.recompress)
         {
-            if (useCompressedPayload && !ctx.options.recompress)
+            size32_t oldCompressedSize = compressor.buflen();
+            if (!compressor.adjustLimit(maxPayloadSize) || !compressor.write(extraData, extraSize))
             {
-                size32_t oldCompressedSize = compressor.buflen();
-                if (!compressor.adjustLimit(maxPayloadSize) || !compressor.write(extraData, extraSize))
-                {
-                    //Attempting to write data may have flushed some bytes into the lzw output buffer.
-                    oldSize += (compressor.buflen() - oldCompressedSize);
-                    hasSpace = false;
-                }
+                //If the compressed size reduces then the length may occupy fewer bytes
+                size32_t newCompressedSize = getCompressedPayloadSize();
+                oldSize += sizePacked(newCompressedSize) - sizePacked(oldCompressedSize);
+
+                //Attempting to write data may have flushed some bytes into the lzw output buffer.
+                oldSize += (compressor.buflen() - oldCompressedSize);
+                hasSpace = false;
             }
             else
-            {
-                // payload already appended to uncompressed.
-            }
+                hasSpace = true;
+        }
+        else if (hasSpace)
+        {
+            // payload already appended to uncompressed.
         }
         else if (uncompressed.length())
         {
@@ -2369,7 +2375,7 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
         payloadSize = 1; // compressionType;
         if (useCompressedPayload)
         {
-            unsigned compressedSize = sizeCompressedPayload ? sizeCompressedPayload : compressor.buflen();
+            unsigned compressedSize = getCompressedPayloadSize();
             payloadSize += sizePacked(compressedSize) + compressedSize;
             if (ctx.options.recompress)
             {
@@ -2445,6 +2451,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                 data.append((unsigned short)payloadLengths.item(i));
         }
 
+        leafMemorySize = 0;
         if (keyLen != keyCompareLen)
         {
             unsigned startPayloadOffset = data.length(); 
@@ -2476,18 +2483,20 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                     if (payloadCompression != COMPRESS_METHOD_RANDROW)
                     {
                         //Calculate the size of the payload when expanded
-                        ctx.leafMemorySize += (totalUncompressedSize - (keyCompareLen * hdr.numKeys));
+                        leafMemorySize += (totalUncompressedSize - (keyCompareLen * hdr.numKeys));
 
                         //Subtract the compressed length because that is no longer kept in memory)
-                        ctx.leafMemorySize -= (data.length() - startPayloadOffset);
+                        leafMemorySize -= (data.length() - startPayloadOffset);
                     }
                     break;
                 }
             }
         }
 
+        leafMemorySize += data.length();
+
         ctx.totalDataSize += data.length();
-        ctx.leafMemorySize += data.length();
+        ctx.leafMemorySize += leafMemorySize;
         assertex(data.length() == getDataSize(true));
     }
 
@@ -2568,7 +2577,7 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
     }
 
     if (useDefaultCompression)
-        ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZ4);
+        ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZ4SHC);
 
     if (ctx.compressionHandler)
     {
