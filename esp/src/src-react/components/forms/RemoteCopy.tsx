@@ -162,6 +162,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                     fieldState: { error }
                 }) => <TextField
                         type="password"
+                        autoComplete="off"
                         key={fieldName}
                         label={nlsHPCC.Password}
                         value={value}
