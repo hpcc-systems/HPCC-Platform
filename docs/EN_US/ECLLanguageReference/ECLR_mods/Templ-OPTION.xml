@@ -686,6 +686,22 @@
               <emphasis>hardlimit</emphasis> setting. This is only valid for
               Thor jobs.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>writeInlineContent</emphasis></entry>
+
+              <entry/>
+
+              <entry>If true, writing a field with XPATH('Name/&lt;&gt;')
+              outputs the string without XML/JSON encoding the content. This
+              allows you to insert arbitrary XML/JSON into the output. There
+              are 3 forms: <emphasis role="bold">'&lt;&gt;'</emphasis> writes
+              the content without a root tag, reading reads all content of
+              parent.<emphasis role="bold"> 'Name&lt;&gt;'</emphasis> writes
+              the content without a tag, reading reads the content of the tag
+              . <emphasis role="bold">'Name/&lt;&gt;' </emphasis>writes the
+              content inside, reading reads the content of the tag.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
