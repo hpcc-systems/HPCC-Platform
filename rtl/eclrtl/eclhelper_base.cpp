@@ -75,6 +75,10 @@ unsigned CThorDiskWriteArg::getExpiryDays() { return 0; }
 void CThorDiskWriteArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorDiskWriteArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorDiskWriteArg::getCluster(unsigned idx) { return NULL; }
+const char * CThorDiskWriteArg::queryFormat()                      { return nullptr; }
+void CThorDiskWriteArg::getFormatOptions(IXmlWriter & options)     { }
+const char * CThorDiskWriteArg::queryProvider()                    { return nullptr; }
+void CThorDiskWriteArg::getProviderOptions(IXmlWriter & options)   { }
 
 //CThorPipeReadArg
 unsigned CThorPipeReadArg::getPipeFlags() { return 0; }
@@ -188,6 +192,10 @@ unsigned CThorSpillArg::getExpiryDays() { return 0; }
 void CThorSpillArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorSpillArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorSpillArg::getCluster(unsigned idx) { return NULL; }
+const char * CThorSpillArg::queryFormat()                      { return nullptr; }
+void CThorSpillArg::getFormatOptions(IXmlWriter & options)     { }
+const char * CThorSpillArg::queryProvider()                    { return nullptr; }
+void CThorSpillArg::getProviderOptions(IXmlWriter & options)   { }
 
 //CThorRollupArg
 
@@ -903,9 +911,10 @@ void CThorNewDiskReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLe
 unsigned __int64 CThorNewDiskReadArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
 unsigned __int64 CThorNewDiskReadArg::getRowLimit()                  { return (unsigned __int64) -1; }
 void CThorNewDiskReadArg::onLimitExceeded()                          { }
-const char * CThorNewDiskReadArg::queryFormat()                      { return "flat"; }
+const char * CThorNewDiskReadArg::queryFormat()                      { return nullptr; }
 void CThorNewDiskReadArg::getFormatOptions(IXmlWriter & options)     { }
-void CThorNewDiskReadArg::getFormatDynOptions(IXmlWriter & options)  { }
+const char * CThorNewDiskReadArg::queryProvider()                    { return nullptr; }
+void CThorNewDiskReadArg::getProviderOptions(IXmlWriter & options)   { }
 
 bool CThorNewDiskReadArg::needTransform() { return false; }
 bool CThorNewDiskReadArg::transformMayFilter() { return false; }
