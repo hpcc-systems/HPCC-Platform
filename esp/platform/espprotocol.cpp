@@ -27,26 +27,29 @@
 #endif
 #include "jmetrics.hpp"
 
-static RelaxedAtomic<unsigned> gActiveRequests;
+static std::shared_ptr<hpccMetrics::GaugeMetric> pActiveRequests;
 
-static auto pActiveRequests = hpccMetrics::registerCustomMetric("esp.requests.active", "Number of active requests",
-                                                                hpccMetrics::METRICS_GAUGE, gActiveRequests, SMeasureCount);
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    pActiveRequests = hpccMetrics::registerGaugeMetric("esp.requests.active", "Number of active requests", SMeasureCount);
+    return true;
+}
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
 unsigned ActiveRequests::getCount()
 {
-    return gActiveRequests;
+    return pActiveRequests->queryValue();
 }
 
 ActiveRequests::ActiveRequests()
 {
-    gActiveRequests++;
+    pActiveRequests->adjust(1);
 }
 
 ActiveRequests::~ActiveRequests()
 {
-    gActiveRequests--;
+    pActiveRequests->adjust(-1);
 }
 
 CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navResize(false), navScroll(false), navWidth(165), protocol(prot)

@@ -481,7 +481,7 @@ add jlib as a dependent lib (if not already doing so).
 
 The general steps for instrumentation are
 
-1.  Determine what component state is to be measured. This requires deep knowledge of the 
+1.  Determine what component state to measure. This requires deep knowledge of the 
     component.
 2.  Create metric objects for each measured state and add each to the manager.
 3.  Add updates for each metric throughout the component to track state
@@ -490,8 +490,8 @@ The general steps for instrumentation are
 The component may retrieve the metrics manager singleton object and manually create
 and add metrics. To simplify the process of metric creation (2 above), the framework 
 provides a set of register functions for each metric. Each creates a metric, registers
-it, and returns a shared pointer to the metric (see below).Use of the register functions 
-is the recommended approach and alleviates the component from needing to get a reference 
+it, and returns a shared pointer to the metric (see below). Use of the register functions 
+is the recommended approach and alleviates the component from needing a reference 
 to the manager.
 
 If the component desires to get a reference to the metrics manager singleton, the following
@@ -515,50 +515,106 @@ The following is an example of creating and registering a counter metric.
 std::shared_ptr<CounterMetric> pCounter = registerCounterMetric("metric.name", "description");
 ```
 
-Metrics can be created in one of two ways: statically or centrally. Static creation should 
-ONLY be reserved for cases where the component does not have some central place where all metrics
-can be created. The primary reason to avoid static creation is that it if there is a problem 
-during creation, any log messages emitted are lost. Debugging is more difficult in this case.
+### Metric Creation
+The method by which a component creates a metric depends on component implementation. The sections
+that follow provide guidance on different methods of metric creation. Choose the method that
+best matches component implementation.
 
-Central creation is the recommended approach. This is where all metrics are created in a single
-place, such as the component's constructor. This allows for all metrics to be created at once. If
-there is a problem during creation, any emitted log messages are not lost. 
+Metrics are guaranteed to always be created. Problems only arise when registering. If there is a
+failure during registration, the metric can still be used within the component to update state. 
+However, the metric will not be reported during collection. Generally, registration failures are 
+for one of the following reasons:
+* Duplicate metric name (for purposes of unique metric naming, the combination of metric 
+name and metadata must be unique)
+* Invalid metric name or metadata value
 
-In some cases, a component may be created and destroyed multiple times. An example is a protocol 
-handler. For these cases a blend of static and central creation is recommended. The code below
-details how:  
+#### During Module Initialization
+If the component is a shared library whose code is not also shared with a main application, 
+then the component should create metrics during module initialization. The following code shows how
+to register a metric during module initialization:
 
 ```cpp
-static std::once_flag metricsInitialized;
-static std::shared_ptr<hpccMetrics::CounterMetric> pCount1;
-... others as needed
+static std::shared_ptr<hpccMetrics::CounterMetric> pCount;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    pCount = hpccMetrics::registerCounterMetric("name", "description", SMeasureCount);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    pCount = nullptr;    // note this is optional
+}
+```
+
+Note that the metric is not required to be a static variable. Other options include:
+* A global variable
+* A static class member variable
+
+#### During Construction
+If the metric is based on measuring state in a class that is created and destroyed multiple times,
+then the metric should be a static variable in the class. The metric is created during the first
+construction and then reused for subsequent constructions. The metric is destroyed when the class
+static variables are destroyed. The following code shows how to register a metric once:
+
+```cpp
+
+//
+// Allocate the class static variables
+static std::once_flag ClassX::metricsInitialized;
+static std::shared_ptr<hpccMetrics::CounterMetric> ClassX::pCount1;
+
+class ClassX
+{
+public:
+    ClassX();
+    void method1();
+    
+private:
+    static std::shared_ptr<hpccMetrics::CounterMetric> pCount1;
+    static std::once_flag metricsInitialized;
+}
 
 ClassX::ClassX()
 {
     std::call_once(metricsInitialized, []()
     {
-        pCount1 = registerCounterMetric("metric1", "description");
-        ... others as needed
-    });
+        pCount1 = hpccMetrics::registerCounterMetric("metric1", "description");
+    });    
 }
 
 void ClassX::method1()
 {
-    pCount1->inc(1);   // example of (3 above)
+    pCount1->inc(1);   // Update state
 }
 
 ```
 
-The code above uses a static _once_flag_ and a _call_once_ block to ensure that the metrics are 
+The static _once_flag_ and _call_once_ block ensure that the metric is
 only created once. The first time the constructor is called, the lambda is executed. Subsequent
 calls to the constructor do not execute the lambda. The static shared\_ptr for each metric maintain
 references to each metric making them available throughout the class.
 
-Invalid metrics are always created, but not registered. This allows component code to continue
-taking measurements, update state, and count events with a valid metric. However, no results 
-will be reported. Essentially, the metric is a black hole. 
+#### Static Creation
+Static creation should be a last resort. If the above methods do not solve the problem of metric
+allocation and registering, then static creation is the next best choice. The primary reason to
+avoid static creation is that if there is a problem during creation, any log messages
+or exceptions are lost. Debugging is more difficult in this case.
 
-Note in the example above, only a single line of code is needed to update state. This is true for 
+An example of static creation is shown below:
+
+```cpp
+
+//
+// Allocate the class static variables
+static std::shared_ptr<hpccMetrics::CounterMetric> pCount1 = hpccMetrics::registerCounterMetric("metric1", "description");
+
+```
+
+### Metric State Updates
+
+Note in the examples above, only a single line of code is needed to update state. This is true for 
 all metric types.
 
 That's it! There are no component requirements related to collection or
@@ -569,7 +625,7 @@ sinks.
 If your component is already tracking a metric, you may not need to convert it to 
 a defined framework metric type. Instead, you can create a custom metric and 
 pass a reference to the existing metric value. The metric value, however, must be
-a scalar value that can be converted to a 64bit unsigned integer (\_\_uint64). 
+a scalar value that can cast to a 64bit unsigned integer (\_\_uint64). 
 
 The following is an example of creating a custom metric (you must provide the metric type):
 
