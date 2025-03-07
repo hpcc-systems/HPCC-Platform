@@ -13,7 +13,7 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="110" />
+      <colspec colwidth="110"/>
 
       <tbody>
         <row>
@@ -43,10 +43,10 @@
           <entry>Specifies the name of the external programming language whose
           code you wish to embed in your ECL. A language support module for
           that language must have been installed in your plugins directory.
-          Modules are provided for languages such as Java, R, Javascript, and
-          Python. You can write your own pluggable language support module for
-          any language not already supported by using the supplied ones as
-          examples or starting points.</entry>
+          Modules are provided for languages such as Java and Python. You can
+          write your own pluggable language support module for any language
+          not already supported by using the supplied ones as examples or
+          starting points.</entry>
         </row>
 
         <row>
@@ -75,10 +75,8 @@
 
   <para>The <emphasis role="bold">IMPORT</emphasis> declaration allows you to
   call existing code written in the external <emphasis>language</emphasis>.
-  This may be used to call Java or Python code, but is not usable with
-  Javascript or R code (use the EMBED structure instead). Java code must be
-  placed in a .java file and compiled using the javac compiler in the usual
-  way. All Java classes used must be thread safe.</para>
+  Java code must be placed in a .java file and compiled using the javac
+  compiler in the usual way. All Java classes used must be thread safe.</para>
 
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
