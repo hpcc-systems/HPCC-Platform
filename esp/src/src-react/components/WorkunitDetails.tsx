@@ -40,7 +40,7 @@ interface WorkunitDetailsProps {
     parentUrl?: string;
     tab?: string;
     fullscreen?: boolean;
-    state?: { outputs?: string, metrics?: string, resources?: string, helpers?: string, eclsummary?: string };
+    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: string };
     queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
 }
 
@@ -209,7 +209,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <Shimmer />
                         </>
                     }>
-                        <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} selection={state?.metrics} />
+                        <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
                     </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "workflows"} size={size}>
