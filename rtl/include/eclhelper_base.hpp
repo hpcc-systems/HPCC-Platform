@@ -96,7 +96,7 @@ class ECLRTL_API CThorChooseSetsExArg : public CThorArgOf<IHThorChooseSetsExArg>
 {
 };
 
-class ECLRTL_API CThorDiskWriteArg : public CThorSinkArgOf<IHThorDiskWriteArg>
+class ECLRTL_API CThorDiskWriteArg : public CThorSinkArgOf<IHThorGenericDiskWriteArg>
 {
     virtual int getSequence() override;
     virtual unsigned getFlags() override;
@@ -105,6 +105,10 @@ class ECLRTL_API CThorDiskWriteArg : public CThorSinkArgOf<IHThorDiskWriteArg>
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual const char * queryProvider() override;
+    virtual void getProviderOptions(IXmlWriter & options) override;
 };
 
 class ECLRTL_API CThorPipeReadArg : public CThorArgOf<IHThorPipeReadArg>
@@ -284,6 +288,10 @@ class ECLRTL_API CThorSpillArg : public CThorArgOf<IHThorSpillArg>
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual const char * queryProvider() override;
+    virtual void getProviderOptions(IXmlWriter & options) override;
 };
 
 class ECLRTL_API CThorNormalizeChildArg : public CThorArgOf<IHThorNormalizeChildArg>
@@ -1176,7 +1184,8 @@ class ECLRTL_API CThorNewDiskReadArg : public CThorArgOf<IHThorNewDiskReadArg>
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual const char * queryFormat() override;
     virtual void getFormatOptions(IXmlWriter & options) override;
-    virtual void getFormatDynOptions(IXmlWriter & options) override;
+    virtual const char * queryProvider() override;
+    virtual void getProviderOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
