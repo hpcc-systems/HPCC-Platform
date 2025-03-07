@@ -1010,16 +1010,16 @@ thor: []
 
         <itemizedlist>
           <listitem>
-            <para>File Access Cost </para>
+            <para>File Access Cost</para>
           </listitem>
 
           <listitem>
-            <para>File Cost at Rest </para>
+            <para>File Cost at Rest</para>
           </listitem>
         </itemizedlist>
 
         <sect4 id="FileAccessCost">
-          <title>File Access Cost </title>
+          <title>File Access Cost</title>
 
           <para>File access costs are the costs of reading and writing to the
           files. Many storage planes do have a separate charge for data
@@ -1260,6 +1260,54 @@ thor: []
         <para>The storage cost parameters under the global section are only
         used if no cost parameters are specified on the storage plane.</para>
       </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="S1-Cost_Optimizer">
+    <title>Cost Optimizer</title>
+
+    <para>The Cost Optimizer is a tool that analyzes Thor jobs to identify
+    potential issues that could cause unnecessary costs. The optimizer is
+    enabled by default and the cost optimizer analysis is generated
+    automatically for all Thor jobs.</para>
+
+    <sect2 id="Cost-OptimizerFunctionality">
+      <title>Cost Optimizer Functionality</title>
+
+      <para>The Cost Optimizer functions by examining the workunit’s graph and
+      metrics to highlight issues such as skews, spills, and other suboptimal
+      operations. Addressing these issues can improve performance and/or
+      reduce costs.</para>
+
+      <para>For example, the Cost Optimizer may detect among the following
+      noteworthy issues:</para>
+
+      <para><emphasis role="bold">Skews</emphasis>: Imbalanced data
+      distribution causing some nodes to process more data than others.</para>
+
+      <para><emphasis role="bold">Spills</emphasis>: Excessive data spilling
+      to disk due to insufficient memory allocation.</para>
+
+      <para><emphasis role="bold">Inefficient Joins</emphasis>: Suboptimal
+      join operations leading to increased processing time.</para>
+
+      <para>These issues result in longer execution times for the cluster,
+      thereby incurring additional costs.</para>
+    </sect2>
+
+    <sect2 id="CO-CostEstimation">
+      <title>Cost Estimation</title>
+
+      <para>If your HPCC Systems deployment is configured to use the cost
+      tracking settings, the Cost Optimizer provides an estimated monetary
+      value for each identified issue.</para>
+
+      <para>All identified issues are reported on the workunit’s summary page
+      in ECL Watch.</para>
+
+      <para>Review the reported issues to determine their validity and impact
+      to your work and consider making changes to improve efficiency and
+      reduce unnecessary costs.</para>
     </sect2>
   </sect1>
 
