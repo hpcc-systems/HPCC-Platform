@@ -103,19 +103,34 @@ public:
             if (stopped)
                 break;
 
-            IFile& iFile = pDirIter->query();
-            const char* dir = iFile.queryFilename();
-    
-            if (!dir || !*dir)
-                continue;
-    
-            // Process directories, but not the "." and ".." and non post-mortem and not expired post-mortem directories
-            if (iFile.isDirectory()==fileBool::foundYes && *dir != '.' && isPostMortemDir(dir) && isExpiredDir(dir, defaultExpireDays))
-            {
-                StringBuffer path(debugDir);
-                path.append(dir);
+            IFile &iFile = pDirIter->query();
+            const char *dirPath = iFile.queryFilename();
 
-                expiryFolderlist.append(path);
+            if (!dirPath || !*dirPath)
+                continue;
+
+            // Process directories, but not the "." and ".." and non post-mortem and not expired post-mortem directories
+            if (iFile.isDirectory() == fileBool::foundYes && *dirPath != '.')
+            {
+                // Ensure directory name only
+                StringBuffer dirNameOnly;
+                String dirNameStr(dirPath);
+                int fwdSlashIndex = dirNameStr.lastIndexOf('/');
+                if (fwdSlashIndex > -1)
+                {
+                    String *tmpStr = dirNameStr.substring(fwdSlashIndex + 1);
+                    dirNameOnly.append(*tmpStr);
+                    delete tmpStr;
+                }
+                else
+                {
+                    dirNameOnly.append(dirNameStr);
+                }
+
+                if (isPostMortemDirPath(dirNameOnly) && isExpiredDirPath(dirNameOnly, defaultExpireDays))
+                {
+                    expiryFolderlist.append(dirPath);
+                }
             }
         }
         pDirIter.clear();
@@ -182,35 +197,35 @@ public:
     }
 
 private:
-    bool isPostMortemDir(const char *dir)
+    bool isPostMortemDirPath(const StringBuffer &dirName)
     {
         // Expecting a directory name like "W20250225-101112"
-        RegExpr RE("^W[0-9]{8}-[0-9]{6}$");
-        if (RE.find(dir))
+        RegExpr RE("^W[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]$");
+        if (RE.find(dirName.str()))
         {
-            PROGLOG(LOGDBGHK "Post-mortem dir: %s", dir);
+            PROGLOG(LOGDBGHK "Post-mortem dir: %s", dirName.str());
 
             return true;
         }
         else
         {
-            PROGLOG(LOGDBGHK "Non post-mortem dir: %s", dir);
+            PROGLOG(LOGDBGHK "Non post-mortem dir: %s", dirName.str());
 
             return false;
         }
     }
 
-    bool isExpiredDir(const char *dir, const unsigned &defaultExpireDays)
+    bool isExpiredDirPath(StringBuffer &dirName, const unsigned &defaultExpireDays)
     {
         // Directory name is like "W20250225-101112"
         StringBuffer formattedDateTimeString;
         formattedDateTimeString.appendf("%c%c%c%c-%c%c-%c%cT%c%c:%c%c:%c%c",
-             dir[1], dir[2], dir[3], dir[4],
-             dir[5], dir[6],
-             dir[7], dir[8],
-             dir[10], dir[11],
-             dir[13], dir[14],
-             dir[15], dir[16]);
+                                        dirName.charAt(1), dirName.charAt(2), dirName.charAt(3), dirName.charAt(4),
+                                        dirName.charAt(5), dirName.charAt(6),
+                                        dirName.charAt(7), dirName.charAt(8),
+                                        dirName.charAt(10), dirName.charAt(11),
+                                        dirName.charAt(12), dirName.charAt(13),
+                                        dirName.charAt(14), dirName.charAt(15));
 
         CDateTime now;
         now.setNow();
@@ -221,7 +236,7 @@ private:
 
         if (now.compare(expires, false) > 0)
         {
-            PROGLOG(LOGDBGHK "Post-mortem dir: %s has expired", dir);
+            PROGLOG(LOGDBGHK "Post-mortem dir: %s has expired", dirName.str());
 
             return true;
         }
