@@ -22,6 +22,7 @@
 #include "jhash.hpp"
 #include "jsort.hpp"
 #include "jregexp.hpp"
+#include "jevent.hpp"
 
 #include "udptopo.hpp"
 #include "ccd.hpp"
@@ -240,6 +241,45 @@ void stopDelayedReleaser()
     delayedReleaser.clear();
 }
 
+
+//-------------------------------------------------------------------------
+
+void startRoxieEventRecording(const char * options, const char * filename)
+{
+    if (isEmptyString(options))
+        options = "threadid";
+
+    StringBuffer outputFilename;
+    const char * path = filename;
+    if (!isAbsolutePath(filename))
+    {
+        getTempFilePath(outputFilename, "eventrecorder", nullptr);
+        outputFilename.append(PATHSEPCHAR);
+        if (!isEmptyString(filename))
+        {
+            outputFilename.append(filename);
+        }
+        else
+        {
+            //MORE: Revisit this at a later date
+            unsigned seq = (unsigned)(get_cycles_now() % 100000);
+            outputFilename.append("roxieevents.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
+        }
+
+        path = outputFilename.str();
+        //MORE: The caller will need to know the full pathname
+    }
+
+    recursiveCreateDirectoryForFile(path);
+    queryRecorder().startRecording(options, path);
+
+    //MORE: Add all the meta information for the files - either now or in stopRoxieEventRecording()
+}
+
+void stopRoxieEventRecording()
+{
+    queryRecorder().stopRecording();
+}
 
 //-------------------------------------------------------------------------
 

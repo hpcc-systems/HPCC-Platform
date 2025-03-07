@@ -64,6 +64,7 @@
 #include "rtldynfield.hpp"
 #include "eclhelper_base.hpp"
 #include "jmetrics.hpp"
+#include "jevent.hpp"
 
 constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
 
@@ -671,23 +672,51 @@ class DelayedCacheEntryReleaser : public IRemovedMappingCallback
 public:
     ~DelayedCacheEntryReleaser()
     {
+        if (unlikely(recordingEvents()))
+        {
+            for (unsigned i1 = 0; i1 < numFixed; i1++)
+                noteEviction(fixedFileId[i1], fixedPending[i1]);
+
+            ForEachItemIn(i2, pending)
+                noteEviction(pendingFileIds.item(i2), &pending.item(i2));
+        }
+
         for (unsigned i=0; i < numFixed; i++)
             fixedPending[i]->Release();
     }
     virtual void noteRemoval(void * _mapping) override
     {
         CNodeMapping *mapping = reinterpret_cast<CNodeMapping *>(_mapping);
-        //Save the node onto a list, so it will be released when this object is released.
+        unsigned keyId = mapping->queryFindValue().keyId;
+        // Save the node onto a list, so it will be released when this object is released.
         CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->query().getNode());
+        // The key id needs to be stored separately because the node does not currently contain it.
         if (numFixed < maxFixed)
-            fixedPending[numFixed++] = node;
+        {
+            fixedPending[numFixed] = node;
+            fixedFileId[numFixed] = keyId;
+            numFixed++;
+        }
         else
+        {
             pending.append(*node);
+            pendingFileIds.append(keyId);
+        }
     }
+
 protected:
-    CIArray pending;
+    void noteEviction(unsigned keyId, CJHTreeNode * node)
+    {
+        offset_t pos = node->getFpos();
+        queryRecorder().recordIndexEviction(keyId, pos, node->getNodeType(), node->getMemSize());
+    }
+
+protected:
+    CIArrayOf<CJHTreeNode> pending;
+    UnsignedArray pendingFileIds;
     //Use a fixed array for a small number of allocations to avoid a heap allocation inside the critsec
     CJHTreeNode * fixedPending[maxFixed]; // deliberately uninitialized
+    unsigned fixedFileId[maxFixed]; // deliberately uninitialized
     unsigned numFixed = 0;
 
 };
@@ -2969,6 +2998,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
                 block.leave();
 
                 //Update ctx stats outside of the critical section.
+                if (unlikely(recordingEvents()))
+                    queryRecorder().recordIndexLookup(iD, pos, type, true);
                 if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
             }
@@ -2985,6 +3016,9 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         cacheEntry->Link();
         ownedCacheEntry.setown(cacheEntry);
     }
+
+    if (unlikely(recordingEvents()))
+        queryRecorder().recordIndexLookup(iD, pos, type, false);
 
     //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
     //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
@@ -3041,6 +3075,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         }
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
+
+        if (unlikely(recordingEvents()))
+            queryRecorder().recordIndexLoad(iD, pos, type, ownedCacheEntry->queryNode()->getMemSize(), cycle_to_nanosec(actualLoadCycles), cycle_to_nanosec(fetchCycles));
+
         if (actualLoadCycles > traceNodeLoadThreshold)
         {
             if ((endLoadCycles - lastLoadReportCycles) >= traceNodeLoadFrequency)
