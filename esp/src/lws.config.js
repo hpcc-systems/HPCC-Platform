@@ -43,6 +43,7 @@ let rewrite = [
     { from: "/FileSpray/(.*)", to: protocol + "://" + ip + ":" + port + "/FileSpray/$1" },
     { from: "/WsCloud/(.*)", to: protocol + "://" + ip + ":" + port + "/WsCloud/$1" },
     { from: "/WSDali/(.*)", to: protocol + "://" + ip + ":" + port + "/WSDali/$1" },
+    { from: "/WSSasha/(.*)", to: protocol + "://" + ip + ":" + port + "/WSSasha/$1" },
     { from: "/WsDfu/(.*)", to: protocol + "://" + ip + ":" + port + "/WsDfu/$1" },
     { from: "/WsDfuXRef/(.*)", to: protocol + "://" + ip + ":" + port + "/WsDfuXRef/$1" },
     { from: "/WsECL/(.*)", to: protocol + "://" + ip + ":8002/WsECL/$1" },
