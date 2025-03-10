@@ -1134,6 +1134,9 @@ enum
     TDXjobtemp          = 0x0040,       // stay around while a wu is being executed.
     TDXgeneric          = 0x0080,       // generic form of disk read/write
 
+    TDXdynprovideroptions = 0x40000000,     // The provider options are dynamic and must be called after onStart()
+    TDXdynformatoptions = 0x80000000,       // The format options are dynamic and must be called after onStart()
+
 //disk read flags
     TDRoptional         = 0x00000100,
     TDRunsorted         = 0x00000200,
@@ -1153,10 +1156,12 @@ enum
     TDRunfilteredcount  = 0x00800000,       // count/aggregegate doesn't have an additional filter
     TDRfilenamecallback = 0x01000000,
     TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
-    TDRdynformatoptions = 0x04000000,
+    //UNUSED            = 0x04000000,
     TDRinvariantfilename= 0x08000000,       // filename is non constant but has the same value for the whole query
     TDRprojectleading   = 0x10000000,       // The projeted format matches leading fields of the source row (so no need to project if disappearing quickly)
     TDRcloneappendvirtual = 0x20000000,     // Can clone the disk record and then append the virtual fields.
+
+    //NB: All flags are now used.
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -1296,6 +1301,17 @@ struct IHThorDiskWriteArg : public IHThorArg
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual unsigned getFormatCrc() = 0;
     virtual const char * getCluster(unsigned idx) = 0;
+};
+
+//New prototype interface for writing any format file through the same interface
+//liable to change at any point.
+//Functions should only be called if getFlags() & TDXgeneric is true.
+struct IHThorGenericDiskWriteArg : extends IHThorDiskWriteArg
+{
+    virtual const char * queryFormat() = 0;                         // not needed for unified provider
+    virtual void getFormatOptions(IXmlWriter & options) = 0;        // not needed for unified provider
+    virtual const char * queryProvider() = 0;
+    virtual void getProviderOptions(IXmlWriter & options) = 0;
 };
 
 struct IHThorFilterArg : public IHThorArg
@@ -1447,12 +1463,7 @@ struct IHThorSplitArg : public IHThorArg
     virtual bool isBalanced() = 0;
 };
 
-struct IHThorSpillExtra : public IInterface
-{
-    //fill in functions here if we need any more...
-};
-
-struct IHThorSpillArg : public IHThorDiskWriteArg
+struct IHThorSpillArg : public IHThorGenericDiskWriteArg
 {
 };
 
@@ -2477,11 +2488,13 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
 
 //New prototype interface for reading any format file through the same interface
 //liable to change at any point.
-struct IHThorNewDiskReadBaseArg : extends IHThorDiskReadBaseArg
+//Functions should only be called if getFlags() & TDXgeneric is true.
+struct IHThorGenericDiskReadBaseArg : extends IHThorDiskReadBaseArg
 {
     virtual const char * queryFormat() = 0;
     virtual void getFormatOptions(IXmlWriter & options) = 0;
-    virtual void getFormatDynOptions(IXmlWriter & options) = 0;
+    virtual const char * queryProvider() = 0;
+    virtual void getProviderOptions(IXmlWriter & options) = 0;
 };
 
 //The following are mixin classes added to one of the activity base interfaces above.
@@ -2624,7 +2637,7 @@ struct IHThorDiskGroupAggregateArg : extends IHThorDiskReadBaseArg, extends IHTh
 };
 
 
-struct IHThorNewDiskReadArg : extends IHThorNewDiskReadBaseArg, extends IHThorSourceLimitTransformExtra, extends IHThorCompoundReadExtra
+struct IHThorNewDiskReadArg : extends IHThorGenericDiskReadBaseArg, extends IHThorSourceLimitTransformExtra, extends IHThorCompoundReadExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
