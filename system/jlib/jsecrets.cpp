@@ -1119,19 +1119,21 @@ static IPropertyTree * resolveLocalSecret(const char *category, const char * nam
     {
         if (entries->isDir())
             continue;
-        StringBuffer name;
-        entries->getName(name);
-        if (!validateXMLTag(name))
+        StringBuffer secretKeyName;   // filename is used as the secret key name
+        entries->getName(secretKeyName);
+        if (!validateXMLTag(secretKeyName))
             continue;
         MemoryBuffer content;
         Owned<IFileIO> io = entries->query().open(IFOread);
-        read(io, 0, (size32_t)-1, content);
+        read(io, 0, (size32_t)-1, content);   // contents of the file is the secret value
         if (!content.length())
             continue;
 
-        //Always add a null terminator to data read from a file so that queryProp() can be used on the resultant tree
-        content.append((byte)0);
-        tree->setPropBin(name, content.length(), content.bufferBase());
+        // Remove trailing whitespace
+        StringBuffer value(content.toByteArray());
+        value.clip();
+
+        tree->setProp(secretKeyName, value.str());
     }
 
     return tree.getClear();
