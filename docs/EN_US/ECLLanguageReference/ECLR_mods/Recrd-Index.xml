@@ -49,9 +49,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -266,7 +266,7 @@
 
         <para>All STRINGs must be fixed length.</para>
 
-        <para></para>
+        <para/>
       </listitem>
     </itemizedlist></para>
 
@@ -365,17 +365,17 @@ BUILD(VehicleKey3);
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt" />
+        <colspec align="left" colwidth="188*"/>
 
-        <colspec />
+        <colspec colwidth="836*"/>
 
         <tbody>
           <row>
             <entry><emphasis role="bold">LZW</emphasis></entry>
 
-            <entry>The default compression. It is a variant of the
-            Lempel-Ziv-Welch algorithm. It remains the default for backward
-            compatibility.</entry>
+            <entry>A variant of the Lempel-Ziv-Welch algorithm. This was the
+            the default compression prior to versions 9.6.90, 9.8.66, and
+            9.10.12.</entry>
           </row>
 
           <row>
@@ -403,27 +403,109 @@ BUILD(VehicleKey3);
             compression on the payload. The resulting index can be smaller
             than using lz4.</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4s'</emphasis> </emphasis></entry>
+
+            <entry>Causes inplace compression on the key fields and lz4s
+            compression on the payload. This uses the stream LZ4 API to avoid
+            recompressing the data and reduce the index build times.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4shc'</emphasis> </emphasis></entry>
+
+            <entry>The default compression for inplace indexes in versions
+            after versions 9.6.90, 9.8.66, and 9.10.12. Causes inplace
+            compression on the key fields and lz4shc compression on the
+            payload. This uses the stream LZ4 API to avoid recompressing the
+            data and reduce the index build times.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The inplace index compression format (introduced in version 9.2.0)
-    improves compression of keyed fields and allows them to be searched
-    without decompression. The original index compression implementation
-    decompresses the rows when they are read from disk.</para>
+    <para>The lz4s and lz4hc inplace index compression formats (introduced in
+    versions 9.6.90, 9.8.66, and 9.10.12 9.2.0 or later) improves compression
+    and reduces build time. These formats require an engine that supports it.
+    In other words, <emphasis role="bold">if you build an index using the lz4s
+    or lz4shc formats, you must use a platform later than 9.6.90, 9.8.66, and
+    9.10.12 to read those indexes. </emphasis></para>
+
+    <para>If you attempt to read an index with the inplace compression format
+    on a system that does not support it, you will receive an error
+    message.</para>
 
     <para>Because the branch nodes can be searched without decompression more
     branch nodes fit into memory which can improve search performance. The lz4
     compression used for the payload is significantly faster at decompressing
-    leaf pages than the previous LZW compression.</para>
+    leaf pages than the previous LZW compression. Whether performance is
+    better with lz4hc (a high-compression variant of lz4) on the payload
+    fields depends on the access characteristics of the data and how much of
+    the index is cached in memory.</para>
 
-    <para>Whether performance is better with lz4hc (a high-compression variant
-    of lz4) on the payload fields depends on the access characteristics of the
-    data and how much of the index is cached in memory.</para>
+    <para><emphasis role="bold">Compression Levels :</emphasis></para>
 
-    <para>If you attempt to read an index with the inplace compression format
-    on a system that does not support them, you will receive an error
-    message.</para>
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="240*"/>
+
+        <colspec colwidth="733*"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">hclevel</emphasis></entry>
+
+            <entry>An integer between 2 and 12 to specify the level of
+            compression. The default is 3. Higher levels increase the
+            compression, but also increase the compression times. This may be
+            cost effective depending on the length of time the data is stored,
+            and the storage costs compared to the compute costs to build the
+            index.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxcompression</emphasis></entry>
+
+            <entry>The maximum desired compression ratio. This avoids the leaf
+            nodes getting too large when expanded, but increases the size of
+            some indexes. The default is 20.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxrecompress</emphasis></entry>
+
+            <entry>Specifies the number of times the entire input dataset
+            should be recompressed to free up space. Increasing the number
+            decreases the size of the indexes, and will probably decrease the
+            decompress time slightly (because there are fewer stream blocks),
+            but will increase the build time. The default is 1.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para/>
+
+    <para>Example:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+          {STRING2 st,STRING20 city,STRING20 lname},FLAT);
+
+SearchTerms := RECORD
+  Vehicles.st;
+  Vehicles.city;
+END; 
+Payload     := RECORD
+  Vehicles.lname;
+END; 
+VehicleKey := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city',
+                    COMPRESSED('inplace:lz4shc,compressopt(hclevel=9,
+                                                           maxcompression=25,
+                                                           maxrecompress=4)'));
+BUILD(VehicleKey);</programlisting>
 
     <para>See Also: <link linkend="DATASET">DATASET</link>, <link
     linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link
