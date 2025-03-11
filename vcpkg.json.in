@@ -4,6 +4,10 @@
     "version": "9.10.0",
     "dependencies": [
         {
+            "name": "antlr3",
+            "platform": "@VCPKG_ANTLR3@"
+        },
+        {
             "name": "apr",
             "platform": "@VCPKG_APR@"
         },
