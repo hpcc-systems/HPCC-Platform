@@ -7060,7 +7060,7 @@ public:
     TestingRowBuffer(unsigned _cost, unsigned _id) : cost(_cost), id(_id)
     {
     }
-    ~TestingRowBuffer() { kill(); }
+    virtual ~TestingRowBuffer() { kill(); }
 
 //interface IBufferedRowCallback
     virtual unsigned getSpillCost() const { return cost; }
@@ -7097,7 +7097,7 @@ public:
     {
         rowManager->addRowBuffer(this);
     }
-    ~CallbackBlockAllocator()
+    virtual ~CallbackBlockAllocator()
     {
         rowManager->removeRowBuffer(this);
     }
