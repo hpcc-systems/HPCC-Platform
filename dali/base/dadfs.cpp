@@ -8240,13 +8240,11 @@ private:
 };
 
 static std::atomic<CNamedGroupStore *> groupStore{nullptr};
-static CriticalSection groupsect;
 
 bool CNamedGroupIterator::match()
 {
     if (conn.get()) {
         if (matchgroup.get()) {
-            CLeavableCriticalBlock block3(groupsect);
             if (!groupStore.load())
                 return false;
             const char *name = pe->query().queryProp("@name");
@@ -8254,7 +8252,6 @@ bool CNamedGroupIterator::match()
                 return false;
             GroupType dummy;
             Owned<IGroup> lgrp = groupStore.load()->dolookup(name, conn, NULL, dummy);
-            block3.leave();
             if (lgrp) {
                 if (exactmatch)
                     return lgrp->equals(matchgroup);
@@ -8270,10 +8267,8 @@ bool CNamedGroupIterator::match()
 
 INamedGroupStore &queryNamedGroupStore()
 {
-    CriticalBlock block(groupsect);
-    if (!groupStore.load()) {
+    if (!groupStore.load())
         groupStore.store(new CNamedGroupStore());
-    }
     return *(groupStore.load());
 }
 
@@ -9206,7 +9201,6 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
 
 
 static std::atomic<CDistributedFileDirectory *> DFdir{nullptr};
-static CriticalSection dfdirCrit;
 
 /**
  * Public method to control DistributedFileDirectory access
@@ -9215,7 +9209,6 @@ static CriticalSection dfdirCrit;
  */
 IDistributedFileDirectory &queryDistributedFileDirectory()
 {
-    CriticalBlock block(dfdirCrit);
     if (!DFdir.load())
         DFdir.store(new CDistributedFileDirectory());
     return *DFdir.load();
@@ -9226,25 +9219,29 @@ IDistributedFileDirectory &queryDistributedFileDirectory()
  */
 void closedownDFS()  // called by dacoven
 {
-    CriticalBlock block(dfdirCrit);
-    try {
-        delete DFdir.load();
+    if (DFdir.load())
+    {
+        try {
+            delete DFdir.load();
+        }
+        catch (IMP_Exception *e) {
+            if (e->errorCode()!=MPERR_link_closed)
+                throw;
+            PrintExceptionLog(e,"closedownDFS");
+            e->Release();
+        }
+        catch (IDaliClient_Exception *e) {
+            if (e->errorCode()!=DCERR_server_closed)
+                throw;
+            e->Release();
+        }
+        DFdir.store(nullptr);
     }
-    catch (IMP_Exception *e) {
-        if (e->errorCode()!=MPERR_link_closed)
-            throw;
-        PrintExceptionLog(e,"closedownDFS");
-        e->Release();
+    if (groupStore.load())
+    {
+        ::Release(groupStore.load());
+        groupStore.store(nullptr);
     }
-    catch (IDaliClient_Exception *e) {
-        if (e->errorCode()!=DCERR_server_closed)
-            throw;
-        e->Release();
-    }
-    DFdir.store(nullptr);
-    CriticalBlock block2(groupsect);
-    ::Release(groupStore.load());
-    groupStore.store(nullptr);
 }
 
 class CDFPartFilter : implements IDFPartFilter, public CInterface
