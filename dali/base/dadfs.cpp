@@ -9205,7 +9205,7 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
 // --------------------------------------------------------
 
 
-static CDistributedFileDirectory *DFdir = NULL;
+static std::atomic<CDistributedFileDirectory *> DFdir{nullptr};
 static CriticalSection dfdirCrit;
 
 /**
@@ -9215,12 +9215,10 @@ static CriticalSection dfdirCrit;
  */
 IDistributedFileDirectory &queryDistributedFileDirectory()
 {
-    if (!DFdir) {
-        CriticalBlock block(dfdirCrit);
-        if (!DFdir)
-            DFdir = new CDistributedFileDirectory();
-    }
-    return *DFdir;
+    CriticalBlock block(dfdirCrit);
+    if (!DFdir.load())
+        DFdir.store(new CDistributedFileDirectory());
+    return *DFdir.load();
 }
 
 /**
@@ -9230,7 +9228,7 @@ void closedownDFS()  // called by dacoven
 {
     CriticalBlock block(dfdirCrit);
     try {
-        delete DFdir;
+        delete DFdir.load();
     }
     catch (IMP_Exception *e) {
         if (e->errorCode()!=MPERR_link_closed)
@@ -9243,7 +9241,7 @@ void closedownDFS()  // called by dacoven
             throw;
         e->Release();
     }
-    DFdir = NULL;
+    DFdir.store(nullptr);
     CriticalBlock block2(groupsect);
     ::Release(groupStore.load());
     groupStore.store(nullptr);
