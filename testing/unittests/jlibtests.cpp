@@ -973,6 +973,21 @@ void testEncodeCSVColumn()
         source.replaceString("aaab", "x");
         CPPUNIT_ASSERT_EQUAL_STR("aaaaaax", source.str());
 
+        // Match string at the end of the source and newStr is same length as oldStr
+        source.set("aaaaaaaaab");
+        source.replaceString("aaab", "xxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaaaxxxx", source.str());
+
+        // Single char match at beginning of source
+        source.set("baaaaaaaaa");
+        source.replaceString("b", "x");
+        CPPUNIT_ASSERT_EQUAL_STR("xaaaaaaaaa", source.str());
+
+        // Single char match at beginning of source and newStr is shorter
+        source.set("baaaaaaaaa");
+        source.replaceString("b", "");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaaaaaa", source.str());
+
         // Single char match at end of source
         source.set("aaaaaaaaab");
         source.replaceString("b", "x");
@@ -983,15 +998,35 @@ void testEncodeCSVColumn()
         source.replaceString("aba", "xxx");
         CPPUNIT_ASSERT_EQUAL_STR("xxxbxxxb", source.str());
 
+        // Match string at the start of the source and new string is shorter
+        source.set("abababab");
+        source.replaceString("aba", "x");
+        CPPUNIT_ASSERT_EQUAL_STR("xbxb", source.str());
+
+        // Match string at the start of the source and new string is longer
+        source.set("abababab");
+        source.replaceString("aba", "xxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("xxxxbxxxxb", source.str());
+
         // Match not found
         source.set("aaaaa");
         source.replaceString("bb", "xxx");
+        CPPUNIT_ASSERT_EQUAL_STR("aaaaa", source.str());
+
+        // Match not found and new string is same length as old string (Different code path)
+        source.set("aaaaa");
+        source.replaceString("bb", "xx");
         CPPUNIT_ASSERT_EQUAL_STR("aaaaa", source.str());
 
         // Replace string is empty
         source.set("aabaa");
         source.replaceString("aa", "");
         CPPUNIT_ASSERT_EQUAL_STR("b", source.str());
+
+        // New string is empty and every character is replaced
+        source.set("aaaaa");
+        source.replaceString("a", "");
+        CPPUNIT_ASSERT_EQUAL_STR("", source.str());
 
         // Search string is empty
         source.set("aaaaaa");
@@ -1037,6 +1072,21 @@ void testEncodeCSVColumn()
         source.set("ababab");
         source.replaceString("ababac", "xxxxxx");
         CPPUNIT_ASSERT_EQUAL_STR("ababab", source.str());
+
+        // Search string has many matches where new string is shorter than the old string
+        source.set("abbabaabaaaababaababababaaabababababbabbbbabbabbbbbbaa");
+        source.replaceString("abab", "x");
+        CPPUNIT_ASSERT_EQUAL_STR("abbabaabaaaxaxxaaxxabbabbbbabbabbbbbbaa", source.str());
+
+        // Search string has many matches where new string is the same length as the old string
+        source.set("abbabaabaaaababaababababaaabababababbabbbbabbabbbbbbaa");
+        source.replaceString("abab", "xxxx");
+        CPPUNIT_ASSERT_EQUAL_STR("abbabaabaaaxxxxaxxxxxxxxaaxxxxxxxxabbabbbbabbabbbbbbaa", source.str());
+
+        // Search string has many matches where new string is empty
+        source.set("abbabaabaaaababaababababaaabababababbabbbbabbabbbbbbaa");
+        source.replaceString("abab", "");
+        CPPUNIT_ASSERT_EQUAL_STR("abbabaabaaaaaaabbabbbbabbabbbbbbaa", source.str());
     }
 };
 
