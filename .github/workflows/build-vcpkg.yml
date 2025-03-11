@@ -64,11 +64,27 @@ jobs:
       asset-name: 'docker-package'
     secrets: inherit
 
+  build-docker-ubuntu-24_04-arm:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-24.04
+      tag_postfix: "-arm"
+    secrets: inherit
+
   build-docker-ubuntu-24_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
+    secrets: inherit
+
+  build-docker-ubuntu-22_04-arm:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-22.04
+      tag_postfix: "-arm"
     secrets: inherit
 
   build-docker-ubuntu-22_04:
@@ -213,4 +229,13 @@ jobs:
       os: macos-13
       build-type: 'Release'
       cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+    secrets: inherit
+
+  build-gh_runner-macos-14:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: macos-14
+      build-type: 'Release'
+      cmake-configuration-ex: '-DCMAKE_OSX_ARCHITECTURES=arm64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
