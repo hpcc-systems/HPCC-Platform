@@ -9,9 +9,12 @@ import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 
 import { FileSprayService, FileSpray as FileSprayNS } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 
 import { Paged } from "./store/Paged";
 import { BaseStore } from "./store/Store";
+
+const logger = scopedLogger("src/ESPDFUWorkunit.ts");
 
 const i18n = nlsHPCC;
 
@@ -331,6 +334,12 @@ export function CreateWUQueryStore(): BaseStore<FileSprayNS.GetDFUWorkunits, typ
             return {
                 data: response?.results?.DFUWorkunit?.map(wu => Get(wu.ID, wu)) ?? [],
                 total: response.NumWUs
+            };
+        }).catch(err => {
+            logger.error(err);
+            return {
+                data: [],
+                total: 0
             };
         });
     });
