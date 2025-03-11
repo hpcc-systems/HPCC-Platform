@@ -78,8 +78,8 @@ struct EventInformation
 };
 
 
-#define DEFINE_EVENT(event) Event##event, #event, false, EventNone
-#define DEFINE_META(meta) Meta##meta, #meta, true, EventNone
+#define DEFINE_EVENT(event) { Event##event, #event, false, EventNone }
+#define DEFINE_META(meta) { Meta##meta, #meta, true, EventNone }
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None),
@@ -120,7 +120,7 @@ struct EventAttrInformation
     unsigned size;
 };
 
-#define DEFINE_ATTR(tag, type) EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type]
+#define DEFINE_ATTR(tag, type) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type] }
 
 static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(None, none),
