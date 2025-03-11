@@ -329,7 +329,8 @@ constexpr size32_t getSizeOfAttr(T arg)
 
 constexpr size32_t getSizeOfAttr(const char * arg)
 {
-    return sizeof(EventAttr) + strlen(arg) + 1;
+    //strlen is a constexpr in gcc, but not in clang
+    return sizeof(EventAttr) + std::char_traits<char>::length(arg) + 1;
 }
 
 template<typename... Args>
@@ -433,7 +434,7 @@ void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
     }
     if (options & ERFthreadid)
     {
-        __uint64 threadId = GetCurrentThreadId();
+        __uint64 threadId = (__uint64)GetCurrentThreadId();
         write(offset, threadId);
     }
 }
