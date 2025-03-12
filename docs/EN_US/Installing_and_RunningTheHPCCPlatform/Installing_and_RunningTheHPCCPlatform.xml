@@ -2078,65 +2078,6 @@ sudo /etc/init.d/hpcc-init -c esp start
       </sect2>
     </sect1>
 
-    <sect1 id="Running-HPCC-Tools-Under-WINE">
-      <title>Running the ECL IDE under WINE</title>
-
-      <para>To run the ECL IDE under WINE in Linux, follow these steps.</para>
-
-      <orderedlist>
-        <listitem>
-          <para>Install wine1.2 (this corresponds to Wine version 1.1.31) and
-          its dependencies.</para>
-        </listitem>
-
-        <listitem>
-          <para>Download msxml3.msi from Microsoft (Service Pack 7 or
-          later).</para>
-
-          <para><emphasis role="underline"><ulink
-          url="http://www.microsoft.com/en-us/download/details.aspx?id=3988">http://www.microsoft.com/en-us/download/details.aspx?id=3988</ulink></emphasis></para>
-        </listitem>
-
-        <listitem>
-          <para>Install msxml3.msi in Wine (Double-click the msi file and Wine
-          will install it).</para>
-        </listitem>
-
-        <listitem>
-          <para>Open Configure Wine (Applications/Wine/Configure Wine):</para>
-        </listitem>
-
-        <listitem>
-          <para>Select the Libraries tab.</para>
-        </listitem>
-
-        <listitem>
-          <para>In the New override for library drop list, select
-          <emphasis>msxml3</emphasis>, then press the add button.</para>
-        </listitem>
-
-        <listitem>
-          <para>Select <emphasis> msxml3</emphasis> in the Existing overrides
-          list and press Edit.</para>
-        </listitem>
-
-        <listitem>
-          <para>Select the <emphasis>Native (Windows)</emphasis> option and
-          press the OK button.</para>
-        </listitem>
-
-        <listitem>
-          <para>Press the OK button to close the Wine Configuration
-          window.</para>
-        </listitem>
-
-        <listitem>
-          <para>Install the HPCC Systems ECL IDE (Double-click the
-          installation file and Wine will install it).</para>
-        </listitem>
-      </orderedlist>
-    </sect1>
-
     <sect1 id="ExternLang_Support">
       <title>External Language Support</title>
 
@@ -2301,7 +2242,7 @@ add1(10);
         at:</para>
 
         <para><ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
       </sect2>
 
       <sect2 id="Add_On_Javascript" role="brk">
@@ -2412,11 +2353,11 @@ split_words('Once upon a time');
             Python anywhere you would use ECL within with your HPCC Systems
             platform.</para>
 
-            <para>Additional examples of HPCC Systems code can be found
-            at:</para>
+            <para>Additional examples of using Python with HPCC Systems code
+            can be found at:</para>
 
             <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
           </listitem>
         </orderedlist>
 
