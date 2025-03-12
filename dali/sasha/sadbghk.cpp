@@ -33,7 +33,6 @@ public:
     {
     }
 
-
     virtual void start() override
     {
         Thread::start(false);
@@ -109,7 +108,7 @@ public:
     virtual int run() override
     {
         CSashaSchedule schedule;
-        unsigned interval = getComponentConfig()->getPropInt("@interval",DEFAULT_HOUSEKEEPING_INTERVAL_HOURS);
+        unsigned interval = getComponentConfig()->getPropInt("@interval", DEFAULT_HOUSEKEEPING_INTERVAL_HOURS);
         if (interval == 0)
         {
             stopped = true;
@@ -142,7 +141,7 @@ private:
     {
         Owned<IFile> file = createIFile(filePath);
         CDateTime expiredModifiedTime;
-        file->getTime( nullptr,  &expiredModifiedTime, nullptr);
+        file->getTime(nullptr, &expiredModifiedTime, nullptr);
         expiredModifiedTime.adjustTime(60 * 24 * expiryDays);
 
         CDateTime now;
