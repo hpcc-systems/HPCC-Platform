@@ -547,6 +547,7 @@ EventRecorder eventRecorder;
 //
 // * Does it make sense to have a (compile time?) option to record events as text instead?  Would that make developer debugging simpler?
 // * Provide a way of getting at the full path filename
+// * compress the span id to 16 bytes in the binary file (it is a 32byte hex coded string)
 // * Ensure the default filename is unique in some way (include the process id?)
 // * Ensure files are written to the debug plane in containerized.  (Should output go to temp and then be copied??)
 // * Add a function to optimize write of a single byte to avoid the loop and provide specialist template functions for byte/bool
