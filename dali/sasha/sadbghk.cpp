@@ -90,21 +90,6 @@ public:
                 if (streq(filePath, ".") || streq(filePath, ".."))
                     continue;
 
-                // Ensure directory name only
-                StringBuffer dirNameOnly;
-                String dirNameStr(filePath);
-                int fwdSlashIndex = dirNameStr.lastIndexOf('/');
-                if (fwdSlashIndex > -1)
-                {
-                    String *tmpStr = dirNameStr.substring(fwdSlashIndex + 1);
-                    dirNameOnly.append(*tmpStr);
-                    delete tmpStr;
-                }
-                else
-                {
-                    dirNameOnly.append(dirNameStr);
-                }
-
                 if (isExpiredModifiedDateTime(filePath))
                 {
                     recursiveRemoveDirectory(filePath);
