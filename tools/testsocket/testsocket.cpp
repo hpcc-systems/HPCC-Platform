@@ -51,6 +51,8 @@ bool remoteStreamQuery = false;
 bool remoteStreamForceResend = false;
 bool remoteStreamSendCursor = false;
 bool autoXML = true;
+bool generateClientSpans = false;
+StringBuffer tracingConfig;
 int verboseDbgLevel = 0;
 
 StringBuffer sendFileName;
@@ -80,6 +82,7 @@ unsigned queryAbsDelayMS = 0;  // ex: -u0 -qd 1000 for 1 q/s ...
 unsigned totalQueryCnt = 0;
 double totalQueryMS = 0.0;
 
+Owned<ISpan> serverSpan;
 //---------------------------------------------------------------------------
 
 void SplitIpPort(StringAttr & ip, unsigned & port, const char * address)
@@ -513,6 +516,7 @@ int ReceiveThread::run()
 
 int doSendQuery(const char * ip, unsigned port, const char * base)
 {
+    OwnedActiveSpanScope clientSpan(serverSpan->createClientSpan("testsocket_sendQuery"));
     Owned<ISocket> socket;
     Owned<ISecureSocketContext> secureContext;
     __int64 starttime, endtime;
@@ -619,8 +623,19 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             newQuery.appendf("</%sRequest></Body></Envelope>", queryName);
             base = newQuery.str();
         }
+
+        StringBuffer tpHeader;
+        if (generateClientSpans && clientSpan->isValid())
+        {
+            Owned<IProperties> clientHeaders = createProperties();
+            clientSpan->getClientHeaders(clientHeaders.get());
+
+            if (clientHeaders->hasProp("traceparent"))
+                tpHeader.appendf("--header traceparent: %s\r\n", clientHeaders->queryProp("traceparent"));
+        }
+
         // note - don't support queryname override unless original query is xml
-        fullQuery.appendf("POST /doc HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n", (int) strlen(base)).append(base);
+        fullQuery.appendf("POST /doc HTTP/1.0\r\n%sContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n", tpHeader.str(), (int) strlen(base)).append(base);
     }
     else
     {
@@ -664,15 +679,40 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
                 fullQuery.append(queryRemoteStreamCmd());
             fullQuery.append(base);
         }
+
+        if (generateClientSpans && clientSpan->isValid())
+        {
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            clientSpan->getClientHeaders(retrievedClientHeaders.get());
+
+            if (retrievedClientHeaders->hasProp("traceparent"))
+            {
+                Owned<IPTree> fullQueryTree = createPTreeFromXMLString(fullQuery.str(), ipt_none, ptr_none);
+
+                IPropertyTree * traceHeaderTree = fullQueryTree->queryPropTree("_trace");
+                if (traceHeaderTree) //query included _trace header, just overwrite the traceparent entry
+                {
+                    traceHeaderTree->setProp("traceparent", retrievedClientHeaders->queryProp("traceparent"));
+                }
+                else // no _trace header in the original query, ensure _trace branch and set traceparent
+                {
+                    fullQueryTree->setPropTree("_trace");
+                    fullQueryTree->setProp("_trace/traceparent", retrievedClientHeaders->queryProp("traceparent"));
+                }
+
+                toXML(fullQueryTree, fullQuery.clear(), 0, XML_SingleQuoteAttributeValues); //rebuild the xml with _trace
+            }
+        }
     }
 
     const char * query = fullQuery.str();
+
     size32_t queryLen=(size32_t)strlen(query);
     size32_t len = queryLen;
     size32_t sendlen = len;
     if (persistConnections)
         sendlen |= 0x80000000;
-    _WINREV(sendlen);                    
+    _WINREV(sendlen);
 
     try
     {
@@ -848,7 +888,9 @@ void usage(int exitCode)
     printf("  -cascade  cascade query (to all roxie nodes)\n");
     printf("  -lock     locked cascade query (to all roxie nodes)\n");
     printf("  -x        raw send\n");
-    
+    printf("  -gcs      generate and propagate client spans per request\n");
+    printf("  -ctc <YAMLconfig> customized JTrace tracing configuration provided\n");
+
     exit(exitCode);
 }
 
@@ -1067,6 +1109,20 @@ int main(int argc, char **argv)
             autoXML = false;
             ++arg;
         }
+        else if (strieq(argv[arg], "-gcs"))
+        {
+            generateClientSpans = true;
+            ++arg;
+        }
+        else if (strieq(argv[arg], "-ctc")) 
+        {
+            if (arg + 1 < argc)
+                tracingConfig.set(argv[++arg]);
+            else
+                usage(1);
+
+            arg++;
+        }
         else
         {
             printf("Unknown argument %s, ignored\n", argv[arg]);
@@ -1083,6 +1139,41 @@ int main(int argc, char **argv)
     {
         queryAbsDelayMS = queryDelayMS;
         queryDelayMS = 0;
+    }
+
+    if (generateClientSpans)
+    {
+        if (tracingConfig.length() == 0)
+        {
+            tracingConfig.set(R"!!(global:
+        tracing:
+            disable: false
+        )!!");
+        }
+
+        try
+        {
+            Owned<IPropertyTree> testTree = createPTreeFromYAMLString(tracingConfig.str(), ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            if (testTree == nullptr)
+            {
+                printf("Invalid YAML tracing configuration detected: '%s'\n", tracingConfig.str());
+                usage(2);
+            }
+            Owned<IPropertyTree> traceConfig = testTree->getPropTree("global");
+
+            initTraceManager("testsocket", traceConfig, nullptr);
+
+            serverSpan.setown(queryTraceManager().createServerSpan("testsocket_server", nullptr)); //can we avoid creating a server span?
+        }
+        catch(...)
+        {
+            printf("Could not initialize JTrace tracing manager!\n\n");
+            usage(2);
+        }
+    }
+    else
+    {
+        serverSpan.setown(getNullSpan());
     }
 
     StringAttr ip;
