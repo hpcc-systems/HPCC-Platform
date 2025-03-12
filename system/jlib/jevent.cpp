@@ -24,7 +24,12 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 
-enum EventType : unsigned short
+// Should be increased if the file format changes
+// Should be increased whenever new attributes are added - unless attribute types are specified in the file
+const static unsigned currentVersion = 1;
+
+// The order should not be changed, and new values should always be appended before EventMax
+enum EventType : byte
 {
     EventNone,
     EventIndexLookup,
@@ -39,7 +44,8 @@ enum EventType : unsigned short
 };
 
 // The attributes that can be associated with each event
-enum EventAttr : unsigned short
+// The order should not be changed, and new values should always be appended before EvAttrMax
+enum EventAttr : byte
 {
     EvAttrNone,
     EvAttrFileId,
@@ -54,8 +60,11 @@ enum EventAttr : unsigned short
     EvAttrMax
 };
 
+static_assert(EvAttrMax <= 128, "Event attributes >=128.  Review the format to decide whether version should change or packed integers used");
+
 //The following flags are used to control which extra pieces of information should be recorded with each event
 //Meta information does not include the extra trace/thread ids etc.
+//These values are persisted in the file, so should not be changed.
 enum EventFlags : unsigned
 {
     ERFnone         = 0x00000000,
@@ -105,7 +114,7 @@ enum EventAttrType
     EATu8,
     EATtimestamp,
     EATstring,
-    EATtraceid,
+    EATtraceid,     // should probably delete...
     EATmax
 };
 
@@ -192,6 +201,31 @@ static_assert(_elements_in(attrInformation) == EvAttrMax);
 // - When writing a chunk of buffer to disk, update the maxWriteOffset, and if the blocked count is non-zero
 //   then signal the semaphore that many times.
 // - Alternatively reserveEvent() could return -1 and the event could be dropped - probably better.
+//
+// File format:
+//
+// version:         4 bytes - which version of the file
+// options:         4 bytes - EventFlags defined above which control which extra pieces of information should be recorded with each event
+// timestamp:       8 bytes - the timestamp (in ns) when the recording started
+//
+// events:
+//   eventType:     1 byte - which event from the EventType enumeration
+//   timestamp:     8 bytes - the time (in ns) since the start of recording that this event occured
+//   traceId:  opt 32 bytes - the otel trace id for the query that recorded the event
+//   threadId: opt  8 bytes - the id of the thread that recorded the event
+//   attributes:
+//     attribute:   1 byte - which attribute, from the EventAttr enumeration.  EventNone (0) marks the end of the attributes.
+//     value:       variable - the value of the attribute depends on the type
+//
+// If the data is compressed, then the event stream is compressed as a sequence of
+//
+//   uncompressedSize   4 bytes
+//   compressedSize     4 bytes
+//   compressedData     compressedSize bytes
+//
+// The compression should be implemented by the streamed writing code.
+//
+// Should there be a terminator at the end of the file?  If will potentially cause problems if the file is compressed...
 
 EventRecorder::EventRecorder() : buffer(OutputBufferSize)
 {
@@ -237,15 +271,14 @@ void EventRecorder::startRecording(const char * optionsText, const char * optFil
     recursiveCreateDirectoryForFile(outputFilename);
 
     Owned<IFile> outputFile = createIFile(outputFilename);
-    output.set(outputFile->open(IFOcreate));
+    output.setown(outputFile->open(IFOcreate));
 
-    const unsigned version = 1;
     startCycles = get_cycles_now();
     __uint64 startTimestamp = getTimeStampNowValue()*1000;
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
-    write(pos, version);
+    write(pos, currentVersion);
     write(pos, options);
     write(pos, startTimestamp);
     nextOffset = pos;
@@ -261,6 +294,8 @@ void EventRecorder::stopRecording()
     if (!isActive())
         return;
 
+    //MORE: Protect against startRecording() being called concurrently, by introducing another boolean to
+    //indicate if it is active, which is only cleared once this function completes.
     recordingEvents.store(false);
 
     //Need to wait until all writes have finished
@@ -275,7 +310,7 @@ void EventRecorder::stopRecording()
     }
 
     {
-        //MORE: Could avoid re-entering
+        //MORE: Could avoid re-entering by using a leaveable critical block above
         CriticalBlock block(cs);
         if (getBlockFromOffset(nextOffset) == getBlockFromOffset(nextWriteOffset))
             ERRLOG("Inconsistent data write %llu v %llu", nextOffset, nextWriteOffset);
@@ -339,8 +374,9 @@ constexpr size32_t getSizeOfAttrs(Args... args)
     return (getSizeOfAttr(args) + ...);
 }
 
-static_assert(getSizeOfAttrs(1U, 3ULL) == 16);
-static_assert(getSizeOfAttrs("gavin") == 8);
+static_assert(getSizeOfAttrs(1U, 3ULL) == 2 * sizeof(EventAttr) + 4 + 8);
+static_assert(getSizeOfAttrs("gavin") == sizeof(EventAttr) + 6);
+static_assert(getSizeOfAttrs(true, 32768U, 1ULL, "boris", "blob") == 5 * sizeof(EventAttr) + 1 + 4 + 8 + 6 + 5);
 
 void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit)
 {
@@ -490,24 +526,36 @@ EventRecorder eventRecorder;
 // GH->TK
 // Next steps:
 //
-// * Provide a way of getting at the full path filename
-// * Ensure the default filename is unique in some way (include the process id?)
-// * Ensure files are written to the debug plane in containerized.  (Should output go to temp and then be copied??)
-// * Should event and attribute be reduced to a single byte (for version 1)?
-// * Add a function to optimize write of a single byte to avoid the loop and provide specialist template functions for byte/bool
+// * Read the binary file and convert to structured text.  (Possibly create a ptree and then use existing code to convert)
 // * Add calls into roxie to start and stop recording based on a control message
-// * Add an option to roxie to record all events at startup
+// * Add a function to pause/unpause collecting event information - may be needed for the next item
 // * Append the meta information for files in the event log when the recording is stopped.
+// * Add a tool to summarise which parts of which indexes are read, with an indication of the frequency (needs design)
+//
+// => milestone: A tool ecl developers can use to understand their queries better
+//
+// * Add an option to roxie to record all events at startup
 //   note - add roxieStartRecording/roxieStopRecording function and call that from everywhere that stops.
 // * Add calls from dali client code for the connection/disconnection, and when data is sent.  Ensure that
 //   this allows us to trace all file meta data operations.
-// * Add calls from the dfs code when reading meta data from a remote esp.  Comments as above.
+//
+// => milestone: We have a tool that can be used to understand how much time in roxie startup is spent in file lookups.
+//
 // * Add an option to esp to enable event logging.
+//
+// => milestone: Can examine which service functions are calling lots of dali functions
+//
+// * Does it make sense to have a (compile time?) option to record events as text instead?  Would that make developer debugging simpler?
+// * Provide a way of getting at the full path filename
+// * Ensure the default filename is unique in some way (include the process id?)
+// * Ensure files are written to the debug plane in containerized.  (Should output go to temp and then be copied??)
+// * Add a function to optimize write of a single byte to avoid the loop and provide specialist template functions for byte/bool
+// * Add calls from the dfs code when reading meta data from a remote esp.  Comments as above.
 // * Possibly add the option to apply a delta to the timestamp (maybe when post processing??) to adjust the timestamp
 //   earlier - so you can record a request to dali, and the time taken, or is it better as two events?
-// * Support throwing items away if the recorder is too bust
+// * Support throwing items away if the recorder is too busy.
+// * Support blocking if the recorder is too busy (for outputing essential meta-data)
 // * Write the files on a separate thread in the background
-// * Read the binary file and convert to structured text.  (Possibly create a ptree and then use existing code to convert)
 // * Add compression (LZ4 as a first stab) to the binary file, possibly use the streaming classes (if nothing else
 //   it is a good to stress test them).  (Should it be a config option?)
 // * Could experiment with other compression options - e.g. single byte for events/attributes, packed integers.

@@ -23,8 +23,8 @@
 #include "jbuff.hpp"
 
 //Opaque typedefs
-enum EventType : unsigned short;
-enum EventAttr : unsigned short;
+enum EventType : byte;
+enum EventAttr : byte;
 interface IFileIO;
 
 // The following class is used to record events that occur during the execution of a roxie query
