@@ -358,6 +358,42 @@
             }
           }
         },
+        "analyzerOptions": {
+          "description": "Default cost optimizer options",
+          "type": "object",
+          "properties": {
+            "disabled": {
+                "type": "boolean",
+                "default": false
+            },
+            "analyzeInEclAgent" : {
+                "description": "Analyse workunit in ECL Agent (if false, workunit will be analysed by Thor manager)",
+                "type": "boolean",
+                "default": false
+            },
+            "analyzeWhenComplete" : {
+                "description": "Analyse workunit after completion (if false, the analysis willl be executed incrementally after each graph completes)",
+                "type": "boolean",
+                "default": false
+            },
+            "minInterestingCost": {
+              "description": "Only report issues that may be costing more than this value (decimal $ value)",
+              "type": "number"
+            },
+            "minInterestingWaste": {
+              "description": "Only report issues that may be wasting more than this time (milliseconds)",
+              "type": "number"
+            },
+            "minInterestingTime": {
+              "description": "Only analyse activities that have a longer execute time than this threshold (milleseconds)",
+              "type": "number"
+            },
+            "skewThreshold": {
+              "description": "Only report issues that exceed this threshold (for skew related issued only report)",
+              "type": "number"
+            }
+          }
+        },
         "expert": {
           "$ref": "#/definitions/expert"
         },
