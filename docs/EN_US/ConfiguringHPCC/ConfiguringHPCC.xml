@@ -2418,29 +2418,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>SashaServer Process DbgHk</title>
-
-          <para>This section describes the SashaServer Process DbgHk
-          tab.</para>
-
-          <para>
-            <graphic fileref="images/CM-img17-4.jpg" vendor="configmgrSS" />
-          </para>
-
-          <para />
-
-          <!--configMgr-Sasha-DbgHk-Include-XXX-24-->
-
-          <para>
-            <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="xpointer(//*[@id='sh.t5'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-          </para>
-        </sect3>
-
-        <?hard-pagebreak ?>
-
-        <sect3>
           <title>SashaServer Process DaFileSrvMonitor</title>
 
           <para>This section describes the SashaServer Process

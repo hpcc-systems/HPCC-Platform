@@ -3,7 +3,7 @@
 #include "jlib.hpp"
 #include "jiface.hpp"
 #include "jptree.hpp"
-#include "jregexp.hpp"
+#include "jstring.hpp"
 
 #include "dadfs.hpp"
 #include "dalienv.hpp"
@@ -11,68 +11,36 @@
 #include "saserver.hpp"
 #include "sautil.hpp"
 
-#define DEFAULT_EXPIRY_INTERVAL 24 // hours
+#define DEFAULT_HOUSEKEEPING_INTERVAL_HOURS 24
 
-#define DEFAULT_EXPIRYDAYS 7
-
-#define LOGDBGHK "DEBUGHOUSEKEEPING: "
+#define LOGDBGHK "DEBUGPLANEHOUSEKEEPING: "
 
 // Debug Housekeeping monitor
 
-class CSashaDebugHousekeepingServer : public ISashaServer, public Thread
+class CSashaDebugPlaneHousekeepingServer : public ISashaServer, public Thread
 {
-    bool stopped;
+    bool stopped{false};
     Semaphore stopsem;
     Mutex runmutex;
-    Linked<IPropertyTree> props;
+    StringBuffer debugDir;
+    unsigned expiryDays{0};
 
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
-    CSashaDebugHousekeepingServer(IPropertyTree *_config)
-        : Thread("CSashaDebugHousekeepingServer"), props(_config)
-    {
-        stopped = false;
-
-        StringBuffer userName;
-        props->getProp("@user", userName);
-    }
-
-    ~CSashaDebugHousekeepingServer()
+    CSashaDebugPlaneHousekeepingServer()
+        : Thread("CSashaDebugPlaneHousekeepingServer")
     {
     }
 
-    void start()
+
+    virtual void start() override
     {
         Thread::start(false);
-    }
 
-    void ready()
-    {
-    }
-
-    void stop()
-    {
-        if (!stopped)
-        {
-            stopped = true;
-            stopsem.signal();
-        }
-        synchronized block(runmutex); // hopefully stopped should stop
-        if (!join(1000 * 60 * 3))
-            OERRLOG("CSashaDebugHousekeepingServer aborted");
-    }
-
-    void runDebugHousekeeping()
-    {
-        synchronized block(runmutex);
-        if (stopped)
-            return;
-        PROGLOG(LOGDBGHK "Started");
-        unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
+        expiryDays = getComponentConfig()->getPropInt("@expiryDays");
 
         // get debug plane dir
-        StringBuffer debugDir;
         StringBuffer planeName;
         if (!getDefaultPlane(planeName, "@debugPlane", "debug"))
         {
@@ -82,6 +50,29 @@ public:
         Owned<IPropertyTree> plane = getStoragePlane(planeName);
         assertex(plane);
         verifyex(plane->getProp("@prefix", debugDir));
+    }
+
+    virtual void ready() override
+    {
+    }
+
+    virtual void stop() override
+    {
+        if (!stopped)
+        {
+            stopped = true;
+            stopsem.signal();
+        }
+        synchronized block(runmutex); // hopefully stopped should stop
+        if (!join(1000 * 60 * 3))
+            OERRLOG("CSashaDebugPlaneHousekeepingServer aborted");
+    }
+
+    void runDebugHousekeeping()
+    {
+        synchronized block(runmutex);
+        if (stopped)
+            return;
 
         // iterate debug plane selecting post-mortem directories for housekeeping
         Owned<IDirectoryIterator> pDirIter = createDirectoryIterator(debugDir.str(), "*", false, true);
@@ -90,18 +81,18 @@ public:
             if (stopped)
                 break;
 
-            IFile &iDirFile = pDirIter->query();
-            const char *dirPath = iDirFile.queryFilename();
-
-            if (!dirPath || !*dirPath)
-                continue;
+            IFile &iFile = pDirIter->query();
+            const char *filePath = iFile.queryFilename();
 
             // Process directories, exclude the ".", "..", non post-mortem and not expired post-mortem directories
-            if (iDirFile.isDirectory() == fileBool::foundYes && *dirPath != '.')
+            if (iFile.isDirectory() == fileBool::foundYes)
             {
+                if (streq(filePath, ".") || streq(filePath, ".."))
+                    continue;
+
                 // Ensure directory name only
                 StringBuffer dirNameOnly;
-                String dirNameStr(dirPath);
+                String dirNameStr(filePath);
                 int fwdSlashIndex = dirNameStr.lastIndexOf('/');
                 if (fwdSlashIndex > -1)
                 {
@@ -114,38 +105,37 @@ public:
                     dirNameOnly.append(dirNameStr);
                 }
 
-                if (isPostMortemDirPath(dirNameOnly) && isExpiredDirPath(dirNameOnly, defaultExpireDays))
+                if (isExpiredModifiedDateTime(filePath))
                 {
-                    recursiveRemoveDirectory(dirPath);
-                    PROGLOG(LOGDBGHK "Deleted %s", dirPath);
+                    recursiveRemoveDirectory(filePath);
+                }
+            }
+            else
+            {
+                if (isExpiredModifiedDateTime(filePath))
+                {
+                    iFile.remove();
                 }
             }
         }
         pDirIter.clear();
-
-        PROGLOG(LOGDBGHK "%s", stopped ? "Stopped" : "Done");
     }
 
-    int run()
+    virtual int run() override
     {
-        unsigned interval = props->getPropInt("@interval", DEFAULT_EXPIRY_INTERVAL);
-        if (!interval)
-            stopped = true;
-        PROGLOG(LOGDBGHK "min interval = %d hr", interval);
-        unsigned initinterval = (interval - 1) / 2; // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval)
-            schedule.init(props, interval, initinterval);
-        initinterval *= 60 * 60 * 1000; // ms
-        unsigned started = msTick();
+        unsigned interval = getComponentConfig()->getPropInt("@interval",DEFAULT_HOUSEKEEPING_INTERVAL_HOURS);
+        if (interval == 0)
+        {
+            stopped = true;
+            return 0;
+        }
+        schedule.init(getComponentConfig(), interval);
         while (!stopped)
         {
             stopsem.wait(1000 * 60);
             if (stopped)
                 break;
-            if (!interval || ((started != (unsigned)-1) && (msTick() - started < initinterval)))
-                continue;
-            started = (unsigned)-1;
             if (!schedule.ready())
                 continue;
             try
@@ -159,66 +149,32 @@ public:
                 e->Release();
             }
         }
-        PROGLOG(LOGDBGHK "Exit");
         return 0;
     }
 
 private:
-    bool isPostMortemDirPath(const StringBuffer &dirName)
+    bool isExpiredModifiedDateTime(const char *filePath)
     {
-        // Expecting a directory name like "W20250225-101112"
-        RegExpr postMortemDirRegEx("^W[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]$");
-        if (postMortemDirRegEx.find(dirName.str()))
-        {
-            PROGLOG(LOGDBGHK "Post-mortem dir: %s", dirName.str());
-
-            return true;
-        }
-        else
-        {
-            PROGLOG(LOGDBGHK "Non post-mortem dir: %s", dirName.str());
-
-            return false;
-        }
-    }
-
-    bool isExpiredDirPath(StringBuffer &dirName, const unsigned &defaultExpireDays)
-    {
-        // Directory name is like "W20250225-101112"
-        StringBuffer cDateTimeoprmattedString;
-        cDateTimeoprmattedString.appendf("%c%c%c%c-%c%c-%c%cT%c%c:%c%c:%c%c",
-                                         dirName.charAt(1), dirName.charAt(2), dirName.charAt(3), dirName.charAt(4),
-                                         dirName.charAt(5), dirName.charAt(6),
-                                         dirName.charAt(7), dirName.charAt(8),
-                                         dirName.charAt(10), dirName.charAt(11),
-                                         dirName.charAt(12), dirName.charAt(13),
-                                         dirName.charAt(14), dirName.charAt(15));
+        Owned<IFile> file = createIFile(filePath);
+        CDateTime expiredModifiedTime;
+        file->getTime( nullptr,  &expiredModifiedTime, nullptr);
+        expiredModifiedTime.adjustTime(60 * 24 * expiryDays);
 
         CDateTime now;
         now.setNow();
 
-        CDateTime expires;
-        expires.setString(cDateTimeoprmattedString.str());
-        expires.adjustTime(60 * 24 * defaultExpireDays);
-
-        if (now.compare(expires, false) > 0)
-        {
-            PROGLOG(LOGDBGHK "Post-mortem dir: %s has expired", dirName.str());
-
+        if (now.compare(expiredModifiedTime, false) > 0)
             return true;
-        }
         else
-        {
             return false;
-        }
     }
 
-} *sashaDebugHousekeepingServer = NULL;
+} *sashaDebugPlaneHousekeepingServer = NULL;
 
-ISashaServer *createSashaDebugHousekeepingServer()
+ISashaServer *createSashaDebugPlaneHousekeepingServer()
 {
-    assertex(!sashaDebugHousekeepingServer); // initialization problem
-    Linked<IPropertyTree> config = serverConfig;
-    sashaDebugHousekeepingServer = new CSashaDebugHousekeepingServer(config);
-    return sashaDebugHousekeepingServer;
+    assertex(isContainerized());
+    assertex(!sashaDebugPlaneHousekeepingServer); // initialization problem
+    sashaDebugPlaneHousekeepingServer = new CSashaDebugPlaneHousekeepingServer();
+    return sashaDebugPlaneHousekeepingServer;
 }

@@ -513,12 +513,11 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
-  debug-housekeeping: {} # NB: no properties defined, use defaults
+  debugplane-housekeeping: {} # NB: no properties defined, use defaults
     #disabled: true
     #interval: 1
     #at: "* 3 * * *"
-    #expiryDefault: 7
-    #user: sasha
+    #expiryDays: 7
 
 
 dfuserver:

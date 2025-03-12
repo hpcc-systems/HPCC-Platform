@@ -49,7 +49,7 @@ sasha:
     disabled: true
   file-expiry:
     disabled: true
-  debug-housekeeping:
+  debugplane-housekeeping:
     disabled: true
 
 esp:
