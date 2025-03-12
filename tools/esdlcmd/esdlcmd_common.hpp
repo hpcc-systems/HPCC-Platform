@@ -418,7 +418,7 @@ static bool getCurrentFolder(StringBuffer & path)
     return false;
 }
 
-static bool getComponentFilesRelPathFromBin(StringBuffer & path)
+[[maybe_unused]] static bool getComponentFilesRelPathFromBin(StringBuffer & path)
 {
     if (getCurrentFolder(path))
         return checkDirExists(path.appendf("%c%s%c%s", PATHSEPCHAR, HIGHER_DIR_RELATIVE,PATHSEPCHAR,COMPONENTS_DIR_NAME));
