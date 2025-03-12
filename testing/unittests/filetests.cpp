@@ -43,6 +43,8 @@
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
+static constexpr byte zeros[0x100000] = { 0 };
+
 class JlibFileTest : public CppUnit::TestFixture
 {
 public:
@@ -135,11 +137,10 @@ public:
     }
     void testCompressed()
     {
-        //patch the first block with zeros
-        constexpr byte zeros[0x100000] = { 0 };
-
         createCompressed();
         readCompressed(false);
+
+        // patch the file with zeroes in various places, retest
 
         write(0, sizeof(zeros), (void *)zeros);
         readCompressed(true);

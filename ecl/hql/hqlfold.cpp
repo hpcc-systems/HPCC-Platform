@@ -1355,7 +1355,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
             "add sp, sp, %[_poplen] \n\t"     // Restore stack pointer (note, have already popped 8 registers, so poplen is len - 64)
             : "=r"(_int64result)
             : [_len] "r"(_len), [_poplen] "r"(_poplen), [strbuf] "r"(strbuf), [fh] "r"(_fh)
-            : "x2","x3","x4","x5","x6","x7","lr"                  // function we call may corrupt lr
+            : "x2","x3","x4","x5","x6","x7","x30"                  // function we call may corrupt x30 (also known as lr)
             );
         int64result = _int64result;
         if (isRealvalue)
