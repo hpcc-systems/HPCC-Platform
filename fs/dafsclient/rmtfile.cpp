@@ -1762,21 +1762,23 @@ void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *m
     }
 }
 
-IFile *createFileLocalMount(const IpAddress &ip, const char * filename)
+IFile *createFileLocalMount(const IpAddress &ip, const char *filename)
 {
     CriticalBlock block(localMountCrit);
-    ForEachItemInRev(i,localMounts) {
+    ForEachItemInRev(i, localMounts) {
         CLocalMountRec &mount = localMounts.item(i);
         if (mount.ip.ipequals(ip)) {
             size32_t bl = mount.dir.length();
-            if (isPathSepChar(mount.dir[bl-1]))
-                bl--;
-            if ((memcmp((void *)filename,(void *)mount.dir.get(),bl)==0)&&(isPathSepChar(filename[bl])||!filename[bl])) { // match
-                StringBuffer locpath(mount.local);
-                if (filename[bl])
-                    addPathSepChar(locpath).append(filename+bl+1);
-                locpath.replace((PATHSEPCHAR=='\\')?'/':'\\',PATHSEPCHAR);
-                return createIFile(locpath.str());
+            if (bl > 0) {
+                if (isPathSepChar(mount.dir[bl - 1]))
+                    bl--;
+                if ((memcmp((void *)filename, (void *)mount.dir.get(), bl) == 0) && (isPathSepChar(filename[bl]) || !filename[bl])) { // match
+                    StringBuffer locpath(mount.local);
+                    if (filename[bl])
+                        addPathSepChar(locpath).append(filename + bl + 1);
+                    locpath.replace((PATHSEPCHAR == '\\') ? '/' : '\\', PATHSEPCHAR);
+                    return createIFile(locpath.str());
+                }
             }
         }
     }
