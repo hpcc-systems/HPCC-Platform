@@ -1,9 +1,12 @@
 import * as React from "react";
 import { Dropdown, TextField, PrimaryButton } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
-import { SashaService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
 
-interface SashaProps {}
+const logger = scopedLogger("src-react/components/Sasha.tsx");
+
+interface SashaProps { }
 
 export const Sasha: React.FunctionComponent<SashaProps> = () => {
   const [selectedOption, setSelectedOption] = React.useState("");
@@ -35,11 +38,25 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
         // Implement getLastServerMessage function call
         break;
       case "restoreECLWorkUnit":
-        // Implement restoreECLWorkUnit function call
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: WsSasha.WUTypes.ECL
+        })
+          .then(response => {
+            setResult(response.Result);
+          })
+          .catch(err => logger.error(err));
         break;
       case "restoreDFUWorkUnit":
-        // Implement restoreDFUWorkUnit function call
-        break;
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: WsSasha.WUTypes.DFU
+        })
+          .then(response => {
+            setResult(response.Result);
+          })
+          .catch(err => logger.error(err));
+          break;
       case "archiveECLWorkUnit":
         // Implement archiveECLWorkUnit function call
         break;
