@@ -109,7 +109,7 @@ export class Archive {
                 }
                 this.sourcePath_Metrics[definition.filePath].add(metric.id);
             });
-            return prev + totalTime ?? 0;
+            return prev + isNaN(totalTime) ? 0 : totalTime;
         }, 0);
     }
 

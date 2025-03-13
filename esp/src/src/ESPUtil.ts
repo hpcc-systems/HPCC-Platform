@@ -14,19 +14,19 @@ import * as query from "dojo/query";
 import * as Stateful from "dojo/Stateful";
 import { Memory } from "./store/Memory";
 
-// @ts-ignore
+// @ts-expect-error
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
-// @ts-ignore
+// @ts-expect-error
 import * as CompoundColumns from "dgrid/extensions/CompoundColumns";
-// @ts-ignore
+// @ts-expect-error
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
-// @ts-ignore
+// @ts-expect-error
 import * as DGrid from "dgrid/Grid";
-// @ts-ignore
+// @ts-expect-error
 import * as Keyboard from "dgrid/Keyboard";
-// @ts-ignore
+// @ts-expect-error
 import * as OnDemandGrid from "dgrid/OnDemandGrid";
-// @ts-ignore
+// @ts-expect-error
 import * as Selection from "dgrid/Selection";
 
 import nlsHPCC from "./nlsHPCC";
@@ -267,13 +267,9 @@ const GridHelper = declare(null, {
 export const LocalStorage = dojo.declare([Evented], {
     constructor() {
         const context = this;
-        if (typeof Storage !== void (0)) {
-            window.addEventListener("storage", function (event) {
-                context.emit("storageUpdate", { event });
-            });
-        } else {
-            console.log("Browser doesn't support multi-tab communication");
-        }
+        window.addEventListener("storage", function (event) {
+            context.emit("storageUpdate", { event });
+        });
     },
 
     setItem(key, value) {

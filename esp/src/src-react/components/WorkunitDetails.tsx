@@ -191,8 +191,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "outputs"} size={size}>
                     {state?.outputs ?
-                        queryParams.outputs?.hasOwnProperty("__legacy") ? <IFrame src={`/ WsWorkunits / WUResult ? Wuid = ${wuid} & ResultName= ${state?.outputs}`} height="99%" /> :
-                            queryParams.outputs?.hasOwnProperty("__visualize") ? <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: wuid, Sequence: state?.outputs }} /> :
+                        "__legacy" in queryParams.outputs ? <IFrame src={`/WsWorkunits/WUResult?Wuid=${wuid}&ResultName=${state?.outputs}`} height="99%" /> :
+                            "__visualize" in queryParams.outputs ? <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: wuid, Sequence: state?.outputs }} /> :
                                 <Result wuid={wuid} resultName={state?.outputs} filter={queryParams.outputs} /> :
                         <Results wuid={wuid} />
                     }
