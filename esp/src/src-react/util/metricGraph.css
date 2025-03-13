@@ -50,6 +50,10 @@
     stroke: var(--colorStatusSuccessForeground1);
 }
 
+.eclwatch_MetricGraphWidget .node.completed>ellipse {
+    stroke: var(--colorStatusSuccessForeground1);
+}
+
 .eclwatch_MetricGraphWidget .node.warning>text.warning {
     font-size: 32px;
     fill: var(--colorStatusWarningForeground1);
