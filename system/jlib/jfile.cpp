@@ -7936,7 +7936,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         {
             const IPropertyTree &plane = planesIter->query();
             PlaneAttributesMapElement &element = planeAttributesMap[plane.queryProp("@name")];
-            element.first = plane.queryProp("@prefix");
+            const char * prefix = plane.queryProp("@prefix");
+            element.first = prefix ? prefix : ""; // If prefix is empty, avoid segfault by setting it to an empty string
             auto &values = element.second;
             for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
             {
@@ -8045,7 +8046,7 @@ static PlaneAttributesMapElement *findPlaneElementFromPath(const char *filePath)
     for (auto &e: planeAttributesMap)
     {
         const char *prefix = e.second.first.c_str();
-        if (prefix) // sanity check, but should never be null
+        if (!isEmptyString(prefix)) // sanity check, std::string cannot be null, so check if empty
         {
             if (startsWith(filePath, prefix))
                 return &e.second;
