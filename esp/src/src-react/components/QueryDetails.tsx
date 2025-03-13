@@ -21,7 +21,7 @@ interface QueryDetailsProps {
     tab?: string;
     fullscreen?: boolean;
     state?: { metricsTab?: string, metricsState?: string, testTab?: string };
-    queryParams?: { metricsSelection?: string };
+    queryParams?: { lineageSelection?: string, metricsSelection?: string };
 }
 
 export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({

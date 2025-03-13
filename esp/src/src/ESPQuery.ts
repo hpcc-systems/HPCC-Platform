@@ -7,12 +7,19 @@ import * as topic from "dojo/topic";
 
 import * as parser from "dojox/xml/parser";
 
+import { WorkunitsService, WsWorkunits as WsWorkunitsNS } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
 import nlsHPCC from "./nlsHPCC";
 import * as WsEcl from "./WsEcl";
 import * as WsWorkunits from "./WsWorkunits";
+import { Paged } from "./store/Paged";
+import { BaseStore } from "./store/Store";
+
+const logger = scopedLogger("src/ESPQuery.ts");
 
 class Store extends ESPRequest.Store {
 
@@ -197,7 +204,34 @@ export function GetFromRequestXML(QuerySetId, requestXml) {
     return null;
 }
 
-export function CreateQueryStore(options) {
+export function CreateQueryStoreLegacy(options) {
     const store = new Store(options);
+    return new Observable(store);
+}
+
+const service = new WorkunitsService({ baseUrl: "" });
+
+export type WUQueryStore = BaseStore<WsWorkunitsNS.WUListQueries, WsWorkunitsNS.QuerySetQuery>;
+
+export function CreateQueryStore(): BaseStore<WsWorkunitsNS.WUListQueries, WsWorkunitsNS.QuerySetQuery> {
+    const store = new Paged<WsWorkunitsNS.WUListQueries, WsWorkunitsNS.QuerySetQuery>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "Sortby",
+        descending: "Descending"
+    }, "Id", (request) => {
+        return service.WUListQueries(request).then(response => {
+            return {
+                data: response?.QuerysetQueries?.QuerySetQuery?.map(qry => Get(qry.QuerySetId, qry.Id, qry)) ?? [],
+                total: response?.NumberOfQueries ?? 0
+            };
+        }).catch(err => {
+            logger.error(err);
+            return {
+                data: [],
+                total: 0
+            };
+        });
+    });
     return new Observable(store);
 }
