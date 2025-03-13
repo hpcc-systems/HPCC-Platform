@@ -2181,10 +2181,6 @@ sudo /etc/init.d/hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>JavaScript</para>
-        </listitem>
-
-        <listitem>
           <para>Python (full support is already built-in)</para>
         </listitem>
       </itemizedlist>
@@ -2194,9 +2190,9 @@ sudo /etc/init.d/hpcc-init -c esp start
 
       <para>In addition to these languages, you can add support for additional
       languages by creating your own plugin. This is not very difficult to do.
-      For example the JavaScript plugin is about 500 lines of C++ code. You
-      can use that as a template to write your own and, if desired, you can
-      contribute it back to the open source initiative.</para>
+      For example the Java plugin is about 500 lines of C++ code. You can use
+      that as a template to write your own and, if desired, you can contribute
+      it back to the open source initiative.</para>
 
       <sect2 id="Add_On_Java" role="brk">
         <title>Java</title>
@@ -2302,63 +2298,6 @@ add1(10);
 
         <para><ulink
         url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl</ulink></para>
-      </sect2>
-
-      <sect2 id="Add_On_Javascript" role="brk">
-        <title>JavaScript</title>
-
-        <para>To enable JavaScript support within the HPCC
-        Systems<superscript>®</superscript> Platform:</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Install the appropriate dependencies for your
-            platform.</para>
-
-            <para><emphasis role="bold">RPM-based systems:</emphasis></para>
-
-            <para>On an RPM-based system (CentOS/Red Hat) install <emphasis
-            role="bold">v8embed.</emphasis></para>
-
-            <para><emphasis role="bold">Debian-based
-            systems:</emphasis></para>
-
-            <para>For a Debian-based system (Ubuntu) install the <emphasis
-            role="bold">libv8-dev</emphasis> package.</para>
-          </listitem>
-
-          <listitem>
-            <para>Test the JavaScript integration.</para>
-
-            <para>JavaScript does multi-thread, as a result this can be the
-            fastest of the currently supported embedded languages.</para>
-
-            <para>You can now execute some JavaScript code either in your ECL
-            IDE or the ECL Playground.</para>
-
-            <para>For example:</para>
-
-            <para><programlisting format="linespecific">//nothor
-
-IMPORT javascript;
-
-javascript.Language.syntaxcheck('1+2');
-
-integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
-
-data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
-set of integer testSet(set of integer val) := EMBED(javascript)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-add1(10);
-</programlisting>If this successfully executes, you have correctly set up
-            JavaScript to work with your HPCC Systems platform.</para>
-          </listitem>
-        </orderedlist>
       </sect2>
 
       <sect2 id="Add_Python_support" role="brk">
