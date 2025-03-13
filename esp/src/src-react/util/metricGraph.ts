@@ -223,8 +223,7 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
                     v.Label || v.id;
     }
 
-    vertexStatus(v: IScopeEx): string {
-        const retVal: Array<ScopeStatus | ExceptionStatus> = [];
+    vertexStatus(v: IScopeEx): ScopeStatus {
         const tally: { [id: string]: number } = { "unknown": 0, "started": 0, "completed": 0 };
         let outEdges = this.vertexInternalOutEdges(v);
         if (outEdges.length === 0) {
@@ -232,12 +231,15 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
         }
         outEdges.forEach(e => ++tally[this.edgeStatus(e)]);
         if (outEdges.length === tally["completed"]) {
-            retVal.push("completed");
+            return "completed";
         } else if (tally["started"] || tally["completed"]) {
-            retVal.push("started");
-        } else {
-            retVal.push("unknown");
+            return "started";
         }
+        return "unknown";
+    }
+
+    vertexClass(v: IScopeEx): string {
+        const retVal: Array<ScopeStatus | ExceptionStatus> = [this.vertexStatus(v)];
         if (v.__exceptions) {
             const severity: { [id: string]: number } = {};
             v.__exceptions.forEach(ex => {
@@ -263,13 +265,13 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
     vertexTpl(v: IScopeEx, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexClass(v)}"]`;
     }
 
     hiddenTpl(v: IScopeEx, options: MetricsView): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}" rank="min"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexClass(v)}" rank="min"]`;
     }
 
     findFirstVertex(scopeName: string) {
@@ -322,6 +324,17 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
         return "unknown";
     }
 
+    itemStatus(item: IScopeEx): ScopeStatus {
+        if (this.isVertex(item)) {
+            return this.vertexStatus(item);
+        } else if (this.isEdge(item)) {
+            return this.edgeStatus(item);
+        } else if (this.isSubgraph(item)) {
+            return this.subgraphStatus(item);
+        }
+        return "unknown";
+    }
+
     protected _dedupSubgraphs: { [scopeName: string]: boolean } = {};
     subgraphTpl(sg: IScopeEx, options: MetricsView): string {
         if (this._dedupSubgraphs[sg.id] === true) return "";
@@ -353,16 +366,17 @@ subgraph cluster_${encodeID(sg.id)} {
 }`;
     }
 
-    graphTpl(items: IScopeEx[] = [], options: MetricsView) {
+    graphTpl(ids: string[] = [], options: MetricsView) {
         this._dedupSubgraphs = {};
         this._dedupVertices = {};
         this._dedupEdges = {};
         const childTpls: string[] = [];
-        if (items?.length) {
-            items.map(item => {
-                if (this.subgraphExists(this.id(item))) {
-                    return item;
+        if (ids?.length) {
+            ids.map(id => {
+                if (this.subgraphExists(id)) {
+                    return this.subgraph(id);
                 } else {
+                    const item = this.item(id);
                     if (item?.__parentName && this.subgraphExists(item?.__parentName)) {
                         return this.subgraph(item.__parentName);
                     }
@@ -375,7 +389,7 @@ subgraph cluster_${encodeID(sg.id)} {
             this.allEdges().filter(e => {
                 const sV = this.vertex(this._activityIndex[e.IdSource]);
                 const tV = this.vertex(this._activityIndex[e.IdTarget]);
-                return sV.__parentID !== tV.__parentID && items.indexOf(this.subgraph(sV.__parentID)) >= 0 && items.indexOf(this.subgraph(tV.__parentID)) >= 0;
+                return sV.__parentID !== tV.__parentID && ids.indexOf(sV.__parentID) >= 0 && ids.indexOf(tV.__parentID) >= 0;
             }).forEach(e => {
                 childTpls.push(this.edgeTpl(e, options));
             });
@@ -593,6 +607,9 @@ export class MetricGraphWidget extends SVGZoomWidget {
                 d3Select(this).selectAll("path,polygon,ellipse")
                     .style("stroke", () => {
                         return context._selection[decodeID(this.id)] ? "var(--colorBrandForegroundOnLightSelected)" : undefined;
+                    })
+                    .filter(function (this: SVGElement, d, i, nodes) {
+                        return this.tagName !== "path";
                     })
                     .style("fill", () => {
                         return context._selection[decodeID(this.id)] ? "var(--colorBrandBackground2Pressed)" : undefined;

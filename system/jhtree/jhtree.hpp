@@ -298,4 +298,26 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager);
 
 #define JHTREE_KEY_NOT_SORTED JHTREE_ERROR_START
 
+constexpr bool isIndexReadActivity(ThorActivityKind actKind)
+{
+    switch (actKind)
+    {
+        case TAKindexread:
+        case TAKindexnormalize:
+        case TAKindexaggregate:
+        case TAKindexcount:
+        case TAKindexgroupaggregate:
+        case TAKindexexists:
+        case TAKindexgroupexists:
+        case TAKindexgroupcount:
+        case TAKkeyedjoin:
+        case TAKkeyeddistribute:
+        case TAKkeyeddenormalize:
+        case TAKkeyeddenormalizegroup:
+            return true;
+        default:
+            return false;
+    }
+}
+
 #endif

@@ -1,13 +1,17 @@
 import * as React from "react";
 import { Dropdown, TextField, PrimaryButton } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { SashaService } from "@hpcc-js/comms";
 
 interface SashaProps {}
 
-export const Sasha: React.FunctionComponent<SashaProps> = ({ }) => {
+export const Sasha: React.FunctionComponent<SashaProps> = () => {
   const [selectedOption, setSelectedOption] = React.useState("");
   const [wuid, setWuid] = React.useState("");
   const [result, setResult] = React.useState("");
+
+  // Create an instance of SashaService (adjust baseUrl if needed)
+  const sashaService = new SashaService({ baseUrl: "" });
 
   const handleOptionChange = (event: React.FormEvent<HTMLDivElement>, option: any) => {
     setSelectedOption(option.key);
@@ -15,10 +19,17 @@ export const Sasha: React.FunctionComponent<SashaProps> = ({ }) => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Perform action based on selected option
     switch (selectedOption) {
-      case "getVersion": 
-        // Implement getVersion function call
+      case "getVersion":
+        sashaService.GetVersion({ GetVersionRequest: {} })
+          .then(response => {
+            console.log("GetVersion response", response.Result);
+            setResult(response.Result);
+          })
+          .catch(err => {
+            console.error(err);
+            setResult(nlsHPCC.Error);
+          });
         break;
       case "getLastServerMessage":
         // Implement getLastServerMessage function call
@@ -44,13 +55,8 @@ export const Sasha: React.FunctionComponent<SashaProps> = ({ }) => {
       default:
         console.log("Invalid option selected");
     }
-    // Reset form
-    setSelectedOption("");
-    setWuid("");
-    setResult("");
   };
 
-  // Conditional rendering for default value
   const defaultValue = result ? null : <div>{nlsHPCC.noDataMessage}</div>;
 
   return (
@@ -76,21 +82,17 @@ export const Sasha: React.FunctionComponent<SashaProps> = ({ }) => {
         {["restoreECLWorkUnit", "restoreDFUWorkUnit", "archiveECLWorkUnit", "archiveDFUWorkUnit", "backupECLWorkUnit", "backupDFUWorkUnit"].includes(selectedOption) && (
           <div>
             <TextField
-              label= {nlsHPCC.WUID}
+              label={nlsHPCC.WUID}
               value={wuid}
               onChange={(event: React.FormEvent<HTMLInputElement>, newValue?: string) => setWuid(newValue || "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
           </div>
         )}
-        <PrimaryButton type="submit" >{nlsHPCC.Submit}</PrimaryButton>
-        {/* Render defaultValue when result is empty */}
+        <PrimaryButton type="submit">{nlsHPCC.Submit}</PrimaryButton>
         {defaultValue}
-        {/* Render result when available */}
         {result && <div>{nlsHPCC.Results}: {result}</div>}
       </form>
     </div>
   );
 };
-
-export default Sasha;

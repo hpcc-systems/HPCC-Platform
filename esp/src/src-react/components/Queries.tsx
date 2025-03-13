@@ -89,7 +89,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
-        return store || ESPQuery.CreateQueryStore({});
+        return store || ESPQuery.CreateQueryStore();
     }, [store]);
 
     const query = React.useMemo(() => {

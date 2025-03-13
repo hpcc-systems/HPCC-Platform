@@ -674,19 +674,21 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
 
         return readCost;
     };
-
-    cost_type totalReadCost = 0;
+    cost_type readCost = 0;
+    ThorActivityKind actKind = container.getKind();
+    bool bIndexReadActivity = isIndexReadActivity(actKind);
     if (fileStats.size()>0)
     {
-        ThorActivityKind activityKind = container.getKind();
         unsigned fileIndex = 0;
         for (unsigned i=0; i<readFiles.size(); i++)
         {
             IDistributedFile *file = queryReadFile(i);
             bool useJhtreeCache = false;
-            // Index uses jhtree caches, so use actual fetches to calculate cost
-            // To determine entry is an index file entry, use the test (i==0) because index file is always the first file
-            if ((TAKindexread == activityKind) || ((TAKkeyedjoin == activityKind) && (0 == i)))
+            // Determine if jhtree cache stats should be used to calculate file access cost:
+            // * Any activities that reads an index should use jhtree cache stats to calculate cost
+            // * However, if it is a keyed join activity, then only use jhtree cache for cost calc if it is the first file
+            //   (because any other file will be a regular data file)
+            if (bIndexReadActivity && (!(TAKkeyedjoin == actKind) || (0 == i)))
                 useJhtreeCache = true;
             if (file)
             {
@@ -697,13 +699,13 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
                     for (unsigned i=0; i<numSubFiles; i++)
                     {
                         IDistributedFile &subFile = super->querySubFile(i, true);
-                        totalReadCost += calcReadCost(useJhtreeCache, subFile, *fileStats[fileIndex]);
+                        readCost += calcReadCost(useJhtreeCache, subFile, *fileStats[fileIndex]);
                         fileIndex++;
                     }
                 }
                 else
                 {
-                    totalReadCost += calcReadCost(useJhtreeCache, *file, *fileStats[fileIndex]);
+                    readCost += calcReadCost(useJhtreeCache, *file, *fileStats[fileIndex]);
                     fileIndex++;
                 }
             }
@@ -713,12 +715,10 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
-        {
-            bool useJhtreeCache = (TAKindexread == container.getKind());
-            totalReadCost = calcReadCost(useJhtreeCache, *file, statsCollection);
-        }
+            // note: use jhtree cache stats to calculate file access cost if it is an index activity
+            readCost = calcReadCost(bIndexReadActivity, *file, statsCollection);
     }
-    return totalReadCost;
+    return readCost;
 }
 
 //////////////////////

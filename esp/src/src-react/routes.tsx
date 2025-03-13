@@ -35,7 +35,12 @@ const workunitsChildren: Route[] = [
     },
     {
         path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: (params.State as string) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { selection: (params.State as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+        })
+    },
+    {
+        path: "/:Wuid/:Tab/:State/:State2", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
         })
     },
 ];
@@ -247,6 +252,11 @@ export const routes: RoutesEx = [
                 })
             },
             {
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:Lineage/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ lineageSelection: params.Lineage as string, metricsSelection: params.Selection as string }} fullscreen={parseFullscreen(ctx.search)} />;
+                })
+            },
+            {
                 path: "/:QuerySetId/:QueryId/graphs/:Wuid/:GraphName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => {
                     return <_.DojoAdapter widgetClassID="GraphTree7Widget" params={params} />;
                 })
@@ -410,15 +420,15 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/sasha",
-                        children: [
-                            {
-                                path: "", action: (ctx, params) => import("./components/Sasha").then(_ => {
-                                    return <_.Sasha />;
-                                })
-                            },
-                        ]
+                children: [
+                    {
+                        path: "", action: (ctx, params) => import("./components/Sasha").then(_ => {
+                            return <_.Sasha />;
+                        })
                     },
                 ]
+            },
+        ]
     },
     {
         mainNav: ["operations"],

@@ -75,6 +75,14 @@ create_platform_core_image() {
             --build-arg BASE_IMAGE=platform-core:release \
                 "$SCRIPT_DIR/vcpkg/."
     fi
+
+    if [ "$MODE" = "relwithdebinfo" ]; then
+        echo "--- Create 'platform-core:relwithdebinfo' image ---"
+        docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-debug-$BUILD_OS.dockerfile" \
+            -t platform-core:relwithdebinfo \
+            --build-arg BASE_IMAGE=platform-core:release \
+                "$SCRIPT_DIR/vcpkg/."
+    fi
 }
 
 finalize_platform_core_image() {
@@ -95,7 +103,7 @@ finalize_platform_core_image() {
     docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
     docker rm -f $CONTAINER
 
-    if [ "$MODE" = "debug" ]; then
+    if [ "$MODE" = "debug" ] || [ "$MODE" = "relwithdebinfo" ]; then
         # Add sources
         echo "--- Adding sources to '$image_name' image ---"
         local CONTAINER=$(docker run -d \
@@ -266,6 +274,10 @@ build() {
         local base=build-$BUILD_OS:$VCPKG_REF
         local build_type="Debug"
         local cmake_options="-DCMAKE_BUILD_TYPE=$build_type"
+    elif [ "$MODE" = "relwithdebinfo" ]; then
+        local base=build-$BUILD_OS:$VCPKG_REF
+        local build_type="RelWithDebInfo"
+        local cmake_options="-DCMAKE_BUILD_TYPE=$build_type"
     else
         echo "Invalid build mode: $MODE"
         usage
@@ -303,7 +315,7 @@ build() {
         run "cmake --build /hpcc-dev/build --parallel --target package"
         finalize_platform_core_image $crc \
             "dpkg -i /hpcc-dev/build/hpccsystems-platform*.deb"
-    elif [ "$MODE" = "debug" ]; then
+    elif [ "$MODE" = "debug" ] || [ "$MODE" = "relwithdebinfo" ]; then
         run "cmake --build /hpcc-dev/build --parallel"
         finalize_platform_core_image $crc \
             "cmake --install /hpcc-dev/build --prefix /opt/HPCCSystems"
@@ -388,7 +400,7 @@ usage() {
     echo "  incr                    perform an incremental build (faster version of 'build -m debug')"
     echo "  install <file|folder>   install from a local deb file or build folder"
     echo "  status                  display environment variables"
-    echo "  -m, --mode              specify the build mode (debug or release)"
+    echo "  -m, --mode              specify the build mode (debug, release, relwithdebinfo)"
     echo "                          default mode is release"
     echo "  -t, --tag               tag the build volume with the current branch ref"
     echo "                          will preserve build state per branch"
