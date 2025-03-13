@@ -10,13 +10,15 @@ export interface HpccJSComponentProps {
     width: number;
     height: number;
     debounce?: boolean;
+    onReady?: () => void;
 }
 
 export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
     widget,
     width,
     height,
-    debounce = true
+    debounce = true,
+    onReady
 }) => {
     const divID = useId("viz-component-");
 
@@ -31,12 +33,12 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         if (widget?.target()) {
             widget.resize({ width, height });
             if (debounce) {
-                widget.lazyRender();
+                widget.lazyRender(() => onReady?.());
             } else {
-                widget.render();
+                widget.render(() => onReady?.());
             }
         }
-    }, [debounce, height, widget, width]);
+    }, [debounce, height, onReady, widget, width]);
 
     return (isNaN(width) || isNaN(height) || width === 0 || height === 0) ?
         <></> :
@@ -49,7 +51,8 @@ export interface AutosizeHpccJSComponentProps {
     fixedHeight?: string;
     padding?: number;
     debounce?: boolean;
-    hidden?: boolean
+    hidden?: boolean;
+    onReady?: () => void;
 }
 
 export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComponentProps> = ({
@@ -58,6 +61,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     padding = 0,
     debounce = true,
     hidden = false,
+    onReady,
     children
 }) => {
 
@@ -66,7 +70,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
         const height = size?.height || padding * 2;
         return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
             <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
-                <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} />
+                <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} onReady={onReady} />
             </div>
             {
                 children ?
@@ -83,7 +87,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
 export interface AutosizeComponentProps {
     fixedHeight?: string;
     padding?: number;
-    hidden?: boolean
+    hidden?: boolean;
 }
 
 export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> = ({

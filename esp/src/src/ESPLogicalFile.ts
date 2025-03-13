@@ -6,6 +6,7 @@ import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 
 import { DFUService, WsDfu as HPCCWsDfu } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 
 import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 import * as ESPRequest from "./ESPRequest";
@@ -17,6 +18,8 @@ import * as WsDfu from "./WsDfu";
 
 import { Paged } from "./store/Paged";
 import { BaseStore } from "./store/Store";
+
+const logger = scopedLogger("src/ESPLogicalFile.ts");
 
 const _logicalFiles = {};
 
@@ -512,6 +515,12 @@ export function CreateDFUQueryStore(): BaseStore<HPCCWsDfu.DFUQueryRequest, type
             return {
                 data: response?.DFULogicalFiles?.DFULogicalFile ?? [],
                 total: response.NumFiles
+            };
+        }).catch(err => {
+            logger.error(err);
+            return {
+                data: [],
+                total: 0
             };
         });
     });
