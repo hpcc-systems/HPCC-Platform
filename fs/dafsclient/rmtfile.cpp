@@ -371,6 +371,7 @@ public:
             auto it = endpointMap.find(endpointStr.str());
             if (it != endpointMap.end())
             {
+                CLeavableCriticalBlock c(secretCrit);
                 storageSecret.append(std::get<1>(it->second).c_str());
                 if (0 == storageSecret.length())
                 {
