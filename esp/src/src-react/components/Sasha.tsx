@@ -3,7 +3,7 @@ import { Dropdown, TextField, PrimaryButton } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { SashaService } from "@hpcc-js/comms";
 
-interface SashaProps {}
+interface SashaProps { }
 
 export const Sasha: React.FunctionComponent<SashaProps> = () => {
   const [selectedOption, setSelectedOption] = React.useState("");
@@ -35,11 +35,31 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
         // Implement getLastServerMessage function call
         break;
       case "restoreECLWorkUnit":
-        // Implement restoreECLWorkUnit function call
-        break;
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: "ECL"
+        })
+          .then(response => {
+            console.log("restoreECLWorkUnit response", response.Result);
+            setResult(response.Result);
+          })
+          .catch(err => {
+            console.error(err);
+            setResult(nlsHPCC.Error);
+          }); break;
       case "restoreDFUWorkUnit":
-        // Implement restoreDFUWorkUnit function call
-        break;
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: "DFU"
+        })
+          .then(response => {
+            console.log("restoreECLWorkUnit response", response.Result);
+            setResult(response.Result);
+          })
+          .catch(err => {
+            console.error(err);
+            setResult(nlsHPCC.Error);
+          }); break; break;
       case "archiveECLWorkUnit":
         // Implement archiveECLWorkUnit function call
         break;
