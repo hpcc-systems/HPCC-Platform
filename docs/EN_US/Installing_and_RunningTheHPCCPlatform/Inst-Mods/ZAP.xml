@@ -58,6 +58,62 @@
     handling your support request, or you can upload the file into the issue
     tracking system. Remember, you should only use the email feature if
     appropriate to share your data.</para>
+
+    <sect3 id="ZAP_Config_Options">
+      <title>Configuration Options</title>
+
+      <para>The component logs are some of the most important artifacts
+      included in these ZAP reports.</para>
+
+      <para>The logging behavior differs on bare metal and containerized
+      deployments. In bare metal, some logs are always slated to be included
+      (Thor Manager, ECLCC Server, and ECL Agent). The UI checkbox “Include
+      worker logs” controls the inclusion of the Thor Worker log files.</para>
+
+      <para>In a containerized environment, you can choose to exclude all the
+      logs. Deselect the UI check boxes for the inclusion of the logs.
+      Containerized deployments allow this flexibility because logs require a
+      remote log reader component which may not be configured on your system.
+      Cloud-based logging can lead to additional expenses for data collection
+      and downloads compared to traditional bare metal systems, which is why
+      some cloud deployments may have logging disabled.</para>
+    </sect3>
+
+    <sect3 id="ZAP-IncludeLogs">
+      <title>Including the Logs</title>
+
+      <para>To include the logs check the two UI check boxes:</para>
+
+      <para><emphasis role="bold">Include related logs</emphasis> : Controls
+      inclusion of the &lt;wuid&gt;.log file.</para>
+
+      <para><emphasis role="bold">Include per-component logs</emphasis>:
+      Controls inclusion of logs generated from at least these components (the
+      list may be vary based on your deployment): ECLCC Server, Thor-ECL
+      Agent, Thor Manager, Thor Agent, and Thor Worker.</para>
+
+      <para>In order for these logs to be included in the Z.A.P. the bare
+      metal deployments require the ESP feature permission <emphasis
+      role="bold">Cluster Topology Access</emphasis> value to be set to
+      <emphasis role="bold">READ</emphasis>.</para>
+
+      <programlisting>ClusterTopologyAccess:READ</programlisting>
+
+      <para>A containerized deployment must have logging properly configured
+      to be able to include logs. Additionally the user must have the feature
+      permission <emphasis>WsLogAccess:Read</emphasis> or the logs will be
+      excluded and instead contain an error message indicating which
+      permission is required.</para>
+
+      <para>If a "no access" message is present in the ZAP file and there are
+      no log files, the permission value specified in the error message must
+      be set to ensure the logs are included in the ZAP report.</para>
+
+      <para>See the <link linkend="Containerized_Logging">Containerized
+      Logging</link> section in the <ulink
+      url="https://hpccsystems.com/training/documentation/all/">Containerized
+      HPCC Systems Platform</ulink> documentation for more information about
+      configuring log processing.</para>
+    </sect3>
   </sect2>
 </sect1>
-
