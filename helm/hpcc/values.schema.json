@@ -3058,6 +3058,24 @@
       },
       "additionalProperties": false
     },
+    "sasha-xref": {
+        "type": "object",
+        "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+        "properties": {
+          "eclwatchProvider": {
+            "type": "boolean",
+            "description": "Run xref using saxref if true",
+            "default": true
+          },
+          "checkSuperFiles": {
+            "type": "boolean",
+            "description": "Check superfiles when running XRef",
+            "default": false
+          },
+          "disabled": {}
+        },
+        "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3081,6 +3099,9 @@
             },
             "thor-qmon": {
               "$ref": "#/definitions/sasha-thor-qmon"
+            },
+            "xref": {
+              "$ref": "#/definitions/sasha-xref"
             },
             "disabled": {
               "type": "boolean"

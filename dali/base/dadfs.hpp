@@ -815,14 +815,15 @@ enum DistributedFileSystemError
 
 
 // utility routines (used by xref and dfu)
-extern da_decl RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn);
+extern da_decl RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn);
+extern da_decl RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn);
 // legacy version
-inline RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,bool replicate,int replicateoffset,RemoteFilename &rfn,bool localmount=false)
+inline RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,bool replicate,int replicateoffset,RemoteFilename &rfn,bool localmount=false)
 {
     // local mount ignored!
     ClusterPartDiskMapSpec mspec;
     mspec.replicateOffset = replicateoffset;
-    return constructPartFilename(grp,partno,partmax,name,partmask,partdir,replicate?1:0,mspec,rfn);
+    return deprecatedConstructPartFilename(grp,partno,partmax,name,partmask,partdir,replicate?1:0,mspec,rfn);
 }
 
 extern da_decl IDFPartFilter *createPartFilter(const char *filter);
