@@ -8240,6 +8240,8 @@ private:
 };
 
 static std::atomic<CNamedGroupStore *> groupStore{nullptr};
+static CriticalSection groupsect;
+
 
 bool CNamedGroupIterator::match()
 {
@@ -8268,7 +8270,10 @@ bool CNamedGroupIterator::match()
 INamedGroupStore &queryNamedGroupStore()
 {
     if (!groupStore.load())
+    {
+        CriticalBlock block(groupsect);
         groupStore.store(new CNamedGroupStore());
+    }
     return *(groupStore.load());
 }
 
@@ -9201,6 +9206,7 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
 
 
 static std::atomic<CDistributedFileDirectory *> DFdir{nullptr};
+static CriticalSection dfdirCrit;
 
 /**
  * Public method to control DistributedFileDirectory access
@@ -9210,28 +9216,35 @@ static std::atomic<CDistributedFileDirectory *> DFdir{nullptr};
 IDistributedFileDirectory &queryDistributedFileDirectory()
 {
     if (!DFdir.load())
+    {
+        CriticalBlock block(dfdirCrit);
         DFdir.store(new CDistributedFileDirectory());
+    }
     return *DFdir.load();
 }
 
 /**
  * Shutdown distributed file system (root directory).
  */
-void closedownDFS()  // called by dacoven
+void closedownDFS() // called by dacoven
 {
     if (DFdir.load())
     {
-        try {
+        CriticalBlock block(dfdirCrit);
+        try
+        {
             delete DFdir.load();
         }
-        catch (IMP_Exception *e) {
-            if (e->errorCode()!=MPERR_link_closed)
+        catch (IMP_Exception *e)
+        {
+            if (e->errorCode() != MPERR_link_closed)
                 throw;
-            PrintExceptionLog(e,"closedownDFS");
+            PrintExceptionLog(e, "closedownDFS");
             e->Release();
         }
-        catch (IDaliClient_Exception *e) {
-            if (e->errorCode()!=DCERR_server_closed)
+        catch (IDaliClient_Exception *e)
+        {
+            if (e->errorCode() != DCERR_server_closed)
                 throw;
             e->Release();
         }
@@ -9239,6 +9252,7 @@ void closedownDFS()  // called by dacoven
     }
     if (groupStore.load())
     {
+        CriticalBlock block(groupsect);
         ::Release(groupStore.load());
         groupStore.store(nullptr);
     }
