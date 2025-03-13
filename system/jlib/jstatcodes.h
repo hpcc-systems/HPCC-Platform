@@ -330,6 +330,8 @@ enum StatisticKind
     StSizeBranchMemory,
     StSizeLeafMemory,
     StSizeLargestExpandedLeaf,
+    StTimeDelayed,                      // Time waiting for minimum query time to pass
+    StCycleDelayedCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
