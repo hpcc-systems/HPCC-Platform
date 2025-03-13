@@ -185,7 +185,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 { key: "divider_4", itemType: ContextualMenuItemType.Divider },
                 {
                     key: "reset",
-                    href: "/esp/files/index.html#/reset",
+                    href: "/esp/files/index.html#/settings/reset",
                     text: nlsHPCC.ResetUserSettings
                 },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
