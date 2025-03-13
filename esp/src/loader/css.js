@@ -403,7 +403,7 @@ define([
 			 */
             function processCss(cssText) {
                 postcssPromise.always(function () {
-                    if (cssText && dojo.isString(cssText) && cssText.length) {
+                    if (cssText && typeof cssText === "string" && cssText.length) {
                         cssText = fixUrlsInCssFile(url, cssText);
                         if (postcssProcessor) {
                             cssText = postcssProcessor.process(cssText, { safe: true });

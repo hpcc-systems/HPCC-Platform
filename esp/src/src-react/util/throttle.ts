@@ -1,7 +1,6 @@
 import { debounce as debounceMethod } from "@hpcc-js/util";
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-type TypeOfClassMethod<T, M extends keyof T> = T[M] extends Function ? T[M] : never;
+type TypeOfClassMethod<T, M extends keyof T> = T[M] extends (...args: any[]) => any ? T[M] : never;
 
 export function singletonDebounce<T, M extends keyof T>(obj: T, method: M, timeoutSecs: number = 1): TypeOfClassMethod<T, M> {
     const __lazy__ = Symbol.for(`__lazy__${method as string}`);

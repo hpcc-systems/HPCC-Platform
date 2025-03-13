@@ -394,7 +394,6 @@ export function useGlobalWorkunitNotes(): [WsWorkunits.Note[]] {
 
 export function useDfuWorkunit(wuid: string, full: boolean = false): [DFUWorkunit, WUStateID, number, boolean, (full?: boolean) => Promise<DFUWorkunit>] {
 
-    // eslint-disable-next-line func-call-spacing
     const [retVal, setRetVal] = React.useState<{ workunit: DFUWorkunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<DFUWorkunit> }>();
 
     React.useEffect(() => {

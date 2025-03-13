@@ -72,14 +72,10 @@ export class Summary extends FlexGrid {
                 ;
         }
         if (!hasGauge) {
-            this._loadingMsg && this._loadingMsg
-                .text(nlsHPCC.loadingMessage)
-                ;
+            this._loadingMsg?.text(nlsHPCC.loadingMessage);
         }
         machineService.GetTargetClusterUsageEx(this._targetCluster !== undefined ? [this._targetCluster] : undefined, bypassCachedResult).then(response => {
-            this._loadingMsg && this._loadingMsg
-                .html('<i class="fa fa-database"></i>')
-                ;
+            this._loadingMsg?.html('<i class="fa fa-database"></i>');
             if (!this._targetCluster) {
                 response.forEach(details => {
                     if (!this._usage[details.Name]) {

@@ -139,7 +139,6 @@ export function valueCleanUp(intsize): string {
 }
 
 export function removeSpecialCharacters(stringToConvert): string {
-    // eslint-disable-next-line no-useless-escape
     return stringToConvert.replace(/[\!\@\#\$\%\^\&\*\)\(\+\=\.\<\>\{\}\[\]\:\;\'\"\|\~\`\_\-]/g, "");
 }
 
@@ -262,7 +261,7 @@ export function formatAsDelim(columns: ColumnMap, rows: any, delim = ",") {
         for (const key in columns) {
             if (key !== columns[key].id && columns[key].selectorType !== "checkbox") {
                 let value = row[key];
-                if (columns[key].hasOwnProperty("csvFormatter")) {
+                if ("csvFormatter" in columns[key]) {
                     value = columns[key].csvFormatter(row[key], row);
                 }
                 const cell = row[columns[key].field] ?? value;
@@ -307,9 +306,9 @@ export function downloadToCSV(grid, rows, fileName) {
         const a = document.createElement("a");
         mimeType = mimeType || "application/octet-stream";
 
-        // @ts-ignore
+        // @ts-expect-error
         if (navigator.msSaveBlob) { // IE10
-            // @ts-ignore
+            // @ts-expect-error
             return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
         } else if ("download" in a) {
             a.href = "data:" + mimeType + "," + encodeURIComponent(content);
@@ -334,12 +333,8 @@ export function downloadToCSV(grid, rows, fileName) {
     download(csvContent, fileName, "text/csv");
 }
 
-export function isObjectEmpty(obj) {
-    for (const prop in obj) {
-        if (obj.hasOwnProperty(prop))
-            return false;
-    }
-    return true;
+export function isObjectEmpty(obj: object): boolean {
+    return Object.keys(obj).length === 0;
 }
 //  -----------------------------------------------------------------------------------------------
 //  Modified from alphanum-sort:  https://github.com/TrySound/alphanum-sort © Bogdan Chadkin
@@ -996,7 +991,7 @@ export function DynamicDialogForm(object) {
 
     for (const key in object) {
         const tr = domConstruct.create("tr", {}, table);
-        if (object.hasOwnProperty(key)) {
+        if (key in object) {
             const td = domConstruct.create("td", {
                 style: "width: 30%;"
             }, tr);
@@ -1022,7 +1017,7 @@ export function DynamicDialogTable(headingsArr, rows) {
     }, table);
 
     arrayUtil.forEach(headingsArr, function (row, idx) {
-        //  @ts-ignore
+        // @ts-expect-error
         const th = domConstruct.create("th", {
             innerHTML: row,
             style: "text-align: left; padding-left:5px;"
@@ -1034,7 +1029,7 @@ export function DynamicDialogTable(headingsArr, rows) {
             style: "padding: 5px 0 5px 0;"
         }, table);
         for (const key in row) {
-            //  @ts-ignore
+            // @ts-expect-error
             const td = domConstruct.create("td", {
                 innerHTML: key === "ServiceName" ? "<a href=" + row.Protocol + "://" + location.hostname + ":" + row.Port + " target='_blank'>" + row[key] + "</a>" : row[key], // TODO improve the ability to add link in any cell
                 style: "style: width: 30%; padding: 5px 0 5px 5px; border: 1px solid #dddddd;"

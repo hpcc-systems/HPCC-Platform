@@ -72,8 +72,18 @@ module.exports = function (env) {
                     use: ["style-loader", "css-loader"]
                 }, {
                     test: /\.js$/,
-                    use: ["source-map-loader"],
-                    enforce: "pre"
+                    enforce: "pre",
+                    use: [{
+                        loader: "source-map-loader",
+                        options: {
+                            filterSourceMappingUrl: (url, resourcePath) => {
+                                if (resourcePath.includes("node_modules") && !resourcePath.includes("hpcc-js")) {
+                                    return false;
+                                }
+                                return true;
+                            }
+                        }
+                    }]
                 }, {
                     test: /\.js$/,
                     loader: "string-replace-loader",

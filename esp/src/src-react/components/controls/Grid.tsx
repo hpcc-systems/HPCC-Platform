@@ -267,8 +267,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [count, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
-        //  Dummy line to ensure its included in the dependency array  ---
-        refresh.value;
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        refresh.value; // Dummy line to ensure its included in the dependency array
         refreshTable(refresh.clear);
     }, [refresh.clear, refresh.value, refreshTable]);
 

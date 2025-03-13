@@ -26,7 +26,7 @@ const DebugBase = declare(null, {
         }
         const ulNode = domConstruct.create("ul", {}, domNode);
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
+            if (key in obj) {
                 this.showDebugRow(ulNode, key, obj[key]);
             }
         }
