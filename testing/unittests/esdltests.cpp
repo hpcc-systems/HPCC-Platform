@@ -349,50 +349,43 @@ public:
         return scriptContext.getClear();
     }
 
-    void runTransform(IEsdlScriptContext *scriptContext, const char *scriptXml, const char *srcSection, const char *tgtSection, const char *testname, int code)
+    void runTransform(IEsdlScriptContext *scriptContext, const char *scriptXml, const char *srcSection, const char *tgtSection, const char *testname)
     {
         unsigned startTime = msTick();
         Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(scriptXml, nullptr);
 
         tf->processTransform(scriptContext, srcSection, tgtSection);
-        fprintf(stdout, "\nTest (%s) time ms(%u)\n", testname, msTick() - startTime);
-
-        if (code)
-            throw MakeStringException(99, "Test failed(%s): expected an explicit exception %d", testname, code);
+        DBGLOG("Test (%s) time ms(%u)", testname, msTick() - startTime);
     }
     void runTest(const char *testname, const char *scriptXml, const char *xml, const char *config, const char *result, int code)
     {
         try
         {
-            //printf("starting %s:\n", testname);  //uncomment to help debug
+            //DBGLOG("starting %s:\n", testname);  //uncomment to help debug
             Owned<IEspContext> ctx = createEspContext(nullptr);
             ctx->setUser(new CSecureUser("not-real", ""));
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, xml, config);
-            scriptContext->setTraceToStdout(true);
-            runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname, code);
+            scriptContext->setTraceToStdout(false);
+            runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("Expected exception %d not thrown", code), code, 0);
 
             StringBuffer output;
             scriptContext->toXML(output.clear(), ESDLScriptCtxSection_FinalRequest);
 
-            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            if (result)
             {
-                fputs(output.str(), stdout);
-                fflush(stdout);
-                fprintf(stdout, "\nTest failed(%s)\n", testname);
-                CPPUNIT_ASSERT(false);
+              VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+              CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
             }
         }
         catch (IException *E)
         {
-            StringBuffer m;
-            if (code!=E->errorCode())
-            {
-                StringBuffer m;
-                fprintf(stdout, "\nTest(%s) Expected %d Exception %d - %s\n", testname, code, E->errorCode(), E->errorMessage(m).str());
-                E->Release();
-                CPPUNIT_ASSERT(false);
-            }
-            E->Release();
+          StringBuffer m;
+          int actualErrorCode = E->errorCode();
+          VStringBuffer message("Exception message: %s", E->errorMessage(m).str());
+          E->Release();
+          CPPUNIT_ASSERT_EQUAL_MESSAGE(message.str(), code, actualErrorCode);
         }
     }
 
@@ -544,11 +537,12 @@ public:
         </config>
       )!!";
 
+      // The previous version of this test was incorrect in asserting the implicit 'n' prefix was required.
+      // "implicit-prefix" shows that it can be used.
       runTest("implicit-prefix", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
 
-      // The implicit 'n' prefix is required if the content has a namespace defined
-      // with no prefix. This test is expected to throw an exception.
-      runTest("implicit-prefix-not-used", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
+      // "implicit-prefix-not-used" shows that it is optional.
+      runTest("implicit-prefix-not-used", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 0);
     }
 
     void testEsdlTransformRequestNamespaces()
@@ -1555,10 +1549,10 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         {
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
-            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "script context 1", 0);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "script context 1");
 
             scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, config2);
-            runTransform(scriptContext, script, "FirstPass", "SecondPass", "script context 2", 0);
+            runTransform(scriptContext, script, "FirstPass", "SecondPass", "script context 2");
 
             constexpr const char * result = R"!!(<root>
   <Person>
@@ -1579,19 +1573,18 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
             StringBuffer output;
             scriptContext->toXML(output, "SecondPass");
-            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            if (result)
             {
-                fputs(output.str(), stdout);
-                fflush(stdout);
-                throw MakeStringException(100, "Test failed(%s)", "script context");
+                VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+                CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
             }
         }
         catch (IException *E)
         {
             StringBuffer m;
-            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "script context", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
-            CPPUNIT_ASSERT(false);
+            CPPUNIT_FAIL(exceptionMessage);
         }
     }
 
@@ -1724,23 +1717,22 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
-            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "target element 1", 0);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "target element 1");
 
             StringBuffer output;
             scriptContext->toXML(output, "FirstPass");
-            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            if (result)
             {
-                fputs(output.str(), stdout);
-                fflush(stdout);
-                throw MakeStringException(100, "Test failed(%s)", "target element");
+                VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+                CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
             }
         }
         catch (IException *E)
         {
             StringBuffer m;
-            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "target element", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
-            CPPUNIT_ASSERT(false);
+            CPPUNIT_FAIL(exceptionMessage);
         }
     }
 
@@ -1778,57 +1770,35 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           Owned<IEspContext> ctx = createEspContext(nullptr);
           Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr, nullptr);
           scriptContext->setTestMode(true);
-          scriptContext->setTraceToStdout(true);
+          scriptContext->setTraceToStdout(false);
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
           scriptContext->setContent("StringFunctions", input);
 
-          unsigned failed = false;
-          runTransform(scriptContext, stringFunctionsScript, "StringFunctions", nullptr, "StringFunctions 1", 0);
-          if (!checkTestResult(scriptContext, "deprecated-encrypt-empty"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "deprecated-decrypt-empty"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "deprecated-encrypt-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "deprecated-decrypt-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "encode-base64-empty"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "decode-base64-empty"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "encode-base64-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "decode-base64-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "compress-empty"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "compress-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "decompress-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "escape-xml-value"))
-            failed = true;
-          if (!checkTestResult(scriptContext, "unescape-xml-value"))
-            failed = true;
-          CPPUNIT_ASSERT(!failed);
+          runTransform(scriptContext, stringFunctionsScript, "StringFunctions", nullptr, "StringFunctions 1");
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//deprecated-encrypt-empty"));;
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//deprecated-decrypt-empty"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//deprecated-encrypt-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//deprecated-decrypt-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//encode-base64-empty"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//decode-base64-empty"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//encode-base64-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//decode-base64-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//compress-empty"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//compress-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//decompress-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//escape-xml-value"));
+          CPPUNIT_ASSERT(scriptContext->getXPathBool("//unescape-xml-value"));
         }
         catch (IException *E)
         {
           StringBuffer m;
-          fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "StringFunctions", E->errorCode(), E->errorMessage(m).str());
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
           E->Release();
-          CPPUNIT_ASSERT(false);
+          CPPUNIT_FAIL(exceptionMessage);
         }
-    }
-    bool checkTestResult(IEsdlScriptContext* scriptContext, const char* test)
-    {
-      bool result = scriptContext->getXPathBool(VStringBuffer("//%s", test));
-      if (!result)
-        fprintf(stdout, "\nTest(StringFunctions-%s) failed\n", test);
-      return result;
     }
 
     void testTxSummary()
@@ -1920,7 +1890,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           CTxSummary* txSummary = ctx->queryTxSummary();
           Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr, nullptr);
           scriptContext->setTestMode(true);
-          scriptContext->setTraceToStdout(true);
+          scriptContext->setTraceToStdout(false);
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
@@ -1928,7 +1898,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, input);
 
           txSummary->clear();
-          runTransform(scriptContext, levelsScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 1", 0);
+          runTransform(scriptContext, levelsScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 1");
           compareTxSummary(scriptContext, "level", "default", levelsResult1, true);
           compareTxSummary(scriptContext, "level", "min", levelsResult1, true);
           compareTxSummary(scriptContext, "level", "normal", levelsResult5, true);
@@ -1945,19 +1915,19 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           compareTxSummary(scriptContext, "level", "10", levelsResult10, true);
 
           txSummary->clear();
-          runTransform(scriptContext, typesScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 2", 0);
+          runTransform(scriptContext, typesScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 2");
           compareTxSummary(scriptContext, "types", "all", typesResultAll, true);
 
           txSummary->clear();
-          runTransform(scriptContext, timersScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 3", 0);
+          runTransform(scriptContext, timersScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 3");
           compareTxSummary(scriptContext, "timers", "all", timersResultAll, false);
         }
         catch (IException *E)
         {
           StringBuffer m;
-          fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "TxSummary", E->errorCode(), E->errorMessage(m).str());
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
           E->Release();
-          CPPUNIT_ASSERT(false);
+          CPPUNIT_FAIL(exceptionMessage);
         }
     }
     void compareTxSummary(IEsdlScriptContext* scriptContext, const char* prefix, const char* test, const char* expectedText, bool exact)
@@ -1969,23 +1939,16 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       json actual = json::parse(actualText.str());
       if (expected != actual)
       {
+        VStringBuffer comparison("Test(TxSummary-%s-%s) expected: '%s'\n    actual: '%s'", prefix, test, expectedText, actualText.str());
         // Timer values are not guaranteed. The delay operation ensures a minimum elapsed time
         // but cannot guarantee a maximum. While object equality is preferred, ensuring that at
         // least the expected times passed are is necessarily sufficient.
         bool closeEnough = !exact && expected.size() == actual.size();
         for (json::iterator it = expected.begin(); closeEnough && it != expected.end(); ++it)
         {
-          if (!actual.contains(it.key()))
-            closeEnough = false;
-          else if (actual[it.key()] < it.value())
-            closeEnough = false;
+          CPPUNIT_ASSERT_MESSAGE(comparison, actual.contains(it.key()));
+          CPPUNIT_ASSERT_MESSAGE(comparison, actual[it.key()] >= it.value());
         }
-        if (!closeEnough)
-        {
-          fprintf(stdout, "\nTest(TxSummary-%s-%s)\n    expected: '%s'\n    actual: '%s'\n", prefix, test, expectedText, actualText.str());
-          CPPUNIT_ASSERT(false);
-        }
-        fprintf(stdout, "\nTxSummary-%s-%s) '%s' close enough to '%s'\n", prefix, test, actualText.str(), expectedText);
       }
     }
 
@@ -2252,39 +2215,41 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
         scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, input);
 
-        runTransform(scriptContext, traceScript, ESDLScriptCtxSection_ESDLRequest, "Masking", "masking", 0);
-        bool failed = false;
-        if (sink->history.size() == expected.size())
+        runTransform(scriptContext, traceScript, ESDLScriptCtxSection_ESDLRequest, "Masking", "masking");
+
+        // Only create the large message if we are going to fail the test
+        if (sink->history.size() != expected.size())
         {
-          for (History::iterator aIt = sink->history.begin(), eIt = expected.begin(); eIt != expected.end(); ++aIt, ++eIt)
-          {
-            if (*aIt != *eIt)
-            {
-              fprintf(stdout, "\nExpected: %d/%d/%s\nActual:  %d/%d/%s\n", eIt->msgAudience, eIt->msgClass, eIt->msg.str(), aIt->msgAudience, aIt->msgClass, aIt->msg.str());
-              failed = true;
-            }
-          }
-        }
-        else
-        {
+          VStringBuffer accumulatedMessage("Size mismatch- expected %ld, actual %ld", expected.size(), sink->history.size());
           unsigned idx = 0;
-          fprintf(stdout, "\nExpected:\n");
+          accumulatedMessage.append("\nExpected:\n");
           for (const HistoricalEvent& he : expected)
-            fprintf(stdout, "    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
+          {
+            VStringBuffer msg("    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
+            accumulatedMessage.append(msg);
+          }
           idx = 0;
-          fprintf(stdout, "Actual:\n");
+          accumulatedMessage.append("Actual:\n");
           for (const HistoricalEvent& he : sink->history)
-            fprintf(stdout, "    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
-          failed = true;
+          {
+            VStringBuffer msg("    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
+            accumulatedMessage.append(msg);
+          }
+          CPPUNIT_FAIL(accumulatedMessage.str());
         }
-        CPPUNIT_ASSERT(!failed);
+
+        for (History::iterator aIt = sink->history.begin(), eIt = expected.begin(); eIt != expected.end(); ++aIt, ++eIt)
+        {
+          VStringBuffer comparison("\nExpected: %d/%d/%s\nActual:  %d/%d/%s\n", eIt->msgAudience, eIt->msgClass, eIt->msg.str(), aIt->msgAudience, aIt->msgClass, aIt->msg.str());
+          CPPUNIT_ASSERT_MESSAGE(comparison.str(), *eIt == *aIt);
+        }
       }
       catch (IException *E)
       {
         StringBuffer m;
-        fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "masking", E->errorCode(), E->errorMessage(m).str());
+        VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
         E->Release();
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL(exceptionMessage);
       }
     }
     IPTree* createMaskingConfiguration(const char* text)
@@ -2294,13 +2259,12 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       {
         cfg.setown(createPTreeFromYAMLString(text));
       }
-      catch (IException* e)
+      catch (IException* E)
       {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        fprintf(stdout, "\nexception parsing masking configuration: %s", msg.str());
-        e->Release();
-        throw SubstituteException();
+        StringBuffer m;
+        VStringBuffer exceptionMessage("Exception in createMaskingConfiguration: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+        E->Release();
+        CPPUNIT_FAIL(exceptionMessage);
       }
       return cfg.getClear();
     }
@@ -2311,14 +2275,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       Owned<IPTree> cfg(createMaskingConfiguration(text));
       Owned<IPTreeIterator> it(cfg->getElements("//maskingPlugin"));
       ForEach(*it)
-      {
-        if (!engine->loadProfiles(it->query()))
-        {
-          fprintf(stdout, "loadProfiles failed\n");
-          failed = true;
-        }
-      }
-      CPPUNIT_ASSERT(!failed);
+        CPPUNIT_ASSERT_MESSAGE("createMaskingEngine: loadProfiles failed", engine->loadProfiles(it->query()));
       return engine.getClear();
     }
     CModularTracer* createTracer(CMockTraceMsgSink& sink)
@@ -2447,23 +2404,22 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
-            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml", 0);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml");
 
             StringBuffer output;
             scriptContext->toXML(output, "MyResult");
-            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            if (result)
             {
-                fputs(output.str(), stdout);
-                fflush(stdout);
-                throw MakeStringException(100, "Test failed(%s)", "http post xml");
+                VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+                CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
             }
         }
         catch (IException *E)
         {
             StringBuffer m;
-            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "http post xml", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
-            CPPUNIT_ASSERT(false);
+            CPPUNIT_FAIL(exceptionMessage);
         }
     }
     void testSynchronizeHTTPPostXml()
@@ -2676,23 +2632,22 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
-            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "synchronize", 0);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "synchronize");
 
             StringBuffer output;
             scriptContext->toXML(output, "MyResult");
-            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            if (result)
             {
-                fputs(output.str(), stdout);
-                fflush(stdout);
-                throw MakeStringException(100, "Test failed(%s)", "synchronize");
+                VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+                CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
             }
         }
         catch (IException *E)
         {
             StringBuffer m;
-            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "synchronize", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
-            CPPUNIT_ASSERT(false);
+            CPPUNIT_FAIL(exceptionMessage);
         }
     }
     void testMysql()
@@ -2847,19 +2802,19 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         try
         {
-            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml", 0);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml");
         }
         catch (IException *E)
         {
             StringBuffer m;
-            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "mysql", E->errorCode(), E->errorMessage(m).str());
+            VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
             E->Release();
+            CPPUNIT_FAIL(exceptionMessage);
         }
 
         StringBuffer output;
         scriptContext->toXML(output);
-        fputs(output.str(), stdout);
-        fflush(stdout);
+        DBGLOG("testMysql output: /n%s", output.str());
     }
 
     void testScriptMap()
@@ -3096,11 +3051,10 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       processServiceAndMethodTransforms(scriptContext, {serviceSet, methodSet}, ESDLScriptCtxSection_InitialResponse, "MyResult");
       StringBuffer output;
       scriptContext->toXML(output, "MyResult");
-      if (result && !areEquivalentTestXMLStrings(result, output.str()))
+      if (result)
       {
-          fputs(output.str(), stdout);
-          fflush(stdout);
-          throw MakeStringException(100, "Test failed(%s)", "transform map");
+          VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+          CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str()));
       }
     }
 
@@ -3354,18 +3308,18 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         processServiceAndMethodTransforms(scriptContext, {serviceSet, methodSet}, ESDLScriptCtxSection_InitialResponse, "MyResult");
         StringBuffer output;
         scriptContext->toXML(output, "MyResult");
-        if (result && !areEquivalentTestXMLStrings(result, output.str(), true))
+        if (result)
         {
-            fputs(output.str(), stdout);
-            fflush(stdout);
-            throw MakeStringException(100, "Test failed(%s)", "call functions");
+            VStringBuffer comparison("Expected: %s\nActual: %s", result, output.str());
+            CPPUNIT_ASSERT_MESSAGE(comparison.str(), areEquivalentTestXMLStrings(result, output.str(), true));
         }
       }
       catch(IException *E)
       {
-        StringBuffer msg;
-        printf("\nOOOPs Exception %d - %s\n", E->errorCode(), E->errorMessage(msg).str());
-        throw E;
+          StringBuffer m;
+          VStringBuffer exceptionMessage("Exception: code=%d, message=%s", E->errorCode(), E->errorMessage(m).str());
+          E->Release();
+          CPPUNIT_FAIL(exceptionMessage);
       }
     }
 };
