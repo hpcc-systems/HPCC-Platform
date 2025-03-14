@@ -35,7 +35,7 @@ using namespace xpp;
 using namespace fxpp;
 using namespace fxpp::fxa;
 
-static IPTree* getPTree(const char* test, const char* subSection, const char* xml)
+static IPTree* getPTree(const char* subSection, const char* xml)
 {
   Owned<IPTree> node;
   try
@@ -44,86 +44,26 @@ static IPTree* getPTree(const char* test, const char* subSection, const char* xm
   }
   catch (IException* e)
   {
-    StringBuffer msg;
-    msg.appendf("Test(%s", test);
+    StringBuffer msg("Exception creating PTree");
     if (subSection)
-      msg.appendf("/%s", subSection);
-    msg.append(") exception creating PTree: ");
+      msg.appendf(" '%s' ", subSection);
     e->errorMessage(msg);
     e->Release();
-    fprintf(stdout, "\n%s\n", msg.str());
-    CPPUNIT_ASSERT(false);
+    CPPUNIT_FAIL(msg.str());
   }
   return node.getClear();
 }
 
-template <typename actual_t, typename expected_t>
-static void compareNumeric(const char* test, const actual_t& actual, const expected_t& expected)
+static void compareXml(const char* actual, const char* expected)
 {
-  if (actual != expected)
+  if (isEmptyString(expected))
+    CPPUNIT_ASSERT_MESSAGE("Test expected empty text", isEmptyString(actual));
+  else
   {
-    StringBuffer msg;
-    msg.appendf("\nTest(%s) actual does not match expected.\n    Actual: ", test)
-       .append(actual)
-       .append("\n  Expected: ")
-       .append(expected)
-       .append("\n");
-    fprintf(stdout, "%s", msg.str());
-    CPPUNIT_ASSERT(false);
-  }
-}
-
-template <>
-void compareNumeric(const char* test, const unsigned long& actual, const unsigned long& expected)
-{
-  if (actual != expected)
-  {
-    char actualBuf[64];
-    char expectedBuf[64];
-    sprintf(actualBuf, "%lu", actual);
-    sprintf(expectedBuf, "%lu", expected);
-    StringBuffer msg;
-    msg.appendf("\nTest(%s) actual does not match expected.\n    Actual: ", test)
-       .append(actualBuf)
-       .append("\n  Expected: ")
-       .append(expectedBuf)
-       .append("\n");
-    fprintf(stdout, "%s", msg.str());
-    CPPUNIT_ASSERT(false);
-  }
-}
-
-static void compareText(const char* test, const char* actual, const char* expected)
-{
-  if (!streq(actual, expected))
-  {
-    fprintf(stdout, "\nTest(%s) actual does not match expected.\n    Actual: %s\n  Expected: %s\n", test, actual, expected);
-    CPPUNIT_ASSERT(false);
-  }
-}
-
-static void compareXml(const char* test, const char* actual, const char* expected)
-{
-  if (!isEmptyString(expected) && isEmptyString(actual))
-  {
-    fprintf(stdout, "\nTest(%s) expected non-empty text.\n", test);
-    CPPUNIT_ASSERT(false);
-  }
-  if (isEmptyString(expected) && !isEmptyString(actual))
-  {
-    fprintf(stdout, "\nTest(%s) expected empty text.\n", test);
-    CPPUNIT_ASSERT(false);
-  }
-  if (!isEmptyString(expected))
-  {
-    Owned<IPTree> actualNode(getPTree(test, "actual", actual));
-    Owned<IPTree> expectedNode(getPTree(test, "expected", expected));
-
-    if (!areMatchingPTrees(actualNode, expectedNode))
-    {
-      fprintf(stdout, "\nTest(%s) actual is not equivalent to expected.\n    Actual: %s\n    Expected: %s\n", test, actual, expected);
-      CPPUNIT_ASSERT(false);
-    }
+    CPPUNIT_ASSERT_MESSAGE("Test expected non-empty text", !isEmptyString(actual));
+    Owned<IPTree> actualNode(getPTree("actual", actual));
+    Owned<IPTree> expectedNode(getPTree("expected", expected));
+    CPPUNIT_ASSERT_MESSAGE(VStringBuffer("actualNode:\n%s\n- expectedNode:\n%s", actual, expected), areMatchingPTrees(actualNode, expectedNode));
   }
 }
 
@@ -224,19 +164,14 @@ public:
 
     void testRequestNamespaces()
     {
-      bool failed = false;
-      if (!checkRequestNamespace("ns", "hpcc:test:esp:xpp:prefix"))
-        failed = true;
-      if (!checkRequestNamespace(nullptr, "hpcc:test:esp:xpp:default"))
-        failed = true;
-      if (failed)
-      {
-        fprintf(stdout, "\n");
-        CPPUNIT_ASSERT(false);
-      }
+      checkRequestNamespace("ns", "hpcc:test:esp:xpp:prefix");
+      checkRequestNamespace(nullptr, "hpcc:test:esp:xpp:default");
+      // tja testing below
+      // checkRequestNamespace("nsXXX", "hpcc:test:esp:xpp:prefix");
+      // checkRequestNamespace(nullptr, "hpcc:test:esp:xpp:default");
     }
 
-    bool checkRequestNamespace(const char* prefix, const char* uri)
+    void checkRequestNamespace(const char* prefix, const char* uri)
     {
       StringBuffer test("request-namespace");
       StringBuffer tag("UnitTest");
@@ -261,7 +196,6 @@ public:
       StartTag stag;
       EndTag etag;
       int type;
-      bool failed = false;
 
       parser->setInput(input, input.length());
       while ((type = parser->next()) != IXmlPullParser::END_DOCUMENT)
@@ -274,160 +208,65 @@ public:
           for (int i = 0, n = stag.getLength(); i < n; i++)
             output.appendf(" %s=\"%s\"", stag.getRawName(i), stag.getValue(i));
           output.append(">");
-          if (!streq(stag.getLocalName(), "UnitTest"))
-          {
-            fprintf(stdout, "\nTest(%s) unexpected local start tag - '%s' instead of '%s'", cfg.name, stag.getLocalName(), "UnitTest");
-            failed = true;
-          }
-          if (!streq(stag.getUri(), uri))
-          {
-            fprintf(stdout, "\nTest(%s) start tag uri mismatch - '%s' instead of '%s'", cfg.name, stag.getUri(), uri);
-            failed = true;
-          }
-          if (stag.getLength() != 2)
-          {
-            fprintf(stdout, "\nTest(%s) attribute count mismatch - %d instead of %d", cfg.name, stag.getLength(), 2);
-            failed = true;
-          }
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Local start tag mismatch", std::string("UnitTest"), std::string(stag.getLocalName()));
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Start tag uri mismatch", std::string(uri), std::string(stag.getUri()));
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Attribute count mismatch", 2, stag.getLength());
+
+          if (!isEmptyString(prefix))
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Local attribute name mismatch", std::string(prefix), std::string(stag.getLocalName(0)));
           else
-          {
-            if (!isEmptyString(prefix))
-            {
-              if (!streq(stag.getLocalName(0), prefix))
-              {
-                fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(0), prefix);
-                failed = true;
-              }
-            }
-            else
-            {
-              if (!streq(stag.getLocalName(0), "xmlns"))
-              {
-                fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(0), "xmlns");
-                failed = true;
-              }
-            }
-            if (!streq(stag.getURI(0), uri))
-            {
-              fprintf(stdout, "\nTest(%s) namespace attribute uri mismatch - '%s' instead of '%s'", cfg.name, stag.getURI(0), uri);
-              failed = true;
-            }
-            if (!streq(stag.getLocalName(1), "foo"))
-            {
-              fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(1), "foo");
-              failed = true;
-            }
-          }
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Local attribute name mismatch", std::string("xmlns"), std::string(stag.getLocalName(0)));
+
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Namespace attribute uri mismatch", std::string(uri), std::string(stag.getURI(0)));
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Local attribute name mismatch", std::string("foo"), std::string(stag.getLocalName(1)));
           break;
         case IXmlPullParser::END_TAG:
           parser->readEndTag(etag);
           output.appendf("</%s>", etag.getQName());
-          if (!streq(etag.getLocalName(), "UnitTest"))
-          {
-            fprintf(stdout, "\nTest(%s) unexpected local end tag - '%s' instead of '%s'", cfg.name, etag.getLocalName(), "UnitTest");
-            failed = true;
-          }
-          if (!streq(stag.getUri(), uri))
-          {
-            fprintf(stdout, "\nTest(%s) end tag uri mismatch - '%s' instead of '%s'", cfg.name, etag.getUri(), uri);
-            failed = true;
-          }
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("Local end tag mismatch", std::string("UnitTest"), std::string(etag.getLocalName()));
+          CPPUNIT_ASSERT_EQUAL_MESSAGE("End tag uri mismatch", std::string(uri), std::string(etag.getUri()));
           break;
         }
       }
-      if (!streq(input, output))
-      {
-        fprintf(stdout, "\nTest(%s) input not equal to output:\n    in:  '%s'\n    out: '%s'", cfg.name, input.str(), output.str());
-        failed = true;
-      }
-      return !failed;
+      CPPUNIT_ASSERT_EQUAL_MESSAGE("Input not equal to output", std::string(input), std::string(output));
     }
 
     void testSkipDocument()
     {
-      const char* test = "skip-document";
       std::unique_ptr<IFragmentedXmlPullParser> parser(fxpp::createParser());
       const char* input = R"!!!(<Root><Child/></Root>)!!!";
       parser->setInput(input, int(strlen(input)));
-      try
-      {
-        parser->skipSubTree();
-        if (parser->next() != XmlPullParser::END_DOCUMENT)
-        {
-          fprintf(stdout, "\nTest(%s) did not leave parser at expected position", test);
-          CPPUNIT_ASSERT(false);
-        }
-      }
-      catch (XmlPullParserException& xe)
-      {
-        fprintf(stdout, "\nTest(%s) failed with exception: %s", test, xe.what());
-        CPPUNIT_ASSERT(false);
-      }
+      parser->skipSubTree();
+      CPPUNIT_ASSERT_MESSAGE("Parser not left at expected position", parser->next() == XmlPullParser::END_DOCUMENT);
     }
 
     void testSkipRoot()
     {
-      const char* test = "skip-root";
       std::unique_ptr<IFragmentedXmlPullParser> parser(fxpp::createParser());
       const char* input = R"!!!(<Root><Child/></Root>)!!!";
       parser->setInput(input, int(strlen(input)));
-      try
-      {
-        parser->next();
-        parser->skipSubTree();
-        if (parser->next() != XmlPullParser::END_DOCUMENT)
-        {
-          fprintf(stdout, "\nTest(%s) did not leave parser at expected position\n", test);
-          CPPUNIT_ASSERT(false);
-        }
-      }
-      catch (XmlPullParserException& xe)
-      {
-        fprintf(stdout, "\nTest(%s) failed with exception: %s\n", test, xe.what());
-        CPPUNIT_ASSERT(false);
-      }
+      parser->next();
+      parser->skipSubTree();
+      CPPUNIT_ASSERT_MESSAGE("Parser not left at expected position", parser->next() == XmlPullParser::END_DOCUMENT);
     }
 
     void testSkipMalformed()
     {
-      const char* test = "skip-malformed";
       std::unique_ptr<IFragmentedXmlPullParser> parser(fxpp::createParser());
       const char* input = R"!!!(<Root>)!!!";
       parser->setInput(input, int(strlen(input)));
-      try
-      {
-        parser->skipSubTree();
-        fprintf(stdout, "\nTest(%s) completed without expected exception expected position\n", test);
-        CPPUNIT_ASSERT(false);
-      }
-      catch (XmlPullParserException& xe)
-      {
-        //fprintf(stdout, "\nTest(%s) passed with exception: %s\n", test, xe.what());
-      }
+      CPPUNIT_ASSERT_THROW(parser->skipSubTree(), XmlPullParserException);
     }
 
     void testSkipChild()
     {
-      const char* test = "skip-child";
       std::unique_ptr<IFragmentedXmlPullParser> parser(fxpp::createParser());
       const char* input = R"!!!(<Root><Child/></Root>)!!!";
       parser->setInput(input, int(strlen(input)));
-      try
-      {
-        parser->next();
-        parser->next();
-        parser->skipSubTree();
-        if (parser->next() != XmlPullParser::END_TAG)
-        {
-          fprintf(stdout, "\nTest(%s) did not leave parser at expected position\n", test);
-          CPPUNIT_ASSERT(false);
-        }
-      }
-      catch (XmlPullParserException& xe)
-      {
-        fprintf(stdout, "\nTest(%s) failed with exception: %s\n", test, xe.what());
-        CPPUNIT_ASSERT(false);
-      }
+      parser->next();
+      parser->next();
+      parser->skipSubTree();
+      CPPUNIT_ASSERT_MESSAGE("Parser not left at expected position", parser->next() == XmlPullParser::END_TAG);
     }
 
     void testNoInput()
@@ -798,7 +637,7 @@ public:
       return parser;
     }
 
-    void parse(const char* name, IXmlPullParser& xpp, StringBuffer& output)
+    void parse(IXmlPullParser& xpp, StringBuffer& output)
     {
       StartTag stag;
       switch (xpp.next())
@@ -808,26 +647,19 @@ public:
         serialize(xpp, stag, output.clear());
         break;
       case IXmlPullParser::END_TAG:
-        fprintf(stdout, "\nTest(%s) Bad test input; unexpected end tag\n", name);
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL("Bad test input; unexpected end tag");
         break;
       case IXmlPullParser::CONTENT:
-        fprintf(stdout, "\nTest(%s) parse calling whitespaceContent\n", name);
         if (!xpp.whitespaceContent())
-        {
-          fprintf(stdout, "\nTest(%s) Bad test input; unexpected content\n", name);
-          CPPUNIT_ASSERT(false);
-        }
+          CPPUNIT_FAIL("Bad test input; unexpected content");
         else
-          parse(name, xpp, output);
+          parse(xpp, output);
         break;
       case IXmlPullParser::END_DOCUMENT:
-        fprintf(stdout, "\nTest(%s) Bad test input; unexpected end document\n", name);
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL("Bad test input; unexpected end document");
         break;
       default:
-        fprintf(stdout, "\nTest(%s) Bad test input; unexpected token type\n", name);
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL("Bad test input; unexpected token type");
         break;
       }
     }
@@ -839,39 +671,18 @@ public:
       {
         parser->next();
       }
-      catch (sxt::XmlTokenizerException& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected XmlTokenizerException exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
-      }
       catch (XmlPullParserException& xe)
       {
         if (cfg.expectSuccess)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected XmlPullParserException; got %s\n", cfg.name, xe.what());
-          CPPUNIT_ASSERT(false);
-        }
+          throw;
       }
       catch (IException* e)
       {
         StringBuffer m;
-        fprintf(stdout, "\nTest(%s) unexpected IException; got %d - %s\n", cfg.name, e->errorCode(), e->errorMessage(m).str());
+        int code = e->errorCode();
+        e->errorMessage(m);
         e->Release();
-        CPPUNIT_ASSERT(false);
-      }
-      catch (CppUnit::Exception& e)
-      {
-        throw;
-      }
-      catch (std::exception& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected standard exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
-      }
-      catch (...)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected exception\n", cfg.name);
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL(VStringBuffer("IException thrown: %d - %s", code, m.str()));
       }
     }
 
@@ -882,50 +693,21 @@ public:
       try
       {
         testParser->setInput(testInput, -1);
-        parse(cfg.name, *testParser, testOutput);
-        if (!cfg.expectSuccess)
-        {
-          fprintf(stdout, "\nTest(%s) did not throw an expected exception\n", cfg.name);
-          fprintf(stdout, "Actual:\n%s\n", testOutput.str());
-          CPPUNIT_ASSERT(false);
-        }
-      }
-      catch (sxt::XmlTokenizerException& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected XmlTokenizerException exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
+        parse(*testParser, testOutput);
+        CPPUNIT_ASSERT_MESSAGE("Test did not throw an expected exception.", cfg.expectSuccess);
       }
       catch (XmlPullParserException& xe)
       {
         if (cfg.expectSuccess)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected XmlPullParserException with test input; got %s\n", cfg.name, xe.what());
-          fprintf(stdout, "Actual:\n%s\n", testOutput.str());
-          CPPUNIT_ASSERT(false);
-        }
+          throw;
       }
       catch (IException* e)
       {
         StringBuffer m;
-        fprintf(stdout, "\nTest(%s) unexpected IException with test input; got %d - %s\n", cfg.name, e->errorCode(), e->errorMessage(m).str());
-        fprintf(stdout, "Actual:\n%s\n", testOutput.str());
+        int code = e->errorCode();
+        e->errorMessage(m);
         e->Release();
-        CPPUNIT_ASSERT(false);
-      }
-      catch (CppUnit::Exception& e)
-      {
-        throw;
-      }
-      catch (std::exception& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected standard exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
-      }
-      catch (...)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected exception with test input\n", cfg.name);
-        fprintf(stdout, "Actual:\n%s\n", testOutput.str());
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL(VStringBuffer("IException thrown: %d - %s", code, m.str()));
       }
     }
 
@@ -937,52 +719,22 @@ public:
       try
       {
         testParser->setInput(testInput, -1);
-        parse(cfg.name, *testParser, testOutput);
-        if (!cfg.expectSuccess)
-        {
-          fprintf(stdout, "\nTest(%s) did not throw an expected exception\n", cfg.name);
-          fprintf(stdout, "    Actual: %s\n", testOutput.str());
-          CPPUNIT_ASSERT(false);
-        }
-        else
-          compareOutput = true;
-      }
-      catch (sxt::XmlTokenizerException& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected XmlTokenizerException exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
+        parse(*testParser, testOutput);
+        CPPUNIT_ASSERT_MESSAGE("Test did not throw an expected exception.", cfg.expectSuccess);
+        compareOutput = true;
       }
       catch (XmlPullParserException& xe)
       {
         if (cfg.expectSuccess)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected XmlPullParserException with test input; got %s\n", cfg.name, xe.what());
-          fprintf(stdout, "    Actual: %s\n", testOutput.str());
-          CPPUNIT_ASSERT(false);
-        }
+          throw;
       }
       catch (IException* e)
       {
         StringBuffer m;
-        fprintf(stdout, "\nTest(%s) unexpected IException with test input; got %d - %s\n", cfg.name, e->errorCode(), e->errorMessage(m).str());
-        fprintf(stdout, "    Actual: %s\n", testOutput.str());
+        int code = e->errorCode();
+        e->errorMessage(m);
         e->Release();
-        CPPUNIT_ASSERT(false);
-      }
-      catch (CppUnit::Exception& e)
-      {
-        throw;
-      }
-      catch (std::exception& e)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected standard exception: %s\n", cfg.name, e.what());
-        CPPUNIT_ASSERT(false);
-      }
-      catch (...)
-      {
-        fprintf(stdout, "\nTest(%s) unexpected exception with test input\n", cfg.name);
-        fprintf(stdout, "    Actual: %s\n", testOutput.str());
-        CPPUNIT_ASSERT(false);
+        CPPUNIT_FAIL(VStringBuffer("IException thrown: %d - %s", code, m.str()));
       }
 
       if (compareOutput)
@@ -994,44 +746,18 @@ public:
           baseParser->setSupportNamespaces(cfg.supportNamespaces);
           baseParser->setRequestNamespaces(cfg.requestNamespaces);
           baseParser->setInput(equivalentInput, int(strlen(equivalentInput)));
-          parse(cfg.name, *baseParser, equivalentOutput);
-        }
-        catch (sxt::XmlTokenizerException& e)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected XmlTokenizerException exception: %s\n", cfg.name, e.what());
-          CPPUNIT_ASSERT(false);
-        }
-        catch (XmlPullParserException& xe)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected XmlPullParserException with equivalent input; got %s\n", cfg.name, xe.what());
-          fprintf(stdout, "    Actual: %s\n  Expected: %s\n", testOutput.str(), equivalentOutput.str());
-          CPPUNIT_ASSERT(false);
+          parse(*baseParser, equivalentOutput);
         }
         catch (IException* e)
         {
           StringBuffer m;
-          fprintf(stdout, "\nTest(%s) unexpected IException with equivalent input; got %d - %s\n", cfg.name, e->errorCode(), e->errorMessage(m).str());
-          fprintf(stdout, "    Actual: %s\n  Expected: %s\n", testOutput.str(), equivalentOutput.str());
+          int code = e->errorCode();
+          e->errorMessage(m);
           e->Release();
-          CPPUNIT_ASSERT(false);
-        }
-        catch (CppUnit::Exception& e)
-        {
-          throw;
-        }
-        catch (std::exception& e)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected standard exception: %s\n", cfg.name, e.what());
-          CPPUNIT_ASSERT(false);
-        }
-        catch (...)
-        {
-          fprintf(stdout, "\nTest(%s) unexpected exception with equivalent input\n", cfg.name);
-          fprintf(stdout, "    Actual: %s\n  Expected: %s\n", testOutput.str(), equivalentOutput.str());
-          CPPUNIT_ASSERT(false);
+          CPPUNIT_FAIL(VStringBuffer("IException thrown: %d - %s", code, m.str()));
         }
 
-        compareXml(cfg.name, testOutput, equivalentOutput);
+        compareXml(testOutput, equivalentOutput);
       }
     }
 
