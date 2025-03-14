@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-export const baseURL = process.env.CI ? "https://play.hpccsystems.com:18010" : "http://127.0.0.1:8080";
+export const baseURL = "http://127.0.0.1:8080";
 
 /**
  * See https://playwright.dev/docs/test-configuration.

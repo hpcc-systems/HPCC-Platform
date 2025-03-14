@@ -36,9 +36,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: "recursive"
+          
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+
       - name: Cache node modules
         uses: actions/cache@v4
         with:
@@ -46,27 +48,33 @@ jobs:
           key: npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}
           restore-keys: |
             npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}
+
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci
+
       - name: Lint
         working-directory: ./esp/src
         run: npm run lint
+
       - name: Install Playwright browsers
         working-directory: ./esp/src
         run: npx playwright install --with-deps
+
       - name: Build
         working-directory: ./esp/src
         run: npm run build
-      - name: Serve
+
+      - name: Set Server IP
         working-directory: ./esp/src
         run: |
           echo "https://play.hpccsystems.com:18010" > lws.target.txt
           echo "" >> lws.target.txt
-          npm run start &
+
       - name: Test
         working-directory: ./esp/src
         run: npm run test-ci
+
       - name: Upload Playwright test results
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v4
