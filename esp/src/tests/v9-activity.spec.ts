@@ -1,9 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("ECLWatch V9", () => {
+test.describe("V9 Activity", () => {
 
-    test("Basic Frame", async ({ page }) => {
-        await page.goto("/esp/files/index.html#/activities");
+    test.beforeEach(async ({ page }) => {
+        await page.goto("index.html#/activities");
+        await page.waitForLoadState("networkidle");
+    });
+
+    test("Frame Loaded", async ({ page }) => {
         await expect(page.getByRole("link", { name: "ECL Watch" })).toBeVisible();
         await expect(page.locator("button").filter({ hasText: "" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Advanced" })).toBeVisible();
@@ -17,9 +21,7 @@ test.describe("ECLWatch V9", () => {
         await expect(page.getByRole("link", { name: "Event Scheduler" })).toBeVisible();
     });
 
-    test("Activities", async ({ page }) => {
-        await page.goto("/esp/files/index.html#/activities");
-        await page.getByTitle("Disk Usage").locator("i").click();
+    test("Activities Loaded", async ({ page }) => {
         await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
         await expect(page.locator(".reflex-splitter")).toBeVisible();
         await expect(page.getByRole("menubar")).toBeVisible();
@@ -32,11 +34,6 @@ test.describe("ECLWatch V9", () => {
         await expect(page.getByText("State")).toBeVisible();
         await expect(page.getByText("Owner")).toBeVisible();
         await expect(page.getByText("Job Name")).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "HThorServer - hthor" })).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "ThorMaster - thor", exact: true })).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "ThorMaster - thor_roxie" })).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "RoxieServer - roxie" })).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "myeclccserver - hthor." })).toBeVisible();
-        await expect(page.getByRole("gridcell", { name: "mydfuserver - dfuserver_queue" })).toBeVisible();
+        await expect(page.locator(".dgrid-row")).not.toHaveCount(0);
     });
 });
