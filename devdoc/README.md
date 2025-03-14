@@ -16,6 +16,7 @@ These documents are generated from Markdown by VitePress.  See [VitePress Markdo
 -   [Code Review Guidelines](CodeReviews.md):  Guidelines for reviewing submissions PRs
 -   [Building with Github Actions](UserBuildAssets.md): How to build source using Github Actions
 -   [Writing Developer Documentation](DevDocs.md): How to ensure your documentation works well with VitePress
+-   [Docker Image](DockerImage.md):  How to create and use a docker image for HPCC-Platform
 
 ## Implementation details for different parts of the system
 
