@@ -1162,6 +1162,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             multicastTTL = ttlTmp;
 
+        if (topology->getPropBool("@recordAllEvents", false))
+        {
+            const char * recordEventOptions = topology->queryProp("@recordEventOptions");
+            const char * optRecordEventFilename = topology->queryProp("@recordEventFilename");
+            startRoxieEventRecording(recordEventOptions, optRecordEventFilename);
+        }
+
         workunitGraphCacheEnabled = topology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
@@ -1766,6 +1773,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
+    stopRoxieEventRecording();
     cleanupPlugins();
     unloadHpccProtocolPlugin();
     closeMulticastSockets();

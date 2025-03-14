@@ -7054,7 +7054,7 @@ protected:
 };
 
 // A row buffer which does not allocate memory for the row array from roxiemem
-class TestingRowBuffer : implements IBufferedRowCallback
+class TestingRowBuffer final : implements IBufferedRowCallback
 {
 public:
     TestingRowBuffer(unsigned _cost, unsigned _id) : cost(_cost), id(_id)
@@ -7136,7 +7136,7 @@ protected:
 
 
 //Free the block as soon as requested
-class SimpleCallbackBlockAllocator : public CallbackBlockAllocator
+class SimpleCallbackBlockAllocator final : public CallbackBlockAllocator
 {
 public:
     SimpleCallbackBlockAllocator(IRowManager * _rowManager, memsize_t _size, unsigned _cost, unsigned _id)
@@ -7154,7 +7154,7 @@ public:
 };
 
 //Allocate another row before disposing of the first
-class NastyCallbackBlockAllocator : public CallbackBlockAllocator
+class NastyCallbackBlockAllocator final : public CallbackBlockAllocator
 {
 public:
     NastyCallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _cost, unsigned _id)
