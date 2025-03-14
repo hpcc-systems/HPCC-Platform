@@ -52,6 +52,7 @@ public:
         CPPUNIT_TEST(testMultiBlock);
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
+        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
     static constexpr bool cleanup = true;
@@ -68,7 +69,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isActive());
 
             // Start recording
-            recorder.startRecording("traceid");
+            recorder.startRecording("traceid", "eventtrace.evt");
             CPPUNIT_ASSERT(recorder.isActive());
 
             // Record some events
@@ -109,15 +110,6 @@ public:
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-
-        if (cleanup)
-        {
-            //MORE: This does not get the full path of the file.  What is the clean interface for getting the filename?
-            //Should it be an accessor function?
-            //Should it be a parameter to the stopRecording function?
-            removeFile("eventtrace.evt");
-            removeFile("testfile.bin");
-        }
     }
 
     void testMultiBlock()
@@ -131,7 +123,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isActive());
 
             // Start recording
-            recorder.startRecording("threadid");
+            recorder.startRecording("threadid", "eventtrace.evt");
             CPPUNIT_ASSERT(recorder.isActive());
 
             // Record some events
@@ -186,7 +178,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isActive());
 
             // Start recording
-            recorder.startRecording("threadid");
+            recorder.startRecording("threadid", "eventtrace.evt");
             CPPUNIT_ASSERT(recorder.isActive());
 
             CIArrayOf<Thread> threads;
@@ -233,6 +225,15 @@ public:
     {
         //Test that the recording is blocked/events are dropped when the buffer is full
         //Add a special event function in the public interface which sleeps for a given time
+    }
+
+    void testCleanup()
+    {
+        if (cleanup)
+        {
+            removeFile("eventtrace.evt");
+            removeFile("testfile.bin");
+        }
     }
 };
 

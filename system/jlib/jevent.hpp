@@ -22,7 +22,44 @@
 #include "jatomic.hpp"
 #include "jbuff.hpp"
 
-//Opaque typedefs
+// The order should not be changed, and new values should always be appended before EventMax
+// The meta prefix is used when there are records that provide extra meta data to help interpret
+// the event data e.g. mapping file ids to filenames.
+enum EventType : byte
+{
+    EventNone,
+    EventIndexLookup,
+    EventIndexLoad,
+    EventIndexEviction,
+    EventDaliConnect,
+    EventDaliRead,
+    EventDaliWrite,
+    EventDaliDisconnect,
+    MetaFileInformation,          // information about a file
+    EventMax
+};
+
+// The attributes that can be associated with each event
+// The order should not be changed, and new values should always be appended before EvAttrMax
+enum EventAttr : byte
+{
+    EvAttrNone,
+    EvAttrFileId,
+    EvAttrFileOffset,
+    EvAttrNodeKind,
+    EvAttrReadTime,
+    EvAttrElapsedTime,
+    EvAttrExpandedSize,
+    EvAttrInCache,
+    EvAttrPath,
+    EvAttrConnectId,
+    EvAttrMax
+};
+
+extern jlib_decl const char * queryEventName(EventType event);
+extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
+
+//---------------------------------------------------------------------------------------------------------------------
 enum EventType : byte;
 enum EventAttr : byte;
 interface IFileIO;
@@ -45,7 +82,7 @@ public:
 
     bool isActive() const { return recordingEvents.load(std::memory_order_acquire); }
 
-    void startRecording(const char * optionsText, const char * optFilename = nullptr);
+    void startRecording(const char * optionsText, const char * filename);
     void stopRecording();
 
 //Functions for each of the events that can be recorded..

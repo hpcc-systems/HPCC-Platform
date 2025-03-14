@@ -28,38 +28,6 @@
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
 const static unsigned currentVersion = 1;
 
-// The order should not be changed, and new values should always be appended before EventMax
-enum EventType : byte
-{
-    EventNone,
-    EventIndexLookup,
-    EventIndexLoad,
-    EventIndexEviction,
-    EventDaliConnect,
-    EventDaliRead,
-    EventDaliWrite,
-    EventDaliDisconnect,
-    MetaFileInformation,          // information about a file
-    EventMax
-};
-
-// The attributes that can be associated with each event
-// The order should not be changed, and new values should always be appended before EvAttrMax
-enum EventAttr : byte
-{
-    EvAttrNone,
-    EvAttrFileId,
-    EvAttrFileOffset,
-    EvAttrNodeKind,
-    EvAttrReadTime,
-    EvAttrElapsedTime,
-    EvAttrExpandedSize,
-    EvAttrInCache,
-    EvAttrPath,
-    EvAttrConnectId,
-    EvAttrMax
-};
-
 static_assert(EvAttrMax <= 128, "Event attributes >=128.  Review the format to decide whether version should change or packed integers used");
 
 //The following flags are used to control which extra pieces of information should be recorded with each event
@@ -145,6 +113,19 @@ static constexpr EventAttrInformation attrInformation[] = {
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
+
+
+const char * queryEventName(EventType event)
+{
+    assertex(event < EventMax);
+    return eventInformation[event].name;
+}
+
+const char * queryEventAttributeName(EventAttr attr)
+{
+    assertex(attr < EvAttrMax);
+    return attrInformation[attr].name;
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -237,8 +218,9 @@ void EventRecorder::checkAttrValue(EventAttr attr, size_t size)
     assertex(expectedSize == 0 || expectedSize == size);
 }
 
-void EventRecorder::startRecording(const char * optionsText, const char * optFilename)
+void EventRecorder::startRecording(const char * optionsText, const char * filename)
 {
+    assertex(filename);
     CriticalBlock block(cs);
     if (isActive())
         return;
@@ -261,16 +243,7 @@ void EventRecorder::startRecording(const char * optionsText, const char * optFil
     if (options & ERFtraceid)
         sizeMessageHeaderFooter += 32;
 
-    if (!optFilename)
-        optFilename = "eventtrace.evt";
-
-    //Get a filename on the debug plane, or temp if bare-metal.  Ensure it is unique etc. etc.
-    StringBuffer outputFilename;
-    getTempFilePath(outputFilename, "eventrecorder", nullptr);
-    outputFilename.append(PATHSEPCHAR).append(optFilename);
-    recursiveCreateDirectoryForFile(outputFilename);
-
-    Owned<IFile> outputFile = createIFile(outputFilename);
+    Owned<IFile> outputFile = createIFile(filename);
     output.setown(outputFile->open(IFOcreate));
 
     startCycles = get_cycles_now();
