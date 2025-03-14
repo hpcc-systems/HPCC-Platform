@@ -641,6 +641,7 @@ public:
                 jobtable.add(cjob.getLink());
                 block.leave();
                 cjob->start();
+                block.enter();
             }
         }
         AsyncCommandStatus ret = ACSerror;
