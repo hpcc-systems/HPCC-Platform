@@ -11,7 +11,7 @@
 #include "saserver.hpp"
 #include "sautil.hpp"
 
-#define DEFAULT_HOUSEKEEPING_INTERVAL_HOURS 24
+static constexpr unsigned defaultHouseKeepingIntervalHours = 24;
 
 #define LOGDBGHK "DEBUGPLANEHOUSEKEEPING: "
 
@@ -108,7 +108,7 @@ public:
     virtual int run() override
     {
         CSashaSchedule schedule;
-        unsigned interval = getComponentConfig()->getPropInt("@interval", DEFAULT_HOUSEKEEPING_INTERVAL_HOURS);
+        unsigned interval = getComponentConfig()->getPropInt("@interval", defaultHouseKeepingIntervalHours);
         if (interval == 0)
         {
             stopped = true;
