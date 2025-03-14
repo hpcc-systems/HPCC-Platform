@@ -310,13 +310,13 @@ interface IFileSerialStreamCallback  // used for CRC tallying
 };
 
 
-extern jlib_decl ISerialStream *createSimpleSerialStream(ISimpleReadStream * in, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createSocketSerialStream(ISocket * in, unsigned timeoutms, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createFileSerialStream(IFileIOStream * in, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createFileSerialStream(IFileIO *fileio, offset_t ofs=0, offset_t flen=(offset_t)-1,size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createFileSerialStream(IMemoryMappedFile *mmapfile, offset_t ofs=0, offset_t flen=(offset_t)-1, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createMemorySerialStream(const void *buffer, memsize_t len, IFileSerialStreamCallback *callback=NULL);
-extern jlib_decl ISerialStream *createMemoryBufferSerialStream(MemoryBuffer & buffer, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createSimpleSerialStream(ISimpleReadStream * in, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createSocketSerialStream(ISocket * in, unsigned timeoutms, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IFileIOStream * in, size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio, offset_t ofs=0, offset_t flen=(offset_t)-1,size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IMemoryMappedFile *mmapfile, offset_t ofs=0, offset_t flen=(offset_t)-1, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createMemorySerialStream(const void *buffer, memsize_t len, IFileSerialStreamCallback *callback=NULL);
+extern jlib_decl IBufferedSerialInputStream *createMemoryBufferSerialStream(MemoryBuffer & buffer, IFileSerialStreamCallback *callback=NULL);
 
 
 typedef Linked<IFile> IFileAttr;

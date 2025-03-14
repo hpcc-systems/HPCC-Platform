@@ -952,7 +952,7 @@ protected:
     const IRoxieContextLogger &logctx;
     byte *bufferBase;
     MemoryBuffer blockBuffer;
-    Owned<ISerialStream> bufferStream;
+    Owned<IBufferedSerialInputStream> bufferStream;
     CThorStreamDeserializerSource rowSource;
     bool eof;
     bool eogPending;

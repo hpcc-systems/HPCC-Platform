@@ -319,7 +319,7 @@ public:
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta());
         IOutputRowDeserializer *deserializer = rowIf->queryRowDeserializer();
         CMessageBuffer mb;
-        Owned<ISerialStream> stream = createMemoryBufferSerialStream(resultData);
+        Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(resultData);
         CThorStreamDeserializerSource rowSource;
         rowSource.setStream(stream);
 

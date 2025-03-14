@@ -418,7 +418,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         unsigned handle = 0;
         Owned<const IDynamicTransform> translator;
         Owned<ISourceRowPrefetcher> prefetcher;
-        Owned<ISerialStream> ioStream;
+        Owned<IBufferedSerialInputStream> ioStream;
         CThorContiguousRowBuffer prefetchSource;
         bool initialized = false;
 

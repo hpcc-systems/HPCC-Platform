@@ -614,7 +614,7 @@ public:
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
         Owned<IFileIO> partIO = fetchStream->getPartIO(filePartIndex);
-        Owned<ISerialStream> stream = createFileSerialStream(partIO, localFpos);
+        Owned<IBufferedSerialInputStream> stream = createFileSerialStream(partIO, localFpos);
         RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
         const ITranslator *translator = translators.item(filePartIndex);
         size32_t fetchedLen;
@@ -669,7 +669,7 @@ public:
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
         Owned<IFileIO> partIO = fetchStream->getPartIO(filePartIndex);
-        Owned<ISerialStream> inputStream = createFileSerialStream(partIO, localFpos);
+        Owned<IBufferedSerialInputStream> inputStream = createFileSerialStream(partIO, localFpos);
         if (inputStream->eos())
             return 0;
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable

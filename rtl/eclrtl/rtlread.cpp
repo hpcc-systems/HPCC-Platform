@@ -25,7 +25,7 @@
 
 //=====================================================================================================
 
-CThorStreamDeserializerSource::CThorStreamDeserializerSource(ISerialStream * _in) : in(_in)
+CThorStreamDeserializerSource::CThorStreamDeserializerSource(IBufferedSerialInputStream * _in) : in(_in)
 {
 }
 
