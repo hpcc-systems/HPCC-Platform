@@ -470,6 +470,9 @@
                 <xsl:attribute name="useLegacyDefaultFileScopePermissionCache">
                     <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]/@useLegacyDefaultFileScopePermissionCache"/>
                 </xsl:attribute>
+                <xsl:attribute name="ldapAdminSecretKey">
+                    <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]/@ldapAdminSecretKey"/>
+                </xsl:attribute>
             </xsl:element>
         </xsl:for-each>
     </xsl:template>
