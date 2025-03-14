@@ -3748,9 +3748,9 @@ public:
 
     //MORE: The file handles should timeout after a while, and accessing an old (invalid handle)
     // should throw a different exception
-    bool checkFileIOHandle(int handle, IFileIO *&fileio, bool del=false)
+    bool checkFileIOHandle(int handle, Owned<IFileIO> & fileio, bool del=false)
     {
-        fileio = NULL;
+        fileio.clear();
         if (handle<=0)
             return false;
         CriticalBlock block(sect);
@@ -3769,7 +3769,7 @@ public:
             }
             else
             {
-               fileio = client.openFiles.item(handleidx).fileIO;
+               fileio.set(client.openFiles.item(handleidx).fileIO);
                client.previdx = handleidx;
             }
             return true;
@@ -3777,7 +3777,7 @@ public:
         return false;
     }
 
-    void checkFileIOHandle(MemoryBuffer &reply, int handle, IFileIO *&fileio, bool del=false)
+    void checkFileIOHandle(MemoryBuffer &reply, int handle, Owned<IFileIO> & fileio, bool del=false)
     {
         if (!checkFileIOHandle(handle, fileio, del))
             throw createDafsException(RFSERR_InvalidFileIOHandle, nullptr);
@@ -3946,7 +3946,7 @@ public:
     {
         int handle;
         msg.read(handle);
-        IFileIO *fileio;
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio, true);
         if (TF_TRACE)
             PROGLOG("close file, handle = %d",handle);
@@ -3960,7 +3960,7 @@ public:
         __int64 pos;
         size32_t len;
         msg.read(handle).read(pos).read(len);
-        IFileIO *fileio;
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio);
 
         //arrange it so we read directly into the reply buffer...
@@ -3984,7 +3984,7 @@ public:
     {
         int handle;
         msg.read(handle);
-        IFileIO *fileio;
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio);
         __int64 size = fileio->size();
         reply.append((unsigned)RFEnoerror).append(size);
@@ -3997,9 +3997,9 @@ public:
         int handle;
         offset_t size;
         msg.read(handle).read(size);
-        IFileIO *fileio;
         if (TF_TRACE)
             PROGLOG("set size file, handle = %d, size = %" I64F "d",handle,size);
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio);
         fileio->setSize(size);
         reply.append((unsigned)RFEnoerror);
@@ -4011,7 +4011,7 @@ public:
         __int64 pos;
         size32_t len;
         msg.read(handle).read(pos).read(len);
-        IFileIO *fileio;
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio);
         const byte *data = (const byte *)msg.readDirect(len);
         if (TF_TRACE_PRE_IO)
@@ -4106,7 +4106,7 @@ public:
         __int64 len;
         StringAttr srcname;
         msg.read(handle).read(srcname).read(pos).read(len);
-        IFileIO *fileio;
+        Owned<IFileIO> fileio;
         checkFileIOHandle(reply, handle, fileio);
 
         Owned<IFile> file = createIFile(srcname.get());
@@ -4971,7 +4971,7 @@ public:
             {
                 if (0 == cursorHandle)
                     throw createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'close' command");
-                IFileIO *dummy;
+                Owned<IFileIO> dummy;
                 checkFileIOHandle(cursorHandle, dummy, true);
                 break;
             }
