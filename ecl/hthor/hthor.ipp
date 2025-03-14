@@ -279,7 +279,7 @@ struct IFileDescriptor;
 class CHThorDiskWriteActivity : public CHThorActivityBase 
 {
 protected:
-    IHThorDiskWriteArg &helper;
+    IHThorGenericDiskWriteArg &helper;
     bool extend;
     bool overwrite;
     Owned<IFileIO> io;
@@ -303,6 +303,7 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
+    unsigned helperFlags;
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -322,10 +323,12 @@ protected:
     const void *getNext(); 
     void checkSizeLimit();
     virtual bool needsAllocator() const { return true; }
+
+    bool isGeneric() const { return (helperFlags & TDXgeneric) != 0; }
 public:
     IMPLEMENT_SINKACTIVITY;
 
-    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
     ~CHThorDiskWriteActivity();
     virtual void execute();
     virtual void ready();
