@@ -263,7 +263,7 @@ void startRoxieEventRecording(const char * options, const char * filename)
         {
             //MORE: Revisit this at a later date
             unsigned seq = (unsigned)(get_cycles_now() % 100000);
-            outputFilename.append("roxieevents.").append(GetCurrentProcessId()).append(".").append(seq).append(".evt");
+            outputFilename.append("roxieevents.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
         }
 
         path = outputFilename.str();
