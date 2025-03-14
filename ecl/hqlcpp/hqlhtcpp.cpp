@@ -10916,6 +10916,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     IHqlExpression * dataset  = expr->queryChild(0);
     IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
+    // Determine if we should use generic read/write code
+    bool useGenericReadWrites = options.genericDiskReadWrites && targetHThor();
+
     if (dataset->isDictionary())
     {
         //OUTPUT(dictionary,,'filename') should never be generated - it should go via a dataset
@@ -10990,6 +10993,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
     //Output to a variable filename is either a user result, or a computed workflow spill, both need evaluating.
+
+    instance->setUseGenericReadWrite(useGenericReadWrites);
 
     if (useImplementationClass)
         instance->setImplementationClass(newMemorySpillSplitArgId);
