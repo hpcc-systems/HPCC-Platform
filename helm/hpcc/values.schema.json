@@ -3051,20 +3051,16 @@
       "properties": {
         "expiryDays": {
           "type": "integer",
-          "description": "Default number of days passed that post-mortem files are deleted after their associated workunit was completed",
+          "description": "Default number of days passed that debug plane files or directories are deleted.",
           "default": "14"
         },
         "disabled": {},
         "interval": {},
-        "service": {},
         "at" : {},
-        "throttle": {},
         "image": {},
-        "plane": {},
         "resources": {},
         "annotations": {},
         "labels": {},
-        "egress": {},
         "expert": {},
         "terminationGracePeriodSeconds": {}
       },

@@ -515,7 +515,7 @@ sasha:
 
   debugplane-housekeeping: {} # NB: no properties defined, use defaults
     #disabled: true
-    #interval: 1
+    #interval: 24
     #at: "* 3 * * *"
     #expiryDays: 7
 

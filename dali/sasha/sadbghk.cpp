@@ -19,9 +19,9 @@ static constexpr unsigned defaultHouseKeepingIntervalHours = 24;
 
 class CSashaDebugPlaneHousekeepingServer : public ISashaServer, public Thread
 {
-    bool stopped{false};
-    Semaphore stopsem;
-    Mutex runmutex;
+    std::atomic<bool> stopped{false};
+    Semaphore stopSem;
+    Mutex runMutex;
     StringBuffer debugDir;
     unsigned expiryDays{0};
 
@@ -37,13 +37,13 @@ public:
     {
         Thread::start(false);
 
-        expiryDays = getComponentConfig()->getPropInt("@expiryDays");
+        expiryDays = getComponentConfigSP()->getPropInt("@expiryDays");
 
         // get debug plane dir
         StringBuffer planeName;
         if (!getDefaultPlane(planeName, "@debugPlane", "debug"))
         {
-            WARNLOG("Exception handlers configured, but debug plane is missing");
+            WARNLOG("Failed to get default debug plane");
             return;
         }
         Owned<IPropertyTree> plane = getStoragePlane(planeName);
@@ -60,20 +60,20 @@ public:
         if (!stopped)
         {
             stopped = true;
-            stopsem.signal();
+            stopSem.signal();
         }
-        synchronized block(runmutex); // hopefully stopped should stop
+        synchronized block(runMutex); // hopefully stopped should stop
         if (!join(1000 * 60 * 3))
             OERRLOG("CSashaDebugPlaneHousekeepingServer aborted");
     }
 
     void runDebugHousekeeping()
     {
-        synchronized block(runmutex);
+        synchronized block(runMutex);
         if (stopped)
             return;
 
-        // iterate debug plane selecting post-mortem directories for housekeeping
+        // iterate debug plane selecting files and directories for housekeeping
         Owned<IDirectoryIterator> pDirIter = createDirectoryIterator(debugDir.str(), "*", false, true);
         ForEach(*pDirIter)
         {
@@ -83,41 +83,42 @@ public:
             IFile &iFile = pDirIter->query();
             const char *filePath = iFile.queryFilename();
 
-            // Process directories, exclude the ".", "..", non post-mortem and not expired post-mortem directories
             if (iFile.isDirectory() == fileBool::foundYes)
             {
+                // Process directories, exclude the ".", "..", and non expired directories from housekeeping
                 if (streq(filePath, ".") || streq(filePath, ".."))
-                    continue;
+                        continue;
 
-                if (isExpiredModifiedDateTime(filePath))
+                if (hasExpired(iFile))
                 {
-                    recursiveRemoveDirectory(filePath);
+                    recursiveRemoveDirectory(&iFile);
                 }
             }
             else
             {
-                if (isExpiredModifiedDateTime(filePath))
+                // Process file exclude non expired files from housekeeping
+                if (hasExpired(iFile))
                 {
                     iFile.remove();
                 }
             }
         }
-        pDirIter.clear();
     }
 
     virtual int run() override
     {
+        Owned<IPropertyTree> compConfig = getComponentConfig();
         CSashaSchedule schedule;
-        unsigned interval = getComponentConfig()->getPropInt("@interval", defaultHouseKeepingIntervalHours);
+        unsigned interval = compConfig->getPropInt("@interval", defaultHouseKeepingIntervalHours);
         if (interval == 0)
         {
             stopped = true;
             return 0;
         }
-        schedule.init(getComponentConfig(), interval);
+        schedule.init(compConfig, interval);
         while (!stopped)
         {
-            stopsem.wait(1000 * 60);
+            stopSem.wait(1000 * 60);
             if (stopped)
                 break;
             if (!schedule.ready())
@@ -128,7 +129,6 @@ public:
             }
             catch (IException *e)
             {
-                StringBuffer s;
                 EXCLOG(e, LOGDBGHK);
                 e->Release();
             }
@@ -137,11 +137,15 @@ public:
     }
 
 private:
-    bool isExpiredModifiedDateTime(const char *filePath)
+    bool hasExpired(IFile &iFile)
     {
-        Owned<IFile> file = createIFile(filePath);
         CDateTime expiredModifiedTime;
-        file->getTime(nullptr, &expiredModifiedTime, nullptr);
+        iFile.getTime(nullptr, &expiredModifiedTime, nullptr);
+        if (expiredModifiedTime.isNull())
+        {
+            WARNLOG("Failed to get modified time for file %s", iFile.queryFilename());
+            return false;
+        }
         expiredModifiedTime.adjustTime(60 * 24 * expiryDays);
 
         CDateTime now;
@@ -153,7 +157,7 @@ private:
             return false;
     }
 
-} *sashaDebugPlaneHousekeepingServer = NULL;
+} *sashaDebugPlaneHousekeepingServer = nullptr;
 
 ISashaServer *createSashaDebugPlaneHousekeepingServer()
 {

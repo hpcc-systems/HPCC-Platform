@@ -1,7 +1,4 @@
-#ifndef SADBGHKIF_HPP
-#define SADBGHKIF_HPP
+#pragma once
 
 interface ISashaServer;
 extern ISashaServer *createSashaDebugPlaneHousekeepingServer();
-
-#endif
