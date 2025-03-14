@@ -8272,7 +8272,8 @@ INamedGroupStore &queryNamedGroupStore()
     if (!groupStore.load())
     {
         CriticalBlock block(groupsect);
-        groupStore.store(new CNamedGroupStore());
+        if (!groupStore.load())
+            groupStore.store(new CNamedGroupStore());
     }
     return *(groupStore.load());
 }
@@ -9218,7 +9219,8 @@ IDistributedFileDirectory &queryDistributedFileDirectory()
     if (!DFdir.load())
     {
         CriticalBlock block(dfdirCrit);
-        DFdir.store(new CDistributedFileDirectory());
+        if (!DFdir.load())
+            DFdir.store(new CDistributedFileDirectory());
     }
     return *DFdir.load();
 }
