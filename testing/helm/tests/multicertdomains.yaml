@@ -49,6 +49,8 @@ sasha:
     disabled: true
   file-expiry:
     disabled: true
+  debugplane-housekeeping:
+    disabled: true
 
 esp:
 - name: eclwatch
