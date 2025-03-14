@@ -23,14 +23,15 @@ jobs:
           github_token: ${{ github.token }}
 
   build:
+    name: "Check eclwatch and npm"
+    if: ${{ needs.pre_job.outputs.eclwatch }}
+    needs: pre_job
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         node: ["22", "20", "18"]
       fail-fast: false
-    name: "Check eclwatch and npm"
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.eclwatch }}
-    runs-on: ubuntu-24.04
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,11 +58,17 @@ jobs:
       - name: Build
         working-directory: ./esp/src
         run: npm run build
+      - name: Serve
+        working-directory: ./esp/src
+        run: |
+          echo "https://play.hpccsystems.com:18010" > lws.target.txt
+          echo "" >> lws.target.txt
+          npm run start &
       - name: Test
         working-directory: ./esp/src
-        run: npm run test
+        run: npm run test-ci
       - name: Upload Playwright test results
-        if: ${{ failure() }}
+        if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: eclwatch-test-results
