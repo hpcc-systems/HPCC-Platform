@@ -141,6 +141,7 @@ public:
     void noteChildQuery()                           { numChildQueries++; }
     void         setLocal(bool value=true)          { isLocal = value; }
     void         setGrouped(bool value=true)        { isGrouped = value; }
+    void         setUseGenericReadWrite(bool value=true)        { useGenericReadWrite = value; }
 
     IHqlDelayedCodeGenerator * createOutputCountCallback() { return table->createOutputCountCallback(); }
 
@@ -214,6 +215,7 @@ public:
     bool         isGrouped;
     bool         hasChildActivity;
     bool         generateMetaFromInput = false;
+    bool         useGenericReadWrite = false;
     GraphLocalisation activityLocalisation;
     ActivityInstance * containerActivity;
     Owned<ParentExtract> parentExtract;
