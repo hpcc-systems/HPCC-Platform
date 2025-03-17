@@ -5,7 +5,7 @@ import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { hashHistory } from "../util/history";
+import { hashHistory, replaceUrl } from "../util/history";
 import { router } from "../routes";
 import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
@@ -15,7 +15,7 @@ import { fireIdle, initSession, lock, unlock } from "src/Session";
 import { useGlobalStore } from "../hooks/store";
 import { useUserTheme } from "../hooks/theme";
 import { useGlobalWorkunitNotes } from "../hooks/workunit";
-import { useUserSession } from "../hooks/user";
+import { useUserSession, useUserStartPage } from "../hooks/user";
 
 const logger = scopedLogger("../components/Frame.tsx");
 const envLogger = scopedLogger("environment");
@@ -34,6 +34,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
 
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
     const { userSession, setUserSession } = useUserSession();
+    const { startPage, shouldRedirect, setShouldRedirect } = useUserStartPage();
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const { theme, themeV9, isDark } = useUserTheme();
@@ -41,6 +42,16 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
 
     const [globalWUNotes] = useGlobalWorkunitNotes();
+
+    React.useEffect(() => {
+        if (startPage && shouldRedirect === "true" && window.location.hash.indexOf(startPage) < 0) {
+            setShouldRedirect("false");
+            if (window.location.hash.substring(2).split("/").length === 1) {
+                replaceUrl(startPage);
+                window.location.reload();
+            }
+        }
+    }, [startPage, shouldRedirect, setShouldRedirect]);
 
     React.useEffect(() => {
         globalWUNotes.forEach(note => {
