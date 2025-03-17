@@ -46,6 +46,10 @@
 
 #include "opentelemetry/sdk/common/global_log_handler.h"
 
+//#include "opentelemetry/sdk/src/common/fast_random_number_generator.h" //Not shared
+#include "opentelemetry/sdk/trace/id_generator.h"
+#include "opentelemetry/sdk/trace/random_id_generator.h"
+
 // NB: undefine after opentelemetry includes, and before HPCC includes where we define.
 #undef ForEach //opentelemetry defines ForEach
 #undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
@@ -67,6 +71,143 @@ namespace opentel_trace = opentelemetry::trace;
 
 using namespace ln_uid;
 
+/////////////////////////////from sdk/src/common/fast_random_number_generator.h//////////////////
+class NotSharedOTelFastRandomNumberGenerator
+{
+public:
+using result_type = uint64_t;
+
+    NotSharedOTelFastRandomNumberGenerator() noexcept = default;
+
+    template <class SeedSequence>
+    NotSharedOTelFastRandomNumberGenerator(SeedSequence &seed_sequence) noexcept
+    {
+        seed(seed_sequence);
+    }
+
+    uint64_t operator()() noexcept
+    {
+        // Uses the xorshift128p random number generation algorithm described in
+        // https://en.wikipedia.org/wiki/Xorshift
+        auto &state_a = state_[0];
+        auto &state_b = state_[1];
+        auto t        = state_a;
+        auto s        = state_b;
+        state_a       = s;
+        t ^= t << 23;        // a
+        t ^= t >> 17;        // b
+        t ^= s ^ (s >> 26);  // c
+        state_b = t;
+        return t + s;
+    }
+
+    // RandomNumberGenerator concept functions required from standard library.
+    // See http://www.cplusplus.com/reference/random/mt19937/
+    template <class SeedSequence>
+    void seed(SeedSequence &seed_sequence) noexcept
+    {
+        seed_sequence.generate(reinterpret_cast<uint32_t *>(state_.data()),
+                            reinterpret_cast<uint32_t *>(state_.data() + state_.size()));
+    }
+
+    static constexpr uint64_t(min)() noexcept { return 0; }
+
+    static constexpr uint64_t(max)() noexcept { return (std::numeric_limits<uint64_t>::max)(); }
+
+private:
+    std::array<uint64_t, 2> state_{};
+};
+/////////////////////////////from sdk/src/common/fast_random_number_generator.h//////////////////
+
+/////////////////////////////from sdk/src/common/random.cc///////////////////////////////////////
+class CleanTlsRandomNumberGenerator
+{
+public:
+    CleanTlsRandomNumberGenerator() noexcept
+    {
+        Seed();
+    }
+
+    NotSharedOTelFastRandomNumberGenerator &engine() noexcept { return engine_; }
+
+private:
+    NotSharedOTelFastRandomNumberGenerator engine_;
+
+    void Seed() noexcept
+    {
+        std::random_device random_device;
+        std::seed_seq seed_seq{random_device(), random_device(), random_device(), random_device()};
+        engine_.seed(seed_seq);
+    }
+};
+/////////////////////////////from sdk/src/common/random.cc///////////////////////////////////////
+
+/////////////////////////////from sdk/src/common/random.h///////////////////////////////////////
+class NotSharedOTelRandom
+{
+public:
+  /**
+   * @return an unsigned 64 bit random number
+   */
+    static uint64_t GenerateRandom64() noexcept
+    {
+        return GetRandomNumberGenerator()();
+    }
+
+    /**
+     * Fill the passed span with random bytes.
+     *
+     * @param buffer A span of bytes.
+     */
+    static void GenerateRandomBuffer(opentelemetry::nostd::span<uint8_t> buffer) noexcept
+    {
+        auto buf_size = buffer.size();
+
+        for (size_t i = 0; i < buf_size; i += sizeof(uint64_t))
+        {
+            uint64_t value = GenerateRandom64();
+            if (i + sizeof(uint64_t) <= buf_size)
+            {
+                memcpy(&buffer[i], &value, sizeof(uint64_t));
+            }
+            else
+            {
+                memcpy(&buffer[i], &value, buf_size - i);
+            }
+        }
+    }
+
+private:
+    /**
+     * @return a seeded thread-local random number generator.
+     */
+    static NotSharedOTelFastRandomNumberGenerator & GetRandomNumberGenerator() noexcept
+    {
+        static thread_local CleanTlsRandomNumberGenerator random_number_generator{};
+        return random_number_generator.engine();
+    }
+};
+/////////////////////////////from sdk/src/common/random.h///////////////////////////////////////
+
+class CustomIdGenerator : public opentelemetry::sdk::trace::IdGenerator
+{
+public:
+    CustomIdGenerator() : IdGenerator(true) {}
+
+    opentelemetry::trace::SpanId GenerateSpanId() noexcept override
+    {
+      uint8_t span_id_buf[trace_api::SpanId::kSize];
+      NotSharedOTelRandom::GenerateRandomBuffer(span_id_buf);
+      return trace_api::SpanId(span_id_buf);
+    }
+    
+    opentelemetry::trace::TraceId GenerateTraceId() noexcept override
+    {
+      uint8_t trace_id_buf[trace_api::TraceId::kSize];
+      NotSharedOTelRandom::GenerateRandomBuffer(trace_id_buf);
+      return trace_api::TraceId(trace_id_buf);
+    }
+};
 
 class CustomOTELLogHandler : public opentelemetry::sdk::common::internal_log::LogHandler
 {
@@ -1512,10 +1653,11 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
+    auto idGenerator = std::unique_ptr<opentelemetry::sdk::trace::IdGenerator>(new CustomIdGenerator());
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
-        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource, std::move(sampler));
+        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource, std::move(sampler), std::move(idGenerator));
 
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
         opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
