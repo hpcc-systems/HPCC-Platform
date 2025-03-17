@@ -1882,6 +1882,7 @@ bool CKeyCursor::_next(IContextLogger *ctx)
                                 break;
                             }
                             parents[depth].clear();
+                            activePayload.clear();
                         }
                         else
                         {
@@ -1916,7 +1917,7 @@ const byte *CKeyCursor::queryRecordBuffer() const
     assertex(node);
     if (!fullBufferValid)
     {
-        node->fetchPayload(nodeKey, recordBuffer);
+        node->fetchPayload(nodeKey, recordBuffer, activePayload);
         fullBufferValid = true;
     }
     return (const byte *) recordBuffer;
@@ -2011,6 +2012,7 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
                         }
                     }
                     parents[depth].clear();
+                    activePayload.clear();
                 }
             }
         }
@@ -2113,6 +2115,7 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
                         }
                     }
                     parents[depth].clear();
+                    activePayload.clear();
                 }
             }
         }
@@ -2173,6 +2176,7 @@ void CKeyCursor::clearParentNodes()
         parents[i].clear();
         parentNodeKeys[i] = 0;
     }
+    activePayload.clear();
 }
 
 void CKeyCursor::serializeCursorPos(MemoryBuffer &mb)

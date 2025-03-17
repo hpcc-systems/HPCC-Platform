@@ -320,4 +320,6 @@ constexpr bool isIndexReadActivity(ThorActivityKind actKind)
     }
 }
 
+extern jhtree_decl void setDynamicPayloadExpansion(bool value);
+
 #endif
