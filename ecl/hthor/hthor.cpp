@@ -8517,7 +8517,11 @@ void CHThorDiskReadBaseActivity::close()
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
         if(dFile)
+        {
+            cost_type readCost = updateCostAndNumReads(dFile, numDiskReads, 0);
+            updateOwnersCostAndNumReads(dFile, numDiskReads, readCost);
             dFile->setAccessed();
+        }
         ldFile.clear();
     }
 }
@@ -8534,6 +8538,7 @@ unsigned __int64 CHThorDiskReadBaseActivity::getLocalFilePosition(const void * r
 
 void CHThorDiskReadBaseActivity::closepart()
 {
+    std::vector<stat_type> numReadsForSubFiles;
     if (opened && inputfileio && ldFile && partNum > 0)
     {
         unsigned previousPartNum = partNum-1;
@@ -8550,11 +8555,11 @@ void CHThorDiskReadBaseActivity::closepart()
                     {
                         IDistributedSuperFile * super = dFile->querySuperFile();
                         IDistributedFile & subfile = super->querySubFile(subfileNum, true);
-                        updateCostAndNumReads(&subfile, curDiskReads);
+                        // Update numDiskReads and cost for the subfile
+                        // (numDisReads and cost in owning files updated in CHThorDiskReadBaseActivity::close)
+                        updateCostAndNumReads(&subfile, curDiskReads, 0);
                     }
                 }
-                else
-                    updateCostAndNumReads(dFile, curDiskReads);
             }
             numDiskReads += curDiskReads;
         }

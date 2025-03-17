@@ -653,11 +653,11 @@ void CMasterActivity::done()
 cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
 {
     // 1) Returns readCost 2) if updateFilePros==true, updates file attributes with @readCost and @numDiskReads
-    auto calcReadCost = [updateFileProps](bool useJhtreeCacheStats, IDistributedFile & file, CThorStatsCollection & stats)
+    auto calcReadCost = [updateFileProps](bool useJhtreeCacheStats, IDistributedFile & file, CThorStatsCollection & stats, stat_type & numReads)
     {
         StringBuffer clusterName;
         file.getClusterName(0, clusterName);
-        stat_type numReads = stats.getStatisticSum(StNumDiskReads);
+        numReads = stats.getStatisticSum(StNumDiskReads);
         cost_type readCost = 0;
         if(useJhtreeCacheStats)
         {
@@ -675,6 +675,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
         return readCost;
     };
     cost_type readCost = 0;
+    stat_type totalNumReads = 0;
     ThorActivityKind actKind = container.getKind();
     bool bIndexReadActivity = isIndexReadActivity(actKind);
     if (fileStats.size()>0)
@@ -699,15 +700,19 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
                     for (unsigned i=0; i<numSubFiles; i++)
                     {
                         IDistributedFile &subFile = super->querySubFile(i, true);
-                        readCost += calcReadCost(useJhtreeCache, subFile, *fileStats[fileIndex]);
+                        stat_type numReads = 0;
+                        readCost += calcReadCost(useJhtreeCache, subFile, *fileStats[fileIndex], numReads);
+                        totalNumReads += numReads;
                         fileIndex++;
                     }
                 }
                 else
                 {
-                    readCost += calcReadCost(useJhtreeCache, *file, *fileStats[fileIndex]);
+                    readCost += calcReadCost(useJhtreeCache, *file, *fileStats[fileIndex], totalNumReads);
                     fileIndex++;
                 }
+                if (updateFileProps)
+                    updateOwnersCostAndNumReads(file, totalNumReads, readCost);
             }
         }
     }
@@ -715,8 +720,12 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
+        {
             // note: use jhtree cache stats to calculate file access cost if it is an index activity
-            readCost = calcReadCost(bIndexReadActivity, *file, statsCollection);
+            readCost = calcReadCost(bIndexReadActivity, *file, statsCollection, totalNumReads);
+            if (updateFileProps)
+                updateOwnersCostAndNumReads(file, totalNumReads, readCost);
+        }
     }
     return readCost;
 }

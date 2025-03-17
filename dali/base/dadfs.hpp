@@ -894,6 +894,7 @@ extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB,
 extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
 extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
 extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_type numDiskWrites);
+extern da_decl void updateOwnersCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost=0);
 extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type numDiskReads, cost_type curReadCost=0); // Update readCost and numDiskReads - return calculated read cost
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;

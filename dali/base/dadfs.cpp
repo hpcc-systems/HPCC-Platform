@@ -229,6 +229,8 @@ extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDis
 
 extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads)
 {
+    if (!numDiskWrites && !numDiskReads)
+        return 0;
     StringBuffer clusterName;
     // Should really specify the cluster number too, but this is the best we can do for now
     f->getClusterName(0, clusterName);
@@ -245,20 +247,29 @@ extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_ty
     return writeCost;
 }
 
-void updateParentCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost)
+// Update owning superfiles costs and numReads
+// (Both numDiskReads and curReadCost required)
+extern da_decl void updateOwnersCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost)
 {
+    if (!numDiskReads && !curReadCost)
+        return;
     Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
     ForEach(*iter)
     {
         IDistributedSuperFile & cur = iter->query();
         updateCostAndNumReads(&cur, numDiskReads, curReadCost);
+        updateOwnersCostAndNumReads(&cur, numDiskReads, curReadCost);
     }
 }
 
+// Update logical file's cost sand numReads
+// (numDiskReads required. curReadCost is optional)
 extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type numDiskReads, cost_type curReadCost)
 {
     const IPropertyTree & fileAttr = file->queryAttributes();
 
+    if (!numDiskReads)
+        return 0;
     if (!curReadCost)
         curReadCost = calcFileAccessCost(file, 0, numDiskReads);
     cost_type legacyReadCost = 0;
@@ -267,12 +278,11 @@ extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type
         if (!isFileKey(fileAttr))
         {
             stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-            legacyReadCost = prevDiskReads ? calcFileAccessCost(file, 0, prevDiskReads) : 0;
+            legacyReadCost = calcFileAccessCost(file, 0, prevDiskReads);
         }
     }
     file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
     file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), numDiskReads);
-    updateParentCostAndNumReads(file, numDiskReads, legacyReadCost + curReadCost);
     return curReadCost;
 }
 
