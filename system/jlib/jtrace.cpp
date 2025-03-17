@@ -67,6 +67,123 @@ namespace opentel_trace = opentelemetry::trace;
 
 using namespace ln_uid;
 
+/**
+ * @class JTraceRandomGenerator
+ * @brief A random number generator class for generating random data using the xorshift128p algorithm.
+ *
+ * This class provides functionality to generate random 64-bit integers and fill a buffer with random bytes.
+ * It uses the xorshift128p algorithm for random number generation, which is fast and suitable for non-cryptographic purposes.
+ * 
+ * This class is based on OpenTelemetry's TlsRandomNumberGenerator, FastRandomNumberGenerator, and Random
+ * and is customized here to avoid a critical issue reported here: https://github.com/open-telemetry/opentelemetry-cpp/issues/2408
+ * 
+ * OpenTelemetry's licensing can be found here:
+ * https://raw.githubusercontent.com/open-telemetry/opentelemetry-cpp/bc36c69209d5e7d268ff80b0a3a1b4e573b484fd/LICENSE
+ */
+class JTraceRandomGenerator
+{
+public:
+    /**
+     * @brief Constructor for JTraceRandomGenerator.
+     *
+     * Initializes the random number generator with a seed sequence generated from multiple random device values.
+     * This ensures that the generator is seeded with high-quality entropy.
+     */
+    JTraceRandomGenerator() noexcept
+    {
+        std::random_device randomDevice;
+        std::seed_seq seedSequence{randomDevice(), randomDevice(), randomDevice(), randomDevice()};
+        seed(seedSequence);
+    }
+
+    /**
+     * @brief Fills the provided buffer with random bytes.
+     *
+     * This method generates random 64-bit integers and copies them into the provided buffer.
+     * If the buffer size is not a multiple of 64 bits, the remaining bytes are filled with a partial random value.
+     *
+     * @param buffer A span of bytes to be filled with random data.
+     */
+    void GenerateRandomBuffer(opentelemetry::nostd::span<uint8_t> buffer) noexcept
+    {
+        auto bufferSize = buffer.size();
+        for (size_t i = 0; i < bufferSize; i += sizeof(uint64_t))
+        {
+            uint64_t value = generateRandom64();
+            if (i + sizeof(uint64_t) <= bufferSize)
+            {
+                memcpy(&buffer[i], &value, sizeof(uint64_t));
+            }
+            else
+            {
+                memcpy(&buffer[i], &value, bufferSize - i);
+            }
+        }
+    }
+
+    /**
+     * @brief Seeds the random number generator with a given seed sequence.
+     *
+     * This method initializes the internal state of the generator using the provided seed sequence.
+     *
+     * @param seedSequence A seed sequence used to initialize the generator's state.
+     */
+    void seed(std::seed_seq &seedSequence) noexcept
+    {
+        seedSequence.generate(reinterpret_cast<uint32_t *>(randomBase.data()),
+                            reinterpret_cast<uint32_t *>(randomBase.data() + randomBase.size()));
+    }
+
+    /**
+     * @brief Generates a random 64-bit integer.
+     *
+     * This method uses the xorshift128p algorithm to produce a random 64-bit integer.
+     * The algorithm is based on bitwise operations and is efficient for generating random numbers.
+     *
+     * @return A random 64-bit integer.
+     */
+    uint64_t generateRandom64() noexcept
+    {
+        // Uses the xorshift128p random number generation algorithm described in
+        // https://en.wikipedia.org/wiki/Xorshift
+        auto &state_a = randomBase[0];
+        auto &state_b = randomBase[1];
+        auto t        = state_a;
+        auto s        = state_b;
+        state_a       = s;
+        t ^= t << 23;        // a
+        t ^= t >> 17;        // b
+        t ^= s ^ (s >> 26);  // c
+        state_b = t;
+        return t + s;
+    }
+
+private:
+    std::array<uint64_t, 2> randomBase{};
+};
+
+class CustomIdGenerator : public opentelemetry::sdk::trace::IdGenerator
+{
+public:
+    CustomIdGenerator() : IdGenerator(true) {}
+
+    opentelemetry::trace::SpanId GenerateSpanId() noexcept override
+    {
+        uint8_t spanIdBuffer[trace_api::SpanId::kSize];
+        randomGenerator.GenerateRandomBuffer(spanIdBuffer);
+        return trace_api::SpanId(spanIdBuffer);
+    }
+    
+    opentelemetry::trace::TraceId GenerateTraceId() noexcept override
+    {
+        uint8_t traceIdBuffer[trace_api::TraceId::kSize];
+        randomGenerator.GenerateRandomBuffer(traceIdBuffer);
+        return trace_api::TraceId(traceIdBuffer);
+    }
+
+private:
+    inline static thread_local JTraceRandomGenerator randomGenerator;
+};
 
 class CustomOTELLogHandler : public opentelemetry::sdk::common::internal_log::LogHandler
 {
@@ -1512,10 +1629,11 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
+    auto idGenerator = std::unique_ptr<opentelemetry::sdk::trace::IdGenerator>(new CustomIdGenerator());
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
-        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource, std::move(sampler));
+        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource, std::move(sampler), std::move(idGenerator));
 
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
         opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
