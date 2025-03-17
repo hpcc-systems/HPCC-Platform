@@ -28,6 +28,8 @@ import datetime
 def calculateDerivedStats(curRow):
 
     timeElapsed = float(curRow.get("elapsed", 0.0))
+    if timeElapsed == 0:
+        timeElapsed = 1
 
     numBranchHits = float(curRow.get("NumNodeCacheHits", 0.0))
     numBranchAdds = float(curRow.get("NumNodeCacheAdds", 0.0))
@@ -326,7 +328,7 @@ if __name__ == "__main__":
                             elif value.endswith("s"):
                                 castValue = float(value[0:-1])*1000
                             elif value.endswith("GB") or value.endswith("Gb"):
-                                castValue = float(value[0:-2])*1000000
+                                castValue = float(value[0:-2])*1000000000
                             elif value.endswith("MB") or value.endswith("Mb"):
                                 castValue = float(value[0:-2])*1000000
                             elif value.endswith("KB") or value.endswith("Kb"):
