@@ -384,7 +384,7 @@ interface IDistributedFile: extends IInterface
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
 
-    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) const = 0;
+    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) = 0;
     virtual unsigned getClusterNames(StringArray &clusters)=0;                  // returns ordinality
                                                                                       // (use findCluster)
     virtual unsigned numClusters()=0;
@@ -434,10 +434,6 @@ interface IDistributedFile: extends IInterface
     virtual int  getExpire(StringBuffer *expirationDate) = 0;
     virtual void setExpire(int expireDays) = 0;
     virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) = 0;
-    virtual bool getNumReads(stat_type &numReads) const = 0;
-    virtual bool getNumWrites(stat_type &numWrites) const = 0;
-    virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
-    virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
 };
 
 
@@ -900,20 +896,6 @@ constexpr bool defaultNonPrivilegedUser = false;
 
 extern da_decl void configurePreferredPlanes();
 
-template<typename Source>
-inline cost_type calcLegacyReadCost(const IPropertyTree & fileAttr, Source source)
-{
-    // Calculate legacy read cost from numDiskReads
-    // (However, it is not possible to accurately calculate read cost for key
-    // files, as the reads may have been from page cache and not from disk.)
-    if (!isFileKey(fileAttr) && source)
-    {
-        stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-        return calcFileAccessCost(source, 0, numDiskReads);
-    }
-    return 0;
-}
-
 // Get read cost from readCost field or calculate legacy read cost
 // - migrateLegacyCost: if true, update readCost field with legacy read cost
 template<typename Source>
@@ -923,11 +905,19 @@ inline cost_type getReadCost(IPropertyTree & fileAttr, Source source, bool migra
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
     {
-        cost_type readCost = calcLegacyReadCost(fileAttr, source);
-        if (migrateLegacyCost)
-            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
-        return readCost;
+        // Calculate legacy read cost from numDiskReads
+        // (However, it is not possible to accurately calculate read cost for key
+        // files, as the reads may have been from page cache and not from disk.)
+        if (!isFileKey(fileAttr) && source)
+        {
+            stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            cost_type readCost = calcFileAccessCost(source, 0, numDiskReads);
+            if (migrateLegacyCost)
+                fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
+            return readCost;
+        }
     }
+    return 0;
 }
 
 // Get read cost from readCost field or calculate legacy read cost
@@ -937,16 +927,15 @@ inline cost_type getReadCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
     else
-        return calcLegacyReadCost(fileAttr, source);
-}
-
-template<typename Source>
-inline cost_type calcLegacyWriteCost(const IPropertyTree & fileAttr, Source source)
-{
-    if (source)
     {
-        stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
-        return calcFileAccessCost(source, numDiskWrites, 0);
+        // Calculate legacy read cost from numDiskReads
+        // (However, it is not possible to accurately calculate read cost for key
+        // files, as the reads may have been from page cache and not from disk.)
+        if (!isFileKey(fileAttr) && source)
+        {
+            stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            return calcFileAccessCost(source, 0, numDiskReads);
+        }
     }
     return 0;
 }
@@ -960,11 +949,17 @@ inline cost_type getWriteCost(IPropertyTree & fileAttr, Source source, bool migr
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
     {
-        cost_type writeCost = calcLegacyWriteCost(fileAttr, source);
-        if (migrateLegacyCost)
-            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
-        return writeCost;
+        // Calculate legacy write cost from numDiskWrites
+        if (source)
+        {
+            stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+            cost_type writeCost = calcFileAccessCost(source, numDiskWrites, 0);
+            if (migrateLegacyCost)
+                fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+            return writeCost;
+        }
     }
+    return 0;
 }
 
 // Get write cost from writeCost field or calculate legacy write cost
@@ -974,7 +969,15 @@ inline cost_type getWriteCost(const IPropertyTree & fileAttr, Source source)
     if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
         return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
     else
-        return calcLegacyWriteCost(fileAttr, source);
+    {
+        // Calculate legacy write cost from numDiskWrites
+        if (source)
+        {
+            stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+            return calcFileAccessCost(source, numDiskWrites, 0);
+        }
+    }
+    return 0;
 }
 
 extern da_decl bool doesPhysicalMatchMeta(IPartDescriptor &partDesc, IFile &iFile, offset_t &expectedSize, offset_t &actualSize);
