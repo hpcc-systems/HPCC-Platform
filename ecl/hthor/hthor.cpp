@@ -351,7 +351,7 @@ private:
     }
 };
 
-ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
+ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorGenericDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
 {
     //In the containerized system, the default data plane for this component is in the configuration
     StringBuffer defaultCluster;
@@ -410,7 +410,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 
 //=====================================================================================================
 
-CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
 }
@@ -11504,7 +11504,9 @@ const void *CHThorNewDiskReadActivity::nextRow()
 
 //=====================================================================================================
 
-MAKEFACTORY(DiskWrite);
+extern HTHOR_API IHThorActivity * createDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph) \
+{   return new CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, arg, kind, _graph); }
+
 MAKEFACTORY(Iterate);
 MAKEFACTORY(Filter);
 MAKEFACTORY(Aggregate);

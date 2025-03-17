@@ -53,7 +53,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     {
     case TAKdiskwrite:
     case TAKspillwrite:
-        return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind, graph);
+        return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorGenericDiskWriteArg &)arg, kind, graph);
     case TAKsort:
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind, graph);
     case TAKdedup:
@@ -390,7 +390,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     case TAKjsonwrite:
     case TAKspillwrite:
         {
-            IHThorDiskWriteArg * helper = static_cast<IHThorDiskWriteArg *>(arg.get());
+            IHThorGenericDiskWriteArg * helper = static_cast<IHThorGenericDiskWriteArg *>(arg.get());
             filename.set(helper->getFileName());
             helper->getUpdateCRCs(eclCRC, totalCRC);
             break;

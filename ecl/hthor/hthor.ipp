@@ -279,7 +279,7 @@ struct IFileDescriptor;
 class CHThorDiskWriteActivity : public CHThorActivityBase 
 {
 protected:
-    IHThorDiskWriteArg &helper;
+    IHThorGenericDiskWriteArg &helper;
     bool extend;
     bool overwrite;
     Owned<IFileIO> io;
@@ -325,7 +325,7 @@ protected:
 public:
     IMPLEMENT_SINKACTIVITY;
 
-    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
     ~CHThorDiskWriteActivity();
     virtual void execute();
     virtual void ready();
