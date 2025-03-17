@@ -314,7 +314,7 @@ interface ISuperFileDescriptor: extends IFileDescriptor
 interface IStoragePlane;
 interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDistributedFile
 {
-    virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL) const = 0;
+    virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL)=0;
     virtual const char *queryGroupName()=0;     // may be NULL
     virtual IGroup *queryGroup()=0;           // may be NULL
     virtual ClusterPartDiskMapSpec  &queryPartDiskMapping()=0;
@@ -327,7 +327,7 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void setGroupName(const char *name)=0;
     virtual void getBaseDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
-    virtual StringBuffer &getClusterLabel(StringBuffer &name) const = 0; // node group name
+    virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // node group name
     virtual void applyPlane(IStoragePlane *plane) = 0;
 };
 
