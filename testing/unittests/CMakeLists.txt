@@ -55,6 +55,8 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espapi.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espshell.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
+         toolskeletontests.cpp
+         ${HPCC_SOURCE_DIR}/tools/common/toolcommand.cpp
     )
 
 if (NOT CONTAINERIZED)
@@ -98,6 +100,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/services/common
+         ${HPCC_SOURCE_DIR}/tools/common
          ${HPCC_SOURCE_DIR}/tools/hidl
          ${HPCC_SOURCE_DIR}/tools/esp-api
          ${CMAKE_BINARY_DIR}/generated
