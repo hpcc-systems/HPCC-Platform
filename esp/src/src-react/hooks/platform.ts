@@ -225,8 +225,8 @@ export function useLogAccessInfo(): LogAccessInfo {
 
     React.useEffect(() => {
         service.GetLogAccessInfo({}).then(response => {
-            if (response.hasOwnProperty("Exceptions")) {
-                setLogsStatusMessage(response["Exceptions"]?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException);
+            if ("Exceptions" in response) {
+                setLogsStatusMessage((response["Exceptions"] as any)?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException);
             } else {
                 if (response.RemoteLogManagerType === null) {
                     setLogsStatusMessage(nlsHPCC.LogAccess_LoggingNotConfigured);

@@ -14,9 +14,9 @@ import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 import nlsHPCC from "./nlsHPCC";
 import { themeIsDark } from "./Utility";
-// @ts-ignore
+// @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
-// @ts-ignore
+// @ts-expect-error
 import * as _Widget from "hpcc/_Widget";
 import { declareMixin } from "./DeclareDecorator";
 

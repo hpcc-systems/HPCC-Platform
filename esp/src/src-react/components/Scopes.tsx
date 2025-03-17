@@ -223,7 +223,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         const keys = Object.keys(query);
         const qs = keys.map(key => {
             const val = query[key];
-            if (!!val) {
+            if (val) {
                 return `${key}=${val}`;
             }
             return "";

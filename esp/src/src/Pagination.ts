@@ -1,11 +1,11 @@
 import * as declare from "dojo/_base/declare";
 import * as on from "dojo/on";
 
-// @ts-ignore
+// @ts-expect-error
 import * as _StoreMixin from "dgrid/_StoreMixin";
-// @ts-ignore
+// @ts-expect-error
 import * as DGridPagination from "dgrid/extensions/Pagination";
-// @ts-ignore
+// @ts-expect-error
 import * as DGrid from "dgrid/Grid";
 
 export const Pagination = declare([DGridPagination], {

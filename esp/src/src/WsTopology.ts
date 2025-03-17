@@ -32,8 +32,8 @@ class TpLogFileStore extends Memory {
 
     emit(type, event?) {
         const args = [this];
-        args.push.apply(args, arguments);
-        return on.emit.apply(on, args);
+        args.push(...arguments);
+        return on.emit(...args);
     }
     //  --- --- ---
 
