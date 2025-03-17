@@ -27,6 +27,8 @@ import datetime
 
 def calculateDerivedStats(curRow):
 
+    timeElapsed = float(curRow.get("elapsed", 0.0))
+
     numBranchHits = float(curRow.get("NumNodeCacheHits", 0.0))
     numBranchAdds = float(curRow.get("NumNodeCacheAdds", 0.0))
     numBranchFetches = float(curRow.get("NumNodeDiskFetches", 0.0))
@@ -130,13 +132,13 @@ def calculateDerivedStats(curRow):
                 notes += ", Most of time in agent"
         else:
             if (timeAgentWait + timeSoapcall) < (timeLocalExecute / 5):
-                unusualSummary += ",Unexplained Server Time"
+                unusualSummary += f",Unexplained Server Time [{100 * (timeLocalExecute - timeAgentWait - timeSoapcall) / timeLocalExecute:.2f}%]"
 
     if sizeAgentReply > 1000000:
         unusualSummary += ",Size Agent reply"
 
-    if timeLocalExecute * 10 < elapsed * 11:
-        notes += ", Single threaded"
+    if timeLocalExecute * 10 < timeElapsed * 11:
+        notes += f", Single threaded [{100 * timeLocalExecute / timeElapsed:.2f}%]"
 
     if timeAgentProcess:
         if (timeAgentQueue > timeAgentProcess):
@@ -146,7 +148,10 @@ def calculateDerivedStats(curRow):
             unusualSummary += ",Agent send backlog"
 
         if timeBranchDecompress + timeLeafDecompress > timeAgentProcess / 4:
-            unusualSummary += ",Decompress time"
+            unusualSummary += f",Decompress time [{100.0 * (timeBranchDecompress + timeLeafDecompress) / timeElapsed:.2f}%]"
+
+    if timeLocalCpu and timeRemoteCpu:
+        notes += f",remote cpu {100 * timeRemoteCpu / (timeLocalCpu + timeRemoteCpu):.0f}%"
 
     numAckRetries = float(curRow.get("NumAckRetries", 0.0))
     resentPackets = float(curRow.get("resentPackets", 0.0))
@@ -320,6 +325,8 @@ if __name__ == "__main__":
                                 castValue = float(value[0:-2])
                             elif value.endswith("s"):
                                 castValue = float(value[0:-1])*1000
+                            elif value.endswith("GB") or value.endswith("Gb"):
+                                castValue = float(value[0:-2])*1000000
                             elif value.endswith("MB") or value.endswith("Mb"):
                                 castValue = float(value[0:-2])*1000000
                             elif value.endswith("KB") or value.endswith("Kb"):
