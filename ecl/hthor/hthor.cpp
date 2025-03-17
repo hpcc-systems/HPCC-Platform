@@ -8538,7 +8538,6 @@ unsigned __int64 CHThorDiskReadBaseActivity::getLocalFilePosition(const void * r
 
 void CHThorDiskReadBaseActivity::closepart()
 {
-    std::vector<stat_type> numReadsForSubFiles;
     if (opened && inputfileio && ldFile && partNum > 0)
     {
         unsigned previousPartNum = partNum-1;
@@ -8556,7 +8555,7 @@ void CHThorDiskReadBaseActivity::closepart()
                         IDistributedSuperFile * super = dFile->querySuperFile();
                         IDistributedFile & subfile = super->querySubFile(subfileNum, true);
                         // Update numDiskReads and cost for the subfile
-                        // (numDisReads and cost in owning files updated in CHThorDiskReadBaseActivity::close)
+                        // (numDiskReads and cost in owning files updated in CHThorDiskReadBaseActivity::close)
                         updateCostAndNumReads(&subfile, curDiskReads, 0);
                     }
                 }

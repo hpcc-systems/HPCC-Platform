@@ -262,7 +262,7 @@ extern da_decl void updateOwnersCostAndNumReads(IDistributedFile * file, stat_ty
     }
 }
 
-// Update logical file's cost sand numReads
+// Update logical file's costs and numReads
 // (numDiskReads required. curReadCost is optional)
 extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type numDiskReads, cost_type curReadCost)
 {
