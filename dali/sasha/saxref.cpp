@@ -115,7 +115,7 @@ struct cFileDesc // no virtuals
     unsigned hash;
     unsigned short N;           // num parts
     unsigned short sn;          // stripe number
-    bool dn;                    // dir-per-part number
+    bool dirPerPart;            // directory per part
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -138,7 +138,7 @@ struct cFileDesc // no virtuals
         ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
         ret->sn = (unsigned short)sn;
-        ret->dn = dn;
+        ret->dirPerPart = dn;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
 
@@ -201,7 +201,7 @@ struct cFileDesc // no virtuals
     {
         StringBuffer mask;
         getName(mask);
-        return expandMask(buf, mask, p, N);
+        return expandMask(buf, mask, p, N, sn, dirPerPart);
     }
 
     static cFileDesc * create(const char *)
@@ -341,7 +341,7 @@ struct cDirDesc
     }
 
 
-    cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
+    cFileDesc *addFile(unsigned drv,const char *filePath,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
     {
 
         unsigned nf;    // num parts
@@ -350,21 +350,23 @@ struct cDirDesc
         unsigned dn;    // dir-per-part num
         bool replicate;
         StringBuffer fn;
-        parseFileName(name, fn, pf, nf, sn, dn, replicate);
+        parseFileName(filePath, fn, pf, nf, sn, dn, replicate);
         pf--;
+        // TODO: Add better check for misplaced in isContainerized
+        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
         cFileDesc *file = files.find(fn.str(),false);
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn.str(),nf,sn,dn>0?true:false);
+            file = cFileDesc::create(*mem,fn.str(),nf,sn,dn>0);
             files.add(file);
         }
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
                 if (mp->eq(drv,pf,node,numnodes)) {
-                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,name);
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,filePath);
                     return NULL;
                 }
                 mp = mp->next;
@@ -378,7 +380,7 @@ struct cDirDesc
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
         if (file->setpresent(drv,pf)) {
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,name);
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,filePath);
             file = NULL;
         }
         return file;
@@ -934,9 +936,22 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                if (!dirFiltered(path.str())) {
-                    dirs.append(fname.str());
+                // Check if subdirectory is a dirPerPart directory
+                // To properly match all parts, process with current directory as the parent
+                const char *dir = fname.str();
+                bool isDirPerPart = true;
+                while (isDirPerPart && *dir) {
+                    if (!isdigit(*(dir++)))
+                        isDirPerPart = false;
                 }
+                if (isDirPerPart) {
+                    // MORE: Should maybe check this doesn't contain any subdirectories to make
+                    // sure it is really a dirPerPart directory. Is an all numbers subdirectory valid in ecl?
+                    if (!scanDirectory(node,ep,path,drv,pdir,NULL))
+                        return false;
+                }
+                else
+                    dirs.append(fname.str());
             }
             else {
                 CDateTime dt;
@@ -998,12 +1013,14 @@ public:
                     ok = false;
                     return;
                 }
-                i = (i+r)%n;
-                setReplicateFilename(path,1);   
-                ep = parent.rawgrp->queryNode(i).endpoint();
-                parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
-                if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
-                    ok = false;
+                if (!isContainerized()) {
+                    i = (i+r)%n;
+                    setReplicateFilename(path,1);
+                    ep = parent.rawgrp->queryNode(i).endpoint();
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
+                        ok = false;
+                    }
                 }
 //              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
             }
@@ -1105,7 +1122,7 @@ public:
                                 const char *tail = splitDirTail(fn.str(),dir.clear());
                                 if (dir.length()&&isPathSepChar(dir.charAt(dir.length()-1)))
                                     dir.setLength(dir.length()-1);
-                                unsigned drv = getPathDrive(dir.str()); // should match c
+                                unsigned drv = isContainerized() ? getPathDrive(dir.str()) : 0; // should match c
                                 if (drv)
                                     setReplicateFilename(dir,0);
                                 if ((lastdir.length()==0)||(strcmp(lastdir.str(),dir.str())!=0)) {
@@ -1115,7 +1132,6 @@ public:
                                 if (pdir&&pdir->markFile(drv,tail,nn,ep,*parent.grp,parent.numnodes)) {
                                     matched++;
                                 }
-                                
                             }
                             else if (p==0) { // skip file
                                 if (parent.verbose)
@@ -1397,7 +1413,8 @@ public:
 
     void listDirectory(cDirDesc *d,const char *name,bool &abort)
     {
-        for (unsigned drv=0;drv<2;drv++) {
+        unsigned drvs = isContainerized() ? 1 : 2;
+        for (unsigned drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             if ((d->files.ordinality()!=0)||(d->totalsize[drv]!=0)||d->empty(drv)) { // final empty() is to make sure only truly empty dirs get added
@@ -2019,6 +2036,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     Semaphore stopsem;
     Mutex runmutex;
     bool ignorelazylost, suspendCoalescer;
+    Owned<IPropertyTree> props;
 
     class cRunThread: public Thread
     {
@@ -2043,7 +2061,10 @@ public:
     CSashaXRefServer()
         : Thread("CSashaXRefServer")
     {
-        suspendCoalescer = true; // can be overridden by configuration setting
+        if (!isContainerized())
+            suspendCoalescer = true; // can be overridden by configuration setting
+        else
+            suspendCoalescer = false;
         stopped = false;
     }
 
@@ -2089,9 +2110,11 @@ public:
                 resumeCoalescingServer();
             }
         };
-        Owned<CSimpleInterface> suspendresume;
-        if (suspendCoalescer)
-            suspendresume.setown(new CSuspendResume());
+        if (!isContainerized()) {
+            Owned<CSimpleInterface> suspendresume;
+            if (suspendCoalescer)
+                suspendresume.setown(new CSuspendResume());
+        }
         synchronized block(runmutex);
         if (stopped)
             return;
@@ -2133,9 +2156,20 @@ public:
         ForEachItemIn(i,groups) {
 #ifdef TESTINGSUPERFILELINKAGE
             continue;
-#endif          
+#endif
             const char *gname = groups.item(i);
-            unsigned maxMb = serverConfig->getPropInt("DfuXRef/@memoryLimit", DEFAULT_MAXMEMORY);
+            unsigned maxMb;
+            if (isContainerized()) {
+                const char *resourcedMemory = getComponentConfigSP()->queryProp("resources/@memory");
+                if (!isEmptyString(resourcedMemory)) {
+                    offset_t sizeBytes = friendlyStringToSize(resourcedMemory);
+                    maxMb = (unsigned)(sizeBytes / 0x100000);
+                }
+                else
+                    maxMb = DEFAULT_MAXMEMORY;
+            }
+            else
+                maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
             CNewXRefManager manager(maxMb);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
                 continue;
@@ -2143,8 +2177,8 @@ public:
             manager.updateStatus(true);
             if (stopped)
                 break;
-            unsigned numThreads = serverConfig->getPropInt("DfuXRef/@numThreads", DEFAULT_MAXDIRTHREADS);
-            unsigned int recentCutoffDays = serverConfig->getPropInt("DfuXRef/@cutoff", DEFAULT_RECENT_CUTOFF_DAYS);
+            unsigned numThreads = props->getPropInt("@numThreads", DEFAULT_MAXDIRTHREADS);
+            unsigned int recentCutoffDays = props->getPropInt("@cutoff", DEFAULT_RECENT_CUTOFF_DAYS);
             if (manager.scanDirectories(stopped,numThreads)) {
                 manager.updateStatus(true);
                 manager.scanLogicalFiles(stopped);
@@ -2212,7 +2246,6 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> props;
         if (isContainerized())
             props.setown(getComponentConfig());
         else
@@ -2221,10 +2254,16 @@ public:
             if (!props)
                 props.setown(createPTree("DfuXRef"));
         }
-        bool eclwatchprovider = props->getPropBool("@eclwatchProvider",isContainerized()?true:false);
+        bool eclwatchProviderDefault = false;
+        // NB: Default to start Xref using sasha service in containerized without having to change values.yaml
+        // eclwatchProvider sets useSasha in call to setSubmittedOk
+        if (isContainerized())
+            eclwatchProviderDefault = true;
+        bool eclwatchprovider = props->getPropBool("@eclwatchProvider",eclwatchProviderDefault);
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");
         StringBuffer clusttmp;
+        // TODO: xref should support checking superfiles in containerized
         if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true))
         {
             if (!clusters||!*clusters)
@@ -2235,7 +2274,8 @@ public:
         if (!interval)
             stopped = !eclwatchprovider;
         setSubmittedOk(eclwatchprovider);
-        suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
+        if (!isContainerized())
+            suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
         ignorelazylost = props->getPropBool("@ignoreLazyLost",true);
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started

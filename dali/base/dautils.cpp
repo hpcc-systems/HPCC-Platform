@@ -3890,6 +3890,7 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
                         mname.append(s);
                     num = pn;
                     max = mn;
+                    break;
                 }
                 else
                     throw makeStringExceptionV(-1, "Incorrect max part number(%d) and part number (%d) in file %s", mn, pn, filename);

@@ -1899,13 +1899,24 @@ void clearThreadLocal()
 
 #endif
 
-StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsigned n)
+StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsigned n, unsigned stripeNum, bool dirPerPart)
 {
+    if (stripeNum>0)
+        addPathSepChar(buf.append('d').append(stripeNum));
     const char *s=mask;
     if (s)
         while (*s) {
             char next = *(s++);
             if (next=='$') {
+                if (dirPerPart)
+                {
+                    const char * start = buf.str();
+                    const char * slash = start + buf.length();
+                    while (slash > start && *slash != PATHSEPCHAR)
+                        slash--;
+                    buf.insert(slash-start, PATHSEPCHAR);
+                    buf.insert((slash+1)-start, p+1);
+                }
                 char pc = toupper(s[0]);
                 if (pc&&(s[1]=='$')) {
                     if (pc=='P') {

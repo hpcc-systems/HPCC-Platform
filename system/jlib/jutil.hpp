@@ -349,7 +349,7 @@ extern jlib_decl void clearThreadLocal();
 
 
 extern jlib_decl bool matchesMask(const char *fn, const char *mask, unsigned p, unsigned n);
-extern jlib_decl StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsigned n);
+extern jlib_decl StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsigned n, unsigned stripeNum = 0, bool dirPerPart = 0);
 extern jlib_decl bool constructMask(StringAttr &attr, const char *fn, unsigned p, unsigned n);
 extern jlib_decl bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &p, unsigned &n); // p is 0 based in these routines
 
