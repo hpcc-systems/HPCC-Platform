@@ -63,6 +63,7 @@ set (    SRCS
          jcrc.cpp
          jdebug.cpp
          jencrypt.cpp
+         jevent.cpp
          jexcept.cpp
          jfile.cpp
          jflz.cpp
@@ -127,6 +128,7 @@ set (    INCLUDES
         jelogtype.hpp
         jencrypt.hpp
         jerror.hpp
+        jevent.hpp
         jexcept.hpp
         jfcmp.hpp
         jfile.hpp
