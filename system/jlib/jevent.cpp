@@ -224,12 +224,15 @@ void EventRecorder::checkAttrValue(EventAttr attr, size_t size)
     assertex(expectedSize == 0 || expectedSize == size);
 }
 
-void EventRecorder::startRecording(const char * optionsText, const char * filename)
+bool EventRecorder::startRecording(const char * optionsText, const char * filename)
 {
     assertex(filename);
     CriticalBlock block(cs);
-    if (isActive())
-        return;
+    if (!isStopped)
+        return false;
+    assertex(!isStarted);
+    isStarted = true;
+    isStopped = false;
 
     auto processOption = [this](const char * option, const char * valueText)
     {
@@ -268,12 +271,18 @@ void EventRecorder::startRecording(const char * optionsText, const char * filena
         counts[i] = 0;
 
     recordingEvents.store(true, std::memory_order_release);
+    return true;
 }
 
-void EventRecorder::stopRecording()
+bool EventRecorder::stopRecording()
 {
-    if (!isActive())
-        return;
+    {
+        CriticalBlock block(cs);
+        if (!isStarted)
+            return false;
+        isStarted = false;
+        assertex(!isStopped);
+    }
 
     //MORE: Protect against startRecording() being called concurrently, by introducing another boolean to
     //indicate if it is active, which is only cleared once this function completes.
@@ -301,7 +310,10 @@ void EventRecorder::stopRecording()
         //Flush the data, after waiting for a little while (or until committed == offset)?
         output->close();
         output.clear();
+        isStopped = true;
     }
+
+    return true;
 }
 
 //See notes above about reseving and committing events
@@ -371,7 +383,7 @@ static_assert(getSizeOfAttrs(true, 32768U, 1ULL, "boris", "blob") == 5 * sizeof(
 
 void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit)
 {
-    if (!isActive())
+    if (!isRecording())
         return;
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, hit);
@@ -387,7 +399,7 @@ void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nod
 
 void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 elapsedTime, __uint64 readTime)
 {
-    if (!isActive())
+    if (!isRecording())
         return;
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, elapsedTime, readTime);
@@ -405,7 +417,7 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
 
 void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size)
 {
-    if (!isActive())
+    if (!isRecording())
         return;
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size);
@@ -421,7 +433,7 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
 
 void EventRecorder::recordDaliConnect(const char * path, __uint64 id)
 {
-    if (!isActive())
+    if (!isRecording())
         return;
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(path, id);
@@ -435,7 +447,7 @@ void EventRecorder::recordDaliConnect(const char * path, __uint64 id)
 
 void EventRecorder::recordDaliDisconnect(__uint64 id)
 {
-    if (!isActive())
+    if (!isRecording())
         return;
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id);

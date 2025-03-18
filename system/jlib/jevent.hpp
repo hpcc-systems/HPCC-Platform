@@ -80,10 +80,10 @@ class jlib_decl EventRecorder
 public:
     EventRecorder();
 
-    bool isActive() const { return recordingEvents.load(std::memory_order_acquire); }
+    bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
-    void startRecording(const char * optionsText, const char * filename);
-    void stopRecording();
+    bool startRecording(const char * optionsText, const char * filename);
+    bool stopRecording();
 
 //Functions for each of the events that can be recorded..
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit);
@@ -142,7 +142,9 @@ protected:
     static constexpr offset_t bufferMask = OutputBufferSize-1;
     static constexpr offset_t blockMask = OutputBlockSize-1;
 
-    std::atomic<bool> recordingEvents{false};
+    std::atomic<bool> recordingEvents{false};       // Are events being recorded? false if recording is paused.
+    bool isStarted{false};                      // Use 2 flags for whether started and stopped to ensure clean
+    bool isStopped{true};                       // termination in stopRecording()
     offset_type nextOffset{0};
     offset_type nextWriteOffset{0};
     unsigned counts[numBlocks] = {0};
@@ -164,6 +166,6 @@ extern jlib_decl EventRecorder eventRecorder;
 }
 
 inline EventRecorder & queryRecorder() { return EventRecorderInternal::eventRecorder; }
-inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isActive(); }
+inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRecording(); }
 
 #endif
