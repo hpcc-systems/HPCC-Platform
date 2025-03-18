@@ -1715,6 +1715,7 @@ dali
 dali data
 {{- else if (eq "thor-qmon" .name) -}}
 dali queues
+{{- else if (eq "debugplane-housekeeping" .name) -}}
 {{- else -}}
 {{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}
