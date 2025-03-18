@@ -151,7 +151,30 @@ runs:
       run: |
         sleep 10
         deploy=$(kubectl get deploy -o name)
-        for i in $deploy; do kubectl rollout status $i -w --timeout=180s; done
+        for i in $deploy; do 
+          if ! kubectl rollout status $i -w --timeout=180s; then
+            echo "Deployment $i failed to roll out within timeout"
+            echo "kubectl get $i -o yaml"
+            kubectl get $i -o yaml
+            echo "kubectl describe $i"
+            kubectl describe $i
+            echo "kubectl get pods"
+            kubectl get pods
+            echo "Determine sasha-debugplane pod name"
+            dbgpod=$(kubectl get pods --no-headers | awk '/^sasha-debugplane/ { print $1 }')
+            echo "sasha-debugplane pod name: $dbgpod"
+            echo "sasha-debugplane: kubectl get pod $dbgpod"
+            kubectl get pod $dbgpod -o yaml || true
+            echo "sasha-debugplane: kubectl describe pod $dbgpod"
+            kubectl describe pod $dbgpod || true
+            echo "Getting recent logs from $dbgpod"
+            kubectl logs --tail=50 $dbgpod || echo "Failed to get logs for $dbgpod"
+            echo "kubectl get rs"
+            kubectl get rs
+            
+            exit 1
+          fi
+        done
         echo "ECLWATCH_IP=$(kubectl get svc eclwatch -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "ROWSERVICE_IP=$(kubectl get svc rowservice -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "SQL_TO_ECL_IP=$(kubectl get svc sql2ecl -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV

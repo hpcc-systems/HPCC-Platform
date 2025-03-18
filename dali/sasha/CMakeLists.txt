@@ -42,6 +42,7 @@ set (    SRCS
          sautil.cpp 
          saverify.cpp 
          saxref.cpp 
+         sadbghk.cpp
     )
 
 include_directories ( 
