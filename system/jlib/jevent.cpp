@@ -79,6 +79,7 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(DaliWrite),
     DEFINE_EVENT(DaliDisconnect),
     DEFINE_META(FileInformation),
+    DEFINE_EVENT(RecordingActive),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -121,6 +122,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(InCache, bool),
     DEFINE_ATTR(Path, string),
     DEFINE_ATTR(ConnectId, u8),
+    DEFINE_ATTR(Enabled, bool),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -233,7 +235,7 @@ void EventRecorder::checkAttrValue(EventAttr attr, size_t size)
     assertex(expectedSize == 0 || expectedSize == size);
 }
 
-bool EventRecorder::startRecording(const char * optionsText, const char * filename)
+bool EventRecorder::startRecording(const char * optionsText, const char * filename, bool pause)
 {
     assertex(filename);
     CriticalBlock block(cs);
@@ -285,7 +287,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     for (unsigned i=0; i < numBlocks; i++)
         counts[i] = 0;
 
-    recordingEvents.store(true, std::memory_order_release);
+    recordingEvents.store(!pause, std::memory_order_release);
     return true;
 }
 
@@ -329,6 +331,26 @@ bool EventRecorder::stopRecording()
     }
 
     return true;
+}
+
+void EventRecorder::pauseRecording(bool pause, bool recordChange)
+{
+    CriticalBlock block(cs);
+    if (!isStarted || isStopped)
+        return;
+
+    bool recordingInFuture = !pause;
+    if (recordingEvents != recordingInFuture)
+    {
+        if (recordingInFuture)
+            recordingEvents = true;
+
+        if (recordChange)
+            recordRecordingActive(recordingInFuture);
+
+        if (!recordingInFuture)
+            recordingEvents = false;
+    }
 }
 
 //See notes above about reseving and committing events
@@ -395,6 +417,19 @@ constexpr size32_t getSizeOfAttrs(Args... args)
 static_assert(getSizeOfAttrs(1U, 3ULL) == 2 * sizeof(EventAttr) + 4 + 8);
 static_assert(getSizeOfAttrs("gavin") == sizeof(EventAttr) + 6);
 static_assert(getSizeOfAttrs(true, 32768U, 1ULL, "boris", "blob") == 5 * sizeof(EventAttr) + 1 + 4 + 8 + 6 + 5);
+
+void EventRecorder::recordRecordingActive(bool enabled)
+{
+    if (!isRecording())
+        return;
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(enabled);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventRecordingActive, pos);
+    write(pos, EvAttrEnabled, enabled);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
 
 void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit)
 {

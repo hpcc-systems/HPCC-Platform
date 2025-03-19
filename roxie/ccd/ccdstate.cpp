@@ -271,9 +271,11 @@ void startRoxieEventRecording(const char * options, const char * filename)
     }
 
     recursiveCreateDirectoryForFile(path);
-    queryRecorder().startRecording(options, path);
+    queryRecorder().startRecording(options, path, true);
 
     //MORE: Add all the meta information for the files - either now or in stopRoxieEventRecording()
+
+    queryRecorder().pauseRecording(false, false);
 }
 
 void stopRoxieEventRecording()
