@@ -1162,7 +1162,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             multicastTTL = ttlTmp;
 
-        if (topology->getPropBool("@recordAllEvents", false))
+        bool recordStartupEvents = topology->getPropBool("expert/@recordStartupEvents", false);
+        if (topology->getPropBool("@recordAllEvents", false) || recordStartupEvents)
         {
             const char * recordEventOptions = topology->queryProp("@recordEventOptions");
             const char * optRecordEventFilename = topology->queryProp("@recordEventFilename");
@@ -1703,6 +1704,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 writeSentinelFile(sentinelFile);
 #endif
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+                if (recordStartupEvents)
+                    stopRoxieEventRecording();
+
                 if (topology->getPropBool("expert/@profileStartup", false))
                 {
                     const char *fname = topology->queryProp("expert/@profileStartupFileName");
