@@ -151,6 +151,7 @@ protected:
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    bool outputToLog{false};
     Owned<IFileIO> output;
 };
 

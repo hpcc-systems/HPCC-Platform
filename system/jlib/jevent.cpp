@@ -44,6 +44,15 @@ BITMASK_ENUM(EventFlags);
 
 static constexpr unsigned defaultEventFlags = ERFthreadid;
 
+inline void TRACEEVENT(char const * format, ...) __attribute__((format(printf, 1, 2)));
+inline void TRACEEVENT(char const * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    VALOG(MCmonitorEvent, format, args);
+    va_end(args);
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 //
 // Meta information about events and attributes.
@@ -241,9 +250,15 @@ void EventRecorder::startRecording(const char * optionsText, const char * filena
             options = (options & ~ERFthreadid) | (valueBool ? ERFthreadid : ERFnone);
         else if (strieq(option, "stack"))
             options = (options & ~ERFstacktrace) | (valueBool ? ERFstacktrace : ERFnone);
+        else if (strieq(option, "all"))
+            options = (valueBool ? ~ERFnone : ERFnone);
+        else if (strieq(option, "log"))
+            outputToLog = valueBool;
     };
 
     options = defaultEventFlags;
+    outputToLog = false;
+
     processOptionString(optionsText, processOption);
     sizeMessageHeaderFooter = sizeof(EventType) + sizeof(__uint64) + sizeof(EventAttr); // event type, timestamp and end of attributes marker
     if (options & ERFthreadid)
@@ -374,6 +389,9 @@ void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nod
     if (!isActive())
         return;
 
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexLookup\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"hit\": %s }", fileid, offset, nodeKind, boolToStr(hit));
+
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, hit);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
@@ -389,6 +407,9 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
 {
     if (!isActive())
         return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexLoad\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"size\": %u, \"elapsed\": %llu, \"read\": %llu }", fileid, offset, nodeKind, size, elapsedTime, readTime);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, elapsedTime, readTime);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -407,6 +428,9 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
 {
     if (!isActive())
         return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexEviction\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"size\": %u }", fileid, offset, nodeKind, size);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size);
     offset_type writeOffset = reserveEvent(requiredSize);
