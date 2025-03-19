@@ -929,7 +929,7 @@ void CHThorSpillActivity::stop()
 //=====================================================================================================
 
 
-CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph), helper(_arg)
 {
     csvOutput.init(helper.queryCsvParameters(),agent.queryWorkUnit()->getDebugValueBool("oldCSVoutputFormat", false));
 }
@@ -1006,7 +1006,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), headerLength(0), footerLength(0)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)

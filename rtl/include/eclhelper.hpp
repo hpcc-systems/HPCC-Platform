@@ -2128,7 +2128,7 @@ struct IHThorCsvWriteExtra : public IInterface
 };
 
 
-struct IHThorCsvWriteArg : public IHThorGenericDiskWriteArg, public IHThorCsvWriteExtra
+struct IHThorCsvWriteArg : public IHThorDiskWriteArg, public IHThorCsvWriteExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
@@ -2178,7 +2178,7 @@ struct IHThorXmlWriteExtra : public IInterface
     virtual unsigned getXmlFlags() = 0;
 };
 
-struct IHThorXmlWriteArg : public IHThorGenericDiskWriteArg, public IHThorXmlWriteExtra
+struct IHThorXmlWriteArg : public IHThorDiskWriteArg, public IHThorXmlWriteExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
