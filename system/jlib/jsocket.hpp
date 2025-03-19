@@ -232,6 +232,16 @@ public:
     }
 };
 
+struct SocketStats
+{
+    cycle_t ioReadCycles = 0;
+    cycle_t ioWriteCycles = 0;
+    __uint64 ioReadBytes = 0;
+    __uint64 ioWriteBytes = 0;
+    __uint64 ioReads = 0;
+    __uint64 ioWrites = 0;
+};
+
 class jlib_decl ISocket : extends IInterface
 {
 public:
@@ -427,6 +437,7 @@ public:
     virtual bool isValid() const = 0;
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
+    virtual SocketStats *getSocketStat() = 0;
 
 /*
 Exceptions raised: (when set_raise_exceptions(TRUE))
