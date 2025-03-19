@@ -5619,7 +5619,7 @@ protected:
                         subfile.setown(queryDistributedFileDirectory().createNewSuperFile(dummySuperRoot, subname));
                         if (transaction)
                         {
-                            auto _transaction = queryTransactionExt(transaction);
+                            IDistributedFileTransactionExt *_transaction = queryTransactionExt(transaction);
                             _transaction->ensureFile(subfile);
                         }
                     }
