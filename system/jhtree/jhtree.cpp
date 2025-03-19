@@ -674,11 +674,19 @@ public:
     {
         if (unlikely(recordingEvents()))
         {
-            for (unsigned i1 = 0; i1 < numFixed; i1++)
-                noteEviction(fixedFileId[i1], fixedPending[i1]);
+            try
+            {
+                for (unsigned i1 = 0; i1 < numFixed; i1++)
+                    noteEviction(fixedFileId[i1], fixedPending[i1]);
 
-            ForEachItemIn(i2, pending)
-                noteEviction(pendingFileIds.item(i2), &pending.item(i2));
+                ForEachItemIn(i2, pending)
+                    noteEviction(pendingFileIds.item(i2), &pending.item(i2));
+            }
+            catch (IException * e)
+            {
+                EXCLOG(e, "~DelayedCacheEntryReleaser");
+                e->Release();
+            }
         }
 
         for (unsigned i=0; i < numFixed; i++)
