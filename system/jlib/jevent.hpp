@@ -96,6 +96,8 @@ public:
     void recordDaliConnect(const char * path, __uint64 id);
     void recordDaliDisconnect(__uint64 id);
 
+    void recordFileInformation(unsigned fileid, const char * filename);
+
     //-------------------------- End of the public interface --------------------------
 
 protected:
@@ -148,8 +150,8 @@ protected:
     static constexpr offset_t blockMask = OutputBlockSize-1;
 
     std::atomic<bool> recordingEvents{false};       // Are events being recorded? false if recording is paused.
-    bool isStarted{false};                      // Use 2 flags for whether started and stopped to ensure clean
-    bool isStopped{true};                       // termination in stopRecording()
+    std::atomic<bool> isStarted{false};             // Use 2 flags for whether started and stopped to ensure clean
+    std::atomic<bool> isStopped{true};              // termination in stopRecording()
     offset_type nextOffset{0};
     offset_type nextWriteOffset{0};
     unsigned counts[numBlocks] = {0};

@@ -24,6 +24,7 @@
 #include "jisem.hpp"
 #include "jqueue.tpp"
 #include "dautils.hpp"
+#include "jevent.hpp"
 
 #include "keydiff.hpp"
 
@@ -2200,6 +2201,27 @@ public:
         CriticalBlock b(crit);
         return todo.ordinality();
     }
+
+    //MORE: This should be called sparingly because it locks all access via the hash table
+    virtual unsigned recordFileInformation(unsigned minimumIdToReport) override
+    {
+        EventRecorder & recorder = queryRecorder();
+        unsigned maxIdSeen = minimumIdToReport;
+        CriticalBlock b(crit);
+        HashIterator h(files);
+        ForEach(h)
+        {
+            ILazyFileIO *f = files.mapToValue(&h.query());
+            unsigned id = f->getFileIdx();
+            //MORE: Filter to only keys?  Add filesize?
+            if (id >= minimumIdToReport)
+                recorder.recordFileInformation(id, f->queryFilename());
+            if (id > maxIdSeen)
+                maxIdSeen = id;
+        }
+        return maxIdSeen;
+    }
+
 
     virtual StringAttrMapping *queryFileErrorList() { return &fileErrorList; }  // returns list of files that could not be open
 };
