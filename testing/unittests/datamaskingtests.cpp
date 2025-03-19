@@ -1264,7 +1264,7 @@ protected:
       for (uint8_t version = minVersion; version <= maxVersion; version++)
       {
         Owned<IDataMaskingProfileContext> context(profile->createContext(version, nullptr));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property acceptance mismatch for '%s' and version %hhu", name, version), expected[version - minVersion], context->inspector().acceptsProperty(name));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property acceptance mismatch for '%s' and version %hhu", name, version), (bool) expected[version - minVersion], context->inspector().acceptsProperty(name));
       }
     }
 
@@ -1276,7 +1276,7 @@ protected:
       for (uint8_t version = minVersion; version <= maxVersion; version++)
       {
         Owned<IDataMaskingProfileContext> context(profile->createContext(version, nullptr));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property usage mismatch for '%s' and version %hhu", name, version), expected[version - minVersion], context->inspector().usesProperty(name));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("property usage mismatch for '%s' and version %hhu", name, version), (bool) expected[version - minVersion], context->inspector().usesProperty(name));
       }
     }
 };
