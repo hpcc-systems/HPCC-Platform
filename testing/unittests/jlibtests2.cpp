@@ -66,11 +66,14 @@ public:
             EventRecorder &recorder = queryRecorder();
 
             // Test that recording is initially inactive
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            recorder.startRecording("traceid", "eventtrace.evt");
-            CPPUNIT_ASSERT(recorder.isActive());
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.isRecording());
+
+            //Check that overlapping starts fail
+            CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx"));
 
             // Record some events
             recorder.recordIndexLookup(1, branchOffset, NodeBranch, true);
@@ -79,12 +82,15 @@ public:
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
             // Stop recording
-            recorder.stopRecording();
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            CPPUNIT_ASSERT(!recorder.isRecording());
+
+            // Check that stopping again fails
+            CPPUNIT_ASSERT(!recorder.stopRecording());
 
             // Restart recording with a different filename
-            recorder.startRecording("threadid", "testfile.bin");
-            CPPUNIT_ASSERT(recorder.isActive());
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin"));
+            CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
             recorder.recordIndexLookup(2, 400, NodeLeaf, false);
@@ -100,8 +106,8 @@ public:
             recorder.recordDaliDisconnect(987);
 
             // Stop recording again
-            recorder.stopRecording();
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            CPPUNIT_ASSERT(!recorder.isRecording());
         }
         catch (IException * e)
         {
@@ -120,11 +126,11 @@ public:
             EventRecorder &recorder = queryRecorder();
 
             // Test that recording is initially inactive
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            recorder.startRecording("threadid", "eventtrace.evt");
-            CPPUNIT_ASSERT(recorder.isActive());
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record some events
             for (unsigned i=0; i < 100'000; i++)
@@ -134,8 +140,8 @@ public:
             }
 
             // Stop recording
-            recorder.stopRecording();
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            CPPUNIT_ASSERT(!recorder.isRecording());
         }
         catch (IException * e)
         {
@@ -175,11 +181,11 @@ public:
             EventRecorder &recorder = queryRecorder();
 
             // Test that recording is initially inactive
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            recorder.startRecording("threadid", "eventtrace.evt");
-            CPPUNIT_ASSERT(recorder.isActive());
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.isRecording());
 
             CIArrayOf<Thread> threads;
             for (unsigned t=0; t < numThreads; t++)
@@ -191,16 +197,16 @@ public:
             if (delay)
             {
                 MilliSleep(delay);
-                recorder.stopRecording();
+                CPPUNIT_ASSERT(recorder.stopRecording());
             }
 
             ForEachItemIn(t2, threads)
                 threads.item(t2).join();
 
             if (!delay)
-                recorder.stopRecording();
+                CPPUNIT_ASSERT(recorder.stopRecording());
 
-            CPPUNIT_ASSERT(!recorder.isActive());
+            CPPUNIT_ASSERT(!recorder.isRecording());
         }
         catch (IException * e)
         {
