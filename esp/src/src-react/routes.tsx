@@ -35,7 +35,15 @@ const workunitsChildren: Route[] = [
     },
     {
         path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { selection: (params.State as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+            let state;
+            switch (params.Tab) {
+                case "metrics":
+                    state = { [params.Tab as string]: { selection: (params.State as string).split(",") } };
+                    break;
+                default:
+                    state = { [params.Tab as string]: (params.State as string) };
+            }
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={state} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
         })
     },
     {
