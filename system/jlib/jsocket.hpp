@@ -232,6 +232,41 @@ public:
     }
 };
 
+struct SocketStats
+{
+    cycle_t ioReadCycles = 0;
+    cycle_t ioWriteCycles = 0;
+    __uint64 ioReadBytes = 0;
+    __uint64 ioWriteBytes = 0;
+    __uint64 ioReads = 0;
+    __uint64 ioWrites = 0;
+
+    unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        switch (kind)
+        {
+        case StCycleSocketReadIOCycles:
+            return ioReadCycles;
+        case StCycleSocketWriteIOCycles:
+            return ioWriteCycles;
+        case StTimeSocketReadIO:
+            return cycle_to_nanosec(ioReadCycles);
+        case StTimeSocketWriteIO:
+            return cycle_to_nanosec(ioWriteCycles);
+        case StSizeSocketRead:
+            return ioReadBytes;
+        case StSizeSocketWrite:
+            return ioWriteBytes;
+        case StNumSocketReads:
+            return ioReads;
+        case StNumSocketWrites:
+            return ioWrites;
+        default:
+            return 0;
+        }
+    }
+};
+
 class jlib_decl ISocket : extends IInterface
 {
 public:

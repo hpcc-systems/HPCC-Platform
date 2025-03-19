@@ -156,6 +156,7 @@ private:
     static Semaphore receiveblocksem;
     bool             receiveblocksemowned; // owned by this socket
 #endif
+    SocketStats     stats;
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
     bool verify_cert(X509* cert);
@@ -317,7 +318,7 @@ public:
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        return m_socket->getStatistic(kind);
+        return stats.getStatistic(kind);
     }
 
     //
@@ -945,6 +946,17 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 break;
         }
     }
+
+    cycle_t elapsedCycles = timer.elapsedCycles();
+    if (!SSTATS)
+        SSTATS = getSocketStatPtr();
+    SSTATS->reads++;
+    SSTATS->readsize += sizeRead;
+    SSTATS->readtimecycles += elapsedCycles;
+    stats.ioReads++;
+    stats.ioReadBytes += sizeRead;
+    stats.ioReadCycles += elapsedCycles;
+
 }
 
 void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
@@ -966,6 +978,17 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
         {
             // NB: minSize not used here, because not using SSL_MODE_ENABLE_PARTIAL_WRITE
             dbgassertex(size == rc);
+
+            cycle_t elapsedCycles = timer.elapsedCycles();
+            if (!SSTATS)
+                SSTATS = getSocketStatPtr();
+            SSTATS->writes++;
+            SSTATS->writesize += rc;
+            SSTATS->writetimecycles += elapsedCycles;
+            stats.ioWrites++;
+            stats.ioWriteBytes += rc;
+            stats.ioWriteCycles += elapsedCycles;
+
             return rc;
         }
         int ssl_err = SSL_get_error(m_ssl, rc);
