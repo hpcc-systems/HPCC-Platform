@@ -64,6 +64,7 @@ public:
         try
         {
             EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
 
             // Test that recording is initially inactive
             CPPUNIT_ASSERT(!recorder.isRecording());
@@ -82,17 +83,23 @@ public:
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
             // Stop recording
-            CPPUNIT_ASSERT(recorder.stopRecording());
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL(4U, summary.numEvents);
 
             // Check that stopping again fails
-            CPPUNIT_ASSERT(!recorder.stopRecording());
+            CPPUNIT_ASSERT(!recorder.stopRecording(nullptr));
 
             // Restart recording with a different filename
             CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin", true));
             CPPUNIT_ASSERT(!recorder.isRecording());
             recorder.pauseRecording(true, false);
             CPPUNIT_ASSERT(!recorder.isRecording());
+
+            //These should be ignored - count checked later on
+            recorder.recordIndexLookup(2, 400, NodeLeaf, false);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, false);
+
             recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
@@ -110,8 +117,9 @@ public:
             recorder.recordDaliDisconnect(987);
 
             // Stop recording again
-            CPPUNIT_ASSERT(recorder.stopRecording());
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL(11U, summary.numEvents);        // One pause + 8 index, 2 dali, not the two logged when paused.
         }
         catch (IException * e)
         {
@@ -144,8 +152,10 @@ public:
             }
 
             // Stop recording
-            CPPUNIT_ASSERT(recorder.stopRecording());
+            EventRecordingSummary summary;
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL(200'000U, summary.numEvents);
         }
         catch (IException * e)
         {
@@ -201,14 +211,14 @@ public:
             if (delay)
             {
                 MilliSleep(delay);
-                CPPUNIT_ASSERT(recorder.stopRecording());
+                CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
             }
 
             ForEachItemIn(t2, threads)
                 threads.item(t2).join();
 
             if (!delay)
-                CPPUNIT_ASSERT(recorder.stopRecording());
+                CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
 
             CPPUNIT_ASSERT(!recorder.isRecording());
         }

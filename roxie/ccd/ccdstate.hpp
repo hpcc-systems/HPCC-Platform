@@ -171,7 +171,8 @@ extern const char *queryNodeIndexName(const IPropertyTree &graphNode, ThorActivi
 extern void createDelayedReleaser();
 extern void stopDelayedReleaser();
 
-extern void startRoxieEventRecording(const char * optionsText, const char * filename);
-extern void stopRoxieEventRecording();
+class EventRecordingSummary;
+extern bool startRoxieEventRecording(const char * optionsText, const char * filename);
+extern bool stopRoxieEventRecording(EventRecordingSummary * optSummary);
 
 #endif
