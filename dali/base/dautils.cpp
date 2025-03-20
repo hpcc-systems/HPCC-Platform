@@ -3787,7 +3787,7 @@ void logNullUser(IUserDescriptor * userDesc)
 #endif
 
 // takes filename and creates mask filename with $P$ extension
-extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,unsigned &stripeNum,unsigned &dirPerPart,bool &replicate)
+extern da_decl void parseFileName(const char *name,StringBuffer *prefix, StringBuffer *dirs, StringBuffer &mname,unsigned &num,unsigned &max,unsigned &stripeNum,unsigned &dirPerPart,bool &replicate)
 {
     StringBuffer nonrepdir;
     if (!isContainerized())
@@ -3804,13 +3804,14 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
     ForEach(*planesIter)
     {
         const IPropertyTree &plane = planesIter->query();
-        const char *prefix = plane.queryProp("@prefix");
-        size_t prefixLen = strlen(prefix);
-        if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
+        const char *prefixString = plane.queryProp("@prefix");
+        size_t prefixLen = strlen(prefixString);
+        if (startsWith(name, prefixString) && name[prefixLen] == PATHSEPCHAR)
         {
+            if (prefix)
+                prefix->append(prefixString);
             mname.ensureCapacity(strlen(name)-prefixLen);
-            mname.append(PATHSEPCHAR);
-            name += prefixLen + 1;
+            name += prefixLen;
             stripeNum = 0;
             if (isContainerized() && plane.getPropInt("@numDevices") > 1)
             {
@@ -3834,7 +3835,8 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
         }
     }
 
-    if (mname.isEmpty())
+    // Assume that if prefix is passed in a match is required
+    if (prefix && prefix->isEmpty())
         throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", filename);
 
     num = 0;
@@ -3868,10 +3870,16 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
             {
                 if (dirPerPart!=pn)
                     throw makeStringExceptionV(-1, "Dir-per-part # (%d) does not match part # (%d) of file %s", dirPerPart, pn, filename);
-                mname.append((d+1)-name, name).append(cur-(tailSlash+1), tailSlash+1);
+                if (dirs)
+                    dirs->append((d+1)-name, name);
+                mname.append(cur-(tailSlash+1), tailSlash+1);
             }
             else
-                mname.append(cur-name,name);
+            {
+                if (dirs)
+                    dirs->append((tailSlash+1)-name, name);
+                mname.append(cur-(tailSlash+1),tailSlash+1);
+            }
 
             if (pn&&(memicmp(s,"_of_",4)==0))
             {

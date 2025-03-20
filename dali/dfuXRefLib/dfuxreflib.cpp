@@ -1664,7 +1664,7 @@ public:
 
             try
             {
-                parseFileName(fullname,orphanname,n,m,stripeNum,dirPerPart,replicate);
+                parseFileName(fullname,nullptr,&orphanname,orphanname,n,m,stripeNum,dirPerPart,replicate);
                 orphanname.toLowerCase();
 
                 COrphanEntryPtr *entryp = manager.orphanmap.getValue(orphanname.str());

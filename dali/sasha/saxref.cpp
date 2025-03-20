@@ -114,44 +114,72 @@ struct cFileDesc // no virtuals
 {
     unsigned hash;
     unsigned short N;           // num parts
-    unsigned short sn;          // stripe number
+    unsigned short stripeNum;   // stripe number
     bool dirPerPart;            // directory per part
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
-    byte name[1];               // first byte length
+    byte prefixLen;
+    byte dirsLen;
+    byte nameLen;
+    char *prefixStr;
+    char *dirsStr;
+    char *nameStr;
     // char namestr[name[1]]
     // bitset presentc[N];
     // bitset presentd[N];
     // bitset markedc[N];
     // bitset markedd[N];
 
-    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n, unsigned sn, bool dn)
+    static cFileDesc * create(CLargeMemoryAllocator &mem,StringBuffer &_prefix, StringBuffer &_dirs, StringBuffer &_name,unsigned n, unsigned sn, bool dn)
     {
-        size32_t sl = strlen(_name); 
-        if (sl>255) {
-            OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",_name);
-            sl = 255;
+        size32_t _prefixLen = _prefix.length();
+        size32_t _dirsLen = _dirs.length();
+        size32_t _nameLen = _name.length();
+
+        if (_prefixLen>255) {
+            OWARNLOG(LOGPFX "File prefix %s longer than 255 chars, truncating",_prefix.str());
+            _prefixLen = 255;
         }
+        if (_dirsLen>255) {
+            OWARNLOG(LOGPFX "File directory %s longer than 255 chars, truncating",_dirs.str());
+            _dirsLen = 255;
+        }
+        if (_nameLen>255) {
+            OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",_name.str());
+            _nameLen = 255;
+        }
+
         size32_t ml = (n*4+7)/8;
-        size32_t sz = sizeof(cFileDesc)+sl+ml;
+        size32_t sz = sizeof(cFileDesc)+_prefixLen+_dirsLen+_nameLen+ml;
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
+
         ret->N = (unsigned short)n;
-        ret->name[0] = (byte)sl;
-        ret->sn = (unsigned short)sn;
+        ret->prefixLen = (byte)_prefixLen;
+        ret->dirsLen = (byte)_dirsLen;
+        ret->nameLen = (byte)_nameLen;
+        ret->prefixStr = (char *)ret+sizeof(cFileDesc);
+        ret->dirsStr = ret->prefixStr+_prefixLen;
+        ret->nameStr = ret->dirsStr+_dirsLen;
+        ret->stripeNum = (unsigned short)sn;
         ret->dirPerPart = dn;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
 
-        memcpy(&ret->name[1],_name,sl);
+        memcpy(ret->prefixStr,_prefix.str(),_prefixLen);
+        memcpy(ret->dirsStr,_dirs.str(),_dirsLen);
+        memcpy(ret->nameStr,_name.str(),_nameLen);
         memset(ret->map(),0,ml);
-        ret->hash = hashc((const byte *)_name,sl,17);
+
+        StringBuffer mpath;
+        mpath.append(_prefix).append(_dirs).append(_name);
+        ret->hash = hashc((const byte *)mpath.str(), mpath.length(), 17);
         return ret;
     }
 
 
     inline byte *map() const
     {
-        return (byte *)&name+1+name[0];
+        return (byte *)nameStr+nameLen;
     }
 
     bool setpresent(unsigned d,unsigned i) // returns old value
@@ -185,23 +213,49 @@ struct cFileDesc // no virtuals
     bool eq(const char *key)
     {
         size32_t sl = strlen(key);
-        if (sl>255) 
-            sl = 255;
-        if (sl!=(byte)name[0])
+        if (sl>255*3) 
+            sl = 255*3;
+        if (sl!=(prefixLen+dirsLen+nameLen))
             return false;
-        return memcmp(key,name+1,sl)==0;
+        return memcmp(key,prefixStr,prefixLen)==0&&memcmp(key+prefixLen,dirsStr,dirsLen)==0&&memcmp(key+prefixLen+dirsLen,nameStr,nameLen)==0;
+    }
+
+    StringBuffer &getPrefix(StringBuffer &buf)
+    {
+        return buf.append((size32_t)prefixLen, prefixStr);
+    }
+
+    StringBuffer &getDirs(StringBuffer &buf)
+    {
+        return buf.append((size32_t)dirsLen, dirsStr);
     }
 
     StringBuffer &getName(StringBuffer &buf)
     {
-        return buf.append((size32_t)name[0],(const char *)(name+1));
+        return buf.append((size32_t)nameLen, nameStr);
+    }
+
+    StringBuffer &getMask(StringBuffer &buf)
+    {
+        getPrefix(buf);
+        getDirs(buf);
+        getName(buf);
+        return buf;
     }
 
     StringBuffer &getPartName(StringBuffer &buf,unsigned p)
     {
+        // In baremetal, buf can be prepoulated with replicate directory
+        if (buf.isEmpty())
+            getPrefix(buf);
+        if (stripeNum>0)
+            addPathSepChar(buf.append('d').append(stripeNum));
+        getDirs(buf);
+        if (dirPerPart)
+            addPathSepChar(buf.append(p+1));
         StringBuffer mask;
         getName(mask);
-        return expandMask(buf, mask, p, N, sn, dirPerPart);
+        return expandMask(buf, mask, p, N);
     }
 
     static cFileDesc * create(const char *)
@@ -349,17 +403,21 @@ struct cDirDesc
         unsigned sn;    // stripe num
         unsigned dn;    // dir-per-part num
         bool replicate;
+        StringBuffer prefix;
+        StringBuffer dirs;
         StringBuffer fn;
-        parseFileName(filePath, fn, pf, nf, sn, dn, replicate);
+        parseFileName(filePath, &prefix, &dirs, fn, pf, nf, sn, dn, replicate);
         pf--;
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
-        cFileDesc *file = files.find(fn.str(),false);
+        StringBuffer mpath;
+        mpath.append(prefix).append(dirs).append(fn);
+        cFileDesc *file = files.find(mpath.str(),false);
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn.str(),nf,sn,dn>0);
+            file = cFileDesc::create(*mem,prefix,dirs,fn,nf,sn,dn>0);
             files.add(file);
         }
         if (misplaced) {
@@ -945,10 +1003,12 @@ public:
                         isDirPerPart = false;
                 }
                 if (isDirPerPart) {
-                    // MORE: Should maybe check this doesn't contain any subdirectories to make
-                    // sure it is really a dirPerPart directory. Is an all numbers subdirectory valid in ecl?
+                    // If a directory contains only numerics, it is a dirPerPart directory
+                    // Files inside a dirPerPart directory should be scanned with the current directory as the parent
                     if (!scanDirectory(node,ep,path,drv,pdir,NULL))
                         return false;
+                    if (pdir->dirs.ordinality()>0)
+                        throw makeStringExceptionV(-1, LOGPFX "Directory Per Part %s contains other subdirectories.", path.str());
                 }
                 else
                     dirs.append(fname.str());
@@ -1231,7 +1291,7 @@ public:
         // first check if any orhans at all (maybe could do this faster)
 #ifdef _DEBUG
         StringBuffer dbgname;
-        f->getName(dbgname);
+        f->getMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
@@ -1247,8 +1307,8 @@ public:
         }
         if (drv==drvs)
             return; // no orphans
-        StringBuffer mask(rootdir);
-        f->getName(mask);
+        StringBuffer mask;
+        f->getMask(mask);
         CDfsLogicalFileName lfn;
         if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
@@ -1278,9 +1338,9 @@ public:
             if (abort)
                 return;
             bool warnnotexists = true;
-            StringBuffer path(rootdir);
+            StringBuffer path;
             if (drv)
-                setReplicateFilename(path,drv);
+                setReplicateFilename(path.append(rootdir),drv);
             size32_t psz = path.length();
             StringBuffer tmp;
             for (unsigned pn=0;pn<f->N;pn++) {
@@ -1333,9 +1393,9 @@ public:
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
                     unsigned n = mp->getNode(numnodes);
-                    StringBuffer path(rootdir);
+                    StringBuffer path;
                     if (drv) 
-                        setReplicateFilename(path,drv);
+                        setReplicateFilename(path.append(rootdir),drv);
                     f->getPartName(path,mp->pn);
                     RemoteFilename rfn;
                     rfn.setPath(grp->queryNode(n).endpoint(),path.str());
@@ -2160,7 +2220,7 @@ public:
             const char *gname = groups.item(i);
             unsigned maxMb;
             if (isContainerized()) {
-                const char *resourcedMemory = getComponentConfigSP()->queryProp("resources/@memory");
+                const char *resourcedMemory = props->queryProp("resources/@memory");
                 if (!isEmptyString(resourcedMemory)) {
                     offset_t sizeBytes = friendlyStringToSize(resourcedMemory);
                     maxMb = (unsigned)(sizeBytes / 0x100000);
