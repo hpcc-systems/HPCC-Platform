@@ -363,6 +363,7 @@ ClusterPartDiskMapSpec & ClusterPartDiskMapSpec::operator=(const ClusterPartDisk
     repeatedPart = other.repeatedPart;
     setDefaultBaseDir(other.defaultBaseDir);
     setDefaultReplicateDir(other.defaultReplicateDir);
+    numStripedDevices = other.numStripedDevices;
     return *this;
 }
 
@@ -504,7 +505,7 @@ public:
         return group.get();
     }
 
-    StringBuffer &getGroupName(StringBuffer &ret,IGroupResolver *resolver) const
+    StringBuffer &getGroupName(StringBuffer &ret,IGroupResolver *resolver)
     {
         if (name.isEmpty()) {
             if (group)
@@ -601,7 +602,7 @@ public:
             basedir.append(mspec.defaultReplicateDir);
     }
 
-    StringBuffer &getClusterLabel(StringBuffer &ret) const
+    StringBuffer &getClusterLabel(StringBuffer &ret)
     {
         return getGroupName(ret, NULL);
     }

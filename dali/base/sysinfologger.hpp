@@ -22,7 +22,7 @@
 #include "jutil.hpp"
 #include "daclient.hpp"
 
-#ifdef DALI_EXPORT
+#ifdef DALI_EXPORTS
  #define SYSINFO_API DECL_EXPORT
 #else
  #define SYSINFO_API DECL_IMPORT
