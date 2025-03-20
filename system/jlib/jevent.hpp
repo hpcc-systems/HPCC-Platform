@@ -36,6 +36,7 @@ enum EventType : byte
     EventDaliWrite,
     EventDaliDisconnect,
     MetaFileInformation,          // information about a file
+    EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
     EventMax
 };
 
@@ -53,6 +54,7 @@ enum EventAttr : byte
     EvAttrInCache,
     EvAttrPath,
     EvAttrConnectId,
+    EvAttrEnabled,
     EvAttrMax
 };
 
@@ -82,8 +84,9 @@ public:
 
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
-    bool startRecording(const char * optionsText, const char * filename);
+    bool startRecording(const char * optionsText, const char * filename, bool pause);
     bool stopRecording();
+    void pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit);
@@ -96,6 +99,8 @@ public:
     //-------------------------- End of the public interface --------------------------
 
 protected:
+    void recordRecordingActive(bool paused);
+
     void checkAttrValue(EventAttr attr, size_t size);
 
     void writeEventHeader(EventType type, offset_type & offset);

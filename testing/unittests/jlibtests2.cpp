@@ -69,11 +69,11 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("traceid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             //Check that overlapping starts fail
-            CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx"));
+            CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", false));
 
             // Record some events
             recorder.recordIndexLookup(1, branchOffset, NodeBranch, true);
@@ -89,7 +89,11 @@ public:
             CPPUNIT_ASSERT(!recorder.stopRecording());
 
             // Restart recording with a different filename
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin"));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin", true));
+            CPPUNIT_ASSERT(!recorder.isRecording());
+            recorder.pauseRecording(true, false);
+            CPPUNIT_ASSERT(!recorder.isRecording());
+            recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
@@ -129,7 +133,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record some events
@@ -184,7 +188,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt"));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             CIArrayOf<Thread> threads;
