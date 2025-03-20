@@ -145,7 +145,6 @@ public:
         m_cacheTimeoutInSeconds = DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES * 60 * 1000;//default every hour
         m_transactionalEnabled = false;
         m_secMgr = NULL;
-        m_lastManagedFileScopesRefresh = 0;
         m_defaultPermission = SecAccess_Unknown;
         m_secMgrClass.set(_secMgrClass);
         m_transactionalCacheTimeout = DEFAULT_CACHE_TIMEOUT_SECONDS;
@@ -175,16 +174,22 @@ public:
     virtual void add (ISecUser& sec_user);
     virtual void removeFromUserCache(ISecUser& sec_user);
 
-    void  setCacheTimeout(int timeoutSeconds)
-    {
-        m_cacheTimeoutInSeconds = timeoutSeconds;
-        if(m_cacheTimeoutInSeconds == 0 && isTransactionalEnabled())//ensure transactional time is updated
-            setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
-        else
-            setTransactionalCacheTimeout(timeoutSeconds);
-    }
+    void  setCacheTimeout(int timeoutSeconds);
+
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
+    void managedFileScopesCacheFillThread();
+    void stopManagedFileScopeCacheFillThread()
+    {
+        if (m_fileScopeCacheFillThread.joinable())
+        {
+            DBGLOG("CACHE: stopping managedFileScopeCacheFillThread...");
+            m_stopFileScopeCacheFillThread = true;
+            m_fileScopeCacheFillSem.signal();
+            m_fileScopeCacheFillThread.join();
+            DBGLOG("CACHE: managedFileScopeCacheFillThread stopped");
+        }
+    }
 
     void setTransactionalEnabled(bool enable)
     {
@@ -201,7 +206,6 @@ public:
 
     void flush();
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
-    void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();
     bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags);
     void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
@@ -235,9 +239,11 @@ private:
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
-    time_t                      m_lastManagedFileScopesRefresh;
 
     bool m_useLegacyDefaultFileScopePermissionCache = false;
+    Semaphore m_fileScopeCacheFillSem;
+    std::thread m_fileScopeCacheFillThread;
+    bool m_stopFileScopeCacheFillThread = false;
 };
 
 time_t getThreadCreateTime();

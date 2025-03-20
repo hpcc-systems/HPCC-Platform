@@ -627,9 +627,9 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     else
         m_permissionsCache.setown(new CPermissionsCache());
 
+    m_permissionsCache->setSecManager(this);
     m_permissionsCache->setCacheTimeout( 60 * cacheTimeoutMinutes);
     m_permissionsCache->setTransactionalEnabled(true);
-    m_permissionsCache->setSecManager(this);
     m_useLegacyDefaultFileScopePermissionCaching = cfg->getPropBool("@useLegacyDefaultFileScopePermissionCache", m_useLegacyDefaultFileScopePermissionCaching);
     m_permissionsCache->setUseLegacyDefaultFileScopePermissionCache(m_useLegacyDefaultFileScopePermissionCaching);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
