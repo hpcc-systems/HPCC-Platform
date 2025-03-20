@@ -1705,7 +1705,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
                 if (recordStartupEvents)
-                    stopRoxieEventRecording();
+                    stopRoxieEventRecording(nullptr);
 
                 if (topology->getPropBool("expert/@profileStartup", false))
                 {
@@ -1777,7 +1777,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
-    stopRoxieEventRecording();
+    stopRoxieEventRecording(nullptr);
     cleanupPlugins();
     unloadHpccProtocolPlugin();
     closeMulticastSockets();
