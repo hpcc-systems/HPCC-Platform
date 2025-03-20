@@ -244,7 +244,7 @@ void stopDelayedReleaser()
 
 //-------------------------------------------------------------------------
 
-void startRoxieEventRecording(const char * options, const char * filename)
+bool startRoxieEventRecording(const char * options, const char * filename)
 {
     if (isEmptyString(options))
         options = "threadid";
@@ -271,16 +271,18 @@ void startRoxieEventRecording(const char * options, const char * filename)
     }
 
     recursiveCreateDirectoryForFile(path);
-    queryRecorder().startRecording(options, path, true);
+    if (!queryRecorder().startRecording(options, path, true))
+        return false;
 
     //MORE: Add all the meta information for the files - either now or in stopRoxieEventRecording()
 
     queryRecorder().pauseRecording(false, false);
+    return true;
 }
 
-void stopRoxieEventRecording()
+bool stopRoxieEventRecording(EventRecordingSummary * optSummary)
 {
-    queryRecorder().stopRecording();
+    return queryRecorder().stopRecording(optSummary);
 }
 
 //-------------------------------------------------------------------------
@@ -2720,6 +2722,12 @@ private:
                     parallelAggregate = 1;
                 topology->setPropInt("@parallelAggregate", parallelAggregate);
             }
+            else if (stricmp(queryName, "control:pauseEventRecording")==0)
+            {
+                bool addEventForChange = control->getPropBool("@audit", false);
+                bool success = queryRecorder().pauseRecording(true, addEventForChange);
+                reply.appendf("<EventRecording success='%s'/>", boolToStr(success));
+            }
             else if (stricmp(queryName, "control:perf")==0)
             {
                 unsigned perfTime = (unsigned) control->getPropInt64("@time", 60);
@@ -2902,6 +2910,12 @@ private:
             {
                 FatalError("Roxie process restarted by operator request");
             }
+            else if (stricmp(queryName, "control:resumeEventRecording")==0)
+            {
+                bool addEventForChange = control->getPropBool("@audit", false);
+                bool success = queryRecorder().pauseRecording(false, addEventForChange);
+                reply.appendf("<EventRecording success='%s'/>", boolToStr(success));
+            }
             else if (stricmp(queryName, "control:retrieveActivityDetails")==0)
             {
                 UNIMPLEMENTED;
@@ -2958,6 +2972,24 @@ private:
             {
                 socketCheckInterval = (unsigned) control->getPropInt64("@val", 0);
                 topology->setPropInt64("@socketCheckInterval", socketCheckInterval);
+            }
+            else if (stricmp(queryName, "control:startEventRecording")==0)
+            {
+                const char * options = control->queryProp("@options");
+                const char * filename = control->queryProp("@filename");
+                bool success = startRoxieEventRecording(options, filename);
+                reply.appendf("<EventRecording success='%s'/>", boolToStr(success));
+            }
+            else if (stricmp(queryName, "control:stopEventRecording")==0)
+            {
+                EventRecordingSummary summary;
+                bool success = stopRoxieEventRecording(&summary);
+                if (success)
+                {
+                    reply.appendf("<EventRecording success='true' numEvents='%u' filename='%s' size='%llu'/>", summary.numEvents, summary.filename.str(), summary.totalSize);
+                }
+                else
+                    reply.appendf("<EventRecording success='false'/>");
             }
             else if (stricmp(queryName, "control:state")==0)
             {
