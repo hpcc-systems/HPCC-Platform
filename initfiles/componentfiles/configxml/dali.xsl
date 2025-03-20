@@ -347,6 +347,9 @@
             <xsl:for-each select="$ldapServerNode">
               <xsl:copy-of select="@ldapPort | @ldapSecurePort | @ldapTimeoutSecs | @ldapCipherSuite | @cacheTimeout | @workunitsBasedn | @modulesBasedn | @systemBasedn | @systemCommonName | @systemUser | @systemPassword | @usersBasedn | @groupsBasedn| @viewsBasedn | @serverType"/>
             </xsl:for-each>
+            <xsl:attribute name="ldapAdminSecretKey">
+              <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@ldapAdminSecretKey"/>
+            </xsl:attribute>
           </xsl:element>
         </xsl:if>
       </xsl:element>
