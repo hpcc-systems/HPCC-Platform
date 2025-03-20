@@ -179,8 +179,16 @@ namespace nsWorkunitservices {
 IPluginContext * parentCtx = NULL;
 
 
-static void getSashaWUArchiveNodes(SocketEndpointArray &epa)
+static void getSashaWUArchiveNodes(SocketEndpointArray &epa, ICodeContext *ctx)
 {
+    IEngineContext *engineCtx = ctx->queryEngineContext();
+    if (engineCtx && !engineCtx->allowSashaAccess())
+    {
+        Owned<IException> e = makeStringException(-1, "workunitservices cannot access Sasha in this context - this normally means it is being called from a thor worker");
+        EXCLOG(e, NULL);
+        throw e.getClear();
+    }
+
 #ifdef _CONTAINERIZED
     StringBuffer service;
     getService(service, "wu-archiver", true);
@@ -206,7 +214,7 @@ static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
     IEngineContext *engineCtx = ctx->queryEngineContext();
     if (engineCtx && !engineCtx->allowDaliAccess())
     {
-        Owned<IException> e = MakeStringException(-1, "workunitservices cannot access Dali in this context - this normally means it is being called from a thor slave");
+        Owned<IException> e = makeStringException(-1, "workunitservices cannot access Dali in this context - this normally means it is being called from a thor worker");
         EXCLOG(e, NULL);
         throw e.getClear();
     }
@@ -368,7 +376,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
     MemoryBuffer mb;
     if (archived) {
         SocketEndpointArray sashaeps;
-        getSashaWUArchiveNodes(sashaeps);
+        getSashaWUArchiveNodes(sashaeps, ctx);
         ForEachItemIn(i,sashaeps) {
             Owned<ISashaCommand> cmd = createSashaCommand();    
             cmd->setAction(SCA_WORKUNIT_SERVICES_GET);                          
@@ -500,7 +508,7 @@ WORKUNITSERVICES_API bool wsWorkunitExists(ICodeContext *ctx, const char *wuid, 
     if (archived)
     {
         SocketEndpointArray sashaeps;
-        getSashaWUArchiveNodes(sashaeps);
+        getSashaWUArchiveNodes(sashaeps, ctx);
         ForEachItemIn(i,sashaeps) {
             Owned<ISashaCommand> cmd = createSashaCommand();    
             cmd->setAction(SCA_LIST);                           
