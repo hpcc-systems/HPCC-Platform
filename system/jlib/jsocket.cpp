@@ -597,16 +597,6 @@ MODULE_EXIT()
     }
 }
 
-struct SocketStats
-{
-    cycle_t ioReadCycles = 0;
-    cycle_t ioWriteCycles = 0;
-    __uint64 ioReadBytes = 0;
-    __uint64 ioWriteBytes = 0;
-    __uint64 ioReads = 0;
-    __uint64 ioWrites = 0;
-};
-
 class CSocket: public ISocket, public CInterface
 {
 public:
@@ -684,6 +674,7 @@ public:
     virtual bool check_connection();
     virtual bool isSecure() const override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override;
+    virtual SocketStats *getSocketStat() override;
 
     
     // Block functions
@@ -1062,6 +1053,11 @@ bool CSocket::set_nonblock(bool on)
 }
 
 #endif
+
+SocketStats *CSocket::getSocketStat()
+{
+    return &stats;
+}
 
 bool CSocket::set_nagle(bool on)
 {
