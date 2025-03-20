@@ -42,7 +42,17 @@ jobs:
       gpg_import: ${{ steps.vars.outputs.gpg_import }}
       folder_prettygitlogs: ${{ steps.vars.outputs.folder_prettygitlogs }}
       folder_eclide: ${{ steps.vars.outputs.folder_eclide }}
+      latest_version: ${{ steps.vars.outputs.latest_tag }}
+      is_latest: ${{ steps.vars.outputs.is_latest }}
     steps:
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/HPCC-Platform
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+          
       - name: Calculate vars
         id: vars
         run: |
@@ -68,7 +78,10 @@ jobs:
           echo "candidate_base_branch=$(echo $candidate_branch | awk -F'.' -v OFS='.' '{ $3="x"; print }')" >> $GITHUB_OUTPUT
           echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=${{ github.repository_owner == 'hpcc-systems' && 'ON' || 'OFF' }}" >> $GITHUB_OUTPUT
           echo 'gpg_import=gpg --batch --import /hpcc-dev/build/private.key' >> $GITHUB_OUTPUT
-
+          latest_tag=$(git tag -l | grep -E "^community_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,3}-[0-9]{1,2}" | sort -V | tail -n 1)
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "is_latest=$(echo $latest_tag | grep -q $community_tag && echo true || echo false)" >> $GITHUB_OUTPUT
+      
       - name: Print vars
         run: |
           echo "${{ toJSON(steps.vars.outputs) }})"
@@ -79,6 +92,7 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ steps.vars.outputs.is_latest }}
 
   build-docker:
     name: Build Docker
