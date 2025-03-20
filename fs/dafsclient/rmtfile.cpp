@@ -360,6 +360,7 @@ public:
     }
     virtual StringBuffer &getSecretBased(StringBuffer &storageSecret, const RemoteFilename & filename) override
     {
+        CLeavableCriticalBlock b(secretCrit);
         if (!endpointMap.empty())
         {
             const SocketEndpoint &ep = filename.queryEndpoint();
@@ -367,11 +368,11 @@ public:
             StringBuffer endpointStr;
             ep.getEndpointHostText(endpointStr);
 
-            CriticalBlock b(secretCrit);
             auto it = endpointMap.find(endpointStr.str());
             if (it != endpointMap.end())
             {
                 storageSecret.append(std::get<1>(it->second).c_str());
+                b.leave();
                 if (0 == storageSecret.length())
                 {
                     VStringBuffer secureUrl("https://%s", endpointStr.str());
