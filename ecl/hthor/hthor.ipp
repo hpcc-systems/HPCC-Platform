@@ -303,6 +303,7 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
+    unsigned helperFlags;
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -322,6 +323,8 @@ protected:
     const void *getNext(); 
     void checkSizeLimit();
     virtual bool needsAllocator() const { return true; }
+
+    bool isGeneric() const { return (helperFlags & TDXgeneric) != 0; }
 public:
     IMPLEMENT_SINKACTIVITY;
 

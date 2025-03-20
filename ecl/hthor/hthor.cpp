@@ -413,6 +413,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
+    helperFlags = helper.getFlags();
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -10830,7 +10831,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     subfiles.kill();
 
     Owned<const IPropertyTree> curFormatOptions;
-    if (helperFlags & TDXgeneric)
+    if (isGeneric())
     {
         Owned clonedFormatOptions(createPTreeFromIPT(formatOptions));
         CPropertyTreeWriter writer(clonedFormatOptions);
@@ -10842,7 +10843,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
 
     //Provider options may be modified below
     Owned<IPropertyTree> curProviderOptions(createPTreeFromIPT(providerOptions));
-    if (helperFlags & TDXgeneric)
+    if (isGeneric())
     {
         CPropertyTreeWriter writer(curProviderOptions);
         helper.getProviderOptions(writer);
