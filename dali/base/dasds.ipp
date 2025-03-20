@@ -30,6 +30,7 @@
 
 #define EXTERNAL_NAME_PREFIX "dalisds_"
 #define EXT_ATTR "@sds:ext"
+#define COMPRESS_ATTR "@sds:compress"
 #define EF_LegacyBinaryValue "bin"
 #define EF_BinaryValue       "bv2"
 #define EF_XML         "xml"
