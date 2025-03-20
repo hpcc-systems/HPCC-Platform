@@ -363,6 +363,7 @@ ClusterPartDiskMapSpec & ClusterPartDiskMapSpec::operator=(const ClusterPartDisk
     repeatedPart = other.repeatedPart;
     setDefaultBaseDir(other.defaultBaseDir);
     setDefaultReplicateDir(other.defaultReplicateDir);
+    numStripedDevices = other.numStripedDevices;
     return *this;
 }
 
