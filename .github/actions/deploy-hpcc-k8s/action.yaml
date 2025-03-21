@@ -154,6 +154,18 @@ runs:
         for i in $deploy; do 
           if ! kubectl rollout status $i -w --timeout=180s; then
             echo "Deployment $i failed to roll out within timeout"
+
+            echo "kubectl get deployment $i -o yaml"
+            kubectl get deployment $i -o yaml
+
+            echo "kubectl describe deployment $i"
+            kubectl describe deployment $i
+
+            echo "kubectl get pods"
+            kubectl get pods
+
+            echo "kubectl get rs"
+            kubectl get rs
             
             echo "Fetching pods for deployment $i..."
             pods=$(kubectl get pods --selector=app=${i#*/} -o name)
@@ -162,11 +174,12 @@ runs:
               echo "No pods found for deployment $i"
             else
               for pod in $pods; do
-                echo "Describing $pod"
-                kubectl describe $pod
+                podname=${pod#deployment.apps/}
+                echo "Describing $podname"
+                kubectl describe $podname
                 
-                echo "Getting recent logs from $pod"
-                kubectl logs --tail=50 $pod || echo "Failed to get logs for $pod"
+                echo "Getting recent logs from $podname"
+                kubectl logs --tail=50 $podname || echo "Failed to get logs for $podname"
               done
             fi
             
