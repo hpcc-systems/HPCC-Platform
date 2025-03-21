@@ -168,10 +168,10 @@ runs:
             dbgpod=$(kubectl get pods --no-headers | awk '/^sasha-debugplane/ { print $1 }')
             echo "sasha-debugplane pod name: $dbgpod"
 
-            echo "sasha-debugplane: kubectl get: $dbgpod"
-            kubectl get $dbgpod -o yaml
+            echo "sasha-debugplane: kubectl get pod $dbgpod"
+            kubectl get pod $dbgpod -o yaml
 
-            echo "sasha-debugplane: kubectl describe pod: $dbgpod"
+            echo "sasha-debugplane: kubectl describe pod $dbgpod"
             kubectl describe pod $dbgpod
 
             echo "Getting recent logs from $dbgpod"
