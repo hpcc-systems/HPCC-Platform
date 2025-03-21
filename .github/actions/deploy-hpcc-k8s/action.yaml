@@ -151,7 +151,21 @@ runs:
       run: |
         sleep 10
         deploy=$(kubectl get deploy -o name)
-        for i in $deploy; do kubectl rollout status $i -w --timeout=180s; done
+        for i in $deploy; do 
+          kubectl rollout status $i -w --timeout=180s || { 
+            echo "Deployment $i failed to roll out within timeout"
+            dbgpod=$(kubectl get pods | fgrep debugplane | awk '{print $1}')
+            if [ -n "$dbgpod" ]; then
+              echo "Fetching logs for debug pod $dbgpod"
+              kubectl logs ${dbgpod}
+              echo "Describing debug pod $dbgpod"
+              kubectl describe pod ${dbgpod}
+            else
+              echo "No debugplane pod found"
+            fi
+            exit 1
+          }
+        done
         echo "ECLWATCH_IP=$(kubectl get svc eclwatch -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "ROWSERVICE_IP=$(kubectl get svc rowservice -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "SQL_TO_ECL_IP=$(kubectl get svc sql2ecl -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
