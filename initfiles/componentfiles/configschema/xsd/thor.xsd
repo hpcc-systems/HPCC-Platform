@@ -94,8 +94,10 @@
                                           hpcc:tooltip="Verify that a read file's CRC matches the published meta data CRC"/>
                             <xs:attribute name="crcWriteEnabled" type="xs:boolean" hpcc:displayName="CRC Write Enabled" hpcc:presetValue="true"
                                           hpcc:tooltip="Calculate and publish a CRC per published disk output file"/>
-                            <xs:attribute name="slaveDaliClient" type="xs:boolean" hpcc:displayName="Slave Dali Client" hpcc:presetValue="false"
-                                          hpcc:tooltip="Set to true if thor slaves require dali connectivity"/>
+                            <xs:attribute name="allowDaliAccess" type="xs:boolean" hpcc:displayName="Worker Dali Client" hpcc:presetValue="false"
+                                          hpcc:tooltip="Set to true if thor workers require direct dali connectivity"/>
+                            <xs:attribute name="allowSashaAccess" type="xs:boolean" hpcc:displayName="Worker Sasha Client" hpcc:presetValue="false"
+                                          hpcc:tooltip="Set to true if thor workers require sasha connectivity"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="SwapNode" hpcc:displayName="Swap Node" minOccurs="1" hpcc:docId="Th.t4" hpcc:class="valueSet">

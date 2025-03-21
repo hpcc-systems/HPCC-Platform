@@ -43,6 +43,7 @@ interface IEngineContext
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const = 0;
     virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const = 0;
     virtual void getManifestFiles(const char *type, StringArray &files) const = 0;
+    virtual bool allowSashaAccess() const = 0;
 };
 
 #endif // ENGINECONTEXT_HPP
