@@ -89,6 +89,7 @@ struct IHThorActivity : implements IActivityBase
 
 
 extern HTHOR_API IHThorActivity *createDiskWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph);
+extern HTHOR_API IHThorActivity *createDiskWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph);
 extern HTHOR_API IHThorActivity *createIterateActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorIterateArg &arg, ThorActivityKind kind, EclGraph & _graph);
 extern HTHOR_API IHThorActivity *createGroupActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &arg, ThorActivityKind kind, EclGraph & _graph);
 extern HTHOR_API IHThorActivity *createFilterActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFilterArg &arg, ThorActivityKind kind, EclGraph & _graph);
