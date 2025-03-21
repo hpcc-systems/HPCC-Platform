@@ -158,8 +158,8 @@ runs:
             echo "kubectl get $i -o yaml"
             kubectl get $i -o yaml
 
-            echo "kubectl describe deployment $i"
-            kubectl describe deployment $i
+            echo "kubectl describe $i"
+            kubectl describe $i
 
             echo "kubectl get pods"
             kubectl get pods
