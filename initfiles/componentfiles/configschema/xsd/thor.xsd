@@ -96,6 +96,8 @@
                                           hpcc:tooltip="Calculate and publish a CRC per published disk output file"/>
                             <xs:attribute name="allowDaliAccess" type="xs:boolean" hpcc:displayName="Worker Dali Client" hpcc:presetValue="false"
                                           hpcc:tooltip="Set to true if thor workers require direct dali connectivity"/>
+                            <xs:attribute name="allowSashaAccess" type="xs:boolean" hpcc:displayName="Worker Sasha Client" hpcc:presetValue="false"
+                                          hpcc:tooltip="Set to true if thor workers require sasha connectivity"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="SwapNode" hpcc:displayName="Swap Node" minOccurs="1" hpcc:docId="Th.t4" hpcc:class="valueSet">
