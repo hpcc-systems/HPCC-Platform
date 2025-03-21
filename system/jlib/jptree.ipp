@@ -162,7 +162,7 @@ interface IPTArrayValue
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
 
-class CPTArray : implements IPTArrayValue, private IArray
+class CPTArray final : implements IPTArrayValue, private IArray
 {
     std::atomic<CQualifierMap *> map{nullptr};
 public:
@@ -194,7 +194,7 @@ public:
 };
 
 
-class jlib_decl CPTValue : implements IPTArrayValue, private MemoryAttr
+class jlib_decl CPTValue final : implements IPTArrayValue, private MemoryAttr
 {
 public:
     CPTValue(MemoryBuffer &src)
@@ -207,7 +207,7 @@ public:
     virtual CQualifierMap *queryMap() override { return nullptr; }
     virtual CQualifierMap *setMap(CQualifierMap *_map) { UNIMPLEMENTED; }
     virtual bool isCompressed() const override { return compressType != COMPRESS_METHOD_NONE; }
-    virtual CompressionMethod getCompressionType() const override { return (CompressionMethod)compressType; }
+    virtual CompressionMethod getCompressionType() const override { assertex(compressType != COMPRESS_METHOD_LZWLEGACY); return (CompressionMethod)compressType; }
     virtual const void *queryValue() const override;
     virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const override;
     virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const override;
