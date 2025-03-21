@@ -6375,12 +6375,15 @@ static int compareTrackedSourceByName(CInterface * const * _left, CInterface * c
 
 IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const IPropertyTree * exclude)
 {
+    if (trackedSources.empty())
+        return nullptr;
+
     Owned<IPropertyTree> sources = createPTree("usedsources");
     sources->setProp("@varient", variant);
     trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
-        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage || options.recordFieldUsage, exclude);
+        IPropertyTree * next = trackedSources.item(i).createReport(exclude);
         if (next)
             sources->addPropTree(next->queryName(), next);
     }
@@ -6392,6 +6395,15 @@ SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr
 {
     if (!(options.reportFieldUsage || options.recordFieldUsage || options.reportFileUsage) || !expr)
         return NULL;
+
+    switch (expr->getOperator())
+    {
+    case no_newkeyindex:
+    case no_table:
+        break;
+    default:
+        return nullptr;
+    }
 
     if (expr->hasAttribute(_spill_Atom) || expr->hasAttribute(jobTempAtom))
         return NULL;
@@ -6411,7 +6423,7 @@ SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr
         if (cur.matches(normalized))
             return &cur;
     }
-    SourceFieldUsage * next = new SourceFieldUsage(normalized);
+    SourceFieldUsage * next = new SourceFieldUsage(normalized, options.reportFieldUsage || options.recordFieldUsage, options.recordUnusedFields);
     trackedSources.append(*next);
     return next;
 }
