@@ -62,9 +62,9 @@
           <entry>The name of the programming language being embedded. A
           language support module for that language must have been installed
           in your plugins directory. Modules are provided for languages such
-          as Java, R, Javascript, and Python. You can write your own pluggable
-          language support module for any language not already supported by
-          using the supplied ones as examples or starting points.</entry>
+          as Java and Python. You can write your own pluggable language
+          support module for any language not already supported by using the
+          supplied ones as examples or starting points.</entry>
         </row>
 
         <row>
@@ -94,10 +94,10 @@
   to add in-line <emphasis>language</emphasis> code to your ECL. This is
   similar to the BEGINC++ structure, but available for any
   <emphasis>language</emphasis> with a pluggable language support module
-  installed, such as Javascript and Python. Others may follow or people can
-  write their own using the supplied ones as templates/examples/starting
-  points. This may be used to write Javascript or Python code, but is not
-  usable with Java code (use the IMPORT function for Java code).</para>
+  installed, such as Java and Python. Others may follow or people can write
+  their own using the supplied ones as templates/examples/starting points.
+  This is not usable with Java code (use the IMPORT function for Java
+  code).</para>
 
   <para>The parameter types that can be passed and returned will vary by
   <emphasis>language</emphasis>, but in general the simple scalar types
