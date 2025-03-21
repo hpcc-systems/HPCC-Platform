@@ -70,6 +70,8 @@
     "@redundancy",
     "@rowLimit",
     "@rowTag",
+    "@sds:ext",
+    "@sds:compress",
     "@sequence",
     "@serverId",
     "@session",

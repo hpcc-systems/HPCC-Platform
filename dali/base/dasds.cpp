@@ -951,7 +951,7 @@ void serializeVisibleAttributes(IPropertyTree &tree, MemoryBuffer &mb)
         for (;;)
         {
             const char *attr = aIter->queryName();
-            if (0 != strcmp(EXT_ATTR, attr))
+            if (0 != strncmp("@sds:", attr, 5))
             {
                 mb.append(attr);
                 mb.append(aIter->queryValue());
@@ -2789,6 +2789,18 @@ public:
         return child->hasProp(EXT_ATTR);
     }
 
+    virtual CompressionMethod getCompressionType(const char *xpath=NULL) const override
+    {
+        if (isAttribute(xpath)) return COMPRESS_METHOD_NONE;
+        CompressionMethod method = CRemoteTreeBase::getCompressionType(xpath);
+        if (method) return method;
+        if (SDSManager->ignoreExternals) return COMPRESS_METHOD_NONE;
+        CServerRemoteTree *child = (CServerRemoteTree *)queryPropTree(xpath);
+        if (!child->hasProp(EXT_ATTR))
+            return COMPRESS_METHOD_NONE;
+        return (CompressionMethod)child->getPropInt(COMPRESS_ATTR, COMPRESS_METHOD_LZW);
+    }
+
     bool getProp(const char *xpath, StringBuffer &ret) const override
     {
         if (xpath)
@@ -3189,7 +3201,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
     {
         bool binary=changeTree.isBinary(NULL);
         IPTArrayValue *v = ((PTree &)changeTree).queryValue();
-        setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), binary, true, v->isCompressed()):NULL, binary);
+        setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), binary, true, v->getCompressionType()):NULL, binary);
         if (changeTree.getPropBool("@new"))
             mergePDState(res, PDS_New);
         mergePDState(res, PDS_Data);
@@ -3232,6 +3244,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
             {
                 SDSManager->deleteExternal(index); // i.e. no longer e.g. now less than threshold.
                 r = removeProp(EXT_ATTR);
+                removeProp(COMPRESS_ATTR);
             }
             else
                 SDSManager->writeExternal(*this, false, index);
@@ -3241,6 +3254,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 if (!t)
                     t = changeTree.addPropTree(ATTRDELETE_TAG, createPTree());
                 t->addProp(EXT_ATTR, "");
+                t->setProp(COMPRESS_ATTR, nullptr);//MORE: What should this do?
             }
             else
                 changeTree.setProp(NULL, (const char *)NULL);
@@ -3255,6 +3269,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                     t = changeTree.addPropTree(ATTRCHANGE_TAG, createPTree());
                 changeTree.setProp(NULL, (const char *)NULL);
                 t->setProp(EXT_ATTR, queryProp(EXT_ATTR));
+                t->setProp(COMPRESS_ATTR, queryProp(COMPRESS_ATTR));
             }
             catch (IException *)
             {
@@ -4150,7 +4165,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                 ((PTree *)tree)->setValue(v, binary);
             }
             else
-                ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, false), false);
+                ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, COMPRESS_METHOD_NONE), false);
 
             Owned<IAttributeIterator> attrs = clientTree->getAttributes();
             if (attrs->first())
@@ -8717,9 +8732,11 @@ void CCovenSDSManager::writeExternal(CServerRemoteTree &tree, bool direct, __int
     IExternalHandler *extHandler = queryExternalHandler(EF_BinaryValue);
     assertex(extHandler);
     tree.removeProp(EXT_ATTR);
+    tree.removeProp(COMPRESS_ATTR);
     StringBuffer name(EXTERNAL_NAME_PREFIX);
     extHandler->write(name.append(index).str(), tree);
     tree.setPropInt64(EXT_ATTR, index);
+    tree.setPropInt(COMPRESS_ATTR, tree.getCompressionType(nullptr));
     extHandler->resetAsExternal(tree);
     // setPropInt64(EXT_ATTR, index); // JCSMORE not necessary
 }
