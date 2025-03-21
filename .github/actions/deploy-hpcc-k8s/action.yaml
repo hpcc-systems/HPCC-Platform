@@ -155,8 +155,8 @@ runs:
           if ! kubectl rollout status $i -w --timeout=180s; then
             echo "Deployment $i failed to roll out within timeout"
 
-            echo "kubectl get deployment $i -o yaml"
-            kubectl get deployment $i -o yaml
+            echo "kubectl get $i -o yaml"
+            kubectl get $i -o yaml
 
             echo "kubectl describe deployment $i"
             kubectl describe deployment $i
