@@ -167,6 +167,11 @@ runs:
             echo "kubectl get rs"
             kubectl get rs
             
+            echo "kubectl describe rs"
+            kubectl get rs | awk 'NR>1 {print $1}' | while read -r rsname; do
+              kubectl describe replicaset/$rsname
+            done
+            
             echo "Fetching pods for deployment $i..."
             pods=$(kubectl get pods --selector=app=${i#*/} -o name)
             
