@@ -178,13 +178,40 @@ public:
     void  setCacheTimeout(int timeoutSeconds)
     {
         m_cacheTimeoutInSeconds = timeoutSeconds;
+
         if(m_cacheTimeoutInSeconds == 0 && isTransactionalEnabled())//ensure transactional time is updated
             setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
         else
             setTransactionalCacheTimeout(timeoutSeconds);
+
+        if (m_secMgr)
+        {
+            if (m_cacheTimeoutInSeconds)
+            {
+                if (!m_fileScopeCacheFillThread.joinable())
+                {
+                    DBGLOG("CACHE: starting managedFileScopeCacheFillThread, timeout = %d", m_cacheTimeoutInSeconds);
+                    m_fileScopeCacheFillThread = std::thread(&CPermissionsCache::managedFileScopesCacheFillThread, this);
+                }
+            }
+            else
+                stopManagedFileScopeCacheFillThread();
+        }
     }
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
+    void managedFileScopesCacheFillThread();
+    void stopManagedFileScopeCacheFillThread()
+    {
+        if (m_fileScopeCacheFillThread.joinable())
+        {
+            DBGLOG("CACHE: stopping managedFileScopeCacheFillThread...");
+            m_stopFileScopeCacheFillThread = true;
+            m_fileScopeCacheFillSem.signal();
+            m_fileScopeCacheFillThread.join();
+            DBGLOG("CACHE: managedFileScopeCacheFillThread stopped");
+        }
+    }
 
     void setTransactionalEnabled(bool enable)
     {
@@ -238,6 +265,9 @@ private:
     time_t                      m_lastManagedFileScopesRefresh;
 
     bool m_useLegacyDefaultFileScopePermissionCache = false;
+    Semaphore m_fileScopeCacheFillSem;
+    std::thread m_fileScopeCacheFillThread;
+    bool m_stopFileScopeCacheFillThread = false;
 };
 
 time_t getThreadCreateTime();
