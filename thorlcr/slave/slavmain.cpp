@@ -1901,8 +1901,8 @@ public:
                         PROGLOG("Using query: %s", soPath.str());
 
                         // slaveDaliClient option deprecated, but maintained for compatibility
-                        if ((!getExpertOptBool("allowDaliAccess") && workUnitInfo->getPropBool("Debug/allowdaliaccess", false)) ||
-                            (!getExpertOptBool("slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false)))
+                        if (!getExpertOptBool("allowDaliAccess") && !getExpertOptBool("slaveDaliClient") &&
+                            (workUnitInfo->getPropBool("Debug/allowdaliaccess", false) || workUnitInfo->getPropBool("Debug/slavedaliclient", false)))
                         {
                             PROGLOG("Workunit option 'allowDaliAccess' enabled");
                             enableThorSlaveAsDaliClient();
@@ -1937,8 +1937,8 @@ public:
                         PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
 
                         // slaveDaliClient option deprecated, but maintained for compatibility
-                        if ((!getExpertOptBool("allowDaliAccess") && job->getWorkUnitValueBool("allowdaliaccess", false)) ||
-                            (!getExpertOptBool("slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false)))
+                        if (!getExpertOptBool("allowDaliAccess") && !getExpertOptBool("slaveDaliClient") &&
+                            (job->getWorkUnitValueBool("Debug/allowdaliaccess", false) || job->getWorkUnitValueBool("Debug/slavedaliclient", false)))
                             disableThorSlaveAsDaliClient();
 
                         PROGLOG("QueryDone, removing %s from jobs", key.get());
