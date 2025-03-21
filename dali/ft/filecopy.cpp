@@ -3851,10 +3851,10 @@ cost_type FileSprayer::updateSourceProperties()
     // Update file readCost and numReads in file properties and do the same for subfiles
     if (distributedSource)
     {
+        FileReadPropertiesUpdater fileReadPropertiesUpdater;
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         if (superSrc && superSrc->numSubFiles() > 0)
         {
-            cost_type totalReadCost = 0;
             Owned<IFileDescriptor> fDesc = superSrc->getFileDescriptor();
             ISuperFileDescriptor *superFDesc = fDesc->querySuperFileDescriptor();
             ForEachItemIn(idx, partition)
@@ -3876,20 +3876,15 @@ cost_type FileSprayer::updateSourceProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    totalReadCost += updateCostAndNumReads(subfile, curProgress.numReads);
-                }
-                else
-                {
-                    // not sure if src superfile can have whichInput==-1 (but if so, this is best effort to calc cost)
-                    totalReadCost += calcFileAccessCost(distributedSource, 0, curProgress.numReads);
+                    fileReadPropertiesUpdater.addCostAndNumReads(subfile, curProgress.numReads);
                 }
             }
-            return updateCostAndNumReads(distributedSource, totalNumReads, totalReadCost);
         }
         else
         {
-            return updateCostAndNumReads(distributedSource, totalNumReads);
+            fileReadPropertiesUpdater.addCostAndNumReads(distributedSource, totalNumReads);
         }
+        return fileReadPropertiesUpdater.getTotalCost();
     }
     return 0;
 }
