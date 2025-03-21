@@ -686,7 +686,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
         {
             OwnedHqlExpr rawTransform = expandDatasetReferences(transform, expandedFile);
             OwnedHqlExpr right = createSelector(no_right, rawFile, joinSeq);
-            ::gatherFieldUsage(fileUsage, rawTransform, right);
+            ::gatherFieldUsage(fileUsage, rawTransform, right, false);
         }
     }
     else
@@ -696,7 +696,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
         {
             OwnedHqlExpr rawTransform = expandDatasetReferences(transform, expandedKey);
             OwnedHqlExpr right = createSelector(no_right, rawKey, joinSeq);
-            ::gatherFieldUsage(keyUsage, rawTransform, right);
+            ::gatherFieldUsage(keyUsage, rawTransform, right, false);
         }
     }
 }
@@ -1121,7 +1121,12 @@ bool KeyedJoinInfo::processFilter()
     OwnedHqlExpr extra;
     monitors = new CppFilterExtractor(rawKey, translator, -(int)numPayloadFields(rawKey), false, createValueSets);
     if (newFilter)
+    {
         monitors->extractFilters(newFilter, extra);
+        SourceFieldUsage * fieldUsage = translator.querySourceFieldUsage(rawKey);
+        if (fieldUsage)
+            monitors->noteKeyedFieldUsage(fieldUsage);
+    }
 
     if (atmostAttr && extra && (atmost.required || !monitors->isCleanlyKeyedExplicitly()))
     {
@@ -1152,7 +1157,7 @@ bool KeyedJoinInfo::processFilter()
     SourceFieldUsage * keyUsage = translator.querySourceFieldUsage(rawKey);
     if (keyUsage)
     {
-        gatherFieldUsage(keyUsage, newFilter, rawKey->queryNormalizedSelector());
+        gatherFieldUsage(keyUsage, newFilter, rawKey->queryNormalizedSelector(), false);
         if (isFullJoin())
             keyUsage->noteFilepos();
     }
@@ -1164,7 +1169,7 @@ bool KeyedJoinInfo::processFilter()
         {
             OwnedHqlExpr rawFilter = expandDatasetReferences(fileFilter, expandedFile);
             OwnedHqlExpr fileRight = createSelector(no_right, rawFile, joinSeq);
-            gatherFieldUsage(fileUsage, rawFilter, fileRight);
+            gatherFieldUsage(fileUsage, rawFilter, fileRight, false);
         }
     }
 
