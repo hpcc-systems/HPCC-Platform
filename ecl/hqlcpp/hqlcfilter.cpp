@@ -273,6 +273,24 @@ void CppFilterExtractor::buildKeySegmentInExpr(BuildFilterState & buildState, Ke
     }
 }
 
+void CppFilterExtractor::noteKeyedFieldUsage(SourceFieldUsage * fieldUsage)
+{
+    IHqlExpression * tableSelector = tableExpr->queryNormalizedSelector();
+    ForEachItemIn(idx, keyableSelects)
+    {
+        IHqlExpression * selector = &keyableSelects.item(idx);
+        ForEachItemIn(cond, keyed.conditions)
+        {
+            KeyCondition & cur = keyed.conditions.item(cond);
+            if ((cur.selector == selector) && !cur.isWild)
+            {
+                fieldUsage->noteKeyedSelect(selector, tableSelector);
+                break;
+            }
+        }
+    }
+}
+
 static IHqlExpression * createCompareRecast(node_operator op, IHqlExpression * value, IHqlExpression * recastValue)
 {
     if (recastValue->queryValue())
