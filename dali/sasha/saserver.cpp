@@ -378,7 +378,7 @@ int main(int argc, const char* argv[])
                 writeSentinelFile(sentinelFile);
         }
 #endif
-        if (getComponentSP()->hasProp("access/dali"))
+        if (getComponentConfigSP()->hasProp("access/dali"))
         {
             PROGLOG("Connecting to DALISERVERS.");
             StringBuffer daliServer;
@@ -523,10 +523,14 @@ int main(int argc, const char* argv[])
     try
     {
         closeEnvironment();
-        if (getComponentSP()->hasProp("access/dali"))
+        if (getComponentConfigSP()->hasProp("access/dali"))
         {
             closeDllServer();
             closedownClientProcess();
+        }
+        else
+        {
+            PROGLOG("Not closeDllServer() nor closedownClientProcess() as no access/dali in config");
         }
     }
     catch (IException *) {  // dali may be down
