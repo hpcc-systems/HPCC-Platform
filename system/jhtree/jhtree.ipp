@@ -18,6 +18,8 @@
 #ifndef _JHTREEI_INCL
 #define _JHTREEI_INCL
 
+#include <memory>
+
 #include "jmutex.hpp"
 #include "jhutil.hpp"
 #include "jqueue.tpp"
@@ -209,6 +211,7 @@ protected:
     Owned<const CJHSearchNode> parents[maxParentNodes];
     unsigned int parentNodeKeys[maxParentNodes] = {0};
     unsigned int nodeKey;
+    mutable PayloadReference activePayload;
     
     mutable bool fullBufferValid = false;
     bool eof=false;

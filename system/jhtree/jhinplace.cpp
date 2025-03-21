@@ -1602,10 +1602,16 @@ InplaceKeyBuildContext::~InplaceKeyBuildContext()
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static bool dynamicPayloadExpansion{false};
+void setDynamicPayloadExpansion(bool value)
+{
+    dynamicPayloadExpansion = value;
+}
+
 CJHInplaceTreeNode::~CJHInplaceTreeNode()
 {
     if (ownedPayload)
-        free(payload);
+        delete [] payload;
 }
 
 int CJHInplaceTreeNode::compareValueAt(const char *src, unsigned int index) const
@@ -1679,21 +1685,25 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         {
             //Always calculate payload location so we can perform a consistency check later on.
             originalPayload = queryPayload(originalData);
-            bool expandOnDemand = false;
-            if (!expandOnDemand && originalPayload)
+            if (originalPayload)
             {
                 CompressionMethod payloadCompression = (CompressionMethod)*originalPayload;
                 switch (payloadCompression)
                 {
                 case COMPRESS_METHOD_NONE:
                 case COMPRESS_METHOD_RANDROW:
+                    expandPayloadOnDemand = false;
                     break;
                 default:
-                    keepCompressedPayload = false;
-                    copyLen = (originalPayload - originalData);
+                    expandPayloadOnDemand = dynamicPayloadExpansion;
+                    keepCompressedPayload = expandPayloadOnDemand;
+                    if (!expandPayloadOnDemand)
+                        copyLen = (originalPayload - originalData);
                     break;
                 }
             }
+            else
+                expandPayloadOnDemand = false;
         }
 
         const size32_t padding = 8 - 1; // Ensure that unsigned8 values can be read "legally"
@@ -1750,6 +1760,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                 assertex(originalPayload && (originalPayload-originalData) == (data - (const byte *)keyBuf));
                 if (!keepCompressedPayload)
                     data = originalPayload;
+                const byte * startOfPayload = data;
                 CompressionMethod payloadCompression = (CompressionMethod)*data++;
                 size32_t compressedLen;
                 if (!isVariablePayload && (payloadCompression == COMPRESS_METHOD_NONE))
@@ -1775,35 +1786,23 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     }
                     default:
                     {
-                        ICompressHandler * handler = queryCompressHandler(payloadCompression);
-                        assertex(handler);
-                        const char * options = nullptr;
-                        Owned<IExpander> exp = handler->getExpander(options);
-                        size32_t len = exp->init(data);
-                        data += compressedLen;
-
-                        size32_t trailingLen = 0;
-                        if (sizeMask & NSFcompressTrailing)
+                        if (!expandPayloadOnDemand)
                         {
-                            trailingLen = readPacked32(data);
+                            size32_t sizeExpanded;
+                            payload = expandPayload(sizeExpanded, payloadCompression, compressedLen, data);
+                            expandedSize += sizeExpanded;
+                            if (payload)
+                                ownedPayload = true;
                         }
-
-                        if (len || trailingLen)
+                        else
                         {
-                            payload = (byte *)malloc(len+trailingLen);
-                            expandedSize += (len+trailingLen);
-                            ownedPayload = true;
-                        }
-
-                        if (len)
-                        {
-                            exp->expand(payload);
-                        }
-
-                        if (trailingLen)
-                        {
-                            memcpy(payload+len, data, trailingLen);
-                            data += trailingLen;
+                            payload = const_cast<byte *>(startOfPayload);
+                            data += compressedLen;
+                            if (sizeMask & NSFcompressTrailing)
+                            {
+                                size32_t trailingLen = readPacked32(data);
+                                data += trailingLen;
+                            }
                         }
                         break;
                     }
@@ -1815,6 +1814,43 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         else
             assertex((data - originalData) == len);
     }
+}
+
+byte * CJHInplaceTreeNode::expandPayload(size32_t & sizeExpanded, CompressionMethod payloadCompression, size32_t compressedLen, const byte * & data) const
+{
+    switch (payloadCompression)
+    {
+        case COMPRESS_METHOD_NONE:
+        case COMPRESS_METHOD_RANDROW:
+            throwUnexpected();
+    }
+
+    ICompressHandler * handler = queryCompressHandler(payloadCompression);
+    assertex(handler);
+    const char * options = nullptr;
+    Owned<IExpander> exp = handler->getExpander(options);
+
+    size32_t len = exp->init(data);
+    data += compressedLen;
+
+    size32_t trailingLen = 0;
+    if (sizeMask & NSFcompressTrailing)
+        trailingLen = readPacked32(data);
+
+    sizeExpanded = len+trailingLen;
+    if ((len == 0) && (trailingLen == 0))
+        return nullptr;
+
+    byte * result = new byte[len+trailingLen];
+    if (len)
+        exp->expand(result);
+
+    if (trailingLen)
+    {
+        memcpy(result+len, data, trailingLen);
+        data += trailingLen;
+    }
+    return result;
 }
 
 const byte * CJHInplaceTreeNode::queryPayload(const byte * data) const
@@ -1876,7 +1912,7 @@ offset_t CJHInplaceBranchNode::getFPosAt(unsigned int index) const
 }
 
 
-bool CJHInplaceBranchNode::fetchPayload(unsigned int num, char *dest) const
+bool CJHInplaceBranchNode::fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const
 {
     throwUnexpected();
 }
@@ -1913,49 +1949,74 @@ unsigned __int64 CJHInplaceLeafNode::getSequence(unsigned int index) const
     return firstSequence + index;
 }
 
-bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst) const
+bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {
     if (index >= hdr.numKeys) return false;
-    if (dst)
+    if (!dst) return true;
+
+    const byte * payloadData = payload;
+    if (expandPayloadOnDemand)
     {
-        unsigned len = keyCompareLen;
-        if (rowexp)
+        std::shared_ptr<byte []> sharedPayload;
+
         {
-            rowexp->expandRow(dst+len,index,0,keyLen-keyCompareLen);
-            len = keyLen;
+            CriticalBlock block(cs);
+
+            sharedPayload = expandedPayload.lock();
+            if (!sharedPayload)
+            {
+                const byte * data = payload;
+                CompressionMethod payloadCompression = (CompressionMethod)*data++;
+                size32_t compressedLen = readPacked32(data);
+                size32_t sizeExpanded;
+                sharedPayload = std::shared_ptr<byte []>(expandPayload(sizeExpanded, payloadCompression, compressedLen, data));
+                expandedPayload = sharedPayload;
+            }
+        }
+
+        //Ensure the payload stays alive for the duration of this call, and is likely preserved until
+        //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.
+        activePayload.data = std::move(sharedPayload);
+        payloadData = activePayload.data.get();
+    }
+
+    unsigned len = keyCompareLen;
+    if (rowexp)
+    {
+        rowexp->expandRow(dst+len,index,0,keyLen-keyCompareLen);
+        len = keyLen;
+    }
+    else
+    {
+        if (payloadOffsets.ordinality())
+        {
+            size32_t offset = 0;
+            if (index)
+                offset = payloadOffsets.item(index-1);
+            size32_t endOffset = payloadOffsets.item(index);
+            size32_t copyLen = endOffset - offset;
+
+            if (copyLen)
+            {
+                memcpy(dst + len, payloadData + offset, copyLen);
+                len += copyLen;
+            }
         }
         else
         {
-            if (payloadOffsets.ordinality())
+            //Fixed size payload...
+            unsigned payloadSize = keyLen - keyCompareLen;
+            if (likely(payloadSize))
             {
-                size32_t offset = 0;
-                if (index)
-                    offset = payloadOffsets.item(index-1);
-                size32_t endOffset = payloadOffsets.item(index);
-                size32_t copyLen = endOffset - offset;
-
-                if (copyLen)
-                {
-                    memcpy(dst + len, payload + offset, copyLen);
-                    len += copyLen;
-                }
-            }
-            else
-            {
-                //Fixed size payload...
-                unsigned payloadSize = keyLen - keyCompareLen;
-                if (likely(payloadSize))
-                {
-                    memcpy(dst + len, payload + index * payloadSize, payloadSize);
-                    len += payloadSize;
-                }
+                memcpy(dst + len, payloadData + index * payloadSize, payloadSize);
+                len += payloadSize;
             }
         }
-        if (keyHdr->hasSpecialFileposition())
-        {
-            offset_t filePosition = getFPosAt(index);
-            _cpyrev8(dst+len, &filePosition);
-        }
+    }
+    if (keyHdr->hasSpecialFileposition())
+    {
+        offset_t filePosition = getFPosAt(index);
+        _cpyrev8(dst+len, &filePosition);
     }
     return true;
 }
