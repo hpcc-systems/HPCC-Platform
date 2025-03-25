@@ -38,6 +38,78 @@ enum { NodeBranch, NodeLeaf };
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
+class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        return visitor->visitFile(filename, version);
+    }
+    virtual Continuation visitEvent(EventType id) override
+    {
+        return visitor->visitEvent(id);
+    }
+    virtual Continuation visitAttribute(EventAttr id) override
+    {
+        return visitor->visitAttribute(id);
+    }
+    virtual Continuation visitAttribute(EventAttr id, const char * value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual Continuation visitAttribute(EventAttr id, bool value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    {
+        return visitor->visitAttribute(id, value);
+    }
+    virtual void leaveFile(uint32_t bytesRead) override
+    {
+        return visitor->leaveFile(bytesRead);
+    }
+protected:
+    Linked<IEventVisitor> visitor;
+public:
+    CNoOpEventVisitorDecorator(IEventVisitor& _visitor) : visitor(&_visitor) {}
+};
+
+class MockEventVisitor : public CNoOpEventVisitorDecorator
+{
+public:
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    {
+        switch (id)
+        {
+            case EvAttrSysStartTimestamp:
+                value = 1000;
+                break;
+            case EvAttrSysOffsetNs:
+                value = 10;
+                break;
+            case EvAttrSysThreadId:
+                value = 100;
+                break;
+        }
+        return CNoOpEventVisitorDecorator::visitAttribute(id, value);
+    }
+public:
+    using CNoOpEventVisitorDecorator::CNoOpEventVisitorDecorator;
+};
+
 static void removeFile(const char * filename)
 {
     Owned<IFile> file = createIFile(filename);
@@ -52,6 +124,7 @@ public:
         CPPUNIT_TEST(testMultiBlock);
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
+        CPPUNIT_TEST(testReadEvents);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -244,6 +317,136 @@ public:
             removeFile("eventtrace.evt");
             removeFile("testfile.bin");
         }
+    }
+
+    void testReadEvents()
+    {
+        //Test reading an empty file
+        try
+        {
+            static const char* expect=R"!!!(name: eventtrace.evt
+version: 1
+attribute: SysFileSize = 16
+attribute: SysStartTimestamp = 1000
+attribute: SysOption = 'traceid'
+attribute: SysOption = 'threadid'
+attribute: SysOption = 'stack'
+bytesRead: 16
+)!!!";
+            EventRecorder& recorder = queryRecorder();
+            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            std::stringstream out;
+            Owned<IEventVisitor> visitor = createVisitor(out);
+            CPPUNIT_ASSERT(visitor.get());
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        try
+        {
+            static const char* expect = R"!!!(name: eventtrace.evt
+version: 1
+attribute: SysFileSize = 87
+attribute: SysStartTimestamp = 1000
+attribute: SysOption = 'traceid'
+attribute: SysOption = 'threadid'
+attribute: SysOption = 'stack'
+event: IndexEviction
+attribute: SysOffsetNs = 10
+attribute: SysTraceId = '00000000000000000000000000000000'
+attribute: SysThreadId = 100
+attribute: FileId = 12345
+attribute: FileOffset = 67890
+attribute: NodeKind = 0
+attribute: ExpandedSize = 4567
+attribute: None
+bytesRead: 87
+)!!!";
+            EventRecorder& recorder = queryRecorder();
+            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            std::stringstream out;
+            Owned<IEventVisitor> visitor = createVisitor(out);
+            CPPUNIT_ASSERT(visitor.get());
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        try
+        {
+            static const char* expect = R"!!!(name: eventtrace.evt
+version: 1
+attribute: SysFileSize = 233
+attribute: SysStartTimestamp = 1000
+attribute: SysOption = 'traceid'
+attribute: SysOption = 'threadid'
+attribute: SysOption = 'stack'
+event: IndexEviction
+attribute: SysOffsetNs = 10
+attribute: SysTraceId = '00000000000000000000000000000000'
+attribute: SysThreadId = 100
+attribute: FileId = 12345
+attribute: FileOffset = 67890
+attribute: NodeKind = 0
+attribute: ExpandedSize = 4567
+attribute: None
+event: DaliConnect
+attribute: SysOffsetNs = 10
+attribute: SysTraceId = '00000000000000000000000000000000'
+attribute: SysThreadId = 100
+attribute: Path = '/Workunits/Workunit/abc.wu'
+attribute: ConnectId = 98765
+attribute: None
+event: DaliDisconnect
+attribute: SysOffsetNs = 10
+attribute: SysTraceId = '00000000000000000000000000000000'
+attribute: SysThreadId = 100
+attribute: ConnectId = 98765
+attribute: None
+bytesRead: 233
+)!!!";
+            EventRecorder& recorder = queryRecorder();
+            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
+            recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765);
+            recorder.recordDaliDisconnect(98765);
+            CPPUNIT_ASSERT(recorder.stopRecording());
+            std::stringstream out;
+            Owned<IEventVisitor> visitor = createVisitor(out);
+            CPPUNIT_ASSERT(visitor.get());
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    IEventVisitor* createVisitor(std::stringstream& out)
+    {
+        Owned<IEventVisitor> visitor = createVisitTrackingEventVisitor(out);
+        return new MockEventVisitor(*visitor);
     }
 };
 

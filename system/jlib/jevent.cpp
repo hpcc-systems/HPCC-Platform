@@ -19,10 +19,13 @@
 #include "jevent.hpp"
 
 #include "jdebug.hpp"
+#include "jstream.hpp"
 #include "jthread.hpp"
 #include "jtrace.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
+#include "jstring.hpp"
+#include <iostream>
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
@@ -123,6 +126,13 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(Path, string),
     DEFINE_ATTR(ConnectId, u8),
     DEFINE_ATTR(Enabled, bool),
+    DEFINE_ATTR(SysFileSize, u8),
+    DEFINE_ATTR(SysStartTimestamp, u8),
+    DEFINE_ATTR(SysOption, string),
+    DEFINE_ATTR(SysOffsetNs, u8),
+    DEFINE_ATTR(SysTraceId, string),
+    DEFINE_ATTR(SysThreadId, u8),
+    DEFINE_ATTR(SysStackTrace, string),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -512,7 +522,7 @@ void EventRecorder::recordDaliDisconnect(__uint64 id)
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
-    writeEventHeader(EventDaliConnect, pos);
+    writeEventHeader(EventDaliDisconnect, pos);
     write(pos, EvAttrConnectId, id);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
@@ -583,6 +593,364 @@ void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 namespace EventRecorderInternal
 {
 EventRecorder eventRecorder;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Read a strongly typed value from a buffered stream.
+template<typename T>
+static T readToken(IBufferedSerialInputStream& stream, T& token, size32_t& bytesRead)
+{
+    if (stream.read(sizeof(token), &token) != sizeof(token))
+        throw makeStringException(-1, "unexpected eof");
+    bytesRead += sizeof(token);
+    return token;
+}
+
+//Read either a NULL terminated are fixed length string from a buffered stream.
+static StringBuffer& readToken(IBufferedSerialInputStream& stream, StringBuffer& token, size32_t len, size32_t& bytesRead)
+{
+    size32_t got = 0;
+    if (len)
+    {
+        const char* s = (const char*)stream.peek(len, got);
+        if (got < len)
+            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
+        token.append(len, s);
+        stream.skip(len);
+        bytesRead += len;
+    }
+    else
+    {
+        for (;;) {
+            const char *s = (const char*)stream.peek(1,got);
+            if (!s)
+                throw makeStringExceptionV(-1, "eof before end of NULL terminated string");
+            const char *p = s;
+            const char *e = p + got;
+            while (p != e)
+            {
+                if (!*p)
+                {
+                    token.append(p - s, s);
+                    stream.skip(p - s + 1);
+                    bytesRead += token.length() + 1;
+                    return token;
+                }
+                p++;
+            }
+            token.append(got, s);
+            stream.skip(got);
+        }
+    }
+    return token;
+}
+
+//Abstract interface for binary event file traversal.
+interface IEventFile : extends IInterface
+{
+    virtual bool traverse(IEventVisitor& visitor) = 0;
+};
+
+struct CEventFileV1 : public CInterfaceOf<IEventFile>
+{
+    IBufferedSerialInputStream& stream;
+    IFile& file;
+    unsigned version{0};
+    uint32_t options{0};
+    size32_t bytesRead{sizeof(version)};
+
+    CEventFileV1(IBufferedSerialInputStream& _stream, IFile& _file, unsigned _version = 1)
+        : stream(_stream)
+        , file(_file)
+        , version(_version)
+    {
+    }
+
+    bool traverse(IEventVisitor& visitor)
+    {
+        return traverseHeader(visitor) && traverseEvents(visitor) && traverseFooter(visitor);
+    }
+
+    inline bool continuing(IEventVisitor::Continuation continuation) const
+    {
+        return (IEventVisitor::visitContinue == continuation);
+    }
+
+    bool traverseHeader(IEventVisitor& visitor)
+    {
+        uint64_t startTimestamp;
+        uint64_t fileSize = file.size();
+
+        readToken(stream, options, bytesRead);
+        readToken(stream, startTimestamp, bytesRead);
+        return (visitor.visitFile(file.queryFilename(), version) &&
+            continuing(visitor.visitAttribute(EvAttrSysFileSize, fileSize)) &&
+            continuing(visitor.visitAttribute(EvAttrSysStartTimestamp, startTimestamp)) &&
+            (!(options & ERFtraceid) || continuing(visitor.visitAttribute(EvAttrSysOption, "traceid"))) &&
+            (!(options & ERFthreadid) || continuing(visitor.visitAttribute(EvAttrSysOption, "threadid"))) &&
+            (!(options & ERFstacktrace) || continuing(visitor.visitAttribute(EvAttrSysOption, "stack"))));
+    }
+
+    bool traverseEvents(IEventVisitor& visitor)
+    {
+        bool mute = false;
+        for (;;)
+        {
+            // no more data means no more events
+            size32_t got = 0;
+            stream.peek(1, got);
+            if (!got)
+                break;
+
+            EventType eventType;
+            readToken(stream, eventType, bytesRead);
+            if (eventType >= EventMax)
+                throw makeStringExceptionV(-1, "invalid event type %u", eventType);
+            if (!reactToVisit(visitor.visitEvent(eventInformation[eventType].type), mute))
+                return false;
+
+            if ((EventNone != eventType) && !traverseAttributes(visitor, mute))
+                return false;
+        }
+        return true;
+    }
+
+    bool traverseAttributes(IEventVisitor& visitor, bool mute)
+    {
+        if (!finishAttribute<uint64_t>(EvAttrSysOffsetNs, visitor, mute))
+            return false;
+        if ((options & ERFtraceid) && !finishAttribute(EvAttrSysTraceId, 32, visitor, mute))
+            return false;
+        if ((options & ERFthreadid) && !finishAttribute<uint64_t>(EvAttrSysThreadId, visitor, mute))
+            return false;
+        for (;;)
+        {
+            EventAttr attr;
+            readToken(stream, attr, bytesRead);
+            if (EvAttrNone == attr)
+            {
+                if (!finishAttribute(attr, visitor, mute))
+                    return false;
+                break;
+            }
+            if (attr >= EvAttrMax)
+                throw makeStringExceptionV(-1, "invalid attribute type %u", attr);
+            switch (attrInformation[attr].type)
+            {
+            case EATnone:
+                if (!finishAttribute(attr, visitor, mute))
+                    return false;
+                break;
+            case EATbool:
+                if (!finishAttribute<bool>(attr, visitor, mute))
+                    return false;
+                break;
+            case EATu1:
+                if (!finishAttribute<uint8_t>(attr, visitor, mute))
+                    return false;
+                break;
+            case EATu2:
+                if (!finishAttribute<uint16_t>(attr, visitor, mute))
+                    return false;
+                break;
+            case EATu4:
+                if (!finishAttribute<uint32_t>(attr, visitor, mute))
+                    return false;
+                break;
+            case EATu8:
+            case EATtimestamp:
+                if (!finishAttribute<uint64_t>(attr, visitor, mute))
+                    return false;
+                break;
+            case EATstring:
+                if (!finishAttribute(attr, 0, visitor, mute))
+                    return false;
+                break;
+            case EATtraceid:
+                if (!finishAttribute(attr, 32, visitor, mute))
+                    return false;
+                break;
+            }
+        }
+        return true;
+    }
+
+    bool traverseFooter(IEventVisitor& visitor)
+    {
+        (void)visitor.leaveFile(bytesRead);
+        return true;
+    }
+
+    bool finishAttribute(EventAttr attr, IEventVisitor& visitor, bool& mute)
+    {
+        if (mute)
+            return true;
+        return reactToVisit(visitor.visitAttribute(attr), mute);
+    }
+
+    template <typename T>
+    bool finishAttribute(EventAttr attr, IEventVisitor& visitor, bool& mute)
+    {
+        T value;
+        readToken(stream, value, bytesRead);
+        if (mute)
+            return true;
+        return reactToVisit(visitor.visitAttribute(attr, value), mute);
+    }
+
+    bool finishAttribute(EventAttr attr, size32_t len, IEventVisitor& visitor, bool& mute)
+    {
+        StringBuffer value;
+        readToken(stream, value, len, bytesRead);
+        if (mute)
+            return true;
+        return reactToVisit(visitor.visitAttribute(attr, value.str()), mute);
+    }
+
+    bool reactToVisit(IEventVisitor::Continuation result, bool& mute)
+    {
+        switch (result)
+        {
+        case IEventVisitor::visitContinue:
+            break;
+        case IEventVisitor::visitSkipEvent:
+            mute = true;
+            break;
+        case IEventVisitor::visitSkipFile:
+            return false;
+        }
+        return true;
+    }
+};
+
+static IFile* locateEventFile(const char* filename)
+{
+    if (isEmptyString(filename))
+        return nullptr;
+    const char * path = filename;
+#if 0
+    StringBuffer outputFilename;
+    if (!isAbsolutePath(filename))
+    {
+        getTempFilePath(outputFilename, "eventrecorder", nullptr);
+        outputFilename.append(PATHSEPCHAR).append(filename);
+        path = outputFilename.str();
+    }
+#endif
+    Owned<IFile> file = createIFile(path);
+    if (!file || !file->exists())
+        throw makeStringExceptionV(-1, "file '%s' not found", path);
+    return file.getClear();
+}
+
+static IBufferedSerialInputStream* openEventFileForReading(IFile& file)
+{
+    Owned<IFileIO> fileIO = file.open(IFOread);
+    if (!fileIO)
+        throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
+    Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
+    if (!baseStream)
+        throw makeStringExceptionV(-1, "file '%s' input stresm not created", file.queryFilename());
+    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
+    if (!bufferedStream)
+        throw makeStringExceptionV(-1, "file '%s' buffered stream not created", file.queryFilename());
+    return bufferedStream.getClear();
+}
+
+bool readEvents(const char* filename, IEventVisitor& visitor)
+{
+    Owned<IFile> inputFile = locateEventFile(filename);
+    Owned<IBufferedSerialInputStream> bufferedStream = openEventFileForReading(*inputFile);
+
+    unsigned version = 0;
+    size32_t bytesRead = 0;
+    readToken(*bufferedStream, version, bytesRead);
+    //MORE: Need to handle multiple file versions
+    if (version != currentVersion)
+        throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", version, currentVersion);
+    Owned<IEventFile> reader;
+    switch (version)
+    {
+    case 1:
+        reader.setown(new CEventFileV1(*bufferedStream, *inputFile, version));
+        break;
+    default:
+        throw makeStringExceptionV(-1, "unsupported file version %u", version);
+    }
+
+    return reader->traverse(visitor);
+}
+
+class jlib_decl CDumpVisitsEventVisitor : public CInterfaceOf<IEventVisitor>
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        *out << "name: " << filename << std::endl;
+        *out << "version: " << version << std::endl;
+        return true;
+    }
+    virtual Continuation visitEvent(EventType id) override
+    {
+        *out << "event: " << queryEventName(id) << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, const char * value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = '" << value << "'" << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, bool value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = " << (value ? "true" : "false") << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = " << (unsigned)value << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = " << (unsigned)value << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = " << value << std::endl;
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    {
+        *out << "attribute: " << queryEventAttributeName(id) << " = " << value << std::endl;
+        return visitContinue;
+    }
+    virtual void leaveFile(uint32_t bytesRead) override
+    {
+        *out << "bytesRead: " << bytesRead << std::endl;
+    }
+protected:
+    std::ostream* out = &std::cout;
+public:
+    CDumpVisitsEventVisitor() {}
+    // An alternate stream may be substituted for testing.
+    CDumpVisitsEventVisitor(std::ostream& _out) : out(&_out) {}
+};
+
+IEventVisitor* createVisitTrackingEventVisitor()
+{
+    return new CDumpVisitsEventVisitor(std::cout);
+}
+
+IEventVisitor* createVisitTrackingEventVisitor(std::ostream& out)
+{
+    return new CDumpVisitsEventVisitor(out);
 }
 
 // GH->TK

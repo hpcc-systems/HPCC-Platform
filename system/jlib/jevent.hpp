@@ -21,6 +21,7 @@
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
+#include <ostream>
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -55,6 +56,13 @@ enum EventAttr : byte
     EvAttrPath,
     EvAttrConnectId,
     EvAttrEnabled,
+    EvAttrSysFileSize,
+    EvAttrSysStartTimestamp,
+    EvAttrSysOption,
+    EvAttrSysOffsetNs,
+    EvAttrSysTraceId,
+    EvAttrSysThreadId,
+    EvAttrSysStackTrace,
     EvAttrMax
 };
 
@@ -173,5 +181,66 @@ extern jlib_decl EventRecorder eventRecorder;
 
 inline EventRecorder & queryRecorder() { return EventRecorderInternal::eventRecorder; }
 inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRecording(); }
+
+// Abstraction of the visitor pattern for "reading" binary event data files. The `readEvents`
+// function will pass each byte of data contained within a file throwgh exactly one method of
+// this interface.
+//
+// For each compatibile file the visitor can expect:
+// 1. One call to visitFile
+// 2. One call to visitAttribute for EvAttrSysFileSize
+// 3. One call to visitAttribute for EvAttrSysStartTimestamp
+// 4. Zero or more calls to visitAttribute for EvAttrSysOption
+// 5. Zero or more sequences of:
+//    a. One call to visitEvent
+//    b. Zero or more calls to visitAttribute
+//    c. One call to visitAttribute for EvAttrNone
+// 6. One call to leaveFile
+//
+// Implementations may implement limited filtering during visitation. All methods, except
+// `leaveFile`, may abort visitation. Both `visitEvent` and `visitAttribute` (in the context of
+// an event) may suppress visitation of the remainder of the current event.
+//
+// Reasons for aborting a file include:
+// - unrecognized file version; or
+// - (remaining) events out of a target date range; or
+// - trace IDs are required but are not present.
+//
+// Reasons for suppressing an event include:
+// - event type not required by current use case; or
+// - attribute value not out of range for current use case.
+interface IEventVisitor : extends IInterface
+{
+    enum Continuation {
+        visitContinue,
+        visitSkipEvent,
+        visitSkipFile
+    };
+    virtual bool visitFile(const char* filename, uint32_t version) = 0;
+    virtual Continuation visitEvent(EventType id) = 0;
+    virtual Continuation visitAttribute(EventAttr id) = 0;
+    virtual Continuation visitAttribute(EventAttr id, const char * value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, bool value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, uint8_t value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, uint16_t value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, uint32_t value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) = 0;
+    virtual void leaveFile(uint32_t bytesRead) = 0;
+};
+
+// Return a new event visitor that writes to standard output for every visit.
+// `visitFile` adds two lines of text, and all other methods add one line of text.
+extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor();
+
+// Return a new event visitor that writes to the given output stream for every visit.
+// `visitFile` adds two lines of text, and all other methods add one line of text.
+extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor(std::ostream& out);
+
+// Opens and parses a single binary event data file. Parsed data is passed to the given visitor
+// until parsing completes or the visitor requests it to stop.
+//
+// Exceptions are thrown on error. False is returned if parsing was stopped prematurely. True is
+// returned if all data was parsed successfully.
+extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
 
 #endif
