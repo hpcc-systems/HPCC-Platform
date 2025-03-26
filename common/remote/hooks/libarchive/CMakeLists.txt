@@ -24,7 +24,9 @@
 
 project( archivefile )
 
-find_package(unofficial-http-parser CONFIG REQUIRED)
+if (APPLE)
+    find_package(unofficial-http-parser CONFIG REQUIRED)
+endif()
 
 set (    SRCS
          archive.cpp
@@ -51,11 +53,13 @@ target_link_libraries ( archivefile
     ${LibArchive_LIBRARIES}
     )
 
-target_link_libraries(archivefile PRIVATE unofficial::http_parser::http_parser)
-
 if (WIN32)
 target_link_libraries ( archivefile
     ${ZLIB_LIBRARIES}
     ${BZIP2_LIBRARIES}
     )
-endif (WIN32)
+elseif (APPLE)
+target_link_libraries( archivefile PRIVATE 
+    unofficial::http_parser::http_parser
+    )
+endif ()
