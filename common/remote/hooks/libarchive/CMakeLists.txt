@@ -24,6 +24,8 @@
 
 project( archivefile )
 
+find_package(unofficial-http-parser CONFIG REQUIRED)
+
 set (    SRCS
          archive.cpp
          archive.hpp
@@ -48,6 +50,8 @@ target_link_libraries ( archivefile
     jlib
     ${LibArchive_LIBRARIES}
     )
+
+target_link_libraries(archivefile PRIVATE unofficial::http_parser::http_parser)
 
 if (WIN32)
 target_link_libraries ( archivefile
