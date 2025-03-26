@@ -952,9 +952,10 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
     }
 
     cycle_t elapsedCycles = timer.elapsedCycles();
-    getSocketStat()->ioReads++;
-    getSocketStat()->ioReadBytes += sizeRead;
-    getSocketStat()->ioReadCycles += elapsedCycles;
+    SocketStats *sockStat = getSocketStat();
+    sockStat->ioReads++;
+    sockStat->ioReadBytes += sizeRead;
+    sockStat->ioReadCycles += elapsedCycles;
     if (!SSTATS)
         SSTATS = getSocketStatPtr();
     SSTATS->reads++;
@@ -984,9 +985,10 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
             dbgassertex(size == rc);
 
             cycle_t elapsedCycles = timer.elapsedCycles();
-            getSocketStat()->ioWrites++;
-            getSocketStat()->ioWriteBytes += rc;
-            getSocketStat()->ioWriteCycles += elapsedCycles;
+            SocketStats *sockStat = getSocketStat();
+            sockStat->ioWrites++;
+            sockStat->ioWriteBytes += rc;
+            sockStat->ioWriteCycles += elapsedCycles;
             if (!SSTATS)
                 SSTATS = getSocketStatPtr();
             SSTATS->writes++;

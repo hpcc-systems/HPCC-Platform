@@ -241,7 +241,6 @@ struct SocketStats
     __uint64 ioReads = 0;
     __uint64 ioWrites = 0;
 };
-typedef struct SocketStats SocketStats;
 
 class jlib_decl ISocket : extends IInterface
 {
