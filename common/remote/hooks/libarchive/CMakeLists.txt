@@ -59,7 +59,7 @@ target_link_libraries ( archivefile
     ${BZIP2_LIBRARIES}
     )
 elseif (APPLE)
-target_link_libraries( archivefile PRIVATE 
+target_link_libraries( archivefile
     unofficial::http_parser::http_parser
     )
 endif ()
