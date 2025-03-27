@@ -44,6 +44,7 @@ int main(int argc, const char* argv[])
 
     CmdMap commands{
         { "dump", createDumpCommand },
+        { "sim", createSimCommand },
     };
     if (argc < 2)
     {

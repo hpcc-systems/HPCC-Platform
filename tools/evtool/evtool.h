@@ -30,3 +30,4 @@ interface IEvToolCommand : extends IInterface
 
 // Command factory functions.
 extern IEvToolCommand* createDumpCommand();
+extern IEvToolCommand* createSimCommand();
