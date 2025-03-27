@@ -32,6 +32,7 @@ set (  SRCS
        evtmain.cpp
        evtool.cpp
        evtdump.cpp
+       evtsim.cpp
     )
 
 ADD_DEFINITIONS(-D_CONSOLE)
