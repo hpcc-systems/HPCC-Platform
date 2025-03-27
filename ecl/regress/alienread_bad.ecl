@@ -17,7 +17,7 @@
 
 //check that virtual fields in the middle of a record with alein datatypes reports an error.
 #option ('targetClusterType', 'hthor');
-#option ('genericDiskReads', true);
+#option ('genericDiskReadWrites', true);
 
 import lib_stringlib;
 prefix := 'regress::'+ __TARGET_PLATFORM__ + '::';

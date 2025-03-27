@@ -18,7 +18,7 @@
 // If option is FALSE or omitted, generic disk reads are off by default but
 // the use of DATASET(,TYPE()) should enable generic disk reads for that
 // one activity
-// #OPTION('genericDiskReads', TRUE);
+// #OPTION('genericDiskReadWrites', TRUE);
 
 NamesLayout := RECORD
     STRING20        surname;
