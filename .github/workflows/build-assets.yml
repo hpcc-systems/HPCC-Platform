@@ -91,9 +91,6 @@ jobs:
           - os: ubuntu-22.04
             name: k8s
             container: true
-          - os: ubuntu-22.04
-            name: docs
-            documentation: true
           - os: ubuntu-20.04
           - os: centos-8
           - os: centos-7
@@ -213,7 +210,7 @@ jobs:
 
       # Communtiy Build
       - name: CMake Packages (community)
-        if: ${{ !matrix.ln && !matrix.ee && !matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && !matrix.container }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -235,7 +232,7 @@ jobs:
           done
 
       - name: CMake Containerized Packages (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -248,29 +245,6 @@ jobs:
             cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ matrix.cmake_options_extra }} && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
-      - name: CMake documentation (community)
-        if: ${{ !matrix.ln && !matrix.ee && !matrix.container && matrix.documentation }}
-        run: |
-          mkdir -p {${{needs.preamble.outputs.folder_build }},EN_US,PT_BR}
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
-            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build -DVCPKG_FILES_DIR=/hpcc-dev -DMAKE_DOCS_ONLY=ON -DUSE_NATIVE_LIBRARIES=ON -DDOCS_AUTO=ON -DDOC_LANGS=ALL && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target all"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/EN_US && zip ALL_HPCC_DOCS_EN_US-$(echo '${{ needs.preamble.outputs.community_tag }}' | sed 's/community_//' ).zip *.pdf"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-$(echo '${{ needs.preamble.outputs.community_tag }}' | sed 's/community_//' ).zip *.pdf"
-
-      - name: Upload Artifacts for ECLIDE build
-        if: ${{ !matrix.ln && !matrix.container && matrix.documentation }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: html-help-documents
-          path: |
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip
-            ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip
-          compression-level: 0
-
       - name: Upload Assets (community)
         if: ${{ !matrix.ln && !matrix.ee }}
         uses: ncipollo/release-action@v1.14.0
@@ -281,18 +255,10 @@ jobs:
           artifacts: |
             ${{ needs.preamble.outputs.folder_build }}/*.deb,
             ${{ needs.preamble.outputs.folder_build }}/*.rpm,
-            ${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.pdf,
-            ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.pdf,
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,
-            ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip,
             ${{ needs.preamble.outputs.folder_build }}/*.md5sum
 
       - name: Locate k8s deb file (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
         id: container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -302,7 +268,7 @@ jobs:
 
       - name: Create Docker Image (community)
         uses: docker/build-push-action@v5
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -334,7 +300,7 @@ jobs:
           JF_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
 
       - name: CMake Packages (internal)
-        if: ${{ matrix.ln && !matrix.container && !matrix.documentation }}
+        if: ${{ matrix.ln && !matrix.container }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -351,7 +317,7 @@ jobs:
           done
 
       - name: CMake Containerized Packages (internal)
-        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ matrix.ln && matrix.container }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -388,7 +354,7 @@ jobs:
           done
 
       - name: Locate k8s deb file (internal)
-        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ matrix.ln && matrix.container }}
         id: ln-container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -398,7 +364,7 @@ jobs:
 
       - name: Create Docker Image (internal)
         uses: docker/build-push-action@v5
-        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ matrix.ln && matrix.container }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -413,7 +379,7 @@ jobs:
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       - name: JFrog Docker Push and Publish
-        if: ${{ matrix.ln && matrix.container && !matrix.documentation && github.repository_owner == 'hpcc-systems' }}
+        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
         run: |
           jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
@@ -440,286 +406,63 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-${{ matrix.documentation }}-logs
+          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-logs
           path: ${{ needs.preamble.outputs.folder_build }}/**/*.log
 
-  build-bare-metal:
-    name: Build Bare Metal
-    # if: github.repository == 'hpcc-systems/HPCC-Platform'
+  build-documentation:
     needs: preamble
-    strategy:
-      matrix:
-        include:
-          - os: "windows-2022"
-            mono: ""
-            sudo: ""
-            cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-            cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-          - os: "macos-13"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
-            cmake_build_options: "--parallel $(nproc)"
-      fail-fast: false
+    uses: ./.github/workflows/build-documentation.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+      folder-platform: ${{ needs.preamble.outputs.folder_platform }}
+      folder-build: ${{ needs.preamble.outputs.folder_build }}
+      candidate-base-branch: ${{ needs.preamble.outputs.candidate_base_branch }}
+      community-tag: ${{ needs.preamble.outputs.community_tag }}
+      mount-platform: ${{ needs.preamble.outputs.mount_platform }}
+      mount-build: ${{ needs.preamble.outputs.mount_build }}
+    secrets: inherit
 
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Print vars
-        shell: "bash"
-        run: |
-          echo ${{ matrix.os }}
-          echo "${{ toJSON(needs.preamble.outputs) }})"
+  build-clienttools-community-macos:
+    needs: preamble
+    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+    secrets: inherit
 
-      - name: OSX Dependencies
-        if: ${{ contains(matrix.os, 'macos') }}
-        shell: "bash"
-        run: |
-          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+  build-clienttools-internal-macos:
+    needs: preamble
+    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+    secrets: inherit
 
-      - name: "Remove builtin vcpkg (old)"
-        working-directory: .
-        shell: "bash"
-        run: |
-          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+  build-clienttools-community-windows:
+    needs: preamble
+    uses: ./.github/workflows/build-clienttools-windows-2022.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+      upload-package: true
+      asset-name: 'clienttools-for-eclide'
+    secrets: inherit
 
-      - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ./HPCC-Platform
-
-      - name: Checkout LN
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ needs.preamble.outputs.internal_ref }}
-          submodules: recursive
-          path: ./LN
-
-      - name: "Create code signing"
-        if: ${{ contains(matrix.os,'windows') }}
-        shell: "pwsh"
-        run: |
-          mkdir -p ./sign
-          cd sign
-          $pfxPath = "hpcc_code_signing.pfx"
-          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          $currentDirectory = Get-Location
-          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
-          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
-          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx
-
-      - name: "vcpkg Bootstrap"
-        shell: "bash"
-        run: |
-          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
-
-      - name: "Setup NuGet credentials"
-        shell: "bash"
-        run: |
-          ${{ matrix.mono }} `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
-            sources add \
-            -name "GitHub" \
-            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
-            -storepasswordincleartext \
-            -username "${{ github.repository_owner }}" \
-            -password "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: CMake Packages
-        shell: "bash"
-        run: |
-          mkdir -p ./build
-          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
-          cmake --build ./build ${{ matrix.cmake_build_options }} --target package
-
-      - name: Sign Windows Package
-        if: ${{ contains(matrix.os,'windows') }}
-        shell: "pwsh"
-        run: |
-          cd ./build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-clienttools*.exe
-
-      - name: Upload Artifact for ECLIDE build
-        if: ${{ contains(matrix.os, 'windows') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Windows-Clienttools
-          path: ./build/hpccsystems-clienttools*.exe
-          compression-level: 0
-
-      - name: Upload Assets
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: "./build/*.exe,./build/*.msi,./build/*.dmg,./build/*.pkg,./build/*.tar.gz"
-
-      - name: CMake LN Packages
-        shell: "bash"
-        run: |
-          ${{ matrix.sudo }} rm -f ./build/CMakeCache.txt
-          ${{ matrix.sudo }} rm -rf ./build/CMakeFiles
-          cmake -S ./LN -B ./build ${{ matrix.cmake_config_options }}
-          cmake --build ./build ${{ matrix.cmake_build_options }} --target package
-
-      - name: Sign LN Windows Package
-        if: ${{ contains(matrix.os,'windows') }}
-        shell: "pwsh"
-        run: |
-          cd ./build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-clienttools*.exe
-
-      - name: Upload Assets to Jfrog (windows)
-        if: ${{ contains(matrix.os, 'windows') && github.repository_owner == 'hpcc-systems' }}
-        shell: bash
-        run: |
-          cd ./build
-          packages=($(ls -1 hpccsystems-*.exe ))
-          for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
-          done
-
-      - name: Upload Assets to Jfrog (macos)
-        if: ${{ contains(matrix.os, 'macos') && github.repository_owner == 'hpcc-systems' }}
-        shell: bash
-        run: |
-          cd ./build
-          packages=($(ls -1 hpccsystems-*.pkg ))
-          for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
-          done
-
-      - name: Upload error logs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}-logs
-          path: ./build/**/*.log
+  build-clienttools-internal-windows:
+    needs: preamble
+    uses: ./.github/workflows/build-clienttools-windows-2022.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+    secrets: inherit
 
   build-bare-metal-eclide:
-    name: Build Bare Metal ECLIDE
-    needs: [ preamble, build-docker, build-bare-metal ]
-    runs-on: "windows-2022"
-    steps:
-      - name: Print vars
-        shell: "bash"
-        run: |
-          echo "${{ toJSON(needs.preamble.outputs) }})"
-
-      - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ./HPCC-Platform
-
-      - name: Checkout ECLIDE
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/ECLIDE
-          ref: ${{ needs.preamble.outputs.eclide_ref }}
-          submodules: recursive
-          path: ./ECLIDE
-          fetch-depth: 0
-
-      - name: "Install html-help-workshop"
-        shell: "bash"
-        run: |
-          choco install html-help-workshop
-          mkdir -p ./ECLIDE/docs }}
-      
-      - name: "Fetch html artifacts"
-        uses: actions/download-artifact@v4
-        with:
-          name: html-help-documents
-          merge-multiple: true
-      
-      - name: "Fetch clienttools artifact"
-        uses: actions/download-artifact@v4
-        with:
-          name: Windows-Clienttools
-          merge-multiple: true
-
-      - name: "Create EN_US CHM file"
-        shell: "bash"
-        run: |
-          html_doc=$(find . -type f -name "html_help_EN_US-*")
-          mkdir html_help_EN_US
-          7z x $html_doc -ohtml_help_EN_US
-          cd html_help_EN_US/html_help
-          # Chocolate install a package but it is not in PATH variable. Use path full of hhc.exe
-          # hhc.exe return non-zero. Appending "true" to work-around
-          C:/"Program Files (x86)"/"HTML Help Workshop"/hhc.exe htmlhelp.hhp || true
-          mv htmlhelp.chm ECLReference.chm
-          cp ECLReference.chm ../../ECLIDE/docs/
-
-      - name: "Create PT_BR CHM file"
-        shell: "bash"
-        run: |
-          html_doc=$(find . -type f -name "html_help_PT_BR-*")
-          mkdir html_help_PT_BR
-          7z x $html_doc -ohtml_help_PT_BR
-          cd html_help_PT_BR/html_help
-          # Chocolate install a package but it is not in PATH variable. Use path full of hhc.exe
-          # hhc.exe return non-zero. Appending "true" to work-around
-          C:/"Program Files (x86)"/"HTML Help Workshop"/hhc.exe htmlhelp.hhp || true
-          mv htmlhelp.chm ECLReference_PT_BR.chm
-          cp ECLReference_PT_BR.chm ../../ECLIDE/docs/
-
-      - name: "Load code signing"
-        shell: "pwsh"
-        run: |
-          mkdir -p ./sign
-          cd sign
-          $pfxPath = "hpcc_code_signing.pfx"
-          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          $currentDirectory = Get-Location
-          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
-          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
-          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx
-
-      - name: "Build ECLIDE"
-        run: |
-          cd ECLIDE
-          mkdir -p ./build
-          cd ./build
-          cmake -A Win32 -S ../ -B .
-          cmake --build . --config RelWithDebInfo --target package --parallel
-
-      - name: Sign ECLIDE Package
-        shell: "pwsh"
-        run: |
-          cd ./ECLIDE/build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE}} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-eclide*.exe
-
-      - name: Upload Assets
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: "./ECLIDE/build/*.exe"
-      
-      - name: Upload Assets to Jfrog (windows)
-        if: ${{ github.repository_owner == 'hpcc-systems' }}
-        shell: bash
-        run: |
-          cd ./ECLIDE/build
-          packages=($(ls -1 hpccsystems-*.exe ))
-          for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
-          done
-
-      - name: Upload error logs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-2022-logs
-          path: ./ECLIDE/build/**/*.log
-
+    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
+    uses: ./.github/workflows/build-eclide.yml
+    with:
+      community-ref: ${{ needs.preamble.outputs.community_ref }}
+      eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
+      clienttools-asset-name: 'clienttools-for-eclide'
+      documentation-asset-name: 'html-help-documents'
+    secrets: inherit
 
   changelogs:
     name: Generate Changelogs
