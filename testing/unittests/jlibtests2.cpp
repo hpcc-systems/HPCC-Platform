@@ -335,14 +335,14 @@ public:
         //Test reading an empty file
         try
         {
-            static const char* expect=R"!!!(name: eventtrace.evt
-version: 1
+            static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
+attribute: version = 1
 attribute: RecordedFileSize = 16
 attribute: RecordedTimestamp = 1000
-attribute: RecordedOption = 'traceid'
-attribute: RecordedOption = 'threadid'
-attribute: RecordedOption = 'stack'
-bytesRead: 16
+attribute: traceid = true
+attribute: threadid = true
+attribute: stack = true
+attribute: bytesRead = 16
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -363,14 +363,16 @@ bytesRead: 16
         }
         try
         {
-            static const char* expect = R"!!!(name: eventtrace.evt
-version: 1
+            static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
+attribute: version = 1
 attribute: RecordedFileSize = 71
 attribute: RecordedTimestamp = 1000
-attribute: RecordedOption = 'traceid'
-attribute: RecordedOption = 'threadid'
-attribute: RecordedOption = 'stack'
+attribute: traceid = true
+attribute: threadid = true
+attribute: stack = true
 event: IndexEviction
+attribute: name = 'IndexEviction'
+attribute: id = 3
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -378,8 +380,7 @@ attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-departEvent
-bytesRead: 71
+attribute: bytesRead = 71
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -401,14 +402,16 @@ bytesRead: 71
         }
         try
         {
-            static const char* expect = R"!!!(name: eventtrace.evt
-version: 1
+            static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
+attribute: version = 1
 attribute: RecordedFileSize = 185
 attribute: RecordedTimestamp = 1000
-attribute: RecordedOption = 'traceid'
-attribute: RecordedOption = 'threadid'
-attribute: RecordedOption = 'stack'
+attribute: traceid = true
+attribute: threadid = true
+attribute: stack = true
 event: IndexEviction
+attribute: name = 'IndexEviction'
+attribute: id = 3
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -416,21 +419,22 @@ attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-departEvent
 event: DaliConnect
+attribute: name = 'DaliConnect'
+attribute: id = 4
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: Path = '/Workunits/Workunit/abc.wu'
 attribute: ConnectId = 98765
-departEvent
 event: DaliDisconnect
+attribute: name = 'DaliDisconnect'
+attribute: id = 7
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: ConnectId = 98765
-departEvent
-bytesRead: 185
+attribute: bytesRead = 185
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -456,7 +460,7 @@ bytesRead: 185
 
     IEventVisitor* createVisitor(std::stringstream& out)
     {
-        Owned<IEventVisitor> visitor = createVisitTrackingEventVisitor(out);
+        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(out);
         return new MockEventVisitor(*visitor);
     }
 };
