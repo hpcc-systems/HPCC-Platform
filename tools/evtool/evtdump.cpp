@@ -22,6 +22,8 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <iostream>
+#include <map>
+#include <set>
 
 // Future enhancements may include:
 // - an output format selector to choose between jSON, YAML, CSV, et al
@@ -38,7 +40,67 @@ enum class OutputFormat : byte
     json_d, // JSON directly from visited content
     yaml_p, // YAML from property tree
     yaml_d, // YAML directly from visited content
+    csv_p, // CSV from property tree
 };
+
+// Serialize a property tree produced by CPTreeEventVisitor to CSV format. This IS NOT a generic
+// utility that can be included in jlib. It makes assumptions about the element structure and
+// header label deduction.
+static StringBuffer& toCSV(IPTree* tree, StringBuffer& out, bool includeHeader)
+{
+    if (!tree)
+        return out.clear();
+
+    IPTree* header = tree->queryPropTree(EVT_PTREE_HEADER);
+    Owned<IPTreeIterator> it = tree->getElements(EVT_PTREE_EVENT);
+
+    // First pass through the tree identifies which event attributes are in use.
+    std::set<EventAttr> attributesInUse;
+    ForEach(*it)
+    {
+        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        {
+            VStringBuffer column("@%s", queryEventAttributeName(a));
+            if (it->query().hasProp(column) || header->hasProp(column))
+                attributesInUse.insert(a);
+        }
+    }
+
+    if (includeHeader)
+    {
+        // Assemble a header row including only permanent attributes and those found to be in use.
+        encodeCSVColumn(out, "EventName");
+        out.append(",");
+        encodeCSVColumn(out, "EventId");
+        for (EventAttr a : attributesInUse)
+        {
+            out.append(",");
+            encodeCSVColumn(out, queryEventAttributeName(a));
+        }
+        out.append('\n');
+    }
+
+    // Second pass through the tree to produce one row per event.
+    ForEach(*it)
+    {
+        const IPTree& e = it->query();
+        encodeCSVColumn(out, e.queryProp("@name"));
+        out.append(',');
+        encodeCSVColumn(out, e.queryProp("@id"));
+        for (EventAttr a : attributesInUse)
+        {
+            out.append(',');
+            VStringBuffer column("@%s", queryEventAttributeName(a));
+            const char* value = e.queryProp(column);
+            if (!value)
+                value = header->queryProp(column);
+            if (value)
+                encodeCSVColumn(out, value);
+        }
+        out.append('\n');
+    }
+    return out;
+}
 
 // Extension of CPTreeEventVisitor in which the destructor outputs the complete property tree in a
 // requested structured format.
@@ -68,6 +130,9 @@ public:
                 break;
             case OutputFormat::yaml_p:
                 toYAML(tree, markup, 2, 0);
+                break;
+            case OutputFormat::csv_p:
+                toCSV(tree, markup, true);
                 break;
             default:
                 std::cerr << "unsupported output format " << byte(format) << std::endl;
@@ -513,6 +578,7 @@ public:
         case OutputFormat::json_p:
         case OutputFormat::xml_p:
         case OutputFormat::yaml_p:
+        case OutputFormat::csv_p:
             visitor.setown(new DumpPTreeEventVisitor(*out, format));
             break;
         case OutputFormat::json_d:
@@ -570,6 +636,10 @@ public:
                 efd.setFormat(OutputFormat::yaml_d);
                 accepted = true;
                 break;
+            case 'c':
+                efd.setFormat(OutputFormat::csv_p);
+                accepted = true;
+                break;
             default:
                 break;
             }
@@ -607,6 +677,7 @@ public:
         out << "[options] <filename>" << std::endl << std::endl;
         out << "Parse a binary event file and write its contents to standard output." << std::endl << std::endl;
         out << "  -?, -h, --help  show this help message and exit" << std::endl;
+        out << "  -c              output a property tree as CSV" << std::endl;
         out << "  -j              output a property tree as JSON" << std::endl;
         out << "  -J              output directly as JSON" << std::endl;
         out << "  -x              output a property tree as XML" << std::endl;
