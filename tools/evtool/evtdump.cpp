@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) 2024 HPCC Systems®.
+    Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,14 +18,24 @@
 #include "evtool.hpp"
 #include "jevent.hpp"
 #include "jfile.hpp"
+#include "jptree.hpp"
 #include "jstring.hpp"
 #include <iostream>
 
-// Initial version supports output as a sequence of visits. Future enhancements
-// may include:
-// - an output format selector to choose between XML, jSON, YAML, CSV, et al
+// Future enhancements may include:
+// - an output format selector to choose between jSON, YAML, CSV, et al
 // - support for multiple input files
 // - support for event filtering
+
+// Supported dump output formats.
+enum class OutputFormat : byte
+{
+    text,
+    json,
+    xml,
+    yaml,
+    tree,
+};
 
 // Open and parse a binary event file.
 class EventFileDump
@@ -35,6 +45,12 @@ public:
     void setFile(const char* filename)
     {
         file.set(filename);
+    }
+
+    // Cache the requested output format.
+    void setFormat(OutputFormat format)
+    {
+        this->format = format;
     }
 
     // Cache the output stream to receive the parsed data.
@@ -55,11 +71,41 @@ public:
     // Perform the requested action.
     bool dump()
     {
-        Owned<IEventVisitor> visitor = createVisitTrackingEventVisitor(*out);
+        Owned<IEventVisitor> visitor;
+        switch (format)
+        {
+        case OutputFormat::json:
+            visitor.setown(createDumpJSONEventVisitor(*out));
+            break;
+        case OutputFormat::text:
+            visitor.setown(createDumpTextEventVisitor(*out));
+            break;
+        case OutputFormat::xml:
+            visitor.setown(createDumpXMLEventVisitor(*out));
+            break;
+        case OutputFormat::yaml:
+            visitor.setown(createDumpYAMLEventVisitor(*out));
+            break;
+        case OutputFormat::tree:
+            {
+                Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
+                if (readEvents(file.str(), creator->queryVisitor()))
+                {
+                    StringBuffer yaml;
+                    toYAML(creator->queryTree(), yaml, 2, 0);
+                    *out << yaml.str() << std::endl;
+                    return true;
+                }
+                return false;
+            }
+        default:
+            throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
+        }
         return readEvents(file.str(), *visitor);
     }
 protected:
     StringAttr file;
+    OutputFormat format = OutputFormat::text;
     std::ostream* out = nullptr;
 };
 
@@ -67,6 +113,35 @@ protected:
 class CEvtDumpCommand : public CEvToolCommand
 {
 public:
+    virtual bool acceptTerseOption(char opt) override
+    {
+        bool accepted = CEvToolCommand::acceptTerseOption(opt);
+        if (!accepted)
+        {
+            switch (opt)
+            {
+            case 'j':
+                efd.setFormat(OutputFormat::json);
+                accepted = true;
+                break;
+            case 'x':
+                efd.setFormat(OutputFormat::xml);
+                accepted = true;
+                break;
+            case 'y':
+                efd.setFormat(OutputFormat::yaml);
+                accepted = true;
+                break;
+            case 'p':
+                efd.setFormat(OutputFormat::tree);
+                accepted = true;
+                break;
+            default:
+                break;
+            }
+        }
+        return accepted;
+    }
     virtual bool acceptParameter(const char* arg) override
     {
         efd.setFile(arg);
@@ -74,6 +149,7 @@ public:
     }
     virtual bool isGoodRequest() override
     {
+        efd.setOutput(std::cout);
         return efd.ready();
     }
     virtual int doRequest() override
@@ -97,8 +173,24 @@ public:
         out << "[options] <filename>" << std::endl << std::endl;
         out << "Parse a binary event file and write its contents to standard output." << std::endl << std::endl;
         out << "  -?, -h, --help  show this help message and exit" << std::endl;
+        out << "  -j              output as JSON" << std::endl;
+        out << "  -x              output as XML" << std::endl;
+        out << "  -y              output as YAML" << std::endl;
         out << "  <filename>      full path to a binary event data file" << std::endl;
         out << std::endl;
+        out << "Structured output would, if represented in a property tree, resemble:" << std::endl;
+        out << "  EventFile" << std::endl;
+        out << "    ├── Header" << std::endl;
+        out << "    |   ├── @filename" << std::endl;
+        out << "    |   ├── @version" << std::endl;
+        out << "    |   └── ... (other header properties)" << std::endl;
+        out << "    ├── Event" << std::endl;
+        out << "    |   ├── @name" << std::endl;
+        out << "    |   ├── @id" << std::endl;
+        out << "    |   └── ... (other event properties)" << std::endl;
+        out << "    ├── ... (more events)" << std::endl;
+        out << "    └── Footer" << std::endl;
+        out << "        ├── @bytesRead" << std::endl;
     }
     CEvtDumpCommand()
     {
