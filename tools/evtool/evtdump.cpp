@@ -35,7 +35,9 @@ enum class OutputFormat : byte
     xml_p, // XML from property tree
     xml_d, // XML directly from visited content
     json_p, // JSON from property tree
-    json_d // JSON directly from visited content
+    json_d, // JSON directly from visited content
+    yaml_p, // YAML from property tree
+    yaml_d, // YAML directly from visited content
 };
 
 // Extension of CPTreeEventVisitor in which the destructor outputs the complete property tree in a
@@ -63,6 +65,9 @@ public:
                 break;
             case OutputFormat::xml_p:
                 toXML(tree, markup);
+                break;
+            case OutputFormat::yaml_p:
+                toYAML(tree, markup, 2, 0);
                 break;
             default:
                 std::cerr << "unsupported output format " << byte(format) << std::endl;
@@ -314,6 +319,157 @@ public:
     }
 };
 
+// Implementation of IEventVisitor that constructs and outputs a YAML, one object at a time. The
+// formatted output resembles that produced by DumpPTreeEventVisitor, with the key difference
+// being that raw data order is preserved.
+//
+// When dumping large data files, this option is significantly more efficient than accumulating all
+// file content into a property tree to be serialized.
+class DumpYAMLEventVisitor : public CInterfaceOf<IEventVisitor>
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        attribute(EVT_PTREE_FILE_NAME, filename);
+        openObject(EVT_PTREE_HEADER);
+        attribute(EVT_PTREE_FILE_VERSION, version);
+        return true;
+    }
+    virtual Continuation visitEvent(EventType id) override
+    {
+        closeObject();
+        out << markup.str();
+        markup.clear();
+        openArray(EVT_PTREE_EVENT);
+        attribute(EVT_PTREE_EVENT_NAME, queryEventName(id));
+        attribute(EVT_PTREE_EVENT_ID, byte(id));
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id) override
+    {
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, const char* value) override
+    {
+        if (EvAttrSysOption == id)
+            attribute(value, true);
+        else
+            attribute(id, value);
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, bool value) override
+    {
+        attribute(id, value);
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
+    {
+        attribute(id, value);
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
+    {
+        attribute(id, value);
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
+    {
+        attribute(id, value);
+        return visitContinue;
+    }
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    {
+        attribute(id, value);
+        return visitContinue;
+    }
+    virtual void leaveFile(uint32_t bytesRead) override
+    {
+        closeObject();
+        closeArray();
+        openObject(EVT_PTREE_FOOTER);
+        attribute(EVT_PTREE_FILE_BYTES_READ, bytesRead);
+        closeObject();
+        out << markup.str() << std::endl;
+    }
+protected:
+    std::ostream& out;
+    StringBuffer markup;
+    bool inArray = false;
+    bool firstProp = true;
+    uint8_t indentation = 0;
+public:
+    DumpYAMLEventVisitor(std::ostream& _out) : out(_out)
+    {
+    }
+    inline void openObject(const char* name)
+    {
+        firstProp = true;
+        indent();
+        markup.append(name).append(":\n");
+        indentation += 2;
+    }
+    inline void openArray(const char* name)
+    {
+        if (!inArray)
+        {
+            openObject(name);
+            inArray = true;
+        }
+        else
+        {
+            indentation += 2;
+            firstProp = true;
+        }
+    }
+    inline void closeArray()
+    {
+        inArray = false;
+    }
+    inline void closeObject()
+    {
+        indentation -= 2;
+    }
+
+    inline void attribute(EventAttr id, uint64_t value)
+    {
+        attribute(queryEventAttributeName(id), value);
+    }
+    inline void attribute(const char* name, uint64_t value)
+    {
+        char buf[21];
+        sprintf(buf, "%lu", value);
+        attribute(name, buf);
+    }
+    template <typename T>
+    inline void attribute(EventAttr id, T value)
+    {
+        attribute(queryEventAttributeName(id), value);
+    }
+    template <typename T>
+    inline void attribute(const char* name, T value)
+    {
+        indent();
+        markup.append(name).append(": ").append(value).append('\n');
+    }
+    void indent()
+    {
+        if (indentation)
+        {
+            uint8_t limit = indentation;
+            if (inArray && firstProp)
+                limit -= 2;
+            for (uint8_t idx = 0; idx < limit; ++idx)
+                markup.append(' ');
+            if (inArray && firstProp)
+            {
+                markup.append("- ");
+                firstProp = false;
+            }
+
+        }
+    }
+};
+
 // Open and parse a binary event file.
 class EventFileDump
 {
@@ -356,6 +512,7 @@ public:
             break;
         case OutputFormat::json_p:
         case OutputFormat::xml_p:
+        case OutputFormat::yaml_p:
             visitor.setown(new DumpPTreeEventVisitor(*out, format));
             break;
         case OutputFormat::json_d:
@@ -363,6 +520,9 @@ public:
             break;
         case OutputFormat::xml_d:
             visitor.setown(new DumpXMLEventVisitor(*out));
+            break;
+        case OutputFormat::yaml_d:
+            visitor.setown(new DumpYAMLEventVisitor(*out));
             break;
         default:
             throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
@@ -400,6 +560,14 @@ public:
                 break;
             case 'X':
                 efd.setFormat(OutputFormat::xml_d);
+                accepted = true;
+                break;
+            case 'y':
+                efd.setFormat(OutputFormat::yaml_p);
+                accepted = true;
+                break;
+            case 'Y':
+                efd.setFormat(OutputFormat::yaml_d);
                 accepted = true;
                 break;
             default:
@@ -443,6 +611,8 @@ public:
         out << "  -J              output directly as JSON" << std::endl;
         out << "  -x              output a property tree as XML" << std::endl;
         out << "  -X              output directly as XML" << std::endl;
+        out << "  -y              output a property tree as YAML" << std::endl;
+        out << "  -Y              output directly as YAML" << std::endl;
         out << "  <filename>      full path to a binary event data file" << std::endl;
         out << std::endl;
     }
