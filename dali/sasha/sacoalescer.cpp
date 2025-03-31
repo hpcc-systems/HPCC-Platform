@@ -118,7 +118,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
             StringBuffer detachName;
             iStoreHelper->getDetachedDeltaName(detachName);
-            StringBuffer detachPath(dataPath);
+            StringBuffer detachPath(std::move(dataPath));
             detachPath.append(detachName);
             OwnedIFile detachedIFile = createIFile(detachPath.str());
             if (detachedIFile->exists() || iStoreHelper->detachCurrentDelta())
