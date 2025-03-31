@@ -32,13 +32,13 @@
         role="bold">|</emphasis><emphasis>options</emphasis><emphasis
         role="bold">]</emphasis></title>
 
-        <para></para>
+        <para/>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="85.40pt" />
+            <colspec align="left" colwidth="85.40pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -110,14 +110,14 @@
 
         <para><informaltable colsep="1" frame="all" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="49.50pt" />
+              <colspec colwidth="49.50pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
                   <entry><graphic fileref="../../images/caution.png"
-                  scale="noin" /></entry>
+                  scale="noin"/></entry>
 
                   <entry>The dfuplus utility does not upload files to a
                   landing zone. You must first upload any file(s) to your
@@ -136,9 +136,9 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.40pt" />
+              <colspec align="left" colwidth="125.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -310,14 +310,14 @@ replicate=1</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><graphic fileref="../../images/caution.png"
-                    scale="noin" /></entry>
+                    scale="noin"/></entry>
 
                     <entry>We do not recommend storing your password in the
                     ini file (which is clear text). The password is included
@@ -342,9 +342,9 @@ replicate=1</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.50pt" />
+                <colspec align="left" colwidth="122.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -398,7 +398,9 @@ replicate=1</programlisting>
                   <row>
                     <entry>dstcluster</entry>
 
-                    <entry>The name of the destination cluster.</entry>
+                    <entry>The name of the destination cluster. For a
+                    containerized deployment, set this to the target data
+                    plane (For example, dstcluster=data)</entry>
                   </row>
 
                   <row>
@@ -624,9 +626,9 @@ dfuplus action=spray srcplane=lzstorageplane
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.50pt" />
+              <colspec align="left" colwidth="122.50pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -811,9 +813,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -832,7 +834,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
                   <entry><emphasis><emphasis>dstcluster</emphasis>
                   </emphasis></entry>
 
-                  <entry>The name of the destination cluster.</entry>
+                  <entry>The name of the destination cluster. For a
+                  containerized deployment, set this to the target data plane
+                  (For example, dstcluster=data)</entry>
                 </row>
 
                 <row>
@@ -898,9 +902,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -914,7 +918,7 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <programlisting>dfuplus action=remove name=RTTEMP::timezones.txt</programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CLI_DFU_renameOps">
@@ -928,9 +932,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -964,9 +968,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="122.40pt" />
+                <colspec align="left" colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1002,9 +1006,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1031,9 +1035,9 @@ dfuplus action=despray srcname=mytest::test:spraytest
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1081,7 +1085,7 @@ dfuplus action=despray srcname=mytest::test:spraytest
 dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 </programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CLI_DFU_AddSuperOperations">
@@ -1098,9 +1102,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1148,9 +1152,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1198,9 +1202,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="142.40pt" />
+                <colspec colwidth="142.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1220,7 +1224,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                   <row>
                     <entry>dstcluster=&lt;cluster-name&gt;</entry>
 
-                    <entry>The name of the destination cluster.</entry>
+                    <entry>The name of the destination cluster. For a
+                    containerized deployment, set this to the target data
+                    plane (For example, dstcluster=data)</entry>
                   </row>
 
                   <row>
@@ -1269,9 +1275,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1300,9 +1306,9 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1327,7 +1333,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 dfuplus action=status limit=300 wuid=P20230301-123456
 dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CLI_DFU_AbortOperations">
@@ -1341,9 +1347,9 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1360,7 +1366,7 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <programlisting>dfuplus action=abort wuid=W20050309-093020</programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CLI_DFU_ResubmitOperations">
@@ -1375,9 +1381,9 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="122.40pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1394,7 +1400,7 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <programlisting>dfuplus action=resubmit wuid=W20050309-093020</programlisting>
 
-          <para></para>
+          <para/>
         </sect3>
 
         <sect3 id="CLI_DFU_SaveXMLOperations">
@@ -1415,13 +1421,13 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
           <para><emphasis>srcname</emphasis> The logical name of the source
           file.</para>
 
-          <para></para>
+          <para/>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt" />
+              <colspec colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1488,9 +1494,9 @@ dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="85.55pt" />
+                <colspec colwidth="85.55pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1598,9 +1604,9 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt" />
+              <colspec colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1659,9 +1665,9 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec colwidth="122.40pt" />
+              <colspec colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
