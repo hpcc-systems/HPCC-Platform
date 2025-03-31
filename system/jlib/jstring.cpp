@@ -1066,10 +1066,45 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
         if (oldlen > curLen)
             return *this;
 
-        StringBuffer temp;
         size_t newlen = newStr ? strlen(newStr) : 0;
-        if (::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr, true))
-            swapWith(temp);
+        // If target string (newStr) is shorter than or equal to search string, do an in-place replacement to avoid allocation
+        if (oldlen >= newlen)
+        {
+            size_t maxOffset = curLen - oldlen;
+            size_t offset = 0;
+            size_t targetOffset = 0;
+            size_t lastCopied = 0;
+            char firstChar = oldStr[0];
+            while (offset <= maxOffset)
+            {
+                if (unlikely(buffer[offset] == firstChar)
+                    && unlikely((oldlen == 1) || memcmp(buffer + offset, oldStr, oldlen)==0))
+                {
+                    if (lastCopied != targetOffset && likely(lastCopied != offset))
+                        memcpy(buffer + targetOffset, buffer + lastCopied, offset - lastCopied);
+                    targetOffset += offset - lastCopied;
+                    memcpy(buffer + targetOffset, newStr, newlen);
+                    offset += oldlen;
+                    targetOffset += newlen;
+                    lastCopied = offset;
+                }
+                else
+                    offset++;
+            }
+            // Copy remaining characters if in-place replacements were made
+            if (lastCopied)
+            {
+                if (lastCopied != targetOffset && lastCopied != curLen)
+                    memcpy(buffer + targetOffset, buffer + lastCopied, curLen - lastCopied);
+                setLength(targetOffset + (curLen - lastCopied));
+            }
+        }
+        else
+        {
+            StringBuffer temp;
+            if (::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr, true))
+                swapWith(temp);
+        }
     }
     return *this;
 }
