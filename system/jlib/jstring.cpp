@@ -2900,7 +2900,7 @@ void processOptionString(const char * options, optionCallback callback)
             if (end)
                 option.append(end-start, start);
             else
-                option.append(options);
+                option.append(start);
         }
 
         if (option.length())
