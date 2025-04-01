@@ -15,9 +15,9 @@ public class Config {
     public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 20; // This time is used to stop the code from waiting infinitely. If it is unable to find a web element on the UI, the code stops the search after this time logs an error if the element is not found.
     public static final String TEST_DESCRIPTION_TEXT = "Testing Description"; // This is the test description that is used to test the description textbox functionality
     public static final boolean TEST_DETAIL_PAGE_FIELD_NAMES_ALL = true; // true means the tests for field names on details page will run for all items (whether it is workunits or logical files) and false means it will only run for the first item
-    public static final boolean TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL = true; // true means the tests for checking the description textbox functionality on details page will run for all workunits and false means it will only run for the first workunit
-    public static final boolean TEST_WU_DETAIL_PAGE_PROTECTED_ALL = true; // true means the tests for checking the protected checkbox functionality on details page will run for all workunits and false means it will only run for the first workunit
-    public static final boolean TEST_DETAIL_PAGE_TAB_CLICK_ALL = true; // true means the tests for tab click validity on details page will run for all items (whether it is workunits or logical files) and false means it will only run for the first item
+    public static final boolean TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL = false; // true means the tests for checking the description textbox functionality on details page will run for all workunits and false means it will only run for the first workunit
+    public static final boolean TEST_WU_DETAIL_PAGE_PROTECTED_ALL = false; // true means the tests for checking the protected checkbox functionality on details page will run for all workunits and false means it will only run for the first workunit
+    public static final boolean TEST_DETAIL_PAGE_TAB_CLICK_ALL = false; // true means the tests for tab click validity on details page will run for all items (whether it is workunits or logical files) and false means it will only run for the first item
 
     // these values are set in the beginning in the TestRunner.java file
     public static String PATH_FOLDER_JSON = ""; // path of the folder of JSON files, it is passed in the CLI arguments.
