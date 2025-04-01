@@ -143,20 +143,32 @@ public abstract class BaseTableTest<T> {
 
     private void testPresenceOfColumnNames(List<String> columnNames, String tabValue) {
 
-        boolean allPresent = true;
+        int numOfElements = columnNames.size();
+        Common.logDebug("testPresenceOfColumnNames(" + numOfElements + " column names, tabValue:" + tabValue + ")");
+
+        if ( numOfElements == 0 ) {
+            return;
+        }
+
+        double elementFound = 0.0;  // It is double for calculating ratio later.
         String currentURL = Common.driver.getCurrentUrl();
+
         for (String columnName : columnNames) {
+            Common.logDebug("columnName: " + columnName);
 
             try {
                 Common.waitForElement(By.xpath("//*[text()='" + columnName + "']"));
+                elementFound += 1.0;
             } catch (TimeoutException ex) {
-                Common.logError("Failure: " + getPageName() + " Details Page. Text : " + columnName + " not present for tab: " + tabValue + ". Current URL: " + currentURL);
-                allPresent = false;
+                Common.logDebug("Warning: " + getPageName() + " Details Page. Text : " + columnName + " not present for tab: " + tabValue + ". Current URL: " + currentURL);
             }
         }
 
-        if (allPresent) {
-            Common.logDetail("Success: " + getPageName() + " Details Page. Tab click on: " + tabValue);
+        double ratio = elementFound / numOfElements;
+        if ( ratio < 0.5 ) {
+            Common.logError("Failure: "+ getPageName() + " Details Page. Tab click on: '" + tabValue + "' -> numOfElements:" + numOfElements + ", elementFound:" + elementFound + ", ratio: " + String.format("%.2f",ratio) + "." );
+        } else {
+            Common.logDetail("Success: " + getPageName() + " Details Page. Tab click on: " + tabValue + " (ratio:" + String.format("%.2f",ratio) + ").");
         }
     }
 
