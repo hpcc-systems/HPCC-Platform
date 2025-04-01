@@ -1066,7 +1066,8 @@ int main( int argc, const char *argv[]  )
             }
             else
             {
-                currentGraphNumber = ++currentGraphNumber % modMaxGraphs;
+                ++currentGraphNumber;
+                currentGraphNumber = currentGraphNumber % modMaxGraphs;
                 if (currentGraphNumber == 0)
                     currentGraphNumber = 1;
                 cloudJobName.appendf("-job-%s-%d", thorName, currentGraphNumber);
