@@ -973,6 +973,16 @@ int main( int argc, const char *argv[]  )
     bool workerJobInstalled = false;
 
     const char *thorName = globals->queryProp("@name");
+    
+    //unsigned maxJobs = globals->getPropInt("@maxJobs", 1);
+    unsigned maxGraphs = globals->getPropInt("@maxGraphs", 1);
+    unsigned modMaxGraphs = maxGraphs + 1;
+    unsigned currentGraphNumber{maxGraphs};
+    const char *apptype = globals->queryProp("@type");
+    bool isThorManager{false};
+    if (apptype)
+        isThorManager = streq("thor", apptype);
+
 #ifdef _CONTAINERIZED
     StringBuffer queueNames;
     getClusterThorQueueName(queueNames, thorName);
@@ -1046,7 +1056,22 @@ int main( int argc, const char *argv[]  )
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
 
-            cloudJobName.appendf("%s-%s", workunit, graphName);
+            if (isThorManager)
+                cloudJobName = "thormanager";
+            else
+                cloudJobName = "thorworker";
+            if (maxGraphs == 1)
+            {
+                cloudJobName.appendf("-job-%s-1", thorName);
+            }
+            else
+            {
+                currentGraphNumber = ++currentGraphNumber % modMaxGraphs;
+                if (currentGraphNumber == 0)
+                    currentGraphNumber = 1;
+                cloudJobName.appendf("-job-%s-%d", thorName, currentGraphNumber);
+            }
+            //cloudJobName.appendf("%s-%s", workunit, graphName);
 
             StringBuffer myEp;
             getRemoteAccessibleHostText(myEp, queryMyNode()->endpoint());
