@@ -26,11 +26,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
-#include <direct.h> 
+#include <direct.h>
 #endif
 
 #include "jlib.hpp"
@@ -549,7 +549,7 @@ CRegistryServer *CRegistryServer::registryServer = NULL;
 
 bool checkClusterRelicateDAFS(IGroup &grp)
 {
-    // check the dafilesrv is running (and right version) 
+    // check the dafilesrv is running (and right version)
     unsigned start = msTick();
     DBGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
@@ -660,7 +660,7 @@ int main( int argc, const char *argv[]  )
 
     setIORetryCount((unsigned)getExpertOptInt64("ioRetries")); // default == 0 == off
     StringBuffer daliServer;
-    if (!globals->getProp("@daliServers", daliServer)) 
+    if (!globals->getProp("@daliServers", daliServer))
     {
         OERRLOG("No Dali server list specified in THOR.XML (daliServers=iport,iport...)");
         return 0; // no recycle
@@ -683,7 +683,7 @@ int main( int argc, const char *argv[]  )
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
 
-    EnableSEHtoExceptionMapping(); 
+    EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
@@ -750,15 +750,15 @@ int main( int argc, const char *argv[]  )
                 break;
             }
             catch (IJSOCK_Exception *e)
-            { 
+            {
                 if ((e->errorCode()!=JSOCKERR_port_in_use))
                     throw;
                 FLLOG(MCexception(e), e,"InitClientProcess");
-                if (retry++>10) 
+                if (retry++>10)
                     throw;
                 e->Release();
                 DBGLOG("Retrying");
-                Sleep(retry*2000);  
+                Sleep(retry*2000);
             }
         }
 
@@ -826,10 +826,10 @@ int main( int argc, const char *argv[]  )
                 // For ChromeBook with 2GB RAM
                 if (gmemSize <= 2048)
                 {
-                    // Decrease max memory to 2/3 
-                    gmemSize = gmemSize * 2 / 3; 
+                    // Decrease max memory to 2/3
+                    gmemSize = gmemSize * 2 / 3;
                 }
-#endif            
+#endif
 #endif
 #endif
             }
@@ -900,9 +900,9 @@ int main( int argc, const char *argv[]  )
                 overrideBaseDirectory = datadir.str();
             if (getConfigurationDirectory(globals->queryPropTree("Directories"),"mirror","thor",globals->queryProp("@name"),repdir))
                 overrideReplicateDirectory = repdir.str();
-            if (!isEmptyString(overrideBaseDirectory)) 
+            if (!isEmptyString(overrideBaseDirectory))
                 setBaseDirectory(overrideBaseDirectory, false);
-            if (!isEmptyString(overrideReplicateDirectory)) 
+            if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
         }
         bool saveQueryDlls = true;
@@ -919,7 +919,7 @@ int main( int argc, const char *argv[]  )
             if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
                 globals->setProp("@query_so_dir", soDir.str());
             else if (!globals->getProp("@query_so_dir", soDir)) {
-                globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
+                globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR);
                 soDir.append(DEFAULT_QUERY_SO_DIR);
             }
             if (isAbsolutePath(soDir.str()))
@@ -955,7 +955,7 @@ int main( int argc, const char *argv[]  )
         // NB: set into globals, serialized and used by worker processes.
         globals->setProp("@thorTempDirectory", tempDirStr);
 
-        startLogMsgParentReceiver();    
+        startLogMsgParentReceiver();
         connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))
             setDaliServixSocketCaching(true); // speeds up deletes under linux
@@ -1047,7 +1047,13 @@ int main( int argc, const char *argv[]  )
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
 
-            cloudJobName.appendf("%s-%s", workunit, graphName);
+            if (globals->hasProp("@instanceNum"))
+            {
+                unsigned instanceNum = globals->getPropInt("@instanceNum");
+                cloudJobName.appendf("%s-%d", thorName, instanceNum);
+            }
+            else
+                cloudJobName.appendf("%s-%s", workunit, graphName);
 
             StringBuffer myEp;
             getRemoteAccessibleHostText(myEp, queryMyNode()->endpoint());
@@ -1125,17 +1131,17 @@ int main( int argc, const char *argv[]  )
 
  * It is intended to be used to bring up a temporary Thor instance that uses local node storage,
  * as the data plane.
- * 
+ *
  * It is likely to be deprecated or need reworking, when DFS is refactored to use SP's properly.
- * 
+ *
  * The mechanism works by:
  * a) Creating a pseudo StoragePlane (publishes group to Dali).
  * b) Spins up a dafilesrv thread in each worker container.
  * c) Changes the default StoragePlane used to publish files, to point to the SP/group created in step (a).
- * 
+ *
  * In this way, a Thor instance, whilst up, will act similarly to a bare-metal system, using local disks as storage.
  * This allows quick cloud based allocation/simulation of bare-metal type clusters for testing purposes.
- * 
+ *
  * NB: This isn't a real StoragePlane, and it will not be accessible by any other component.
  *
  */
@@ -1163,7 +1169,7 @@ int main( int argc, const char *argv[]  )
         auditThorSystemEvent("Terminate");
         DBGLOG("ThorManager terminated OK");
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         FLLOG(MCexception(e), e,"ThorManager");
         exception.setown(e);
