@@ -61,6 +61,7 @@ data:
           labels:
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" $appJobName "instanceOf" (printf "%s-job" .me.name)) | indent 12 }}
             accessDali: "yes"
+            accessSasha: "yes"
             accessEsp: "yes"
             {{- include "hpcc.generateHelmVersion" . | nindent 12 }}
 {{- if hasKey .me "labels" }}
@@ -141,6 +142,7 @@ spec:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" .name) | indent 8 }}
         run: {{ .name | quote }}
         accessDali: "yes"
+        accessSasha: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
         {{- include "hpcc.generateHelmVersion" . | nindent 8 }}
 {{- if hasKey . "labels" }}

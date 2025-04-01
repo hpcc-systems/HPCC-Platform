@@ -470,7 +470,8 @@ int main( int argc, const char *argv[]  )
             if (globals->getPropBool("@MPChannelReconnect"))
                 getMPServer()->setOpt(mpsopt_channelreopen, "true");
 
-            if (getExpertOptBool("slaveDaliClient"))
+            // slaveDaliClient option deprecated, but maintained for compatibility
+            if (getExpertOptBool("allowDaliAccess", getExpertOptBool("slaveDaliClient")))
                 enableThorSlaveAsDaliClient();
 
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
@@ -638,7 +639,8 @@ int main( int argc, const char *argv[]  )
     if (!recvShutdown && unregisterException.get())
         UnregisterSelf(unregisterException);
 
-    if (getExpertOptBool("slaveDaliClient"))
+    // slaveDaliClient option deprecated, but maintained for compatibility
+    if (getExpertOptBool("allowDaliAccess", getExpertOptBool("slaveDaliClient")))
         disableThorSlaveAsDaliClient();
 
 #ifdef USE_MP_LOG

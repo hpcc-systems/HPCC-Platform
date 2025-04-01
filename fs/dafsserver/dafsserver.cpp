@@ -5045,7 +5045,8 @@ public:
                 if (0 == cursorHandle)
                 {
                     IDAFS_Exception* exception = createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'close' command");
-                    closeSpan->recordException(exception);
+                    if (closeSpan)
+                        closeSpan->recordException(exception);
                     throw exception;
                 }
 

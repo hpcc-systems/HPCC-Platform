@@ -571,6 +571,7 @@ public:
         return ::getGlobalUniqueIds(num, &foreignNode);
     }
     virtual bool allowDaliAccess() const  { return true; }
+    virtual bool allowSashaAccess() const { return true; }
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
     {
         result.append("workunit"); // No distinction between global, workunit and query scopes for eclagent

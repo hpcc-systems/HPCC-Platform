@@ -3080,6 +3080,10 @@ public:
         Owned<IRoxieDaliHelper> dali = ::connectToDali();
         return dali != nullptr;
     }
+    virtual bool allowSashaAccess() const
+    {
+        return nullptr != workUnit; // allow if dynamic query only
+    }
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
     {
         if (workUnit)
