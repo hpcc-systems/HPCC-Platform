@@ -39,6 +39,7 @@ jlib_decl void deleteResource(const char *componentName, const char *job, const 
 jlib_decl void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob);
 jlib_decl bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
 jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
+jlib_decl void setJobName(StringBuffer& jobName, const char *thorName, const unsigned maxGraphs, unsigned& currentGraphNumber, const unsigned modMaxGraphs);
 
 constexpr unsigned defaultKubectlRetrySecs = 60;
 extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, unsigned retrySecs=defaultKubectlRetrySecs);

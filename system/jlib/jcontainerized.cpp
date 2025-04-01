@@ -227,12 +227,17 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     args.append(" \"--k8sJob=true\"");
+    bool isJobResourceType = strcmp(resourceType, "job") == 0;
     const char *baseImageVersion = getenv("baseImageVersion");
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
     {
+        if (isJobResourceType && streq(p.first.c_str(), "graphNo"))
+        {
+            args.appendf(" \"--graphNo=%u\"", (unsigned)strtoul(p.second.c_str(), nullptr, 10));
+        }
         // special handling _HPCC_JOB_VERSION_, not just a straight substitution
-        if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
+        else if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
         {
             const char *newVersion = p.second.c_str();
             if (!isEmptyString(newVersion))
@@ -267,7 +272,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     if (autoCleanup)
     {
         unsigned deleteJobGracePeriod = 0;
-        if (strcmp(resourceType, "job") == 0)
+        if (isJobResourceType)
             deleteJobGracePeriod = getComponentConfigSP()->getPropInt("@terminationGracePeriodSeconds", defaultDeleteJobGracePeriod);
         // touch a file, with naming convention { componentName },{ resourceType },{ jobName },{ graceTimeSecs }.k8s
         // it will be used if the job fails ungracefully, to tidy up leaked resources
@@ -313,6 +318,22 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     }
     if (exception)
         throw exception.getClear();
+}
+
+void setJobName(StringBuffer& jobName, const char *thorName, const unsigned maxGraphs, unsigned& currentGraphNumber, const unsigned modMaxGraphs)
+{
+    jobName.set(thorName);
+    if (maxGraphs == 1)
+    {
+        jobName.append("-1");
+    }
+    else
+    {
+        ++currentGraphNumber %= maxGraphs + 1;
+        if (currentGraphNumber == 0)
+            currentGraphNumber = 1;
+        jobName.appendf("-%d", currentGraphNumber);
+    }
 }
 
 // returns a vector of {pod-name, node-name} vectors,
@@ -502,7 +523,6 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(JLIBERR_K8sServiceError, "No suitable dafilesrv service '%s' enabled (Rquired be @public=true and @tls=%s)", application, boolToStr(secure));
     return { "", 0 };
 }
-
 
 static unsigned podInfoInitCBId = 0;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
