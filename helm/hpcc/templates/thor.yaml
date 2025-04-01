@@ -88,6 +88,7 @@ data:
         metadata:
           labels:
             accessDali: "yes"
+            accessSasha: "yes"
             accessEsp: "yes"
             {{- include "hpcc.generateHelmVersion" . | nindent 12 }}
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName "instanceOf" (printf "%s-job" .eclAgentName)) | indent 12 }}
@@ -155,6 +156,7 @@ data:
         metadata:
           labels:
             accessDali: "yes"
+            accessSasha: "yes"
             accessEsp: "yes"
             app: "thor"
             component: "thormanager"
@@ -226,6 +228,7 @@ data:
         metadata:
           labels:
             accessDali: "yes"
+            accessSasha: "yes"
             accessEsp: "yes"
             app: "thor"
             component: "thorworker"
@@ -368,6 +371,7 @@ spec:
     metadata:
       labels:
         accessDali: "yes"
+        accessSasha: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
         app: "thor"
         component: "thor-eclagent"

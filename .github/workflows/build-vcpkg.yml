@@ -50,7 +50,7 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ${{ inputs.os }}
-      ln: ${{ inputs.ln }}
+      ln: ${{ inputs.ln == true }}
       upload-package: true
       asset-name: 'docker-package'
     secrets: inherit

@@ -1678,7 +1678,13 @@ public:
     virtual bool allowDaliAccess() const
     {
         // NB. includes access to foreign Dalis.
-        return jobChannel.queryJob().getOptBool("slaveDaliClient");
+        // slaveDaliClient option deprecated, but maintained for compatibility
+        return jobChannel.queryJob().getOptBool("allowDaliAccess", jobChannel.queryJob().getOptBool("slaveDaliClient"));
+    }
+    virtual bool allowSashaAccess() const
+    {
+        bool defaultAccess = isContainerized() ? false : true; // BM had access before, but not sure it should - kept for backwards compatibility
+        return jobChannel.queryJob().getOptBool("allowSashaAccess", defaultAccess);
     }
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
     {

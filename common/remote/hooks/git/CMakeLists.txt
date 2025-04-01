@@ -24,8 +24,7 @@
 
 project( gitfile )
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBGIT2 REQUIRED IMPORTED_TARGET libgit2)
+find_package(unofficial-libgit2 CONFIG REQUIRED)
 
 set (    SRCS
          gitfile.cpp
@@ -44,5 +43,5 @@ install ( TARGETS gitfile DESTINATION filehooks CALC_DEPS)
 
 target_link_libraries ( gitfile
     jlib
-    PkgConfig::LIBGIT2
-    )
+    unofficial::libgit2::libgit2
+)

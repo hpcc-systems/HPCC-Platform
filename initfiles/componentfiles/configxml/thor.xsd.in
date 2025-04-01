@@ -174,10 +174,10 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="slaveDaliClient" type="xs:boolean" use="optional" default="false">
+            <xs:attribute name="allowDaliAccess" type="xs:boolean" use="optional" default="false">
               <xs:annotation>
                 <xs:appinfo>
-                  <tooltip>Set to true if thor slaves require dali connectivity</tooltip>
+                  <tooltip>Set to true if thor workers require direct dali connectivity</tooltip>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
