@@ -25,4 +25,30 @@ if (INSTALL_VCPKG_CATALOG)
     install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
 endif()
 
+#  Check if vcpkg needs a bootstrap ---
+if (WIN32)
+    set(VCPKG_BOOTSTRAP_FILE "bootstrap-vcpkg.bat")
+else ()
+    set(VCPKG_BOOTSTRAP_FILE "./bootstrap-vcpkg.sh")
+endif ()
+file(SHA256 "${VCPKG_ROOT}/${VCPKG_BOOTSTRAP_FILE}" VCPKG_SCRIPT_HASH)
+set(VCPKG_HASH_FILE "${VCPKG_FILES_DIR}/bootstrap-vcpkg-hash.txt")
+
+set(SAVED_VCPKG_SCRIPT_HASH "")
+if (EXISTS "${VCPKG_HASH_FILE}")
+    file(READ "${VCPKG_HASH_FILE}" SAVED_VCPKG_SCRIPT_HASH)
+endif()
+
+if (NOT "${VCPKG_SCRIPT_HASH}" STREQUAL "${SAVED_VCPKG_SCRIPT_HASH}")
+    message( "Hash mismatch or hash file missing. Running ${VCPKG_BOOTSTRAP_FILE}..." )
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E chdir "${VCPKG_ROOT}" "${VCPKG_BOOTSTRAP_FILE}"
+        RESULT_VARIABLE BOOTSTRAP_RESULT
+    )
+    if (NOT BOOTSTRAP_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to execute ${VCPKG_BOOTSTRAP_FILE}")
+    endif()
+    file(WRITE "${VCPKG_HASH_FILE}" "${VCPKG_SCRIPT_HASH}")
+endif()
+
 endif ()
