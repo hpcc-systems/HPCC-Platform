@@ -24,7 +24,7 @@
 
 project( gitfile )
 
-find_package(unofficial-libgit2 CONFIG REQUIRED)
+find_package(libgit2 CONFIG REQUIRED)
 
 set (    SRCS
          gitfile.cpp
@@ -43,5 +43,5 @@ install ( TARGETS gitfile DESTINATION filehooks CALC_DEPS)
 
 target_link_libraries ( gitfile
     jlib
-    unofficial::libgit2::libgit2
+    libgit2::libgit2package
 )
