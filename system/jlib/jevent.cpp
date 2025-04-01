@@ -281,11 +281,13 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     if (options & ERFtraceid)
         sizeMessageHeaderFooter += 32;
 
+    outputFilename.set(filename);
     Owned<IFile> outputFile = createIFile(filename);
     output.setown(outputFile->open(IFOcreate));
 
-    startCycles = get_cycles_now();
     __uint64 startTimestamp = getTimeStampNowValue()*1000;
+    numEvents = 0;
+    startCycles = get_cycles_now();
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
@@ -295,13 +297,13 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     nextOffset = pos;
     nextWriteOffset = 0;
     for (unsigned i=0; i < numBlocks; i++)
-        counts[i] = 0;
+        pendingEventCounts[i] = 0;
 
     recordingEvents.store(!pause, std::memory_order_release);
     return true;
 }
 
-bool EventRecorder::stopRecording()
+bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
 {
     {
         CriticalBlock block(cs);
@@ -335,19 +337,27 @@ bool EventRecorder::stopRecording()
         writeBlock(nextOffset, nextOffset & blockMask);
 
         //Flush the data, after waiting for a little while (or until committed == offset)?
+        if (optSummary)
+        {
+            optSummary->filename.set(outputFilename);
+            optSummary->numEvents = numEvents;
+            optSummary->totalSize = output->getStatistic(StSizeDiskWrite);
+        }
+
         output->close();
         output.clear();
+
         isStopped = true;
     }
 
     return true;
 }
 
-void EventRecorder::pauseRecording(bool pause, bool recordChange)
+bool EventRecorder::pauseRecording(bool pause, bool recordChange)
 {
     CriticalBlock block(cs);
     if (!isStarted || isStopped)
-        return;
+        return false;
 
     bool recordingInFuture = !pause;
     if (recordingEvents != recordingInFuture)
@@ -361,6 +371,7 @@ void EventRecorder::pauseRecording(bool pause, bool recordChange)
         if (!recordingInFuture)
             recordingEvents = false;
     }
+    return true;
 }
 
 //See notes above about reseving and committing events
@@ -371,7 +382,8 @@ EventRecorder::offset_type EventRecorder::reserveEvent(size32_t size)
         CriticalBlock block(cs);
         offset = nextOffset;
         nextOffset += size;
-        counts[getBlockFromOffset(offset)]++;
+        pendingEventCounts[getBlockFromOffset(offset)]++;
+        numEvents++;
     }
     return offset;
 }
@@ -384,11 +396,11 @@ void EventRecorder::commitEvent(offset_type startOffset, size32_t size)
     {
         CriticalBlock block(cs);
 
-        prevCount = counts[thisBlock];
+        prevCount = pendingEventCounts[thisBlock];
         if (likely(prevCount != 0))
         {
             unsigned count = prevCount - 1;
-            counts[thisBlock] = count;
+            pendingEventCounts[thisBlock] = count;
             if (count == 0)
             {
                 if (getBlockFromOffset(nextOffset) != thisBlock)
@@ -432,6 +444,9 @@ void EventRecorder::recordRecordingActive(bool enabled)
 {
     if (!isRecording())
         return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"RecordingActive\", \"enabled\": %s }", boolToStr(enabled));
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(enabled);
     offset_type writeOffset = reserveEvent(requiredSize);

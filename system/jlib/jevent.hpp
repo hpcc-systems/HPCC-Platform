@@ -18,10 +18,12 @@
 #ifndef JEVENT_HPP
 #define JEVENT_HPP
 
+#include <ostream>
+
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
-#include <ostream>
+#include "jstring.hpp"
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -69,6 +71,13 @@ enum EventAttr : byte
 extern jlib_decl const char * queryEventName(EventType event);
 extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
 
+struct jlib_decl EventRecordingSummary
+{
+    unsigned numEvents{0};
+    offset_t totalSize{0};
+    StringBuffer filename;
+};
+
 //---------------------------------------------------------------------------------------------------------------------
 enum EventType : byte;
 enum EventAttr : byte;
@@ -93,8 +102,8 @@ public:
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
     bool startRecording(const char * optionsText, const char * filename, bool pause);
-    bool stopRecording();
-    void pauseRecording(bool pause, bool recordChange);
+    bool stopRecording(EventRecordingSummary * optSummary);
+    bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit);
@@ -160,13 +169,15 @@ protected:
     bool isStopped{true};                       // termination in stopRecording()
     offset_type nextOffset{0};
     offset_type nextWriteOffset{0};
-    unsigned counts[numBlocks] = {0};
+    offset_type numEvents{0};
+    unsigned pendingEventCounts[numBlocks] = {0};
     cycle_t startCycles{0};
     MemoryAttr buffer;
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
     bool outputToLog{false};
+    StringBuffer outputFilename;
     Owned<IFileIO> output;
 };
 
