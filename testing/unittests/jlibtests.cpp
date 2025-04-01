@@ -4888,6 +4888,7 @@ public:
         testOption("name=boris", {{"name", "boris"}});
         testOption("option1=value1,option2(value2),option3,option4(nested=value,nested(value))",
                     {{"option1", "value1"}, {"option2", "value2"}, {"option3", "1"}, {"option4", "nested=value,nested(value)"}});
+        testOption("one,two,three", {{"one", "1"}, {"two", "1"}, {"three", "1"}});
     }
 };
 

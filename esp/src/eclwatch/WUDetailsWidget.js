@@ -687,7 +687,7 @@ define([
             registry.byId(this.id + "Resubmit").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Recover").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Publish").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
-            registry.byId(this.id + "ZapReport").set("disabled", this.wu.isDeleted());
+            registry.byId(this.id + "ZapReport").set("disabled", isArchived || this.wu.isDeleted());
             registry.byId(this.id + "Reschedule").set("disabled", !this.wu.isAbleToReschedule());
             registry.byId(this.id + "Deschedule").set("disabled", !this.wu.isAbleToDeschedule());
 
