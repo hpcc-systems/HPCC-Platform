@@ -140,22 +140,24 @@ public:
 class CPermissionsCache : public CInterface
 {
 public:
-    CPermissionsCache(const char * _secMgrClass = nullptr)
+    CPermissionsCache(const char * _secMgrClass, ISecManager *secMgr)
     {
         m_cacheTimeoutInSeconds = DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES * 60 * 1000;//default every hour
         m_transactionalEnabled = false;
-        m_secMgr = NULL;
+        m_secMgr = secMgr;
         m_defaultPermission = SecAccess_Unknown;
         m_secMgrClass.set(_secMgrClass);
         m_transactionalCacheTimeout = DEFAULT_CACHE_TIMEOUT_SECONDS;
     }
+
+    CPermissionsCache(ISecManager *secMgr) : CPermissionsCache(nullptr, secMgr) {}
 
     virtual ~CPermissionsCache();
 
     //Returns an owned reference to a shared cache of a given Sec Mgr class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* getInstance(const char * _secMgrClass);
+    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr = nullptr);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -208,7 +210,7 @@ public:
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();
     bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags);
-    void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
+
     SecAccessFlags  queryDefaultPermission(ISecUser& user);
     void setUseLegacyDefaultFileScopePermissionCache(bool useLegacy)
     {
@@ -224,7 +226,8 @@ private:
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
     mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
-    int m_cacheTimeoutInSeconds; //cleanup cycle period
+    std::atomic<unsigned int> m_cacheTimeoutInSeconds;
+    // int m_cacheTimeoutInSeconds; //cleanup cycle period
     bool m_transactionalEnabled;
     int m_transactionalCacheTimeout;
 
@@ -238,12 +241,13 @@ private:
     SecAccessFlags              m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
+    mutable ReadWriteLock       m_defaultFilePermissionRWLock;//guards m_userDefaultFileScopePermissions
     ISecManager *               m_secMgr;
 
     bool m_useLegacyDefaultFileScopePermissionCache = false;
     Semaphore m_fileScopeCacheFillSem;
     std::thread m_fileScopeCacheFillThread;
-    bool m_stopFileScopeCacheFillThread = false;
+    std::atomic<bool> m_stopFileScopeCacheFillThread = false;
 };
 
 time_t getThreadCreateTime();
