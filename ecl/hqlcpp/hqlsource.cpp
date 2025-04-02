@@ -660,7 +660,13 @@ public:
         useImplementationClass = false;
         isUnfilteredCount = false;
         requiresOrderedMerge = false;
-        useGenericDiskReadWrite = (translator.queryOptions().genericDiskReadWrites && canReadWriteGenerically) || forceReadWriteGenerically;
+        if (canReadWriteGenerically || forceReadWriteGenerically)
+        {
+            if (tableExpr && tableExpr->queryChild(2)->getOperator() == no_filetype)
+                useGenericDiskReadWrite = true;
+            else
+                useGenericDiskReadWrite = translator.queryOptions().genericDiskReadWrites;
+        }
         rootSelfRow = NULL;
         activityKind = TAKnone;
 
@@ -2927,22 +2933,19 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     if (useGenericDiskReadWrite)
     {
-        if ((modeOp != no_thor) && (modeOp != no_flat))
+        StringBuffer format;
+        if (modeOp != no_filetype)
         {
-            StringBuffer format;
-            if (modeOp != no_filetype)
-            {
-                format.append(getOpString(modeOp)).toLowerCase();
-            }
-            else
-            {
-                // Pluggable file type; cite the file type name
-                IHqlExpression * fileType = queryAttributeChild(mode, fileTypeAtom, 0);
-                getStringValue(format, fileType);
-                format.toLowerCase();
-            }
-            instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", format.str());
+            format.append(getOpString(modeOp)).toLowerCase();
         }
+        else
+        {
+            // Pluggable file type; cite the file type name
+            IHqlExpression * fileType = queryAttributeChild(mode, fileTypeAtom, 0);
+            getStringValue(format, fileType);
+            format.toLowerCase();
+        }
+        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", format.str());
     }
 
     //---- virtual bool canMatchAny() { return <value>; } ----
@@ -3136,8 +3139,6 @@ protected:
     virtual void buildMembers(IHqlExpression * expr) override;
     virtual void analyseGraph(IHqlExpression * expr) override;
 
-    void buildFormatOption(BuildCtx & ctx, IHqlExpression * name, IHqlExpression * value);
-    void buildFormatOptions(BuildCtx & fixedCtx, IHqlExpression * expr);
     void buildFormatOptionsFunction(IHqlExpression * expr);
 };
 
@@ -3232,62 +3233,9 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
     }
 }
 
-
-void DiskReadBuilder::buildFormatOption(BuildCtx & ctx, IHqlExpression * name, IHqlExpression * value)
-{
-    if (value->isAttribute())
-    {
-    }
-    else if (value->isList())
-    {
-        node_operator op = value->getOperator();
-        if ((op == no_list) && value->numChildren())
-        {
-            ForEachChild(i, value)
-                buildFormatOption(ctx, name, value->queryChild(i));
-        }
-        else if ((op == no_list) || (op == no_null))
-        {
-            //MORE: There should be a better way of doing this!
-            translator.buildXmlSerializeBeginNested(ctx, name, false);
-            translator.buildXmlSerializeEndNested(ctx, name);
-        }
-    }
-    else
-    {
-        translator.buildXmlSerializeScalar(ctx, value, name);
-    }
-}
-
-void DiskReadBuilder::buildFormatOptions(BuildCtx & ctx, IHqlExpression * expr)
-{
-    IHqlExpression * pluggableFileTypeAtom = expr->queryAttribute(fileTypeAtom); // null if pluggable file type not used
-    
-    ForEachChild(i, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(i);
-
-        // Skip if expression is a pluggable file type (we don't want it appearing as an option)
-        // or if it is not an attribute
-        if (cur != pluggableFileTypeAtom && cur->isAttribute())
-        {
-            OwnedHqlExpr name = createConstant(str(cur->queryName()));
-            if (cur->numChildren())
-            {
-                ForEachChild(c, cur)
-                    buildFormatOption(ctx, name, cur->queryChild(c));
-            }
-            else
-                translator.buildXmlSerializeScalar(ctx, queryBoolExpr(true), name);
-        }
-    }
-}
-
 void DiskReadBuilder::buildFormatOptionsFunction(IHqlExpression * expr)
 {
-    MemberFunction formatFunc(translator, instance->createctx, "virtual void getFormatOptions(IXmlWriter & out) override", MFopt);
-
-    buildFormatOptions(formatFunc.ctx, expr);
+    translator.buildFormatOptionsFunction(instance->createctx, expr);
     if (!expr->isConstant())
         hasDynamicOptions = true;
 }
