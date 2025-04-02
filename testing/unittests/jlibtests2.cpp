@@ -365,7 +365,7 @@ bytesRead: 16
         {
             static const char* expect = R"!!!(name: eventtrace.evt
 version: 1
-attribute: RecordedFileSize = 87
+attribute: RecordedFileSize = 71
 attribute: RecordedTimestamp = 1000
 attribute: RecordedOption = 'traceid'
 attribute: RecordedOption = 'threadid'
@@ -379,7 +379,7 @@ attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
 departEvent
-bytesRead: 87
+bytesRead: 71
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -403,7 +403,7 @@ bytesRead: 87
         {
             static const char* expect = R"!!!(name: eventtrace.evt
 version: 1
-attribute: RecordedFileSize = 233
+attribute: RecordedFileSize = 185
 attribute: RecordedTimestamp = 1000
 attribute: RecordedOption = 'traceid'
 attribute: RecordedOption = 'threadid'
@@ -430,7 +430,7 @@ attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: ConnectId = 98765
 departEvent
-bytesRead: 233
+bytesRead: 185
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));

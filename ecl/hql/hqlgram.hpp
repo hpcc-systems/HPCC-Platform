@@ -1356,7 +1356,6 @@ private:
         int yyStartPos;
         char *yyBuffer;
 
-        static unsigned hex2digit(char c);
         static __uint64 str2uint64(unsigned len, const char * digits, unsigned base);
         static void hex2str(char * target, const char * digits, unsigned len);
 };
