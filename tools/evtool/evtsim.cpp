@@ -78,7 +78,7 @@ public:
             if (streq(name, "IndexLookup"))
             {
                 unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropBool("@offset");
+                offset_t offset = (offset_t)evt.getPropInt64("@offset");
                 byte nodeKind = (byte)evt.getPropInt("@nodeKind");
                 bool hit = evt.getPropBool("@hit");
                 recorder.recordIndexLookup(fileId, offset, nodeKind, hit);
@@ -86,7 +86,7 @@ public:
             else if (streq(name, "IndexLoad"))
             {
                 unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropBool("@offset");
+                offset_t offset = (offset_t)evt.getPropInt64("@offset");
                 byte nodeKind = (byte)evt.getPropInt("@nodeKind");
                 size32_t size = (size32_t)evt.getPropInt("@size");
                 __uint64 elapsedTime = (__uint64)evt.getPropInt64("@elapsed");
@@ -96,7 +96,7 @@ public:
             else if (streq(name, "IndexEviction"))
             {
                 unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropBool("@offset");
+                offset_t offset = (offset_t)evt.getPropInt64("@offset");
                 byte nodeKind = (byte)evt.getPropInt("@nodeKind");
                 size32_t size = (size32_t)evt.getPropInt("@size");
                 recorder.recordIndexEviction(fileId, offset, nodeKind, size);
@@ -123,18 +123,23 @@ public:
             }
             else if (streq(name, "RecordingActive"))
             {
-                bool pause = evt.getPropBool("@pause");
-                bool resume = evt.getPropBool("@resume");
-                recorder.pauseRecording(true, pause);
-                recorder.pauseRecording(false, resume);
+                // Always resume immediately after pausing. The simulation does not verify that
+                // pausing will suppress the recording of future events. It verifies only that the
+                // pause and resume events themselves are recorded when expected, based on API
+                // input parameters.
+                bool recordPause = evt.getPropBool("@recordPause");
+                bool recordResume = evt.getPropBool("@recordResume");
+                recorder.pauseRecording(true, recordPause);
+                recorder.pauseRecording(false, recordResume);
             }
             else
                 throw makeStringExceptionV(-1, "unknown event: %s", name);;
         }
-        if (!recorder.stopRecording())
+        if (!recorder.stopRecording(nullptr))
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }
+
 protected:
     StringBuffer markup;
 };
@@ -142,16 +147,18 @@ protected:
 // Connector between the command line tool and the logic of simulating events.
 class CEvtSimCommand : public CEvToolCommand
 {
-    public:
+public:
     virtual bool acceptParameter(const char* arg) override
     {
         efs.setFile(arg);
         return true;
     }
+
     virtual bool isGoodRequest() override
     {
         return efs.ready();
     }
+
     virtual int doRequest() override
     {
         try
@@ -167,6 +174,7 @@ class CEvtSimCommand : public CEvToolCommand
             return 1;
         }
     }
+
     virtual void usage(int argc, const char* argv[], int pos, std::ostream& out) override
     {
         usagePrefix(argc, argv, pos, out);
@@ -178,6 +186,7 @@ class CEvtSimCommand : public CEvToolCommand
         out << "                  events" << std::endl;
         out << std::endl;
     }
+
 protected:
     EventFileSim efs;
 };
