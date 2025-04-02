@@ -287,11 +287,13 @@ protected:
     StringBuffer lfn;
     StringAttr filename;
     OwnedIFile file;
-    bool incomplete = false;
-    bool grouped = false;
-    bool blockcompressed = false;
-    bool encrypted = false;
+    unsigned helperFlags;
+    bool incomplete;
+    bool grouped;
+    bool blockcompressed;
+    bool encrypted;
     bool outputPlaneCompressed = false;
+    bool useGenericReadWrites = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<ILogicalRowWriter> outSeq;
@@ -303,7 +305,8 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
-    unsigned helperFlags = 0;
+    Owned<IPropertyTree> formatOptions; // used by generic I/O
+    Owned<IPropertyTree> providerOptions; // used by generic I/O
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -323,8 +326,6 @@ protected:
     const void *getNext(); 
     void checkSizeLimit();
     virtual bool needsAllocator() const { return true; }
-
-    bool isGeneric() const { return (helperFlags & TDXgeneric) != 0; }
 public:
     IMPLEMENT_SINKACTIVITY;
 
@@ -2996,6 +2997,7 @@ protected:
     bool opened = false;
     bool finishedParts = false;
     bool isCodeSigned = false;
+    bool useGenericReadWrites = false;
     unsigned __int64 stopAfter = 0;
     unsigned __int64 offsetOfPart = 0;
     void close();
@@ -3016,11 +3018,9 @@ protected:
         return agent.getLayoutTranslationMode();
     }
 
-    bool isGeneric() const { return (helperFlags & TDXgeneric) != 0; }
-
     const char * queryReadFormat()
     {
-        if (!isGeneric())
+        if (!useGenericReadWrites)
             return "flat";
         const char * readFormat = helper.queryFormat();
         //MORE: Later this should return null, and use the type of the file if it is a distibuted file
