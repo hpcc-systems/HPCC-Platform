@@ -23,17 +23,17 @@
 // several virtual and abstract methods. `usage` remains for subclasses to implement.
 class CEvToolCommand : public CInterfaceOf<IEvToolCommand>
 {
-public:
+public: // new abstract methods
     virtual bool isGoodRequest() = 0;
     virtual int  doRequest() = 0;
-public:
+public: // IEvToolCommand
     virtual int dispatch(int argc, const char* argv[], int pos) override;
 protected:
-    bool isHelp = false;
-public:
     virtual bool accept(const char* arg);
     virtual bool acceptTerseOption(char opt);
     virtual bool acceptVerboseOption(const char* opt);
     virtual bool acceptParameter(const char* arg);
     void usagePrefix(int argc, const char* argv[], int pos, std::ostream& out);
+protected:
+    bool isHelp = false;
 };

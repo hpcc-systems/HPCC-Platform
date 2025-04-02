@@ -20,7 +20,7 @@
 #include "jiface.hpp"
 #include <ostream>
 
-// Core interface for tool commands. `dispatch` processes indiviusal requests. `usage` provides
+// Core interface for tool commands. `dispatch` processes individual requests. `usage` provides
 // help text for the command.
 interface IEvToolCommand : extends IInterface
 {
