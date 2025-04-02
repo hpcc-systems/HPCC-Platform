@@ -67,7 +67,43 @@ inline bool nextCsvToken(const char *&s,StringBuffer &tok)
     return true;
 }
 
+StringBuffer &getPhysicalPartName(StringBuffer &name, IPropertyTree *plane, const char *lfn, unsigned partNum, unsigned numParts, bool isDirPerPart, bool isStriped)
+{
+    if (!plane)
+        return name;
 
+    // On baremetal root dir is set already to account for checking replicate directories
+    if (name.isEmpty())
+        addPathSepChar(name.append(plane->queryProp("@prefix")));
+
+    if (isStriped)
+    {
+        unsigned numDevices = plane->getPropInt("@numDevices");
+        unsigned stripeNum = calcStripeNumber(partNum, lfn, numDevices);
+        addPathSepChar(name.append('d').append(stripeNum));
+    }
+
+    const char *lastMatch = lfn;
+    while (*lfn)
+    {
+        if (lfn[0]==':')
+        {
+            addPathSepChar(name.append(lfn-lastMatch, lastMatch));
+            lfn += 2;
+            lastMatch = lfn;
+        }
+        else
+            lfn++;
+    }
+
+    if (isDirPerPart)
+        addPathSepChar(name.append(partNum+1));
+
+    name.append(lastMatch);
+    name.append("._").append(partNum+1).append("_of_").append(numParts);
+
+    return name;
+}
 
 struct cMisplacedRec
 {
@@ -114,8 +150,8 @@ struct cFileDesc // no virtuals
 {
     unsigned hash;
     unsigned short N;           // num parts
-    unsigned short sn;          // stripe number
-    bool dirPerPart;            // directory per part
+    bool isStriped;             // stripe number present in physical path
+    bool isDirPerPart;          // directory-per-part number present in physical path
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -125,7 +161,7 @@ struct cFileDesc // no virtuals
     // bitset markedc[N];
     // bitset markedd[N];
 
-    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n, unsigned sn, bool dn)
+    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n,bool d,bool s)
     {
         size32_t sl = strlen(_name); 
         if (sl>255) {
@@ -137,8 +173,8 @@ struct cFileDesc // no virtuals
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
         ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
-        ret->sn = (unsigned short)sn;
-        ret->dirPerPart = dn;
+        ret->isDirPerPart = d;
+        ret->isStriped = s;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
 
@@ -201,7 +237,7 @@ struct cFileDesc // no virtuals
     {
         StringBuffer mask;
         getName(mask);
-        return expandMask(buf, mask, p, N, sn, dirPerPart);
+        return expandMask(buf, mask, p, N);
     }
 
     static cFileDesc * create(const char *)
@@ -341,32 +377,28 @@ struct cDirDesc
     }
 
 
-    cFileDesc *addFile(unsigned drv,const char *filePath,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
+    cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, bool isDirPerPart, bool isStriped)
     {
 
         unsigned nf;    // num parts
         unsigned pf;    // part num
-        unsigned sn;    // stripe num
-        unsigned dn;    // dir-per-part num
-        bool replicate;
-        StringBuffer fn;
-        parseFileName(filePath, fn, pf, nf, sn, dn, replicate);
-        pf--;
+        StringAttr mask;
+        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
-        cFileDesc *file = files.find(fn.str(),false);
+        cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn.str(),nf,sn,dn>0);
+            file = cFileDesc::create(*mem,fn,nf,isDirPerPart,isStriped);
             files.add(file);
         }
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
                 if (mp->eq(drv,pf,node,numnodes)) {
-                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,filePath);
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,name);
                     return NULL;
                 }
                 mp = mp->next;
@@ -380,7 +412,7 @@ struct cDirDesc
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
         if (file->setpresent(drv,pf)) {
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,filePath);
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,name);
             file = NULL;
         }
         return file;
@@ -683,8 +715,9 @@ public:
     bool verbose;
     unsigned numuniqnodes = 0;
     Owned<IUserDescriptor> udesc;
+    Linked<IPropertyTree> storagePlane;
 
-    CNewXRefManager(unsigned maxMb=DEFAULT_MAXMEMORY)
+    CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
         : mem(0x100000*((memsize_t)maxMb),0x10000,true)
     {
         iswin = false; // set later
@@ -702,6 +735,9 @@ public:
         serverConfig->getProp("@sashaUser", userName);
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
+
+        if (plane)
+            storagePlane.set(plane);
     }
 
     ~CNewXRefManager()
@@ -898,7 +934,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile)
+    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, bool isDirPerPart=false, bool isStripeDir=false)
     {
         size32_t dsz = path.length();
         if (pdir==NULL) 
@@ -936,19 +972,23 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                // Check if subdirectory is a dirPerPart directory
+                // Check if subdirectory is a dirPerPart or stripe directory
                 // To properly match all parts, process with current directory as the parent
                 const char *dir = fname.str();
-                bool isDirPerPart = true;
-                while (isDirPerPart && *dir) {
+                bool isStriped = dir[0] == 'd';
+                if (isStriped)
+                    dir++;
+                bool isSpecialDir = true;
+                while (isSpecialDir && *dir) {
                     if (!isdigit(*(dir++)))
-                        isDirPerPart = false;
+                        isSpecialDir = false;
                 }
-                if (isDirPerPart) {
-                    // MORE: Should maybe check this doesn't contain any subdirectories to make
-                    // sure it is really a dirPerPart directory. Is an all numbers subdirectory valid in ecl?
-                    if (!scanDirectory(node,ep,path,drv,pdir,NULL))
+                if (isSpecialDir) {
+                    // Files inside a special directory should be scanned with the current directory as the parent
+                    if (!scanDirectory(node,ep,path,drv,pdir,NULL,!isStriped,isStriped))
                         return false;
+                    if (!isStriped && pdir->dirs.ordinality()>0)
+                        throw makeStringExceptionV(-1, LOGPFX "Directory Per Part %s contains other subdirectories.", path.str());
                 }
                 else
                     dirs.append(fname.str());
@@ -959,7 +999,7 @@ public:
                 nsz += fsz;
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
-                    pdir->addFile(drv,path.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem,isDirPerPart,isStripeDir);
                 }
             }
             path.setLength(dsz);
@@ -969,7 +1009,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file,isDirPerPart,isStripeDir))
                 return false;
             path.setLength(dsz);
         }
@@ -1222,7 +1262,7 @@ public:
     }   
 
 
-    void listOrphans(cFileDesc *f,const char *basedir,bool &abort,unsigned int recentCutoffDays)
+    void listOrphans(cFileDesc *f,const char *basedir,const char *scope,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1247,10 +1287,14 @@ public:
         }
         if (drv==drvs)
             return; // no orphans
-        StringBuffer mask(rootdir);
+        StringBuffer mask(basedir);
+        StringBuffer scopeMask(scope);
+        addPathSepChar(mask);
+        scopeMask.append("::");
         f->getName(mask);
+        f->getName(scopeMask);
         CDfsLogicalFileName lfn;
-        if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
+        if (lfn.setFromMask(scopeMask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
                 if (queryDistributedFileDirectory().exists(lfn.get(),udesc,true,false)) {
                     warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
@@ -1278,16 +1322,15 @@ public:
             if (abort)
                 return;
             bool warnnotexists = true;
-            StringBuffer path(rootdir);
+            StringBuffer path;
             if (drv)
-                setReplicateFilename(path,drv);
+                setReplicateFilename(addPathSepChar(path.append(basedir)),drv);
             size32_t psz = path.length();
             StringBuffer tmp;
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
-                    f->getPartName(path,pn);
                     RemoteFilename rfn;
-                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),path.str());
+                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),getPhysicalPartName(path,storagePlane,lfn.get(), pn, f->N, f->isDirPerPart, f->isStriped).str());
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -1458,7 +1501,7 @@ public:
         }
     }
 
-    void listOrphans(cDirDesc *d,StringBuffer &basedir,bool &abort,unsigned int recentCutoffDays)
+    void listOrphans(cDirDesc *d,StringBuffer &basedir,StringBuffer &scope,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1474,14 +1517,18 @@ public:
         PROGLOG("listOrphans TEST DIR(%s)",dbgname.str());
 #endif
         size32_t bds = basedir.length();
+        size32_t scopeLen = scope.length();
         if (bds!=0) 
             addPathSepChar(basedir);
+        if (scopeLen!=0)
+            scope.append("::");
         d->getName(basedir);
+        d->getName(scope);
         listDirectory(d,basedir.str(),abort);
-        unsigned i =0;
+        unsigned i = 0;
         cFileDesc *file = d->files.first(i);
         while (file) {
-            listOrphans(file,basedir,abort,recentCutoffDays);
+            listOrphans(file,basedir,scope,abort,recentCutoffDays);
             if (abort)
                 return;
             file = d->files.next(i);
@@ -1489,12 +1536,13 @@ public:
         i = 0;
         cDirDesc *dir = d->dirs.first(i);
         while (dir) {
-            listOrphans(dir,basedir,abort,recentCutoffDays);
+            listOrphans(dir,basedir,scope,abort,recentCutoffDays);
             if (abort)
                 return;
             dir = d->dirs.next(i);
         }
         basedir.setLength(bds);
+        scope.setLength(scopeLen);
     }
 
     static int compareDirs(IInterface * const *t1,IInterface * const *t2)
@@ -1515,7 +1563,8 @@ public:
         // also does directories
         log("Scanning for orphans");
         StringBuffer basedir;
-        listOrphans(NULL,basedir,abort,recentCutoffDays);
+        StringBuffer scope;
+        listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
         log("Orphan scan complete");
@@ -2037,6 +2086,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     Mutex runmutex;
     bool ignorelazylost, suspendCoalescer;
     Owned<IPropertyTree> props;
+    std::unordered_map<std::string, Owned<IPropertyTree>> storagePlanes;
 
     class cRunThread: public Thread
     {
@@ -2132,18 +2182,19 @@ public:
         // Revisit: XREF should really be plane centric only
         StringArray groups;
         StringArray cnames;
-        if (isContainerized()) {
-            // NB: must be a list of planes only
-            ForEachItemIn(i, list) {
-                const char *planeName = list.item(i);
-                Owned<IPropertyTree> plane = getStoragePlane(planeName);
+        // NB: must be a list of planes only
+        ForEachItemIn(i1, list) {
+            const char *planeName = list.item(i1);
+            Owned<IPropertyTree> plane = getStoragePlane(planeName);
+            if (isContainerized) {
                 if (!plane)
                     throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
                 groups.append(planeName);
                 cnames.append(planeName);
             }
+            storagePlanes[planeName].setown(plane.getClear());
         }
-        else {
+        if (!isContainerized()) {
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
             if (!conn) {
                 OERRLOG("Could not connect to /Environment/Software");
@@ -2160,7 +2211,7 @@ public:
             const char *gname = groups.item(i);
             unsigned maxMb;
             if (isContainerized()) {
-                const char *resourcedMemory = getComponentConfigSP()->queryProp("resources/@memory");
+                const char *resourcedMemory = props->queryProp("resources/@memory");
                 if (!isEmptyString(resourcedMemory)) {
                     offset_t sizeBytes = friendlyStringToSize(resourcedMemory);
                     maxMb = (unsigned)(sizeBytes / 0x100000);
@@ -2170,7 +2221,7 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(maxMb);
+            CNewXRefManager manager(storagePlanes[gname].get(),maxMb);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
                 continue;
             manager.start(updateeclwatch);
