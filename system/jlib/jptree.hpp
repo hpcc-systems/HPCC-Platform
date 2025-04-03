@@ -410,6 +410,7 @@ jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsign
 jlib_decl void setPTreeMappingThreshold(unsigned threshold);
 
 jlib_decl void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName);
+jlib_decl void copyProp(IPropertyTree & target, IPropertyTree & source, const char * name);
 
 jlib_decl StringBuffer &encodePtreeName(StringBuffer &s, unsigned size, const char *value, const char *startEncoding=nullptr);
 jlib_decl StringBuffer &encodePTreeName(StringBuffer &s, const char *value, const char *startEncoding=nullptr);

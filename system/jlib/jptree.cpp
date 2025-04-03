@@ -9867,6 +9867,21 @@ void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropert
     }
 }
 
+void copyProp(IPropertyTree & target, IPropertyTree & source, const char * name)
+{
+    if (source.hasProp(name))
+    {
+        if (source.isBinary(name))
+        {
+            MemoryBuffer value;
+            source.getPropBin(name, value);
+            target.setPropBin(name, value.length(), value.toByteArray());
+        }
+        else
+            target.setProp(name, source.queryProp(name));
+    }
+}
+
 inline void checkEndHexSequence(StringBuffer &s, bool &hexSequence)
 {
     if (hexSequence)

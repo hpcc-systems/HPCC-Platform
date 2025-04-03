@@ -1,0 +1,195 @@
+name: Build ECLIDE
+
+on:
+  workflow_call:
+    inputs:
+      community-ref:
+        type: string
+        description: 'community_[semver]'
+        required: true
+      eclide-ref:
+        type: string
+        description: 'eclide_[semver]'
+        required: true
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'windows-2022'
+      clienttools-asset-name:
+        type: string
+        description: 'Clienttools Asset name'
+        required: true
+      documentation-asset-name:
+        type: string
+        description: 'Documentation Asset name'
+        required: true
+
+jobs:
+  
+
+  build-bare-metal-eclide:
+    name: Build Bare Metal ECLIDE
+    runs-on: "windows-2022"
+    steps:
+ 
+      - name: VCPKG check
+        shell: "bash"
+        run: |
+          echo "VCPKG_INSTALLATION_ROOT: $VCPKG_INSTALLATION_ROOT"
+          echo "VCPKG_DEFAULT_TRIPLET: $VCPKG_DEFAULT_TRIPLET"
+          echo "VCPKG_TARGET_TRIPLET: $VCPKG_TARGET_TRIPLET"
+          echo "VCPKG_APPLOCAL_DEPS: $VCPKG_APPLOCAL_DEPS"
+          echo "VCPKG_APPLOCAL_DEPS_DEBUG: $VCPKG_APPLOCAL_DEPS_DEBUG"
+          echo "VCPKG_APPLOCAL_DEPS_RELEASE: $VCPKG_APPLOCAL_DEPS_RELEASE"
+          echo "VCPKG_APPLOCAL_DEPS_RELWITHDEBINFO: $VCPKG_APPLOCAL_DEPS_RELWITHDEBINFO"
+          echo "VCPKG_APPLOCAL_DEPS_MINSIZEREL: $VCPKG_APPLOCAL_DEPS_MINSIZEREL"
+          ls -la $VCPKG_INSTALLATION_ROOT
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+      
+      - name: Setup Dependencies
+        shell: 'bash'
+        run: |
+          curl -o fop-2.9-bin.tar.gz https://archive.apache.org/dist/xmlgraphics/fop/binaries/fop-2.9-bin.tar.gz
+          mkdir fop
+          tar -xf fop-2.9-bin.tar.gz -C fop --strip-components=1
+          curl -o fop/fop/saxon-he-12.4.jar https://repo1.maven.org/maven2/net/sf/saxon/Saxon-HE/12.4/saxon-he-12.4.jar
+
+
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.community-ref }}
+          submodules: recursive
+          path: ./HPCC-Platform
+ 
+      - name: Checkout ECLIDE
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/ECLIDE
+          ref: ${{ inputs.eclide-ref }}
+          submodules: recursive
+          path: ./ECLIDE
+          fetch-depth: 0
+
+      - name: Install html-help-workshop
+        shell: "bash"
+        run: |
+          choco install html-help-workshop
+          mkdir -p ./ECLIDE/docs
+
+      - name: Fetch html artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.documentation-asset-name }}
+          merge-multiple: true
+
+      - name: Fetch clienttools artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.clienttools-asset-name }}
+          merge-multiple: true
+
+      - name: "Create EN_US CHM file"
+        shell: "bash"
+        run: |
+          html_doc=$(find . -type f -name "html_help_EN_US-*")
+          mkdir html_help_EN_US
+          7z x $html_doc -ohtml_help_EN_US
+          cd html_help_EN_US/html_help
+          # Chocolate install a package but it is not in PATH variable. Use path full of hhc.exe
+          # hhc.exe return non-zero. Appending "true" to work-around
+          C:/"Program Files (x86)"/"HTML Help Workshop"/hhc.exe htmlhelp.hhp || true
+          mv htmlhelp.chm ECLReference.chm
+          cp ECLReference.chm ../../ECLIDE/docs/
+  
+      - name: "Create PT_BR CHM file"
+        shell: "bash"
+        run: |
+          html_doc=$(find . -type f -name "html_help_PT_BR-*")
+          mkdir html_help_PT_BR
+          7z x $html_doc -ohtml_help_PT_BR
+          cd html_help_PT_BR/html_help
+          # Chocolate install a package but it is not in PATH variable. Use path full of hhc.exe
+          # hhc.exe return non-zero. Appending "true" to work-around
+          C:/"Program Files (x86)"/"HTML Help Workshop"/hhc.exe htmlhelp.hhp || true
+          mv htmlhelp.chm ECLReference_PT_BR.chm
+          cp ECLReference_PT_BR.chm ../../ECLIDE/docs/
+
+      - name: vcpkg bootstrap
+        shell: "bash"
+        run: |
+          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
+
+      - name: Setup NuGet credentials
+        shell: "bash"
+        run: |
+            `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -name "GitHub" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -username "${{ github.repository_owner }}" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Load code signing
+        shell: "pwsh"
+        run: |
+          mkdir -p ./sign
+          cd sign
+          $pfxPath = "hpcc_code_signing.pfx"
+          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
+          $currentDirectory = Get-Location
+          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
+          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
+          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx
+
+      - name: Check workspace
+        shell: "bash"
+        run: |
+          ls -la
+
+      - name: Build ECLIDE
+        shell: "bash"
+        run: |
+          cd ECLIDE
+          mkdir -p ./build
+          cd ./build
+          cmake -A Win32 -S ../ -B .
+          cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
+
+      - name: Sign ECLIDE Package
+        shell: "pwsh"
+        run: |
+          cd ./ECLIDE/build
+          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE}} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-eclide*.exe
+
+      - name: Upload Assets
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          artifacts: "./ECLIDE/build/*.exe"
+      
+      - name: Upload Assets to Jfrog
+        if: ${{ github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./ECLIDE/build
+          packages=($(ls -1 hpccsystems-*.exe ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
+          done
+
+      - name: Upload Error Logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-2022-eclide-logs
+          path: ./ECLIDE/build/**/*.log
