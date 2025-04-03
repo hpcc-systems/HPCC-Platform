@@ -3531,8 +3531,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     Owned<ISocketSelectHandler> selecthandler;
     Owned<IThreadPool>  threads;    // for commands
     bool stopping;
-    unsigned clientcounttick;
-    unsigned closedclients;
+    unsigned clientcounttick;   // is only touched/read by checkTimeout() that is not contended itself.
+    unsigned closedclients;   // is only touched/read by checkTimeout() that is not contended itself.
     CAsyncCommandManager asyncCommandManager;
     CThrottler stdCmdThrottler, slowCmdThrottler;
     CClientStatsTable clientStatsTable;
@@ -5835,41 +5835,43 @@ public:
 
     void checkTimeout()
     {
-        if (msTick()-clientcounttick>1000*60*60)
+        if (msTick() - clientcounttick > 1000 * 60 * 60)
         {
-            CriticalBlock block(ClientCountSect);
-            if (TF_TRACE_CLIENT_STATS && (ClientCount || MaxClientCount))
-                PROGLOG("Client count = %d, max = %d", ClientCount, MaxClientCount);
-            clientcounttick = msTick();
-            MaxClientCount = ClientCount;
+            {
+                CriticalBlock block(ClientCountSect);
+                if (TF_TRACE_CLIENT_STATS && (ClientCount || MaxClientCount))
+                    PROGLOG("Client count = %d, max = %d", ClientCount, MaxClientCount);
+                MaxClientCount = ClientCount;
+            }
             if (closedclients)
             {
                 if (TF_TRACE_CLIENT_STATS)
-                    PROGLOG("Closed client count = %d",closedclients);
+                    PROGLOG("Closed client count = %d", closedclients);
                 closedclients = 0;
             }
+            clientcounttick = msTick();
         }
         CriticalBlock block(sect);
-        ForEachItemInRev(i,clients)
+        ForEachItemInRev(i, clients)
         {
             CRemoteClientHandler &client = clients.item(i);
             if (client.timedOut())
             {
                 StringBuffer s;
-                bool ok = client.getInfo(s);    // will spot duff sockets
-                if (ok&&(client.openFiles.ordinality()!=0))
+                bool ok = client.getInfo(s); // will spot duff sockets
+                if (ok && (client.openFiles.ordinality() != 0))
                 {
                     if (TF_TRACE_CLIENT_CONN && client.inactiveTimedOut())
-                        WARNLOG("Inactive %s",s.str());
+                        WARNLOG("Inactive %s", s.str());
                 }
                 else
                 {
 #ifndef _DEBUG
                     if (TF_TRACE_CLIENT_CONN)
 #endif
-                        PROGLOG("Timing out %s",s.str());
+                        PROGLOG("Timing out %s", s.str());
                     closedclients++;
-                    onCloseSocket(&client,4);   // removes owned handles
+                    onCloseSocket(&client, 4); // removes owned handles
                 }
             }
         }
