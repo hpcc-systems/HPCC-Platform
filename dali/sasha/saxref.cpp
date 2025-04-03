@@ -986,7 +986,6 @@ public:
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
                 // Check if subdirectory is a dirPerPart or stripe directory
-                // To properly match all parts, process with current directory as the parent
                 const char *dir = fname.str();
                 bool isStriped = dir[0] == 'd';
                 if (isStriped)
@@ -997,7 +996,11 @@ public:
                         isSpecialDir = false;
                 }
                 if (isSpecialDir) {
-                    // Files inside a special directory should be scanned with the current directory as the parent
+                    // To properly match all file parts, we avoid building up the cDirDesc structure with stripe and dir-per-part directories
+                    // so that file parts with different physical locations can be correctly matched e.g.
+                    // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/1/afile.1_of_2
+                    // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/2/afile.2_of_2
+                    // These files would never be matched if we didn't build up the cDirDesc structure without the stripe and dir-per-part directories
                     if (!scanDirectory(node,ep,path,drv,pdir,NULL,!isStriped,isStriped))
                         return false;
                     if (!isStriped && pdir->dirs.ordinality()>0)
