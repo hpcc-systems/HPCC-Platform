@@ -5561,4 +5561,55 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION( HashFuncTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( HashFuncTests, "HashFuncTests" );
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class SleepTests : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(SleepTests);
+        CPPUNIT_TEST(testSleep);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    void testSleep()
+    {
+        //Sanity check that the sleep functions do not sleep too long or too short
+        {
+            __uint64 start = nsTick();
+            MilliSleep(10);
+            __uint64 elapsed = nsTick() - start;
+            CPPUNIT_ASSERT(elapsed > 10 * 1000 * 1000);
+            CPPUNIT_ASSERT(elapsed < 12 * 1000 * 1000);
+        }
+
+        {
+            __uint64 start = nsTick();
+            NanoSleep(10'000'000);
+            __uint64 elapsed = nsTick() - start;
+            CPPUNIT_ASSERT(elapsed > 10 * 1000 * 1000);
+            CPPUNIT_ASSERT(elapsed < 12 * 1000 * 1000);
+        }
+
+        {
+            __uint64 start = nsTick();
+            NanoSleep(10'000);
+            __uint64 elapsed = nsTick() - start;
+            CPPUNIT_ASSERT(elapsed > 10 * 1000);
+            CPPUNIT_ASSERT(elapsed < 1000 * 1000);
+        }
+
+        //Check case > 1 second
+        {
+            __uint64 start = nsTick();
+            NanoSleep(3'000'000'000);
+            __uint64 elapsed = nsTick() - start;
+            CPPUNIT_ASSERT(elapsed > 3'000'000'000);
+            CPPUNIT_ASSERT(elapsed < 3'100'000'000);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( SleepTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SleepTests, "SleepTests" );
+
 #endif // _USE_CPPUNIT

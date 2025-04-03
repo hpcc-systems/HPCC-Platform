@@ -2624,10 +2624,10 @@ protected:
         logctx.mergeStats(0, globalStats);
         unsigned __int64 elapsed = elapsedTimer.elapsedNs();
         unsigned __int64 minTime = milliToNano(options.minTimeLimit);
-        if (nanoToMilli(elapsed) < minTime)
+        if (minTime && (nanoToMilli(elapsed) < minTime))
         {
             unsigned __int64 delay = minTime - elapsed;
-            MilliSleep(nanoToMilli(delay));  // nano sleep would be better?
+            NanoSleep(delay);
             logctx.noteStatistic(StTimeDelayed, delay);
         }
         logctx.setStatistic(StTimeTotalExecute, elapsed);  // Should this include delay?
