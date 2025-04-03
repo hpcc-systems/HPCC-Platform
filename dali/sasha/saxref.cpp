@@ -1278,7 +1278,7 @@ public:
     }   
 
 
-    void listOrphans(cFileDesc *f,const char *basedir,const char *scope,bool &abort,unsigned int recentCutoffDays)
+    void listOrphans(cFileDesc *f,const char *currentPath,const char *currentScope,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1303,8 +1303,8 @@ public:
         }
         if (drv==drvs)
             return; // no orphans
-        StringBuffer mask(basedir);
-        StringBuffer scopeBuf(scope);
+        StringBuffer mask(currentPath);
+        StringBuffer scopeBuf(currentScope);
         addPathSepChar(mask);
         scopeBuf.append("::");
         f->getNameMask(mask);
@@ -1338,13 +1338,14 @@ public:
             bool warnnotexists = true;
             StringBuffer path;
             if (drv)
-                setReplicateFilename(addPathSepChar(path.append(basedir)),drv);
+                setReplicateFilename(addPathSepChar(path.append(currentPath)),drv);
             size32_t psz = path.length();
             StringBuffer tmp;
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),getPhysicalPartName(path,storagePlane,scopeBuf.str(), pn, f->N, f->isDirPerPart, f->isStriped).str());
+                    getPhysicalPartName(path,storagePlane,scopeBuf.str(), pn, f->N, f->isDirPerPart, f->isStriped);
+                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),path.str());
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -2235,7 +2236,7 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(storagePlanes[gname].get(),maxMb);
+            CNewXRefManager manager(storagePlanes[gname],maxMb);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
                 continue;
             manager.start(updateeclwatch);
