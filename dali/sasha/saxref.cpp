@@ -152,6 +152,7 @@ struct cFileDesc // no virtuals
     unsigned short N;           // num parts
     bool isStriped;             // stripe number present in physical path
     bool isDirPerPart;          // directory-per-part number present in physical path
+    byte filenameLen;           // length of file name excluding extension i.e. ._$P$_of_$N$
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -161,7 +162,7 @@ struct cFileDesc // no virtuals
     // bitset markedc[N];
     // bitset markedd[N];
 
-    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n,bool d,bool s)
+    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n,bool d,bool s,unsigned fnLen)
     {
         size32_t sl = strlen(_name); 
         if (sl>255) {
@@ -174,6 +175,7 @@ struct cFileDesc // no virtuals
         ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
         ret->isDirPerPart = d;
+        ret->filenameLen = (byte)fnLen;
         ret->isStriped = s;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
@@ -228,7 +230,15 @@ struct cFileDesc // no virtuals
         return memcmp(key,name+1,sl)==0;
     }
 
-    StringBuffer &getName(StringBuffer &buf)
+    bool getName(StringBuffer &buf)
+    {
+        bool maskExists = filenameLen != 0;
+        if (maskExists)
+            buf.append((size32_t)filenameLen, (const char *)(name+1));
+        return maskExists;
+    }
+
+    StringBuffer &getNameMask(StringBuffer &buf)
     {
         return buf.append((size32_t)name[0],(const char *)(name+1));
     }
@@ -236,7 +246,7 @@ struct cFileDesc // no virtuals
     StringBuffer &getPartName(StringBuffer &buf,unsigned p)
     {
         StringBuffer mask;
-        getName(mask);
+        getNameMask(mask);
         return expandMask(buf, mask, p, N);
     }
 
@@ -360,13 +370,14 @@ struct cDirDesc
     }
 
     const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
-                    StringAttr &mask,   // decoded mask
-                    unsigned &pf,       // part node
-                    unsigned &nf)       // num parts
+                    StringAttr &mask,       // decoded mask
+                    unsigned &pf,           // part node
+                    unsigned &nf,           // num parts
+                    unsigned &filenameLen)  // length of file name excluding extension i.e. ._$P$_of_$N$
     {
         const char *fn = name;
         // first see if tail fits a mask
-        if (deduceMask(fn, true, mask, pf, nf))
+        if (deduceMask(fn, true, mask, pf, nf, filenameLen))
             fn = mask.get();
         else {  // didn't match mask so use straight name
             //PROGLOG("**unmatched(%d,%d,%d) %s",drv,node,numnodes,name);
@@ -380,10 +391,11 @@ struct cDirDesc
     cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, bool isDirPerPart, bool isStriped)
     {
 
-        unsigned nf;    // num parts
-        unsigned pf;    // part num
+        unsigned nf;          // num parts
+        unsigned pf;          // part num
+        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
         StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
+        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
@@ -391,7 +403,7 @@ struct cDirDesc
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn,nf,isDirPerPart,isStriped);
+            file = cFileDesc::create(*mem,fn,nf,isDirPerPart,isStriped,filenameLen);
             files.add(file);
         }
         if (misplaced) {
@@ -422,8 +434,9 @@ struct cDirDesc
     {
         unsigned nf;
         unsigned pf;
+        unsigned filenameLen;
         StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
+        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
         cFileDesc *file = files.find(fn,false);
         if (file) {
@@ -1271,7 +1284,7 @@ public:
         // first check if any orhans at all (maybe could do this faster)
 #ifdef _DEBUG
         StringBuffer dbgname;
-        f->getName(dbgname);
+        f->getNameMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
@@ -1288,16 +1301,14 @@ public:
         if (drv==drvs)
             return; // no orphans
         StringBuffer mask(basedir);
-        StringBuffer scopeMask(scope);
+        StringBuffer scopeBuf(scope);
         addPathSepChar(mask);
-        scopeMask.append("::");
-        f->getName(mask);
-        f->getName(scopeMask);
-        CDfsLogicalFileName lfn;
-        if (lfn.setFromMask(scopeMask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
+        scopeBuf.append("::");
+        f->getNameMask(mask);
+        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
             try {
-                if (queryDistributedFileDirectory().exists(lfn.get(),udesc,true,false)) {
-                    warn(scopeMask.str(),"Orphans ignored as %s exists",lfn.get());
+                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                     return;
                 }
             }
@@ -1330,7 +1341,7 @@ public:
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),getPhysicalPartName(path,storagePlane,lfn.get(), pn, f->N, f->isDirPerPart, f->isStriped).str());
+                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),getPhysicalPartName(path,storagePlane,scopeBuf.str(), pn, f->N, f->isDirPerPart, f->isStriped).str());
                     offset_t sz;
                     CDateTime dt;
                     bool found;
