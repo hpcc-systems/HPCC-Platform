@@ -285,13 +285,13 @@ public:
                     if (compConfig->getPropBool("@useThorQueue", true))
                         params.push_back({ "queue", queue.get() });
 
-                    const char *thorName = compConfig->queryProp("@name");
+                    const char *thorName = compConfig->queryProp("@targetName");
                     StringBuffer jobName{};
                     if (isThorAgent)
                         jobName = "thormanager";
                     else
                         jobName = "thorworker";
-                    unsigned maxGraphs = compConfig->getPropInt("@maxGraphs", 1);
+                    unsigned maxGraphs = compConfig->getPropInt("@maxActive", 1);    // maxGraphs
                     if (maxGraphs == 1)
                     {
                         jobName.appendf("-job-%s-1", thorName);
