@@ -974,7 +974,6 @@ int main( int argc, const char *argv[]  )
 
     const char *thorName = globals->queryProp("@name");
     
-    //unsigned maxJobs = globals->getPropInt("@maxJobs", 1);
     unsigned maxGraphs = globals->getPropInt("@maxGraphs", 1);
     unsigned modMaxGraphs = maxGraphs + 1;
     unsigned currentGraphNumber{maxGraphs};

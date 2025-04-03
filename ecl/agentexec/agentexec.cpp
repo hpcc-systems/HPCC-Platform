@@ -284,10 +284,32 @@ public:
                     std::list<std::pair<std::string, std::string>> params = { };
                     if (compConfig->getPropBool("@useThorQueue", true))
                         params.push_back({ "queue", queue.get() });
-                    StringBuffer jobName(wuid);
+
+                    const char *thorName = compConfig->queryProp("@name");
+                    unsigned maxGraphs = compConfig->getPropInt("@maxGraphs", 1);
+                    unsigned modMaxGraphs = maxGraphs + 1;
+                    unsigned currentGraphNumber{maxGraphs};
+                    StringBuffer jobName;
+                    if (isThorAgent)
+                        jobName = "thormanager";
+                    else
+                        jobName = "thorworker";
+                    if (maxGraphs == 1)
+                    {
+                        jobName.appendf("-job-%s-1", thorName);
+                    }
+                    else
+                    {
+                        ++currentGraphNumber %= modMaxGraphs;
+                        if (currentGraphNumber == 0)
+                            currentGraphNumber = 1;
+                        jobName.appendf("-job-%s-%d", thorName, currentGraphNumber);
+                    }
+        
+//                    StringBuffer jobName(wuid);
                     if (isThorAgent)
                     {
-                        jobName.append('-').append(graphName);
+//                        jobName.append('-').append(graphName);
                         params.push_back({ "graphName", graphName.get() });
                         params.push_back({ "wfid", std::to_string(wfid) });
                     }
