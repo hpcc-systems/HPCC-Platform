@@ -242,7 +242,24 @@ public:
         : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
-    }
+        if (isThorAgent)
+            jobNamePrefix = "thormanager";
+        else
+            jobNamePrefix = "thorworker";
+        
+        Owned<const IPropertyTree> compConfig = getComponentConfig();
+        thorName = compConfig->queryProp("@name");
+        maxGraphs = compConfig->getPropInt("@maxGraphs", 1);
+        if (maxGraphs == 1)
+        {
+            jobNamePrefix.appendf("-job-%s-1", thorName);
+        }
+        else
+        {
+            modMaxGraphs = maxGraphs + 1;
+            currentGraphNumber = maxGraphs;
+        }
+}
     virtual void init(void *param) override
     {
         auto &context = *static_cast<ThreadCtx *>(param);
@@ -285,20 +302,8 @@ public:
                     if (compConfig->getPropBool("@useThorQueue", true))
                         params.push_back({ "queue", queue.get() });
 
-                    const char *thorName = compConfig->queryProp("@name");
-                    unsigned maxGraphs = compConfig->getPropInt("@maxGraphs", 1);
-                    unsigned modMaxGraphs = maxGraphs + 1;
-                    unsigned currentGraphNumber{maxGraphs};
-                    StringBuffer jobName;
-                    if (isThorAgent)
-                        jobName = "thormanager";
-                    else
-                        jobName = "thorworker";
-                    if (maxGraphs == 1)
-                    {
-                        jobName.appendf("-job-%s-1", thorName);
-                    }
-                    else
+                    StringBuffer jobName{jobNamePrefix};
+                    if (maxGraphs != 1)
                     {
                         ++currentGraphNumber %= modMaxGraphs;
                         if (currentGraphNumber == 0)
@@ -408,6 +413,11 @@ private:
     StringAttr queue;
     Linked<IJobQueueItem> item;
     bool isThorAgent = false;
+    StringBuffer jobNamePrefix;
+    const char *thorName{nullptr};
+    unsigned maxGraphs{};
+    unsigned modMaxGraphs{};
+    unsigned currentGraphNumber{};
 };
 
 IPooledThread *CEclAgentExecutionServer::createNew()
