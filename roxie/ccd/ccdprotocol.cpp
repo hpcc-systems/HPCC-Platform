@@ -1837,18 +1837,30 @@ readAnother:
                 if (httpHelper.isHttp())
                     httpHelper.setUseEnvelope(extractor.isSoap);
             }
+
+            if (!queryName)
+            {
+                // or should we set("") ?  Is an empty queryName ever valid ?
+                if (doTrace(traceSockets, TraceFlags::Max))
+                {
+                    DBGLOG("missing/invalid query name from socket");
+                }
+                client.clear();
+                return;
+            }
+
             if (streq(queryPrefix.str(), "control"))
             {
                 if (httpHelper.isHttp())
                     client->setHttpMode(queryName, false, httpHelper);
 
-                bool aclupdate = strieq(queryName, "aclupdate"); //ugly
+                bool aclupdate = strieq(queryName.str(), "aclupdate"); //ugly
                 byte iptFlags = aclupdate ? ipt_caseInsensitive|ipt_fast : ipt_fast;
 
                 createQueryPTree(queryPT, httpHelper, rawText, iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces), queryName);
 
                 //IPropertyTree *root = queryPT;
-                if (!strchr(queryName, ':'))
+                if (!strchr(queryName.str(), ':'))
                 {
                     VStringBuffer fullname("control:%s", queryName.str()); //just easier to keep for debugging and internal checking
                     queryPT->renameProp("/", fullname);
@@ -1856,7 +1868,7 @@ readAnother:
                 Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags | HPCC_PROTOCOL_CONTROL, global->defaultXmlReadFlags);
                 sink->onControlMsg(msgctx, queryPT, protocol);
                 protocol->finalize(0);
-                if (streq(queryName, "lock") || streq(queryName, "childlock")) //don't reset startNs, lock time should be included
+                if (streq(queryName.str(), "lock") || streq(queryName.str(), "childlock")) //don't reset startNs, lock time should be included
                     goto readAnother;
             }
             else if (isStatus)

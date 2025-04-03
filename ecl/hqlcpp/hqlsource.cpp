@@ -1837,7 +1837,7 @@ void SourceBuilder::analyseGraph(IHqlExpression * expr)
 {
     analyse(expr);
     SourceFieldUsage * fieldUsage = translator.querySourceFieldUsage(tableExpr);
-    if (fieldUsage && !fieldUsage->seenAll())
+    if (fieldUsage && !fieldUsage->isComplete())
     {
         if (expr->queryNormalizedSelector() == tableExpr->queryNormalizedSelector())
             fieldUsage->noteAll();
@@ -1852,7 +1852,7 @@ void SourceBuilder::gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpressi
     {
         if (expr->queryBody() == tableExpr->queryBody())
             return;
-        if (fieldUsage->seenAll())
+        if (fieldUsage->isComplete())
             return;
 
         IHqlExpression * ds = expr->queryChild(0);
@@ -1863,7 +1863,7 @@ void SourceBuilder::gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpressi
                 assertex(ds->queryBody() == tableExpr->queryBody());
                 IHqlExpression * selSeq = querySelSeq(expr);
                 OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-                ::gatherFieldUsage(fieldUsage, expr, left);
+                ::gatherFieldUsage(fieldUsage, expr, left, false);
                 return;
             }
         }
@@ -4044,6 +4044,10 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
         MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
         monitors.buildSegments(func.ctx, "irc", false);
     }
+
+    SourceFieldUsage * fieldUsage = translator.querySourceFieldUsage(tableExpr);
+    if (fieldUsage)
+        monitors.noteKeyedFieldUsage(fieldUsage);
 
     buildLimits(instance->startctx, expr, instance->activityId);
     if (!limitExpr && !keyedLimitExpr && !choosenValue && (instance->kind == TAKindexread || instance->kind == TAKindexnormalize) && !steppedExpr)

@@ -57,27 +57,33 @@ protected:
 class HQL_API SourceFieldUsage : public CInterface
 {
 public:
-    SourceFieldUsage(IHqlExpression * _source);
+    SourceFieldUsage(IHqlExpression * _source, bool _includeFieldDetail, bool _includeUnusedFields);
 
-    void noteSelect(IHqlExpression * select, IHqlExpression * selector);
+    void noteKeyedSelect(IHqlExpression * select, IHqlExpression * selector);
+    void noteSelect(IHqlExpression * select, IHqlExpression * selector, bool isKeyed);
     inline void noteAll() { usedAll = true; }
     inline void noteFilepos() { usedFilepos = true; }
 
     const char * queryFilenameText() const;
     inline bool matches(IHqlExpression * search) const { return source == search; }
+    inline bool isComplete() const { return seenAll() && !trackKeyed(); }
     inline bool seenAll() const { return usedAll; }
+    inline bool trackKeyed() const { return (source->getOperator() == no_newkeyindex); }
 
-    IPropertyTree * createReport(bool includeFieldDetail, const IPropertyTree * exclude) const;
+    IPropertyTree * createReport(const IPropertyTree * exclude) const;
 
 protected:
-    void expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, bool includeFieldDetail, unsigned & numFields, unsigned & numFieldsUsed) const;
+    void expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, unsigned firstPayload, unsigned & numFields, unsigned & numFieldsUsed, unsigned & numPayloadCandidates) const;
     IHqlExpression * queryFilename() const;
 
 protected:
     LinkedHqlExpr source;
     HqlExprArray selects;
+    BoolArray areKeyed;
     bool usedAll;
     bool usedFilepos;
+    bool includeFieldDetail;
+    bool includeUnusedFields;
 
 private:
     mutable StringAttr cachedFilenameEcl;
@@ -92,7 +98,7 @@ extern HQL_API void logTreeStats(const HqlExprArray & exprs);
 extern HQL_API void gatherSelectExprs(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API bool containsSelector(IHqlExpression * expr, IHqlExpression * selector);
 extern HQL_API bool containsSelectorAnywhere(IHqlExpression * expr, IHqlExpression * selector);         // searches through nested "hidden" definitions
-extern HQL_API void gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr, IHqlExpression * selector);
+extern HQL_API void gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr, IHqlExpression * selector, bool isKeyed);
 extern HQL_API void gatherParentFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr);
 
 #endif

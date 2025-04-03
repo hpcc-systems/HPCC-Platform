@@ -64,6 +64,7 @@ public:
     void buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed);
     bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxField);
     bool useValueSets() const { return createValueSets; }
+    void noteKeyedFieldUsage(SourceFieldUsage * fieldUsage);
 
 protected:
     void buildEmptyKeySegment(BuildFilterState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);

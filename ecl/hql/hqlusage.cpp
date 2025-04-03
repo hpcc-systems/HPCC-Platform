@@ -27,9 +27,9 @@
 //#define SEARCH_FIELD "field1"
 
 #ifdef SEARCH_FIELD
-static void breakOnMatchField()
+static void breakOnMatchField(bool isKeyed)
 {
-    strlen("");
+    printf("%u\n", isKeyed);
 }
 #endif
 
@@ -337,32 +337,48 @@ static void expandSelectText(StringBuffer & s, IHqlExpression * expr)
 }
 
 
-static IPropertyTree * addSelect(IPropertyTree * xml, IHqlExpression * expr, bool isUsed)
+static IPropertyTree * addSelect(IPropertyTree * xml, IHqlExpression * expr, bool isUsed, bool isKeyed, bool isPayload)
 {
+    //Sanity check to help catch logic problems elsewhere.  It should only be possible to use KEYED() on key fields!
+    //But if it fails we do not want to fail the compile => only check in debug.
+    dbgassertex(!(isKeyed && isPayload));
     StringBuffer text;
     expandSelectText(text, expr);
-    Owned<IPropertyTree> field = createPTree(isUsed ? "field" : "unused");
+    Owned<IPropertyTree> field = createPTree("field");
     field->setProp("@name", text.str());
+    if (isKeyed)
+        field->setPropBool("@hasKeyedUse", isKeyed);
+    if (!isUsed)
+        field->setPropBool("@unused", true);
+    if (isPayload)
+        field->setPropBool("@payload", true);
     const char * tag = field->queryName();
     xml = ensurePTree(xml, "fields");
     return xml->addPropTree(tag, field.getClear());
 }
 
-SourceFieldUsage::SourceFieldUsage(IHqlExpression * _source)
-: source(_source)
+SourceFieldUsage::SourceFieldUsage(IHqlExpression * _source, bool _includeFieldDetail, bool _includeUnusedFields)
+: source(_source), includeFieldDetail(_includeFieldDetail), includeUnusedFields(_includeUnusedFields)
 {
     usedAll = false;
     usedFilepos = false;
 }
 
-void SourceFieldUsage::noteSelect(IHqlExpression * select, IHqlExpression * selector)
+void SourceFieldUsage::noteKeyedSelect(IHqlExpression * select, IHqlExpression * selector)
+{
+    noteSelect(select, selector, true);
+}
+
+void SourceFieldUsage::noteSelect(IHqlExpression * select, IHqlExpression * selector, bool isKeyed)
 {
 #ifdef SEARCH_FIELD
     if (select->queryChild(1)->queryName() == createAtom(SEARCH_FIELD))
     {
+#ifdef SEARCH_FILENAME
         if (matchesConstantString(queryFilename(), SEARCH_FILENAME, true))
+#endif
         {
-            breakOnMatchField();
+            breakOnMatchField(isKeyed);
         }
     }
 #endif
@@ -370,8 +386,15 @@ void SourceFieldUsage::noteSelect(IHqlExpression * select, IHqlExpression * sele
     //MORE: For simple selectors may be more efficient to search before replacing the selector.
     OwnedHqlExpr mapped = replaceSelector(select, selector, queryActiveTableSelector());
     //MORE: May need to use a hash table.
-    if (!selects.contains(*mapped))
+
+    unsigned match = selects.find(*mapped);
+    if (match == NotFound)
+    {
         selects.append(*mapped.getClear());
+        areKeyed.append(isKeyed);
+    }
+    else if (isKeyed)
+        areKeyed.replace(true, match);
 }
 
 IHqlExpression * SourceFieldUsage::queryFilename() const
@@ -401,7 +424,7 @@ const char * SourceFieldUsage::queryFilenameText() const
     return cachedFilenameEcl.get();
 }
 
-IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IPropertyTree * exclude) const
+IPropertyTree * SourceFieldUsage::createReport(const IPropertyTree * exclude) const
 {
     bool sourceIsKey = isKey(source);
     const char * type = sourceIsKey ? "index" : "dataset";
@@ -421,79 +444,81 @@ IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IP
     entry->setProp("@name", nameText);
     entry->setProp("@type", type);
 
+    bool reportPayload = isKey(source);
+    unsigned firstPayload = NotFound;
+    IHqlExpression * record = source->queryRecord();
+    if (reportPayload)
+    {
+        unsigned numPayloadFields = 0;
+        if (getBoolAttribute(source, filepositionAtom, true))
+            numPayloadFields = 1;
+        IHqlExpression * payloadAttr = source->queryAttribute(_payload_Atom);
+        if (!payloadAttr)
+            payloadAttr = record->queryAttribute(_payload_Atom);
+        if (payloadAttr)
+            numPayloadFields = (unsigned)getIntValue(payloadAttr->queryChild(0));
+        if (numPayloadFields)
+            firstPayload = firstPayloadField(record, numPayloadFields);
+    }
     unsigned numFields = 0;
     unsigned numFieldsUsed = 0;
-    expandSelects(entry, source->queryRecord(), queryActiveTableSelector(), usedAll, includeFieldDetail, numFields, numFieldsUsed);
-    if (isKey(source))
-    {
-        IHqlExpression * original = queryAttributeChild(source, _original_Atom, 0);
-        if (!original)
-            original = source;
-        IHqlExpression * lastField = queryLastField(original->queryRecord());
-        if (getBoolAttribute(source, filepositionAtom, true))
-        {
-            if (usedFilepos || !lastField->hasAttribute(_implicitFpos_Atom))
-            {
-                numFields++;
-                if (usedFilepos || usedAll)
-                {
-                    if (includeFieldDetail)
-                        addSelect(entry, lastField, true);
-                    numFieldsUsed++;
-                }
-            }
-        }
-        else
-        {
-            assertex(!usedFilepos);
-        }
-    }
+    unsigned numPayloadCandidates = 0;
+    expandSelects(entry, record, queryActiveTableSelector(), usedAll, firstPayload, numFields, numFieldsUsed, numPayloadCandidates);
 
     entry->setPropInt("@numFields", numFields);
     entry->setPropInt("@numFieldsUsed", numFieldsUsed);
+    if (sourceIsKey && numPayloadCandidates)
+        entry->setPropInt("@numUnkeyedKeyed", numPayloadCandidates);
     return entry.getClear();
 }
 
 
-void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, bool includeFieldDetail, unsigned & numFields, unsigned & numFieldsUsed) const
+void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, unsigned firstPayload, unsigned & numFields, unsigned & numFieldsUsed, unsigned & numPayloadCandidates) const
 {
+    bool reportKeyed = trackKeyed();
     ForEachChild(i, record)
     {
         IHqlExpression * cur = record->queryChild(i);
+        bool inPayload = (i >= firstPayload);
+        unsigned childFirstPayload = inPayload ? 0 : NotFound;
         switch (cur->getOperator())
         {
         case no_field:
             {
                 OwnedHqlExpr selected = createSelectExpr(LINK(selector), LINK(cur));
-                bool thisUsed = allUsed || selects.contains(*selected);
+                unsigned match = selects.find(*selected);
+                bool isKeyed = reportKeyed && (match != NotFound) ? areKeyed.item(match) : false;
+                bool thisUsed = allUsed || (match != NotFound);
                 if (cur->isDatarow())
                 {
-                    expandSelects(xml, cur->queryRecord(), selected, thisUsed, includeFieldDetail, numFields, numFieldsUsed);
+                    expandSelects(xml, cur->queryRecord(), selected, thisUsed, childFirstPayload, numFields, numFieldsUsed, numPayloadCandidates);
                 }
                 else
                 {
                     numFields++;
+                    if (!inPayload && !isKeyed)
+                        numPayloadCandidates++;
                     if (thisUsed)
                     {
                         if (includeFieldDetail)
-                            addSelect(xml, selected, thisUsed);
+                            addSelect(xml, selected, true, isKeyed, inPayload);
                         numFieldsUsed++;
                     }
                     else
                     {
-                        //could have an option to output unused fields, with code like the following:
-                        //addSelect(xml, selected, thisUsed);
+                        if (includeUnusedFields)
+                            addSelect(xml, selected, false, false, inPayload);
                     }
                 }
                 break;
             }
         case no_record:
-            expandSelects(xml, cur, selector, allUsed, includeFieldDetail, numFields, numFieldsUsed);
+            expandSelects(xml, cur, selector, allUsed, childFirstPayload, numFields, numFieldsUsed, numPayloadCandidates);
             break;
         case no_ifblock:
             //MORE: Theoretically if any of the fields within the ifblock are used, then the fields
             //used in the ifblock condition are also used.  Needs to be handled by a preprocessing step.
-            expandSelects(xml, cur->queryChild(1), selector, allUsed, includeFieldDetail, numFields, numFieldsUsed);
+            expandSelects(xml, cur->queryChild(1), selector, allUsed, childFirstPayload, numFields, numFieldsUsed, numPayloadCandidates);
             break;
         }
     }
@@ -506,8 +531,8 @@ static HqlTransformerInfo sourceFieldTrackerInfo("SourceFieldTracker");
 class SourceFieldTracker : public NewHqlTransformer
 {
 public:
-    SourceFieldTracker(SourceFieldUsage * _fieldUsage, IHqlExpression * _selector)
-        : NewHqlTransformer(sourceFieldTrackerInfo), fieldUsage(_fieldUsage), selector(_selector)
+    SourceFieldTracker(SourceFieldUsage * _fieldUsage, IHqlExpression * _selector, bool isKeyed)
+        : NewHqlTransformer(sourceFieldTrackerInfo), fieldUsage(_fieldUsage), selector(_selector), insideKeyed(isKeyed)
     {
     }
 
@@ -519,12 +544,27 @@ protected:
 protected:
     SourceFieldUsage * fieldUsage;
     IHqlExpression * selector;
+    bool insideKeyed = false;
+    bool suppressKeyed = false;
 };
 
 void SourceFieldTracker::analyseExpr(IHqlExpression * expr)
 {
-    if (fieldUsage->seenAll() || alreadyVisited(expr))
+    ANewTransformInfo * extra = queryTransformExtra(expr);
+    if (alreadyVisited(extra))
+    {
+        //Use spareByte1 to track whether this expression has been visited inside KEYED()
+        if (!insideKeyed || extra->spareByte1)
+            return;
+        if (!fieldUsage->trackKeyed())
+            return;
+    }
+
+    if (insideKeyed)
+        extra->spareByte1 = true;
+    else if (fieldUsage->seenAll())
         return;
+
     if (expr == selector)
     {
         fieldUsage->noteAll();
@@ -533,10 +573,12 @@ void SourceFieldTracker::analyseExpr(IHqlExpression * expr)
 
     if (isSelected(expr))
     {
-        fieldUsage->noteSelect(expr->queryNormalizedSelector(), selector);
+        fieldUsage->noteSelect(expr->queryNormalizedSelector(), selector, insideKeyed);
         return;
     }
 
+    bool savedInsideKeyed = insideKeyed;
+    bool savedSupressKeyed = suppressKeyed;
     switch (expr->getOperator())
     {
     case no_filepos:
@@ -546,9 +588,22 @@ void SourceFieldTracker::analyseExpr(IHqlExpression * expr)
             return;
         }
         break;
+    case no_assertkeyed:
+    case no_assertwild:
+        if (!suppressKeyed)
+            insideKeyed = true;
+        break;
+    case no_select:
+        //If an expression contains a child query on an index, e.g. exists(ds(field=RIGHT.x)) then do not
+        //tag RIGHT.x as keyed.  Representation is no_select(no_select_nth(no_aggregate,...)))
+        if (isNewSelector(expr))
+            suppressKeyed = true;
+        break;
     }
 
     NewHqlTransformer::analyseExpr(expr);
+    insideKeyed = savedInsideKeyed;
+    suppressKeyed = savedSupressKeyed;
 }
 
 
@@ -567,10 +622,10 @@ bool SourceFieldTracker::isSelected(IHqlExpression * expr) const
 
 //------------------------------------------------------------------------------------------------
 
-void gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr, IHqlExpression * selector)
+void gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr, IHqlExpression * selector, bool isKeyed)
 {
     unsigned first = getNumChildTables(expr);
-    SourceFieldTracker tracker(fieldUsage, selector);
+    SourceFieldTracker tracker(fieldUsage, selector, isKeyed);
     ForEachChildFrom(i, expr, first)
         tracker.analyse(expr->queryChild(i), 0);
 }
@@ -610,15 +665,15 @@ void gatherParentFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr
     IHqlExpression * selSeq = querySelSeq(expr);
     //MORE: Do all this in a single pass
     if (hasDs)
-        gatherFieldUsage(fieldUsage, expr, ds->queryNormalizedSelector());
+        gatherFieldUsage(fieldUsage, expr, ds->queryNormalizedSelector(), false);
     if (hasLeft)
     {
         OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-        gatherFieldUsage(fieldUsage, expr, left);
+        gatherFieldUsage(fieldUsage, expr, left, false);
     }
     if (hasRight)
     {
         OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-        gatherFieldUsage(fieldUsage, expr, right);
+        gatherFieldUsage(fieldUsage, expr, right, false);
     }
 }
