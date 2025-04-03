@@ -792,6 +792,7 @@ struct HqlCppOptions
     bool                reportFieldUsage = false;
     bool                reportFileUsage = false;
     bool                recordFieldUsage = false;
+    bool                recordUnusedFields = false;
     bool                subsortLocalJoinConditions = false;
     bool                projectNestedTables = false;
     bool                showSeqInGraph = false;
@@ -2045,11 +2046,11 @@ protected:
     bool getDebugFlag(const char * name, bool defValue);
     void initOptions();
     void postProcessOptions();
-    SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
     void noteAllFieldsUsed(IHqlExpression * expr);
     IHqlExpression * translateGetGraphResult(BuildCtx & ctx, IHqlExpression * expr);
 
 public:
+    SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
     IHqlExpression * convertToPhysicalIndex(IHqlExpression * tableExpr);
     IHqlExpression * buildIndexFromPhysical(IHqlExpression * expr);
     //MORE: At some point the global getUniqueId() should be killed so there are only local references.
