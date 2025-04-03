@@ -55,18 +55,20 @@ jobs:
         timeout-minutes: 10 # generous, expected time is approx 1 min.
         shell: "bash"
         run: |
-          set +e     # Ignore intermediate error(s) in this step
           ulimit -c unlimited
           ulimit -c
 
           export LANG="en_US.UTF-8"
           sudo update-locale
+          mkdir -p /home/runner/HPCCSystems-regression/log
+          logFile="/home/runner/HPCCSystems-regression/log/unittests.log"
+          echo "pwd: $(pwd)"
           while read test
           do
-            echo "$test"
-            echo "--------------------------------------"
-            /opt/HPCCSystems/bin/unittests -e "$test"
-            echo " "
+            echo "$test" | tee -a $logFile
+            echo "--------------------------------------" | tee -a  $logFile
+            /opt/HPCCSystems/bin/unittests -e "$test" 2>&1 | tee -a $logFile
+            echo " " | tee -a $logFile
           done< <(/opt/HPCCSystems/bin/unittests -l | sort )
 
       - name: Check for Core files
