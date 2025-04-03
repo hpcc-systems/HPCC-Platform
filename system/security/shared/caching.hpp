@@ -157,7 +157,7 @@ public:
     //Returns an owned reference to a shared cache of a given Sec Mgr class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr = nullptr);
+    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -218,8 +218,11 @@ public:
             DBGLOG("*** Setting default file scope permissions to use legacy mode which uses first retrieved permission for all users.");
         m_useLegacyDefaultFileScopePermissionCache = useLegacy;
     }
+
 private:
 
+    void clearPermissionsCache();
+    void clearUsersCache();
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
     typedef std::map<string, CachedUser*> MapUserCache;
 
@@ -248,6 +251,7 @@ private:
     Semaphore m_fileScopeCacheFillSem;
     std::thread m_fileScopeCacheFillThread;
     std::atomic<bool> m_stopFileScopeCacheFillThread = false;
+    std::atomic<bool> m_flushCache = false;
 };
 
 time_t getThreadCreateTime();

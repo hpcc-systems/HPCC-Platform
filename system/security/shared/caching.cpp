@@ -226,8 +226,9 @@ CPermissionsCache::~CPermissionsCache()
         g_mapCache.erase(m_secMgrClass.str());
     }
     stopManagedFileScopeCacheFillThread();
-    removeAllManagedFileScopes();   // does this really need to take the lock?
-    flush();
+    removeAllManagedFileScopes();
+    clearPermissionsCache();
+    clearUsersCache();
 }
 
 int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, bool* pFound)
@@ -679,6 +680,14 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
 
     while (!m_stopFileScopeCacheFillThread)
     {
+        // If the flush cache flag is set, clear the permission and user caches
+        if (m_flushCache)
+        {
+            clearPermissionsCache();
+            clearUsersCache();
+            m_flushCache = false;
+        }
+
         IArrayOf<ISecResource> scopes;
         aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
 
@@ -721,26 +730,26 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 
     SecAccessFlags defaultPermission = SecAccess_None;
     const std::string username(user.getName());
+    bool addedToCache = false;
 
     {
         ReadLockBlock readLock(m_defaultFilePermissionRWLock);
         auto it = m_userDefaultFileScopePermissions.find(username);
-        readLock.clear();   // lock no longer needed
+        if (it != m_userDefaultFileScopePermissions.end())
+            return it->second;
+    }
 
-        // If default permission not found for the user, query the security manager.
-        // Then, acquire the write lock and add the default permission to the cache if
-        // not already added by another thread.
+    // If default permission not found for the user, query the security manager.
+    // Then, acquire the write lock and add the default permission to the cache if
+    // not already added by another thread.
+    defaultPermission = m_secMgr->queryDefaultPermission(user);
+    {
+        WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
+        auto it = m_userDefaultFileScopePermissions.find(username);
         if (it == m_userDefaultFileScopePermissions.end())
         {
-            defaultPermission = m_secMgr->queryDefaultPermission(user);
-            WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
-            it = m_userDefaultFileScopePermissions.find(username);
-            if (it == m_userDefaultFileScopePermissions.end())
-            {
-                m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
-                DBGLOG("Added user '%s' to default file scope permissions with access %s(%d)", username.c_str(), getSecAccessFlagName(defaultPermission),
-                    defaultPermission);
-            }
+            m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
+            addedToCache = true;
         }
         else
         {
@@ -748,32 +757,41 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
         }
     }
 
+    if (addedToCache)
+        DBGLOG("Added user '%s' to default file scope permissions with access %s(%d)", username.c_str(), getSecAccessFlagName(defaultPermission),
+                    defaultPermission);
+
     return defaultPermission;
 }
 
 void CPermissionsCache::flush()
 {
-    {
-        WriteLockBlock writeLock(m_resPermCacheRWLock);
-        MapResPermissionsCache::const_iterator i;
-        MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
-        for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
-            delete (*i).second;
-        m_resPermissionsMap.clear();
-    }
-    {
-        WriteLockBlock writeLock(m_userCacheRWLock );
-        MapUserCache::const_iterator ui;
-        MapUserCache::const_iterator uiEnd = m_userCache.end();
-        for (ui = m_userCache.begin(); ui != uiEnd; ui++)
-            delete (*ui).second;
-        m_userCache.clear();
-    }
-
     // If the managed file scope cache fill thread is running, signal it to refill the cache
+    m_flushCache = true;
     if (m_fileScopeCacheFillThread.joinable())
         m_fileScopeCacheFillSem.signal();
 }
+
+void CPermissionsCache::clearPermissionsCache()
+{
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
+    MapResPermissionsCache::const_iterator i;
+    MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
+    for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
+        delete (*i).second;
+    m_resPermissionsMap.clear();
+}
+
+void CPermissionsCache::clearUsersCache()
+{
+    WriteLockBlock writeLock(m_userCacheRWLock );
+    MapUserCache::const_iterator ui;
+    MapUserCache::const_iterator uiEnd = m_userCache.end();
+    for (ui = m_userCache.begin(); ui != uiEnd; ui++)
+        delete (*ui).second;
+    m_userCache.clear();
+}
+
 
 CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass, ISecManager *secMgr)
 {
