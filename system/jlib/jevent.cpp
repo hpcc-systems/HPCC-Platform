@@ -542,6 +542,24 @@ void EventRecorder::recordDaliDisconnect(__uint64 id)
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
+void EventRecorder::recordFileInformation(unsigned fileid, const char * filename)
+{
+    //Meta data is logged whether or not recording is paused, check that logging is enabled.
+    if (!isStarted || isStopped)
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"MetaFileInformation\", \"file\": %u, \"path\"=\"%s\" }", fileid, filename);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, filename);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(MetaFileInformation, pos);
+    write(pos, EvAttrFileId, fileid);
+    write(pos, EvAttrPath, filename);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
 void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
 {
     __uint64 ts = cycle_to_nanosec(get_cycles_now() - startCycles); // nanoseconds relative to the start of the recording

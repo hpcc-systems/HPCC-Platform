@@ -274,7 +274,8 @@ bool startRoxieEventRecording(const char * options, const char * filename)
     if (!queryRecorder().startRecording(options, path, true))
         return false;
 
-    //MORE: Add all the meta information for the files - either now or in stopRoxieEventRecording()
+    //Generate information about all files that are already registered - others will be added as they are opened
+    recordEventIndexInformation();
 
     queryRecorder().pauseRecording(false, false);
     return true;

@@ -1074,6 +1074,26 @@ CKeyStore::~CKeyStore()
 {
 }
 
+unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
+{
+    unsigned id;
+    if (useId != (unsigned) -1)
+        id = useId;
+    else
+        id = ++nextId;
+
+    //This is unfortunate that this is within the critical section, but if it is not then the event stream
+    //can contain references to ids before the file information is recorded.
+    //
+    //Index adds are unusual, so it is unlikely to cause problems in practice.
+    //
+    //It has to be in this function because creating a file class will generate some event data as a side-effect.
+    if (unlikely(recordingEvents()))
+        queryRecorder().recordFileInformation(id, filename);
+
+    return id;
+}
+
 unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
 {
     synchronized block(mutex);
@@ -1095,12 +1115,12 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         if (iMappedFile)
         {
             assert(!iFileIO && !part);
-            keyIndex = new CMemKeyIndex(getUniqId(fileIdx), LINK(iMappedFile), fname, isTLK);
+            keyIndex = new CMemKeyIndex(getUniqId(fileIdx, fileName), LINK(iMappedFile), fname, isTLK);
         }
         else if (iFileIO)
         {
             assert(!part);
-            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK, blockedIOSize);
+            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), LINK(iFileIO), fname, isTLK, blockedIOSize);
         }
         else
         {
@@ -1116,7 +1136,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 iFile.setown(createIFile(fileName));
             IFileIO *fio = iFile->open(IFOread);
             if (fio)
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK, blockedIOSize);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, blockedIOSize);
             else
                 throw MakeStringException(0, "Failed to open index file %s", fileName);
         }
@@ -1162,6 +1182,24 @@ StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
     return xml;
 }
 
+//MORE: This should be called sparingly because it locks all access via the hash table
+void CKeyStore::recordEventIndexInformation()
+{
+    if (!recordingEvents())
+        return;
+
+    EventRecorder & recorder = queryRecorder();
+    synchronized block(mutex);
+    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
+    ForEach(*iter)
+    {
+        CKeyIndexMapping &mapping = iter->query();
+        IKeyIndex &index = mapping.query();
+        unsigned id = index.queryId();
+        const char *name = mapping.queryFindString();
+        recorder.recordFileInformation(id, name);
+    }
+}
 
 void CKeyStore::resetMetrics()
 {
@@ -2802,6 +2840,7 @@ public:
     virtual unsigned queryScans() { return realKey ? realKey->queryScans() : 0; }
     virtual unsigned querySeeks() { return realKey ? realKey->querySeeks() : 0; }
     virtual const char *queryFileName() const { return keyfile.get(); }
+    virtual unsigned queryId() const override { return NotFound; }
     virtual offset_t queryBlobHead() { return checkOpen().queryBlobHead(); }
     virtual void resetCounts() { if (realKey) realKey->resetCounts(); }
     virtual offset_t queryLatestGetNodeOffset() const { return realKey ? realKey->queryLatestGetNodeOffset() : 0; }
@@ -2858,9 +2897,15 @@ extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &ret)
     return queryKeyStore()->getMetrics(ret);
 }
 
+
 extern jhtree_decl void resetIndexMetrics()
 {
     queryKeyStore()->resetMetrics();
+}
+
+void recordEventIndexInformation()
+{
+    queryKeyStore()->recordEventIndexInformation();
 }
 
 extern jhtree_decl size_t setNodeCacheMem(size_t cacheSize)

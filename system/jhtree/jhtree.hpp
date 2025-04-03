@@ -91,6 +91,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual size32_t keyedSize() = 0;
     virtual bool hasPayload() = 0;
     virtual const char *queryFileName() const = 0;
+    virtual unsigned queryId() const = 0;
     virtual offset_t queryBlobHead() = 0;
     virtual void resetCounts() = 0;
     virtual offset_t queryLatestGetNodeOffset() const = 0;
@@ -154,6 +155,7 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet();
 extern jhtree_decl IKeyArray *createKeyArray();
 extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &);
 extern jhtree_decl void resetIndexMetrics();
+extern jhtree_decl void recordEventIndexInformation();
 
 extern jhtree_decl RelaxedAtomic<unsigned> nodesLoaded;
 

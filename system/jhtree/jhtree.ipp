@@ -48,12 +48,8 @@ private:
     Mutex mutex;
     CKeyIndexMRUCache keyIndexCache;
     std::atomic<unsigned> nextId { 0x80000000 };
-    unsigned getUniqId(unsigned useId)
-    {
-        if (useId != (unsigned) -1)
-            return useId;
-        return ++nextId;
-    }
+
+    unsigned getUniqId(unsigned useId, const char * filename);
     IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
 public:
     CKeyStore();
@@ -66,6 +62,7 @@ public:
     void clearCacheEntry(const IFileIO *io);
     unsigned setKeyCacheLimit(unsigned limit);
     StringBuffer &getMetrics(StringBuffer &xml);
+    void recordEventIndexInformation();
     void resetMetrics();
 };
 
@@ -137,6 +134,7 @@ public:
     virtual unsigned getFlags() { return (unsigned char)keyHdr->getKeyType(); };
 
     virtual void dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw);
+    virtual unsigned queryId() const override { return iD; }
 
     virtual unsigned numParts() { return 1; }
     virtual IKeyIndex *queryPart(unsigned idx) { return idx ? NULL : this; }
