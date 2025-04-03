@@ -1297,7 +1297,7 @@ public:
         if (lfn.setFromMask(scopeMask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
                 if (queryDistributedFileDirectory().exists(lfn.get(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
+                    warn(scopeMask.str(),"Orphans ignored as %s exists",lfn.get());
                     return;
                 }
             }

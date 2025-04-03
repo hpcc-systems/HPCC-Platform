@@ -3812,10 +3812,9 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
             mname.append(PATHSEPCHAR);
             name += prefixLen + 1;
             stripeNum = 0;
-            if (isContainerized() && plane.getPropInt("@numDevices") > 1)
+            unsigned numDevices = plane.getPropInt("@numDevices");
+            if (*name=='d' && numDevices>1)
             {
-                if (*name!='d')
-                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 name++;
                 if (*name==PATHSEPCHAR)
                     throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
@@ -3827,7 +3826,7 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
                 if (*name!=PATHSEPCHAR)
                     throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
                 name++;
-                if (stripeNum>=plane.getPropInt("@numDevices"))
+                if (stripeNum>=numDevices)
                     throw makeStringExceptionV(-1, "Stripe number in file %s is greater than numDevices in storage plane definition", filename);
             }
             break;
@@ -3893,7 +3892,7 @@ extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned 
                     break;
                 }
                 else
-                    throw makeStringExceptionV(-1, "Incorrect max part number(%d) and part number (%d) in file %s", mn, pn, filename);
+                    throw makeStringExceptionV(-1, "Incorrect max part number (%d) and part number (%d) in file %s", mn, pn, filename);
             }
             else
                 throw makeStringExceptionV(-1, "Missing part number in file %s", filename);

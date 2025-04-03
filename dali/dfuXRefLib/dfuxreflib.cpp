@@ -2946,7 +2946,7 @@ protected:
 
         // Standard file name with multiple parts
         parseFileName("/var/lib/HPCCSystems/hpcc-data/test/myname._1_of_3", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
-        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data/test/myname._$P$_of_3",mname.str());
+        CPPUNIT_ASSERT_EQUAL_STR("/test/myname._$P$_of_3",mname.str());
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)1,num);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)3,max);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)0,stripeNum);
@@ -2955,7 +2955,7 @@ protected:
 
         // Standard file name with multiple parts is striped across directories, storage plane has numDevices set to 111
         parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/myname._10_of_30", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
-        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_30",mname.str());
+        CPPUNIT_ASSERT_EQUAL_STR("/test/myname._$P$_of_30",mname.str());
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)10,num);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)30,max);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
@@ -2964,7 +2964,7 @@ protected:
 
         // Standard file name with multiple parts is striped across directories and each part has its own directory, storage plane has numDevices set to 111
         parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
-        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100",mname.str());
+        CPPUNIT_ASSERT_EQUAL_STR("/test/myname._$P$_of_100",mname.str());
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)42,num);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100,max);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)1,stripeNum);
@@ -2973,11 +2973,20 @@ protected:
 
         // Test a longer part number
         parseFileName("/var/lib/HPCCSystems/hpcc-data-two/d110/test/12345/myname._12345_of_100000", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
-        CPPUNIT_ASSERT_EQUAL_STR("/var/lib/HPCCSystems/hpcc-data-two/test/myname._$P$_of_100000",mname.str());
+        CPPUNIT_ASSERT_EQUAL_STR("/test/myname._$P$_of_100000",mname.str());
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)12345,num);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100000,max);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)110,stripeNum);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)12345,dirPerPart);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
+
+        // A file with a storage plane that has numDevices>1 but no stripe number in the path (not sure how this happens naturally, but it is possible)
+        parseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname._42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
+        CPPUNIT_ASSERT_EQUAL_STR("/test/myname._$P$_of_100",mname.str());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Part number is incorrect",(unsigned)42,num);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Max part number is incorrect",(unsigned)100,max);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Stripe number is incorrect",(unsigned)0,stripeNum);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Dir-per-part number is incorrect",(unsigned)0,dirPerPart);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Replicate is incorrect",true,replicate);
 
         // A file without a storage plane throws an exception
@@ -2992,20 +3001,6 @@ protected:
             e->errorMessage(msg);
             e->Release();
             CPPUNIT_ASSERT_EQUAL_STR("Could not find matching prefix in plane definition for file /test/myname._1_of_3",msg.str());
-        }
-
-        // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
-        try
-        {
-            parseFileName("/var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100", mname.clear(), num, max, stripeNum, dirPerPart, replicate);
-            CPPUNIT_ASSERT(false);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_ASSERT_EQUAL_STR("In storage plane definition numDevices>1, but no stripe sub-directory found in file /var/lib/HPCCSystems/hpcc-data-two/test/myname.42_of_100",msg.str());
         }
 
         // A file with a storage plane that has numDevices>1 but no stripe number in the path throws an exception
@@ -3061,7 +3056,7 @@ protected:
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
-            CPPUNIT_ASSERT_EQUAL_STR("Dir-per-part # does not match part # of file /var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100",msg.str());
+            CPPUNIT_ASSERT_EQUAL_STR("Dir-per-part # (42) does not match part # (43) of file /var/lib/HPCCSystems/hpcc-data-two/d1/test/42/myname._43_of_100",msg.str());
         }
 
         // A file where the part number is greater than the max part number
@@ -3075,7 +3070,7 @@ protected:
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
-            CPPUNIT_ASSERT_EQUAL_STR("Incorrect max part number(100) and part number (1000) in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100",msg.str());
+            CPPUNIT_ASSERT_EQUAL_STR("Incorrect max part number (100) and part number (1000) in file /var/lib/HPCCSystems/hpcc-data-two/d1/test/1000/myname._1000_of_100",msg.str());
         }
 
         // A file where the part number is missing
