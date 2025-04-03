@@ -85,6 +85,7 @@ public:
     mutable std::atomic<int> dynPriority;
     unsigned timeLimit;
     unsigned warnTimeLimit;
+    unsigned minTimeLimit;
     unsigned traceLimit;
 
     memsize_t memoryLimit;

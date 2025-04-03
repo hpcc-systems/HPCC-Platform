@@ -530,7 +530,8 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
                                                       StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
                                                       StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
-                                                      StNumAckRetries, StNumAgentRequests, StSizeAgentRequests, StSizeContinuationData, StNumContinuationRequests
+                                                      StNumAckRetries, StNumAgentRequests, StSizeAgentRequests, StSizeContinuationData, StNumContinuationRequests,
+                                                      StTimeDelayed
                                                       });
 
 //=================================================================================
