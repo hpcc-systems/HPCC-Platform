@@ -58,13 +58,13 @@ enum EventAttr : byte
     EvAttrPath,
     EvAttrConnectId,
     EvAttrEnabled,
-    EvAttrSysFileSize,
-    EvAttrSysStartTimestamp,
-    EvAttrSysOption,
-    EvAttrSysOffsetNs,
-    EvAttrSysTraceId,
-    EvAttrSysThreadId,
-    EvAttrSysStackTrace,
+    EvAttrRecordedFileSize,
+    EvAttrRecordedTimestamp,
+    EvAttrRecordedOption,
+    EvAttrEventTimeOffset,
+    EvAttrEventTraceId,
+    EvAttrEventThreadId,
+    EvAttrEventStackTrace,
     EvAttrMax
 };
 
@@ -201,17 +201,17 @@ inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRe
 //
 // For each compatibile file the visitor can expect:
 // 1. One call to visitFile
-// 2. One call to visitAttribute for EvAttrSysFileSize
-// 3. One call to visitAttribute for EvAttrSysStartTimestamp
-// 4. Zero or more calls to visitAttribute for EvAttrSysOption
+// 2. One call to visitAttribute for EvAttrRecordedFileSize
+// 3. One call to visitAttribute for EvAttrRecordedTimestamp
+// 4. Zero or more calls to visitAttribute for EvAttrRecordedOption
 // 5. Zero or more sequences of:
 //    a. One call to visitEvent
 //    b. Zero or more calls to visitAttribute
-//    c. One call to visitAttribute for EvAttrNone
-// 6. One call to leaveFile
+//    c. One call to departEvent
+// 6. One call to departFile
 //
 // Implementations may implement limited filtering during visitation. All methods, except
-// `leaveFile`, may abort visitation. Both `visitEvent` and `visitAttribute` (in the context of
+// `departFile`, may abort visitation. Both `visitEvent` and `visitAttribute` (in the context of
 // an event) may suppress visitation of the remainder of the current event.
 //
 // Reasons for aborting a file include:
@@ -231,14 +231,14 @@ interface IEventVisitor : extends IInterface
     };
     virtual bool visitFile(const char* filename, uint32_t version) = 0;
     virtual Continuation visitEvent(EventType id) = 0;
-    virtual Continuation visitAttribute(EventAttr id) = 0;
     virtual Continuation visitAttribute(EventAttr id, const char * value) = 0;
     virtual Continuation visitAttribute(EventAttr id, bool value) = 0;
     virtual Continuation visitAttribute(EventAttr id, uint8_t value) = 0;
     virtual Continuation visitAttribute(EventAttr id, uint16_t value) = 0;
     virtual Continuation visitAttribute(EventAttr id, uint32_t value) = 0;
     virtual Continuation visitAttribute(EventAttr id, uint64_t value) = 0;
-    virtual void leaveFile(uint32_t bytesRead) = 0;
+    virtual bool departEvent() = 0;
+    virtual void departFile(uint32_t bytesRead) = 0;
 };
 
 // Return a new event visitor that writes to standard output for every visit.

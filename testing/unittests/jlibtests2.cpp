@@ -49,10 +49,6 @@ public:
     {
         return visitor->visitEvent(id);
     }
-    virtual Continuation visitAttribute(EventAttr id) override
-    {
-        return visitor->visitAttribute(id);
-    }
     virtual Continuation visitAttribute(EventAttr id, const char * value) override
     {
         return visitor->visitAttribute(id, value);
@@ -77,9 +73,13 @@ public:
     {
         return visitor->visitAttribute(id, value);
     }
-    virtual void leaveFile(uint32_t bytesRead) override
+    virtual bool departEvent() override
     {
-        return visitor->leaveFile(bytesRead);
+        return visitor->departEvent();
+    }
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        return visitor->departFile(bytesRead);
     }
 protected:
     Linked<IEventVisitor> visitor;
@@ -94,13 +94,13 @@ public:
     {
         switch (id)
         {
-            case EvAttrSysStartTimestamp:
+            case EvAttrRecordedTimestamp:
                 value = 1000;
                 break;
-            case EvAttrSysOffsetNs:
+            case EvAttrEventTimeOffset:
                 value = 10;
                 break;
-            case EvAttrSysThreadId:
+            case EvAttrEventThreadId:
                 value = 100;
                 break;
         }
@@ -337,11 +337,11 @@ public:
         {
             static const char* expect=R"!!!(name: eventtrace.evt
 version: 1
-attribute: SysFileSize = 16
-attribute: SysStartTimestamp = 1000
-attribute: SysOption = 'traceid'
-attribute: SysOption = 'threadid'
-attribute: SysOption = 'stack'
+attribute: RecordedFileSize = 16
+attribute: RecordedTimestamp = 1000
+attribute: RecordedOption = 'traceid'
+attribute: RecordedOption = 'threadid'
+attribute: RecordedOption = 'stack'
 bytesRead: 16
 )!!!";
             EventRecorder& recorder = queryRecorder();
@@ -365,20 +365,20 @@ bytesRead: 16
         {
             static const char* expect = R"!!!(name: eventtrace.evt
 version: 1
-attribute: SysFileSize = 87
-attribute: SysStartTimestamp = 1000
-attribute: SysOption = 'traceid'
-attribute: SysOption = 'threadid'
-attribute: SysOption = 'stack'
+attribute: RecordedFileSize = 87
+attribute: RecordedTimestamp = 1000
+attribute: RecordedOption = 'traceid'
+attribute: RecordedOption = 'threadid'
+attribute: RecordedOption = 'stack'
 event: IndexEviction
-attribute: SysOffsetNs = 10
-attribute: SysTraceId = '00000000000000000000000000000000'
-attribute: SysThreadId = 100
+attribute: EventTimeOffset = 10
+attribute: EventTraceId = '00000000000000000000000000000000'
+attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-attribute: None
+departEvent
 bytesRead: 87
 )!!!";
             EventRecorder& recorder = queryRecorder();
@@ -403,33 +403,33 @@ bytesRead: 87
         {
             static const char* expect = R"!!!(name: eventtrace.evt
 version: 1
-attribute: SysFileSize = 233
-attribute: SysStartTimestamp = 1000
-attribute: SysOption = 'traceid'
-attribute: SysOption = 'threadid'
-attribute: SysOption = 'stack'
+attribute: RecordedFileSize = 233
+attribute: RecordedTimestamp = 1000
+attribute: RecordedOption = 'traceid'
+attribute: RecordedOption = 'threadid'
+attribute: RecordedOption = 'stack'
 event: IndexEviction
-attribute: SysOffsetNs = 10
-attribute: SysTraceId = '00000000000000000000000000000000'
-attribute: SysThreadId = 100
+attribute: EventTimeOffset = 10
+attribute: EventTraceId = '00000000000000000000000000000000'
+attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-attribute: None
+departEvent
 event: DaliConnect
-attribute: SysOffsetNs = 10
-attribute: SysTraceId = '00000000000000000000000000000000'
-attribute: SysThreadId = 100
+attribute: EventTimeOffset = 10
+attribute: EventTraceId = '00000000000000000000000000000000'
+attribute: EventThreadId = 100
 attribute: Path = '/Workunits/Workunit/abc.wu'
 attribute: ConnectId = 98765
-attribute: None
+departEvent
 event: DaliDisconnect
-attribute: SysOffsetNs = 10
-attribute: SysTraceId = '00000000000000000000000000000000'
-attribute: SysThreadId = 100
+attribute: EventTimeOffset = 10
+attribute: EventTraceId = '00000000000000000000000000000000'
+attribute: EventThreadId = 100
 attribute: ConnectId = 98765
-attribute: None
+departEvent
 bytesRead: 233
 )!!!";
             EventRecorder& recorder = queryRecorder();
