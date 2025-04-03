@@ -2242,7 +2242,7 @@ add1(10);
         at:</para>
 
         <para><ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/embedjava.ecl</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
       </sect2>
 
       <sect2 id="Add_On_Javascript" role="brk">
@@ -2353,11 +2353,11 @@ split_words('Once upon a time');
             Python anywhere you would use ECL within with your HPCC Systems
             platform.</para>
 
-            <para>Additional examples of HPCC Systems code can be found
-            at:</para>
+            <para>Additional examples of using Python with HPCC Systems code
+            can be found at:</para>
 
             <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
           </listitem>
         </orderedlist>
 
