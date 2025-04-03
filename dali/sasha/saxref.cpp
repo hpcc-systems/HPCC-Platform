@@ -1001,7 +1001,10 @@ public:
                     if (!scanDirectory(node,ep,path,drv,pdir,NULL,!isStriped,isStriped))
                         return false;
                     if (!isStriped && pdir->dirs.ordinality()>0)
-                        throw makeStringExceptionV(-1, LOGPFX "Directory Per Part %s contains other subdirectories.", path.str());
+                    {
+                        OERRLOG(LOGPFX "Directory Per Part %s contains other subdirectories.", path.str());
+                        return false;
+                    }
                 }
                 else
                     dirs.append(fname.str());
