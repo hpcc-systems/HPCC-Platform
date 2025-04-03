@@ -225,8 +225,10 @@ CPermissionsCache::~CPermissionsCache()
         CriticalBlock block(mapCacheCS);
         g_mapCache.erase(m_secMgrClass.str());
     }
+    stopManagedFileScopeCacheFillThread();
     removeAllManagedFileScopes();
-    flush();
+    clearPermissionsCache();
+    clearUsersCache();
 }
 
 int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, bool* pFound)
@@ -478,7 +480,7 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
 
 bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
 {
-    WriteLockBlock writeLock(m_scopesRWLock);
+    // Caller must lock m_scopesRWLock for writing
     ForEachItemIn(x, scopes)
     {
         ISecResource* scope = &scopes.item(x);
@@ -502,30 +504,10 @@ bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
     return true;
 }
 
-inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& scopes)
-{
-    WriteLockBlock writeLock(m_scopesRWLock);
-    ForEachItemIn(x, scopes)
-    {
-        ISecResource* scope = &scopes.item(x);
-        if(!scope)
-            continue;
-        const char* cachekey = scope->getName();
-        if(cachekey == NULL)
-            continue;
-        map<string, ISecResource*>::iterator it = m_managedFileScopesMap.find(cachekey);
-        if (it != m_managedFileScopesMap.end())
-        {
-            ISecResource *res = (*it).second;
-            res->Release();
-            m_managedFileScopesMap.erase(it);
-        }
-    }
-}
 
 inline void CPermissionsCache::removeAllManagedFileScopes()
 {
-    WriteLockBlock writeLock(m_scopesRWLock);
+    // Caller must lock m_scopesRWLock for writing
     map<string, ISecResource*>::const_iterator cit;
     map<string, ISecResource*>::const_iterator iEnd = m_managedFileScopesMap.end();
 
@@ -536,6 +518,30 @@ inline void CPermissionsCache::removeAllManagedFileScopes()
     }
     m_managedFileScopesMap.clear();
 }
+
+static CriticalSection setCacheTimeoutCriticalSection;
+void  CPermissionsCache::setCacheTimeout(int timeoutSeconds)
+{
+    CriticalBlock setCacheTimeoutBlock(setCacheTimeoutCriticalSection);
+    m_cacheTimeoutInSeconds = timeoutSeconds;
+
+    if(timeoutSeconds == 0 && isTransactionalEnabled())//ensure transactional time is updated
+        setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
+    else
+        setTransactionalCacheTimeout(timeoutSeconds);
+
+    if (timeoutSeconds)
+    {
+        if (!m_fileScopeCacheFillThread.joinable())
+        {
+            DBGLOG("CACHE: starting managedFileScopeCacheFillThread, timeout = %d", timeoutSeconds);
+            m_fileScopeCacheFillThread = std::thread(&CPermissionsCache::managedFileScopesCacheFillThread, this);
+        }
+    }
+    else
+        stopManagedFileScopeCacheFillThread();
+}
+
 
 /*
     if perms set on 'scopeA::scopeB' only and lookup of 'scopeA::scopeB::scopeC::scopeD'
@@ -549,8 +555,6 @@ inline void CPermissionsCache::removeAllManagedFileScopes()
 
     etc. Until full scope path checked, or no read permissions hit on ancestor scope.
 */
-static CriticalSection msCacheSyncCS;//for managed scopes cache synchronization
-static CriticalSection syncDefaultScopePermissions;//for cached default file scope permissions
 bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags)
 {
     unsigned start = msTick();
@@ -558,37 +562,6 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     {
         *accessFlags = queryDefaultPermission(sec_user);
         OWARNLOG("FileScope empty for %s, applying default permissions %s(%d), took %dms", sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags,  msTick()-start);
-        return true;
-    }
-
-    if (m_secMgr)
-    {
-        CriticalBlock block(msCacheSyncCS);
-        time_t now;
-        time(&now);
-        if (0 == m_lastManagedFileScopesRefresh || ((now - m_lastManagedFileScopesRefresh) > m_cacheTimeoutInSeconds))
-        {
-            removeAllManagedFileScopes();
-            IArrayOf<ISecResource> scopes;
-            aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
-            if (count)
-                addManagedFileScopes(scopes);
-            if (m_useLegacyDefaultFileScopePermissionCache)
-            {
-                m_defaultPermission = SecAccess_Unknown;
-            }
-            else
-            {
-                CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
-                m_userDefaultFileScopePermissions.clear();
-            }
-            time(&m_lastManagedFileScopesRefresh);
-        }
-    }
-
-    if (m_managedFileScopesMap.empty())
-    {
-        *accessFlags = queryDefaultPermission(sec_user);
         return true;
     }
 
@@ -613,7 +586,16 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     ISecResource *matchedRes = NULL;
     ISecResource *res = NULL;
     bool isManaged = false;
+
     ReadLockBlock readLock(m_scopesRWLock);
+
+    if (m_managedFileScopesMap.empty())
+    {
+        readLock.clear();   // no longer needed
+        *accessFlags = queryDefaultPermission(sec_user);
+        return true;
+    }
+
     for(unsigned i = 0; i < scopes.length(); i++)
     {
         const char* scope = scopes.item(i);
@@ -679,11 +661,62 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     return rc;
 }
 
+
+void CPermissionsCache::managedFileScopesCacheFillThread()
+{
+    DBGLOG("CACHE: managedFileScopeCacheFillThread started");
+
+    // When the thread first starts, do a cache fill with the write lock held.
+    // This ensures any managed scope queries are locked out until the cache is filled.
+    {
+        WriteLockBlock writeLock(m_scopesRWLock);
+        IArrayOf<ISecResource> scopes;
+        aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
+        removeAllManagedFileScopes();
+        if (count)
+            addManagedFileScopes(scopes);
+        DBGLOG("CACHE: managedFileScopeCacheFillThread Initial fill complete");
+    }
+
+    while (!m_stopFileScopeCacheFillThread)
+    {
+        // If the flush cache flag is set, clear the permission and user caches
+        if (m_flushCache)
+        {
+            clearPermissionsCache();
+            clearUsersCache();
+            m_flushCache = false;
+        }
+
+        IArrayOf<ISecResource> scopes;
+        aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
+
+        {
+            WriteLockBlock writeLock(m_scopesRWLock);
+            removeAllManagedFileScopes();
+            if (count)
+                addManagedFileScopes(scopes);
+        }
+
+        if (m_useLegacyDefaultFileScopePermissionCache)
+        {
+            m_defaultPermission = SecAccess_Unknown;
+        }
+        else
+        {
+            WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
+            m_userDefaultFileScopePermissions.clear();
+        }
+
+        // Wait again
+        m_fileScopeCacheFillSem.wait(m_cacheTimeoutInSeconds * 1000);
+    }
+    DBGLOG("CACHE: managedFileScopeCacheFillThread exiting");
+}
+
+
 SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 {
-    if (!m_secMgr)
-        return SecAccess_Full; // if no security manager, all full access to all scopes
-
     if (m_useLegacyDefaultFileScopePermissionCache)
     {
         if (m_defaultPermission == SecAccess_Unknown)
@@ -698,12 +731,23 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
     SecAccessFlags defaultPermission = SecAccess_None;
     const std::string username(user.getName());
     bool addedToCache = false;
+
     {
-        CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+        ReadLockBlock readLock(m_defaultFilePermissionRWLock);
+        auto it = m_userDefaultFileScopePermissions.find(username);
+        if (it != m_userDefaultFileScopePermissions.end())
+            return it->second;
+    }
+
+    // If default permission not found for the user, query the security manager.
+    // Then, acquire the write lock and add the default permission to the cache if
+    // not already added by another thread.
+    defaultPermission = m_secMgr->queryDefaultPermission(user);
+    {
+        WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
         auto it = m_userDefaultFileScopePermissions.find(username);
         if (it == m_userDefaultFileScopePermissions.end())
         {
-            defaultPermission = m_secMgr->queryDefaultPermission(user);
             m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
             addedToCache = true;
         }
@@ -714,47 +758,42 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
     }
 
     if (addedToCache)
-    {
         DBGLOG("Added user '%s' to default file scope permissions with access %s(%d)", username.c_str(), getSecAccessFlagName(defaultPermission),
-               defaultPermission);
-    }
+                    defaultPermission);
 
     return defaultPermission;
 }
 
 void CPermissionsCache::flush()
 {
-    // MORE - is this safe? m_defaultPermossion and m_lastManagedFileScopesRefresh are unprotected,
-    // and entries could be added to the first cache while the second is being cleared - does that matter?
-    {
-        WriteLockBlock writeLock(m_resPermCacheRWLock);
-        MapResPermissionsCache::const_iterator i;
-        MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
-        for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
-            delete (*i).second;
-        m_resPermissionsMap.clear();
-    }
-    {
-        WriteLockBlock writeLock(m_userCacheRWLock );
-        MapUserCache::const_iterator ui;
-        MapUserCache::const_iterator uiEnd = m_userCache.end();
-        for (ui = m_userCache.begin(); ui != uiEnd; ui++)
-            delete (*ui).second;
-        m_userCache.clear();
-    }
-    if (m_useLegacyDefaultFileScopePermissionCache)
-    {
-        m_defaultPermission = SecAccess_Unknown;
-    }
-    else
-    {
-        CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
-        m_userDefaultFileScopePermissions.clear();
-    }
-    m_lastManagedFileScopesRefresh = 0;
+    // If the managed file scope cache fill thread is running, signal it to refill the cache
+    m_flushCache = true;
+    if (m_fileScopeCacheFillThread.joinable())
+        m_fileScopeCacheFillSem.signal();
 }
 
-CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass)
+void CPermissionsCache::clearPermissionsCache()
+{
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
+    MapResPermissionsCache::const_iterator i;
+    MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
+    for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
+        delete (*i).second;
+    m_resPermissionsMap.clear();
+}
+
+void CPermissionsCache::clearUsersCache()
+{
+    WriteLockBlock writeLock(m_userCacheRWLock );
+    MapUserCache::const_iterator ui;
+    MapUserCache::const_iterator uiEnd = m_userCache.end();
+    for (ui = m_userCache.begin(); ui != uiEnd; ui++)
+        delete (*ui).second;
+    m_userCache.clear();
+}
+
+
+CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass, ISecManager *secMgr)
 {
     const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
 
@@ -767,7 +806,7 @@ CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass)
     }
     else
     {
-        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass);
+        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass, secMgr);
         g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
         return instance;
     }
