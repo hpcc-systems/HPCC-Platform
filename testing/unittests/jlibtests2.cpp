@@ -464,4 +464,110 @@ bytesRead: 233
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibEventTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibEventTest, "JlibEventTest" );
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class BufferedSerialOutputStreamTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(BufferedSerialOutputStreamTest);
+    CPPUNIT_TEST(testPut);
+    CPPUNIT_TEST(testSuspendResume);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testPut()
+    {
+        try
+        {
+            StringBuffer result;
+            Owned<IBufferedSerialOutputStream> outputStream = createBufferedSerialOutputStream(result);
+            CPPUNIT_ASSERT_EQUAL(0ULL, outputStream->tell());
+
+            outputStream->put(10, "abcdefghij");
+            CPPUNIT_ASSERT_EQUAL(10ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abcdefghij", result);
+
+            outputStream->put(10, "0123456789");
+            CPPUNIT_ASSERT_EQUAL(20ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abcdefghij0123456789", result);
+
+            size32_t got;
+            byte * buffer = outputStream->reserve(5U, got);
+            CPPUNIT_ASSERT_EQUAL(20ULL, outputStream->tell());
+            CPPUNIT_ASSERT(got >= 5);
+            memset(buffer, '!', 4);
+            outputStream->commit(4);
+            CPPUNIT_ASSERT_EQUAL(24ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abcdefghij0123456789!!!!", result);
+
+            result.clear();
+            CPPUNIT_ASSERT_EQUAL(0ULL, outputStream->tell());
+
+            outputStream->put(3, "abc");
+            CPPUNIT_ASSERT_EQUAL(3ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abc", result);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testSuspendResume()
+    {
+        try
+        {
+            StringBuffer result;
+            Owned<IBufferedSerialOutputStream> outputStream = createBufferedSerialOutputStream(result);
+
+            outputStream->put(3, "abc");
+            CPPUNIT_ASSERT_EQUAL(3ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abc", result);
+
+            outputStream->suspend(1);       // abc_
+            CPPUNIT_ASSERT_EQUAL(4ULL, outputStream->tell());
+
+            outputStream->put(3, "123");    // abc_123
+            CPPUNIT_ASSERT_EQUAL(7ULL, outputStream->tell());
+
+            outputStream->suspend(4);       // abc_123____
+            CPPUNIT_ASSERT_EQUAL(11ULL, outputStream->tell());
+
+            outputStream->put(3, "XYZ");    // abc_123____XYZ
+            CPPUNIT_ASSERT_EQUAL(14ULL, outputStream->tell());
+
+            outputStream->resume(4, "!!!!");// abc_123!!!!XYZ
+            CPPUNIT_ASSERT_EQUAL(14ULL, outputStream->tell());
+
+            outputStream->put(3, "123");    // abc_123!!!!XYZ123
+            CPPUNIT_ASSERT_EQUAL(17ULL, outputStream->tell());
+
+            outputStream->suspend(2);       // abc_123!!!!XYZ123__
+            CPPUNIT_ASSERT_EQUAL(19ULL, outputStream->tell());
+
+            outputStream->put(3, "<=>");    // abc_123!!!!XYZ123__<=>
+            CPPUNIT_ASSERT_EQUAL(22ULL, outputStream->tell());
+
+            outputStream->resume(2, "%%");  // abc_123!!!!XYZ123%%<=>
+            CPPUNIT_ASSERT_EQUAL(22ULL, outputStream->tell());
+
+            outputStream->resume(1, "+");   // abc+123!!!!XYZ123%%<=>
+            CPPUNIT_ASSERT_EQUAL(22ULL, outputStream->tell());
+            CPPUNIT_ASSERT_EQUAL_STR("abc+123!!!!XYZ123%%<=>", result);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(BufferedSerialOutputStreamTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(BufferedSerialOutputStreamTest, "BufferedSerialOutputStreamTest");
+
 #endif // _USE_CPPUNIT
