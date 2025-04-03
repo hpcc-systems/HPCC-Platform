@@ -542,6 +542,9 @@ public:
                 dstProps.setProp("@modified",dates.str());
             if (srcProps.hasProp("@kind"))
                 dstProps.setProp("@kind", srcProps.queryProp("@kind"));
+            copyProp(dstProps, srcProps, "@uncompressedSize");
+            copyProp(dstProps, srcProps, "@recordCount");
+            copyProp(dstProps, srcProps, "@offsetBranches");
         }
 
         if (!copyphysical) //cloneFrom tells roxie where to copy from.. it's unnecessary if we already did the copy
