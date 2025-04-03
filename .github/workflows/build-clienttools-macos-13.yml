@@ -1,0 +1,119 @@
+name: Build Clienttools macos-13
+
+on:
+  workflow_call:
+    inputs:
+      community-ref:
+        type: string
+        description: 'community_[semver]'
+        required: true
+      ln-ref:
+        type: string
+        description: 'internal_[semver]'
+        required: false
+        default: ''
+      cmake-config-options:
+        type: string
+        description: 'CMake config options'
+        required: false
+        default: "-DCMAKE_BUILD_TYPE=Release -DUSE_NATIVE_LIBRARIES=ON -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
+      cmake-build-options:
+        type: string
+        description: 'CMake build options'
+        required: false
+        default: "--parallel $(nproc)"
+
+jobs:
+  generate_macos_13_clienttools:
+    name: Generate MacOS 13 Clienttools
+    runs-on: "macos-13"
+
+    steps:
+      - name: Dependencies
+        shell: "bash"
+        run: |
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+
+      - name: Remove builtin vcpkg
+        shell: "bash"
+        run: |
+          sudo rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.community-ref }}
+          submodules: recursive
+          path: ./HPCC-Platform
+      
+      - name: Checkout LN
+        if: ${{ inputs.ln-ref != '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ln-ref }}
+          submodules: recursive
+          token: ${{ secrets.LNB_TOKEN }}
+          repository: ${{ github.repository_owner }}/LN
+          path: ./LN
+
+      - name: vcpkg bootstrap
+        shell: "bash"
+        run: |
+          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Setup NuGet credentials"
+        shell: "bash"
+        run: |
+          mono `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
+          sources add \
+          -name "GitHub" \
+          -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+          -storepasswordincleartext \
+          -username "${{ github.repository_owner }}" \
+          -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Setup Source Directory
+        id: setup_source
+        shell: "bash"
+        run: |
+          if [ -d ./LN ]; then
+            echo "LN directory exists; building internal clienttools"
+            echo "source_dir=./LN" >> $GITHUB_OUTPUT
+          else
+            echo "LN directory does not exist; building community clienttools"
+            echo "source_dir=./HPCC-Platform" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Clienttools
+        shell: "bash"
+        run: |
+          mkdir -p ./build
+          cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
+          cmake --build ./build ${{ inputs.cmake-build-options }} --target package
+
+      - name: Release Community Clienttools
+        if: ${{ inputs.ln-ref == '' }}
+        uses: ncipollo/release-action@v1.16.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          artifacts: "./build/hpccsystems-clienttools-community*.pkg"
+
+      - name: Release Internal Clienttools to JFrog Repository
+        if: ${{ inputs.ln-ref != '' && github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./build
+          packages=($(ls -1 hpccsystems-clienttools-internal*.pkg ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+          done
+
+      - name: Upload Error Logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-13-clienttools-logs-${{ github.job }}-${{ github.run_number }}
+          path: ./build/**/*.log
+          retention-days: 1
