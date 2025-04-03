@@ -1648,7 +1648,10 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
 ActiveSpanScope::ActiveSpanScope(ISpan * _ptr) : ActiveSpanScope(_ptr, queryThreadedActiveSpan()) {}
 ActiveSpanScope::ActiveSpanScope(ISpan * _ptr, ISpan * _prev) : span(_ptr), prevSpan(_prev)
 {
-    setThreadedActiveSpan(_ptr);
+    if (span == nullptr)
+        span = queryNullSpan();
+
+    setThreadedActiveSpan(span);
 }
 
 ActiveSpanScope::~ActiveSpanScope()
