@@ -24,6 +24,7 @@
 #include "jatomic.hpp"
 #include "jbuff.hpp"
 #include "jstring.hpp"
+#include "jstats.h"
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -34,10 +35,15 @@ enum EventType : byte
     EventIndexLookup,
     EventIndexLoad,
     EventIndexEviction,
+    EventDaliChangeMode,
+    EventDaliCommit,
     EventDaliConnect,
-    EventDaliRead,
-    EventDaliWrite,
-    EventDaliDisconnect,
+    EventDaliEnsureLocal,
+    EventDaliGet,
+    EventDaliGetChildren,
+    EventDaliGetChildrenFor,
+    EventDaliGetElements,
+    EventDaliSubscribe,
     MetaFileInformation,          // information about a file
     EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
     EventMax
@@ -65,6 +71,7 @@ enum EventAttr : byte
     EvAttrEventTraceId,
     EvAttrEventThreadId,
     EvAttrEventStackTrace,
+    EvAttrDataSize,
     EvAttrMax
 };
 
@@ -110,8 +117,15 @@ public:
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 elapsedTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
 
-    void recordDaliConnect(const char * path, __uint64 id);
-    void recordDaliDisconnect(__uint64 id);
+    void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliCommit(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliConnect(const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliEnsureLocal(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliGet(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliGetChildren(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliGetChildrenFor(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliGetElements(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliSubscribe(const char * xpath, __int64 id, stat_type elapsedNs);
 
     void recordFileInformation(unsigned fileid, const char * filename);
 
@@ -119,6 +133,8 @@ public:
 
 protected:
     void recordRecordingActive(bool paused);
+    void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize);
 
     void checkAttrValue(EventAttr attr, size_t size);
 

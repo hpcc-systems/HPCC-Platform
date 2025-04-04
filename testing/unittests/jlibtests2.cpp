@@ -186,13 +186,12 @@ public:
             recorder.recordIndexEviction(2, 500, NodeLeaf, 2048);
             recorder.recordIndexLoad(1, 1200, NodeLeaf, 2048, 600, 400);
 
-            recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 987);
-            recorder.recordDaliDisconnect(987);
+            recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 987, 100, 67);
 
             // Stop recording again
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             CPPUNIT_ASSERT(!recorder.isRecording());
-            CPPUNIT_ASSERT_EQUAL(11U, summary.numEvents);        // One pause + 8 index, 2 dali, not the two logged when paused.
+            CPPUNIT_ASSERT_EQUAL(10U, summary.numEvents);        // One pause + 8 index, 2 dali, not the two logged when paused.
             CPPUNIT_ASSERT_EQUAL_STR("testfile.bin", summary.filename);        // One pause + 8 index, 2 dali, not the two logged when paused.
         }
         catch (IException * e)
@@ -403,7 +402,7 @@ bytesRead: 71
         {
             static const char* expect = R"!!!(name: eventtrace.evt
 version: 1
-attribute: RecordedFileSize = 185
+attribute: RecordedFileSize = 156
 attribute: RecordedTimestamp = 1000
 attribute: RecordedOption = 'traceid'
 attribute: RecordedOption = 'threadid'
@@ -423,21 +422,16 @@ attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: Path = '/Workunits/Workunit/abc.wu'
 attribute: ConnectId = 98765
+attribute: ElapsedTime = 100
+attribute: DataSize = 73
 departEvent
-event: DaliDisconnect
-attribute: EventTimeOffset = 10
-attribute: EventTraceId = '00000000000000000000000000000000'
-attribute: EventThreadId = 100
-attribute: ConnectId = 98765
-departEvent
-bytesRead: 185
+bytesRead: 156
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
-            recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765);
-            recorder.recordDaliDisconnect(98765);
+            recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
             std::stringstream out;
             Owned<IEventVisitor> visitor = createVisitor(out);
