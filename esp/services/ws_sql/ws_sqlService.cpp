@@ -98,80 +98,94 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
 
                 if (qname && *qname && wuid && *wuid)
                 {
-                    StringBuffer resp;
-
-                    Owned<IEspPublishedQuery> pubQuery = createPublishedQuery();
-                    pubQuery->setName(qname);
-                    pubQuery->setId(id);
-                    pubQuery->setWuid(wuid);
-                    pubQuery->setSuspended(iter->query().getPropBool("@suspended"));
-
-                    Owned<IEspQuerySignature> querysignature = createQuerySignature();
-                    IArrayOf<IEspHPCCColumn> inparams;
-                    IArrayOf<IEspOutputDataset> resultsets;
-
-                    WsEclWuInfo wsinfo(wuid, setname, qname, username, passwd);
-                    Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, passwd));
-
-                    //Each published query can have multiple results (datasets)
-                    IConstWUResultIterator &results = wsinfo.ensureWorkUnit()->getResults();
-                    ForEach(results)
+                    try
                     {
-                        Owned<IEspOutputDataset> outputdataset = createOutputDataset();
-                        IArrayOf<IEspHPCCColumn> outparams;
+                        StringBuffer resp;
 
-                        IConstWUResult &result = results.query();
+                        Owned<IEspPublishedQuery> pubQuery = createPublishedQuery();
+                        pubQuery->setName(qname);
+                        pubQuery->setId(id);
+                        pubQuery->setWuid(wuid);
+                        pubQuery->setSuspended(iter->query().getPropBool("@suspended"));
 
-                        SCMStringBuffer resultName;
-                        result.getResultName(resultName);
-                        outputdataset->setName(resultName.s.str());
+                        Owned<IEspQuerySignature> querysignature = createQuerySignature();
+                        IArrayOf<IEspHPCCColumn> inparams;
+                        IArrayOf<IEspOutputDataset> resultsets;
 
-                        Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&result);
+                        WsEclWuInfo wsinfo(wuid, setname, qname, username, passwd);
+                        Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, passwd));
 
-                        //Each result dataset can have multiple result columns
-                        int columncount = meta->getColumnCount();
-                        for (int i = 0; i < columncount; i++)
+                        //Each published query can have multiple results (datasets)
+                        IConstWUResultIterator &results = wsinfo.ensureWorkUnit()->getResults();
+                        ForEach(results)
+                        {
+                            Owned<IEspOutputDataset> outputdataset = createOutputDataset();
+                            IArrayOf<IEspHPCCColumn> outparams;
+
+                            IConstWUResult &result = results.query();
+
+                            SCMStringBuffer resultName;
+                            result.getResultName(resultName);
+                            outputdataset->setName(resultName.s.str());
+
+                            Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&result);
+
+                            //Each result dataset can have multiple result columns
+                            int columncount = meta->getColumnCount();
+                            for (int i = 0; i < columncount; i++)
+                            {
+                                Owned<IEspHPCCColumn> col = createHPCCColumn();
+
+                                SCMStringBuffer columnLabel;
+                                meta->getColumnLabel(columnLabel,i);
+                                col->setName(columnLabel.str());
+
+                                SCMStringBuffer eclType;
+                                meta->getColumnEclType(eclType, i);
+                                col->setType(eclType.str());
+
+                                outparams.append(*col.getLink());
+                            }
+                            outputdataset->setOutParams(outparams);
+                            resultsets.append(*outputdataset.getLink());
+                        }
+
+                        //Each query can have multiple input parameters
+                        IConstWUResultIterator &vars = wsinfo.ensureWorkUnit()->getVariables();
+                        ForEach(vars)
                         {
                             Owned<IEspHPCCColumn> col = createHPCCColumn();
 
-                            SCMStringBuffer columnLabel;
-                            meta->getColumnLabel(columnLabel,i);
-                            col->setName(columnLabel.str());
+                            IConstWUResult &var = vars.query();
 
+                            SCMStringBuffer varname;
+                            var.getResultName(varname);
+                            col->setName(varname.str());
+
+                            Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
                             SCMStringBuffer eclType;
-                            meta->getColumnEclType(eclType, i);
+                            meta->getColumnEclType(eclType, 0);
                             col->setType(eclType.str());
 
-                            outparams.append(*col.getLink());
+                            inparams.append(*col.getLink());
                         }
-                        outputdataset->setOutParams(outparams);
-                        resultsets.append(*outputdataset.getLink());
-                    }
 
-                    //Each query can have multiple input parameters
-                    IConstWUResultIterator &vars = wsinfo.ensureWorkUnit()->getVariables();
-                    ForEach(vars)
+                        querysignature->setInParams(inparams);
+                        querysignature->setResultSets(resultsets);
+                        pubQuery->setSignature(*querysignature.getLink());
+                        queries.append(*pubQuery.getLink());
+                    }
+                    catch(IException *e)
                     {
-                        Owned<IEspHPCCColumn> col = createHPCCColumn();
-
-                        IConstWUResult &var = vars.query();
-
-                        SCMStringBuffer varname;
-                        var.getResultName(varname);
-                        col->setName(varname.str());
-
-                        Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
-                        SCMStringBuffer eclType;
-                        meta->getColumnEclType(eclType, 0);
-                        col->setType(eclType.str());
-
-                        inparams.append(*col.getLink());
+                        StringBuffer text;
+                        e->errorMessage(text);
+                        ESPLOG(LogNormal, "WsSQL: Could not gather published query '%s' schema: '%s'", qname, text.str());
+                        e->Release();
                     }
-
-                    querysignature->setInParams(inparams);
-                    querysignature->setResultSets(resultsets);
-                    pubQuery->setSignature(*querysignature.getLink());
-                    queries.append(*pubQuery.getLink());
+                    catch(...)
+                    {
+                        ESPLOG(LogNormal, "WsSQL: Could not gather published query '%s' schema", qname);
+                    }
                 }
             }
             pqset->setQuerySetQueries(queries);
