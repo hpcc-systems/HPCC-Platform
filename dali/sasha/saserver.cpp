@@ -54,7 +54,7 @@ extern void LDStest();
 Owned<IPropertyTree> serverConfig;
 static IArrayOf<ISashaServer> servers;
 static std::atomic<unsigned> StopSuspendCount{0};
-static std::atomic<bool> stopped{false};
+static bool stopped{false};
 static Semaphore stopSem;
 static bool isDaliClient{false};
 
