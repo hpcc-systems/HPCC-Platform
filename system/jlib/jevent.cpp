@@ -279,7 +279,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     if (options & ERFthreadid)
         sizeMessageHeaderFooter += sizeof(__uint64);
     if (options & ERFtraceid)
-        sizeMessageHeaderFooter += 32;
+        sizeMessageHeaderFooter += 16;
 
     outputFilename.set(filename);
     Owned<IFile> outputFile = createIFile(filename);
@@ -571,7 +571,11 @@ void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
     {
         const char * traceid = queryThreadedActiveSpan()->queryTraceId();
         assertex(strlen(traceid) == 32);
-        writeData(offset, 32, traceid);
+        for (unsigned i=0; i < 32; i += 2)
+        {
+            byte next = getHexPair(traceid + i);
+            writeByte(offset, next);
+        }
     }
     if (options & ERFthreadid)
     {
@@ -603,6 +607,14 @@ void EventRecorder::writeData(offset_type & offset, size_t size, const void * da
         target[buffOffset] = source[i];
     }
     offset += size;
+}
+
+void EventRecorder::writeByte(offset_type & offset, byte value)
+{
+    byte * target = (byte *)buffer.mem();
+    size32_t buffOffset = offset & bufferMask;
+    target[buffOffset] = value;
+    offset++;
 }
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
@@ -672,6 +684,7 @@ private:
         return (visitor->visitFile(file->queryFilename(), version) &&
             continuing(visitor->visitAttribute(EvAttrRecordedFileSize, fileSize)) &&
             continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, startTimestamp)) &&
+            // Pass through information about which of the extra options are provided on each of the event records
             (!(options & ERFtraceid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "traceid"))) &&
             (!(options & ERFthreadid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "threadid"))) &&
             (!(options & ERFstacktrace) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "stack"))));
@@ -704,7 +717,7 @@ private:
     {
         if (!finishAttribute<uint64_t>(EvAttrEventTimeOffset))
             return false;
-        if ((options & ERFtraceid) && !finishAttribute(EvAttrEventTraceId, 32))
+        if ((options & ERFtraceid) && !finishDataAttribute(EvAttrEventTraceId, 16))
             return false;
         if ((options & ERFthreadid) && !finishAttribute<uint64_t>(EvAttrEventThreadId))
             return false;
@@ -797,6 +810,24 @@ private:
         if (mute)
             return true;
         return reactToVisit(visitor->visitAttribute(attr, value.str()));
+    }
+
+    //Read as data, but pass through as a hex encoded string
+    bool finishDataAttribute(EventAttr attr, size32_t len)
+    {
+        MemoryAttr buffer(len);
+        if (stream->read(len, buffer.mem()) != len)
+            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
+        bytesRead += len;
+
+        if (mute)
+            return true;
+
+        StringBuffer hexText;
+        hexText.ensureCapacity(len*2);
+        for (unsigned i=0; i < len; i++)
+            hexText.appendhex(buffer.getByte(i), true);
+        return reactToVisit(visitor->visitAttribute(attr, hexText.str()));
     }
 
     bool reactToVisit(IEventVisitor::Continuation result)

@@ -1570,7 +1570,7 @@ StringAttrItem::StringAttrItem(const char *_text, unsigned _len)
 }
 
 
-inline char hex(char c, char lower)
+inline char hex(char c, bool lower)
 {
   if (c < 10)
     return '0' + c;
@@ -1580,7 +1580,7 @@ inline char hex(char c, char lower)
     return 'A' + c - 10;
 }
 
-StringBuffer &  StringBuffer::appendhex(unsigned char c, char lower)
+StringBuffer &  StringBuffer::appendhex(unsigned char c, bool lower)
 {
     append(hex(c>>4, lower));
     append(hex(c&0xF, lower));

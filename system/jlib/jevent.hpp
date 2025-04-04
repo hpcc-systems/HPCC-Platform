@@ -150,6 +150,7 @@ protected:
         writeData(offset, strlen(value)+1, value);
     }
 
+    void writeByte(offset_type & offset, byte value);
     void writeData(offset_type & offset, size_t size, const void * data);
 
     offset_type reserveEvent(size32_t size);
