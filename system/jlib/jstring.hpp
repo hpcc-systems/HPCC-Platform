@@ -52,6 +52,7 @@ public:
     inline bool     isEmpty() const                     { return (curLen == 0); }
     void            setLength(size_t len);
     inline void     ensureCapacity(size_t max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
+    char *          ensureCapacity(size_t max, size_t & got); // ensure there is space, but do not increase curLen
     size32_t        lengthUtf8() const;
 
     StringBuffer &  append(char value);
@@ -98,6 +99,7 @@ public:
     StringBuffer &  insert(size_t offset, const IStringVal * value);
     StringBuffer &  reverse();
     void            setCharAt(size_t offset, char value);
+    void            replace(size_t offset, size_t len, const void * value);
 
     //Non-standard functions:
     MemoryBuffer &  deserialize(MemoryBuffer & in);
@@ -124,6 +126,7 @@ public:
     char *          reserve(size_t size);
     char *          reserveTruncate(size_t size);
     void            setown(StringBuffer &other);
+    size_t          space() const { return maxLen - curLen - 1; }
     StringBuffer &  stripChar(char oldChar);
     void            swapWith(StringBuffer &other);
     void setBuffer(size_t buffLen, char * newBuff, size_t strLen);

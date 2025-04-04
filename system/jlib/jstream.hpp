@@ -101,6 +101,7 @@ extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISeria
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);
 extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output);
+extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target);
 
 
 inline IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, bool threaded)

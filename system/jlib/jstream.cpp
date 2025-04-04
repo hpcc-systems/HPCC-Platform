@@ -1025,6 +1025,83 @@ ISerialOutputStream * createSerialOutputStream(IFileIO * output)
 }
 
 
+//This base class was created in case we ever want a lighter weight implementation that only implements ISerialOutputStream
+class CStringSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
+{
+public:
+    CStringSerialOutputStreamBase(StringBuffer & _target)
+    : target(_target)
+    {
+    }
+
+    virtual void flush() override
+    {
+    }
+
+    virtual void put(size32_t len, const void * ptr) override
+    {
+        target.append(len, (const char *)ptr);
+    }
+
+    virtual offset_t tell() const override
+    {
+        return target.length();
+    }
+
+    virtual void replaceOutput(ISerialOutputStream * newOutput) override
+    {
+        throwUnimplemented();
+    }
+
+protected:
+    StringBuffer & target;
+};
+
+
+class CStringBufferSerialOutputStream final : public CStringSerialOutputStreamBase
+{
+public:
+    CStringBufferSerialOutputStream(StringBuffer & _target)
+    : CStringSerialOutputStreamBase(_target)
+    {
+    }
+
+    virtual byte * reserve(size32_t wanted, size32_t & got) override
+    {
+        size_t sizeGot;
+        char * ret = target.ensureCapacity(wanted, sizeGot);
+        got = sizeGot;
+        return (byte *)ret;
+    }
+
+    virtual void commit(size32_t written) override
+    {
+        target.setLength(target.length() + written);
+    }
+
+    virtual void suspend(size32_t wanted) override
+    {
+        suspendOffsets.append(target.length());
+        //Leave space for the data to be written afterwards
+        target.reserve(wanted);
+    }
+    virtual void resume(size32_t len, const void * ptr) override
+    {
+        size32_t offset = suspendOffsets.tos();
+        suspendOffsets.pop();
+        target.replace(offset, len, ptr);
+    }
+
+protected:
+    Unsigned64Array suspendOffsets;
+};
+
+
+IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target)
+{
+    return new CStringBufferSerialOutputStream(target);
+}
+
 /*
  * Future work:
  *
