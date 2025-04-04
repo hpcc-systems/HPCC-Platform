@@ -149,7 +149,7 @@ int CEclAgentExecutionServer::run()
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server queue create/connect: ");
         e->Release();
@@ -166,7 +166,7 @@ int CEclAgentExecutionServer::run()
     serverStatus.commitProperties();
     writeSentinelFile(sentinelFile);
 
-    try 
+    try
     {
         running = true;
         LocalIAbortHandler abortHandler(*this);
@@ -210,18 +210,18 @@ int CEclAgentExecutionServer::run()
         DBGLOG("Closing down");
     }
 
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server Exception: ");
         e->Release();
         PROGLOG("Exiting");
     }
 
-    try 
+    try
     {
         queue->disconnect();
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server queue disconnect: ");
         e->Release();
@@ -284,12 +284,25 @@ public:
                     std::list<std::pair<std::string, std::string>> params = { };
                     if (compConfig->getPropBool("@useThorQueue", true))
                         params.push_back({ "queue", queue.get() });
-                    StringBuffer jobName(wuid);
                     if (isThorAgent)
                     {
-                        jobName.append('-').append(graphName);
                         params.push_back({ "graphName", graphName.get() });
                         params.push_back({ "wfid", std::to_string(wfid) });
+                    }
+
+                    const char *thorName = compConfig->queryProp("@targetName");
+                    unsigned maxGraphs = compConfig->getPropInt("@maxActive", 1);
+                    StringBuffer jobName{thorName};
+                    if (maxGraphs == 1)
+                    {
+                        jobName.append("-1");
+                    }
+                    else
+                    {
+                        ++currentGraphNumber %= maxGraphs + 1;
+                        if (currentGraphNumber == 0)
+                            currentGraphNumber = 1;
+                        jobName.appendf("-%d", currentGraphNumber);
                     }
 
                     SCMStringBuffer optPlatformVersion;
@@ -386,7 +399,10 @@ private:
     StringAttr queue;
     Linked<IJobQueueItem> item;
     bool isThorAgent = false;
+    static unsigned currentGraphNumber;
 };
+
+unsigned WaitThread::currentGraphNumber{0};
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
@@ -455,12 +471,12 @@ bool CEclAgentExecutionServer::executeWorkunit(IJobQueueItem *item)
 #ifdef _WIN32
     bool success = invoke_program(cmdLine.str(), runcode, false, NULL, NULL);
 #else
-    //specify "wait" to eliminate linux zombies. Waits for the startup script to 
+    //specify "wait" to eliminate linux zombies. Waits for the startup script to
     //complete (not eclagent), because script starts eclagent in the background
     bool success = invoke_program(cmdLine.str(), runcode, true, NULL, NULL);
 #endif
     if (success)
-    { 
+    {
         if (runcode != 0)
             PROGLOG("Process failed during execution: %s error(%" I64F "i)", cmdLine.str(), (unsigned __int64) runcode);
         else
@@ -490,8 +506,8 @@ eclagent:
     type: hthor
 )!!";
 
-int main(int argc, const char *argv[]) 
-{ 
+int main(int argc, const char *argv[])
+{
     if (!checkCreateDaemon(argc, argv))
         return EXIT_FAILURE;
 
@@ -502,7 +518,7 @@ int main(int argc, const char *argv[])
     {
         config.setown(loadConfiguration(defaultYaml, argv, "eclagent", "AGENTEXEC", "agentexec.xml", nullptr));
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Error processing config file\n");
         return 1;
@@ -513,7 +529,7 @@ int main(int argc, const char *argv[])
     {
         CEclAgentExecutionServer server(config);
         server.run();
-    } 
+    }
     catch (...)
     {
         printf("Unexpected error running agentexec server\r\n");
