@@ -511,6 +511,15 @@ sasha:
       cpu: "1"
       memory: "4Gi"
 
+  debugplane-housekeeping:
+    #disabled: true
+    #interval: 1
+    #at: "* 3 * * *"
+    #expiryDays: 14
+    resources:
+      cpu: "1"
+      memory: "1Gi"
+
 dfuserver:
 - name: dfuserver
   maxJobs: 1
