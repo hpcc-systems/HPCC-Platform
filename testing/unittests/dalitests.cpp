@@ -31,6 +31,8 @@
 #include "dasds.hpp"
 #include "danqs.hpp"
 #include "dautils.hpp"
+#include "dastats.hpp"
+
 #include "wujobq.hpp"
 
 #include <vector>
@@ -43,6 +45,7 @@
 #include "sysinfologger.hpp"
 
 //#define COMPAT
+#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
 // ======================================================================= Support Functions / Classes
 
@@ -3879,5 +3882,243 @@ class DaliJobQueueTester : public CppUnit::TestFixture
 
 CPPUNIT_TEST_SUITE_REGISTRATION( DaliJobQueueTester );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliJobQueueTester, "DaliJobQueueTester" );
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class GlobalMetricDumper : implements IGlobalMetricRecorder
+{
+public:
+    //MORE: Need to pass the start and end time.
+    virtual void processGlobalStatistics(const char * category, const MetricsDimensionList & dimensions, const char * startTime, const char * endTime, const GlobalStatisticsList & stats) override
+    {
+        out.append(category).append("[");
+        if (dimensions.size())
+        {
+            for (const auto & dimension : dimensions)
+            {
+                out.append(dimension.first).append("=");
+                out.append(dimension.second).append(",");
+            }
+            out.setLength(out.length()-1);
+        }
+
+        out.appendf("] (%s..%s) => {", startTime, endTime);
+
+        if (stats.size())
+        {
+            for (const auto & stat : stats)
+            {
+                out.append(queryStatisticName(stat.first)).append("=");
+                out.append(stat.second).append(",");
+            }
+            out.setLength(out.length()-1);
+        }
+
+        out.append("}").newline();
+    }
+
+public:
+    StringBuffer out;
+};
+
+
+
+class DaliGlobalMetricsTester : public CppUnit::TestFixture
+{
+    /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
+    /* Note: All global messages with time stamp before 2000-03-31 will be deleted */
+    CPPUNIT_TEST_SUITE(DaliGlobalMetricsTester);
+        CPPUNIT_TEST(doStart);
+        CPPUNIT_TEST(testGlobalMetrics);
+        CPPUNIT_TEST(testTimeslots);
+        CPPUNIT_TEST(doStop);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void doStart()
+    {
+        daliClientInit();
+    }
+    void doStop()
+    {
+        daliClientEnd();
+    }
+    void verifyGlobalMetrics(const char * optCategory, const MetricsDimensionList & optDimensions, const CDateTime & startTime, const CDateTime * endTime, const char * expected)
+    {
+        CDateTime now;
+        if (!endTime)
+        {
+            now.setNow();
+            endTime = &now;
+        }
+
+        GlobalMetricDumper visitor;
+        visitor.out.newline();  // start with a newline to allow cleaner definitions of the expected output
+        gatherGlobalMetrics(optCategory, optDimensions, startTime, *endTime, visitor);
+        CPPUNIT_ASSERT_EQUAL_STR(expected, visitor.out.str());
+    }
+
+    void testGlobalMetrics()
+    {
+        CDateTime startTime;
+        startTime.setString("1999-01-13T12:00:00", nullptr, false);
+
+        setGlobalMetricNowTime("1999-01-13T12:00:00");
+        try
+        {
+            resetGlobalMetrics("testCategory", MetricsDimensionList());
+            resetGlobalMetrics("testCategory2", MetricsDimensionList());
+
+            recordGlobalMetrics("testCategory", MetricsDimensionList{}, { StTimeBlocked }, { 10000 });
+
+            verifyGlobalMetrics(nullptr, MetricsDimensionList{}, startTime, nullptr,
+                                "\ntestCategory[] (1999011312..1999011312) => {TimeBlocked=10000}\n");
+
+            recordGlobalMetrics("testCategory", MetricsDimensionList{}, { StTimeBlocked, StTimeLocalExecute }, { 10000, 12345 });
+            recordGlobalMetrics("testCategory", MetricsDimensionList{{"user","gavin"},{"instance","thor400"}}, { StTimeLocalExecute, StCostExecute }, { 54321, 1290 });
+            recordGlobalMetrics("testCategory", MetricsDimensionList{{"user","gavin"}}, { StTimeLocalExecute, StCostExecute }, { 11111, 999 });
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeBlocked=20000,TimeLocalExecute=12345}
+testCategory[user=gavin,instance=thor400] (1999011312..1999011312) => {TimeLocalExecute=54321,CostExecute=1290}
+testCategory[user=gavin] (1999011312..1999011312) => {TimeLocalExecute=11111,CostExecute=999}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, startTime, nullptr, expected);
+            }
+
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data1"},{"user","gavin"}}, { StCostFileAccess }, { 11111 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","gavin"}}, { StCostFileAccess }, { 22222 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","jim"}}, { StCostFileAccess }, { 33333 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data3"},{"user","bob"}}, { StCostFileAccess }, { 9999 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data1"},{"user","gavin"}}, { StCostFileAccess }, { 11111 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","gavin"}}, { StCostFileAccess }, { 22222 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","jim"}}, { StCostFileAccess }, { 33333 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","gavin"}}, { StCostFileAccess }, { 22222 });
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{{"plane", "data2"},{"user","jim"}}, { StCostFileAccess }, { 33333 });
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeBlocked=20000,TimeLocalExecute=12345}
+testCategory[user=gavin,instance=thor400] (1999011312..1999011312) => {TimeLocalExecute=54321,CostExecute=1290}
+testCategory[user=gavin] (1999011312..1999011312) => {TimeLocalExecute=11111,CostExecute=999}
+testCategory2[plane=data1,user=gavin] (1999011312..1999011312) => {CostFileAccess=22222}
+testCategory2[plane=data2,user=gavin] (1999011312..1999011312) => {CostFileAccess=66666}
+testCategory2[plane=data2,user=jim] (1999011312..1999011312) => {CostFileAccess=99999}
+testCategory2[plane=data3,user=bob] (1999011312..1999011312) => {CostFileAccess=9999}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, startTime, nullptr, expected);
+            }
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testTimeslots()
+    {
+        const char * slot1 = "1999-01-13T12:00:00";
+        const char * slot1End = "1999-01-13T12:59:99";
+        const char * slot1b = "1999-01-13T12:58:00";
+        const char * slot2 = "1999-01-13T13:00:00";
+        const char * slot3 = "1999-01-14T13:00:00";
+        const char * slot4 = "2000-01-14T13:00:00";
+
+        CDateTime slot1Time;
+        slot1Time.setString(slot1);
+        CDateTime slot1EndTime;
+        slot1EndTime.setString(slot1End);
+        CDateTime slot2Time;
+        slot2Time.setString(slot2);
+        CDateTime slot3Time;
+        slot3Time.setString(slot3);
+        CDateTime slot4Time;
+        slot4Time.setString(slot4);
+
+        try
+        {
+            resetGlobalMetrics("testCategory", MetricsDimensionList());
+            resetGlobalMetrics("testCategory2", MetricsDimensionList());
+
+            setGlobalMetricNowTime(slot1);
+            recordGlobalMetrics("testCategory", MetricsDimensionList{}, { StTimeLocalExecute }, { 10 });
+            setGlobalMetricNowTime(slot1b);
+            recordGlobalMetrics("testCategory", MetricsDimensionList{}, { StTimeLocalExecute }, { 20 });
+
+            setGlobalMetricNowTime(slot2);
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{}, { StTimeLocalExecute }, { 40 });
+
+            setGlobalMetricNowTime(slot3);
+            recordGlobalMetrics("testCategory2", MetricsDimensionList{}, { StTimeLocalExecute }, { 80 });
+
+            setGlobalMetricNowTime(slot4);
+            recordGlobalMetrics("testCategory", MetricsDimensionList{}, { StTimeLocalExecute }, { 160 });
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeLocalExecute=30}
+testCategory[] (2000011413..2000011413) => {TimeLocalExecute=160}
+testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
+testCategory2[] (1999011413..1999011413) => {TimeLocalExecute=80}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, slot1Time, nullptr, expected);
+            }
+
+            {
+                constexpr const char * expected = R"!(
+)!";
+                verifyGlobalMetrics("unknown", MetricsDimensionList{}, slot1Time, nullptr, expected);
+            }
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeLocalExecute=30}
+testCategory[] (2000011413..2000011413) => {TimeLocalExecute=160}
+)!";
+                verifyGlobalMetrics("testCategory", MetricsDimensionList{}, slot1Time, nullptr, expected);
+            }
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeLocalExecute=30}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, slot1Time, &slot1Time, expected);
+            }
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeLocalExecute=30}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, slot1Time, &slot1EndTime, expected);
+            }
+
+            {
+                constexpr const char * expected = R"!(
+testCategory[] (1999011312..1999011312) => {TimeLocalExecute=30}
+testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
+)!";
+                verifyGlobalMetrics(nullptr, MetricsDimensionList{}, slot1Time, &slot2Time, expected);
+            }
+
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( DaliGlobalMetricsTester );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliGlobalMetricsTester, "DaliGlobalMetricsTester" );
+
+
 
 #endif // _USE_CPPUNIT
