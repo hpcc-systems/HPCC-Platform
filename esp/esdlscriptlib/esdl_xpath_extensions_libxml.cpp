@@ -1050,6 +1050,44 @@ static void isTraceEnabled(xmlXPathParserContextPtr ctxt, int nargs)
     xmlXPathReturnBoolean(ctxt, scriptContext->isTraceEnabled());
 }
 
+static void getSecretKeyValueExtFunc(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+    if (nargs != 2)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar* tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    StringBuffer key((const char*)tmp);
+    xmlFree(tmp);
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    SecretId id((const char*)tmp);
+    xmlFree(tmp);
+
+    Owned<IPTree> secret(scriptContext->getSecret("espUser", id));
+    if (!secret)
+    {
+        xmlXPathSetError((ctxt), XPATH_UNDEF_VARIABLE_ERROR);
+        return;
+    }
+    StringBuffer value;
+    if (!getSecretKeyValue(value, secret, key))
+        xmlXPathReturnEmptyString(ctxt);
+    else
+        xmlXPathReturnString((ctxt), xmlStrdup((const xmlChar*)value.str()));
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -1079,6 +1117,7 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "canMaskContent", (void *)canMaskContent);
     xpathContext->registerFunction(uri, "getMaskingPropertyAwareness", (void *)getMaskingPropertyAwareness);
     xpathContext->registerFunction(uri, "isTraceEnabled", (void *)isTraceEnabled);
+    xpathContext->registerFunction(uri, "getSecretKeyValue", (void*)getSecretKeyValueExtFunc);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
