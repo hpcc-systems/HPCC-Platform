@@ -38,11 +38,25 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
         // Implement getLastServerMessage function call
         break;
       case "restoreECLWorkUnit":
-        // Implement restoreECLWorkUnit function call
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: WsSasha.WUTypes.ECL
+        })
+          .then(response => {
+            setResult(response.Result);
+          })
+          .catch(err => logger.error(err));
         break;
       case "restoreDFUWorkUnit":
-        // Implement restoreDFUWorkUnit function call
-        break;
+        sashaService.RestoreWU({
+          Wuid: wuid,
+          WUType: WsSasha.WUTypes.DFU
+        })
+          .then(response => {
+            setResult(response.Result);
+          })
+          .catch(err => logger.error(err));
+          break;
       case "archiveECLWorkUnit":
         sashaService.ArchiveWU({
           Wuid: wuid,
