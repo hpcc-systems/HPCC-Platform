@@ -162,7 +162,8 @@ bool validateDropZone(IPropertyTree * plane, const char * path, const char * hos
 
 IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch)
 {
-    if (strsame(host, "localhost"))
+    // host string can contain "." without a host group defined in containerized environment
+    if (strsame(host, "localhost") || (isContainerized() && strsame(host, ".")))
         host = nullptr;
     StringBuffer xpath("storage/planes");
     if (!isEmptyString(category))
