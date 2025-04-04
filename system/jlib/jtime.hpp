@@ -113,6 +113,8 @@ public:
 
     int queryUtcToLocalDelta() const;
 
+    unsigned getUtcHour() const { return utc_hour; }
+
 private:
     void setFromUtcTm(struct tm const & ts);
     void getToUtcTm(struct tm & ts) const;
