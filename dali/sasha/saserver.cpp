@@ -240,26 +240,10 @@ public:
 
 void SashaMain()
 {
-    if (!isDaliClient)
+    if (!isDaliClient) // If a Dali client, SashaMain will be listening to MP and cancelled by CStopThread
     {
-        bool stopped = false;
-        class AbortHandler : implements CSimpleInterfaceOf<IAbortHandler>
-        {
-            bool& stopped;
-        public:
-            AbortHandler(bool &_stopped) : stopped(_stopped) {}
-            virtual bool onAbort() override
-            {
-                PROGLOG("Aborted");
-                stopped = true;
-                return false;
-            }
-        } abortHandler(stopped);
- 
-        addAbortHandler(abortHandler);
-        while (!stopped)
-        {            
-        }
+        // NB: requestStop signals stopSem
+        stopSem.wait();
         return;
     }
 
@@ -498,16 +482,14 @@ int main(int argc, const char* argv[])
                         if (!stopped)
                         {
                             stopped = true;
-                            if (isDaliClient)
-                            {
-                                IInterCommunicator &comm = queryWorldCommunicator();
-                                comm.cancel(NULL, MPTAG_SASHA_REQUEST);
-                            }
+                            IInterCommunicator &comm = queryWorldCommunicator();
+                            comm.cancel(NULL, MPTAG_SASHA_REQUEST);
                         }
                     }
                 } *stopThread{};
                 if (isDaliClient)
                     stopThread = new CStopThread;
+                // else, SashaMain waits directly on stopSem
                 addThreadExceptionHandler(&exceptionStopHandler);
 #ifdef _CONTAINERIZED
                 if (!serverConfig->getPropBool("@inDaliPod"))
