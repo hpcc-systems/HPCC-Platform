@@ -23,6 +23,7 @@
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
+#include "jptree.hpp"
 #include "jstring.hpp"
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
@@ -242,13 +243,27 @@ interface IEventVisitor : extends IInterface
     virtual void departFile(uint32_t bytesRead) = 0;
 };
 
-// Return a new event visitor that writes to standard output for every visit.
-// `visitFile` adds two lines of text, and all other methods add one line of text.
-extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor();
+// Extension of IEventVisitor that provides public access to a property tree containing the
+// visited data.
+interface IPTreeEventVisitor : public IEventVisitor
+{
+    virtual IPTree* queryTree() const = 0;
+};
 
-// Return a new event visitor that writes to the given output stream for every visit.
-// `visitFile` adds two lines of text, and all other methods add one line of text.
-extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor(std::ostream& out);
+// Get a visitor that streams visited event data in JSON format.
+extern jlib_decl IEventVisitor* createDumpJSONEventVisitor(std::ostream& out);
+
+// Get a visitor that streams visited event data in a flat text format.
+extern jlib_decl IEventVisitor* createDumpTextEventVisitor(std::ostream& out);
+
+// Get a visitor that streams visited event data in XML format.
+extern jlib_decl IEventVisitor* createDumpXMLEventVisitor(std::ostream& out);
+
+// Get a visitor that streams visited event data in YAML format.
+extern jlib_decl IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out);
+
+// Get a visitor that stores visited event data in a property tree.
+extern jlib_decl IPTreeEventVisitor* createPTreeEventVisitor();
 
 // Opens and parses a single binary event data file. Parsed data is passed to the given visitor
 // until parsing completes or the visitor requests it to stop.
