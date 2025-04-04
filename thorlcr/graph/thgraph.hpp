@@ -65,6 +65,7 @@
 
 #include "thorplugin.hpp"
 #include "jstats.h"
+#include "dautils.hpp"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
 #define THORDATALINK_STARTED            (RCMAX&~THORDATALINK_STOPPED&~(RCMAX>>2))   // dataLinkStart() was called
@@ -632,6 +633,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
     AtomicShared<CFileSizeTracker> tempFileSizeTracker;
+    AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
     void clean();
 
 protected:
@@ -817,6 +819,8 @@ public:
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
     }
+    IFileReadPropertiesUpdater * queryFileReadPropsUpdater();
+
 // IExceptionHandler
     virtual bool fireException(IException *e);
 

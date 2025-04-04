@@ -8545,14 +8545,18 @@ void CHThorDiskReadBaseActivity::closepart()
             {
                 if (superfile)
                 {
-                    unsigned subfile, lnum;
-                    if (superfile->mapSubPart(previousPartNum, subfile, lnum))
+                    unsigned subfileNum, lnum;
+                    if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
                     {
-                        IDistributedSuperFile *super = dFile->querySuperFile();
-                        dFile = &(super->querySubFile(subfile, true));
+                        IDistributedSuperFile * super = dFile->querySuperFile();
+                        IDistributedFile & subfile = super->querySubFile(subfileNum, true);
+                        graph.queryFileReadPropsUpdater()->addCostAndNumReads(&subfile, curDiskReads, 0);
                     }
                 }
-                updateCostAndNumReads(dFile, curDiskReads);
+                else
+                {
+                    graph.queryFileReadPropsUpdater()->addCostAndNumReads(dFile, curDiskReads, 0);
+                }
             }
             numDiskReads += curDiskReads;
         }
@@ -8901,6 +8905,7 @@ void CHThorDiskReadBaseActivity::updateProgress(IStatisticGatherer &progress) co
     StatsActivityScope scope(progress, activityId);
     progress.addStatistic(StNumDiskReads, numDiskReads);
     progress.addStatistic(StCostFileAccess, diskAccessCost);
+    //fileReadPropertiesUpdater.updateFileProperties();
 }
 
 //=====================================================================================================

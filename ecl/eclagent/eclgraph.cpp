@@ -1364,6 +1364,14 @@ void EclGraph::updateLibraryProgress()
     }
 }
 
+static CriticalSection fileReadPropsUpdaterCrit;
+
+IFileReadPropertiesUpdater * EclGraph::queryFileReadPropsUpdater()
+{
+    IUserDescriptor * udesc = agent->queryCodeContext()->queryUserDescriptor();
+    return fileReadPropsUpdater.query([udesc] { return createFileReadPropertiesUpdater(udesc); }, fileReadPropsUpdaterCrit);
+}
+
 //---------------------------------------------------------------------------
 
 void UninitializedGraphResult::addRowOwn(const void * row)

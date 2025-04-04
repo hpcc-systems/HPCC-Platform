@@ -15006,3 +15006,4 @@ WuidPattern::WuidPattern(const char* _pattern)
     if (!pattern.isEmpty() && islower(pattern.charAt(0)))
         pattern.setCharAt(0, toupper(pattern.charAt(0)));
 }
+
