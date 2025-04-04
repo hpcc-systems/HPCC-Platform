@@ -402,7 +402,7 @@ int main(int argc, const char* argv[])
             Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
             initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
         }
-        
+
         if (stop)
             stopSashaServer((argc>2)?argv[2]:"", DEFAULT_SASHA_PORT);
         else
