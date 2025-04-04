@@ -671,9 +671,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     cost_type totalReadCost = 0;
     ThorActivityKind actKind = container.getKind();
     bool bIndexReadActivity = isIndexReadActivity(actKind);
-    Owned<FileReadPropertiesUpdater> fileReadPropertiesUpdater;
-    if (updateFileProps)
-        fileReadPropertiesUpdater.setown(new FileReadPropertiesUpdater());
+    IFileReadPropertiesUpdater * fileReadPropertiesUpdater = queryGraph().queryFileReadPropsUpdater();
     if (fileStats.size()>0)
     {
         unsigned fileIndex = 0;

@@ -41,6 +41,7 @@
 #include "jlog.hpp"
 #include "dalienv.hpp"
 #include "ftbase.ipp"
+#include "dautils.hpp"
 
 #ifdef _CONTAINERIZED
 //Temporary see HPCC-25822
@@ -3848,11 +3849,12 @@ cost_type FileSprayer::updateTargetProperties()
 cost_type FileSprayer::updateSourceProperties()
 {
     TimeSection timer("FileSprayer::updateSourceProperties() time");
-    // Update file readCost and numReads in file properties and do the same for subfiles
+    // Update file readCost and numReads in file properties and do the same for owning super files
     if (distributedSource)
     {
-        FileReadPropertiesUpdater fileReadPropertiesUpdater;
+        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(nullptr);
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
+        cost_type totalCost = 0;
         if (superSrc && superSrc->numSubFiles() > 0)
         {
             Owned<IFileDescriptor> fDesc = superSrc->getFileDescriptor();
@@ -3876,15 +3878,15 @@ cost_type FileSprayer::updateSourceProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    fileReadPropertiesUpdater.addCostAndNumReads(subfile, curProgress.numReads);
+                    totalCost += fileReadPropertiesUpdater->addCostAndNumReads(subfile, curProgress.numReads);
                 }
             }
         }
         else
         {
-            fileReadPropertiesUpdater.addCostAndNumReads(distributedSource, totalNumReads);
+            totalCost += fileReadPropertiesUpdater->addCostAndNumReads(distributedSource, totalNumReads);
         }
-        return fileReadPropertiesUpdater.getTotalCost();
+        return totalCost;
     }
     return 0;
 }
