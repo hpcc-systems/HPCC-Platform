@@ -175,6 +175,13 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
                         pubQuery->setSignature(*querysignature.getLink());
                         queries.append(*pubQuery.getLink());
                     }
+                    catch(IException *e)
+                    {
+                        StringBuffer text;
+                        e->errorMessage(text);
+                        ESPLOG(LogNormal, "WsSQL: Could not gather published query '%s' schema: '%s'", qname, text.str());
+                        e->Release();
+                    }
                     catch(...)
                     {
                         ESPLOG(LogNormal, "WsSQL: Could not gather published query '%s' schema", qname);
