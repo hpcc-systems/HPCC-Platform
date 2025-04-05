@@ -484,6 +484,11 @@ public:
     {
         return m_isSecure;
     }
+
+    virtual SocketStats *getSocketStat() override
+    {
+        return m_socket->getSocketStat();
+    }
 };
 
 #ifdef USERECVSEM
@@ -945,6 +950,18 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 break;
         }
     }
+
+    cycle_t elapsedCycles = timer.elapsedCycles();
+    SocketStats *sockStat = getSocketStat();
+    sockStat->ioReads++;
+    sockStat->ioReadBytes += sizeRead;
+    sockStat->ioReadCycles += elapsedCycles;
+    if (!SSTATS)
+        SSTATS = getSocketStatPtr();
+    SSTATS->reads++;
+    SSTATS->readsize += sizeRead;
+    SSTATS->readtimecycles += elapsedCycles;
+
 }
 
 void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
@@ -966,6 +983,18 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
         {
             // NB: minSize not used here, because not using SSL_MODE_ENABLE_PARTIAL_WRITE
             dbgassertex(size == rc);
+
+            cycle_t elapsedCycles = timer.elapsedCycles();
+            SocketStats *sockStat = getSocketStat();
+            sockStat->ioWrites++;
+            sockStat->ioWriteBytes += rc;
+            sockStat->ioWriteCycles += elapsedCycles;
+            if (!SSTATS)
+                SSTATS = getSocketStatPtr();
+            SSTATS->writes++;
+            SSTATS->writesize += rc;
+            SSTATS->writetimecycles += elapsedCycles;
+
             return rc;
         }
         int ssl_err = SSL_get_error(m_ssl, rc);

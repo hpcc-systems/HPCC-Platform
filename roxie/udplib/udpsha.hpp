@@ -412,6 +412,7 @@ private:
     virtual bool isSecure() const override { UNIMPLEMENTED; }
     virtual bool isValid() const override { UNIMPLEMENTED; }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override { return 0; }
+    virtual SocketStats *getSocketStat() override { UNIMPLEMENTED; }
 
 };
 
