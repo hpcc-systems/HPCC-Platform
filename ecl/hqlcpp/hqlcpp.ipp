@@ -842,7 +842,7 @@ struct HqlCppOptions
     bool                newIndexReadMapping = false;
     bool                diskReadsAreSimple = false;
     bool                allKeyedFiltersOptional = false;
-    bool                genericDiskReads = false;
+    bool                genericDiskReadWrites = false;
     bool                generateActivityFormats = false;
     bool                generateDiskFormats = false;
     bool                generateIR = false;
