@@ -70,6 +70,9 @@
             "platform": "@VCPKG_REDIS@"
         },
         {
+            "name": "http-parser"
+        },
+        {
             "name": "icu",
             "platform": "@VCPKG_ICU@",
             "features": [
