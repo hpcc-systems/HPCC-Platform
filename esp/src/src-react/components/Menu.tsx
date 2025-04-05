@@ -3,7 +3,7 @@ import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Link, mergeSt
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { containerized, bare_metal } from "src/BuildInfo";
-import { navCategory } from "../util/history";
+import { navCategory, pushUrl } from "../util/history";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useLogAccessInfo } from "../hooks/platform";
@@ -138,8 +138,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
                     document.dispatchEvent(themeChangeEvent);
                 }}
             />
-            {/* Disable Theme editor button for launch of 9.0 */}
-            {/* <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} /> */}
+            <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => pushUrl("/settings")} />
         </Stack.Item>
     </Stack>;
 };
