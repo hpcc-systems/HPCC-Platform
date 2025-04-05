@@ -39,7 +39,8 @@ set (    SRCS
          dasds.cpp 
          dasess.cpp 
          dasubs.cpp 
-         dautils.cpp 
+         dautils.cpp
+         sysinfologger.cpp
     )
     
 set (    INCLUDES
@@ -56,6 +57,7 @@ set (    INCLUDES
          dasess.hpp
          dasubs.hpp
          dautils.hpp
+         sysinfologger.hpp
     )   
 
 set_source_files_properties(dasds.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
@@ -70,6 +72,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/include 
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${HPCC_SOURCE_DIR}/testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DDALI_EXPORTS -DNULL_DALIUSER_STACKTRACE)
@@ -88,5 +91,6 @@ if(NOT PLUGIN)
         mp 
         hrpc 
         dafsclient
+        ${CppUnit_LIBRARIES}
     )
 endif()
