@@ -117,3 +117,11 @@ margin period.
 Should be set on planes backed by storage types that do not guarantee files are
 ready to be read by any other consumer immediately, e.g. Azure Blob storage.
 Default: 0
+
+## safeStatBehaviour (unsigned)
+
+Controls error behaviour of jfile stat() calls.
+0 = fail on any unexpected error. NB: ENOENT and ENOTDIR as file not present.
+1 = ignore EACCES - suppre exception, returns false.
+2 = ignore all other errors - suppress exception, return false. This was the legacy behaviour.
+Default: 0
