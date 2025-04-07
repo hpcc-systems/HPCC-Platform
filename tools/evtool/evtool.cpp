@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "jfile.hpp"
 #include "jstring.hpp"
 #include <iostream>
 
@@ -25,20 +26,24 @@ int CEvToolCommand::dispatch(int argc, const char* argv[], int pos)
     {
         if (!accept(argv[idx]))
         {
-            std::cerr << "invalid argument: " << argv[idx] << std::endl << std::endl;
-            usage(argc, argv, idx, std::cerr);
+            StringBuffer err;
+            err << "invalid argument: " << argv[idx] << "\n\n";
+            consoleErr().put(err.length(), err.str());
+            usage(argc, argv, idx, consoleErr());
             return 1;
         }
         if (isHelp)
         {
-            usage(argc, argv, idx, std::cout);
+            usage(argc, argv, idx, consoleOut());
             return 0;
         }
     }
     if (!isGoodRequest())
     {
-        std::cerr << "incomplete request" << std::endl << std::endl;
-        usage(argc, argv, pos, std::cerr);
+        StringBuffer err;
+        err << "incomplete request\n\n";
+        consoleErr().put(err.length(), err.str());
+        usage(argc, argv, pos, consoleErr());
         return 1;
     }
     return doRequest();
@@ -99,15 +104,60 @@ bool CEvToolCommand::acceptParameter(const char* arg)
     return false;
 }
 
-void CEvToolCommand::usagePrefix(int argc, const char* argv[], int pos, std::ostream& out)
+void CEvToolCommand::usagePrefix(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out)
 {
-    out << "usage: ";
+    StringBuffer prefix("usage: ");
     const char* delim = strrchr(argv[0], PATHSEPCHAR);
     if (delim)
-        out << delim + 1;
+        prefix << delim + 1;
     else
-        out << argv[0];
-    out << " ";
+        prefix << argv[0];
+    prefix << " ";
     for (int idx = 1; idx <= pos; ++idx)
-        out << argv[idx] << " ";
+        prefix << argv[idx] << " ";
+    out.put(prefix.length(), prefix.str());
+}
+
+namespace
+{
+    static Owned<IBufferedSerialOutputStream> out;
+    static Owned<IBufferedSerialOutputStream> err;
+}
+
+IBufferedSerialOutputStream& consoleOut()
+{
+    if (!out)
+    {
+        Owned<IFile> file = createIFile("stdout:");
+        Owned<IFileIO> fileIO = file->open(IFOwrite);
+        Owned<ISerialOutputStream> baseStream = createSerialOutputStream(fileIO);
+        out.setown(createBufferedOutputStream(baseStream, 0x10000, false));
+    }
+    return *out;
+}
+
+IBufferedSerialOutputStream& consoleErr()
+{
+    if (!err)
+    {
+        Owned<IFile> file = createIFile("stderr:");
+        Owned<IFileIO> fileIO = file->open(IFOwrite);
+        Owned<ISerialOutputStream> baseStream = createSerialOutputStream(fileIO);
+        err.setown(createBufferedOutputStream(baseStream, 0x10000, false));
+    }
+    return *err;
+}
+
+void cleanupConsole()
+{
+    if (out)
+    {
+        out->flush();
+        out.clear();
+    }
+    if (err)
+    {
+        err->flush();
+        err.clear();
+    }
 }

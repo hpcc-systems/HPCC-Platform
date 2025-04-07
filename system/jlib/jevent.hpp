@@ -18,12 +18,11 @@
 #ifndef JEVENT_HPP
 #define JEVENT_HPP
 
-#include <ostream>
-
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
 #include "jptree.hpp"
+#include "jstream.hpp"
 #include "jstring.hpp"
 #include "jstats.h"
 
@@ -260,19 +259,19 @@ interface IEventVisitor : extends IInterface
 };
 
 // Get a visitor that streams visited event data in JSON format.
-extern jlib_decl IEventVisitor* createDumpJSONEventVisitor(std::ostream& out);
+extern jlib_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in a flat text format.
-extern jlib_decl IEventVisitor* createDumpTextEventVisitor(std::ostream& out);
+extern jlib_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in XML format.
-extern jlib_decl IEventVisitor* createDumpXMLEventVisitor(std::ostream& out);
+extern jlib_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in YAML format.
-extern jlib_decl IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out);
+extern jlib_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in CSV format.
-extern jlib_decl IEventVisitor* createDumpCSVEventVisitor(std::ostream& out);
+extern jlib_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out);
 
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.

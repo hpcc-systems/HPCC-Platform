@@ -1219,18 +1219,18 @@ protected: // new abstract method(s)
     virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
 
 public:
-    CDumpStreamEventVisitor(std::ostream& _out)
-        : out(_out)
+    CDumpStreamEventVisitor(IBufferedSerialOutputStream& _out)
+        : out(&_out)
     {
     }
 
 protected:
     void dump(bool eoln)
     {
-        out << markup.str();
+        out->put(markup.length(), markup.str());
         markup.clear();
         if (eoln)
-            out << std::endl;
+            out->put(1, "\n");
     }
 
     bool inHeader() const { return State::Header == state; }
@@ -1245,7 +1245,7 @@ protected:
         Footer,
     };
     State state{State::Idle};
-    std::ostream& out;
+    Linked<IBufferedSerialOutputStream> out;
     StringBuffer markup;
 };
 
@@ -1316,7 +1316,7 @@ protected:
     }
 };
 
-IEventVisitor* createDumpTextEventVisitor(std::ostream& out)
+IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpTextEventVisitor(out);
 }
@@ -1400,7 +1400,7 @@ private:
     unsigned indentLevel{0};
 };
 
-IEventVisitor* createDumpXMLEventVisitor(std::ostream& out)
+IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpXMLEventVisitor(out);
 }
@@ -1534,7 +1534,7 @@ private:
     bool firstEvent{true};
 };
 
-IEventVisitor* createDumpJSONEventVisitor(std::ostream& out)
+IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpJSONEventVisitor(out);
 }
@@ -1630,7 +1630,7 @@ protected:
     uint8_t indentLevel{0};
 };
 
-IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out)
+IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpYAMLEventVisitor(out);
 }
@@ -1704,7 +1704,7 @@ private:
     Attributes eventAttrs;
 };
 
-IEventVisitor* createDumpCSVEventVisitor(std::ostream& out)
+IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpCSVEventVisitor(out);
 }
