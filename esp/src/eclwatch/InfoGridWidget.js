@@ -382,6 +382,8 @@ define([
                     return l.Severity > r.Severity;
                 });
                 this.infoData = exceptions;
+                const infoChecked = (this.infoData.filter(i => i.Severity === "Error" || i.Severity === "Warning").length === 0) ? true : false;
+                this.infoCheck.set("checked", infoChecked);
                 this.refreshFilter();
             },
 
