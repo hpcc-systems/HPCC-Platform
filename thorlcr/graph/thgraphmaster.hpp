@@ -51,6 +51,7 @@ interface IJobManager : extends IInterface
     virtual void addCachedSo(const char *name) = 0;
     virtual void updateWorkUnitLog(IWorkUnit &workunit) = 0;
     virtual void setExceptionCtx(IThorException *e) = 0;
+    virtual void deltaPostmortemInProgress(int v) = 0;
 };
 
 interface ILoadedDllEntry;

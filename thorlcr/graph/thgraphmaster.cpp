@@ -1771,8 +1771,10 @@ void CJobMaster::jobDone()
     if (isContainerized())
     {
         if (hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::always) ||
-        (aborted && hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::onFailure)))
+            (aborted && hasMask(jobInfoCaptureBehaviour, JobInfoCaptureBehaviour::onFailure)))
         {
+            queryJobManager().deltaPostmortemInProgress(1);
+            COnScopeExit reset([&]{ queryJobManager().deltaPostmortemInProgress(-1); });
             captureJobInfo(queryWorkUnit(), JobInfoCaptureType::logs);
         }
     }
@@ -1840,6 +1842,26 @@ void CJobMaster::saveSpills()
 
 void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
 {
+    CCycleTimer timer;
+    bool captureTimeRecorded = false;
+    auto recordTimerFunc = [&]
+    {
+        if (captureTimeRecorded) // if set, capture process completes sucessfully and stat added
+            return;
+        unsigned __int64 captureNs = timer.elapsedNs();
+        Owned<IWorkUnit> lw = &wu.lock();
+        lw->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StTimePostMortemCapture, NULL, captureNs, 1, 0, StatsMergeReplace);
+    };
+    COnScopeExit recordTimerScope(recordTimerFunc);
+
+    StringArray flagsStrArr;
+    if (hasMask(flags, JobInfoCaptureType::logs))
+        flagsStrArr.append("logs");
+    if (hasMask(flags, JobInfoCaptureType::stacks))
+        flagsStrArr.append("stacks");
+    StringBuffer flagsStr;
+    PROGLOG("Capturing job info: flags=%s", flagsStrArr.getString(flagsStr, ",").str());
+
     StringBuffer dir;
     if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
     {
@@ -1894,7 +1916,7 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
     std::future<std::vector<std::string>> managerResultsFuture = std::async(std::launch::async, managerCaptureFunc);
 
     std::vector<std::string> capturedFiles;
-    auto responseFunc = [&capturedFiles](unsigned worker, MemoryBuffer &mb)
+    auto workerResponseFunc = [&capturedFiles](unsigned worker, MemoryBuffer &mb)
     {
         bool res;
         mb.read(res);
@@ -1914,7 +1936,19 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
         }
     };
     VStringBuffer cmd("<debuginfo dir=\"%s\" flags=\"%u\"/>", dir.str(), (byte)flags);
-    issueWorkerDebugCmd(cmd, 0, responseFunc);
+    unsigned debugInfoWorkerTimeoutMs = 20000; // should be more than enough for all logs to copy logs to debug plane (all done asynchronously)
+    if (hasMask(flags, JobInfoCaptureType::stacks)) // gdb info gathering can be a bit slow
+        debugInfoWorkerTimeoutMs += 10000;
+    try
+    {
+        issueWorkerDebugCmd(cmd, 0, workerResponseFunc, debugInfoWorkerTimeoutMs);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+        // we want to continue with what we have
+    }
     std::vector<std::string> managerResults = managerResultsFuture.get();
     capturedFiles.insert(capturedFiles.end(), managerResults.begin(), managerResults.end());
 
@@ -1928,14 +1962,20 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
             OWARNLOG("Failed to create tarball of debuginfo");
             return;
         }
+        unsigned __int64 captureNs = timer.elapsedNs();
+        captureTimeRecorded = true; // well not quite, but we should not try again if this fails
         Owned<IWorkUnit> lw = &wu.lock();
+        lw->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StTimePostMortemCapture, NULL, captureNs, 1, 0, StatsMergeReplace);
         Owned<IWUQuery> query = lw->updateQuery();
         VStringBuffer archiveFilePath("%s/%s", dir.str(), archiveFilename.str());
         query->addAssociatedFile(FileTypePostMortem, archiveFilePath, "localhost", description, 0, 0, 0);
     }
     else
     {
+        unsigned __int64 captureNs = timer.elapsedNs();
+        captureTimeRecorded = true; // well not quite, but we should not try again if this fails
         Owned<IWorkUnit> lw = &wu.lock();
+        lw->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StTimePostMortemCapture, NULL, captureNs, 1, 0, StatsMergeReplace);
         Owned<IWUQuery> query = lw->updateQuery();
         for (auto &file: capturedFiles)
         {
@@ -2198,7 +2238,7 @@ void CJobMaster::pause(bool doAbort)
     }
 }
 
-void CJobMaster::issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc)
+void CJobMaster::issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc, unsigned debugInfoWorkerTimeoutMs)
 {
     mptag_t replyTag = createReplyTag();
     ICommunicator &comm = queryNodeComm();
@@ -2210,30 +2250,27 @@ void CJobMaster::issueWorkerDebugCmd(const char *rawText, unsigned workerNum, st
     rank_t rank = workerNum ? workerNum : RANK_ALL_OTHER; // 0 == all workers
     if (!comm.send(mbuf, rank, managerWorkerMpTag, MP_ASYNC_SEND))
     {
-        DBGLOG("Failed to send debug info to slave");
+        IWARNLOG("Failed to send debug info to slave");
         throwUnexpected();
     }
 
     rank = workerNum ? workerNum : RANK_ALL;
     unsigned numToRecv = workerNum ? 1 : queryNodes();
-    while (numToRecv)
+    unsigned remainingToRecv = numToRecv;
+    CTimeMon tm(debugInfoWorkerTimeoutMs);
+    while (true)
     {
         rank_t sender;
         mbuf.clear();
-        unsigned recvTimeoutCount = 0;
-        while (!comm.recv(mbuf, rank, replyTag, &sender, SHORTTIMEOUT))
-        {
-            if (queryAborted())
-                return;
-            ++recvTimeoutCount;
-            if (recvTimeoutCount == 10)
-                throw makeStringExceptionV(0, "Timedout waiting for debugcmd response from worker %u", workerNum);
-            IWARNLOG("Waiting for debugcmd response from worker %u", workerNum);
-        }
+        if (!comm.recv(mbuf, rank, replyTag, &sender, debugInfoWorkerTimeoutMs))
+            throw makeStringExceptionV(0, "Timedout waiting for debugcmd response from worker %u", workerNum);
         while (mbuf.remaining())
             responseFunc(sender, mbuf);
-
-        numToRecv--;
+        remainingToRecv--;
+        if (0 == remainingToRecv)
+            break;
+        if (tm.timedout())
+            throw makeStringExceptionV(0, "Timedout waiting for debugcmd response from workers - %u did not respond within timelimit (%u secs)", remainingToRecv, debugInfoWorkerTimeoutMs/1000);
     }
 }
 
