@@ -138,6 +138,7 @@ Install the HPCC Platform from the downloaded artifact, set permissions and conf
     run: |
         sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
         sudo chown -R $USER:$USER /opt/HPCCSystems
+        sudo chown -R $USER:$USER /var/*/HPCCSystems
         sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
   ```
 - **Checkout ecl-bundles repository**  
