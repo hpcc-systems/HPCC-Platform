@@ -20,14 +20,13 @@
 #include "evtool.h"
 #include "jstring.hpp"
 #include <functional>
-#include <iostream>
 #include <map>
 #include <string>
 
 using CmdCreator = std::function<IEvToolCommand*()>;
 using CmdMap = std::map<std::string, CmdCreator>;
 
-static void usage(const char* tool, const CmdMap& commands, std::ostream& out)
+static void usage(const char* tool, const CmdMap& commands, IBufferedSerialOutputStream& out)
 {
     const char* argv[] = { tool, nullptr };
     for (const CmdMap::value_type& c : commands)
@@ -48,14 +47,16 @@ int main(int argc, const char* argv[])
     };
     if (argc < 2)
     {
-        usage(argv[0], commands, std::cout);
+        usage(argv[0], commands, consoleOut());
         return 0;
     }
     CmdMap::const_iterator it = commands.find(argv[1]);
     if (commands.end() == it)
     {
-        std::cerr << "unknown command: " << argv[1] << std::endl << std::endl;
-        usage(argv[0], commands, std::cerr);
+        StringBuffer err;
+        err << "unknown command: " << argv[1] << "\n\n";
+        consoleErr().put(err.length(), err.str());
+        usage(argv[0], commands, consoleErr());
         return 1;
     }
     Owned<IEvToolCommand> cmd = it->second();
@@ -68,7 +69,8 @@ int main(int argc, const char* argv[])
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        std::cerr << msg.str() << std::endl;
+        msg << '\n';
+        consoleErr().put(msg.length(), msg.str());
         return 1;
     }
 }
