@@ -140,24 +140,25 @@ public:
 class CPermissionsCache : public CInterface
 {
 public:
-    CPermissionsCache(const char * _secMgrClass, ISecManager *secMgr)
+    CPermissionsCache(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0)
     {
-        m_cacheTimeoutInSeconds = DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES * 60 * 1000;//default every hour
+        unsigned timeoutSeconds = ((cacheTimeoutMinutes != 0) ? cacheTimeoutMinutes : DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES) * 60;  //default every hour
         m_transactionalEnabled = false;
         m_secMgr = secMgr;
         m_defaultPermission = SecAccess_Unknown;
         m_secMgrClass.set(_secMgrClass);
         m_transactionalCacheTimeout = DEFAULT_CACHE_TIMEOUT_SECONDS;
+        setCacheTimeout(timeoutSeconds);
     }
 
-    CPermissionsCache(ISecManager *secMgr) : CPermissionsCache(nullptr, secMgr) {}
+    CPermissionsCache(ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0) : CPermissionsCache(nullptr, secMgr, cacheTimeoutMinutes) {}
 
     virtual ~CPermissionsCache();
 
     //Returns an owned reference to a shared cache of a given Sec Mgr class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr);
+    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -181,17 +182,7 @@ public:
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
     void managedFileScopesCacheFillThread();
-    void stopManagedFileScopeCacheFillThread()
-    {
-        if (m_fileScopeCacheFillThread.joinable())
-        {
-            DBGLOG("CACHE: stopping managedFileScopeCacheFillThread...");
-            m_stopFileScopeCacheFillThread = true;
-            m_fileScopeCacheFillSem.signal();
-            m_fileScopeCacheFillThread.join();
-            DBGLOG("CACHE: managedFileScopeCacheFillThread stopped");
-        }
-    }
+    void stopManagedFileScopeCacheFillThread();
 
     void setTransactionalEnabled(bool enable)
     {
@@ -230,7 +221,6 @@ private:
     mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
     std::atomic<unsigned int> m_cacheTimeoutInSeconds;
-    // int m_cacheTimeoutInSeconds; //cleanup cycle period
     bool m_transactionalEnabled;
     int m_transactionalCacheTimeout;
 
@@ -251,7 +241,6 @@ private:
     Semaphore m_fileScopeCacheFillSem;
     std::thread m_fileScopeCacheFillThread;
     std::atomic<bool> m_stopFileScopeCacheFillThread = false;
-    std::atomic<bool> m_flushCache = false;
 };
 
 time_t getThreadCreateTime();

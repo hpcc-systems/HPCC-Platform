@@ -225,8 +225,14 @@ CPermissionsCache::~CPermissionsCache()
         CriticalBlock block(mapCacheCS);
         g_mapCache.erase(m_secMgrClass.str());
     }
+
     stopManagedFileScopeCacheFillThread();
-    removeAllManagedFileScopes();
+
+    {
+        WriteLockBlock writeLock(m_scopesRWLock);
+        removeAllManagedFileScopes();
+    }
+
     clearPermissionsCache();
     clearUsersCache();
 }
@@ -534,14 +540,14 @@ void  CPermissionsCache::setCacheTimeout(int timeoutSeconds)
     {
         if (!m_fileScopeCacheFillThread.joinable())
         {
-            DBGLOG("CACHE: starting managedFileScopeCacheFillThread, timeout = %d", timeoutSeconds);
+            DBGLOG("CACHE: CPermissionsCache starting managedFilesScopeCacheFillThread, timeout = %d", timeoutSeconds);
             m_fileScopeCacheFillThread = std::thread(&CPermissionsCache::managedFileScopesCacheFillThread, this);
+            m_fileScopeCacheFillSem.wait(5000);   // wait for thread to start
         }
     }
     else
         stopManagedFileScopeCacheFillThread();
 }
-
 
 /*
     if perms set on 'scopeA::scopeB' only and lookup of 'scopeA::scopeB::scopeC::scopeD'
@@ -664,7 +670,9 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
 
 void CPermissionsCache::managedFileScopesCacheFillThread()
 {
-    DBGLOG("CACHE: managedFileScopeCacheFillThread started");
+    DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread started");
+
+    m_fileScopeCacheFillSem.signal();  // we have started
 
     // When the thread first starts, do a cache fill with the write lock held.
     // This ensures any managed scope queries are locked out until the cache is filled.
@@ -675,19 +683,10 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
         removeAllManagedFileScopes();
         if (count)
             addManagedFileScopes(scopes);
-        DBGLOG("CACHE: managedFileScopeCacheFillThread Initial fill complete");
     }
 
     while (!m_stopFileScopeCacheFillThread)
     {
-        // If the flush cache flag is set, clear the permission and user caches
-        if (m_flushCache)
-        {
-            clearPermissionsCache();
-            clearUsersCache();
-            m_flushCache = false;
-        }
-
         IArrayOf<ISecResource> scopes;
         aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
 
@@ -711,7 +710,20 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
         // Wait again
         m_fileScopeCacheFillSem.wait(m_cacheTimeoutInSeconds * 1000);
     }
-    DBGLOG("CACHE: managedFileScopeCacheFillThread exiting");
+    DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread exiting");
+}
+
+
+void CPermissionsCache::stopManagedFileScopeCacheFillThread()
+{
+    if (m_fileScopeCacheFillThread.joinable())
+    {
+        DBGLOG("CACHE: CPermissionsCache stopping managedFileScopesCacheFillThread...");
+        m_stopFileScopeCacheFillThread = true;
+        m_fileScopeCacheFillSem.signal();
+        m_fileScopeCacheFillThread.join();
+        DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread stopped");
+    }
 }
 
 
@@ -766,10 +778,32 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 
 void CPermissionsCache::flush()
 {
-    // If the managed file scope cache fill thread is running, signal it to refill the cache
-    m_flushCache = true;
-    if (m_fileScopeCacheFillThread.joinable())
-        m_fileScopeCacheFillSem.signal();
+    clearPermissionsCache();
+    clearUsersCache();
+
+    if (m_useLegacyDefaultFileScopePermissionCache)
+    {
+        m_defaultPermission = SecAccess_Unknown;
+    }
+    else
+    {
+        WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
+        m_userDefaultFileScopePermissions.clear();
+    }
+
+    // Write lock will prevent any managed scope queries until the cache is filled. Note that there is a possibility that the
+    // fill thread and the flush attempt to clear and fill at the same time. The likelihood of this happening is low since
+    // cached timeout should be on the order of minutes if not an hour or longer. So, while a double fill is possible, there is
+    // no harm in it. Only the flush will block until the fill is complete.
+    {
+        WriteLockBlock writeLock(m_scopesRWLock);
+        IArrayOf<ISecResource> scopes;
+        aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
+        removeAllManagedFileScopes();
+        if (count)
+            addManagedFileScopes(scopes);
+    }
+
 }
 
 void CPermissionsCache::clearPermissionsCache()
@@ -793,7 +827,7 @@ void CPermissionsCache::clearUsersCache()
 }
 
 
-CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass, ISecManager *secMgr)
+CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes)
 {
     const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
 
@@ -806,7 +840,7 @@ CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass, ISe
     }
     else
     {
-        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass, secMgr);
+        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass, secMgr, cacheTimeoutMinutes);
         g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
         return instance;
     }

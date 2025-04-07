@@ -620,14 +620,13 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_ldap_client.setown(ldap_client);
     m_pp.setown(pp);
-    int cacheTimeoutMinutes = cfg->getPropInt("@cacheTimeout", DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES);//config value is in minutes
+    unsigned cacheTimeoutMinutes = cfg->getPropInt("@cacheTimeout", DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES);//config value is in minutes
 
     if (cfg->getPropBool("@sharedCache", true))
-        m_permissionsCache.setown(CPermissionsCache::getInstance(cfg->queryProp("@name"), this));
+        m_permissionsCache.setown(CPermissionsCache::getInstance(cfg->queryProp("@name"), this, cacheTimeoutMinutes));
     else
-        m_permissionsCache.setown(new CPermissionsCache(this));
+        m_permissionsCache.setown(new CPermissionsCache(this, cacheTimeoutMinutes));
 
-    m_permissionsCache->setCacheTimeout( 60 * cacheTimeoutMinutes);
     m_permissionsCache->setTransactionalEnabled(true);
     m_useLegacyDefaultFileScopePermissionCaching = cfg->getPropBool("@useLegacyDefaultFileScopePermissionCache", m_useLegacyDefaultFileScopePermissionCaching);
     m_permissionsCache->setUseLegacyDefaultFileScopePermissionCache(m_useLegacyDefaultFileScopePermissionCaching);
