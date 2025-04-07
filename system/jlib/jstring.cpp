@@ -517,6 +517,14 @@ void StringBuffer::setLength(size_t len)
     curLen = len;
 }
 
+char * StringBuffer::ensureCapacity(size_t max, size_t & got)
+{
+    if (maxLen <= curLen + max)
+        _realloc(curLen + max);
+    got = maxLen - curLen - 1;
+    return buffer + curLen;
+}
+
 size32_t StringBuffer::lengthUtf8() const
 {
     size_t chars = 0;
@@ -892,6 +900,15 @@ void StringBuffer::setCharAt(size_t offset, char value)
 {
     if (offset < curLen)
         buffer[offset] = value;
+}
+
+void StringBuffer::replace(size_t offset, size_t len, const void * value)
+{
+    if ((offset >= curLen) || (len == 0))
+        return;
+    if (offset + len > curLen)
+        len = curLen - offset;
+    memcpy(buffer + offset, value, len);
 }
 
 StringBuffer & StringBuffer::toLowerCase()
