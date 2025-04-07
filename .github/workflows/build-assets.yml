@@ -105,6 +105,7 @@ jobs:
           - os: ubuntu-22.04
             name: k8s
             container: true
+            build-docker-image: true
           - os: ubuntu-20.04
           - os: ubuntu-20.04
             name: k8s
@@ -266,7 +267,7 @@ jobs:
             ${{ needs.preamble.outputs.folder_build }}/*.md5sum
 
       - name: Locate k8s deb file (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container && matrix.build-docker-image}}
         id: container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -276,7 +277,7 @@ jobs:
 
       - name: Create Docker Image (community)
         uses: docker/build-push-action@v5
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container && matrix.build-docker-image }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -362,7 +363,7 @@ jobs:
           done
 
       - name: Locate k8s deb file (internal)
-        if: ${{ matrix.ln && matrix.container }}
+        if: ${{ matrix.ln && matrix.container && matrix.build-docker-image}}
         id: ln-container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -372,7 +373,7 @@ jobs:
 
       - name: Create Docker Image (internal)
         uses: docker/build-push-action@v5
-        if: ${{ matrix.ln && matrix.container }}
+        if: ${{ matrix.ln && matrix.container && matrix.build-docker-image }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -387,7 +388,7 @@ jobs:
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       - name: JFrog Docker Push and Publish
-        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
+        if: ${{ matrix.ln && matrix.container && matrix.build-docker-image && github.repository_owner == 'hpcc-systems' }}
         run: |
           jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
