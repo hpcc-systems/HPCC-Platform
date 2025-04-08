@@ -90,7 +90,6 @@ jobs:
         shell: "bash"
         run: |
           sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
-          sudo chown -R $USER:$USER /opt/HPCCSystems
 
           sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
 
@@ -107,21 +106,19 @@ jobs:
           sudo /etc/init.d/hpcc-init start
 
       - name: Run Setup
-        working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
           /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
-              ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
+              /opt/HPCCSystems/testing/regress/ecl-test setup --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
           if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
 
       - name: Run spray tests
-        working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
           # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
            /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
-           ./ecl-test query --preAbort /opt/HPCCSystems/bin/smoketest-preabort.sh --pq 2 --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace *spray*
+               /opt/HPCCSystems/testing/regress/ecl-test query --suiteDir /opt/HPCCSystems/testing/regress --preAbort /opt/HPCCSystems/bin/smoketest-preabort.sh --pq 2 --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace *spray*
            # In this stage we don't care about the test results
 
       - name: Get content
