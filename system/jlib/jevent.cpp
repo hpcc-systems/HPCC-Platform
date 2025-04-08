@@ -77,10 +77,15 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(IndexLookup),
     DEFINE_EVENT(IndexLoad),
     DEFINE_EVENT(IndexEviction),
+    DEFINE_EVENT(DaliChangeMode),
+    DEFINE_EVENT(DaliCommit),
     DEFINE_EVENT(DaliConnect),
-    DEFINE_EVENT(DaliRead),
-    DEFINE_EVENT(DaliWrite),
-    DEFINE_EVENT(DaliDisconnect),
+    DEFINE_EVENT(DaliEnsureLocal),
+    DEFINE_EVENT(DaliGet),
+    DEFINE_EVENT(DaliGetChildren),
+    DEFINE_EVENT(DaliGetChildrenFor),
+    DEFINE_EVENT(DaliGetElements),
+    DEFINE_EVENT(DaliSubscribe),
     DEFINE_META(FileInformation),
     DEFINE_EVENT(RecordingActive),
 };
@@ -133,6 +138,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(EventTraceId, string),
     DEFINE_ATTR(EventThreadId, u8),
     DEFINE_ATTR(EventStackTrace, string),
+    DEFINE_ATTR(DataSize, u4),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -515,30 +521,41 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordDaliConnect(const char * path, __uint64 id)
+void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)
 {
     if (!isRecording())
         return;
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(path, id);
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"path\": \"%s\", \"id\"=0x%llx, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), path, id, elapsedNs, dataSize);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(path, id, elapsedNs, dataSize);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
-    writeEventHeader(EventDaliConnect, pos);
+    writeEventHeader(event, pos);
     write(pos, EvAttrPath, path);
     write(pos, EvAttrConnectId, id);
+    write(pos, EvAttrElapsedTime, elapsedNs);
+    write(pos, EvAttrDataSize, dataSize);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordDaliDisconnect(__uint64 id)
+void EventRecorder::recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize)
 {
     if (!isRecording())
         return;
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id);
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"id\"=0x%llx, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), id, elapsedNs, dataSize);
+
+    //MORE: Should the time stamp be adjusted by the elapsed time??
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id, elapsedNs, dataSize);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
-    writeEventHeader(EventDaliDisconnect, pos);
+    writeEventHeader(event, pos);
     write(pos, EvAttrConnectId, id);
+    write(pos, EvAttrElapsedTime, elapsedNs);
+    write(pos, EvAttrDataSize, dataSize);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
@@ -559,6 +576,52 @@ void EventRecorder::recordFileInformation(unsigned fileid, const char * filename
     write(pos, EvAttrPath, filename);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
+
+void EventRecorder::recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliChangeMode, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliCommit(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliCommit, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliConnect(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliConnect, path, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliEnsureLocal(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliEnsureLocal, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliGet(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliGet, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliGetChildren(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliGetChildren, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliGetChildrenFor(__int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliGetChildrenFor, id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliGetElements(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)
+{
+    recordDaliEvent(EventDaliGetElements, path ? path : "", id, elapsedNs, dataSize);
+}
+
+void EventRecorder::recordDaliSubscribe(const char * xpath, __int64 id, stat_type elapsedNs)
+{
+    recordDaliEvent(EventDaliSubscribe, xpath, id, elapsedNs, 0);
+}
+
 
 void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
 {
