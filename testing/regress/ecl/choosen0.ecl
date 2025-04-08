@@ -27,7 +27,7 @@ multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
 useTranslation := #IFDEFINED(root.useTranslation, false);
 
-#option('fgenericDiskReads', useGeneric);
+#option('genericDiskReadWrites', useGeneric);
 
 //--- end of version configuration ---
 
