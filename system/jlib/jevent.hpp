@@ -250,10 +250,7 @@ interface IEventVisitor : extends IInterface
     virtual Continuation visitEvent(EventType id) = 0;
     virtual Continuation visitAttribute(EventAttr id, const char * value) = 0;
     virtual Continuation visitAttribute(EventAttr id, bool value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) = 0;
     virtual bool departEvent() = 0;
     virtual void departFile(uint32_t bytesRead) = 0;
 };

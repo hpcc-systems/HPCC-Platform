@@ -57,19 +57,7 @@ public:
     {
         return visitor->visitAttribute(id, value);
     }
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
     {
         return visitor->visitAttribute(id, value);
     }
@@ -90,7 +78,7 @@ public:
 class MockEventVisitor : public CNoOpEventVisitorDecorator
 {
 public:
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
     {
         switch (id)
         {
@@ -371,7 +359,6 @@ attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: id = 3
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -410,7 +397,6 @@ attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: id = 3
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -420,7 +406,6 @@ attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
 event: DaliConnect
 attribute: name = 'DaliConnect'
-attribute: id = 6
 attribute: EventTimeOffset = 10
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100

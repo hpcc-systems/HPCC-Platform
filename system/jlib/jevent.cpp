@@ -25,7 +25,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jstring.hpp"
-#include <iostream>
+#include <set>
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
@@ -739,8 +739,8 @@ private:
 
     bool traverseHeader()
     {
-        uint64_t startTimestamp;
-        uint64_t fileSize = file->size();
+        __uint64 startTimestamp;
+        __uint64 fileSize = file->size();
 
         readToken(options);
         readToken(startTimestamp);
@@ -778,11 +778,11 @@ private:
 
     bool traverseAttributes()
     {
-        if (!finishAttribute<uint64_t>(EvAttrEventTimeOffset))
+        if (!finishAttribute<__uint64>(EvAttrEventTimeOffset))
             return false;
         if ((options & ERFtraceid) && !finishDataAttribute(EvAttrEventTraceId, 16))
             return false;
-        if ((options & ERFthreadid) && !finishAttribute<uint64_t>(EvAttrEventThreadId))
+        if ((options & ERFthreadid) && !finishAttribute<__uint64>(EvAttrEventThreadId))
             return false;
         for (;;)
         {
@@ -815,7 +815,7 @@ private:
                 break;
             case EATu8:
             case EATtimestamp:
-                if (!finishAttribute<uint64_t>(attr))
+                if (!finishAttribute<__uint64>(attr))
                     return false;
                 break;
             case EATstring:
@@ -854,7 +854,9 @@ private:
         readToken(value);
         if (mute)
             return true;
-        return reactToVisit(visitor->visitAttribute(attr, value));
+        if (std::is_same<T, bool>::value)
+            return reactToVisit(visitor->visitAttribute(attr, bool(value)));
+        return reactToVisit(visitor->visitAttribute(attr, __uint64(value)));
     }
 
     bool finishAttribute(EventAttr attr)
@@ -1005,7 +1007,6 @@ bool readEvents(const char* filename, IEventVisitor& visitor)
 //       │   └── ... (other header attributes)
 //       ├── Event
 //       │   ├── @name
-//       │   ├── @id
 //       │   └── ... (other event attributes)
 //       ├── ... (more Event elements)
 //       └── Footer
@@ -1017,7 +1018,6 @@ constexpr static const char* DUMP_STRUCTURE_HEADER = "Header";
 constexpr static const char* DUMP_STRUCTURE_FILE_VERSION = "version";
 constexpr static const char* DUMP_STRUCTURE_EVENT = "Event";
 constexpr static const char* DUMP_STRUCTURE_EVENT_NAME = "name";
-constexpr static const char* DUMP_STRUCTURE_EVENT_ID = "id";
 constexpr static const char* DUMP_STRUCTURE_FOOTER = "Footer";
 constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 
@@ -1030,7 +1030,7 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //  `virtual Continuation visitEvent(EventType id) = 0;`
 //  `virtual bool departEvent() = 0;`
 //  `virtual void departFile(uint32_t bytesRead) = 0;`
-//  `virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;`
+//  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
 class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
 public:
@@ -1039,7 +1039,7 @@ public:
     virtual Continuation visitAttribute(EventAttr id, const char* value) override
     {
         if (EvAttrRecordedOption == id)
-            recordAttribute(value, "true", false);
+            recordAttribute(EvAttrNone, value, "true", false);
         else
             doVisitAttribute(id, value);
         return Continuation::visitContinue;
@@ -1051,27 +1051,7 @@ public:
         return Continuation::visitContinue;
     }
 
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
-    {
-        // promote value to larger integer to avoid ambiguity with unsignd char
-        // during conversion to text
-        doVisitAttribute(id, uint16_t(value));
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
-    {
-        doVisitAttribute(id, value);
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
-    {
-        doVisitAttribute(id, value);
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
     {
         doVisitAttribute(id, value);
         return Continuation::visitContinue;
@@ -1080,59 +1060,51 @@ public:
 protected:
     void doVisitHeader(const char* filename, uint32_t version)
     {
-        doVisitAttribute(DUMP_STRUCTURE_FILE_NAME, filename);
-        doVisitAttribute(DUMP_STRUCTURE_FILE_VERSION, version);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_NAME, filename);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_VERSION, __uint64(version));
     }
 
     void doVisitEvent(EventType id)
     {
-        doVisitAttribute(DUMP_STRUCTURE_EVENT_NAME, queryEventName(id));
-        // again, avoid ambiguity with unsignd char...
-        doVisitAttribute(DUMP_STRUCTURE_EVENT_ID, uint16_t(id));
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_EVENT_NAME, queryEventName(id));
     }
 
-    void doVisitAttribute(EventAttr id, uint64_t value)
+    void doVisitAttribute(EventAttr id, __uint64 value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
     void doVisitAttribute(EventAttr id, const char* value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
-    template <typename T>
-    void doVisitAttribute(EventAttr id, T value)
+    void doVisitAttribute(EventAttr id, bool value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
-    void doVisitAttribute(const char* name, uint64_t value)
+    void doVisitAttribute(EventAttr id, const char* name, __uint64 value)
     {
-        char buf[21];
-        sprintf(buf, "%llu", __uint64(value));
-        recordAttribute(name, buf, false);
+        recordAttribute(id, name, StringBuffer().append(value), false);
     }
 
-    void doVisitAttribute(const char* name, const char* value)
+    void doVisitAttribute(EventAttr id, const char* name, const char* value)
     {
-        recordAttribute(name, value, true);
+        recordAttribute(id, name, value, true);
     }
 
-    template <typename T>
-    void doVisitAttribute(const char* name, T value)
+    void doVisitAttribute(EventAttr id, const char* name, bool value)
     {
-        StringBuffer tmp;
-        tmp.append(value);
-        recordAttribute(name, tmp.str(), false);
+        recordAttribute(id, name, (value ? "true" : "false"), false);
     }
 
     void doVisitFooter(uint32_t bytesRead)
     {
-        doVisitAttribute(DUMP_STRUCTURE_FILE_BYTES_READ, bytesRead);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_BYTES_READ, __uint64(bytesRead));
     }
 
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
 };
 
 // Concrete extension of CDumpEventVisitor<IPTreeEventVisitor> that uses an IPropertyTree to store
@@ -1169,7 +1141,7 @@ public: // IEventVisitor
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         active->addProp(VStringBuffer("@%s", name), value);
     }
@@ -1216,7 +1188,7 @@ IEventPTreeCreator* createEventPTreeCreator()
 class CDumpStreamEventVisitor : public CDumpEventVisitor
 {
 protected: // new abstract method(s)
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
 
 public:
     CDumpStreamEventVisitor(IBufferedSerialOutputStream& _out)
@@ -1290,7 +1262,7 @@ public:
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         markup.append("attribute: ").append(name).append(" = ");
         if (quoted)
@@ -1365,7 +1337,7 @@ public:
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         appendXMLAttr(markup, name, value);
     }
@@ -1413,8 +1385,8 @@ public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         state = State::Header;
-        openObject();
-        openObject(DUMP_STRUCTURE_HEADER);
+        openElement();
+        openElement(DUMP_STRUCTURE_HEADER);
         doVisitHeader(filename, version);
         return true;
     }
@@ -1423,41 +1395,41 @@ public:
     {
         if (inHeader())
         {
-            closeObject();
+            closeElement();
             state = State::Events;
         }
         if (firstEvent)
         {
             openArray(DUMP_STRUCTURE_EVENT);
-            openObject();
+            openElement();
             firstEvent = false;
         }
         else
-            openObject();
+            openElement();
         doVisitEvent(id);
         return visitContinue;
     }
 
     virtual bool departEvent() override
     {
-        closeObject();
+        closeElement();
         return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
     {
         if (inHeader())
-            closeObject();
+            closeElement();
         else if (inEvents())
             closeArray();
-        openObject(DUMP_STRUCTURE_FOOTER);
+        openElement(DUMP_STRUCTURE_FOOTER);
         doVisitFooter(bytesRead);
-        closeObject();
-        closeObject(true);
+        closeElement();
+        closeElement(true);
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         conditionalDelimiter();
         indent();
@@ -1468,12 +1440,12 @@ public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
 
 protected:
-    inline void openObject()
+    inline void openElement()
     {
-        openObject(nullptr);
+        openElement(nullptr);
     }
 
-    void openObject(const char* name)
+    void openElement(const char* name)
     {
         openContainer(name, "{ ");
     }
@@ -1488,7 +1460,7 @@ protected:
         closeContainer("]");
     }
 
-    void closeObject(bool done = false)
+    void closeElement(bool done = false)
     {
         closeContainer("}");
         dump(done);
@@ -1547,7 +1519,7 @@ public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         state = State::Header;
-        openObject(DUMP_STRUCTURE_HEADER);
+        openElement(DUMP_STRUCTURE_HEADER);
         doVisitHeader(filename, version);
         return true;
     }
@@ -1556,34 +1528,34 @@ public:
     {
         if (inHeader())
         {
-            closeObject();
-            openObject(DUMP_STRUCTURE_EVENT);
+            closeElement();
+            openElement(DUMP_STRUCTURE_EVENT);
             state = State::Events;
         }
         else
-            openObject(nullptr);
+            openElement(nullptr);
         doVisitEvent(id);
         return visitContinue;
     }
 
     virtual bool departEvent() override
     {
-        closeObject();
+        closeElement();
         return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
     {
         if (inHeader())
-            closeObject();
+            closeElement();
         state = State::Footer;
-        openObject(DUMP_STRUCTURE_FOOTER);
+        openElement(DUMP_STRUCTURE_FOOTER);
         doVisitFooter(bytesRead);
-        closeObject();
+        closeElement();
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         indent();
         markup.append(name).append(": ").append(value).append('\n');
@@ -1592,7 +1564,7 @@ protected:
 public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
 
-    void openObject(const char* name)
+    void openElement(const char* name)
     {
         if (!isEmptyString(name))
         {
@@ -1603,7 +1575,7 @@ public:
         firstProp = true;
     }
 
-    void closeObject()
+    void closeElement()
     {
         indentLevel--;
         dump(false);
@@ -1643,65 +1615,63 @@ public:
 
         state = State::Header;
         encodeCSVColumn(markup, "EventName");
-        markup.append(",");
-        encodeCSVColumn(markup, "EventId");
-        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
         {
-            reverseLookup[queryEventAttributeName(a)] = a;
             markup.append(",");
-            encodeCSVColumn(markup, queryEventAttributeName(a));
+            encodeCSVColumn(markup, queryEventAttributeName(EventAttr(a)));
         }
         dump(true);
         return true;
     }
+
     virtual Continuation visitEvent(EventType id) override
     {
         if (inHeader())
             state = State::Events;
         encodeCSVColumn(markup, queryEventName(id));
-        markup.append(',');
-        StringBuffer tmp;
-        encodeCSVColumn(markup, tmp.append(uint16_t(id)));
-        eventAttrs = headerAttrs;
         return visitContinue;
     }
+
     virtual bool departEvent() override
     {
-        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
         {
             markup.append(",");
-            Attributes::const_iterator it = eventAttrs.find(a);
-            if (it != eventAttrs.end())
-                encodeCSVColumn(markup, it->second.str());
+            if (row[a].get())
+                encodeCSVColumn(markup, row[a].get());
         }
         dump(true);
-        eventAttrs.clear();
+        // Prepare for the next event by clearing only those row values set by the departed event.
+        // Header attributes are not cleared so that they can be output for each event.
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
+        {
+            if (row[a].get() && !headerAttrs.count(EventAttr(a)))
+                row[a].clear();
+        }
         return true;
     }
+
     virtual void departFile(uint32_t bytesRead) override
     {
-        reverseLookup.clear();
     }
+
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
-        ReverseLookup::const_iterator it = reverseLookup.find(name);
-        if (it != reverseLookup.end())
+        if (id != EvAttrNone)
         {
+            row[id].set(value);
             if (inHeader())
-                headerAttrs[it->second].set(value);
-            else if (inEvents())
-                eventAttrs[it->second].set(value);
+                headerAttrs.insert(id);
         }
     }
+
 public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
 private:
-    using ReverseLookup = std::map<std::string, EventAttr>;
-    ReverseLookup reverseLookup;
-    using Attributes = std::map<EventAttr, StringAttr>;
-    Attributes headerAttrs;
-    Attributes eventAttrs;
+    StringAttr row[EvAttrMax];
+    std::set<EventAttr> headerAttrs;
 };
 
 IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
