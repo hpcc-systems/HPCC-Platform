@@ -993,75 +993,646 @@ bool readEvents(const char* filename, IEventVisitor& visitor)
     return reader.traverse(filename, visitor);
 }
 
-class jlib_decl CDumpVisitsEventVisitor : public CInterfaceOf<IEventVisitor>
+// Event data may be expressed in multiple structured formats, such as XML, JSON, or YAML. Each of
+// these can be represented as in an IPropertyTree. All such representations should share a common
+// structure.
+//
+// The IPropertyTree representation of a binary event file resembles:
+//     EventFile
+//       ├── Header
+//       │   ├── @filename
+//       │   ├── @version
+//       │   └── ... (other header attributes)
+//       ├── Event
+//       │   ├── @name
+//       │   ├── @id
+//       │   └── ... (other event attributes)
+//       ├── ... (more Event elements)
+//       └── Footer
+//           ├── @bytesRead
+
+constexpr static const char* DUMP_STRUCTURE_ROOT = "EventFile";
+constexpr static const char* DUMP_STRUCTURE_FILE_NAME = "filename";
+constexpr static const char* DUMP_STRUCTURE_HEADER = "Header";
+constexpr static const char* DUMP_STRUCTURE_FILE_VERSION = "version";
+constexpr static const char* DUMP_STRUCTURE_EVENT = "Event";
+constexpr static const char* DUMP_STRUCTURE_EVENT_NAME = "name";
+constexpr static const char* DUMP_STRUCTURE_EVENT_ID = "id";
+constexpr static const char* DUMP_STRUCTURE_FOOTER = "Footer";
+constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
+
+// Abstract base class for event visitors that store visited data in a text-based format. Text-
+// based, in this context, means only that the values will be stored as strings. The actual output
+// format is determined by the subclass.
+//
+// Subclasses must implement:
+//  `virtual bool visitFile(const char* filename, uint32_t version) = 0;`
+//  `virtual Continuation visitEvent(EventType id) = 0;`
+//  `virtual bool departEvent() = 0;`
+//  `virtual void departFile(uint32_t bytesRead) = 0;`
+//  `virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;`
+class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
+{
+public:
+    using Continuation = IEventVisitor::Continuation;
+
+    virtual Continuation visitAttribute(EventAttr id, const char* value) override
+    {
+        if (EvAttrRecordedOption == id)
+            recordAttribute(value, "true", false);
+        else
+            doVisitAttribute(id, value);
+        return Continuation::visitContinue;
+    }
+
+    virtual Continuation visitAttribute(EventAttr id, bool value) override
+    {
+        doVisitAttribute(id, value);
+        return Continuation::visitContinue;
+    }
+
+    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
+    {
+        // promote value to larger integer to avoid ambiguity with unsignd char
+        // during conversion to text
+        doVisitAttribute(id, uint16_t(value));
+        return Continuation::visitContinue;
+    }
+
+    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
+    {
+        doVisitAttribute(id, value);
+        return Continuation::visitContinue;
+    }
+
+    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
+    {
+        doVisitAttribute(id, value);
+        return Continuation::visitContinue;
+    }
+
+    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    {
+        doVisitAttribute(id, value);
+        return Continuation::visitContinue;
+    }
+
+protected:
+    void doVisitHeader(const char* filename, uint32_t version)
+    {
+        doVisitAttribute(DUMP_STRUCTURE_FILE_NAME, filename);
+        doVisitAttribute(DUMP_STRUCTURE_FILE_VERSION, version);
+    }
+
+    void doVisitEvent(EventType id)
+    {
+        doVisitAttribute(DUMP_STRUCTURE_EVENT_NAME, queryEventName(id));
+        // again, avoid ambiguity with unsignd char...
+        doVisitAttribute(DUMP_STRUCTURE_EVENT_ID, uint16_t(id));
+    }
+
+    void doVisitAttribute(EventAttr id, uint64_t value)
+    {
+        doVisitAttribute(queryEventAttributeName(id), value);
+    }
+
+    void doVisitAttribute(EventAttr id, const char* value)
+    {
+        doVisitAttribute(queryEventAttributeName(id), value);
+    }
+
+    template <typename T>
+    void doVisitAttribute(EventAttr id, T value)
+    {
+        doVisitAttribute(queryEventAttributeName(id), value);
+    }
+
+    void doVisitAttribute(const char* name, uint64_t value)
+    {
+        char buf[21];
+        sprintf(buf, "%llu", __uint64(value));
+        recordAttribute(name, buf, false);
+    }
+
+    void doVisitAttribute(const char* name, const char* value)
+    {
+        recordAttribute(name, value, true);
+    }
+
+    template <typename T>
+    void doVisitAttribute(const char* name, T value)
+    {
+        StringBuffer tmp;
+        tmp.append(value);
+        recordAttribute(name, tmp.str(), false);
+    }
+
+    void doVisitFooter(uint32_t bytesRead)
+    {
+        doVisitAttribute(DUMP_STRUCTURE_FILE_BYTES_READ, bytesRead);
+    }
+
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+};
+
+// Concrete extension of CDumpEventVisitor<IPTreeEventVisitor> that uses an IPropertyTree to store
+// visited data. The tree is constructed in memory and is available via the `queryTree` method
+// after visitation.
+class CPTreeEventVisitor : public CDumpEventVisitor
+{
+public: // IEventVisitor
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        tree.setown(createPTree(DUMP_STRUCTURE_ROOT));
+        active = tree->addPropTree(DUMP_STRUCTURE_HEADER, createPTree());
+        doVisitHeader(filename, version);
+        return true;
+    }
+
+    virtual Continuation visitEvent(EventType id) override
+    {
+        active = tree->addPropTree(DUMP_STRUCTURE_EVENT, createPTree());
+        doVisitEvent(id);
+        return visitContinue;
+    }
+
+    virtual bool departEvent() override
+    {
+        active = tree.get();
+        return true;
+    }
+
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        active = tree->addPropTree(DUMP_STRUCTURE_FOOTER, createPTree());
+        doVisitFooter(bytesRead);
+    }
+
+protected:
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        active->addProp(VStringBuffer("@%s", name), value);
+    }
+
+public:
+    virtual IPTree* queryTree() const
+    {
+        return tree.get();
+    }
+
+protected:
+    Owned<IPTree> tree;
+    IPTree* active = nullptr;
+};
+
+IEventPTreeCreator* createEventPTreeCreator()
+{
+    class Creator : public CInterfaceOf<IEventPTreeCreator>
+    {
+    public:
+        virtual IEventVisitor& queryVisitor() override
+        {
+            return *visitor;
+        }
+
+        virtual IPTree* queryTree() const override
+        {
+            return visitor->queryTree();
+        }
+
+        Creator()
+        {
+            visitor.setown(new CPTreeEventVisitor);
+        }
+
+    private:
+        Owned<CPTreeEventVisitor> visitor;
+    };
+    return new Creator;
+}
+
+// Abstract extension of CDumpEventVisitor that writes visited data to an output stream. Subclasses
+// are responsible for formatting the data in the desired format.
+class CDumpStreamEventVisitor : public CDumpEventVisitor
+{
+protected: // new abstract method(s)
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+
+public:
+    CDumpStreamEventVisitor(std::ostream& _out)
+        : out(_out)
+    {
+    }
+
+protected:
+    void dump(bool eoln)
+    {
+        out << markup.str();
+        markup.clear();
+        if (eoln)
+            out << std::endl;
+    }
+
+    bool inHeader() const { return State::Header == state; }
+    bool inEvents() const { return State::Events == state; }
+
+protected:
+    enum class State : byte
+    {
+        Idle,
+        Header,
+        Events,
+        Footer,
+    };
+    State state{State::Idle};
+    std::ostream& out;
+    StringBuffer markup;
+};
+
+// Concrete extension of CDumpStreamEventVisitor that writes visited data as unstructured text.
+// One line of text is produced for each event and attribute visited, plus additional lines for
+// the file name, version, and number of bytes read from the file.
+class CDumpTextEventVisitor : public CDumpStreamEventVisitor
 {
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
-        *out << "name: " << filename << std::endl;
-        *out << "version: " << version << std::endl;
+        state = State::Header;
+        doVisitHeader(filename, version);
         return true;
     }
+
     virtual Continuation visitEvent(EventType id) override
     {
-        *out << "event: " << queryEventName(id) << std::endl;
+        if (inHeader())
+        {
+            closeElement();
+            state = State::Events;
+        }
+        openElement(queryEventName(id));
+        doVisitEvent(id);
         return visitContinue;
     }
-    virtual Continuation visitAttribute(EventAttr id, const char * value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = '" << value << "'" << std::endl;
-        return visitContinue;
-    }
-    virtual Continuation visitAttribute(EventAttr id, bool value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = " << (value ? "true" : "false") << std::endl;
-        return visitContinue;
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = " << (unsigned)value << std::endl;
-        return visitContinue;
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = " << (unsigned)value << std::endl;
-        return visitContinue;
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = " << value << std::endl;
-        return visitContinue;
-    }
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
-    {
-        *out << "attribute: " << queryEventAttributeName(id) << " = " << value << std::endl;
-        return visitContinue;
-    }
+
     virtual bool departEvent() override
     {
-        *out << "departEvent" << std::endl;
+        closeElement();
         return true;
     }
+
     virtual void departFile(uint32_t bytesRead) override
     {
-        *out << "bytesRead: " << bytesRead << std::endl;
+        if (inHeader())
+            closeElement();
+        state = State::Footer;
+        doVisitFooter(bytesRead);
+        closeElement();
     }
+
 protected:
-    std::ostream* out = &std::cout;
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        markup.append("attribute: ").append(name).append(" = ");
+        if (quoted)
+            markup.append('\'');
+        markup.append(value);
+        if (quoted)
+            markup.append('\'');
+        markup.append('\n');
+    }
+
 public:
-    CDumpVisitsEventVisitor() {}
-    // An alternate stream may be substituted for testing.
-    CDumpVisitsEventVisitor(std::ostream& _out) : out(&_out) {}
+    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
+protected:
+    void openElement(const char* name)
+    {
+        markup.append("event: ").append(name).append('\n');
+    }
+
+    void closeElement()
+    {
+        dump(false);
+    }
 };
 
-IEventVisitor* createVisitTrackingEventVisitor()
+IEventVisitor* createDumpTextEventVisitor(std::ostream& out)
 {
-    return new CDumpVisitsEventVisitor(std::cout);
+    return new CDumpTextEventVisitor(out);
 }
 
-IEventVisitor* createVisitTrackingEventVisitor(std::ostream& out)
+// Extension of CDumpStreamEventVisitor that outputs XML-formatted text. Header and Footer elements
+// synthesized to hold the file name, version, and number of bytes read from the file.
+class CDumpXMLEventVisitor : public CDumpStreamEventVisitor
 {
-    return new CDumpVisitsEventVisitor(out);
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        state = State::Header;
+        openElement(DUMP_STRUCTURE_ROOT, true);
+        openElement(DUMP_STRUCTURE_HEADER);
+        doVisitHeader(filename, version);
+        return true;
+    }
+
+    virtual Continuation visitEvent(EventType id) override
+    {
+        if (inHeader())
+        {
+            closeElement();
+            state = State::Events;
+        }
+        openElement(DUMP_STRUCTURE_EVENT);
+        doVisitEvent(id);
+        return visitContinue;
+    }
+
+    virtual bool departEvent() override
+    {
+        closeElement();
+        return true;
+    }
+
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        if (inHeader())
+            closeElement();
+        state = State::Footer;
+        openElement(DUMP_STRUCTURE_FOOTER);
+        doVisitFooter(bytesRead);
+        closeElement();
+        closeElement(DUMP_STRUCTURE_ROOT);
+    }
+
+protected:
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        appendXMLAttr(markup, name, value);
+    }
+
+public:
+    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
+    void openElement(const char* name, bool complete = false)
+    {
+        markup.pad(2 * indentLevel);
+        indentLevel++;
+        appendXMLOpenTag(markup, name, nullptr, complete);
+        if (complete)
+            markup.append('\n');
+    }
+
+    void closeElement()
+    {
+        markup.append("/>");
+        indentLevel--;
+        dump(true);
+    }
+
+    void closeElement(const char* name)
+    {
+        appendXMLCloseTag(markup, name);
+        indentLevel--;
+        dump(true);
+    }
+
+private:
+    unsigned indentLevel{0};
+};
+
+IEventVisitor* createDumpXMLEventVisitor(std::ostream& out)
+{
+    return new CDumpXMLEventVisitor(out);
+}
+
+// Extension of CDumpStreamEventVisitor that outputs JSON-formatted text. Header and Footer objects
+// are synthesized to hold the file name, version, and number of bytes read from the file.
+class CDumpJSONEventVisitor : public CDumpStreamEventVisitor
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        state = State::Header;
+        openObject();
+        openObject(DUMP_STRUCTURE_HEADER);
+        doVisitHeader(filename, version);
+        return true;
+    }
+
+    virtual Continuation visitEvent(EventType id) override
+    {
+        if (inHeader())
+        {
+            closeObject();
+            state = State::Events;
+        }
+        if (firstEvent)
+        {
+            openArray(DUMP_STRUCTURE_EVENT);
+            openObject();
+            firstEvent = false;
+        }
+        else
+            openObject();
+        doVisitEvent(id);
+        return visitContinue;
+    }
+
+    virtual bool departEvent() override
+    {
+        closeObject();
+        return true;
+    }
+
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        if (inHeader())
+            closeObject();
+        else if (inEvents())
+            closeArray();
+        openObject(DUMP_STRUCTURE_FOOTER);
+        doVisitFooter(bytesRead);
+        closeObject();
+        closeObject(true);
+    }
+
+protected:
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        conditionalDelimiter();
+        indent();
+        appendJSONStringValue(markup, name, value, true, quoted);
+    }
+
+public:
+    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
+protected:
+    inline void openObject()
+    {
+        openObject(nullptr);
+    }
+
+    void openObject(const char* name)
+    {
+        openContainer(name, "{ ");
+    }
+
+    void openArray(const char* name)
+    {
+        openContainer(name, "[ ");
+    }
+
+    void closeArray()
+    {
+        closeContainer("]");
+    }
+
+    void closeObject(bool done = false)
+    {
+        closeContainer("}");
+        dump(done);
+    }
+
+    void openContainer(const char* name, const char* token)
+    {
+        conditionalDelimiter();
+        indent();
+        if (!isEmptyString(name))
+            appendJSONName(markup, name);
+        markup.append(token);
+        firstFlags.push_back(true);
+    }
+
+    void closeContainer(const char* token)
+    {
+        firstFlags.pop_back();
+        indent();
+        markup.append(token);
+    }
+
+    void conditionalDelimiter()
+    {
+        if (!firstFlags.empty())
+        {
+            if (!firstFlags.back())
+                markup.append(",");
+            else
+                firstFlags.back() = false;
+        }
+    }
+
+    void indent()
+    {
+        markup.append('\n');
+        if (!firstFlags.empty())
+            markup.pad(2 * (firstFlags.size()));
+    }
+
+private:
+    std::vector<bool> firstFlags;
+    bool firstEvent{true};
+};
+
+IEventVisitor* createDumpJSONEventVisitor(std::ostream& out)
+{
+    return new CDumpJSONEventVisitor(out);
+}
+
+// Extension of CDumpStreamEventVisitor that outputs YAML-formatted text. Header and Footer objects
+// are synthesized to hold the file name, version, and number of bytes read from the file.
+class CDumpYAMLEventVisitor : public CDumpStreamEventVisitor
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+        state = State::Header;
+        openObject(DUMP_STRUCTURE_HEADER);
+        doVisitHeader(filename, version);
+        return true;
+    }
+
+    virtual Continuation visitEvent(EventType id) override
+    {
+        if (inHeader())
+        {
+            closeObject();
+            openObject(DUMP_STRUCTURE_EVENT);
+            state = State::Events;
+        }
+        else
+            openObject(nullptr);
+        doVisitEvent(id);
+        return visitContinue;
+    }
+
+    virtual bool departEvent() override
+    {
+        closeObject();
+        return true;
+    }
+
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        if (inHeader())
+            closeObject();
+        state = State::Footer;
+        openObject(DUMP_STRUCTURE_FOOTER);
+        doVisitFooter(bytesRead);
+        closeObject();
+    }
+
+protected:
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        indent();
+        markup.append(name).append(": ").append(value).append('\n');
+    }
+
+public:
+    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
+    void openObject(const char* name)
+    {
+        if (!isEmptyString(name))
+        {
+            indent();
+            markup.append(name).append(":\n");
+        }
+        indentLevel++;
+        firstProp = true;
+    }
+
+    void closeObject()
+    {
+        indentLevel--;
+        dump(false);
+    }
+
+    void indent()
+    {
+        if (indentLevel)
+        {
+            uint8_t limit = indentLevel;
+            if (inEvents() && firstProp)
+                limit -= 1;
+            markup.pad(2 * limit);
+            if (inEvents() && firstProp)
+            {
+                markup.append("- ");
+                firstProp = false;
+            }
+        }
+    }
+
+protected:
+    bool firstProp{true};
+    uint8_t indentLevel{0};
+};
+
+IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out)
+{
+    return new CDumpYAMLEventVisitor(out);
 }
 
 // GH->TK
