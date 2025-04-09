@@ -330,6 +330,9 @@ enum StatisticKind
     StSizeBranchMemory,
     StSizeLeafMemory,
     StSizeLargestExpandedLeaf,
+    StNumBloomAccepts,
+    StNumBloomRejects,
+    StNumBloomSkips,
     StMax,
 
     //For any quantity there is potentially the following variants.

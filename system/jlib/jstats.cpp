@@ -1003,6 +1003,9 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(BranchMemory), "The estimated size of the branch nodes when stored in memory" },
     { SIZESTAT(LeafMemory), "The estimated size of the leaf nodes when stored in memory"},
     { SIZESTAT(LargestExpandedLeaf), "The size of the largest leaf node when expanded in memory"},
+    { NUMSTAT(BloomAccepts), "The number of times a bloom filter accepts an index lookup" },
+    { NUMSTAT(BloomRejects), "The number of times a bloom filter rejects an index lookup" },
+    { NUMSTAT(BloomSkips), "The number of times a bloom filter cannot filter an index lookup" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
