@@ -338,8 +338,13 @@ public:
     {
         if (!origin.length() || 0 != stricmp("user", origin.get())) // don't report slave in user message
         {
-            if (graphId)
-                str.append("Graph ").append(graphName).append("[").append(graphId).append("], ");
+            if (graphName.length())
+            {
+                str.append("Graph ").append(graphName);
+                if (graphId)
+                    str.append("[").append(graphId).append("]");
+                str.append(", ");
+            }
             if (kind)
                 str.append(activityKindStr(kind));
             if (id)
