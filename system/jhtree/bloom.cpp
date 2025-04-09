@@ -89,10 +89,11 @@ int IndexBloomFilter::compare(CInterface *const *_a, CInterface *const *_b)
     return a->fields - b->fields;
 }
 
-bool IndexBloomFilter::reject(const IIndexFilterList &filters) const
+bool IndexBloomFilter::reject(const IIndexFilterList &filters, bool & isValidBloom) const
 {
     hash64_t hashval = HASH64_INIT;
-    return getBloomHash(fields, filters, hashval) && !test(hashval);
+    isValidBloom = getBloomHash(fields, filters, hashval);
+    return isValidBloom && !test(hashval);
 }
 
 extern bool getBloomHash(__int64 fields, const IIndexFilterList &filters, hash64_t &hashval)
