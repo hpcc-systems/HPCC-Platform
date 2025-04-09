@@ -271,6 +271,9 @@ extern jlib_decl IEventVisitor* createDumpXMLEventVisitor(std::ostream& out);
 // Get a visitor that streams visited event data in YAML format.
 extern jlib_decl IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out);
 
+// Get a visitor that streams visited event data in CSV format.
+extern jlib_decl IEventVisitor* createDumpCSVEventVisitor(std::ostream& out);
+
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.
 interface IEventPTreeCreator : extends IInterface

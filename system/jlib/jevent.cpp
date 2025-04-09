@@ -1635,6 +1635,80 @@ IEventVisitor* createDumpYAMLEventVisitor(std::ostream& out)
     return new CDumpYAMLEventVisitor(out);
 }
 
+class CDumpCSVEventVisitor : public CDumpStreamEventVisitor
+{
+public:
+    virtual bool visitFile(const char* filename, uint32_t version) override
+    {
+
+        state = State::Header;
+        encodeCSVColumn(markup, "EventName");
+        markup.append(",");
+        encodeCSVColumn(markup, "EventId");
+        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        {
+            reverseLookup[queryEventAttributeName(a)] = a;
+            markup.append(",");
+            encodeCSVColumn(markup, queryEventAttributeName(a));
+        }
+        dump(true);
+        return true;
+    }
+    virtual Continuation visitEvent(EventType id) override
+    {
+        if (inHeader())
+            state = State::Events;
+        encodeCSVColumn(markup, queryEventName(id));
+        markup.append(',');
+        StringBuffer tmp;
+        encodeCSVColumn(markup, tmp.append(uint16_t(id)));
+        eventAttrs = headerAttrs;
+        return visitContinue;
+    }
+    virtual bool departEvent() override
+    {
+        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        {
+            markup.append(",");
+            Attributes::const_iterator it = eventAttrs.find(a);
+            if (it != eventAttrs.end())
+                encodeCSVColumn(markup, it->second.str());
+        }
+        dump(true);
+        eventAttrs.clear();
+        return true;
+    }
+    virtual void departFile(uint32_t bytesRead) override
+    {
+        reverseLookup.clear();
+    }
+protected:
+    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    {
+        ReverseLookup::const_iterator it = reverseLookup.find(name);
+        if (it != reverseLookup.end())
+        {
+            if (inHeader())
+                headerAttrs[it->second].set(value);
+            else if (inEvents())
+                eventAttrs[it->second].set(value);
+        }
+    }
+public:
+    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+private:
+    using ReverseLookup = std::map<std::string, EventAttr>;
+    ReverseLookup reverseLookup;
+    using Attributes = std::map<EventAttr, StringAttr>;
+    Attributes headerAttrs;
+    Attributes eventAttrs;
+};
+
+IEventVisitor* createDumpCSVEventVisitor(std::ostream& out)
+{
+    return new CDumpCSVEventVisitor(out);
+}
+
 // GH->TK
 // Next steps:
 //

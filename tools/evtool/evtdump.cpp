@@ -21,9 +21,10 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <iostream>
+#include <map>
+#include <set>
 
 // Future enhancements may include:
-// - an output format selector to choose between jSON, YAML, CSV, et al
 // - support for multiple input files
 // - support for event filtering
 
@@ -34,6 +35,7 @@ enum class OutputFormat : byte
     json,
     xml,
     yaml,
+    csv,
     tree,
 };
 
@@ -86,6 +88,9 @@ public:
         case OutputFormat::yaml:
             visitor.setown(createDumpYAMLEventVisitor(*out));
             break;
+        case OutputFormat::csv:
+            visitor.setown(createDumpCSVEventVisitor(*out));
+            break;
         case OutputFormat::tree:
             {
                 Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
@@ -132,6 +137,10 @@ public:
                 efd.setFormat(OutputFormat::yaml);
                 accepted = true;
                 break;
+            case 'c':
+                efd.setFormat(OutputFormat::csv);
+                accepted = true;
+                break;
             case 'p':
                 efd.setFormat(OutputFormat::tree);
                 accepted = true;
@@ -173,6 +182,7 @@ public:
         out << "[options] <filename>" << std::endl << std::endl;
         out << "Parse a binary event file and write its contents to standard output." << std::endl << std::endl;
         out << "  -?, -h, --help  show this help message and exit" << std::endl;
+        out << "  -c              output as comma separated values" << std::endl;
         out << "  -j              output as JSON" << std::endl;
         out << "  -x              output as XML" << std::endl;
         out << "  -y              output as YAML" << std::endl;
@@ -191,6 +201,9 @@ public:
         out << "    ├── ... (more events)" << std::endl;
         out << "    └── Footer" << std::endl;
         out << "        ├── @bytesRead" << std::endl;
+        out << std::endl;
+        out << "CSV output includes columns for event name and ID, plus one for each" << std::endl;
+        out << "event attribute used by the event recorder." << std::endl;
     }
     CEvtDumpCommand()
     {
