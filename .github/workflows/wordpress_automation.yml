@@ -1,0 +1,46 @@
+name: Wordpress Automation
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The git tag to build the asset from'
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: 'The git tag to build the asset from'
+        required: true
+jobs:
+  generate-asset-manifest:
+    runs-on: ubuntu-latest
+    steps:
+
+      # Look into checking out only HPCC-Platform/build_utils/builds_file_transfer directory
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/HPCC-Platform
+          ref: 'master'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          clean: false
+
+      - name: Install Python
+        run: |
+          sudo apt-get install python3 python3-pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install paramiko
+          echo "Python installed -- $(python3 --version)"
+      
+      - name: Transfer to Wordpress
+        run: |
+           python3 build_utils/builds_file_transfer/builds_file_transfer.py
+        shell: bash
+        env:
+          REPO_OWNER: ${{ secrets.REPO_OWNER }}
+          TAG: ${{ inputs.tag }}
+          HOSTNAME: ${{ secrets.WORDPRESS_HOSTNAME }}
+          USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
+          PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
+          PORT: ${{ secrets.WORDPRESS_PORT }}
+          
