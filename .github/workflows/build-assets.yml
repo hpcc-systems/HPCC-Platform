@@ -496,3 +496,10 @@ jobs:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
     secrets: inherit
 
+  deploy_wordpress:
+    needs: [preamble, build-docker]
+    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
+    uses: ./.github/workflows/wordpress_automation.yml
+    with:
+      tag: ${{ needs.preamble.outputs.community_tag }}
+    secrets: inherit
