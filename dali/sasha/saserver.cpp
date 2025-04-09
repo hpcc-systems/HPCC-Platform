@@ -378,16 +378,24 @@ int main(int argc, const char* argv[])
                 writeSentinelFile(sentinelFile);
         }
 #endif
-        StringBuffer daliServer;
-        if (!serverConfig->getProp("@daliServers", daliServer))
-            serverConfig->getProp("@DALISERVERS", daliServer); // @DALISERVERS legacy/bare-metal
-        if (0 == daliServer.length())
+        if (getComponentConfigSP()->hasProp("access/dali"))
         {
-            PROGLOG("DALISERVERS not specified in sashaconf.xml");
-            return 1;
+            PROGLOG("Connecting to DALISERVERS.");
+            StringBuffer daliServer;
+            if (!serverConfig->getProp("@daliServers", daliServer))
+                serverConfig->getProp("@DALISERVERS", daliServer); // @DALISERVERS legacy/bare-metal
+            if (0 == daliServer.length())
+            {
+                PROGLOG("DALISERVERS not specified in sashaconf.xml");
+                return 1;
+            }
+            Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
+            initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
         }
-        Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
-        initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
+        else
+        {
+            PROGLOG("Not connecting to DALISERVERS as no access/dali in config");
+        }
 
         if (stop)
             stopSashaServer((argc>2)?argv[2]:"", DEFAULT_SASHA_PORT);
@@ -514,9 +522,16 @@ int main(int argc, const char* argv[])
     serverConfig.clear();
     try
     {
-        closeDllServer();
         closeEnvironment();
-        closedownClientProcess();
+        if (getComponentConfigSP()->hasProp("access/dali"))
+        {
+            closeDllServer();
+            closedownClientProcess();
+        }
+        else
+        {
+            PROGLOG("Not closeDllServer() nor closedownClientProcess() as no access/dali in config");
+        }
     }
     catch (IException *) {  // dali may be down
     }
