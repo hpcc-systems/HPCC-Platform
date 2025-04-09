@@ -334,6 +334,9 @@ enum StatisticKind
     StCycleDelayedCycles,
     StTimePostMortemCapture,
     StCyclePostMortemCaptureCycles,
+    StNumBloomAccepts,
+    StNumBloomRejects,
+    StNumBloomSkips,
     StMax,
 
     //For any quantity there is potentially the following variants.
