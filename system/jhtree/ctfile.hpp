@@ -193,6 +193,7 @@ public:
     inline offset_t getFirstLeafPos() const { return (offset_t)hdr.firstLeaf; }
     inline bool hasSpecialFileposition() const { return true; }
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
+    inline offset_t queryBloomHead() const { return hdr.bloomHead; }
     __uint64 getPartitionFieldMask() const
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
@@ -404,6 +405,7 @@ public:
 class CJHTreeBloomTableNode : public CJHTreeRawDataNode
 {
 public:
+    virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const override;
     void get(MemoryBuffer & out) const;
     __int64 get8();
     unsigned get4();

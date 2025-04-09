@@ -1300,6 +1300,22 @@ void CJHTreeMetadataNode::get(StringBuffer & out) const
     out.append(expandedSize, keyBuf);
 }
 
+void CJHTreeBloomTableNode::dump(FILE *out, int length, unsigned rowCount, bool raw) const
+{
+    CJHTreeRawDataNode::dump(out, length, rowCount, raw);
+
+    //The bloom class should not have a read member in it, but will not fix now
+    CJHTreeBloomTableNode * bloom = const_cast<CJHTreeBloomTableNode *>(this);
+    unsigned savedRead = bloom->read;
+    offset_t nextbloom = bloom->get8();
+    unsigned numHashes = bloom->get4();
+    __uint64 fields =  bloom->get8();
+    unsigned bloomTableSize = bloom->get4();
+    bloom->read = savedRead;
+
+    fprintf(out, "Node dump: next(%" I64F "d) hashes(%u) fields(%llx), size(%u)\n", nextbloom, numHashes, fields, bloomTableSize);
+}
+
 void CJHTreeBloomTableNode::get(MemoryBuffer & out) const
 {
     out.append(expandedSize-read, keyBuf + read);
