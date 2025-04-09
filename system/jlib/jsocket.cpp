@@ -597,16 +597,6 @@ MODULE_EXIT()
     }
 }
 
-struct SocketStats
-{
-    cycle_t ioReadCycles = 0;
-    cycle_t ioWriteCycles = 0;
-    __uint64 ioReadBytes = 0;
-    __uint64 ioWriteBytes = 0;
-    __uint64 ioReads = 0;
-    __uint64 ioWrites = 0;
-};
-
 class CSocket: public ISocket, public CInterface
 {
 public:
@@ -2945,26 +2935,7 @@ bool CSocket::isSecure() const
 
 unsigned __int64 CSocket::getStatistic(StatisticKind kind) const
 {
-    switch (kind)
-    {
-    case StCycleSocketReadIOCycles:
-        return stats.ioReadCycles;
-    case StCycleSocketWriteIOCycles:
-        return stats.ioWriteCycles;
-    case StTimeSocketReadIO:
-        return cycle_to_nanosec(stats.ioReadCycles);
-    case StTimeSocketWriteIO:
-        return cycle_to_nanosec(stats.ioWriteCycles);
-    case StSizeSocketRead:
-        return stats.ioReadBytes;
-    case StSizeSocketWrite:
-        return stats.ioWriteBytes;
-    case StNumSocketReads:
-        return stats.ioReads;
-    case StNumSocketWrites:
-        return stats.ioWrites;
-    }
-    return 0;
+    return stats.getStatistic(kind);
 }
 
 CSocket::~CSocket()
