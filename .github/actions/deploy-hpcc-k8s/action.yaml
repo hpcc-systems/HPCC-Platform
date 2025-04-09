@@ -151,7 +151,30 @@ runs:
       run: |
         sleep 10
         deploy=$(kubectl get deploy -o name)
-        for i in $deploy; do kubectl rollout status $i -w --timeout=180s; done
+        for i in $deploy; do
+          if ! kubectl rollout status $i -w --timeout=180s; then
+            echo "Deployment $i failed to roll out within timeout"
+            echo "kubectl get $i -o yaml"
+            kubectl get $i -o yaml
+            echo "kubectl describe $i"
+            kubectl describe $i
+            echo "kubectl get pods"
+            kubectl get pods
+            echo "Getting information for all pods"
+            for pod in $(kubectl get pods --no-headers | awk '{ print $1 }'); do
+              echo "Pod name: $pod"
+              echo "$pod: kubectl get pod"
+              kubectl get pod $pod -o yaml || echo "Failed to get pod for $pod"
+              echo "$pod: kubectl describe pod"
+              kubectl describe pod $pod || echo "Failed to describe pod for $pod"
+              echo "$pod: getting recent logs"
+              kubectl logs --tail=50 $pod || echo "Failed to get logs for $pod"
+            done
+            echo "kubectl get rs"
+            kubectl get rs
+            exit 1
+          fi
+        done
         echo "ECLWATCH_IP=$(kubectl get svc eclwatch -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "ROWSERVICE_IP=$(kubectl get svc rowservice -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
         echo "SQL_TO_ECL_IP=$(kubectl get svc sql2ecl -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
