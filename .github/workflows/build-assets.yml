@@ -592,3 +592,11 @@ jobs:
             ${{ needs.preamble.outputs.folder_prettygitlogs }}/community_${{ steps.get_version.outputs.current_version }}.html
             ${{ needs.preamble.outputs.folder_prettygitlogs }}/internal_${{ steps.get_version.outputs.current_version }}.html
             ${{ needs.preamble.outputs.folder_prettygitlogs }}/eclide_${{ steps.get_version.outputs.current_version }}.html
+
+  deploy_wordpress:
+    needs: [preamble, build-docker]
+    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
+    uses: ./.github/workflows/wordpress_automation.yml
+    with:
+      tag: ${{ needs.preamble.outputs.community_tag }}
+    secrets: inherit
