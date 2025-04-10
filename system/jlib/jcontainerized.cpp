@@ -231,12 +231,8 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
     {
-        if (streq(p.first.c_str(), "instanceNum"))
-        {
-            args.appendf(" \"--instanceNum=%s\"", p.second.c_str());
-        }
         // special handling _HPCC_JOB_VERSION_, not just a straight substitution
-        else if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
+        if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
         {
             const char *newVersion = p.second.c_str();
             if (!isEmptyString(newVersion))
@@ -271,7 +267,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     if (autoCleanup)
     {
         unsigned deleteJobGracePeriod = 0;
-        if (streq(resourceType, "job") == 0)
+        if (strcmp(resourceType, "job") == 0)
             deleteJobGracePeriod = getComponentConfigSP()->getPropInt("@terminationGracePeriodSeconds", defaultDeleteJobGracePeriod);
         // touch a file, with naming convention { componentName },{ resourceType },{ jobName },{ graceTimeSecs }.k8s
         // it will be used if the job fails ungracefully, to tidy up leaked resources

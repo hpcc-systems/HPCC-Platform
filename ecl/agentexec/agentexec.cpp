@@ -302,10 +302,10 @@ public:
                     {
                         jobName.append(targetName).append('-');
                         jobName.append(myInstanceNumber);
+                        params.push_back({ "instanceNum", std::to_string(myInstanceNumber) });
                     }
                     else
                         jobName.append(wuid).append('-').append(graphName);
-                    params.push_back({ "instanceNum", std::to_string(myInstanceNumber) });
 
                     SCMStringBuffer optPlatformVersion;
                     {
@@ -400,8 +400,8 @@ private:
     StringAttr apptype;
     StringAttr queue;
     Linked<IJobQueueItem> item;
-    bool isThorAgent = false;
-    unsigned myInstanceNumber{};
+    bool isThorAgent{false};
+    unsigned myInstanceNumber{0};
 };
 
 IPooledThread *CEclAgentExecutionServer::createNew()
