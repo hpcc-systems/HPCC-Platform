@@ -41,7 +41,7 @@ interface WorkunitDetailsProps {
     parentUrl?: string;
     tab?: string;
     fullscreen?: boolean;
-    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: string };
+    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: string | { selection?: string, lineNum?: number } };
     queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
 }
 
@@ -253,7 +253,12 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "eclsummary"} size={size}>
-                    <ECLArchive wuid={wuid} parentUrl={`${parentUrl}/${wuid}/eclsummary`} selection={state?.eclsummary} />
+                    <ECLArchive
+                        wuid={wuid}
+                        parentUrl={`${parentUrl}/${wuid}/eclsummary`}
+                        selection={state?.eclsummary && typeof state.eclsummary === "object" ? state.eclsummary.selection : state?.eclsummary as string}
+                        lineNum={state?.eclsummary && typeof state.eclsummary === "object" ? state.eclsummary.lineNum : undefined}
+                    />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "xml"} size={size}>
                     <WUXMLSourceEditor wuid={wuid} />

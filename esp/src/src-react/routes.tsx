@@ -40,6 +40,9 @@ const workunitsChildren: Route[] = [
                 case "metrics":
                     state = { [params.Tab as string]: { selection: (params.State as string).split(",") } };
                     break;
+                case "eclsummary":
+                    state = { [params.Tab as string]: params.State as string };
+                    break;
                 default:
                     state = { [params.Tab as string]: (params.State as string) };
             }
@@ -48,7 +51,18 @@ const workunitsChildren: Route[] = [
     },
     {
         path: "/:Wuid/:Tab/:State/:State2", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+            let state;
+            switch (params.Tab) {
+                case "metrics":
+                    state = { [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } };
+                    break;
+                case "eclsummary":
+                    state = { [params.Tab as string]: { selection: params.State as string, lineNum: parseInt(params.State2 as string) } };
+                    break;
+                default:
+                    state = { [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } };
+            }
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={state} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
         })
     },
 ];

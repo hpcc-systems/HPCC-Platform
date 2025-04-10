@@ -11,11 +11,13 @@ import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 Palette.rainbow("StdDevs", ["white", "white", "#fff0f0", "#ffC0C0", "#ff8080", "#ff0000", "#ff0000"]);
 
 export interface MetricsPropertiesTablesProps {
+    wuid?: string;
     scopesTableColumns?: string[];
     scopes?: IScopeEx[];
 }
 
 export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesTablesProps> = ({
+    wuid = "",
     scopesTableColumns = [],
     scopes = []
 }) => {
@@ -50,7 +52,27 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             }
             for (const key in item.__groupedProps) {
                 const row = item.__groupedProps[key];
-                scopeProps.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
+                let rowValue;
+                switch (row.Key) {
+                    case "Filename":
+                    case "Indexname":
+                        rowValue = `<a href="#/files/${row.Value}">${row.Value}</a>`;
+                        break;
+                    case "DefinitionList":
+                        const matches = row.Value?.match(/[/\\]([^/\\]+)\((\d+),(\d+)\)/);
+                        const fileName = matches ? matches[1] : null;
+                        const lineNum = matches ? matches[2] : null;
+                        rowValue = lineNum ? `<a href="#/workunits/${wuid}/eclsummary/${fileName}/${lineNum}">${row.Value}</a>` : row.Value;
+                        break;
+                    case "name":
+                        const splitMetricName = row.Value.split(":");
+                        const lastMetricNode = splitMetricName.pop();
+                        rowValue = `<a href="#/workunits/${wuid}/metrics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                        break;
+                    default:
+                        rowValue = row.Value;
+                }
+                scopeProps.push([row.Key, rowValue, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
             }
             scopeProps.sort((l, r) => {
                 const lIdx = sortByColumns.indexOf(l[0]);
@@ -76,7 +98,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             .data(props)
             .lazyRender()
             ;
-    }, [propsTable, scopes, sortByColumns]);
+    }, [propsTable, scopes, sortByColumns, wuid]);
 
     return <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>;
 };
