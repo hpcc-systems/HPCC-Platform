@@ -300,7 +300,7 @@ protected:
     stat_type numDiskWrites = 0;
     cost_type diskAccessCost = 0;
     Owned<ClusterWriteHandler> clusterHandler;
-    offset_t sizeLimit;
+    offset_t sizeLimit = 0;
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
@@ -387,7 +387,7 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     Owned<IFile> file;
     bool incomplete;
     bool defaultNoSeek = false;
-    offset_t sizeLimit;
+    offset_t sizeLimit = 0;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;
     unsigned __int64 totalLeafNodes = 0;
