@@ -231,9 +231,9 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
     {
-        if (streq(p.first.c_str(), "graphNo"))
+        if (streq(p.first.c_str(), "instanceNum"))
         {
-            args.appendf(" \"--graphNo=%s\"", p.second.c_str());
+            args.appendf(" \"--instanceNum=%s\"", p.second.c_str());
         }
         // special handling _HPCC_JOB_VERSION_, not just a straight substitution
         else if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
@@ -317,22 +317,6 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     }
     if (exception)
         throw exception.getClear();
-}
-
-void setJobName(StringBuffer& jobName, const char *thorName, const unsigned maxGraphs, unsigned& currentGraphNumber, const unsigned modMaxGraphs)
-{
-    jobName.set(thorName);
-    if (maxGraphs == 1)
-    {
-        jobName.append("-1");
-    }
-    else
-    {
-        ++currentGraphNumber %= maxGraphs + 1;
-        if (currentGraphNumber == 0)
-            currentGraphNumber = 1;
-        jobName.appendf("-%d", currentGraphNumber);
-    }
 }
 
 // returns a vector of {pod-name, node-name} vectors,

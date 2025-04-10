@@ -243,7 +243,7 @@ public:
         : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
-        instanceNumber = ++activeWaitThreads;
+        myInstanceNumber = ++activeWaitThreads;
     }
     ~WaitThread()
     {
@@ -296,11 +296,16 @@ public:
                         params.push_back({ "wfid", std::to_string(wfid) });
                     }
 
-                    const char *thorName = compConfig->queryProp("@targetName");
-                    unsigned maxGraphs = compConfig->getPropInt("@maxActive", 1);
+                    const char *targetName = compConfig->queryProp("@targetName");
                     StringBuffer jobName;
-                    k8s::setJobName(jobName, thorName, maxGraphs, instanceNumber, maxGraphs + 1);
-                    params.push_back({ "graphNo", std::to_string(instanceNumber) });
+                    if (targetName)
+                    {
+                        jobName.append(targetName).append('-');
+                        jobName.append(myInstanceNumber);
+                    }
+                    else
+                        jobName.append(wuid).append('-').append(graphName);
+                    params.push_back({ "instanceNum", std::to_string(myInstanceNumber) });
 
                     SCMStringBuffer optPlatformVersion;
                     {
@@ -396,7 +401,7 @@ private:
     StringAttr queue;
     Linked<IJobQueueItem> item;
     bool isThorAgent = false;
-    unsigned instanceNumber{};
+    unsigned myInstanceNumber{};
 };
 
 IPooledThread *CEclAgentExecutionServer::createNew()

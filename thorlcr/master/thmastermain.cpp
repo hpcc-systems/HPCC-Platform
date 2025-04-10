@@ -1046,10 +1046,13 @@ int main( int argc, const char *argv[]  )
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
 
-            unsigned maxGraphs = globals->getPropInt("@maxGraphs", 1);
-            unsigned modMaxGraphs = maxGraphs + 1;
-            unsigned currentGraphNumber = globals->getPropInt("@graphNo", maxGraphs);
-            k8s::setJobName(cloudJobName, thorName, maxGraphs, currentGraphNumber, modMaxGraphs);
+            if (globals->hasProp("@instanceNum"))
+            {
+                unsigned instanceNum = globals->getPropInt("@instanceNum");
+                cloudJobName.appendf("%s-%d", thorName, instanceNum);
+            }
+            else
+                cloudJobName.appendf("%s-%s", workunit, graphName);
 
             StringBuffer myEp;
             getRemoteAccessibleHostText(myEp, queryMyNode()->endpoint());
