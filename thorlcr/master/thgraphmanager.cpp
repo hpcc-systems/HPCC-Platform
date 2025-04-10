@@ -354,6 +354,7 @@ public:
     virtual void fatal(IException *e);
     virtual void addCachedSo(const char *name);
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
+    virtual void setExceptionCtx(IThorException *e);
 };
 
 
@@ -456,6 +457,16 @@ void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
 #endif
 }
 
+void CJobManager::setExceptionCtx(IThorException *e)
+{
+    if (nullptr != e->queryGraphName()) // already set
+        return;
+    Owned<CJobMaster> job = getCurrentJob();
+    if (!job)
+        return;
+    e->setGraphInfo(job->queryGraphName(), job->queryCurrentSubGraphId());
+}
+
 
 
 #define IDLE_RESTART_PERIOD (8*60) // 8 hours
@@ -470,7 +481,10 @@ public:
     virtual void threadmain() override
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
-            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
+        {
+            Owned<IThorException> te = MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000);
+            abortThor(te, TEC_Idle, false);
+        }
     }
     void stop() { sem.signal(); }
 };
@@ -1121,17 +1135,20 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
     if (-1 == queryExitCode()) setExitCode(errCode);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
-    Owned<IException> _e;
+    Owned<IThorException> te;
     if (0 == aborting)
     {
         aborting = 1;
         if (errCode != TEC_Clean)
         {
-            if (!e)
-            {
-                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
-                e = _e;
-            }
+            if (e)
+                te.setown(MakeThorException(e));
+            else
+                te.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+            Owned<IJobManager> mgr = getJobManager();
+            if (mgr)
+                mgr->setExceptionCtx(te);
+            e = te;
             DBGLOG(e, "abortThor");
         }
         DBGLOG("abortThor called");
@@ -1151,8 +1168,8 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         {
             if (!e)
             {
-                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
-                e = _e;
+                te.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+                e = te;
             }
             jM->fireException(e);
         }
@@ -1183,7 +1200,8 @@ public:
             if (stopped) break;
             if (!verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
             {
-                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"), TEC_DaliDown);
+                Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor");
+                abortThor(te, TEC_DaliDown);
                 break;
             }
         }

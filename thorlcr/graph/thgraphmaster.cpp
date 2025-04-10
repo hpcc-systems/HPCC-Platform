@@ -2675,6 +2675,10 @@ void CMasterGraph::execute(size32_t _parentExtractSz, const byte *parentExtract,
 {
     if (isComplete())
         return;
+
+    jobM->setCurrentSubGraphId(queryGraphId());
+    COnScopeExit scoped([&]() { jobM->setCurrentSubGraphId(0); });
+
     CThorPerfTracer perf;
     double perfinterval = 0.0;
     if (!queryOwner()) // owning graph sends query+child graphs
