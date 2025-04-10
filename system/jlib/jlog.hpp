@@ -755,7 +755,7 @@ interface jlib_decl ILogMsgListener : public IInterface
 
 interface jlib_decl ILogMsgManager : public ILogMsgListener
 {
- public:    
+ public:
     virtual void              enterQueueingMode() = 0;
     virtual void              setQueueBlockingLimit(unsigned lim) = 0;
     virtual void              setQueueDroppingLimit(unsigned lim, unsigned numToDrop) = 0;
@@ -911,7 +911,7 @@ extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 extern jlib_decl ILogMsgHandler * queryPostMortemLogMsgHandler();
 extern jlib_decl bool copyPostMortemLogging(const char *target, bool clear);
-extern jlib_decl void setupContainerizedLogMsgHandler();
+extern jlib_decl void setupContainerizedLogMsgHandler(bool configChanged = false);
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
