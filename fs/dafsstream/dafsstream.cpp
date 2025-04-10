@@ -1472,6 +1472,11 @@ IRowWriter *createRowWriter(IDFUFilePartWriter *partWriter)
         }
         virtual void putRow(const void *row) override
         {
+            // callers should use writeRow() instead
+            throwUnexpected();
+        }
+        virtual void writeRow(const void *row) override
+        {
             serializer->serialize(*this, (const byte *)row);
         }
         virtual void flush() override

@@ -2814,6 +2814,11 @@ public:
         writer->putRow(row);
         ++count; // NULL's too (but there won't be any in usage of this impl.)
     }
+    virtual void writeRow(const void *row) override
+    {
+        writer->writeRow(row);
+        ++count;
+    }
     virtual void flush() override
     {
         writer->flush();

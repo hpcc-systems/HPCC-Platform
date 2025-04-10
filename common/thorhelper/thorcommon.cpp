@@ -1506,7 +1506,7 @@ public:
         }
     }
 
-    void putRow(const void *row)
+    inline void _putRow(const void *row, bool _release)
     {
         if (row)
         {
@@ -1528,7 +1528,9 @@ public:
                         extbuf.append(b);
                 }
             }
-            allocator->releaseRow(row);
+
+            if (_release)
+                allocator->releaseRow(row);
         }
         else if (ers_eogonly == emptyRowSemantics) // backpatch
         {
@@ -1546,6 +1548,16 @@ public:
             byte b = 1;
             put(1, &b);
         }
+    }
+
+    void putRow(const void *row)
+    {
+        _putRow(row, true);
+    }
+
+    void writeRow(const void *row)
+    {
+        _putRow(row, false);
     }
 
     void flush()

@@ -80,6 +80,11 @@ class CThorGraphResult : implements IThorResult, implements IRowWriter, public C
         {
             rows.append(row);
         }
+        virtual void writeRow(const void *row)
+        {
+            // callers should use putRow() instead
+            throwUnexpected();
+        }
         virtual void flush() { }
         virtual IRowStream *getReader()
         {
@@ -111,6 +116,12 @@ public:
         assertex(!readers);
         ++rowStreamCount;
         rowBuffer->putRow(row);
+    }
+    virtual void writeRow(const void *row)
+    {
+        assertex(!readers);
+        ++rowStreamCount;
+        rowBuffer->writeRow(row);
     }
     virtual void flush() { }
     virtual offset_t getPosition() { UNIMPLEMENTED; return 0; }

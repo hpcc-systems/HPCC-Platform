@@ -1692,7 +1692,7 @@ protected:
             traceInfo->append("shrink() - previous maxRows=").append(maxRows).append(", new maxRows=").append(spillableRows.queryMaxRows());
         return ret;
     }
-    void putRow(const void *row)
+    inline void _putRow(const void *row, bool _release)
     {
         if (!spillableRows.append(row))
         {
@@ -1720,10 +1720,19 @@ protected:
                 oom = true;
             if (oom)
             {
-                ReleaseThorRow(row);
+                if (_release)
+                    ReleaseThorRow(row);
                 throw MakeActivityException(&activity, ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
             }
         }
+    }
+    void putRow(const void *row)
+    {
+        _putRow(row, true);
+    }
+    void writeRow(const void *row)
+    {
+        _putRow(row, false);
     }
     IRowStream *getStream(CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool shared)
     {
@@ -2125,6 +2134,10 @@ public:
             virtual void putRow(const void *row)
             {
                 parent->putRow(row);
+            }
+            virtual void writeRow(const void *row)
+            {
+                parent->writeRow(row);
             }
             virtual void flush()
             {

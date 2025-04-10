@@ -1562,6 +1562,12 @@ public:
         }
     }
 
+    virtual void writeRow(const void *row)
+    {
+        // callers should use putRow() instead
+        throwUnexpected();
+    }
+
     virtual void flush()
     {
         if (curBlock)

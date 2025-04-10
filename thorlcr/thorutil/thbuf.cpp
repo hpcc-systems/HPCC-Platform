@@ -314,6 +314,12 @@ public:
         }
     }
 
+    void writeRow(const void *row)
+    {
+        // callers should use putRow() instead
+        throwUnexpected();
+    }
+
     void stop()
     {
 #ifdef _FULL_TRACE
@@ -482,7 +488,7 @@ public:
         delete in;
     }
 
-    void putRow(const void *row)
+    inline void _putRow(const void *row, bool _release)
     {
         REENTRANCY_CHECK(putrecheck)
         size32_t sz = 0;
@@ -522,7 +528,18 @@ public:
             }
         }
         // cancelled
-        ReleaseThorRow(row);
+        if (_release)
+            ReleaseThorRow(row);
+    }
+
+    void putRow(const void *row)
+    {
+        _putRow(row, true);
+    }
+
+    void writeRow(const void *row)
+    {
+        _putRow(row, false);
     }
 
     const void *nextRow()
@@ -1184,6 +1201,11 @@ public:
                 throwUnexpected();
         }
     }
+    virtual void writeRow(const void *row) override
+    {
+        // callers should use putRow() instead
+        throwUnexpected();
+    }
     virtual void flush() override
     {
         // semantics of ISmartRowBuffer::flush:
@@ -1258,6 +1280,11 @@ public:
     {
         assertex(!eoi);
         writer->putRow(row);
+    }
+    virtual void writeRow(const void *row)
+    {
+        assertex(!eoi);
+        writer->writeRow(row);
     }
     virtual void flush()
     {
@@ -1717,11 +1744,12 @@ public:
         return LINK(this);
     }
 // ISharedSmartBufferRowWriter
-    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) override
+    inline void _putRow(const void *row, ISharedSmartBufferCallback *callback, bool _release)
     {
         if (stopped)
         {
-            ReleaseThorRow(row);
+            if (_release)
+                ReleaseThorRow(row);
             return;
         }
         unsigned len=rowSize(row);
@@ -1756,9 +1784,17 @@ public:
         if (!callback || paged)
             signalReaders();
     }
+    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) override
+    {
+        _putRow(row, callback, true);
+    }
     virtual void putRow(const void *row) override
     {
-        return putRow(row, NULL);
+        return _putRow(row, NULL, true);
+    }
+    virtual void writeRow(const void *row) override
+    {
+        return _putRow(row, NULL, false);
     }
     virtual void flush() override
     {
@@ -2794,6 +2830,11 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
             if (rows.ordinality() >= owner.writeGranularity)
                 owner.addRows(rows);
             rows.append(row);
+        }
+        virtual void writeRow(const void *row)
+        {
+            // callers should use putRow() instead
+            throwUnexpected();
         }
         virtual void flush()
         {
