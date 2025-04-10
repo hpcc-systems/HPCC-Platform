@@ -413,8 +413,8 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
-    formatOptions.setown(createPTree());
-    providerOptions.setown(createPTree());
+    formatOptions.setown(createPTree()); // options governing the format of the bytes sent to the output stream
+    providerOptions.setown(createPTree()); // options governing the output stream itself (overwrite, append, etc)
     helperFlags = helper.getFlags();
     useGenericReadWrites = ((helperFlags & TDXgeneric) != 0);
     grouped = (helperFlags & TDXgrouped) != 0;
@@ -424,9 +424,9 @@ CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned
     {
         // Initial provider and format options from flags
         providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+        providerOptions->setPropBool("@extend", extend);
+        providerOptions->setPropBool("@overwrite", overwrite);
         formatOptions->setPropBool("@grouped", grouped);
-        formatOptions->setPropBool("@extend", extend);
-        formatOptions->setPropBool("@overwrite", overwrite);
     }
 }
 
