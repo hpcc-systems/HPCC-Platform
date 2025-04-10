@@ -814,9 +814,9 @@ void SessionLogMsgFilter::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("filter", filterTree);
 }
 
-bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const 
-{ 
-    if(localFlag && msg.queryRemoteFlag()) return false; 
+bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const
+{
+    if(localFlag && msg.queryRemoteFlag()) return false;
     SpinBlock b(lock);
     return const_cast<RegExpr &>(regex).find(msg.queryText()) != NULL;
 }
@@ -1303,7 +1303,7 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName)
             }
         }
     }
-    if(!handle) 
+    if(!handle)
     {
         handle = getNullHandle();
         OWARNLOG("RollingFileLogMsgHandler::doRollover : could not open log file %s for output", filename.str());
@@ -1420,9 +1420,9 @@ void LogMsgMonitor::addToPTree(IPropertyTree * tree) const
 void CLogMsgManager::MsgProcessor::push(LogMsg * msg)
 {
     //assertex(more); an assertex will just recurse here
-    if (!more) // we are effective stopped so don't bother even dropping (and leak parameter) as drop will involve 
-               // interaction with the base class which is stopped and could easily crash (as this condition 
-               // is expected not to occur - typically occurs if the user has incorrectly called exit on one thread 
+    if (!more) // we are effective stopped so don't bother even dropping (and leak parameter) as drop will involve
+               // interaction with the base class which is stopped and could easily crash (as this condition
+               // is expected not to occur - typically occurs if the user has incorrectly called exit on one thread
                // while still in the process of logging on another)
                // cf Bug #53695 for more discussion of the issue
         return;
@@ -1578,14 +1578,14 @@ void CLogMsgManager::enterQueueingMode()
 
 void CLogMsgManager::setQueueBlockingLimit(unsigned lim)
 {
-    CriticalBlock crit(modeLock); 
+    CriticalBlock crit(modeLock);
     if(processor)
         processor->setBlockingLimit(lim);
 }
 
 void CLogMsgManager::setQueueDroppingLimit(unsigned lim, unsigned numToDrop)
 {
-    CriticalBlock crit(modeLock); 
+    CriticalBlock crit(modeLock);
     if(processor)
         processor->setDroppingLimit(lim, numToDrop);
 }
@@ -1925,8 +1925,8 @@ void CLogMsgManager::addAllMonitorsToPTree(IPropertyTree * tree) const
         monitors.item(i).addToPTree(tree);
 }
 
-bool CLogMsgManager::rejectsCategory(const LogMsgCategory & cat) const 
-{ 
+bool CLogMsgManager::rejectsCategory(const LogMsgCategory & cat) const
+{
     if (!prefilter.includeCategory(cat))
         return true;
 
@@ -2330,6 +2330,7 @@ public:
 static CNullManager nullManager;
 static Singleton<IRemoteLogAccess> logAccessor;
 static CriticalSection logAccessCrit;
+static unsigned logConfigUpdateCBId = 0;
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
 {
@@ -2341,10 +2342,23 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
     theSysLogEventLogger = new CSysLogEventLogger;
     theManager = new CLogMsgManager();
     theManager->resetMonitors();
+
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        PROGLOG("DJPS JLog: before setupContainerizedLogMsgHandler()");
+        setupContainerizedLogMsgHandler();
+        PROGLOG("DJPS JLog: after setupContainerizedLogMsgHandler()");
+    };
+    if (isContainerized())
+        logConfigUpdateCBId = installConfigUpdateHook(updateFunc, true);
+
     return true;
 }
 MODULE_EXIT()
 {
+    if (isContainerized())
+        removeConfigUpdateHook(logConfigUpdateCBId);
+
     ::Release(theManager);
     theManager = &nullManager;
     delete theSysLogEventLogger;
@@ -2388,6 +2402,13 @@ void setupContainerizedLogMsgHandler()
             return;
         }
 
+        if (theStderrHandler)
+        {
+            bool theStderrHandler_wasMonitored = queryLogMsgManager()->removeMonitor(theStderrHandler);
+            PROGLOG("DJPS JLog: theStderrHandler_wasMonitored=%s", boolToStr(theStderrHandler_wasMonitored));
+            delete theStderrHandler;
+            theStderrHandler = nullptr;
+        }
         if (logConfig->hasProp(logFormatAtt))
         {
             const char *logFormat = logConfig->queryProp(logFormatAtt);
@@ -2414,7 +2435,9 @@ void setupContainerizedLogMsgHandler()
             //Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
             const char *logFields = logConfig->queryProp(logFieldsAtt);
             if (!isEmptyString(logFields))
+            {
                 theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
+            }
         }
 
         //Only recreate filter if at least one filter attribute configured
@@ -2461,6 +2484,13 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
             UseSysLogForOperatorMessages();
 
+        if (thePostMortemHandler)
+        {
+            bool thePostMortemHandler_wasMonitored = queryLogMsgManager()->removeMonitor(thePostMortemHandler);
+            PROGLOG("DJPS JLog: thePostMortemHandler_wasMonitored=%s", boolToStr(thePostMortemHandler_wasMonitored));
+            delete thePostMortemHandler;
+            thePostMortemHandler = nullptr;
+        }
         unsigned postMortemLines = logConfig->getPropInt(capturePostMortemAtt, 0);
         if (postMortemLines)
         {
@@ -2504,7 +2534,7 @@ ISysLogEventLogger * querySysLogEventLogger()
 
 ILogMsgHandler * getSysLogMsgHandler(unsigned fields)
 {
-    return new SysLogMsgHandler(theSysLogEventLogger, fields); 
+    return new SysLogMsgHandler(theSysLogEventLogger, fields);
 }
 
 #ifdef _WIN32
@@ -2555,7 +2585,7 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
                 char src[_MAX_PATH+1];
                 LPTSTR tail;
                 DWORD res = SearchPath(NULL,"JELOG.DLL",NULL,sizeof(src),src,&tail);
-                if (res>0) 
+                if (res>0)
                     copyFile(path,src);
                 else
                     throw makeOsException(GetLastError());
@@ -2570,20 +2600,20 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
 
         }
         HKEY hk;
-        if (RegCreateKeyEx(HKEY_LOCAL_MACHINE,"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\Seisint", 
+        if (RegCreateKeyEx(HKEY_LOCAL_MACHINE,"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\Seisint",
                            NULL, NULL, 0, KEY_ALL_ACCESS, NULL, &hk, NULL)==0) {
             DWORD sizedata = 0;
             DWORD type = REG_EXPAND_SZ;
             if ((RegQueryValueEx(hk,"EventMessageFile",NULL, &type, NULL, &sizedata)!=0)||!sizedata) {
-                StringAttr str("%SystemRoot%\\System32\\JELOG.dll"); 
+                StringAttr str("%SystemRoot%\\System32\\JELOG.dll");
                 RegSetValueEx(hk,"EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE) str.get(), (DWORD)str.length() + 1);
                 RegSetValueEx(hk,"CategoryMessageFile", 0, REG_EXPAND_SZ, (LPBYTE) str.get(), (DWORD)str.length() + 1);
-                DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE | EVENTLOG_AUDIT_SUCCESS | EVENTLOG_AUDIT_FAILURE; 
+                DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE | EVENTLOG_AUDIT_SUCCESS | EVENTLOG_AUDIT_FAILURE;
                 RegSetValueEx(hk, "TypesSupported", 0, REG_DWORD,  (LPBYTE) &dwData,  sizeof(DWORD));
                 dwData = 16;
                 RegSetValueEx(hk, "CategoryCount", 0, REG_DWORD,  (LPBYTE) &dwData,  sizeof(DWORD));
             }
-            RegCloseKey(hk); 
+            RegCloseKey(hk);
         }
         hEventLog = RegisterEventSource(NULL,"Seisint");
         if (!hEventLog) {
@@ -2621,8 +2651,8 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
 
 CSysLogEventLogger::~CSysLogEventLogger()
 {
-    if (hEventLog!=0) 
-        DeregisterEventSource(hEventLog); 
+    if (hEventLog!=0)
+        DeregisterEventSource(hEventLog);
 }
 
 #else
@@ -2631,7 +2661,7 @@ CSysLogEventLogger::~CSysLogEventLogger()
 
 #define CATEGORY_AUDIT_FUNCTION_REQUIRED
 #define AUDIT_TYPES_BEGIN int auditTypeDataMap[NUM_AUDIT_TYPES+1] = {
-#define MAKE_AUDIT_TYPE(name, type, categoryid, eventid, level) level, 
+#define MAKE_AUDIT_TYPE(name, type, categoryid, eventid, level) level,
 #define AUDIT_TYPES_END 0 };
 #include "jelogtype.hpp"
 #undef CATEGORY_AUDIT_FUNCTION_REQUIRED
@@ -2932,7 +2962,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use)
         return;
     if (use) {
         msgHandler = getSysLogMsgHandler();
-        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);  
+        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);
         queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
     }
     else {
@@ -3435,7 +3465,7 @@ TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_lis
     return dft;
 }
 
-void ctxlogReport(const LogMsgCategory & cat, const char * format, ...) 
+void ctxlogReport(const LogMsgCategory & cat, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -3443,7 +3473,7 @@ void ctxlogReport(const LogMsgCategory & cat, const char * format, ...)
     va_end(args);
 }
 
-void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args) 
+void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args)
 {
     ctxlogReportVA(cat, NoLogMsgCode, format, args);
 }
