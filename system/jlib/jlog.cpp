@@ -2393,6 +2393,13 @@ static constexpr bool useSysLogDefault = false;
 
 void setupContainerizedLogMsgHandler(bool configChanged)
 {
+    if (configChanged)
+    {
+        queryLogMsgManager()->suspendChildren();
+        queryLogMsgManager()->removeAllMonitors();
+        queryLogMsgManager()->removeAllChildren();
+    }
+
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
