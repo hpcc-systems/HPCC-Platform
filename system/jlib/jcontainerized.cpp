@@ -227,7 +227,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     args.append(" \"--k8sJob=true\"");
-    bool isJobResourceType = strcmp(resourceType, "job") == 0;
+    bool isJobResourceType = streq(resourceType, "job") == 0;
     const char *baseImageVersion = getenv("baseImageVersion");
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
