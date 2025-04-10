@@ -538,11 +538,20 @@ void  CPermissionsCache::setCacheTimeout(int timeoutSeconds)
 
     if (timeoutSeconds)
     {
+        unsigned threadStartWaitTimeSeconds = 5;
+
+        // If the fill thread has not been started, start it
         if (!m_fileScopeCacheFillThread.joinable())
         {
             DBGLOG("CACHE: CPermissionsCache starting managedFilesScopeCacheFillThread, timeout = %d", timeoutSeconds);
             m_fileScopeCacheFillThread = std::thread(&CPermissionsCache::managedFileScopesCacheFillThread, this);
-            m_fileScopeCacheFillSem.wait(5000);   // wait for thread to start
+            m_fileScopeCacheFillSem.wait(threadStartWaitTimeSeconds * 1000);   // wait for thread to start
+
+            if (!m_fileScopeCacheFillThread.joinable())
+            {
+                OWARNLOG("CACHE: CPermissionsCache failed to start managedFilesScopeCacheFillThread after %d seconds, disabling cache", threadStartWaitTimeSeconds);
+                m_cacheTimeoutInSeconds = 0;  // 0 means cache disabled
+            }
         }
     }
     else
@@ -672,43 +681,61 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
 {
     DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread started");
 
-    m_fileScopeCacheFillSem.signal();  // we have started
-
     // When the thread first starts, do a cache fill with the write lock held.
     // This ensures any managed scope queries are locked out until the cache is filled.
     {
         WriteLockBlock writeLock(m_scopesRWLock);
+        m_fileScopeCacheFillSem.signal();  // we have started and have the lock to ensure the cache is filled
         IArrayOf<ISecResource> scopes;
         aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
         removeAllManagedFileScopes();
         if (count)
             addManagedFileScopes(scopes);
+        time(&m_lastCacheFillTime);
     }
 
-    while (!m_stopFileScopeCacheFillThread)
+    unsigned int waitTimeSeconds = m_cacheTimeoutInSeconds;
+    while (!m_stopFileScopeCacheFillThread && m_cacheTimeoutInSeconds)
     {
-        IArrayOf<ISecResource> scopes;
-        aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
+        m_fileScopeCacheFillSem.wait(waitTimeSeconds * 1000);
 
+        time_t now;
+        time(&now);
+
+        // If the cache timeout has expired, fill the cache
+        if (now - m_lastCacheFillTime >= m_cacheTimeoutInSeconds)
         {
-            WriteLockBlock writeLock(m_scopesRWLock);
-            removeAllManagedFileScopes();
-            if (count)
-                addManagedFileScopes(scopes);
+            IArrayOf<ISecResource> scopes;
+            aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
+
+            {
+                WriteLockBlock writeLock(m_scopesRWLock);
+                removeAllManagedFileScopes();
+                if (count)
+                    addManagedFileScopes(scopes);
+                time(&m_lastCacheFillTime);
+            }
+
+            if (m_useLegacyDefaultFileScopePermissionCache)
+            {
+                m_defaultPermission = SecAccess_Unknown;
+            }
+            else
+            {
+                WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
+                m_userDefaultFileScopePermissions.clear();
+            }
+            waitTimeSeconds = m_cacheTimeoutInSeconds;
         }
 
-        if (m_useLegacyDefaultFileScopePermissionCache)
-        {
-            m_defaultPermission = SecAccess_Unknown;
-        }
+        // Otherwise, the cache was filled by another thread (probably a flush), so determine the remaining amount of
+        // time to wait before the next cache fill cycle to prevent excessive fills (ensure all values are positive)
         else
         {
-            WriteLockBlock writeLock(m_defaultFilePermissionRWLock);
-            m_userDefaultFileScopePermissions.clear();
+            time_t timeSinceLastFill = now - m_lastCacheFillTime;
+            time_t remainingWaitTime = (timeSinceLastFill < m_cacheTimeoutInSeconds) ? (m_cacheTimeoutInSeconds - timeSinceLastFill) : 0;
+            waitTimeSeconds = remainingWaitTime;
         }
-
-        // Wait again
-        m_fileScopeCacheFillSem.wait(m_cacheTimeoutInSeconds * 1000);
     }
     DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread exiting");
 }
@@ -802,6 +829,7 @@ void CPermissionsCache::flush()
         removeAllManagedFileScopes();
         if (count)
             addManagedFileScopes(scopes);
+        time(&m_lastCacheFillTime);
     }
 
 }
