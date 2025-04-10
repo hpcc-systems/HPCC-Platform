@@ -191,7 +191,7 @@ protected:
     offset_type nextWriteOffset{0};
     offset_type numEvents{0};
     unsigned pendingEventCounts[numBlocks] = {0};
-    cycle_t startCycles{0};
+    std::atomic<cycle_t> startCycles{0};
     MemoryAttr buffer;
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};

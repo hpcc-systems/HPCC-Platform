@@ -293,7 +293,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
 
     __uint64 startTimestamp = getTimeStampNowValue()*1000;
     numEvents = 0;
-    startCycles = get_cycles_now();
+    startCycles.store(get_cycles_now(), std::memory_order_release);
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
@@ -625,7 +625,7 @@ void EventRecorder::recordDaliSubscribe(const char * xpath, __int64 id, stat_typ
 
 void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
 {
-    __uint64 ts = cycle_to_nanosec(get_cycles_now() - startCycles); // nanoseconds relative to the start of the recording
+    __uint64 ts = cycle_to_nanosec(get_cycles_now() - startCycles.load(std::memory_order_acquire)); // nanoseconds relative to the start of the recording
 
     write(offset, type);
     write(offset, ts);
