@@ -3576,10 +3576,19 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         return;
 
     IPropertyTree * plane = storage->addPropTree("planes");
+
+    // Revisit: Ignore hthor planes when running XRef on storage planes
+    if (groupType == grp_hthor)
+        plane->setPropBool("@hthorplane", true);
+
     StringBuffer mirrorname;
     const char * planeName = name;
     if (copy != 0)
+    {
         planeName = mirrorname.append(name).append("_mirror");
+        // Set copy to true to be able to avoid running XRef on mirror planes
+        plane->setPropBool("@copy", true);
+    }
 
     plane->setProp("@name", planeName);
 

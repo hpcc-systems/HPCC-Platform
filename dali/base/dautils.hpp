@@ -590,4 +590,6 @@ extern da_decl void logNullUser(IUserDescriptor *userDesc);
 inline void logNullUser(IUserDescriptor *userDesc) { }
 #endif
 
+extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,unsigned &stripeNum,unsigned &dirPerPart,bool &replicate);
+
 #endif
