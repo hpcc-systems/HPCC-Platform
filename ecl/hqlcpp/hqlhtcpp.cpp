@@ -11052,9 +11052,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     }
     else if (xmlAttr)
     {
-        kind = (isJson) ? TAKjsonwrite : TAKxmlwrite;
         activityArgName = "XmlWrite";
-        format.append("xml");
+        if (isJson)
+        {
+            kind = TAKjsonwrite;
+            format.append("json");
+        }
+        else
+        {
+            kind = TAKxmlwrite;
+            format.append("xml");
+        }
     }
     else if (expr->hasAttribute(_spill_Atom))
     {
@@ -11210,7 +11218,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
             if (useGenericReadWrites && program)
-                buildFormatOptionsFunction(instance->classctx, program);
+                buildFormatOptionsFunction(instance->createctx, program);
 
             //virtual const char * queryRecordECL() = 0;
             //Ensure the ECL for the record reflects its serialized form, not the internal form
