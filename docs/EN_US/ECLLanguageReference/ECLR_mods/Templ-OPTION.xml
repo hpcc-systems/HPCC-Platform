@@ -1532,8 +1532,8 @@
       </informaltable></para>
 
     <para><emphasis role="bold">The following </emphasis><emphasis
-    role="bold">options</emphasis><emphasis role="bold"> are for the workunit
-    analyzer:</emphasis></para>
+    role="bold">options</emphasis><emphasis role="bold"> are for the Cost
+    Optimizer:</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
