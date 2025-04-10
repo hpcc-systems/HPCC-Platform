@@ -109,8 +109,6 @@ jobs:
           - os: centos-8
           - os: centos-7
             cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-          - os: amazonlinux
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: rockylinux-8
           - os: ubuntu-22.04
             name: LN k8s
