@@ -55,7 +55,7 @@ public:
     }
 
     // Cache the output stream to receive the parsed data.
-    // - a command line request might use comsole output
+    // - a command line request might use console output
     // - a unit test might use a string-backed output stream
     // - an ESP might select a string stream or something else
     void setOutput(IBufferedSerialOutputStream& out)
@@ -99,7 +99,6 @@ public:
                     toYAML(creator->queryTree(), yaml, 2, 0);
                     out->put(yaml.length(), yaml.str());
                     out->put(1, "\n");
-                    out->flush();
                     return true;
                 }
                 return false;
@@ -207,7 +206,6 @@ public:
         usage << "CSV output includes columns for event name and ID, plus one for each" << '\n';
         usage << "event attribute used by the event recorder." << '\n';
         out.put(usage.length(), usage.str());
-        out.flush();
     }
     CEvtDumpCommand()
     {

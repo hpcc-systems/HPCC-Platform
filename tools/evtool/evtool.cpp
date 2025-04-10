@@ -118,9 +118,14 @@ void CEvToolCommand::usagePrefix(int argc, const char* argv[], int pos, IBuffere
     out.put(prefix.length(), prefix.str());
 }
 
-IBufferedSerialOutputStream& consoleOut()
+namespace
 {
     static Owned<IBufferedSerialOutputStream> out;
+    static Owned<IBufferedSerialOutputStream> err;
+}
+
+IBufferedSerialOutputStream& consoleOut()
+{
     if (!out)
     {
         Owned<IFile> file = createIFile("stdout:");
@@ -133,13 +138,26 @@ IBufferedSerialOutputStream& consoleOut()
 
 IBufferedSerialOutputStream& consoleErr()
 {
-    static Owned<IBufferedSerialOutputStream> out;
-    if (!out)
+    if (!err)
     {
         Owned<IFile> file = createIFile("stderr:");
         Owned<IFileIO> fileIO = file->open(IFOwrite);
         Owned<ISerialOutputStream> baseStream = createSerialOutputStream(fileIO);
-        out.setown(createBufferedOutputStream(baseStream, 0x100000, false));
+        err.setown(createBufferedOutputStream(baseStream, 0x100000, false));
     }
-    return *out;
+    return *err;
+}
+
+void cleanupConsole()
+{
+    if (out)
+    {
+        out->flush();
+        out.clear();
+    }
+    if (err)
+    {
+        err->flush();
+        err.clear();
+    }
 }

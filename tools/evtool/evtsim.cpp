@@ -238,7 +238,6 @@ public:
         usage << "  <filename>      full path to an XML or YAML file containing simulated" << "\n";
         usage << "                  events" << "\n";
         out.put(usage.length(), usage.str());
-        out.flush();
     }
 
 protected:

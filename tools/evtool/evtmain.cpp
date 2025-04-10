@@ -39,6 +39,14 @@ static void usage(const char* tool, const CmdMap& commands, IBufferedSerialOutpu
 
 int main(int argc, const char* argv[])
 {
+    struct Cleanup
+    {
+        ~Cleanup()
+        {
+            cleanupConsole();
+        }
+    } cleanup;
+
     InitModuleObjects();
 
     CmdMap commands{

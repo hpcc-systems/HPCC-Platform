@@ -30,6 +30,7 @@ interface IEvToolCommand : extends IInterface
 
 extern IBufferedSerialOutputStream& consoleOut();
 extern IBufferedSerialOutputStream& consoleErr();
+extern void cleanupConsole();
 
 // Command factory functions.
 extern IEvToolCommand* createDumpCommand();
