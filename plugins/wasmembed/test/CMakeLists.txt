@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.22)
-
 project(wasmembed)
 
 set(WASM_PATH "${CMAKE_CURRENT_BINARY_DIR}/bin/${PROJECT_NAME}.wasm")

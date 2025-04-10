@@ -25,7 +25,7 @@
 
 <xsl:template match="EsdlService">
     <xsl:variable name="servicename" select="@name"/>
-<xsl:text></xsl:text>cmake_minimum_required(VERSION 3.0)
+<xsl:text></xsl:text>cmake_minimum_required(VERSION 3.22.1...4.0 FATAL_ERROR)
 project (<xsl:value-of select="$servicename"/>ServicePlugin)
 set(CMAKE_INSTALL_PREFIX "<xsl:value-of select="$installdir"/>")
 if (("${HPCC_SOURCE_DIR}" STREQUAL "") OR ("${HPCC_BUILD_DIR}" STREQUAL "") OR ("${CMAKE_BUILD_TYPE}" STREQUAL

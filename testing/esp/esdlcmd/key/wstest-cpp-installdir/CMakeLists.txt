@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.0)
 project (WsTestServicePlugin)
 set(CMAKE_INSTALL_PREFIX "/opt/HPCCSystems")
 if (("${HPCC_SOURCE_DIR}" STREQUAL "") OR ("${HPCC_BUILD_DIR}" STREQUAL "") OR ("${CMAKE_BUILD_TYPE}" STREQUAL
