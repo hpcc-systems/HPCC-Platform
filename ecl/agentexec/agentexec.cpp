@@ -235,6 +235,7 @@ int CEclAgentExecutionServer::run()
 typedef std::tuple<IJobQueueItem *, unsigned, const char *, const char *> ThreadCtx;
 
 // NB: WaitThread only used by if pool created (see CEclAgentExecutionServer ctor)
+static std::atomic<unsigned> activeWaitThreads{0};
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
@@ -242,6 +243,11 @@ public:
         : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
+        instanceNumber = ++activeWaitThreads;
+    }
+    ~WaitThread()
+    {
+        --activeWaitThreads;
     }
     virtual void init(void *param) override
     {
@@ -293,8 +299,8 @@ public:
                     const char *thorName = compConfig->queryProp("@targetName");
                     unsigned maxGraphs = compConfig->getPropInt("@maxActive", 1);
                     StringBuffer jobName;
-                    k8s::setJobName(jobName, thorName, maxGraphs, currentGraphNumber, maxGraphs + 1);
-                    params.push_back({ "graphNo", std::to_string(currentGraphNumber) });
+                    k8s::setJobName(jobName, thorName, maxGraphs, instanceNumber, maxGraphs + 1);
+                    params.push_back({ "graphNo", std::to_string(instanceNumber) });
 
                     SCMStringBuffer optPlatformVersion;
                     {
@@ -390,10 +396,8 @@ private:
     StringAttr queue;
     Linked<IJobQueueItem> item;
     bool isThorAgent = false;
-    static unsigned currentGraphNumber;
+    unsigned instanceNumber{};
 };
-
-unsigned WaitThread::currentGraphNumber{0};
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
