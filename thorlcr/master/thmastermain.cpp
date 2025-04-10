@@ -1058,7 +1058,7 @@ int main( int argc, const char *argv[]  )
                 throw makeStringException(TE_AbortException, "Failed to apply worker networkpolicy manifest");
             k8s::KeepJobs keepJob = k8s::translateKeepJobs(globals->queryProp("@keepJobs"));
 
-            std::list<std::pair<std::string, std::string>> params = { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)}, { "graphNo", std::to_string(currentGraphNumber) } };
+            std::list<std::pair<std::string, std::string>> params = { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} };
             if (optPlatformVersion.length())
                 params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
             if (!k8s::applyYaml("thorworker", workunit, cloudJobName, "job", params, false, k8s::KeepJobs::none == keepJob))
