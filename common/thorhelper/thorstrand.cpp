@@ -1562,6 +1562,14 @@ public:
         }
     }
 
+    virtual void writeRow(const void *row)
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
+    }
+
     virtual void flush()
     {
         if (curBlock)

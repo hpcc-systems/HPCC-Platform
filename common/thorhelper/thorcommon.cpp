@@ -1528,6 +1528,7 @@ public:
                         extbuf.append(b);
                 }
             }
+
             allocator->releaseRow(row);
         }
         else if (ers_eogonly == emptyRowSemantics) // backpatch
@@ -1546,6 +1547,14 @@ public:
             byte b = 1;
             put(1, &b);
         }
+    }
+
+    void writeRow(const void *row)
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
 
     void flush()
