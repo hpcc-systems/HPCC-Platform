@@ -234,7 +234,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     {
         if (isJobResourceType && streq(p.first.c_str(), "graphNo"))
         {
-            args.appendf(" \"--graphNo=%u\"", (unsigned)strtoul(p.second.c_str(), nullptr, 10));
+            args.appendf(" \"--graphNo=%s\"", p.second.c_str());
         }
         // special handling _HPCC_JOB_VERSION_, not just a straight substitution
         else if (streq(p.first.c_str(), "_HPCC_JOB_VERSION_") && !isEmptyString(baseImageVersion)) // NB: if baseImageVersion is empty implies incompatible helm chart/runtime image mismatch
