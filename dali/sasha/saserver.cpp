@@ -40,6 +40,7 @@
 #include "saarch.hpp"
 #include "saverify.hpp"
 #include "saxref.hpp"
+#include "sadbghk.hpp"
 #include "saqmon.hpp"
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
@@ -53,8 +54,9 @@ extern void LDStest();
 Owned<IPropertyTree> serverConfig;
 static IArrayOf<ISashaServer> servers;
 static std::atomic<unsigned> StopSuspendCount{0};
-static bool stopped = false;
+static bool stopped{false};
 static Semaphore stopSem;
+static bool isDaliClient{false};
 
 const char *sashaProgramName;
 
@@ -238,6 +240,13 @@ public:
 
 void SashaMain()
 {
+    if (!isDaliClient) // If a Dali client, SashaMain will be listening to MP and cancelled by CStopThread
+    {
+        // NB: requestStop signals stopSem
+        stopSem.wait();
+        return;
+    }
+
     IInterCommunicator & comm=queryWorldCommunicator();
     unsigned start = msTick();
     unsigned timeout = serverConfig->getPropInt("@autoRestartInterval")*1000*60*60;
@@ -329,6 +338,7 @@ int main(int argc, const char* argv[])
     try
     {
         serverConfig.setown(loadConfiguration(defaultYaml, argv, "sasha", "SASHA", "sashaconf.xml", nullptr));
+        isDaliClient = isContainerized() ? serverConfig->hasProp("[access='dali']") : true;
 
         Owned<IFile> sentinelFile;
 
@@ -378,16 +388,20 @@ int main(int argc, const char* argv[])
                 writeSentinelFile(sentinelFile);
         }
 #endif
-        StringBuffer daliServer;
-        if (!serverConfig->getProp("@daliServers", daliServer))
-            serverConfig->getProp("@DALISERVERS", daliServer); // @DALISERVERS legacy/bare-metal
-        if (0 == daliServer.length())
+        if (isDaliClient)
         {
-            PROGLOG("DALISERVERS not specified in sashaconf.xml");
-            return 1;
+            PROGLOG("Connecting to DALISERVERS.");
+            StringBuffer daliServer;
+            if (!serverConfig->getProp("@daliServers", daliServer))
+                serverConfig->getProp("@DALISERVERS", daliServer); // @DALISERVERS legacy/bare-metal
+            if (0 == daliServer.length())
+            {
+                PROGLOG("DALISERVERS not specified in sashaconf.xml");
+                return 1;
+            }
+            Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
+            initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
         }
-        Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
-        initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
 
         if (stop)
             stopSashaServer((argc>2)?argv[2]:"", DEFAULT_SASHA_PORT);
@@ -435,6 +449,8 @@ int main(int argc, const char* argv[])
                     servers.append(*createSashaFileExpiryServer());
                 else if (strieq(service, "thor-qmon"))
                     servers.append(*createSashaQMonitorServer());
+                else if (strieq(service, "debugplane-housekeeping"))
+                    servers.append(*createSashaDebugPlaneHousekeepingServer());
                 //else if (strieq(service, "xref")) // TODO
                 //    servers.append(*createSashaXrefServer());
                 else
@@ -443,9 +459,6 @@ int main(int argc, const char* argv[])
                 startPerformanceMonitor(serverConfig->getPropInt("@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
                 AddServers();
 #endif
-
-                StringBuffer eps;
-                PROGLOG("SASERVER starting on %s",queryMyNode()->endpoint().getEndpointHostText(eps).str());
 
                 ForEachItemIn(i1,servers)
                 {
@@ -469,11 +482,14 @@ int main(int argc, const char* argv[])
                         if (!stopped)
                         {
                             stopped = true;
-                            IInterCommunicator &comm=queryWorldCommunicator();
+                            IInterCommunicator &comm = queryWorldCommunicator();
                             comm.cancel(NULL, MPTAG_SASHA_REQUEST);
                         }
                     }
-                } *stopThread = new CStopThread;
+                } *stopThread{};
+                if (isDaliClient)
+                    stopThread = new CStopThread;
+                // else, SashaMain waits directly on stopSem
                 addThreadExceptionHandler(&exceptionStopHandler);
 #ifdef _CONTAINERIZED
                 if (!serverConfig->getPropBool("@inDaliPod"))
@@ -484,8 +500,11 @@ int main(int argc, const char* argv[])
                 SashaMain();
                 removeThreadExceptionHandler(&exceptionStopHandler);
 
-                stopSem.signal();
-                delete stopThread;
+                if (isDaliClient)
+                {
+                    stopSem.signal();
+                    delete stopThread;
+                }
 
                 PROGLOG("SASERVER exiting");
 #ifndef _CONTAINERIZED
@@ -514,9 +533,12 @@ int main(int argc, const char* argv[])
     serverConfig.clear();
     try
     {
-        closeDllServer();
         closeEnvironment();
-        closedownClientProcess();
+        if (isDaliClient)
+        {
+            closeDllServer();
+            closedownClientProcess();
+        }
     }
     catch (IException *) {  // dali may be down
     }
