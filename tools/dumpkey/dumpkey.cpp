@@ -259,6 +259,7 @@ int main(int argc, const char **argv)
                 printf("Key '%s'\nkeySize=%d keyedSize = %d NumParts=%x, Top=%d\n", keyName, key_size, keyedSize, index->numParts(), index->isTopLevelKey());
                 printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
                 printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
+                printf("bloomoffset=%" I64F "d[%" I64F "d]\n", header->queryBloomHead(), header->queryBloomHead()/nodeSize);
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 if (metadata)
                 {
