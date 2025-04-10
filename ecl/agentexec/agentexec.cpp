@@ -292,7 +292,7 @@ public:
 
                     const char *thorName = compConfig->queryProp("@targetName");
                     unsigned maxGraphs = compConfig->getPropInt("@maxActive", 1);
-                    StringBuffer jobName{};
+                    StringBuffer jobName;
                     k8s::setJobName(jobName, thorName, maxGraphs, currentGraphNumber, maxGraphs + 1);
                     params.push_back({ "graphNo", std::to_string(currentGraphNumber) });
 
