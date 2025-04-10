@@ -1989,15 +1989,15 @@ void RemoteDiskRowReader::stop()
 
 // Lookup to map the names of file types/formats to their object constructors;
 // map will be initialized within MODULE_INIT
-static std::map<std::string, std::function<DiskRowReader*(IRowReadFormatMapping*)>> genericFileTypeMap;
+static std::map<std::string, std::function<DiskRowReader*(IRowReadFormatMapping*)>> genericReaderFileTypeMap;
 
 
 // format is assumed to be lowercase
 IDiskRowReader * doCreateLocalDiskReader(const char * format, IRowReadFormatMapping * _mapping)
 {
-    auto foundReader = genericFileTypeMap.find(format);
+    auto foundReader = genericReaderFileTypeMap.find(format);
 
-    if (foundReader != genericFileTypeMap.end() && foundReader->second)
+    if (foundReader != genericReaderFileTypeMap.end() && foundReader->second)
         return foundReader->second(_mapping);
 
     UNIMPLEMENTED;
@@ -2042,19 +2042,19 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // should be defined here; the key is the lowecase name of the format,
     // as will be used in ECL, and the value should be a lambda
     // that creates the appropriate disk row reader object
-    genericFileTypeMap.emplace("flat", [](IRowReadFormatMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
-    genericFileTypeMap.emplace("csv", [](IRowReadFormatMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
-    genericFileTypeMap.emplace("xml", [](IRowReadFormatMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
+    genericReaderFileTypeMap.emplace("flat", [](IRowReadFormatMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
+    genericReaderFileTypeMap.emplace("csv", [](IRowReadFormatMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
+    genericReaderFileTypeMap.emplace("xml", [](IRowReadFormatMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
 #ifdef _USE_PARQUET
-    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IRowReadFormatMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
+    genericReaderFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IRowReadFormatMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
 #else
-    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IRowReadFormatMapping * _mapping) { return nullptr; });
+    genericReaderFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IRowReadFormatMapping * _mapping) { return nullptr; });
 #endif
 
     // Stuff the file type names that were just instantiated into a list;
     // list will be accessed by the ECL compiler to validate the names
     // at compile time
-    for (auto iter = genericFileTypeMap.begin(); iter != genericFileTypeMap.end(); iter++)
+    for (auto iter = genericReaderFileTypeMap.begin(); iter != genericReaderFileTypeMap.end(); iter++)
         addAvailableGenericFileTypeName(iter->first.c_str());
 
     return true;
