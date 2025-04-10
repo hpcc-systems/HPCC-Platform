@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: "Nightly build and publish release container"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
