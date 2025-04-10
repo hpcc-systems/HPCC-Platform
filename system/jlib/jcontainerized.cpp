@@ -227,12 +227,11 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     args.append(" \"--k8sJob=true\"");
-    bool isJobResourceType = streq(resourceType, "job") == 0;
     const char *baseImageVersion = getenv("baseImageVersion");
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
     for (const auto &p: extraParams)
     {
-        if (isJobResourceType && streq(p.first.c_str(), "graphNo"))
+        if (streq(p.first.c_str(), "graphNo"))
         {
             args.appendf(" \"--graphNo=%s\"", p.second.c_str());
         }
@@ -272,7 +271,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     if (autoCleanup)
     {
         unsigned deleteJobGracePeriod = 0;
-        if (isJobResourceType)
+        if (streq(resourceType, "job") == 0)
             deleteJobGracePeriod = getComponentConfigSP()->getPropInt("@terminationGracePeriodSeconds", defaultDeleteJobGracePeriod);
         // touch a file, with naming convention { componentName },{ resourceType },{ jobName },{ graceTimeSecs }.k8s
         // it will be used if the job fails ungracefully, to tidy up leaked resources
