@@ -54,6 +54,8 @@ sasha:
     disabled: true
   debugplane-housekeeping:
     disabled: true
+  xref:
+    disabled: true
 
 esp:
 - name: eclwatch

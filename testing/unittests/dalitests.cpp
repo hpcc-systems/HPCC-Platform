@@ -484,8 +484,9 @@ public:
         Owned<IGroup> grp = createIGroup("10.150.10.1-3");
         RemoteFilename rfn;
         for (unsigned i=0;i<3;i++)
-            for (unsigned ic=0;ic<mspec.defaultCopies;ic++) {
-                constructPartFilename(grp,i+1,3,(i==1)?"test.txt":NULL,"test._$P$_of_$N$","/c$/thordata/test",ic,mspec,rfn);
+            for (unsigned ic=0;ic<mspec.defaultCopies;ic++)
+            {
+                constructPartFilename(grp,i+1,ic,3,0,0,false,(i==1)?"test.txt":NULL,"/c$/thordata/test","test._$P$_of_$N$",0,rfn);
                 StringBuffer tmp;
                 printf("%d,%d: %s\n",i,ic,rfn.getRemotePath(tmp).str());
             }
