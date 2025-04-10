@@ -40,6 +40,9 @@ const workunitsChildren: Route[] = [
                 case "metrics":
                     state = { [params.Tab as string]: { selection: (params.State as string).split(",") } };
                     break;
+                case "eclsummary":
+                    state = { [params.Tab as string]: params.State as string };
+                    break;
                 default:
                     state = { [params.Tab as string]: (params.State as string) };
             }
