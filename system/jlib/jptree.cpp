@@ -1051,6 +1051,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, Compr
 
 static void *uncompress(const void *src, size32_t &sz, byte compressType)
 {
+    dbgassertex(compressType != COMPRESS_METHOD_LZWLEGACY);
     if (compressType == COMPRESS_METHOD_LZWLEGACY)
         compressType = COMPRESS_METHOD_LZW;
     IExpander *expander = NULL;
@@ -1110,6 +1111,8 @@ void CPTValue::deserialize(MemoryBuffer &src)
     if (sz)
     {
         src.read(compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW;
         set(sz, src.readDirect(sz));
     }
     else
@@ -1883,23 +1886,9 @@ bool PTree::isCompressed(const char *xpath) const
     return false;
 }
 
-CompressionMethod PTree::getCompressionType(const char *xpath) const
+CompressionMethod PTree::getCompressionType() const
 {
-    if (!xpath)
-        return value ? value->getCompressionType() : COMPRESS_METHOD_NONE;
-    else if (isAttribute(xpath))
-        return COMPRESS_METHOD_NONE;
-    else
-    {
-        const char *prop = splitXPathX(xpath);
-        if (!isAttribute(prop))
-        {
-            IPropertyTree *branch = queryPropTree(xpath);
-            if (branch)
-                return branch->getCompressionType(nullptr);
-        }
-    }
-    return COMPRESS_METHOD_NONE;
+    return value ? value->getCompressionType() : COMPRESS_METHOD_NONE;
 }
 
 bool PTree::isBinary(const char *xpath) const

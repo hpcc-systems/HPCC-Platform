@@ -2780,13 +2780,12 @@ public:
         return child->hasProp(EXT_ATTR);
     }
 
-    virtual CompressionMethod getCompressionType(const char *xpath=NULL) const override
+    virtual CompressionMethod getCompressionType() const override
     {
-        if (isAttribute(xpath)) return COMPRESS_METHOD_NONE;
-        CompressionMethod method = CRemoteTreeBase::getCompressionType(xpath);
+        CompressionMethod method = CRemoteTreeBase::getCompressionType();
         if (method) return method;
         if (SDSManager->ignoreExternals) return COMPRESS_METHOD_NONE;
-        CServerRemoteTree *child = (CServerRemoteTree *)queryPropTree(xpath);
+        CServerRemoteTree *child = (CServerRemoteTree *)queryPropTree(nullptr);
         if (!child->hasProp(EXT_ATTR))
             return COMPRESS_METHOD_NONE;
         return (CompressionMethod)child->getPropInt(COMPRESS_ATTR, COMPRESS_METHOD_LZW);
@@ -8726,7 +8725,7 @@ void CCovenSDSManager::writeExternal(CServerRemoteTree &tree, bool direct, __int
     StringBuffer name(EXTERNAL_NAME_PREFIX);
     extHandler->write(name.append(index).str(), tree);
     tree.setPropInt64(EXT_ATTR, index);
-    tree.setPropInt(COMPRESS_ATTR, tree.getCompressionType(nullptr));
+    tree.setPropInt(COMPRESS_ATTR, tree.getCompressionType());
     extHandler->resetAsExternal(tree);
     // setPropInt64(EXT_ATTR, index); // JCSMORE not necessary
 }

@@ -1038,10 +1038,10 @@ bool CClientRemoteTree::isCompressed(const char *xpath) const
     return CRemoteTreeBase::isCompressed(xpath);
 }
 
-CompressionMethod CClientRemoteTree::getCompressionType(const char *xpath) const
+CompressionMethod CClientRemoteTree::getCompressionType() const
 {
-    if (!xpath) checkExt();
-    return CRemoteTreeBase::getCompressionType(xpath);
+    checkExt();
+    return CRemoteTreeBase::getCompressionType();
 }
 
 bool CClientRemoteTree::getProp(const char *xpath, StringBuffer &ret) const
@@ -1177,7 +1177,7 @@ IPropertyTree *CClientRemoteTree::collateData()
         if (queryValue())
         {
             bool binary=isBinary(NULL);
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, true, getCompressionType(NULL)), binary);
+            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, true, getCompressionType()), binary);
         }
         else
             ((PTree *)ct.queryTree())->setValue(new CPTValue(0, NULL, false, true, COMPRESS_METHOD_NONE), false);

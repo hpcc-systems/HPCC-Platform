@@ -663,7 +663,7 @@ public:
     virtual bool hasProp(const char * xpath) const override;
     virtual bool isBinary(const char *xpath=NULL) const override;
     virtual bool isCompressed(const char *xpath=NULL) const override;
-    virtual CompressionMethod getCompressionType(const char *xpath=NULL) const override;
+    virtual CompressionMethod getCompressionType() const override;
     virtual bool renameProp(const char *xpath, const char *newName) override;
     virtual bool renameTree(IPropertyTree *tree, const char *newName) override;
     virtual const char *queryProp(const char *xpath) const override;
