@@ -6,6 +6,7 @@
 	],
 	"settings": {
 		"cmake.configureArgs": [
+			"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DINCLUDE_PLUGINS=ON",
