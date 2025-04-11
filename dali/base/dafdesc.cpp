@@ -3577,7 +3577,7 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
 
     IPropertyTree * plane = storage->addPropTree("planes");
 
-    // Revisit: Ignore hthor planes when running XRef on storage planes
+    // Revisit: Ignore hthor planes when running XRef in bare metal
     if (groupType == grp_hthor)
         plane->setPropBool("@hthorplane", true);
 
