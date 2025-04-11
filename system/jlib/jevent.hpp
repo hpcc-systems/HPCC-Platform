@@ -196,9 +196,13 @@ protected:
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    byte compressionType = 0;
     bool outputToLog{false};
+    bool corruptOutput = false;
     StringBuffer outputFilename;
+    Owned<IFile> outputFile;
     Owned<IFileIO> output;
+    Owned<ISerialOutputStream> outputStream;
 };
 
 // The implementation exposes a global object so that the test for whether events are being recorded
