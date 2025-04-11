@@ -2412,8 +2412,6 @@ void setupContainerizedLogMsgHandler(bool configChanged)
         bool newFormatDetected{false};
         if (configChanged && theStderrHandler)
         {
-            bool theStderrHandler_wasMonitored = queryLogMsgManager()->removeMonitor(theStderrHandler);
-            PROGLOG("DJPS JLog: theStderrHandler_wasMonitored=%s", boolToStr(theStderrHandler_wasMonitored));
             delete theStderrHandler;
             theStderrHandler = nullptr;
 
@@ -2493,8 +2491,6 @@ void setupContainerizedLogMsgHandler(bool configChanged)
 
         if (configChanged && thePostMortemHandler)
         {
-            bool thePostMortemHandler_wasMonitored = queryLogMsgManager()->removeMonitor(thePostMortemHandler);
-            PROGLOG("DJPS JLog: thePostMortemHandler_wasMonitored=%s", boolToStr(thePostMortemHandler_wasMonitored));
             delete thePostMortemHandler;
             thePostMortemHandler = nullptr;
         }
@@ -2509,6 +2505,11 @@ void setupContainerizedLogMsgHandler(bool configChanged)
             thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
             queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
+    }
+
+    if (configChanged)
+    {
+        queryLogMsgManager()->unsuspendChildren();
     }
 }
 
