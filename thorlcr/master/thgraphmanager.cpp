@@ -1239,13 +1239,13 @@ void closeThorServerStatus()
  *  0 = unrecognised format, or wuid mismatch
  *  1 = success. new graph/wuid received.
  */
-static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &retWfid, StringBuffer &retWuid, StringBuffer &retGraphName)
+static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &retWfid, StringBuffer &retWuid, StringBuffer &retGraphName, unsigned __int64 priority)
 {
     StringBuffer next;
     CMessageBuffer msg;
     if (thorQueue)
     {
-        Owned<IJobQueueItem> item = thorQueue->dequeue(timeoutMs);
+        Owned<IJobQueueItem> item = thorQueue->dequeuePriority(priority, timeoutMs);
         if (!item)
             return -1;
         next.set(item->queryWUID());
@@ -1371,6 +1371,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
+        bool disableQueuePriority = getComponentConfigSP()->getPropBool("expert/@disableQueuePriority");
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
@@ -1381,7 +1382,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
                 dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
                 bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
-                VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
                 StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false
 
                 // NB: in k8s a Thor instance is explicitly started to run a specific wuid/graph
@@ -1390,12 +1390,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                 if (multiJobLinger)
                 {
-                    StringBuffer thorQueueName;
-                    getClusterThorQueueName(thorQueueName, globals->queryProp("@name"));
-                    StringBuffer queueNames(thorQueueName);
-                    queueNames.append(",");
-                    getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
-
+                    StringBuffer queueNames;
+                    getClusterThorQueueName(queueNames, globals->queryProp("@name"));
+                    if (disableQueuePriority)
+                    {
+                        queueNames.append(",");
+                        getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
+                    }
                     PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
                     thorQueue.setown(createJobQueue(queueNames));
                     thorQueue->connect(false);
@@ -1542,11 +1543,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
                     PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
+
                     StringBuffer nextJob;
                     do
                     {
                         StringBuffer wuid;
-                        int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName);
+                        unsigned __int64 priority = disableQueuePriority ? 0 : getTimeStampNowValue();
+                        int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName, priority);
                         if (ret > 0)
                         {
                             currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
