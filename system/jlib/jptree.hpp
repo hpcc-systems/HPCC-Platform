@@ -26,6 +26,7 @@
 #include "jexcept.hpp"
 #include "jiter.hpp"
 #include "jprop.hpp"
+#include "jlzw.hpp"
 
 #include <initializer_list>
 
@@ -81,6 +82,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual bool hasProp(const char *xpath) const = 0;
     virtual bool isBinary(const char *xpath=NULL) const = 0;
     virtual bool isCompressed(const char *xpath=NULL) const = 0; // needed for external/internal efficiency e.g. for clone
+    virtual CompressionMethod getCompressionType() const = 0;
     virtual bool renameProp(const char *xpath, const char *newName) = 0;
     virtual bool renameTree(IPropertyTree *tree, const char *newName) = 0;
 
