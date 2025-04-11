@@ -2345,9 +2345,7 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
 
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        PROGLOG("DJPS JLog: before setupContainerizedLogMsgHandler()");
         setupContainerizedLogMsgHandler(true);
-        PROGLOG("DJPS JLog: after setupContainerizedLogMsgHandler()");
     };
     if (isContainerized())
         logConfigUpdateCBId = installConfigUpdateHook(updateFunc, true);
