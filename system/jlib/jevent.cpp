@@ -26,6 +26,7 @@
 #include "jlog.hpp"
 #include "jstring.hpp"
 #include <set>
+#include "jlzw.hpp"
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
@@ -55,6 +56,8 @@ inline void TRACEEVENT(char const * format, ...)
     VALOG(MCmonitorEvent, format, args);
     va_end(args);
 }
+
+constexpr const char magicHeader[4] = { 'H','E','V','T' };
 
 //---------------------------------------------------------------------------------------------------------------------
 //
@@ -131,7 +134,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(Path, string),
     DEFINE_ATTR(ConnectId, u8),
     DEFINE_ATTR(Enabled, bool),
-    DEFINE_ATTR(RecordedFileSize, u8),
+    DEFINE_ATTR(FileSize, u8),
     DEFINE_ATTR(RecordedTimestamp, u8),
     DEFINE_ATTR(RecordedOption, string),
     DEFINE_ATTR(EventTimeOffset, u8),
@@ -241,7 +244,7 @@ const char * queryEventAttributeName(EventAttr attr)
 //
 // Should there be a terminator at the end of the file?  If will potentially cause problems if the file is compressed...
 
-EventRecorder::EventRecorder() : buffer(OutputBufferSize)
+EventRecorder::EventRecorder() : buffer(OutputBufferSize), compressionType(COMPRESS_METHOD_LZ4)
 {
 }
 
@@ -273,12 +276,29 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
             options = (options & ~ERFstacktrace) | (valueBool ? ERFstacktrace : ERFnone);
         else if (strieq(option, "all"))
             options = (valueBool ? ~ERFnone : ERFnone);
+        else if (strieq(option, "compress"))
+        {
+            if (isdigit(*valueText))
+            {
+                compressionType = (byte) atoi(valueText);
+                if (compressionType >= COMPRESS_METHOD_LAST)
+                    compressionType = COMPRESS_METHOD_LZ4;
+            }
+            else
+            {
+                ICompressHandler * compression = queryCompressHandler(valueText);
+                if (compression)
+                    compressionType = compression->queryMethod();
+            }
+        }
         else if (strieq(option, "log"))
             outputToLog = valueBool;
     };
 
     options = defaultEventFlags;
     outputToLog = false;
+    compressionType = COMPRESS_METHOD_LZ4;
+    corruptOutput = false;
 
     processOptionString(optionsText, processOption);
     sizeMessageHeaderFooter = sizeof(EventType) + sizeof(__uint64) + sizeof(EventAttr); // event type, timestamp and end of attributes marker
@@ -288,8 +308,27 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
         sizeMessageHeaderFooter += 16;
 
     outputFilename.set(filename);
-    Owned<IFile> outputFile = createIFile(filename);
+    outputFile.setown(createIFile(filename));
     output.setown(outputFile->open(IFOcreate));
+
+    Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
+    Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);
+
+    //Write the uncompressed header:
+    bufferedDiskStream->put(sizeof(magicHeader), magicHeader);
+    bufferedDiskStream->put(sizeof(currentVersion), &currentVersion);
+    bufferedDiskStream->put(sizeof(compressionType), &compressionType);
+
+    if (compressionType != COMPRESS_METHOD_NONE)
+    {
+        ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+        const char *compressOptions = nullptr; // at least for now!
+        Owned<ICompressor> compressor = compressHandler->getCompressor(compressOptions);
+        Owned<ISerialOutputStream> compressedStream = createCompressingOutputStream(bufferedDiskStream, compressor);
+        outputStream.set(compressedStream);
+    }
+    else
+        outputStream.set(bufferedDiskStream);
 
     __uint64 startTimestamp = getTimeStampNowValue()*1000;
     numEvents = 0;
@@ -297,7 +336,6 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
-    write(pos, currentVersion);
     write(pos, options);
     write(pos, startTimestamp);
     nextOffset = pos;
@@ -342,16 +380,26 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
 
         writeBlock(nextOffset, nextOffset & blockMask);
 
+        outputStream->flush();
+        outputStream.clear();
+
         //Flush the data, after waiting for a little while (or until committed == offset)?
         if (optSummary)
         {
-            optSummary->filename.set(outputFilename);
+            if (corruptOutput)
+                optSummary->filename.set("Output deleted because it was corrupt");
+            else
+                optSummary->filename.set(outputFilename);
             optSummary->numEvents = numEvents;
             optSummary->totalSize = output->getStatistic(StSizeDiskWrite);
+            optSummary->rawSize = nextOffset;
         }
 
         output->close();
         output.clear();
+
+        if (corruptOutput)
+            outputFile->remove();
 
         isStopped = true;
     }
@@ -682,16 +730,24 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
-    //MORE: How does this know that other threads have written all their data???
-
     //MORE: Make this asynchronous - on a background thread.
-    //Could use the streaming interface and reuse those classes - possible a useful test case.
-    //MORE: Could also compress with LZ4 before writing - may well be faster than the disk write
     offset_t fileOffset = startOffset & ~blockMask;
-    assertex(fileOffset == nextWriteOffset);
 
-    size32_t blockOffset = nextWriteOffset & blockMask;
-    output->write(nextWriteOffset, size, (const byte *)buffer.get() + blockOffset);
+    //Internal consistency check which should never occur.  It can occur if blocking/discarding
+    //is not implemented and the compression takes too long (e.g. lz4hc)
+    if (fileOffset != nextWriteOffset)
+    {
+        OERRLOG("writeBlock: fileOffset %llu, nextWriteOffset %llu", fileOffset, nextWriteOffset);
+        //Avoid writing any more data to the output and delete when the recording is stopped
+        //aborting recording at this point is too complex
+        corruptOutput = true;
+    }
+
+    if (!corruptOutput)
+    {
+        size32_t blockOffset = nextWriteOffset & blockMask;
+        outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+    }
     nextWriteOffset += size;
 }
 
@@ -723,7 +779,6 @@ public:
         stream.setown(openEventFileForReading(*file));
         visitor.set(&_visitor);
 
-        readToken(version);
         //MORE: Need to handle multiple file versions
         if (version != currentVersion)
             throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", version, currentVersion);
@@ -740,12 +795,10 @@ private:
     bool traverseHeader()
     {
         __uint64 startTimestamp;
-        __uint64 fileSize = file->size();
 
         readToken(options);
         readToken(startTimestamp);
         return (visitor->visitFile(file->queryFilename(), version) &&
-            continuing(visitor->visitAttribute(EvAttrRecordedFileSize, fileSize)) &&
             continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, startTimestamp)) &&
             // Pass through information about which of the extra options are provided on each of the event records
             (!(options & ERFtraceid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "traceid"))) &&
@@ -985,6 +1038,28 @@ private:
             throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
         Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
         Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
+
+        char header[sizeof(magicHeader)];
+        bufferedStream->read(sizeof(header), header);
+        if (memcmp(header, magicHeader, sizeof(magicHeader)) != 0)
+            throw makeStringExceptionV(-1, "file '%s' is not an event file", file.queryFilename());
+
+        bufferedStream->read(sizeof(version), &version);
+        byte compressionType;
+        bufferedStream->read(sizeof(compressionType), &compressionType);
+
+        bytesRead += sizeof(header) + sizeof(version) + sizeof(compressionType);
+
+        if (compressionType != COMPRESS_METHOD_NONE)
+        {
+            ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+            const char *compressOptions = nullptr; // at least for now!
+            Owned<IExpander> expander = compressHandler->getExpander(compressOptions);
+
+            Owned<ISerialInputStream> decompressedStream = createDecompressingInputStream(bufferedStream, expander);
+            Owned<IBufferedSerialInputStream> bufferedDecompressedStream = createBufferedInputStream(decompressedStream, 0x100000, false);
+            return bufferedDecompressedStream.getClear();
+        }
         return bufferedStream.getClear();
     }
 };
