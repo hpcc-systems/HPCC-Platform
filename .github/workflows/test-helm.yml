@@ -15,7 +15,7 @@ on:
 jobs:
   pre_job:
      # continue-on-error: true # Uncomment once integration is finished
-     runs-on: ubuntu-20.04
+     runs-on: ubuntu-latest
      # Map a step output to a job output
      outputs:
        helm: ${{ steps.skip_check.outputs.helm }}
@@ -26,7 +26,7 @@ jobs:
            github_token: ${{ github.token }}
   build:
     name: "Check helm chart lint"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: pre_job
     if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.helm }}
     steps:

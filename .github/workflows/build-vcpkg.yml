@@ -145,14 +145,14 @@ jobs:
     with:
       os: 'ubuntu-22.04'
       asset-name: 'Documentation'
-    
+
   build-docker-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
     secrets: inherit
-
+    
   build-docker-rockylinux-8:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
