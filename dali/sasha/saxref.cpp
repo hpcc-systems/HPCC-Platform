@@ -2066,6 +2066,7 @@ int main(int argc, char* argv[])
 #endif
 
 
+constexpr float maxMemPercentage = 0.9; // In containerized, leave some headroom for the pod
 class CSashaXRefServer: public ISashaServer, public Thread
 {  
     bool stopped;
@@ -2205,6 +2206,7 @@ public:
                 }
                 else
                     maxMb = DEFAULT_MAXMEMORY;
+                maxMb *= maxMemPercentage;
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
