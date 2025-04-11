@@ -42,7 +42,7 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
             setData(fileBlooms.map(bloom => {
                 return {
                     ...bloom,
-                    FieldNames: bloom?.FieldNames?.Item[0] || "",
+                    FieldNames: bloom?.FieldNames?.Item.join(",") || "",
                 };
             }));
         }

@@ -300,6 +300,17 @@ int CEspHttpServer::processRequest()
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
 
+        // Set Content-Security-Policy header here to prevent frame injection
+        // before any of the handler functions are called that could return a
+        // page with a parameterized frame, such as legacy ECLWatch pages
+        // returned as files. Restrict src to the current host with a wildcard
+        // port to allow ws_ecl to be embedded in a frame when it is bound to
+        // a different port.
+        StringBuffer host;
+        m_request->getHost(host);
+        VStringBuffer frameSrc("frame-src %s:*", host.str());
+        m_response->setHeader("Content-Security-Policy", frameSrc.str());
+
         if (!stricmp(method.str(), GET_METHOD))
         {
             if (stype==sub_serv_root)
@@ -529,7 +540,6 @@ int CEspHttpServer::onGetApplicationFrame(CHttpRequest* request, CHttpResponse* 
                     return onGetFile(request, response, page);
             }
         }
-
         StringBuffer html;
         m_apport->getAppFrameHtml(modtime, inner, html, ctx);
         response->setContent(html.length(), html.str());
