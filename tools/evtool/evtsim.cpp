@@ -19,7 +19,7 @@
 #include "jevent.hpp"
 #include "jfile.hpp"
 #include "jptree.hpp"
-#include <iostream>
+#include "jstream.hpp"
 
 // The simulation command is included as an aid in the development and testing of evtool. It may
 // be impacted by changes to the event recording API. Authors of changes to that API are requiired
@@ -218,24 +218,26 @@ public:
         }
         catch (IException* e)
         {
-            StringBuffer msg;
+            StringBuffer msg("exception simulating event file: ");
             e->errorMessage(msg);
             e->Release();
-            std::cerr << msg.str() << std::endl;
+            msg.append('\n');
+            consoleErr().put(msg.length(), msg.str());
             return 1;
         }
     }
 
-    virtual void usage(int argc, const char* argv[], int pos, std::ostream& out) override
+    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         usagePrefix(argc, argv, pos, out);
-        out << "[options] <filename>" << std::endl << std::endl;
-        out << "Create a binary event file containing the events specified in an external" << std::endl;
-        out << "configuration file. The configuration may use either XML or YAML formats." << std::endl << std::endl;
-        out << "  -?, -h, --help  show this help message and exit" << std::endl;
-        out << "  <filename>      full path to an XML or YAML file containing simulated" << std::endl;
-        out << "                  events" << std::endl;
-        out << std::endl;
+        StringBuffer usage;
+        usage << "[options] <filename>" << "\n\n";
+        usage << "Create a binary event file containing the events specified in an external" << "\n";
+        usage << "configuration file. The configuration may use either XML or YAML formats." << "\n\n";
+        usage << "  -?, -h, --help  show this help message and exit" << "\n";
+        usage << "  <filename>      full path to an XML or YAML file containing simulated" << "\n";
+        usage << "                  events" << "\n";
+        out.put(usage.length(), usage.str());
     }
 
 protected:
