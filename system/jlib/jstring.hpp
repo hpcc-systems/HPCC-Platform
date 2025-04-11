@@ -71,6 +71,7 @@ public:
     StringBuffer &  append(const String & value);
     StringBuffer &  append(const IStringVal & value);
     StringBuffer &  append(const IStringVal * value);
+    StringBuffer &  append(const std::string & value) { return append(value.size(), value.c_str()); }
     StringBuffer &  appendN(size_t count, char fill);
     StringBuffer &  appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     StringBuffer &  appendLower(size_t len, const char * value);

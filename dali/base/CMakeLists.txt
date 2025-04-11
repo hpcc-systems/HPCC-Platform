@@ -37,7 +37,8 @@ set (    SRCS
          dameta.cpp
          danqs.cpp 
          dasds.cpp 
-         dasess.cpp 
+         dasess.cpp
+         dastats.cpp
          dasubs.cpp 
          dautils.cpp
          sysinfologger.cpp
@@ -55,6 +56,7 @@ set (    INCLUDES
          daqueue.hpp
          dasds.hpp
          dasess.hpp
+         dastats.hpp
          dasubs.hpp
          dautils.hpp
          sysinfologger.hpp
