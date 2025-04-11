@@ -1,6 +1,7 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
-import { CounterBadgeProps, CounterBadge } from "@fluentui/react-components";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Stack, Text, useTheme } from "@fluentui/react";
+import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox } from "@fluentui/react-components";
+import { WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
@@ -20,11 +21,21 @@ import { PasswordStatus, useMyAccount, useUserSession } from "../hooks/user";
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
+import { AppPanel } from "./AppPanel";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
+import { debounce } from "../util/throttle";
 
 const logger = scopedLogger("src-react/components/Title.tsx");
-import { AppPanel } from "./AppPanel";
+
+const NewTabButton: React.FunctionComponent<ButtonProps> = (props) => {
+    return <Button
+        {...props}
+        appearance="transparent"
+        icon={<WindowNewRegular />}
+        size="small"
+    />;
+};
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -53,6 +64,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState("");
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const { currentUser, isAdmin } = useMyAccount();
     const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
@@ -73,6 +85,24 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             setShowMyAccount(true);
         }, [])
     });
+
+    const onSearchKeyUp = debounce((evt) => {
+        if (evt.key === "Enter") {
+            if (!evt.target.value) return;
+            if (evt.ctrlKey) {
+                window.open(`#/search/${searchValue.trim()}`);
+            } else {
+                window.location.href = `#/search/${searchValue.trim()}`;
+            }
+        } else {
+            setSearchValue(evt.target.value);
+        }
+    }, 100);
+
+    const onSearchNewTabClick = React.useCallback(() => {
+        if (!searchValue) return;
+        window.open(`#/search/${searchValue.trim()}`);
+    }, [searchValue]);
 
     const titlebarColorSet = React.useMemo(() => {
         return titlebarColor && titlebarColor !== theme.palette.themeLight;
@@ -301,7 +331,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 </Stack>
             </Stack.Item>
             <Stack.Item align="center">
-                <SearchBox onSearch={newValue => { window.location.href = `#/search/${newValue.trim()}`; }} placeholder={nlsHPCC.PlaceholderFindText} styles={{ root: { minWidth: 320 } }} />
+                <SearchBox onKeyUp={onSearchKeyUp} contentAfter={<NewTabButton onClick={onSearchNewTabClick} />} placeholder={nlsHPCC.PlaceholderFindText} style={{ minWidth: 320 }} />
             </Stack.Item>
             <Stack.Item align="center" >
                 <Stack horizontal>

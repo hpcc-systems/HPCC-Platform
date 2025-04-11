@@ -24,7 +24,7 @@ on:
 
 jobs:
   pre_job:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     # Map a step output to a job output
     outputs:
       eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
@@ -47,7 +47,7 @@ jobs:
 
     needs: pre_job
     if: ${{ needs.pre_job.outputs.eclwatch && github.repository == 'hpcc-systems/HPCC-Platform' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository

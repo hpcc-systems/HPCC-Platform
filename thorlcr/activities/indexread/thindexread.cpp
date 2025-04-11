@@ -73,54 +73,71 @@ protected:
     }
     void prepareKey(IDistributedFile *index)
     {
-        IDistributedFile *f = index;
-        IDistributedSuperFile *super = f->querySuperFile();
+        IDistributedSuperFile *super = index->querySuperFile();
 
-        unsigned nparts = f->numParts(); // includes tlks if any, but unused in array
-        performPartLookup.ensureCapacity(nparts);
+        unsigned numParts = index->numParts();
+
+        if (!nofilter)
+        {
+            performPartLookup.ensureCapacity(numParts); // includes tlks if any, but will never be marked used
+            while (numParts--)
+                performPartLookup.append(false);
+        }
 
         bool checkTLKConsistency = (nullptr != super) && !localKey && (0 != (TIRsorted & indexBaseHelper->getFlags()));
-        if (nofilter)
-        {
-            while (nparts--) performPartLookup.append(true);
-            if (!checkTLKConsistency) return;
-        }
-        else
-        {
-            while (nparts--) performPartLookup.append(false); // parts to perform lookup set later
-        }
-
+        unsigned width = 0;
+        bool hasTLK = false;
+        unsigned tlkCrc = 0;
+        bool first = true;
+        unsigned superSubIndex=0;
+        bool fileCrc = false, rowCrc = false;
         Owned<IDistributedFileIterator> iter;
+        IDistributedFile *f = index;
         if (super)
         {
             iter.setown(super->getSubFileIterator(true));
             verifyex(iter->first());
             f = &iter->query();
         }
-        unsigned width = f->numParts();
-        if (!localKey)
-            --width;
-        assertex(width);
-        unsigned tlkCrc = 0;
-        bool first = true;
-        unsigned superSubIndex=0;
-        bool fileCrc = false, rowCrc = false;
+        unsigned numSubFiles = super ? super->numSubFiles(true) : 1;
         for (;;)
         {
-            Owned<IDistributedFilePart> part = f->getPart(width);
+            unsigned thisWidth = f->numParts();
+            Owned<IDistributedFilePart> lastPart = f->getPart(thisWidth-1);
+
+            // there are assumptions litered through the code, that indexes always have a TLK
+
+            bool thisHasTLK = false;
+            if (thisWidth > 1)
+            {
+                thisHasTLK = isPartTLK(lastPart->queryAttributes());
+                if (!thisHasTLK)
+                    verifyex(localKey); // only very old distributed local keys have no TLK
+            }
+            if (first)
+            {
+                hasTLK = thisHasTLK;
+                width = thisWidth;
+                if (!hasTLK)
+                    checkTLKConsistency = false;
+            }
+            else if (width != thisWidth)
+                throw MakeActivityException(this, 0, "Unsupported: Super key '%s' contains subfiles with differing numbers of file parts.", f->queryLogicalName());
+            else if (hasTLK != thisHasTLK)
+                throw MakeActivityException(this, 0, "Unsupported: Super key '%s' contains a mixture of subfiles, some with TLKs, some without", f->queryLogicalName());
             if (checkTLKConsistency)
             {
                 unsigned _tlkCrc;
-                if (part->getCrc(_tlkCrc))
+                if (lastPart->getCrc(_tlkCrc))
                     fileCrc = true;
-                else if (part->queryAttributes().hasProp("@crc")) // NB: key "@crc" is not a crc on the file, but data within.
+                else if (lastPart->queryAttributes().hasProp("@crc")) // NB: key "@crc" is not a crc on the file, but data within.
                 {
-                    _tlkCrc = part->queryAttributes().getPropInt("@crc");
+                    _tlkCrc = lastPart->queryAttributes().getPropInt("@crc");
                     rowCrc = true;
                 }
-                else if (part->queryAttributes().hasProp("@tlkCrc")) // backward compat.
+                else if (lastPart->queryAttributes().hasProp("@tlkCrc")) // backward compat.
                 {
-                    _tlkCrc = part->queryAttributes().getPropInt("@tlkCrc");
+                    _tlkCrc = lastPart->queryAttributes().getPropInt("@tlkCrc");
                     rowCrc = true;
                 }
                 else
@@ -141,28 +158,27 @@ protected:
                 if (checkTLKConsistency)
                 {
                     if (first)
-                    {
                         tlkCrc = _tlkCrc;
-                        first = false;
-                    }
                     else if (tlkCrc != _tlkCrc)
                         throw MakeActivityException(this, 0, "Sorted output on super files comprising of non copartitioned sub keys is not supported (TLK's do not match)");
                 }
             }
+            if (hasTLK)
+                thisWidth--;
             if (!nofilter)
             {
                 Owned<IKeyIndex> keyIndex;
                 unsigned copy;
-                for (copy=0; copy<part->numCopies(); copy++)
+                for (copy=0; copy<lastPart->numCopies(); copy++)
                 {
                     RemoteFilename rfn;
-                    OwnedIFile ifile = createIFile(part->getFilename(rfn,copy));
+                    OwnedIFile ifile = createIFile(lastPart->getFilename(rfn,copy));
                     if (ifile->exists())
                     {
                         StringBuffer remotePath;
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
-                        part->getCrc(crc);
+                        lastPart->getCrc(crc);
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, 0));
                         break;
                     }
@@ -176,32 +192,31 @@ protected:
                 tlk->reset();
                 if (partitionKey)
                 {
-                    unsigned slavePart = tlk->getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
-                    if (slavePart)
-                        performPartLookup.replace(true, slavePart-1);
+                    unsigned part = tlk->getPartition(); // Returns 0 if no partition info, or filter cannot be partitioned
+                    if (part)
+                        performPartLookup.replace(true, (aindex_t)(numSubFiles*(part-1)+superSubIndex));
                     else
                     {
                         // if not partitionable filter, all parts need to be used
-                        for (unsigned p=0; p<f->numParts(); p++)
-                            performPartLookup.replace(true, p);
+                        for (unsigned p=0; p<thisWidth; p++)
+                            performPartLookup.replace(true, numSubFiles*p+superSubIndex);
                     }
                 }
                 else
                 {
                     while (tlk->lookup(false))
                     {
-                        offset_t node = extractFpos(tlk);
-                        if (node)
-                            performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(node-1)+superSubIndex:node-1));
+                        offset_t part = extractFpos(tlk);
+                        if (part)
+                            performPartLookup.replace(true, (aindex_t)(numSubFiles*(part-1)+superSubIndex));
                     }
                 }
             }
             if (!super||!iter->next())
                 break;
+            first = false;
             superSubIndex++;
             f = &iter->query();
-            if (width != f->numParts()-1)
-                throw MakeActivityException(this, 0, "Unsupported: Super key '%s' contains subfiles with differing numbers of file parts.", f->queryLogicalName());
         }
     }
 

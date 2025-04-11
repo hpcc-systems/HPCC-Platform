@@ -2940,7 +2940,6 @@ void CMasterGraph::sendGraph()
 
 bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
-    GraphPrintLog("Processing graph");
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
