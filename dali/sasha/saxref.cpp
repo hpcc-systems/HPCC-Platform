@@ -693,6 +693,7 @@ public:
     Owned<IUserDescriptor> udesc;
     Linked<IPropertyTree> storagePlane;
     bool isPlaneStriped = false;
+    unsigned numDevices = 1;
 
     CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
         : mem(0x100000*((memsize_t)maxMb),0x10000,true)
@@ -716,7 +717,8 @@ public:
         if (plane)
         {
             storagePlane.set(plane);
-            isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (storagePlane->getPropInt("@numDevices")>1);
+            numDevices = storagePlane->getPropInt("@numDevices", 1);
+            isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
         }
     }
 
@@ -1307,7 +1309,6 @@ public:
         unsigned ndone[2];
         ndone[0] = 0;
         ndone[1] = 0;
-        unsigned numDevices = storagePlane->hasProp("@HostGroup") ? 1 : storagePlane->getPropInt("@numDevices", 1);
         unsigned fnameHash = getFilenameHash(scopeBuf.str());
         const char * prefix = storagePlane->queryProp("@prefix");
         for (drv=0;drv<drvs;drv++) {
