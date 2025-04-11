@@ -1005,6 +1005,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(LargestExpandedLeaf), "The size of the largest leaf node when expanded in memory"},
     { TIMESTAT(Delayed), "Time spent waiting for minimum query execution period" },
     { CYCLESTAT(Delayed) },
+    { TIMESTAT(PostMortemCapture), "The time taken for post mortem capture" },
+    { CYCLESTAT(PostMortemCapture) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

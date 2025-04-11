@@ -193,7 +193,7 @@ public:
     void saveSpills();
     bool go();
     void pause(bool abort);
-    void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc);
+    void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc, unsigned debugInfoWorkerTimeoutMs);
     void captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags);
     void setCurrentSubGraphId(graph_id _subGraphId) { currentSubGraphId = _subGraphId; }
     graph_id queryCurrentSubGraphId() const { return currentSubGraphId; }

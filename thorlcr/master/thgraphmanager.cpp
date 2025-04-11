@@ -108,6 +108,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
+    std::atomic<int> postMortemCaptureInProgress{0};
+
     class CPodInfo
     {
         unsigned wfid = 0;
@@ -257,7 +259,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                     mb.read(row);
                     response.append(row);
                 };
-                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc);
+                constexpr unsigned maxTimeMs = 30000; // should be more than enough
+                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc, maxTimeMs);
                 response.append("</print>");
             }
             else if (strieq(command, "quit"))
@@ -355,8 +358,8 @@ public:
     virtual void addCachedSo(const char *name);
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
     virtual void setExceptionCtx(IThorException *e);
+    virtual void deltaPostmortemInProgress(int v);
 };
-
 
 // CJobManager impl.
 
@@ -409,6 +412,24 @@ void CJobManager::fatal(IException *e)
 {
     try
     {
+        // crude mechanism to wait if post-mortem capture if it is in progress (it shouldn't be, but want to know if it is and wait a short while)
+        CTimeMon tm(30000);
+        if (postMortemCaptureInProgress)
+        {
+            PROGLOG("Waiting for post-mortem capture to complete");
+            while (true)
+            {
+                MilliSleep(5000);
+                if (0 == postMortemCaptureInProgress)
+                    break;
+                else if (tm.timedout())
+                {
+                    PROGLOG("Timed out waiting for post-mortem capture to complete. Continuing to terminate");
+                    break;
+                }
+            }
+        }
+
         IArrayOf<CJobMaster> jobList;
         {
             CriticalBlock b(jobCrit);
@@ -467,6 +488,11 @@ void CJobManager::setExceptionCtx(IThorException *e)
     e->setGraphInfo(job->queryGraphName(), job->queryCurrentSubGraphId());
 }
 
+void CJobManager::deltaPostmortemInProgress(int v)
+{
+    postMortemCaptureInProgress += v;
+    assertex(postMortemCaptureInProgress >= 0);
+}
 
 
 #define IDLE_RESTART_PERIOD (8*60) // 8 hours
