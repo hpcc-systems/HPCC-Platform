@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: "Check eclhelper interface"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout pr
         uses: actions/checkout@v4
