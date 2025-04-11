@@ -18,6 +18,7 @@ interface BlobImportFormValues {
     destLogicalName: string;
     selectedFiles?: {
         TargetName: string,
+        NumParts: string,
         SourceFile: string,
         SourcePlane: string,
         SourceIP: string
@@ -93,6 +94,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     request["sourcePlane"] = file.SourcePlane;
                     request["sourcePath"] = file.SourceFile;
                     request["fullPath"] = file.SourceFile;
+                    request["destNumParts"] = file.NumParts;
                     requests.push(FileSpray.SprayFixed({
                         request: request
                     }));
@@ -148,6 +150,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
             selection.forEach((file: { [id: string]: any }, idx) => {
                 newValues.selectedFiles[idx] = {
                     TargetName: "",
+                    NumParts: "",
                     SourceFile: file["fullPath"],
                     SourcePlane: file?.DropZone?.Name ?? "",
                     SourceIP: file["NetAddress"]
@@ -230,6 +233,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                 <thead>
                     <tr>
                         <th>{nlsHPCC.SourcePath}</th>
+                        <th>{nlsHPCC.NumberofParts}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -252,6 +256,26 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                                         pattern: {
                                             value: /^(?:[\/\\]?[-a-z0-9\*_]+[\/\\])+([-a-z0-9 \*_\.]+)$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
+                                        }
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <Controller
+                                    control={control} name={`selectedFiles.${idx}.NumParts` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        pattern: {
+                                            value: /^[0-9]+$/i,
+                                            message: nlsHPCC.ValidationErrorEnterNumber
                                         }
                                     }}
                                 />

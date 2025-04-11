@@ -36,6 +36,7 @@ jobs:
       community_tag: ${{ steps.vars.outputs.community_tag }}
       internal_tag: ${{ steps.vars.outputs.internal_tag }}
       hpcc_version: ${{ steps.vars.outputs.hpcc_version }}
+      hpcc_version_full: ${{ steps.vars.outputs.hpcc_version_full }}
       candidate_base_branch: ${{ steps.vars.outputs.candidate_base_branch }}
       candidate_branch: ${{ steps.vars.outputs.candidate_branch }}
       cmake_docker_config: ${{ steps.vars.outputs.cmake_docker_config }}
@@ -72,6 +73,7 @@ jobs:
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           echo "hpcc_version=$(echo $community_tag | sed 's/community_//' | sed 's/-[0-9]$//')" >> $GITHUB_OUTPUT
+          echo "hpcc_version_full=$(echo $community_tag | sed 's/community_//')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
           candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
           echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
@@ -109,6 +111,7 @@ jobs:
           - os: ubuntu-22.04
             name: k8s
             container: true
+            build-docker-image: true
           - os: ubuntu-20.04
           - os: ubuntu-20.04
             name: k8s
@@ -230,7 +233,7 @@ jobs:
             type=registry,ref=${{ steps.vars.outputs.docker_tag }}
           cache-to: type=inline
 
-      # Communtiy Build
+      # Community Build
       - name: CMake Packages (community)
         if: ${{ !matrix.ln && !matrix.ee && !matrix.container }}
         run: |
@@ -280,7 +283,7 @@ jobs:
             ${{ needs.preamble.outputs.folder_build }}/*.md5sum
 
       - name: Locate k8s deb file (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.build-docker-image}}
         id: container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -290,7 +293,7 @@ jobs:
 
       - name: Create Docker Image (community)
         uses: docker/build-push-action@v5
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.build-docker-image }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -376,7 +379,7 @@ jobs:
           done
 
       - name: Locate k8s deb file (internal)
-        if: ${{ matrix.ln && matrix.container }}
+        if: ${{ matrix.ln && matrix.build-docker-image}}
         id: ln-container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -386,7 +389,7 @@ jobs:
 
       - name: Create Docker Image (internal)
         uses: docker/build-push-action@v5
-        if: ${{ matrix.ln && matrix.container }}
+        if: ${{ matrix.ln && matrix.build-docker-image }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -401,7 +404,7 @@ jobs:
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       - name: JFrog Docker Push and Publish
-        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
+        if: ${{ matrix.ln && matrix.build-docker-image && github.repository_owner == 'hpcc-systems' }}
         run: |
           jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
@@ -487,108 +490,9 @@ jobs:
     secrets: inherit
 
   changelogs:
-    name: Generate Changelogs
     needs: preamble
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_platform }}
-          fetch-tags: true
-          fetch-depth: 0
-      - name: Checkout LN
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ needs.preamble.outputs.internal_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_ln }}
-          fetch-tags: true
-          fetch-depth: 0
-      - name: Checkout ECLIDE
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/ECLIDE
-          ref: ${{ needs.preamble.outputs.eclide_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_eclide }}
-          fetch-tags: true
-          fetch-depth: 0
-      - name: Checkout PrettyGitLogs
-        uses: actions/checkout@v4
-        with:
-          repository: hpcc-systems/PrettyGitLogs
-          ref: master
-          path: ${{ needs.preamble.outputs.folder_prettygitlogs }}
-      - name: Get Previous Versions
-        id: get_version
-        shell: bash
-        working-directory: ${{ needs.preamble.outputs.folder_platform }}
-        run: |
-          tag=$(git describe --exact-match --tags 2>/dev/null)
-          version=$(echo $tag | cut -d_ -f2)
-          major=$(echo $version | cut -d. -f1)
-          minor=$(echo $version | cut -d. -f2)
-          point=$(echo $version | cut -d. -f3 | cut -d- -f1)
-          type=$(echo $version | cut -d- -f2)
-          if [[ $point -eq 0 ]]; then
-            if [[ $minor -eq 0 ]]; then
-              major=$((major - 1))
-              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
-              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
-            else
-              minor=$((minor - 2))
-              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
-              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
-            fi
-          else
-            point=$((point - 2))
-            previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-rc" | head -n 1 | cut -d_ -f2 )
-            previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]" | head -n 1 | cut -d_ -f2)
-          fi
-          echo "current_version=$version" >> $GITHUB_OUTPUT
-          echo "previous_rc_version=$previous_rc" >> $GITHUB_OUTPUT
-          echo "previous_gold_version=$previous_gold" >> $GITHUB_OUTPUT
-          echo "type=$type" >> $GITHUB_OUTPUT
-      - name: Print vars
-        run: |
-          echo "${{ toJSON(steps.get_version.outputs) }}"
-      - name: Generate Changelogs
-        shell: bash
-        working-directory: ${{ needs.preamble.outputs.folder_prettygitlogs }}
-        run: |
-          # run setup for perl environment
-          ./prettyLogs_setup.sh
+    uses: ./.github/workflows/build-changelogs.yml
+    with:
+      current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
+    secrets: inherit
 
-          # provide credentials
-          sed -i -e '/^JIRAUser/c\JIRAUser=${{ secrets.JIRA_USERNAME}}' prettylogs.conf
-          sed -i -e '/^JIRAPW/c\JIRAPW=${{ secrets.JIRA_TOKEN }}' prettylogs.conf
- 
-          # Generate Changelogs
-          if [[ ! "${{ steps.get_version.outputs.type }}" == *"rc"* ]]; then
-            perl ./prettyLogs.pl -bt community_${{ steps.get_version.outputs.current_version }} -et community_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_platform }} -sort -html community_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt internal_${{ steps.get_version.outputs.current_version }} -et internal_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_ln }} -sort -html internal_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt eclide_${{ steps.get_version.outputs.current_version }} -et eclide_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_eclide }} -sort -html eclide_${{ steps.get_version.outputs.current_version }}
-          elif [ "${{ steps.get_version.outputs.type }}" == "rc1" ]; then
-            perl ./prettyLogs.pl -bt community_${{ steps.get_version.outputs.current_version }} -et community_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_platform }} -sort -html community_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt internal_${{ steps.get_version.outputs.current_version }} -et internal_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_ln }} -sort -html internal_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt eclide_${{ steps.get_version.outputs.current_version }} -et eclide_${{ steps.get_version.outputs.previous_gold_version }} -repo ${{ needs.preamble.outputs.folder_eclide }} -sort -html eclide_${{ steps.get_version.outputs.current_version }}
-          else
-            perl ./prettyLogs.pl -bt community_${{ steps.get_version.outputs.current_version }} -et community_${{ steps.get_version.outputs.previous_rc_version }} -repo ${{ needs.preamble.outputs.folder_platform }} -sort -html community_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt internal_${{ steps.get_version.outputs.current_version }} -et internal_${{ steps.get_version.outputs.previous_rc_version }} -repo ${{ needs.preamble.outputs.folder_ln }} -sort -html internal_${{ steps.get_version.outputs.current_version }}
-            perl ./prettyLogs.pl -bt eclide_${{ steps.get_version.outputs.current_version }} -et eclide_${{ steps.get_version.outputs.previous_rc_version }} -repo ${{ needs.preamble.outputs.folder_eclide }} -sort -html eclide_${{ steps.get_version.outputs.current_version }}
-          fi
-      - name: Upload Changelogs
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: |
-            ${{ needs.preamble.outputs.folder_prettygitlogs }}/community_${{ steps.get_version.outputs.current_version }}.html
-            ${{ needs.preamble.outputs.folder_prettygitlogs }}/internal_${{ steps.get_version.outputs.current_version }}.html
-            ${{ needs.preamble.outputs.folder_prettygitlogs }}/eclide_${{ steps.get_version.outputs.current_version }}.html

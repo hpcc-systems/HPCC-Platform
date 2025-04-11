@@ -108,6 +108,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
+    std::atomic<int> postMortemCaptureInProgress{0};
+
     class CPodInfo
     {
         unsigned wfid = 0;
@@ -257,7 +259,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                     mb.read(row);
                     response.append(row);
                 };
-                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc);
+                constexpr unsigned maxTimeMs = 30000; // should be more than enough
+                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc, maxTimeMs);
                 response.append("</print>");
             }
             else if (strieq(command, "quit"))
@@ -354,8 +357,9 @@ public:
     virtual void fatal(IException *e);
     virtual void addCachedSo(const char *name);
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
+    virtual void setExceptionCtx(IThorException *e);
+    virtual void deltaPostmortemInProgress(int v);
 };
-
 
 // CJobManager impl.
 
@@ -408,6 +412,24 @@ void CJobManager::fatal(IException *e)
 {
     try
     {
+        // crude mechanism to wait if post-mortem capture if it is in progress (it shouldn't be, but want to know if it is and wait a short while)
+        CTimeMon tm(30000);
+        if (postMortemCaptureInProgress)
+        {
+            PROGLOG("Waiting for post-mortem capture to complete");
+            while (true)
+            {
+                MilliSleep(5000);
+                if (0 == postMortemCaptureInProgress)
+                    break;
+                else if (tm.timedout())
+                {
+                    PROGLOG("Timed out waiting for post-mortem capture to complete. Continuing to terminate");
+                    break;
+                }
+            }
+        }
+
         IArrayOf<CJobMaster> jobList;
         {
             CriticalBlock b(jobCrit);
@@ -456,6 +478,21 @@ void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
 #endif
 }
 
+void CJobManager::setExceptionCtx(IThorException *e)
+{
+    if (nullptr != e->queryGraphName()) // already set
+        return;
+    Owned<CJobMaster> job = getCurrentJob();
+    if (!job)
+        return;
+    e->setGraphInfo(job->queryGraphName(), job->queryCurrentSubGraphId());
+}
+
+void CJobManager::deltaPostmortemInProgress(int v)
+{
+    postMortemCaptureInProgress += v;
+    assertex(postMortemCaptureInProgress >= 0);
+}
 
 
 #define IDLE_RESTART_PERIOD (8*60) // 8 hours
@@ -470,7 +507,10 @@ public:
     virtual void threadmain() override
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
-            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
+        {
+            Owned<IThorException> te = MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000);
+            abortThor(te, TEC_Idle, false);
+        }
     }
     void stop() { sem.signal(); }
 };
@@ -1121,17 +1161,20 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
     if (-1 == queryExitCode()) setExitCode(errCode);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
-    Owned<IException> _e;
+    Owned<IThorException> te;
     if (0 == aborting)
     {
         aborting = 1;
         if (errCode != TEC_Clean)
         {
-            if (!e)
-            {
-                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
-                e = _e;
-            }
+            if (e)
+                te.setown(MakeThorException(e));
+            else
+                te.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+            Owned<IJobManager> mgr = getJobManager();
+            if (mgr)
+                mgr->setExceptionCtx(te);
+            e = te;
             DBGLOG(e, "abortThor");
         }
         DBGLOG("abortThor called");
@@ -1151,8 +1194,8 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         {
             if (!e)
             {
-                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
-                e = _e;
+                te.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+                e = te;
             }
             jM->fireException(e);
         }
@@ -1183,7 +1226,8 @@ public:
             if (stopped) break;
             if (!verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
             {
-                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"), TEC_DaliDown);
+                Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor");
+                abortThor(te, TEC_DaliDown);
                 break;
             }
         }
@@ -1221,13 +1265,13 @@ void closeThorServerStatus()
  *  0 = unrecognised format, or wuid mismatch
  *  1 = success. new graph/wuid received.
  */
-static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &retWfid, StringBuffer &retWuid, StringBuffer &retGraphName)
+static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &retWfid, StringBuffer &retWuid, StringBuffer &retGraphName, unsigned __int64 priority)
 {
     StringBuffer next;
     CMessageBuffer msg;
     if (thorQueue)
     {
-        Owned<IJobQueueItem> item = thorQueue->dequeue(timeoutMs);
+        Owned<IJobQueueItem> item = thorQueue->dequeuePriority(priority, timeoutMs);
         if (!item)
             return -1;
         next.set(item->queryWUID());
@@ -1353,6 +1397,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
+        bool disableQueuePriority = getComponentConfigSP()->getPropBool("expert/@disableQueuePriority");
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
@@ -1363,7 +1408,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
                 dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
                 bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
-                VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
                 StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false
 
                 // NB: in k8s a Thor instance is explicitly started to run a specific wuid/graph
@@ -1372,12 +1416,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                 if (multiJobLinger)
                 {
-                    StringBuffer thorQueueName;
-                    getClusterThorQueueName(thorQueueName, globals->queryProp("@name"));
-                    StringBuffer queueNames(thorQueueName);
-                    queueNames.append(",");
-                    getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
-
+                    StringBuffer queueNames;
+                    getClusterThorQueueName(queueNames, globals->queryProp("@name"));
+                    if (disableQueuePriority)
+                    {
+                        queueNames.append(",");
+                        getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
+                    }
                     PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
                     thorQueue.setown(createJobQueue(queueNames));
                     thorQueue->connect(false);
@@ -1524,11 +1569,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
                     PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
+
                     StringBuffer nextJob;
                     do
                     {
                         StringBuffer wuid;
-                        int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName);
+                        unsigned __int64 priority = disableQueuePriority ? 0 : getTimeStampNowValue();
+                        int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName, priority);
                         if (ret > 0)
                         {
                             currentWuid.set(wuid); // NB: will always be same if !multiJobLinger

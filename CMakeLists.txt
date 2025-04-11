@@ -249,7 +249,7 @@ if ( WIN32 )
             install ( PROGRAMS ${MSVC_REDIST} DESTINATION tmp )
             get_filename_component(MSVC_REDIST_NAME ${MSVC_REDIST} NAME)
             list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
-                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC_REDIST_NAME} /S'
+                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC_REDIST_NAME} /quiet /norestart'
             ")
         else ()
             MESSAGE(FATAL_ERROR "-- Unable to locate vcredist_${CMAKE_MSVC_ARCH}.exe")

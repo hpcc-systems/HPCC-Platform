@@ -173,6 +173,7 @@ class graphmaster_decl CJobMaster : public CJobBase
     Owned<CSlaveMessageHandler> slaveMsgHandler;
     SocketEndpoint agentEp;
     CriticalSection sendQueryCrit, spillCrit;
+    graph_id currentSubGraphId = 0;
 
     void initNodeDUCache();
 
@@ -192,8 +193,10 @@ public:
     void saveSpills();
     bool go();
     void pause(bool abort);
-    void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc);
+    void issueWorkerDebugCmd(const char *rawText, unsigned workerNum, std::function<void(unsigned, MemoryBuffer &mb)> responseFunc, unsigned debugInfoWorkerTimeoutMs);
     void captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags);
+    void setCurrentSubGraphId(graph_id _subGraphId) { currentSubGraphId = _subGraphId; }
+    graph_id queryCurrentSubGraphId() const { return currentSubGraphId; }
 
     virtual IConstWorkUnit &queryWorkUnit() const
     {

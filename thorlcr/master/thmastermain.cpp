@@ -250,7 +250,8 @@ public:
         --workersRegistered;
         if (watchdog)
             watchdog->removeWorker(ep);
-        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str()), TEC_WorkerInit);
+        Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str());
+        abortThor(te, TEC_WorkerInit);
     }
     void registerNode(unsigned worker)
     {

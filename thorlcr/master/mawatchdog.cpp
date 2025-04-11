@@ -154,7 +154,11 @@ void CMasterWatchdog::checkMachineStatus()
             StringBuffer epstr;
             mstate->ep.getEndpointHostText(epstr);
             if (mstate->markdead)
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost contact with Thor worker: %s (Process terminated or node down?)", epstr.str()), TEC_Watchdog);
+            {
+                Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "Watchdog has lost contact with Thor worker: %s (Process terminated or node down?)", epstr.str());
+                te->setSlave(mstate->workerNum+1);
+                abortThor(te, TEC_Watchdog);
+            }
             else
             {
                 mstate->markdead = true;
@@ -269,7 +273,9 @@ void CMasterWatchdog::threadmain()
                     if (ms)
                         worker = ms->workerNum;
                 }
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor worker %u [%s] (Process terminated or node down?)", worker+1, epStr.str()), TEC_Watchdog);
+                Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor worker %u [%s] (Process terminated or node down?)", worker+1, epStr.str());
+                te->setSlave(worker+1);
+                abortThor(te, TEC_Watchdog);
             }
         }
         catch (IException *e)

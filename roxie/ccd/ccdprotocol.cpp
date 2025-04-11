@@ -123,7 +123,8 @@ public:
     virtual void start() override
     {
         // Note we allow a few additional threads than requested - these are the threads that return "Too many active queries" responses
-        pool.setown(createThreadPool("RoxieSocketWorkerPool", this, false, nullptr, sink->getPoolSize()+5, INFINITE));
+        // and reduce start delay
+        pool.setown(createThreadPool("RoxieSocketWorkerPool", this, false, nullptr, sink->getPoolSize()+5, 1));
         assertex(!running);
         Thread::start(false);
         started.wait();
