@@ -480,7 +480,6 @@ public:
         ClusterPartDiskMapSpec mspec;
         Owned<IGroup> grp = createIGroup("10.150.10.1-3");
         RemoteFilename rfn;
-        IStoragePlane *plane = getDataStoragePlane("mystorageplane", true);
         for (unsigned i=0;i<3;i++)
             for (unsigned ic=0;ic<mspec.defaultCopies;ic++)
             {
