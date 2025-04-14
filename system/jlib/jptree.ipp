@@ -24,7 +24,7 @@
 #include "jhash.hpp"
 #include "jmutex.hpp"
 #include "jsuperhash.hpp"
-
+#include "jlzw.hpp"
 
 #include "jptree.hpp"
 #include "jbuff.hpp"
@@ -156,12 +156,13 @@ interface IPTArrayValue
     virtual size32_t queryValueRawSize() const = 0;
     virtual unsigned find(const IPropertyTree *search) const = 0;
     virtual IPropertyTree **getRawArray() const = 0;
+    virtual CompressionMethod getCompressionType() const = 0;
 
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
 
-class CPTArray : implements IPTArrayValue, private IArray
+class CPTArray final : implements IPTArrayValue, private IArray
 {
     std::atomic<CQualifierMap *> map{nullptr};
 public:
@@ -170,6 +171,7 @@ public:
     virtual CQualifierMap *queryMap() override { return map.load(); }
     virtual CQualifierMap *setMap(CQualifierMap *_map) override;
     virtual bool isCompressed() const override { return false; }
+    virtual CompressionMethod getCompressionType() const override { return COMPRESS_METHOD_NONE; }
     virtual const void *queryValue() const override { UNIMPLEMENTED; }
     virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const override { UNIMPLEMENTED; }
     virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const override { UNIMPLEMENTED; }
@@ -192,19 +194,20 @@ public:
 };
 
 
-class jlib_decl CPTValue : implements IPTArrayValue, private MemoryAttr
+class jlib_decl CPTValue final : implements IPTArrayValue, private MemoryAttr
 {
 public:
     CPTValue(MemoryBuffer &src)
     { 
         deserialize(src); 
     }
-    CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, bool compressed=false);
+    CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, CompressionMethod _compressType = COMPRESS_METHOD_NONE);
 
     virtual bool isArray() const override { return false; }
     virtual CQualifierMap *queryMap() override { return nullptr; }
     virtual CQualifierMap *setMap(CQualifierMap *_map) { UNIMPLEMENTED; }
-    virtual bool isCompressed() const override { return compressed; }
+    virtual bool isCompressed() const override { return compressType != COMPRESS_METHOD_NONE; }
+    virtual CompressionMethod getCompressionType() const override { assertex(compressType != COMPRESS_METHOD_LZWLEGACY); return (CompressionMethod)compressType; }
     virtual const void *queryValue() const override;
     virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const override;
     virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const override;
@@ -219,12 +222,13 @@ public:
     virtual unsigned find(const IPropertyTree *search) const override { throwUnexpected(); }
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
 
+
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
 private:
-    mutable bool compressed;
+    mutable byte compressType;
 };
 
 #define IptFlagTst(fs, f) (0!=(fs&(f)))
@@ -659,6 +663,7 @@ public:
     virtual bool hasProp(const char * xpath) const override;
     virtual bool isBinary(const char *xpath=NULL) const override;
     virtual bool isCompressed(const char *xpath=NULL) const override;
+    virtual CompressionMethod getCompressionType() const override;
     virtual bool renameProp(const char *xpath, const char *newName) override;
     virtual bool renameTree(IPropertyTree *tree, const char *newName) override;
     virtual const char *queryProp(const char *xpath) const override;

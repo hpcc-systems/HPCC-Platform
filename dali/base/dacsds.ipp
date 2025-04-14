@@ -352,6 +352,7 @@ public:
     virtual bool removeTree(IPropertyTree *child) override;
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override;
     virtual bool isCompressed(const char *xpath=NULL) const override;
+    virtual CompressionMethod getCompressionType() const override;
     virtual bool getProp(const char *xpath, StringBuffer &ret) const override;
     virtual const char *queryProp(const char * xpath) const override;
     virtual bool getPropBool(const char *xpath, bool dft=false) const override;
