@@ -21,6 +21,7 @@
     "@directory",
     "@dllname",
     "@eclVersion",
+    "@endTime",
     "@enqueuedt",
     "@expireDays",
     "@fetchEntire",
@@ -41,6 +42,7 @@
     "@keyedSize",
     "@leafMemorySize"
     "@libCount",
+    "@local",
     "@localValue",
     "@mapFlags",
     "@maxActivity",
@@ -76,6 +78,7 @@
     "@severity",
     "@size",
     "@source",
+    "@startTime",
     "@stateEx",
     "@status",
     "@submitID",
