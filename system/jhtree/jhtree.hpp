@@ -51,7 +51,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual unsigned __int64 getSequence() = 0;
     virtual offset_t getFPos() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
-    virtual void reset() = 0;
+    virtual void reset(IContextLogger *ctx) = 0;
     virtual bool lookup(bool exact, IContextLogger *ctx) = 0;
     virtual bool next(IContextLogger *ctx) = 0;
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx) = 0;

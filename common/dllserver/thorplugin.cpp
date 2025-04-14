@@ -36,6 +36,8 @@
 
 #include "thorplugin.hpp"
 
+static constexpr CompressionMethod defaultResourceCompression = COMPRESS_METHOD_LZW;
+
 void * SimplePluginCtx::ctxMalloc(size_t size)
 { 
     return rtlMalloc(size); 
@@ -690,7 +692,7 @@ extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, Str
 extern DLLSERVER_API void appendResource(MemoryBuffer & mb, size32_t len, const void *data, bool compress)
 {
     mb.append((byte)0x80).append(resourceHeaderVersion);
-    compressToBuffer(mb, len, data, compress ? COMPRESS_METHOD_LZW : COMPRESS_METHOD_NONE);
+    compressToBuffer(mb, len, data, compress ? defaultResourceCompression : COMPRESS_METHOD_NONE);
 }
 
 extern DLLSERVER_API void compressResource(MemoryBuffer & compressed, size32_t len, const void *data)

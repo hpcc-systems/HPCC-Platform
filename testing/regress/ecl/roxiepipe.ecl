@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 //nohthor
 
 string TargetIP := '.' : stored('TargetIP');

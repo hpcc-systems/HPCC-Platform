@@ -113,7 +113,7 @@ public:
      */
     IndexBloomFilter(unsigned numHashes, unsigned tableSize, byte *table, __uint64 fields);
     inline __int64 queryFields() const { return fields; }
-    bool reject(const IIndexFilterList &filters) const;
+    bool reject(const IIndexFilterList &filters, bool & isValidBloom) const;
     static int compare(CInterface *const *a, CInterface *const *b);
 private:
     const __uint64 fields;
