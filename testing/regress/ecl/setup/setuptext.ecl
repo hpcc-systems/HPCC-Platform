@@ -444,7 +444,7 @@ doCreateSimpleIndex(boolean useLocal, boolean useTranslation) := FUNCTION
                 BUILD(distributedWords, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(),
                         OVERWRITE, NOROOT, COMPRESSED(row)),
                 BUILD(normalizedInversion, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(),
-                        OVERWRITE, COMPRESSED(row))
+                        OVERWRITE, COMPRESSED(row),BLOOM(kind, word))
             )
         );
         //Add a column mapping, testing done L->R, multiple transforms, and that parameters work
