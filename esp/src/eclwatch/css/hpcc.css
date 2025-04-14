@@ -280,12 +280,12 @@ h2 img:first-of-type {
 }
 
 .flat .dgrid-row-table th.dgrid-cell {
-    border-right: 1px solid var(--colorNeutralBackground5);
+    border-right: 1px solid var(--colorNeutralBackground5, #ddd);
 }
 
 .flat .dgrid-row-table td.dgrid-cell {
     border-width: 0 1px 1px 0;
-    border-color: var(--colorNeutralBackground5);
+    border-color: var(--colorNeutralBackground5, #ddd);
     border-style: solid;
 }
 
