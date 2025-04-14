@@ -241,7 +241,7 @@ private:
     Semaphore m_fileScopeCacheFillSem;
     std::thread m_fileScopeCacheFillThread;
     std::atomic<bool> m_stopFileScopeCacheFillThread = false;
-    time_t m_lastCacheFillTime;
+    std::atomic<time_t> m_lastCacheFillTime;
 };
 
 time_t getThreadCreateTime();

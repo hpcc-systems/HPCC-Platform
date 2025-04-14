@@ -538,24 +538,43 @@ void  CPermissionsCache::setCacheTimeout(int timeoutSeconds)
 
     if (timeoutSeconds)
     {
-        unsigned threadStartWaitTimeSeconds = 5;
-
         // If the fill thread has not been started, start it
         if (!m_fileScopeCacheFillThread.joinable())
         {
             DBGLOG("CACHE: CPermissionsCache starting managedFilesScopeCacheFillThread, timeout = %d", timeoutSeconds);
             m_fileScopeCacheFillThread = std::thread(&CPermissionsCache::managedFileScopesCacheFillThread, this);
-            m_fileScopeCacheFillSem.wait(threadStartWaitTimeSeconds * 1000);   // wait for thread to start
 
-            if (!m_fileScopeCacheFillThread.joinable())
+            unsigned threadStartWaitTimeSeconds = 5;
+            unsigned maxWaits = 3;
+
+            for (unsigned i = 0; i < maxWaits; i++)
             {
-                OWARNLOG("CACHE: CPermissionsCache failed to start managedFilesScopeCacheFillThread after %d seconds, disabling cache", threadStartWaitTimeSeconds);
-                m_cacheTimeoutInSeconds = 0;  // 0 means cache disabled
+                m_fileScopeCacheFillSem.wait(threadStartWaitTimeSeconds * 1000);   // wait for thread to start
+
+                if (!m_fileScopeCacheFillThread.joinable())
+                {
+                    if (i == maxWaits-1)
+                    {
+                        unsigned totalWaitTime = threadStartWaitTimeSeconds * maxWaits;
+                        OWARNLOG("CACHE: CPermissionsCache failed to start managedFilesScopeCacheFillThread after waiting total of %d seconds, disabling cache", totalWaitTime);
+                        m_cacheTimeoutInSeconds = 0;  // 0 means cache disabled
+                    }
+                    else
+                    {
+                        OWARNLOG("CACHE: CPermissionsCache failed to start managedFilesScopeCacheFillThread after waiting %d seconds, waiting again...", threadStartWaitTimeSeconds);
+                    }
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }
     else
+    {
         stopManagedFileScopeCacheFillThread();
+    }
 }
 
 /*
@@ -691,10 +710,12 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
         removeAllManagedFileScopes();
         if (count)
             addManagedFileScopes(scopes);
-        time(&m_lastCacheFillTime);
+        time_t now;
+        time(&now);
+        m_lastCacheFillTime = now;
     }
 
-    unsigned int waitTimeSeconds = m_cacheTimeoutInSeconds;
+    unsigned waitTimeSeconds = m_cacheTimeoutInSeconds;
     while (!m_stopFileScopeCacheFillThread && m_cacheTimeoutInSeconds)
     {
         m_fileScopeCacheFillSem.wait(waitTimeSeconds * 1000);
@@ -702,8 +723,11 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
         time_t now;
         time(&now);
 
+        // Save previous fill time in case another thread modifies it
+        time_t previousCacheFillTime = m_lastCacheFillTime;
+
         // If the cache timeout has expired, fill the cache
-        if (now - m_lastCacheFillTime >= m_cacheTimeoutInSeconds)
+        if (now - previousCacheFillTime >= m_cacheTimeoutInSeconds)
         {
             IArrayOf<ISecResource> scopes;
             aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
@@ -713,9 +737,11 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
                 removeAllManagedFileScopes();
                 if (count)
                     addManagedFileScopes(scopes);
-                time(&m_lastCacheFillTime);
+                time(&now);
+                m_lastCacheFillTime = now;
             }
 
+            // To be deprecated (security hole)
             if (m_useLegacyDefaultFileScopePermissionCache)
             {
                 m_defaultPermission = SecAccess_Unknown;
@@ -727,12 +753,11 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
             }
             waitTimeSeconds = m_cacheTimeoutInSeconds;
         }
-
-        // Otherwise, the cache was filled by another thread (probably a flush), so determine the remaining amount of
-        // time to wait before the next cache fill cycle to prevent excessive fills (ensure all values are positive)
         else
         {
-            time_t timeSinceLastFill = now - m_lastCacheFillTime;
+            // Otherwise, the cache was filled by another thread (probably a flush), so determine the remaining amount of
+            // time to wait before the next cache fill cycle to prevent excessive fills (ensure all values are positive)
+            time_t timeSinceLastFill = now - previousCacheFillTime;
             time_t remainingWaitTime = (timeSinceLastFill < m_cacheTimeoutInSeconds) ? (m_cacheTimeoutInSeconds - timeSinceLastFill) : 0;
             waitTimeSeconds = remainingWaitTime;
         }
@@ -829,7 +854,9 @@ void CPermissionsCache::flush()
         removeAllManagedFileScopes();
         if (count)
             addManagedFileScopes(scopes);
-        time(&m_lastCacheFillTime);
+        time_t now;
+        time(&now);
+        m_lastCacheFillTime = now;
     }
 
 }
