@@ -18,6 +18,8 @@
 #ifndef CTFILE_HPP
 #define CTFILE_HPP
 
+#include <memory>
+
 //#define TIME_NODE_SEARCH
 
 #include "jiface.hpp"
@@ -270,6 +272,15 @@ public:
 
 // Abstract base class for any node that represents a searchable block of keys, either with payloads or with links to other such nodes
 
+class PayloadReference
+{
+public:
+    void clear();
+
+public:
+    std::shared_ptr<byte[]> data{nullptr};
+};
+
 class CJHSearchNode : public CJHTreeNode
 {
 public:
@@ -277,7 +288,7 @@ public:
     inline size32_t getNumKeys() const { return hdr.numKeys; }
 
     virtual bool getKeyAt(unsigned int num, char *dest) const = 0;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const = 0;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const = 0;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const = 0;
     virtual offset_t getFPosAt(unsigned int num) const = 0;
     virtual unsigned __int64 getSequence(unsigned int num) const = 0;
@@ -306,7 +317,7 @@ protected:
 public:
     ~CJHSplitSearchNode();
     virtual bool getKeyAt(unsigned int num, char *dest) const override;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
     virtual unsigned __int64 getSequence(unsigned int num) const override;
@@ -337,7 +348,7 @@ public:
 //These are the key functions that need to be implemented for a node that can be searched
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     virtual bool getKeyAt(unsigned int num, char *dest) const override;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
     virtual unsigned __int64 getSequence(unsigned int num) const override;
@@ -361,7 +372,7 @@ public:
     ~CJHVarTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -374,7 +385,7 @@ class CJHRowCompressedNode : public CJHLegacySearchNode
 public:
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };

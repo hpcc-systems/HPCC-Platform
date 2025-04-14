@@ -1307,6 +1307,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);
         limitWaitingWorkers = topology->getPropBool("@limitWaitingWorkers", limitWaitingWorkers);
+        setDynamicPayloadExpansion(topology->getPropBool("@compressPayloadInMemory", false));
 
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
         setLegacyAES(topology->getPropBool("expert/@useLegacyAES", false));
