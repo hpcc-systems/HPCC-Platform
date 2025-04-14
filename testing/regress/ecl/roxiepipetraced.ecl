@@ -63,6 +63,7 @@ pipe_send := DATASET([{{'Joe', 'Doe'}, {'Fresno', 'CA', 11111}},
 */
 
 
+string CurrentTraceContext := lib_logging.Logging.getTraceSpanHeader(); //Fetches current active trace (if available on target engine).
 // This is the remote call to the 'roxie_echo' service.
 pipe_recv := PIPE(pipe_send,
     'roxiepipe' +
@@ -73,12 +74,13 @@ pipe_recv := PIPE(pipe_send,
     ' -mr 2' +
     ' -h ' + TargetIP + ':9876 ' +
     ' -r Peeps' +
-    ' -tp ' + lib_logging.Logging.getTraceSpanHeader() +  //Fetches current active trace/span context
-                                                          //Not currently supported on thor - run on hthor
-                                                          //can provide hardcoded traceparent as below
-    //' -tp 00-0c483675c6c887d9fb49885c0f2ba116-379563f3fcd56bc9-01 ' + 
+    ' -tp ' +                   //Propagates trace context to target roxie.
+      CurrentTraceContext  +    //Dynamically fetched traceContext from target engine
+                                //Otherwise, a hard-coded trace contexted can be constructed
+                                //in the following format: 00-0c483675c6c887d9fb49885c0f2ba116-379563f3fcd56bc9-01
     ' -q "<roxie_echo format=\'raw\'><peeps id=\'id\' format=\'raw\'></peeps></roxie_echo>"'
 , PersonRec);
 
+OUTPUT(CurrentTraceContext);
 OUTPUT(pipe_recv);
 

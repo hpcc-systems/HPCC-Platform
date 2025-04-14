@@ -105,7 +105,7 @@ public:
     void sendQuery()
     {
         MemoryBuffer sendBuffer;
-        if (traceParent != nullptr && !traceParent.isEmpty())
+        if (!traceParent.isEmpty())
         {
             try
             {
