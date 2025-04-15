@@ -161,8 +161,9 @@ hash64_t SimpleRowHasher::hash(const byte *row) const
     return rtlHash64Data(length, row + offset, HASH64_INIT);
 }
 
-// For cases where we know data is sorted
-
+// For cases where we know data is sorted - duplicate entries will be adjacent
+// and clashes between different keys should be very unlikely, so no need to use
+// a hash table to dedup.
 class jhtree_decl SortedBloomBuilder : public CInterfaceOf<IBloomBuilder>
 {
 public:
@@ -369,7 +370,11 @@ extern jhtree_decl IRowHasher *createRowHasher(const RtlRecord &recInfo, __uint6
     {
         unsigned lastField = ffsll(fields+1)-2;
         if (recInfo.isFixedOffset(lastField) && recInfo.queryType(lastField)->isFixedSize())
-           return new SimpleRowHasher(recInfo, fields, 0, recInfo.queryType(lastField)->getMinSize()); // Specialize to speed up another common case - fixed-size block at start
+        {
+            unsigned length = recInfo.getFixedOffset(lastField) + recInfo.queryType(lastField)->getMinSize();
+            size32_t offset = 0;
+            return new SimpleRowHasher(recInfo, fields, offset, length); // Specialize to speed up another common case - fixed-size block at start
+        }
     }
     return new RowHasher(recInfo, fields);
 }
