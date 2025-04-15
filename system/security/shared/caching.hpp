@@ -177,7 +177,7 @@ public:
     virtual void add (ISecUser& sec_user);
     virtual void removeFromUserCache(ISecUser& sec_user);
 
-    void  setCacheTimeout(int timeoutSeconds);
+    void  setCacheTimeout(unsigned timeoutSeconds);
 
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
