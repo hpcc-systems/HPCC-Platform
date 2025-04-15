@@ -517,6 +517,7 @@ sasha:
 dfuserver:
 - name: dfuserver
   maxJobs: 1
+  replicas: 1
   #resources:
   #  cpu: "1"
   #  memory: "2G"
