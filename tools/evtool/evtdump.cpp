@@ -20,7 +20,6 @@
 #include "jfile.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
-#include <iostream>
 #include <map>
 #include <set>
 
@@ -56,12 +55,12 @@ public:
     }
 
     // Cache the output stream to receive the parsed data.
-    // - a command line request might use std::cout
-    // - a unit test might use a std::stringstream
+    // - a command line request might use console output
+    // - a unit test might use a string-backed output stream
     // - an ESP might select a string stream or something else
-    void setOutput(std::ostream& out)
+    void setOutput(IBufferedSerialOutputStream& out)
     {
-        this->out = &out;
+        this->out.set(&out);
     }
 
     // Return true if a valid request can be attempted.
@@ -98,7 +97,8 @@ public:
                 {
                     StringBuffer yaml;
                     toYAML(creator->queryTree(), yaml, 2, 0);
-                    *out << yaml.str() << std::endl;
+                    out->put(yaml.length(), yaml.str());
+                    out->put(1, "\n");
                     return true;
                 }
                 return false;
@@ -111,7 +111,7 @@ public:
 protected:
     StringAttr file;
     OutputFormat format = OutputFormat::text;
-    std::ostream* out = nullptr;
+    Linked<IBufferedSerialOutputStream> out;
 };
 
 // Connector between the command line tool and the logic of dumping an event file.
@@ -158,7 +158,6 @@ public:
     }
     virtual bool isGoodRequest() override
     {
-        efd.setOutput(std::cout);
         return efd.ready();
     }
     virtual int doRequest() override
@@ -169,45 +168,48 @@ public:
         }
         catch (IException* e)
         {
-            StringBuffer msg;
+            StringBuffer msg("exception dumping event file: ");
             e->errorMessage(msg);
             e->Release();
-            std::cerr << msg.str() << std::endl;
+            msg.append('\n');
+            consoleErr().put(msg.length(), msg.str());
             return 1;
         }
     }
-    virtual void usage(int argc, const char* argv[], int pos, std::ostream& out) override
+    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         usagePrefix(argc, argv, pos, out);
-        out << "[options] <filename>" << std::endl << std::endl;
-        out << "Parse a binary event file and write its contents to standard output." << std::endl << std::endl;
-        out << "  -?, -h, --help  show this help message and exit" << std::endl;
-        out << "  -c              output as comma separated values" << std::endl;
-        out << "  -j              output as JSON" << std::endl;
-        out << "  -x              output as XML" << std::endl;
-        out << "  -y              output as YAML" << std::endl;
-        out << "  <filename>      full path to a binary event data file" << std::endl;
-        out << std::endl;
-        out << "Structured output would, if represented in a property tree, resemble:" << std::endl;
-        out << "  EventFile" << std::endl;
-        out << "    ├── Header" << std::endl;
-        out << "    |   ├── @filename" << std::endl;
-        out << "    |   ├── @version" << std::endl;
-        out << "    |   └── ... (other header properties)" << std::endl;
-        out << "    ├── Event" << std::endl;
-        out << "    |   ├── @name" << std::endl;
-        out << "    |   ├── @id" << std::endl;
-        out << "    |   └── ... (other event properties)" << std::endl;
-        out << "    ├── ... (more events)" << std::endl;
-        out << "    └── Footer" << std::endl;
-        out << "        ├── @bytesRead" << std::endl;
-        out << std::endl;
-        out << "CSV output includes columns for event name and ID, plus one for each" << std::endl;
-        out << "event attribute used by the event recorder." << std::endl;
+        StringBuffer usage;
+        usage << "[options] <filename>" << "\n\n";
+        usage << "Parse a binary event file and write its contents to standard output." << "\n\n";
+        usage << "  -?, -h, --help  show this help message and exit" << '\n';
+        usage << "  -c              output as comma separated values" << '\n';
+        usage << "  -j              output as JSON" << '\n';
+        usage << "  -x              output as XML" << '\n';
+        usage << "  -y              output as YAML" << '\n';
+        usage << "  <filename>      full path to a binary event data file" << '\n';
+        usage << '\n';
+        usage << "Structured output would, if represented in a property tree, resemble:" << '\n';
+        usage << "  EventFile" << '\n';
+        usage << "    ├── Header" << '\n';
+        usage << "    |   ├── @filename" << '\n';
+        usage << "    |   ├── @version" << '\n';
+        usage << "    |   └── ... (other header properties)" << '\n';
+        usage << "    ├── Event" << '\n';
+        usage << "    |   ├── @name" << '\n';
+        usage << "    |   ├── @id" << '\n';
+        usage << "    |   └── ... (other event properties)" << '\n';
+        usage << "    ├── ... (more events)" << '\n';
+        usage << "    └── Footer" << '\n';
+        usage << "        ├── @bytesRead" << '\n';
+        usage << '\n';
+        usage << "CSV output includes columns for event name and ID, plus one for each" << '\n';
+        usage << "event attribute used by the event recorder." << '\n';
+        out.put(usage.length(), usage.str());
     }
     CEvtDumpCommand()
     {
-        efd.setOutput(std::cout);
+        efd.setOutput(consoleOut());
     }
 protected:
     EventFileDump efd;

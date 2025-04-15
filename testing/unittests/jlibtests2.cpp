@@ -347,11 +347,11 @@ attribute: bytesRead = 16
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
             CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
-            std::stringstream out;
+            StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
-            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+            CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
         }
         catch (IException * e)
         {
@@ -386,11 +386,11 @@ attribute: bytesRead = 71
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
-            std::stringstream out;
+            StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
-            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+            CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
         }
         catch (IException * e)
         {
@@ -436,11 +436,11 @@ attribute: bytesRead = 156
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
-            std::stringstream out;
+            StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
-            CPPUNIT_ASSERT_EQUAL(std::string(expect), out.str());
+            CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
         }
         catch (IException * e)
         {
@@ -451,9 +451,10 @@ attribute: bytesRead = 156
         }
     }
 
-    IEventVisitor* createVisitor(std::stringstream& out)
+    IEventVisitor* createVisitor(StringBuffer& out)
     {
-        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(out);
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
         return new MockEventVisitor(*visitor);
     }
 };
