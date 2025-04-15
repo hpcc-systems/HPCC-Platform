@@ -69,6 +69,10 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
+if (NOT CMAKE_POLICY_VERSION_MINIMUM)
+    set (CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif ()
+
 set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(${HPCC_SOURCE_DIR}/version.cmake)
 include(${HPCC_SOURCE_DIR}/cmake_modules/options.cmake)
