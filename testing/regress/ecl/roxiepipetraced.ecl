@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
-//nohthor
+//nokey
+
 import lib_logging; // only needed if lib_logging.Logging.getTraceSpanHeader used below
 string TargetIP := '.' : stored('TargetIP');
 
