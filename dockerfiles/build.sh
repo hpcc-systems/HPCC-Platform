@@ -3,7 +3,7 @@ set -e
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
-export $(grep -v '^#' $SCRIPT_DIR/../../.env | xargs -d '\r' | xargs -d '\n') > /dev/null
+export $(grep -v '^#' $SCRIPT_DIR/../.env | xargs -d '\r' | xargs -d '\n') > /dev/null
 
 GITHUB_ACTOR="${GITHUB_ACTOR:-hpcc-systems}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-none}"

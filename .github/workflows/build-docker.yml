@@ -144,8 +144,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          file: HPCC-Platform/dockerfiles/vcpkg/${{ inputs.os }}.dockerfile
-          context: HPCC-Platform/dockerfiles/vcpkg/.
+          file: HPCC-Platform/dockerfiles/${{ inputs.os }}.dockerfile
+          context: HPCC-Platform/dockerfiles/.
           push: false
           load: true
           build-args: |

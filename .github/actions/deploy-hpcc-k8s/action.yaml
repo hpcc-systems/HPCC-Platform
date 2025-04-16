@@ -76,7 +76,7 @@ runs:
       uses: docker/build-push-action@v4
       with:
         builder: ${{ steps.buildx.outputs.name }}
-        file: ${{ inputs.platform-folder }}/dockerfiles/vcpkg/platform-core-ubuntu-22.04/Dockerfile
+        file: ${{ inputs.platform-folder }}/dockerfiles/platform-core-ubuntu-22.04/Dockerfile
         context: ${{ inputs.platform-folder }}/
         push: true
         tags: localhost:32000/hpccsystems/platform-core:latest
