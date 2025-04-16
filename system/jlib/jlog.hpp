@@ -691,6 +691,7 @@ interface jlib_decl ILogMsgFilter : public IInterface
 
 typedef enum
 {
+    LOGFORMAT_undefined,
     LOGFORMAT_xml,
     LOGFORMAT_json,
     LOGFORMAT_table
@@ -708,6 +709,7 @@ interface jlib_decl ILogMsgHandler : public IInterface
     virtual int               flush() { return 0; }
     virtual bool              getLogName(StringBuffer &name) const = 0;
     virtual offset_t          getLogPosition(StringBuffer &logFileName) const = 0;
+    virtual LogHandlerFormat  queryFormatType() const = 0;
 };
 
 // Class on manager's list of children which sends new filters to children, and holds thread which receives log messages
@@ -755,7 +757,7 @@ interface jlib_decl ILogMsgListener : public IInterface
 
 interface jlib_decl ILogMsgManager : public ILogMsgListener
 {
- public:    
+ public:
     virtual void              enterQueueingMode() = 0;
     virtual void              setQueueBlockingLimit(unsigned lim) = 0;
     virtual void              setQueueDroppingLimit(unsigned lim, unsigned numToDrop) = 0;
