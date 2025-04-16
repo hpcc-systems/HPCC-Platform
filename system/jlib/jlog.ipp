@@ -309,10 +309,10 @@ class AndLogMsgFilter : public CLogMsgFilter
 public:
     AndLogMsgFilter(ILogMsgFilter * _arg1, ILogMsgFilter * _arg2) : arg1(_arg1), arg2(_arg2) {}
     AndLogMsgFilter(MemoryBuffer & in) { arg1.setown(getDeserializedLogMsgFilter(in)); arg2.setown(getDeserializedLogMsgFilter(in)); }
-    AndLogMsgFilter(IPropertyTree * tree) 
-    { 
+    AndLogMsgFilter(IPropertyTree * tree)
+    {
         Owned <IPropertyTreeIterator> iter = tree->getElements("filter");
-        ForEach(*iter) 
+        ForEach(*iter)
         {
             ILogMsgFilter *filter = getLogMsgFilterFromPTree(&(iter->query()));
             if (!arg1.get())
@@ -342,10 +342,10 @@ class OrLogMsgFilter : public CLogMsgFilter
 public:
     OrLogMsgFilter(ILogMsgFilter * _arg1, ILogMsgFilter * _arg2) : arg1(_arg1), arg2(_arg2) {}
     OrLogMsgFilter(MemoryBuffer & in) { arg1.setown(getDeserializedLogMsgFilter(in)); arg2.setown(getDeserializedLogMsgFilter(in)); }
-    OrLogMsgFilter(IPropertyTree * tree) 
-    { 
+    OrLogMsgFilter(IPropertyTree * tree)
+    {
         Owned <IPropertyTreeIterator> iter = tree->getElements("filter");
-        ForEach(*iter) 
+        ForEach(*iter)
         {
             ILogMsgFilter *filter = getLogMsgFilterFromPTree(&(iter->query()));
             if (!arg1.get())
@@ -380,7 +380,7 @@ public:
         yes.setown(getDeserializedLogMsgFilter(in));
         no.setown(getDeserializedLogMsgFilter(in));
     }
-    SwitchLogMsgFilter(IPropertyTree * tree) 
+    SwitchLogMsgFilter(IPropertyTree * tree)
     {
         cond.setown(getLogMsgFilterFromPTree(tree->queryPropTree("filter[1]")));
         yes.setown(getLogMsgFilterFromPTree(tree->queryPropTree("filter[2]")));
@@ -438,6 +438,7 @@ public:
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
     bool                      getLogName(StringBuffer &name) const { return false; }
     offset_t                  getLogPosition(StringBuffer &name) const { return 0; }
+    virtual LogHandlerFormat  queryFormatType() const = 0;
 protected:
     FILE *                    handle;
     unsigned                  messageFields;
@@ -454,6 +455,7 @@ public:
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_json; };
 };
 
 class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
@@ -465,6 +467,7 @@ public:
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_xml; };
 };
 
 class HandleLogMsgHandlerTable : implements HandleLogMsgHandler, public CInterface
@@ -476,6 +479,7 @@ public:
     bool                      needsPrep() const { return !prepped; }
     void                      prep() { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
     void                      addToPTree(IPropertyTree * tree) const;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_table; };
 private:
     bool                      prepped;
 };
@@ -492,7 +496,7 @@ public:
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
-                
+
 protected:
     FILE *                    handle;
     unsigned                  messageFields;
@@ -549,7 +553,9 @@ public:
     virtual void handleMessage(const LogMsg & msg) override;
     virtual bool needsPrep() const override { return false; }
     virtual void prep() override {}
+    virtual unsigned queryMaxLinesToKeep() const override { return maxLinesToKeep; }
     virtual unsigned queryMessageFields() const override { return messageFields; }
+    virtual void setMaxLinesToKeep(unsigned _maxLinesToKeep) override { maxLinesToKeep = _maxLinesToKeep; }
     virtual void setMessageFields(unsigned _fields) override { messageFields = _fields; }
     virtual void addToPTree(IPropertyTree * tree) const override;
     virtual int flush() override { CriticalBlock block(crit); return fflush(handle); }
@@ -565,7 +571,7 @@ protected:
     mutable StringBuffer filename;
     mutable CriticalSection crit;
     StringBuffer curMsgText;
-    const unsigned maxLinesToKeep = 0;
+    unsigned maxLinesToKeep = 0;
     unsigned messageFields = MSGFIELD_all;
     unsigned linesInCurrent = 0;
     unsigned sequence = 0;
@@ -926,7 +932,7 @@ public:
     BinaryLogAccessFilter(ILogAccessFilter * _arg1, ILogAccessFilter * _arg2, LogAccessFilterType _type) : arg1(_arg1), arg2(_arg2)
     {
         if (!arg1 || !arg2)
-            throw makeStringException(-1, "Binary Log Access Filter encountered empty operand"); 
+            throw makeStringException(-1, "Binary Log Access Filter encountered empty operand");
 
         setType(_type);
     }

@@ -702,6 +702,8 @@ interface jlib_decl ILogMsgHandler : public IInterface
     virtual void              handleMessage(const LogMsg & msg) = 0;
     virtual bool              needsPrep() const = 0;
     virtual void              prep() = 0;
+    virtual unsigned          queryMaxLinesToKeep() const { return 0; };
+    virtual void              setMaxLinesToKeep(unsigned _maxLinesToKeep) {};
     virtual unsigned          queryMessageFields() const = 0;
     virtual void              setMessageFields(unsigned _fields = MSGFIELD_all) = 0;
     virtual void              addToPTree(IPropertyTree * parent) const = 0;
@@ -755,7 +757,7 @@ interface jlib_decl ILogMsgListener : public IInterface
 
 interface jlib_decl ILogMsgManager : public ILogMsgListener
 {
- public:    
+ public:
     virtual void              enterQueueingMode() = 0;
     virtual void              setQueueBlockingLimit(unsigned lim) = 0;
     virtual void              setQueueDroppingLimit(unsigned lim, unsigned numToDrop) = 0;
@@ -911,7 +913,7 @@ extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 extern jlib_decl ILogMsgHandler * queryPostMortemLogMsgHandler();
 extern jlib_decl bool copyPostMortemLogging(const char *target, bool clear);
-extern jlib_decl void setupContainerizedLogMsgHandler();
+extern jlib_decl void setupContainerizedLogMsgHandler(bool updateConfigOnTheFly = false);
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
