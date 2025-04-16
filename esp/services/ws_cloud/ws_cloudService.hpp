@@ -22,7 +22,6 @@
 #include "InfoCacheReader.hpp"
 
 const unsigned defaultK8sResourcesInfoCacheForceBuildSeconds = 10;
-const unsigned defaultK8sResourcesInfoCacheAutoRebuildSeconds = 120;
 
 class CK8sResourcesInfoCache  : public CInfoCache
 {
@@ -39,8 +38,8 @@ public:
 class CK8sResourcesInfoCacheReader  : public CInfoCacheReader
 {
 public:
-    CK8sResourcesInfoCacheReader (const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
+    CK8sResourcesInfoCacheReader (const char* _name, unsigned _forceRebuildSeconds)
+        : CInfoCacheReader(_name, INFINITE, _forceRebuildSeconds, false) {}
 
     virtual CInfoCache* read() override
     {
