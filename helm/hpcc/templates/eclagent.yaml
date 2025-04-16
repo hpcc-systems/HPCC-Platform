@@ -124,7 +124,7 @@ data:
 {{- $enginePlaneDetails := dict -}}
 {{- $_ := include "hpcc.getEnginePlanes" (dict "root" $ "me" . "result" $enginePlaneDetails) -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeCategories" $enginePlaneDetails.planeCategories "includeNames" $enginePlaneDetails.namedPlanes "env" $env }}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas") "lifeCycleCtx" (dict "containers" list))) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" "global" "lifeCycleCtx" (dict "containers" list))) }}
 {{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1
