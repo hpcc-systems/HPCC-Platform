@@ -49,7 +49,7 @@ data:
 {{-   $_ := include "hpcc.getEnginePlanes" (dict "root" $ "me" . "result" $enginePlaneDetails) -}}
 {{-   $commonCtx := dict "root" $ "me" $roxie "includeCategories" $enginePlaneDetails.planeCategories "includeNames" $enginePlaneDetails.namedPlanes "secretsCategories" $secretsCategories "env" $env }}
 {{-   $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
-{{-   $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global,~.*::loggging")) }}
+{{-   $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{-   include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{-   $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
 {{-   if $singleNode -}}

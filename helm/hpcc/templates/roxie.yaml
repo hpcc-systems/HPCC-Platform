@@ -94,8 +94,8 @@ data:
 {{-   $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
 {{-   $_ := set $commonCtx "heartbeatInterval" ($toposerver.heartbeatInterval | int | default 10000) -}}
 {{-   $_ := set $toposerver "name" $commonCtx.toponame -}}
-{{-   $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap" "component" "roxie" "excludeKeys" "global,~.*::loggging")) }}
-{{-   $topoconfigSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap" "component" "toposerver" "excludeKeys" "global,~.*::loggging")) }}
+{{-   $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
+{{-   $topoconfigSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap" "component" "toposerver" "excludeKeys" "global")) }}
 {{-   include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{-   $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
 {{-   if not $singleNode -}}

@@ -37,7 +37,7 @@ data:
   {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerKeyName) -}}
  {{ end }}
 {{ end }}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global,~.*::loggging")) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global")) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

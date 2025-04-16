@@ -97,7 +97,7 @@ data:
 {{- $includeStorageCategories := ternary (list "lz" "data" "dll" "debug") (list "data" "dll" "debug") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeCategories" $includeStorageCategories "env" $env -}}
 {{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp::queues,~.*::loggging")) -}}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp::queues")) -}}
 {{- if (ne (include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility)) "") }}
  {{- /* If esp is using a public cert, this flag is used later to add the local MTLS mount and cert */ -}}
  {{- $_ := set $commonCtx "externalCert" true -}}

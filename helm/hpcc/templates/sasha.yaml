@@ -34,7 +34,7 @@
 {{- if and (hasKey $sasha "plane") $sasha.plane -}}
 {{- $_ := set $commonCtx "includeNames" (list ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")))) -}}
 {{- end -}}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap" "component" "sasha" "excludeKeys" "global,~.*::loggging")) -}}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap" "component" "sasha" "excludeKeys" "global")) -}}
 {{- $serviceName := printf "sasha-%s" $sashaName -}}
 apiVersion: apps/v1
 kind: Deployment

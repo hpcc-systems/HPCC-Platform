@@ -49,7 +49,7 @@ data:
 {{- $secretsCategories := list "system" }}
 {{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "debug") "secretsCategories" $secretsCategories "env" $env }}
 {{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap" "component" "eclscheduler" "excludeKeys" "global,~.*::loggging")) -}}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap" "component" "eclscheduler" "excludeKeys" "global")) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
