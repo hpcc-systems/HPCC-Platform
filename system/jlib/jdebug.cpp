@@ -688,6 +688,15 @@ cycle_t BlockedTimeTracker::noteWaiting()
     return now;
 }
 
+cycle_t BlockedTimeTracker::noteWaiting(unsigned numWaiting)
+{
+    cycle_t now = get_cycles_now();
+    CriticalBlock block(cs);
+    numStarted += numWaiting;
+    timeStampTally -= now * numWaiting;
+    return now;
+}
+
 cycle_t BlockedTimeTracker::noteComplete()
 {
     cycle_t now = get_cycles_now();
@@ -710,6 +719,12 @@ __uint64 BlockedTimeTracker::getWaitingNs() const
     return calcActiveTime(tally, active);
 }
 
+
+unsigned BlockedTimeTracker::numInFlight() const
+{
+    CriticalBlock block(cs);
+    return numStarted - numFinished;
+}
 
 void BlockedTimeTracker::extractOverlapInfo(OverlapTimeInfo & info, bool isStart) const
 {

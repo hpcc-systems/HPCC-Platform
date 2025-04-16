@@ -34,6 +34,7 @@
 #include "wujobq.hpp"
 #include "daclient.hpp"
 #include "daqueue.hpp"
+#include "dastats.hpp"
 
 #include "thgraphmaster.ipp"
 #include "thorport.hpp"
@@ -694,6 +695,8 @@ void CJobManager::run()
                 }
             }
         } daliLock;
+
+        const char *thorName = globals->queryProp("@name");
         Owned<IJobQueueItem> item;
         {
             CIdleShutdown idleshutdown(globals->getPropInt("@idleRestartPeriod", IDLE_RESTART_PERIOD));
@@ -701,6 +704,7 @@ void CJobManager::run()
             {
                 for (;;)
                 {
+                    CCycleTimer waitTimer;
                     while (!stopped && !jobq->ordinality()) // this is avoid tight loop when nothing on q.
                     {
                         if (jobQConnected)
@@ -713,6 +717,7 @@ void CJobManager::run()
                     if (stopped)
                         break;
                     unsigned connected, waiting, enqueued;
+
                     if (exclLockDaliMutex->enter(5000))
                     {
                         daliLock.set(exclLockDaliMutex, exclusiveLockName);
@@ -754,6 +759,8 @@ void CJobManager::run()
                                         item.setown(_item.getClear());
                                         conversation.setown(acceptconv.getClear());
                                     }
+
+                                    recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorName}}, { StNumAccepts, StTimeBlocked }, { 1ULL, waitTimer.elapsedNs() });
                                     break;
                                 }
                             }
@@ -766,10 +773,12 @@ void CJobManager::run()
                         if (enqueued)
                             PROGLOG("Exclusive lock %s in use. Queue state (connected=%d, waiting=%d, enqueued=%d)", exclusiveLockName.str(), connected ,waiting, enqueued);
                     }
+                    recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorName}}, { StTimeBlocked }, { waitTimer.elapsedNs() });
                 }
             }
             else
             {
+                CCycleTimer waitTimer;
                 if (!jobQConnected)
                 {
                     jobq->connect(true);
@@ -778,6 +787,7 @@ void CJobManager::run()
                 IJobQueueItem *_item;
                 conversation.setown(jobq->acceptConversation(_item,30*1000));    // 30s priority transition delay
                 item.setown(_item);
+                recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorName}}, { StNumAccepts, StTimeBlocked }, { item ? 1ULL : 0ULL, waitTimer.elapsedNs() });
             }
         }
         if (!conversation.get()||!item.get())
@@ -1399,6 +1409,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         bool disableQueuePriority = getComponentConfigSP()->getPropBool("expert/@disableQueuePriority");
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
+        const char * thorname = globals->queryProp("@name");
         try
         {
             if (!isContainerized())
@@ -1571,6 +1582,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
 
                     StringBuffer nextJob;
+                    CCycleTimer waitTimer;
                     do
                     {
                         StringBuffer wuid;
@@ -1586,6 +1598,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         // else - reject/ignore duff message.
                     } while (!lingerTimer.timedout(&lingerRemaining));
 
+                    recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorname}}, { StTimeBlocked }, { waitTimer.elapsedNs() });
 
                     if (0 == currentGraphName.length())
                     {
@@ -1607,6 +1620,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         }
                         break;
                     }
+                    recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorname}}, { StNumAccepts }, { 1ULL });
                 }
                 thorQueue.clear();
             }

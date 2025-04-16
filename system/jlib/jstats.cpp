@@ -1010,6 +1010,9 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(BloomAccepts), "The number of times a bloom filter accepts an index lookup" },
     { NUMSTAT(BloomRejects), "The number of times a bloom filter rejects an index lookup" },
     { NUMSTAT(BloomSkips), "The number of times a bloom filter cannot filter an index lookup" },
+    { TIMESTAT(StartElapsed), "The elapsed time taken starting a component" },
+    { CYCLESTAT(StartElapsed) },
+    { NUMSTAT(Accepts), "The number of items accepted for processing" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

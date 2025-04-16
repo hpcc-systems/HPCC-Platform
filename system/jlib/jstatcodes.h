@@ -337,6 +337,9 @@ enum StatisticKind
     StNumBloomAccepts,
     StNumBloomRejects,
     StNumBloomSkips,
+    StTimeStartElapsed,
+    StCycleStartElapsedCycles,
+    StNumAccepts,
     StMax,
 
     //For any quantity there is potentially the following variants.

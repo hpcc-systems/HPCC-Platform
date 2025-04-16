@@ -54,6 +54,7 @@
 #include "dalienv.hpp"
 #include "daqueue.hpp"
 #include "dasds.hpp"
+#include "dastats.hpp"
 #include "dllserver.hpp"
 #include "workunit.hpp"
 #include "rmtfile.hpp"
@@ -78,6 +79,7 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
+static BlockedTimeTracker startupTimeTracker;
 
 class CThorEndHandler : implements IThreaded
 {
@@ -343,6 +345,7 @@ public:
                     PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
                 }
                 --remaining;
+                startupTimeTracker.noteComplete();
             }
         }
         assertex(workers == connectedWorkers.size());
@@ -627,6 +630,7 @@ bool ControlHandler(ahType type)
 #include "thactivitymaster.hpp"
 int main( int argc, const char *argv[]  )
 {
+    CCycleTimer startupTracker;
     if (!checkCreateDaemon(argc, argv))
         return EXIT_FAILURE;
 
@@ -1042,6 +1046,7 @@ int main( int argc, const char *argv[]  )
                 if ((numWorkers % numWorkersPerPod) != 0)
                     throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
 
+                startupTimeTracker.noteWaiting(numWorkers);
                 wuRead->getDebugValue("platformVersion", optPlatformVersion);
                 Owned<IWorkUnit> workunit = &wuRead->lock();
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
@@ -1081,6 +1086,7 @@ int main( int argc, const char *argv[]  )
                 if (pct)
                     workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerNode);
             }
+            startupTimeTracker.noteWaiting(numWorkers);
         }
 
         registry->connect(numWorkers);
@@ -1157,6 +1163,10 @@ int main( int argc, const char *argv[]  )
             startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 #endif
         configurePreferredPlanes();
+
+        assertex(startupTimeTracker.numInFlight() == 0);
+        __uint64 startupElapsedTimeNs = startupTracker.elapsedNs();
+        recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorName}}, { StNumStarts, StTimeStart, StTimeStartElapsed }, { 1ULL, startupTimeTracker.getWaitingNs()+startupElapsedTimeNs, startupElapsedTimeNs });
 
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
