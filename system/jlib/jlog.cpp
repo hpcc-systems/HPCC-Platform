@@ -2379,9 +2379,6 @@ static constexpr bool useSysLogDefault = false;
 static CConfigUpdateHook configUpdateHook;
 void setupContainerizedLogMsgHandler()
 {
-    DISLOG("called setupContainerizedLogMsgHandler() 1");  // TODO
-    DBGLOG("called setupContainerizedLogMsgHandler() 80"); // TODO
-
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
@@ -2493,13 +2490,7 @@ void setupContainerizedLogMsgHandler()
     {
         auto updateConfigFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
         {
-            DISLOG("Config update started 1"); // TODO
-            DBGLOG("Config update started 80"); // TODO
-
             setupContainerizedLogMsgHandler();
-
-            DISLOG("Config update completed 1"); // TODO
-            DBGLOG("Config update completed 80"); // TODO
         };
         configUpdateHook.installOnce(updateConfigFunc, false);
     }
