@@ -2550,34 +2550,17 @@ e.g. a cache of secrets, with an auto reload/refresh mechanism, or 'replicas'.
   {{- if (regexMatch $regex $configElementName) -}}
    {{- $_ := set $configCtx "excludeSection" true -}}
   {{- end -}}
- {{- end -}}
- {{- if not $configCtx.excludeSection -}}
-  {{- $configDictCtx := dict -}}
-  {{- range $key := $excludeKeyList -}}
-   {{- $keyParts := splitList "::" $key -}}
-   {{- $outerRaw := index $keyParts 0 -}}
-   {{- $outerIsWild := hasPrefix "~" $outerRaw -}}
-   {{- $outerKey := trimPrefix "~" $outerRaw -}}
-   {{- $hasSubKey := eq (len $keyParts) 2 -}}
-   {{- $innerKey := "" -}}
-   {{- $innerIsWild := false -}}
-   {{- if $hasSubKey -}}
-    {{- $innerRaw := index $keyParts 1 -}}
-    {{- $innerIsWild = hasPrefix "~" $innerRaw -}}
-    {{- $innerKey = trimPrefix "~" $innerRaw -}}
-   {{- end -}}
-   {{- range $topKey, $topVal := $configElementDict -}}
-    {{- if or (and (not $outerIsWild) (eq $outerKey $topKey)) (and $outerIsWild (regexMatch $outerKey $topKey)) -}}
-     {{- if not $hasSubKey -}}
-      {{- $configElementDict = unset $configElementDict $topKey -}}
-     {{- else -}}
-      {{- $innerDict := get $configElementDict $topKey | default dict -}}
-      {{- if (kindIs "map" $innerDict) -}}
-       {{- if $innerIsWild -}}
-        {{- range $k, $_ := $innerDict -}}
-         {{- if regexMatch $innerKey $k -}}
-          {{- $innerDict = unset $innerDict $k -}}
-         {{- end -}}
+  {{- if not $configCtx.excludeSection -}}
+    {{- $configDictCtx := dict -}}
+    {{- range $key := $excludeKeyList -}}
+      {{- $_ := set $configDictCtx "keyDictStr" (regexReplaceAll "(.*)\\..*$" $key "${1}") -}}
+      {{- if eq $configDictCtx.keyDictStr $key -}}{{/* single component key, e.g. "global"*/}}
+        {{- (unset $configElementDict $key) -}}
+      {{- else -}}{{/* scopes component key, e.g. "eclccserver.queue"*/}}
+        {{- $_ := set $configDictCtx "keyKeyStr" (regexReplaceAll ".*\\.(.*)$" $key "${1}") -}}
+        {{- $subDict := get $configElementDict $configDictCtx.keyDictStr -}}
+        {{- if $subDict -}}
+          {{- $_ := set $configElementDict $configDictCtx.keyDictStr (unset $subDict $configDictCtx.keyKeyStr) -}}
         {{- end -}}
        {{- else -}}
         {{- $innerDict = unset $innerDict $innerKey -}}

@@ -164,10 +164,10 @@ runs:
             for pod in $(kubectl get pods --no-headers | awk '{ print $1 }'); do
               echo "Pod name: $pod"
               echo "$pod: kubectl get pod"
-              kubectl get pod $pod -o yaml || echo "Failed to get pod for $pod"
+              kubectl get pod $pod -o yaml || true
               echo "$pod: kubectl describe pod"
-              kubectl describe pod $pod || echo "Failed to describe pod for $pod"
-              echo "$pod: getting recent logs"
+              kubectl describe pod $pod || true
+              echo "$pod: getting recents logs"
               kubectl logs --tail=50 $pod || echo "Failed to get logs for $pod"
             done
             echo "kubectl get rs"
