@@ -631,11 +631,11 @@ esp:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
     port: 8888
     ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
-    servicePort: 8010
+    servicePort: 8009
     ## wsdlAddress should be set to the host and port which clients can use to hit this service.
     #   This address is added to the service wsdl files which simplify setting up a SOAP client to hit this service.  There may be many external factors determining the address
     #   that is accible to clients.
-    # wsdlAddress: clientfacingaddress:8010
+    # wsdlAddress: clientfacingaddress:8009
     ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
     visibility: local
     ## Annotations can be specified on a service - for example to specify provider-specific information such as service.beta.kubernetes.io/azure-load-balancer-internal-subnet
@@ -670,7 +670,7 @@ esp:
   auth: none
   replicas: 1
   service:
-    servicePort: 8010
+    servicePort: 8009
     visibility: cluster
   # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
   #  default for EclWatch is 60M, default for other services is 8M
