@@ -83,6 +83,8 @@ void ResourceManager::addNamed(const char * type, unsigned len, const void * dat
     MemoryBuffer mb;
     appendResource(mb, len, data, compressed);
     resources.append(*new ResourceItem(type, id, mb.length(), mb.toByteArray()));
+    if (doTrace(traceResources))
+        DBGLOG("Add resource %s:%u (%u bytes from %u)%s", type, id, mb.length(), len, compressed ? " compressed" : "");
 }
 
 bool ResourceManager::addCompress(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id, bool addToManifest)

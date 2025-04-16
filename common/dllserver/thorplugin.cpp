@@ -36,7 +36,7 @@
 
 #include "thorplugin.hpp"
 
-static constexpr CompressionMethod defaultResourceCompression = COMPRESS_METHOD_LZW;
+static constexpr CompressionMethod defaultResourceCompression = COMPRESS_METHOD_LZ4HC;
 
 void * SimplePluginCtx::ctxMalloc(size_t size)
 { 

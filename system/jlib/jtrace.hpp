@@ -430,6 +430,7 @@ constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
 //Specific to the code generator
 // see traceOptimizations above.
+constexpr TraceFlags traceResources = TraceFlags::flag16;
 
 //========================================================================================= 
 
@@ -478,6 +479,7 @@ constexpr std::initializer_list<TraceOption> eclccTraceOptions
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
     TRACEOPT(traceOptimizations),
+    TRACEOPT(traceResources),
 };
 
 interface IPropertyTree;
