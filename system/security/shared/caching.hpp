@@ -140,23 +140,25 @@ public:
 class CPermissionsCache : public CInterface
 {
 public:
-    CPermissionsCache(const char * _secMgrClass = nullptr)
+    CPermissionsCache(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0)
     {
-        m_cacheTimeoutInSeconds = DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES * 60 * 1000;//default every hour
+        unsigned timeoutSeconds = ((cacheTimeoutMinutes != 0) ? cacheTimeoutMinutes : DEFAULT_RESOURCE_CACHE_TIMEOUT_MINUTES) * 60;  //default every hour
         m_transactionalEnabled = false;
-        m_secMgr = NULL;
-        m_lastManagedFileScopesRefresh = 0;
+        m_secMgr = secMgr;
         m_defaultPermission = SecAccess_Unknown;
         m_secMgrClass.set(_secMgrClass);
         m_transactionalCacheTimeout = DEFAULT_CACHE_TIMEOUT_SECONDS;
+        setCacheTimeout(timeoutSeconds);
     }
+
+    CPermissionsCache(ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0) : CPermissionsCache(nullptr, secMgr, cacheTimeoutMinutes) {}
 
     virtual ~CPermissionsCache();
 
     //Returns an owned reference to a shared cache of a given Sec Mgr class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* getInstance(const char * _secMgrClass);
+    static CPermissionsCache* getInstance(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -175,16 +177,12 @@ public:
     virtual void add (ISecUser& sec_user);
     virtual void removeFromUserCache(ISecUser& sec_user);
 
-    void  setCacheTimeout(int timeoutSeconds)
-    {
-        m_cacheTimeoutInSeconds = timeoutSeconds;
-        if(m_cacheTimeoutInSeconds == 0 && isTransactionalEnabled())//ensure transactional time is updated
-            setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
-        else
-            setTransactionalCacheTimeout(timeoutSeconds);
-    }
+    void  setCacheTimeout(unsigned timeoutSeconds);
+
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
+    void managedFileScopesCacheFillThread();
+    void stopManagedFileScopeCacheFillThread();
 
     void setTransactionalEnabled(bool enable)
     {
@@ -201,10 +199,9 @@ public:
 
     void flush();
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
-    void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();
     bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags);
-    void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
+
     SecAccessFlags  queryDefaultPermission(ISecUser& user);
     void setUseLegacyDefaultFileScopePermissionCache(bool useLegacy)
     {
@@ -212,15 +209,18 @@ public:
             DBGLOG("*** Setting default file scope permissions to use legacy mode which uses first retrieved permission for all users.");
         m_useLegacyDefaultFileScopePermissionCache = useLegacy;
     }
+
 private:
 
+    void clearPermissionsCache();
+    void clearUsersCache();
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
     typedef std::map<string, CachedUser*> MapUserCache;
 
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
     mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
-    int m_cacheTimeoutInSeconds; //cleanup cycle period
+    std::atomic<unsigned int> m_cacheTimeoutInSeconds;
     bool m_transactionalEnabled;
     int m_transactionalCacheTimeout;
 
@@ -234,10 +234,14 @@ private:
     SecAccessFlags              m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
+    mutable ReadWriteLock       m_defaultFilePermissionRWLock;//guards m_userDefaultFileScopePermissions
     ISecManager *               m_secMgr;
-    time_t                      m_lastManagedFileScopesRefresh;
 
     bool m_useLegacyDefaultFileScopePermissionCache = false;
+    Semaphore m_fileScopeCacheFillSem;
+    std::thread m_fileScopeCacheFillThread;
+    std::atomic<bool> m_stopFileScopeCacheFillThread = false;
+    std::atomic<time_t> m_lastCacheFillTime;
 };
 
 time_t getThreadCreateTime();
