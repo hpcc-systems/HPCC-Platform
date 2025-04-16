@@ -9,6 +9,7 @@
 #include <libxml/xinclude.h>
 #include <libxml/catalog.h>
 #include <libxml/xpathInternals.h>
+#include <libxml/xmlsave.h>
 #include <libxslt/xslt.h>
 #include <libxslt/xsltInternals.h>
 #include <libxslt/transform.h>
