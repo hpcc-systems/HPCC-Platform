@@ -31,7 +31,7 @@
 class CLZ4Compressor final : public CFcmpCompressor
 {
     bool hc;
-    int hcLevel = LZ4HC_CLEVEL_DEFAULT;
+    int hcLevel = 3; // Default to 3 because default takes took long for general use
 protected:
     virtual void setinmax() override
     {

@@ -329,7 +329,7 @@ public:
     virtual IPropertyTree *create(MemoryBuffer &mb) override;
     virtual void createChildMap() override;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree) override;
-    virtual void setLocal(size32_t size, const void *data, bool _binary) override;
+    virtual void setLocal(size32_t size, const void *data, bool _binary, CompressionMethod compressType) override;
     virtual void appendLocal(size32_t size, const void *data, bool binary) override;
     virtual void addingNewElement(IPropertyTree &child, int pos) override;
     virtual void removingElement(IPropertyTree *tree, unsigned pos) override;
@@ -345,7 +345,7 @@ public:
     virtual void setPropInt64(const char *xpath, __int64 val) override;
     virtual void addPropReal(const char *xpath, double val) override;
     virtual void setPropReal(const char *xpath, double val) override;
-    virtual void setPropBin(const char *xpath, size32_t size, const void *data) override;
+    virtual void setPropBin(const char *xpath, size32_t size, const void *data, CompressionMethod preferredCompression) override;
     virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val) override;
     virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) override;
     virtual bool removeProp(const char *xpath) override;
