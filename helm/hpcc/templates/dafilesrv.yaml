@@ -3,9 +3,9 @@ Dafilesrv configmap
 Pass in dict with root and me
 */}}
 {{- define "hpcc.dafilesrvConfigMap" -}}
-apiVersion: v1 
+apiVersion: v1
 metadata:
-  name: {{ .me.name }}-configmap 
+  name: {{ .me.name }}-configmap
 data:
   {{ .me.name }}.yaml:
     version: 1.0
@@ -37,7 +37,7 @@ data:
   {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerKeyName) -}}
  {{ end }}
 {{ end }}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global")) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global,~.*::loggging")) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,7 +99,7 @@ spec:
  {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
 {{- end }}
 ---
-kind: ConfigMap 
+kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap")) }}
 ---
 {{- $service := deepCopy .service -}}
