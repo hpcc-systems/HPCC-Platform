@@ -6,7 +6,7 @@ global:
   image:
     ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
     ## For best results, the helm chart version and platform version should match, which is the default if version is
-    ## not specified. Do not override without good reason as undefined behavior may result. 
+    ## not specified. Do not override without good reason as undefined behavior may result.
     ## version: x.y.z
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
@@ -48,12 +48,12 @@ global:
   # If not specified, the first esp component that exposes eclservices application is assumed.
   # Can also be overridden locally in individual components
   ## defaultEsp: eclservices
-  
+
   egress:
     ## If restricted is set, NetworkPolicies will include egress restrictions to allow connections from pods only to the minimum required by the system
     ## Set to false to disable all egress policy restrictions (not recommended)
     restricted: true
-    
+
     ## The kube-system namespace is not generally labelled by default - to enable more restrictive egress control for dns lookups we need to be told the label
     ## If not provided, DNS lookups on port 53 will be allowed to connect anywhere
     ## The namespace may be labelled using a command such as "kubectl label namespace kube-system name=kube-system"
@@ -434,7 +434,7 @@ dafilesrv:
   service:
     servicePort: 7200
     visibility: local
-    
+
 - name: spray-service
   application: spray
   service:
@@ -513,6 +513,11 @@ sasha:
     #switchMinTime: 1
     #queues: "*"
 
+  debugplane-housekeeping: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 24
+    #at: "* 3 * * *"
+    #expiryDays: 14
 
 dfuserver:
 - name: dfuserver
@@ -555,7 +560,7 @@ eclccserver:
   replicas: 1
   ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
   useChildProcesses: false
-  ## If non-zero, and useChildProcesses is false, try spending up to this number of seconds compiling using a child process before switching to 
+  ## If non-zero, and useChildProcesses is false, try spending up to this number of seconds compiling using a child process before switching to
   ## a separate container. Speeds up throughput of small jobs.
   childProcessTimeLimit: 10
   ## maxActive controls how many workunit compiles may be active at once (per replica)
@@ -575,7 +580,7 @@ eclccserver:
   #resources:
   #  cpu: "1"
   #  memory: "4G"
-    
+
 esp:
 - name: eclwatch
   ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
@@ -636,9 +641,9 @@ esp:
     #annotations:
     #  service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "mysubnet"
     #  The service.annotations prefixed with hpcc.eclwatch.io should not be declared here. They can be declared
-    #  in other services in order to be exposed in the ECLWatch interface. Similar function can be used by other 
+    #  in other services in order to be exposed in the ECLWatch interface. Similar function can be used by other
     #  applications. For other applications, the "eclwatch" inside the service.annotations should be replaced by
-    #  their application names. 
+    #  their application names.
     #  hpcc.eclwatch.io/enabled: "true"
     #  hpcc.eclwatch.io/description: "some description"
     ## You can also specify labels on a service
@@ -800,7 +805,7 @@ roxie:
   #  cpu: "2"
   #  memory: "8Gi"
 
-  # Roxie may take a while to start up if there are a lot of queries to load. Yuo may need to 
+  # Roxie may take a while to start up if there are a lot of queries to load. Yuo may need to
   #override the default startup/readiness probing by setting these values
   #minStartupTime: 30      # How long to wait before initiating startup probing
   #maxStartupTime: 600     # Maximum time to wait for startup to complete before failing
