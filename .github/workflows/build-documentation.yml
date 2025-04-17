@@ -105,8 +105,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          file: ${{ inputs.folder-platform }}/dockerfiles/vcpkg/${{ inputs.os }}.dockerfile
-          context: ${{ inputs.folder-platform }}/dockerfiles/vcpkg
+          file: ${{ inputs.folder-platform }}/dockerfiles/${{ inputs.os }}.dockerfile
+          context: ${{ inputs.folder-platform }}/dockerfiles
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |

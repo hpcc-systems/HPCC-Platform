@@ -158,7 +158,7 @@ updates:
     open-pull-requests-limit: 0
 
   - package-ecosystem: "docker"
-    directory: "/dockerfiles/vcpkg"
+    directory: "/dockerfiles"
     schedule:
       interval: "daily"
     commit-message:
@@ -166,7 +166,7 @@ updates:
     open-pull-requests-limit: 0
 
   - package-ecosystem: "docker"
-    directory: "/dockerfiles/vcpkg/platform-core-ubuntu-22.04"
+    directory: "/dockerfiles/platform-core-ubuntu-22.04"
     schedule:
       interval: "daily"
     commit-message:
