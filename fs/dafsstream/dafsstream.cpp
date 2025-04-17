@@ -1472,8 +1472,10 @@ IRowWriter *createRowWriter(IDFUFilePartWriter *partWriter)
         }
         virtual void putRow(const void *row) override
         {
-            // callers should use writeRow() instead
-            throwUnexpected();
+#ifdef _DEBUG
+            PrintStackReport();
+#endif
+            UNIMPLEMENTED_X("Caller should use writeRow() instead");
         }
         virtual void writeRow(const void *row) override
         {

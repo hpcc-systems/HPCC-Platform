@@ -316,8 +316,10 @@ public:
 
     void writeRow(const void *row)
     {
-        // callers should use putRow() instead
-        throwUnexpected();
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
 
     void stop()
@@ -1203,8 +1205,10 @@ public:
     }
     virtual void writeRow(const void *row) override
     {
-        // callers should use putRow() instead
-        throwUnexpected();
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
     virtual void flush() override
     {
@@ -1744,12 +1748,11 @@ public:
         return LINK(this);
     }
 // ISharedSmartBufferRowWriter
-    inline void _putRow(const void *row, ISharedSmartBufferCallback *callback, bool _release)
+    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) override
     {
         if (stopped)
         {
-            if (_release)
-                ReleaseThorRow(row);
+            ReleaseThorRow(row);
             return;
         }
         unsigned len=rowSize(row);
@@ -1784,17 +1787,16 @@ public:
         if (!callback || paged)
             signalReaders();
     }
-    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) override
-    {
-        _putRow(row, callback, true);
-    }
     virtual void putRow(const void *row) override
     {
-        return _putRow(row, NULL, true);
+        return putRow(row, NULL);
     }
     virtual void writeRow(const void *row) override
     {
-        return _putRow(row, NULL, false);
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
     virtual void flush() override
     {
@@ -2833,8 +2835,10 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
         }
         virtual void writeRow(const void *row)
         {
-            // callers should use putRow() instead
-            throwUnexpected();
+#ifdef _DEBUG
+            PrintStackReport();
+#endif
+            UNIMPLEMENTED_X("Caller should use putRow() instead");
         }
         virtual void flush()
         {

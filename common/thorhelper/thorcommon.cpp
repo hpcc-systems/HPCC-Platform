@@ -1506,7 +1506,7 @@ public:
         }
     }
 
-    inline void _putRow(const void *row, bool _release)
+    inline void _putRow(const void *row)
     {
         if (row)
         {
@@ -1529,8 +1529,7 @@ public:
                 }
             }
 
-            if (_release)
-                allocator->releaseRow(row);
+            allocator->releaseRow(row);
         }
         else if (ers_eogonly == emptyRowSemantics) // backpatch
         {
@@ -1552,12 +1551,12 @@ public:
 
     void putRow(const void *row)
     {
-        _putRow(row, true);
+        _putRow(row);
     }
 
     void writeRow(const void *row)
     {
-        _putRow(row, false);
+        _putRow(row);
     }
 
     void flush()
