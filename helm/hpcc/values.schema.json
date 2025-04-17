@@ -3079,6 +3079,14 @@
       },
       "additionalProperties": false
     },
+    "sasha-xref": {
+        "type": "object",
+        "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+        "properties": {
+          "disabled": {}
+        },
+        "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3105,6 +3113,9 @@
             },
             "debugplane-housekeeping": {
               "$ref": "#/definitions/sasha-debugplane-housekeeping"
+            },
+            "xref": {
+              "$ref": "#/definitions/sasha-xref"
             },
             "disabled": {
               "type": "boolean"

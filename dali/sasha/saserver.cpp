@@ -451,8 +451,8 @@ int main(int argc, const char* argv[])
                     servers.append(*createSashaQMonitorServer());
                 else if (strieq(service, "debugplane-housekeeping"))
                     servers.append(*createSashaDebugPlaneHousekeepingServer());
-                //else if (strieq(service, "xref")) // TODO
-                //    servers.append(*createSashaXrefServer());
+                else if (strieq(service, "xref"))
+                   servers.append(*createSashaXrefServer());
                 else
                     throw makeStringExceptionV(0, "Unrecognised 'service': %s", service);
 #else

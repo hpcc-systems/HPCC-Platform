@@ -519,6 +519,10 @@ sasha:
     #at: "* 3 * * *"
     #expiryDays: 14
 
+  xref: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 1
+    #ignoreLazyLost: false
 
 dfuserver:
 - name: dfuserver
