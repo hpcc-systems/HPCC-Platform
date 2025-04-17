@@ -412,8 +412,10 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
-    incomplete = false;
     helperFlags = helper.getFlags();
+    grouped = (helperFlags & TDXgrouped) != 0;
+    extend = (helperFlags & TDWextend) != 0;
+    overwrite = (helperFlags & TDWoverwrite) != 0;
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -431,9 +433,6 @@ CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
 void CHThorDiskWriteActivity::ready()       
 { 
     CHThorActivityBase::ready(); 
-    grouped = (helper.getFlags() & TDXgrouped) != 0;
-    extend = ((helper.getFlags() & TDWextend) != 0);
-    overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
     resolve();
     uncompressedBytesWritten = 0;
     numRecords = 0;

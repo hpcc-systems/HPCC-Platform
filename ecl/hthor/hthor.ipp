@@ -280,22 +280,22 @@ class CHThorDiskWriteActivity : public CHThorActivityBase
 {
 protected:
     IHThorGenericDiskWriteArg &helper;
-    bool extend;
-    bool overwrite;
+    bool extend = false;
+    bool overwrite = false;
     Owned<IFileIO> io;
     Linked<IFileIOStream> diskout;
     StringBuffer lfn;
     StringAttr filename;
     OwnedIFile file;
-    bool incomplete;
-    bool grouped;
-    bool blockcompressed;
-    bool encrypted;
+    bool incomplete = false;
+    bool grouped = false;
+    bool blockcompressed = false;
+    bool encrypted = false;
     bool outputPlaneCompressed = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<IExtRowWriter> outSeq;
-    unsigned __int64 numRecords;
+    unsigned __int64 numRecords = 0;
     stat_type numDiskWrites = 0;
     cost_type diskAccessCost = 0;
     Owned<ClusterWriteHandler> clusterHandler;
@@ -303,7 +303,7 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
-    unsigned helperFlags;
+    unsigned helperFlags = 0;
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
