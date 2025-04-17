@@ -671,7 +671,7 @@ cost_type CMasterActivity::calcFileReadCostStats(bool updateFileProps)
     cost_type totalReadCost = 0;
     ThorActivityKind actKind = container.getKind();
     bool bIndexReadActivity = isIndexReadActivity(actKind);
-    IFileReadPropertiesUpdater * fileReadPropertiesUpdater = queryGraph().queryFileReadPropsUpdater();
+    IFileReadPropertiesUpdater * fileReadPropertiesUpdater = (static_cast<CMasterGraph &>(queryGraph())).queryFileReadPropsUpdater();
     if (fileStats.size()>0)
     {
         unsigned fileIndex = 0;
@@ -3219,6 +3219,17 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorR
     return result;
 }
 
+IFileReadPropertiesUpdater * CMasterGraph::queryFileReadPropsUpdater()
+{
+    return fileReadPropsUpdater.query([this] { return createFileReadPropertiesUpdater(this->job.queryUserDescriptor()); }, fileReadPropsUpdaterCrit);
+}
+
+void CMasterGraph::end()
+{
+    if (fileReadPropsUpdater.query())
+        fileReadPropsUpdater.query()->publish();
+    CGraphBase::end();
+}
 
 ///////////////////////////////////////////////////
 

@@ -3786,62 +3786,85 @@ void logNullUser(IUserDescriptor * userDesc)
 }
 #endif
 
+// FileReadPropertiesUpdater:
+// - aggregates the readCost and the numDiskReads for each logical file (using addCostAndNumReads method).
+// - upon publishing (calling publish method), it:
+//   - it traverses up the owning superfiles, computing the cumulative readCost andnumDiskReads for the subfile owners.
+//   - it subsequently updates file properties for both the files and their owning superfiles with the newly derived statistics.
+// It is designed to optimize the update process for readCost and read count by:
+// * reducing the frequency of getOwningSuperFiles calls, as these operations are resource-intensive.
+// * performing a single-pass update of file properties (e.g. at the end of a graph execution).
 class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesUpdater>
 {
     struct FileStatItem
     {
-        Linked<IDistributedFile> file;
+        Owned<IDistributedFile> file;
         stat_type numDiskReads = 0;
         cost_type readCost = 0;
     };
     std::unordered_map<std::string, FileStatItem> stats;
     Linked<IUserDescriptor> udesc;
 
-    // Add the cost and number of reads to stats tracking map (to be written to properties later)
-    // - it will store the IDistributedFile if storeIDistributedFile is true
-    FileStatItem & appendCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost, bool storeIDistributedFile)
+    // Add the readCost and numDiskReads to owners stats
+    FileStatItem & appendOwnersCostAndNumReads(std::unordered_map<std::string, FileStatItem> & ownerStats, IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost)
     {
-        FileStatItem & curStatItem = stats[file->queryLogicalName()];
-        if (storeIDistributedFile && !curStatItem.file)
-            curStatItem.file.set(file);
+        FileStatItem & curStatItem = ownerStats[file->queryLogicalName()];
+        if (!curStatItem.file)
+            curStatItem.file.setown(LINK(file));
         curStatItem.numDiskReads += numDiskReads;
         curStatItem.readCost += curReadCost;
         return curStatItem;
     }
-    // Update the cost and number of reads for owning superfile
-    // - this will recurse up the superfile tree updating the owning superfiles
-    // N.b. fileStatItem.file MUST be set to a valid IDistributedFile
-    void updateOwnersStats(FileStatItem & fileStatItem)
+    // Update the readCost and numDiskReads for owning superfiles
+    // - this will recurse up the superfiles tree updating the owning superfiles
+    // n.b. fileStatItem.file must be set to a valid IDistributedFile
+    void updateOwnersStats(std::unordered_map<std::string, FileStatItem> & ownerStats, const FileStatItem & fileStatItem)
     {
-        stat_type & numDiskReads = fileStatItem.numDiskReads;
-        cost_type & readCost = fileStatItem.readCost;
         // getOwningSuperFiles iterator is slow, so only call it once (say at the end of graph)
         Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles();
         ForEach(*iter)
         {
             IDistributedSuperFile & cur = iter->query();
-            FileStatItem & owningFileStatItem = appendCostAndNumReads(&cur, numDiskReads, readCost, true);
-            updateOwnersStats(owningFileStatItem);
+            const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, fileStatItem.numDiskReads, fileStatItem.readCost);
+            updateOwnersStats(ownerStats, owningFileStatItem);
         }
     }
-    // Update the cost and number of reads to the file properties
-    // N.b. It is ok for fileStatItem.file to be null when calling this function
-    void updateFileProperties()
+
+public:
+    FileReadPropertiesUpdater(IUserDescriptor * udesc) : udesc(udesc) {}
+
+    // Track and accumulate the readCost and numDiskReads to stats tracking map (to be written to properties later)
+    // - if curReadCost is 0, it will be calculated using calcFileAccessCost
+    virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) override
     {
-        // Iterate through files, updating the owner stats
-        // (Also, lookup the file if it is not already set)
+        if (!numDiskReads)
+            return 0;
+
+        if (!curReadCost)
+            curReadCost = calcFileAccessCost(file, 0, numDiskReads);
+        // Add the readCost and numDiskReads to stats tracking map
+        FileStatItem & curStatItem = stats[file->queryLogicalName()];
+        curStatItem.numDiskReads += numDiskReads;
+        curStatItem.readCost += curReadCost;
+        return curReadCost;
+    }
+
+    // Publish the readCost and numDiskReads to the file properties and for owning superfiles
+    // N.b. It is ok for fileStatItem.file to be null when calling this function
+    void publish()
+    {
+        std::unordered_map<std::string, FileStatItem> ownerStats;
+        // Iterate through files, updating the ownerStats
+        // (Also, set FileStatItem::file to a valid IDistributedFile, if possible)
         for (auto & [logicalName, curStatItem] : stats)
         {
-            if (!curStatItem.file)
+            curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+            if (!curStatItem.file) // File may have been deleted
             {
-                curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
-                if (!curStatItem.file)  // File may have been deleted
-                {
-                    OERRLOG("FileReadPropertiesUpdater: File not found: %s", logicalName.c_str());
-                    continue;
-                }
+                OERRLOG("FileReadPropertiesUpdater: File not found: %s", logicalName.c_str());
+                continue;
             }
-            updateOwnersStats(curStatItem);
+            updateOwnersStats(ownerStats, curStatItem);
         }
         // Update the file properties with the new stats
         for (auto & [logicalName, curStatItem] : stats)
@@ -3849,25 +3872,12 @@ class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesU
             if (curStatItem.file)
                 updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
         }
-    }
-public:
-    FileReadPropertiesUpdater(IUserDescriptor * udesc) : udesc(udesc) {}
-    ~FileReadPropertiesUpdater()
-    {
-        updateFileProperties();
-    }
-    // Add the cost and number of reads to stats tracking map (to be written to properties later)
-    virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost=0) override
-    {
-        if (!numDiskReads)
-            return 0;
-
-        if (curReadCost==0)
-            curReadCost = calcFileAccessCost(file, 0, numDiskReads);
-        // Add the cost and number of reads to stats tracking map
-        // (file is not stored as this may cause problems for some queries where)
-        appendCostAndNumReads(file, numDiskReads, curReadCost, false);
-        return curReadCost;
+        // Update the owner file propertiers owners stats
+        for (auto & [logicalName, curStatItem] : ownerStats)
+        {
+            updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
+        }
+        stats.clear(); // ensure all IDistributedFiles are released
     }
 };
 

@@ -262,8 +262,8 @@ extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type
             legacyReadCost = calcFileAccessCost(file, 0, prevDiskReads);
         }
     }
-    file->addAttrValues({{getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost},
-                         {getDFUQResultFieldName(DFUQRFnumDiskReads), numDiskReads}});
+    file->addAttrValues({makeAttrValuePair(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost),
+                         makeAttrValuePair(getDFUQResultFieldName(DFUQRFnumDiskReads), (unsigned __int64)numDiskReads)});
     return curReadCost;
 }
 
@@ -3322,8 +3322,14 @@ public:
         }
     }
 
-    virtual void addAttrValues(const std::vector<std::pair<const char*, unsigned __int64>>& attrs) override
+    virtual void addAttrValues(std::initializer_list<AttrValuePair> attrs) override
     {
+        if (logicalName.isForeign())
+        {
+            // Note: it is not possible to update foreign attributes at the moment, so ignoring
+            return;
+        }
+
         CFileAttrLock attrLock;
         if (conn)
             lockFileAttrLock(attrLock);
@@ -3334,15 +3340,8 @@ public:
 
             if (0 == value)
                 continue;
-            if (logicalName.isForeign())
-            {
-                // Note: it is not possible to update foreign attributes at the moment, so ignoring
-            }
-            else
-            {
-                unsigned __int64 currentVal = queryAttributes().getPropInt64(attrName);
-                queryAttributes().setPropInt64(attrName, currentVal + value);
-            }
+            unsigned __int64 currentVal = queryAttributes().getPropInt64(attrName);
+            queryAttributes().setPropInt64(attrName, currentVal + value);
         }
     }
 
@@ -6416,12 +6415,11 @@ public:
         return true;
     }
 
-    virtual bool getNumReads(stat_type &numReads)  const override
+    virtual bool getNumReads(stat_type &numReads) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
-            numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads));
-        else
+        numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), (stat_type) -1);
+        if (numReads == (stat_type) -1)
         {
             numReads = 0;
             ForEachItemIn(i,subfiles)
@@ -6437,9 +6435,8 @@ public:
     virtual bool getNumWrites(stat_type &numWrites) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
-            numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
-        else
+        numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), (stat_type) -1);
+        if (numWrites == (stat_type) -1)
         {
             numWrites = 0;
             ForEachItemIn(i,subfiles)
@@ -6455,9 +6452,8 @@ public:
     virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
-            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost));
-        else
+        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), (cost_type) -1);
+        if (cost == (stat_type) -1)
         {
             cost = 0;
             ForEachItemIn(i,subfiles)
@@ -6473,9 +6469,8 @@ public:
     virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        if (attrs && attrs->hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
-            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
-        else
+        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), (cost_type) -1);
+        if (cost == (stat_type) -1)
         {
             cost = 0;
             ForEachItemIn(i,subfiles)
@@ -6746,15 +6741,15 @@ public:
         if (getRecordLayout(mb, "_rtlType"))
             attrs.setPropBin("_rtlType", mb.length(), mb.bufferBase());
         stat_type numReads, numWrites;
-        if (getNumReads(numReads))
-            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), numReads);
-        if (getNumWrites(numWrites))
-            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numWrites); 
+        getNumReads(numReads);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), numReads);
+        getNumWrites(numWrites);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numWrites);
         cost_type readCost, writeCost;
-        if (getReadCost(readCost, true))
-            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
-        if (getWriteCost(writeCost, true))
-            attrs.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+        getReadCost(readCost, true);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
+        getWriteCost(writeCost, true);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
         const char *kind = nullptr;
         Owned<IDistributedFileIterator> subIter = getSubFileIterator(true);
         ForEach(*subIter)

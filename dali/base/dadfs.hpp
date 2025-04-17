@@ -333,6 +333,12 @@ interface ICodeContext;
 /**
  * A distributed file, composed of one or more DistributedFileParts.
  */
+typedef std::pair<const char*, unsigned __int64> AttrValuePair;
+inline AttrValuePair makeAttrValuePair(const char * attr, unsigned __int64 val)
+{
+    return std::make_pair(attr, val);
+}
+
 interface IDistributedFile: extends IInterface
 {
     virtual unsigned numParts() = 0;
@@ -368,7 +374,7 @@ interface IDistributedFile: extends IInterface
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual void setAccessed() = 0;                                             // set date and time last accessed to now (local time)
     virtual void addAttrValue(const char *attr, unsigned __int64 value) = 0;    // atomic add to attribute value
-    virtual void addAttrValues(const std::vector<std::pair<const char*, unsigned __int64>>& attrs) = 0; // for each pair of attribute name and value, atomic add to attribute value
+    virtual void addAttrValues(std::initializer_list<AttrValuePair> attrs) = 0; // for each pair of attribute name and value, atomic add to attribute value
     virtual unsigned numCopies(unsigned partno) = 0;                            // number of copies
 
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)

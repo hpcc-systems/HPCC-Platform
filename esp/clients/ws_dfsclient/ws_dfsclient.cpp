@@ -282,7 +282,7 @@ public:
     {
         legacyDFSFile->addAttrValue(attr, value);
     }
-    virtual void addAttrValues(const std::vector<std::pair<const char*, unsigned __int64>>& attrs) override
+    virtual void addAttrValues(std::initializer_list<AttrValuePair> attrs) override
     {
         legacyDFSFile->addAttrValues(attrs);
     }

@@ -3878,14 +3878,15 @@ cost_type FileSprayer::updateSourceProperties()
                         // so query the first (and only) subfile
                         subfile = &superSrc->querySubFile(0);
                     }
-                    totalCost += fileReadPropertiesUpdater->addCostAndNumReads(subfile, curProgress.numReads);
+                    totalCost += fileReadPropertiesUpdater->addCostAndNumReads(subfile, curProgress.numReads, 0);
                 }
             }
         }
         else
         {
-            totalCost += fileReadPropertiesUpdater->addCostAndNumReads(distributedSource, totalNumReads);
+            totalCost += fileReadPropertiesUpdater->addCostAndNumReads(distributedSource, totalNumReads, 0);
         }
+        fileReadPropertiesUpdater->publish();
         return totalCost;
     }
     return 0;

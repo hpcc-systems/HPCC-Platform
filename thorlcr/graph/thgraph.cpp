@@ -1216,7 +1216,6 @@ void traceMemUsage()
 
 /////
 static CriticalSection tempFileSizeTrackerCrit; // shared amongst all, because very unlikely to contend
-static CriticalSection fileReadPropsUpdaterCrit;
 
 CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
 {
@@ -2298,11 +2297,6 @@ IThorGraphResults *CGraphBase::createThorGraphResults(unsigned num)
 CFileSizeTracker * CGraphBase::queryTempFileSizeTracker()
 {
     return tempFileSizeTracker.query([] { return new CFileSizeTracker; }, tempFileSizeTrackerCrit);
-}
-
-IFileReadPropertiesUpdater * CGraphBase::queryFileReadPropsUpdater()
-{
-    return fileReadPropsUpdater.query([this] { return createFileReadPropertiesUpdater(this->job.queryUserDescriptor()); }, fileReadPropsUpdaterCrit);
 }
 
 

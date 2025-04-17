@@ -1052,6 +1052,7 @@ typedef MapBetween<graphid_t, graphid_t, EclSubGraphPtr, EclSubGraphPtr> SubGrap
 class EclGraph : public CInterface
 {
     AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
+    CriticalSection fileReadPropsUpdaterCrit;
 
     RedirectedAgentContext graphAgentContext;
     class SubGraphCodeContext : public IndirectCodeContextEx

@@ -1298,6 +1298,8 @@ void EclGraph::execute(const byte * parentExtract)
             wu->setGraphState(queryGraphName(), wfid, WUGraphFailed);
         throw;
     }
+    if (fileReadPropsUpdater.query())
+        fileReadPropsUpdater.query()->publish();
 }
 
 void EclGraph::executeLibrary(const byte * parentExtract, IHThorGraphResults * results)
@@ -1363,8 +1365,6 @@ void EclGraph::updateLibraryProgress()
         agent->mergeAggregatorStats(*statsCollection, wfid, queryGraphName(), cur.id);
     }
 }
-
-static CriticalSection fileReadPropsUpdaterCrit;
 
 IFileReadPropertiesUpdater * EclGraph::queryFileReadPropsUpdater()
 {
