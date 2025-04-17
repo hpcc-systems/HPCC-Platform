@@ -79,10 +79,11 @@ private:
     Owned<ISmartSocket> roxieSock;
     StringBuffer query;
     StringBuffer resultName;
+    StringBuffer traceParent;
 
     QueueOf<MemoryBuffer, false> outputQ;
 
-    char *inputBuffer = nullptr;;
+    char *inputBuffer = nullptr;
     unsigned inputLen = 0;
     unsigned curInput = 0;
 
@@ -93,7 +94,7 @@ public:
     unsigned recordsRead = 0;
     unsigned recordsWritten = 0;
 
-    RoxieThread(const char *_query, const char *_resultName) : query(_query), resultName(_resultName)
+    RoxieThread(const char *_query, const char *_resultName, const char * _traceParent) : query(_query), resultName(_resultName), traceParent(_traceParent)
     {
         recordsRead = recordsWritten = 0;
         bytesPerQuery = recordsPerQuery * in_width;
@@ -104,6 +105,22 @@ public:
     void sendQuery()
     {
         MemoryBuffer sendBuffer;
+        if (!traceParent.isEmpty())
+        {
+            try
+            {
+                Owned<IPTree> queryTree = createPTreeFromXMLString(query, ipt_none, ptr_none);
+                ensurePTree(queryTree, "_trace");
+                queryTree->setProp("_trace/traceparent", traceParent.str());
+                toXML(queryTree, query.clear());
+            }
+            catch (IException * e)
+            {
+                StringBuffer s;
+                printf("Warning: could not inject trace parent: '%s'", e->errorMessage(s).str());
+                e->Release();
+            }
+        }
         unsigned queryLen = query.length();
         unsigned revQueryLen = queryLen;
         _WINREV(revQueryLen);
@@ -476,6 +493,8 @@ void usage()
     printf("  -to   N      Read timeout\n");
     printf("  -wu   wuid   Workunit id\n");
     printf("  -l    name   Logfile name\n");
+    printf("  -tp   trace  Provide trace context (traceparent)\n");
+    printf("               Sample format: 00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01\n");
     printf("  -ssl         Use SSL connections\n");
 }
 
@@ -487,6 +506,7 @@ int main(int argc, char *argv[])
     StringBuffer query;
     StringBuffer resultName;
     StringBuffer logFile;
+    StringBuffer traceParent;
     unsigned numThreads = 2;
     bool retryMode = true;
 
@@ -607,6 +627,12 @@ int main(int argc, char *argv[])
             if (i <argc)
                 logFile.clear().append(argv[i]);
         }
+        else if (stricmp(argv[i], "-tp") == 0)   //trace parent provided
+        {
+            i++;
+            if (i < argc)
+                traceParent.clear().append(argv[i]);
+        }
 #if 0
         else if (stricmp(argv[i], "-d") == 0)
         {
@@ -692,7 +718,7 @@ int main(int argc, char *argv[])
             {
                 for (i=0; i<(int)numThreads; i++)
                 {
-                    rt[i] = new RoxieThread(query.str(), resultName.str());
+                    rt[i] = new RoxieThread(query.str(), resultName.str(), traceParent.str());
                     PROGLOG("Starting thread %d", i);
                     rt[i]->start(true);
                 }
