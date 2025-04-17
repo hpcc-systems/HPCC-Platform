@@ -314,6 +314,14 @@ public:
         }
     }
 
+    void writeRow(const void *row)
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
+    }
+
     void stop()
     {
 #ifdef _FULL_TRACE
@@ -482,7 +490,7 @@ public:
         delete in;
     }
 
-    void putRow(const void *row)
+    inline void _putRow(const void *row, bool _release)
     {
         REENTRANCY_CHECK(putrecheck)
         size32_t sz = 0;
@@ -522,7 +530,18 @@ public:
             }
         }
         // cancelled
-        ReleaseThorRow(row);
+        if (_release)
+            ReleaseThorRow(row);
+    }
+
+    void putRow(const void *row)
+    {
+        _putRow(row, true);
+    }
+
+    void writeRow(const void *row)
+    {
+        _putRow(row, false);
     }
 
     const void *nextRow()
@@ -1184,6 +1203,13 @@ public:
                 throwUnexpected();
         }
     }
+    virtual void writeRow(const void *row) override
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
+    }
     virtual void flush() override
     {
         // semantics of ISmartRowBuffer::flush:
@@ -1258,6 +1284,11 @@ public:
     {
         assertex(!eoi);
         writer->putRow(row);
+    }
+    virtual void writeRow(const void *row)
+    {
+        assertex(!eoi);
+        writer->writeRow(row);
     }
     virtual void flush()
     {
@@ -1759,6 +1790,13 @@ public:
     virtual void putRow(const void *row) override
     {
         return putRow(row, NULL);
+    }
+    virtual void writeRow(const void *row) override
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
     virtual void flush() override
     {
@@ -2794,6 +2832,13 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
             if (rows.ordinality() >= owner.writeGranularity)
                 owner.addRows(rows);
             rows.append(row);
+        }
+        virtual void writeRow(const void *row)
+        {
+#ifdef _DEBUG
+            PrintStackReport();
+#endif
+            UNIMPLEMENTED_X("Caller should use putRow() instead");
         }
         virtual void flush()
         {
