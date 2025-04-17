@@ -10514,7 +10514,7 @@ void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph)
     _graph->serialize(mb);
     // Note - we could compress further but that would introduce compatibility concerns, so don't bother
     // Cassandra workunit code actually lzw compresses the parent anyway
-    xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray());
+    xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray(), COMPRESS_METHOD_LZ4HC);
     graph.setown(_graph);
 }
 
