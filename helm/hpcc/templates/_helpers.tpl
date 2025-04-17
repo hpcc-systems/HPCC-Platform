@@ -2623,7 +2623,7 @@ globalExcludeList below is a hard-coded list of global keys to exclude.
 
 */}}
 {{- define "hpcc.getConfigSHA" }}
-{{- $globalExcludeList := list "~.*::replicas" -}}
+{{- $globalExcludeList := list "~.*::replicas" "~.*::vaults" -}}
 {{- $globalExcludeSectionRegexList := list ".*-job.yaml$" -}}
 {{- $componentExcludeList := ternary (splitList "," (.excludeKeys | default "")) list (hasKey . "excludeKeys") -}}
 {{- $combinedExcludeKeyList := concat $globalExcludeList $componentExcludeList -}}
