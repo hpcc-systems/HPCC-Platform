@@ -10666,6 +10666,31 @@ void HqlCppTranslator::buildSerializedLayoutMember(BuildCtx & ctx, IHqlExpressio
 }
 
 
+unsigned getDefaultBloomFieldMask(IHqlExpression * record)
+{
+    unsigned mask = 0;
+    unsigned fieldCount = 0;
+    unsigned totalSize = 0;
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        if (cur->isAttribute())
+            continue;
+
+        if (cur->getOperator() != no_field)
+            return mask;
+
+        if (cur->hasAttribute(_payload_Atom))
+            return mask;
+
+        mask |= (1 << fieldCount);
+        fieldCount++;
+        totalSize += cur->queryType()->getSize();
+        if (totalSize >= 3)
+            return mask;
+    }
+    return mask;
+}
 
 ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
@@ -10697,6 +10722,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         singlePart = true;
         widthExpr = NULL;
     }
+
+    LinkedHqlExpr serializedRecord = record;
+    unsigned numPayload = numPayloadFields(expr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(serializedRecord, numPayload));
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
 
     StringBuffer s;
     StringBuffer flags;
@@ -10778,10 +10809,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     }
     if (!blooms && options.addDefaultBloom)
     {
+        __uint64 bloomFieldMask = getDefaultBloomFieldMask(serializedRecord);
         bloomNames.append(", &bloomDefault");
         BuildCtx classctx(instance->startctx);
         IHqlStmt * classStmt = beginNestedClass(classctx, "bloomDefault", "CBloomBuilderInfo");
-        classctx.addQuoted("virtual __uint64 getBloomFields() const override { return 1; }");
+        classctx.addQuotedF("virtual __uint64 getBloomFields() const override { return %llu; }", bloomFieldMask);
         endNestedClass(classStmt);
         blooms++;
     }
@@ -10807,11 +10839,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() override { return (unsigned) -1; }"));
 
     //virtual const char * queryRecordECL() = 0;
-    LinkedHqlExpr serializedRecord = record;
-    unsigned numPayload = numPayloadFields(expr);
-    if (numPayload)
-        serializedRecord.setown(notePayloadFields(serializedRecord, numPayload));
-    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
     buildRecordEcl(instance->createctx, serializedRecord, "queryRecordECL");
 
     bool hasFilePosition = getBoolAttribute(expr, filepositionAtom, true);
