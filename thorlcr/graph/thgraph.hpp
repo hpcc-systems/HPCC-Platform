@@ -65,6 +65,7 @@
 
 #include "thorplugin.hpp"
 #include "jstats.h"
+#include "dautils.hpp"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
 #define THORDATALINK_STARTED            (RCMAX&~THORDATALINK_STOPPED&~(RCMAX>>2))   // dataLinkStart() was called
@@ -817,6 +818,7 @@ public:
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
     }
+
 // IExceptionHandler
     virtual bool fireException(IException *e);
 

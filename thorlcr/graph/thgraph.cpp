@@ -2299,6 +2299,7 @@ CFileSizeTracker * CGraphBase::queryTempFileSizeTracker()
     return tempFileSizeTracker.query([] { return new CFileSizeTracker; }, tempFileSizeTrackerCrit);
 }
 
+
 ////
 
 CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)

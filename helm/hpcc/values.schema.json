@@ -358,6 +358,14 @@
             "storageWrites": {
                 "description": "cost per 10,000 write operations",
                 "type": "number"
+            },
+            "limit": {
+              "description": "Default cost limit for thor/hthor jobs (overrideable in ECL using maxCost option)",
+              "type": "number"
+            },
+            "hardlimit": {
+              "description": "Hard cost limit for thor/hthor jobs",
+              "type": "number"
             }
           }
         },
@@ -836,6 +844,14 @@
         "perCpu": {
           "description": "cost of a single cpu",
           "type": "number"
+        },
+        "limit": {
+            "description": "Default cost limit for thor/hthor jobs (overrideable in ECL using maxCost option)",
+            "type": "number"
+        },
+        "hardlimit": {
+            "description": "Hard cost limit for thor/hthor jobs",
+            "type": "number"
         }
       }
     },
