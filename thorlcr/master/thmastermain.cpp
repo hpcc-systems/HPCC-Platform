@@ -79,7 +79,7 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
-static BlockedTimeTracker startupTimeTracker;
+static BlockedTimeTracker workerProvisionTracker;
 
 class CThorEndHandler : implements IThreaded
 {
@@ -345,7 +345,7 @@ public:
                     PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
                 }
                 --remaining;
-                startupTimeTracker.noteComplete();
+                workerProvisionTracker.noteComplete();
             }
         }
         assertex(workers == connectedWorkers.size());
@@ -923,7 +923,7 @@ int main( int argc, const char *argv[]  )
             if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
                 globals->setProp("@query_so_dir", soDir.str());
             else if (!globals->getProp("@query_so_dir", soDir)) {
-                globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
+                globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR);
                 soDir.append(DEFAULT_QUERY_SO_DIR);
             }
             if (isAbsolutePath(soDir.str()))
@@ -1011,6 +1011,7 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         auditThorSystemEvent("Initializing");
+        CCycleTimer workerStartTimer;
         unsigned numWorkers = 0;
         if (isContainerized())
         {
@@ -1046,7 +1047,7 @@ int main( int argc, const char *argv[]  )
                 if ((numWorkers % numWorkersPerPod) != 0)
                     throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
 
-                startupTimeTracker.noteWaiting(numWorkers);
+                workerProvisionTracker.noteWaiting(numWorkers);
                 wuRead->getDebugValue("platformVersion", optPlatformVersion);
                 Owned<IWorkUnit> workunit = &wuRead->lock();
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
@@ -1086,7 +1087,7 @@ int main( int argc, const char *argv[]  )
                 if (pct)
                     workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerNode);
             }
-            startupTimeTracker.noteWaiting(numWorkers);
+            workerProvisionTracker.noteWaiting(numWorkers);
         }
 
         registry->connect(numWorkers);
@@ -1164,9 +1165,14 @@ int main( int argc, const char *argv[]  )
 #endif
         configurePreferredPlanes();
 
-        assertex(startupTimeTracker.numInFlight() == 0);
+        assertex(workerProvisionTracker.numInFlight() == 0);
+        __uint64 workerProvisionTimeNs = workerProvisionTracker.getWaitingNs();
         __uint64 startupElapsedTimeNs = startupTracker.elapsedNs();
-        recordGlobalMetrics("Queue", {{"component","thor"},{"name",thorName}}, { StNumStarts, StTimeStart, StTimeStartElapsed }, { 1ULL, startupTimeTracker.getWaitingNs()+startupElapsedTimeNs, startupElapsedTimeNs });
+        __uint64 workerWaitingTimeNs = numWorkers * workerStartTimer.elapsedNs() - workerProvisionTimeNs;
+
+        double expenseStart = calcCostNs(getThorManagerRate(), startupElapsedTimeNs) + calcCostNs(getThorWorkerRate(), workerWaitingTimeNs);
+        cost_type costStart = money2cost_type(expenseStart);
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName } }, { StNumStarts, StTimeProvisioning, StTimeStart, StCostStart }, { 1ULL, workerProvisionTimeNs, startupElapsedTimeNs, costStart });
 
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);

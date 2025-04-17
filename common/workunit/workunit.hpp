@@ -1786,6 +1786,7 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char 
 extern WORKUNIT_API double getMachineCostRate();
 extern WORKUNIT_API double getThorManagerRate();
 extern WORKUNIT_API double getThorWorkerRate();
+extern WORKUNIT_API double getThorRate(unsigned numberOfWorkers);
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfWorkers);
 
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
@@ -1818,8 +1819,6 @@ inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GL
 
 extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
-
-inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
 
 constexpr bool defaultThorMultiJobLinger = true;
 constexpr unsigned defaultThorLingerPeriod = 60;
