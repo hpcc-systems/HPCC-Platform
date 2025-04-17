@@ -25,8 +25,17 @@ on:
         required: false
         default: false
 
-  # Do not include "push" in final version (uncomment for testing on users own repo)
-  # push:
+  push:
+    tags:
+      - "community_*"
+      - "!community_8.10.*"
+      - "!community_8.8.*"
+      - "!community_8.6.*"
+      - "!community_8.4.*"
+      - "!community_8.2.*"
+      - "!community_8.0.*"
+      - "!community_7.*"
+      - "!HPCC*"
 
   pull_request:
     branches:
