@@ -79,10 +79,11 @@ public:
     {
         auto start = std::chrono::high_resolution_clock::now();
         opentelemetry::v1::sdk::common::ExportResult result = exporter->Export(spans);
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        //int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        std::chrono::duration<signed long, std::nano> duration = std::chrono::high_resolution_clock::now() - start;
 
         //mimicking metric jlog output for now.
-        LOG(MCmonitorMetric, "{ \"type\": \"metric\", \"name\": \"trace.export.latency.ms\",\"status\":\"%s\", \"duration_ms\":%ld, \"span_count\":%lu}", result == opentelemetry::v1::sdk::common::ExportResult::kSuccess ? "success" : "failure", duration.count(), spans.size());
+        LOG(MCmonitorMetric, "{ \"type\": \"metric\", \"name\": \"trace.export.latency.ns\",\"status\":\"%s\", \"duration_ms\":%ld, \"span_count\":%lu}", result == opentelemetry::v1::sdk::common::ExportResult::kSuccess ? "success" : "failure", duration.count(), spans.size());
 
         return result;
     }
