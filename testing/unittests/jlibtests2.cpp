@@ -319,27 +319,28 @@ public:
 
     void testReadEvents()
     {
+        EventRecordingSummary summary;
         //Test reading an empty file
         try
         {
             static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedFileSize = 16
 attribute: RecordedTimestamp = 1000
 attribute: traceid = true
 attribute: threadid = true
 attribute: stack = true
-attribute: bytesRead = 16
+attribute: bytesRead = 21
 )!!!";
             EventRecorder& recorder = queryRecorder();
-            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("all=true,compress(0)", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
+            DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }
         catch (IException * e)
         {
@@ -352,7 +353,6 @@ attribute: bytesRead = 16
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedFileSize = 71
 attribute: RecordedTimestamp = 1000
 attribute: traceid = true
 attribute: threadid = true
@@ -366,18 +366,19 @@ attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-attribute: bytesRead = 71
+attribute: bytesRead = 76
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
-            CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
+            DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }
         catch (IException * e)
         {
@@ -390,7 +391,6 @@ attribute: bytesRead = 71
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedFileSize = 156
 attribute: RecordedTimestamp = 1000
 attribute: traceid = true
 attribute: threadid = true
@@ -413,19 +413,20 @@ attribute: Path = '/Workunits/Workunit/abc.wu'
 attribute: ConnectId = 98765
 attribute: ElapsedTime = 100
 attribute: DataSize = 73
-attribute: bytesRead = 156
+attribute: bytesRead = 161
 )!!!";
             EventRecorder& recorder = queryRecorder();
-            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("all,compress(lz4hc)", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
-            CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
+            DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }
         catch (IException * e)
         {
