@@ -66,13 +66,21 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             .then(({ DFUXRefListResponse }) => {
                 const xrefNodes = DFUXRefListResponse?.DFUXRefListResult?.XRefNode;
                 if (xrefNodes) {
-                    setData(xrefNodes.map((item, idx) => {
-                        return {
-                            name: item.Name,
-                            modified: item.Modified,
-                            status: item.Status
-                        };
-                    }));
+                    if (Array.isArray(xrefNodes)) {
+                        setData(xrefNodes.map((item, idx) => {
+                            return {
+                                name: item.Name,
+                                modified: item.Modified,
+                                status: item.Status
+                            };
+                        }));
+                    } else {
+                        setData([{
+                            name: xrefNodes.Name,
+                            modified: xrefNodes.Modified,
+                            status: xrefNodes.Status
+                        }]);
+                    }
                 }
             })
             .catch(err => logger.error(err))
