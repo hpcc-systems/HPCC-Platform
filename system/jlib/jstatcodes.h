@@ -119,6 +119,12 @@ enum StatisticMeasure
 //The values in this enumeration are stored persistently.  The associated values must not be changed.
 //If you add an entry here you must also update statsMetaData
 //NOTE: All statistic names should be unique with the type prefix removed. Since the prefix is replaced with Skew/Min/etc.
+//
+// A guide to naming
+// NumXXX           - Should be a plural noun, indicating a count of something
+// WhenXXX          - Should be a past tense of a verb, indicating a time when something happened
+// TimeXXX          - Less clear
+// CostXXX          - Should be the infinitive of a verb
 enum StatisticKind
 {
     StKindNone,
@@ -337,6 +343,18 @@ enum StatisticKind
     StNumBloomAccepts,
     StNumBloomRejects,
     StNumBloomSkips,
+    StNumAccepts,
+    StNumWaits,
+    StTimeProvisioning,
+    StCycleProvisioningCycles,
+    StCostStart,
+    StTimeWaitSuccess,
+    StCycleWaitSuccessCycles,
+    StTimeWaitFailure,
+    StCycleWaitFailureCycles,
+    StCostWait,
+    StNumAborts,
+    StCostAbort,
     StMax,
 
     //For any quantity there is potentially the following variants.

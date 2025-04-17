@@ -14244,6 +14244,11 @@ extern WORKUNIT_API double getThorWorkerRate()
     return getCostCpuHour() * numCpus;
 }
 
+extern WORKUNIT_API double getThorRate(unsigned numberOfWorkers)
+{
+    return getThorManagerRate() + getThorWorkerRate() * numberOfWorkers;
+}
+
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfWorkers)
 {
     return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * numberOfWorkers;
