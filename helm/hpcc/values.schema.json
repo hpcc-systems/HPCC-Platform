@@ -1250,6 +1250,10 @@
           },
           "additionalProperties": { "type": ["integer", "string", "boolean"] }
         },
+        "metered": {
+          "type": "boolean",
+          "description": "Track and report export action latency"
+        },
         "additionalProperties": { "type": ["integer", "string", "boolean"] }
       }
     },

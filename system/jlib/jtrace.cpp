@@ -67,6 +67,46 @@ namespace opentel_trace = opentelemetry::trace;
 
 using namespace ln_uid;
 
+class MeteredExporter final : public opentelemetry::sdk::trace::SpanExporter {
+private:
+    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter;
+
+public:
+    MeteredExporter() = delete;
+    MeteredExporter(std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> && _exporter) : exporter(std::move(_exporter)) {}
+
+    opentelemetry::sdk::common::ExportResult Export(const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable> > & spans) noexcept override
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        opentelemetry::v1::sdk::common::ExportResult result = exporter->Export(spans);
+        //int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        std::chrono::duration<signed long, std::nano> duration = std::chrono::high_resolution_clock::now() - start;
+
+        //mimicking metric jlog output for now.
+        LOG(MCmonitorMetric, "{ \"type\": \"metric\", \"name\": \"trace.export.latency.ns\",\"status\":\"%s\", \"duration_ms\":%ld, \"span_count\":%lu}", result == opentelemetry::v1::sdk::common::ExportResult::kSuccess ? "success" : "failure", duration.count(), spans.size());
+
+        return result;
+    }
+
+    virtual std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
+    {
+        return exporter->MakeRecordable();
+    }
+
+    virtual bool Shutdown(std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
+    {
+        return exporter->Shutdown(timeout);
+    }
+};
+
+class MeteredExporterFactory
+{
+public:
+    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create(std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> && exporter)
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(new MeteredExporter(std::move(exporter)));
+    }
+};
 
 class CustomOTELLogHandler : public opentelemetry::sdk::common::internal_log::LogHandler
 {
@@ -1364,6 +1404,11 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     try
     {
         exporter = createExporter(exportConfig, batchDefault);
+
+        if (exportConfig->getPropBool("@metered", false))
+        {
+            exporter = MeteredExporterFactory::Create(std::move(exporter));
+        }
     }
     catch(const std::exception& e) //polymorphic type std::exception
     {
@@ -1508,7 +1553,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     if (enableDefaultLogExporter)
     {
         //Simple option to create logging to the log file - primarily to aid developers.
-        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS, nullptr);
+        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = MeteredExporterFactory::Create(JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS, nullptr));
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
