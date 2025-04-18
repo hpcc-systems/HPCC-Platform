@@ -1839,7 +1839,7 @@ readAnother:
                     httpHelper.setUseEnvelope(extractor.isSoap);
             }
 
-            if (!queryName)
+            if (!queryName && !isStatus)
             {
                 // or should we set("") ?  Is an empty queryName ever valid ?
                 if (doTrace(traceSockets, TraceFlags::Max))

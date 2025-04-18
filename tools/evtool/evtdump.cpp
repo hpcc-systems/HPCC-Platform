@@ -197,14 +197,13 @@ public:
         usage << "    |   └── ... (other header properties)" << '\n';
         usage << "    ├── Event" << '\n';
         usage << "    |   ├── @name" << '\n';
-        usage << "    |   ├── @id" << '\n';
         usage << "    |   └── ... (other event properties)" << '\n';
         usage << "    ├── ... (more events)" << '\n';
         usage << "    └── Footer" << '\n';
         usage << "        ├── @bytesRead" << '\n';
         usage << '\n';
-        usage << "CSV output includes columns for event name and ID, plus one for each" << '\n';
-        usage << "event attribute used by the event recorder." << '\n';
+        usage << "CSV output includes columns for event name, plus one for each event" << '\n';
+        usage << "attribute used by the event recorder." << '\n';
         out.put(usage.length(), usage.str());
     }
     CEvtDumpCommand()

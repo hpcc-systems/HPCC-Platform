@@ -957,7 +957,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     return false;
 }           
 
-        
+
 
 
 
@@ -1528,7 +1528,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    constructPartFilename(grp,partno,numparts,partname,partmask,partdir,replicate,replicateoffset,rfn);
+                    deprecatedConstructPartFilename(grp,partno,numparts,partname,partmask,partdir,replicate,replicateoffset,rfn);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
@@ -1606,7 +1606,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
 
 
 
-    
+
 
 class CPhysicalXREF
 {
@@ -2596,7 +2596,7 @@ public:
         msgcallback.set(_msgcallback);
 
         IPropertyTree *out=NULL;
-        
+
         Owned<IGroup> g;
         unsigned j;
         if (!nclusters) {
@@ -2625,7 +2625,7 @@ public:
         logicalnamelist.kill();
         dirlist.kill();
         orphanlist.kill();
-        
+
         const char* cluster = clusters[0];
         loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
 

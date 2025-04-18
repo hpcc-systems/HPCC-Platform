@@ -113,7 +113,9 @@ struct cMisplacedRec
 struct cFileDesc // no virtuals
 {
     unsigned hash;
-    unsigned short N;           // num parts 
+    unsigned short N;           // num parts
+    bool isDirPerPart;          // directory-per-part number present in physical path
+    byte filenameLen;           // length of file name excluding extension i.e. ._$P$_of_$N$
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -123,7 +125,7 @@ struct cFileDesc // no virtuals
     // bitset markedc[N];
     // bitset markedd[N];
 
-    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n)
+    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n,bool d,unsigned fnLen)
     {
         size32_t sl = strlen(_name); 
         if (sl>255) {
@@ -135,6 +137,8 @@ struct cFileDesc // no virtuals
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
         ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
+        ret->isDirPerPart = d;
+        ret->filenameLen = (byte)fnLen;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
 
@@ -188,15 +192,24 @@ struct cFileDesc // no virtuals
         return memcmp(key,name+1,sl)==0;
     }
 
-    StringBuffer &getName(StringBuffer &buf)
+    bool getName(StringBuffer &buf) const
+    {
+        // Check mask exists
+        if (filenameLen == 0)
+            return false;
+        buf.append((size32_t)filenameLen, (const char *)(name+1));
+        return true;
+    }
+
+    StringBuffer &getNameMask(StringBuffer &buf) const
     {
         return buf.append((size32_t)name[0],(const char *)(name+1));
     }
 
-    StringBuffer &getPartName(StringBuffer &buf,unsigned p)
+    StringBuffer &getPartName(StringBuffer &buf,unsigned p) const
     {
         StringBuffer mask;
-        getName(mask);
+        getNameMask(mask);
         return expandMask(buf, mask, p, N);
     }
 
@@ -320,13 +333,14 @@ struct cDirDesc
     }
 
     const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
-                    StringAttr &mask,   // decoded mask
-                    unsigned &pf,       // part node
-                    unsigned &nf)       // num parts
+                    StringAttr &mask,       // decoded mask
+                    unsigned &pf,           // part node
+                    unsigned &nf,           // num parts
+                    unsigned &filenameLen)  // length of file name excluding extension i.e. ._$P$_of_$N$
     {
         const char *fn = name;
         // first see if tail fits a mask
-        if (deduceMask(fn, true, mask, pf, nf))
+        if (deduceMask(fn, true, mask, pf, nf, filenameLen))
             fn = mask.get();
         else {  // didn't match mask so use straight name
             //PROGLOG("**unmatched(%d,%d,%d) %s",drv,node,numnodes,name);
@@ -337,19 +351,22 @@ struct cDirDesc
     }
 
 
-    cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
+    cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, bool isDirPerPart)
     {
 
-        unsigned nf;
-        unsigned pf;
+        unsigned nf;          // num parts
+        unsigned pf;          // part num
+        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
         StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
-        bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
+        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
+        // TODO: Add better check for misplaced in isContainerized
+        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
+        bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn,nf);
+            file = cFileDesc::create(*mem,fn,nf,isDirPerPart,filenameLen);
             files.add(file);
         }
         if (misplaced) {
@@ -380,8 +397,9 @@ struct cDirDesc
     {
         unsigned nf;
         unsigned pf;
+        unsigned filenameLen;
         StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
+        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
         cFileDesc *file = files.find(fn,false);
         if (file) {
@@ -673,8 +691,11 @@ public:
     bool verbose;
     unsigned numuniqnodes = 0;
     Owned<IUserDescriptor> udesc;
+    Linked<IPropertyTree> storagePlane;
+    bool isPlaneStriped = false;
+    unsigned numStripedDevices = 1;
 
-    CNewXRefManager(unsigned maxMb=DEFAULT_MAXMEMORY)
+    CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
         : mem(0x100000*((memsize_t)maxMb),0x10000,true)
     {
         iswin = false; // set later
@@ -692,6 +713,14 @@ public:
         serverConfig->getProp("@sashaUser", userName);
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
+
+        if (plane)
+        {
+            storagePlane.set(plane);
+            unsigned numDevices = storagePlane->getPropInt("@numDevices", 1);
+            isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
+            numStripedDevices = isPlaneStriped ? numDevices : 1;
+        }
     }
 
     ~CNewXRefManager()
@@ -755,12 +784,15 @@ public:
             OERRLOG(LOGPFX "Cluster %s node group %s not found",clustname.get(),grpstr.str());
             return false;
         }
-        ForEachItemIn(i1,done) {
-            GroupRelation gr = done.item(i1).compare(grp);
-            if ((gr==GRidentical)||(gr==GRsubset)) {
-                if (strcmp(basedir.str(),donedir.item(i1))==0) {
-                    OWARNLOG(LOGPFX "Node group %s already done",grpstr.str());
-                    return false;
+        // Group overlap doesn't apply to containerized. Should be cleaned up once planes are fully integrated
+        if (!isContainerized()) {
+            ForEachItemIn(i1,done) {
+                GroupRelation gr = done.item(i1).compare(grp);
+                if ((gr==GRidentical)||(gr==GRsubset)) {
+                    if (strcmp(basedir.str(),donedir.item(i1))==0) {
+                        OWARNLOG(LOGPFX "Node group %s already done",grpstr.str());
+                        return false;
+                    }
                 }
             }
         }
@@ -790,20 +822,32 @@ public:
         clusters.kill();
         clusterscsl.clear().append(grpstr);
         clusters.append(grpstr.str());
-        Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
-        StringBuffer gname;
-        ForEach(*giter) {
-            giter->get(gname.clear());
-            if (strcmp(grpname,gname.str())!=0) {
-                clusters.append(gname.str());
-                clusterscsl.append(',').append(gname.str());
+        if (!isContainerized()) {
+            // This code is locating all other groups that are a subset of the group being scanned.
+            // and builds this list up into 'clustercsl', which is used when XREF identifies a lost
+            // file, tagging them with this list, as possible candidate clusters it may be part of.
+            Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
+            StringBuffer gname;
+            ForEach(*giter) {
+                giter->get(gname.clear());
+                if (strcmp(grpname,gname.str())!=0) {
+                    clusters.append(gname.str());
+                    clusterscsl.append(',').append(gname.str());
+                }
             }
+            // add the first IP also
+            rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
+            clusters.append(gname.str());
+            clusterscsl.append(',').append(gname.str());
         }
-        // add the first IP also
-        rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
-        clusters.append(gname.str());
-        clusterscsl.append(',').append(gname.str());
-        if (basedir.length()==0) {
+        if (isContainerized()) {
+            Owned<IPropertyTree> plane = getStoragePlane(_clustname);
+            if (!plane)
+                throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
+            rootdir.set(plane->queryProp("@prefix"));
+            assert(!rootdir.isEmpty());
+        }
+        else if (basedir.length()==0) {
             const char *ddir = "thor";
             const char *rdir = "thor";
             StringBuffer datadir;
@@ -873,7 +917,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile)
+    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, bool isDirPerPart=false)
     {
         size32_t dsz = path.length();
         if (pdir==NULL) 
@@ -911,9 +955,38 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                if (!dirFiltered(path.str())) {
-                    dirs.append(fname.str());
+                // Check if subdirectory is a dirPerPart or stripe directory
+                const char *dir = fname.str();
+                bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
+                if (isDirStriped)
+                    dir++;
+                bool isSpecialDir = true;
+                while (*dir) {
+                    if (!isdigit(*(dir++))) {
+                        isSpecialDir = false;
+                        isDirStriped = false;
+                        break;
+                    }
                 }
+                // Check that top level subdirectories match isPlaneStriped from plane details
+                if ((pdir==root) && (isPlaneStriped != isDirStriped))
+                    OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
+                if (isSpecialDir) {
+                    // To properly match all file parts, we need to remove the stripe and dir-per-part directories from the path
+                    // so that the cDirDesc heirarchy matches the logical scope hierarchy
+                    // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/1/afile.1_of_2
+                    // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/2/afile.2_of_2
+                    // These files would never be matched if we didn't build up the cDirDesc structure without the stripe and dir-per-part directories
+                    if (!scanDirectory(node,ep,path,drv,pdir,NULL,!isDirStriped))
+                        return false;
+                    if (!isDirStriped && pdir->dirs.ordinality()>0)
+                    {
+                        OERRLOG(LOGPFX "Directory Per Part %s contains other subdirectories.", path.str());
+                        return false;
+                    }
+                }
+                else
+                    dirs.append(fname.str());
             }
             else {
                 CDateTime dt;
@@ -921,7 +994,7 @@ public:
                 nsz += fsz;
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
-                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem,isDirPerPart);
                 }
             }
             path.setLength(dsz);
@@ -931,7 +1004,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file,isDirPerPart))
                 return false;
             path.setLength(dsz);
         }
@@ -975,12 +1048,14 @@ public:
                     ok = false;
                     return;
                 }
-                i = (i+r)%n;
-                setReplicateFilename(path,1);   
-                ep = parent.rawgrp->queryNode(i).endpoint();
-                parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
-                if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
-                    ok = false;
+                if (!isContainerized()) {
+                    i = (i+r)%n;
+                    setReplicateFilename(path,1);
+                    ep = parent.rawgrp->queryNode(i).endpoint();
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
+                        ok = false;
+                    }
                 }
 //              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
             }
@@ -1082,7 +1157,7 @@ public:
                                 const char *tail = splitDirTail(fn.str(),dir.clear());
                                 if (dir.length()&&isPathSepChar(dir.charAt(dir.length()-1)))
                                     dir.setLength(dir.length()-1);
-                                unsigned drv = getPathDrive(dir.str()); // should match c
+                                unsigned drv = isContainerized() ? 0 : getPathDrive(dir.str()); // should match c
                                 if (drv)
                                     setReplicateFilename(dir,0);
                                 if ((lastdir.length()==0)||(strcmp(lastdir.str(),dir.str())!=0)) {
@@ -1092,7 +1167,6 @@ public:
                                 if (pdir&&pdir->markFile(drv,tail,nn,ep,*parent.grp,parent.numnodes)) {
                                     matched++;
                                 }
-                                
                             }
                             else if (p==0) { // skip file
                                 if (parent.verbose)
@@ -1183,7 +1257,7 @@ public:
     }   
 
 
-    void listOrphans(cFileDesc *f,const char *basedir,bool &abort,unsigned int recentCutoffDays)
+    void listOrphans(cFileDesc *f,const char *currentPath,const char *currentScope,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1192,12 +1266,13 @@ public:
         // first check if any orhans at all (maybe could do this faster)
 #ifdef _DEBUG
         StringBuffer dbgname;
-        f->getName(dbgname);
+        f->getNameMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
         unsigned drv;
-        for (drv=0;drv<2;drv++) {
+        unsigned drvs = isContainerized() ? 1 : 2;
+        for (drv=0;drv<drvs;drv++) {
             unsigned i0;
             for (i0=0;i0<f->N;i0++) 
                 if (f->testpresent(drv,i0)&&!f->testmarked(drv,i0)) 
@@ -1205,16 +1280,16 @@ public:
             if (i0<f->N)
                 break;
         }
-        if (drv==2)
+        if (drv==drvs)
             return; // no orphans
-        StringBuffer mask(basedir);
-        addPathSepChar(mask);
-        f->getName(mask);
-        CDfsLogicalFileName lfn;
-        if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
+        StringBuffer mask;
+        StringBuffer scopeBuf(currentScope);
+        scopeBuf.append("::");
+        f->getNameMask(mask);
+        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
             try {
-                if (queryDistributedFileDirectory().exists(lfn.get(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
+                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                     return;
                 }
             }
@@ -1235,21 +1310,21 @@ public:
         unsigned ndone[2];
         ndone[0] = 0;
         ndone[1] = 0;
-        for (drv=0;drv<2;drv++) {
+        unsigned fnameHash = getFilenameHash(scopeBuf.str());
+        const char * prefix = storagePlane->queryProp("@prefix");
+        for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             bool warnnotexists = true;
-            StringBuffer path(basedir);
-            addPathSepChar(path);
+            StringBuffer path;
             if (drv)
-                setReplicateFilename(path,drv);
+                setReplicateFilename(addPathSepChar(path.append(currentPath)),drv);
             size32_t psz = path.length();
             StringBuffer tmp;
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
-                    f->getPartName(path,pn);
                     RemoteFilename rfn;
-                    rfn.setPath(grp->queryNode((pn+drv)%numnodes).endpoint(),path.str());
+                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -1294,15 +1369,8 @@ public:
                     return;
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
-                    unsigned n = mp->getNode(numnodes);
-                    StringBuffer path(basedir);
-                    if (*basedir)
-                        addPathSepChar(path);
-                    if (drv) 
-                        setReplicateFilename(path,drv);
-                    f->getPartName(path,mp->pn);
                     RemoteFilename rfn;
-                    rfn.setPath(grp->queryNode(n).endpoint(),path.str());
+                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {
@@ -1325,11 +1393,11 @@ public:
         CDateTime now;
         now.setNow();
         StringBuffer tmp;
-        for (drv=0;drv<2;drv++) {
+        for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             if (branch[drv]) {
-                tmp.clear().append(mask.str());
+                addPathSepChar(tmp.clear().append(currentPath)).append(mask.str());
                 if (drv) 
                     setReplicateFilename(tmp,1);
                 CDateTime co(mostrecent[drv]);
@@ -1377,7 +1445,8 @@ public:
 
     void listDirectory(cDirDesc *d,const char *name,bool &abort)
     {
-        for (unsigned drv=0;drv<2;drv++) {
+        unsigned drvs = isContainerized() ? 1 : 2;
+        for (unsigned drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             if ((d->files.ordinality()!=0)||(d->totalsize[drv]!=0)||d->empty(drv)) { // final empty() is to make sure only truly empty dirs get added
@@ -1421,7 +1490,7 @@ public:
         }
     }
 
-    void listOrphans(cDirDesc *d,StringBuffer &basedir,bool &abort,unsigned int recentCutoffDays)
+    void listOrphans(cDirDesc *d,StringBuffer &basedir,StringBuffer &scope,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1437,14 +1506,18 @@ public:
         PROGLOG("listOrphans TEST DIR(%s)",dbgname.str());
 #endif
         size32_t bds = basedir.length();
+        size32_t scopeLen = scope.length();
         if (bds!=0) 
             addPathSepChar(basedir);
+        if (scopeLen!=0)
+            scope.append("::");
         d->getName(basedir);
+        d->getName(scope);
         listDirectory(d,basedir.str(),abort);
-        unsigned i =0;
+        unsigned i = 0;
         cFileDesc *file = d->files.first(i);
         while (file) {
-            listOrphans(file,basedir,abort,recentCutoffDays);
+            listOrphans(file,basedir,scope,abort,recentCutoffDays);
             if (abort)
                 return;
             file = d->files.next(i);
@@ -1452,12 +1525,13 @@ public:
         i = 0;
         cDirDesc *dir = d->dirs.first(i);
         while (dir) {
-            listOrphans(dir,basedir,abort,recentCutoffDays);
+            listOrphans(dir,basedir,scope,abort,recentCutoffDays);
             if (abort)
                 return;
             dir = d->dirs.next(i);
         }
         basedir.setLength(bds);
+        scope.setLength(scopeLen);
     }
 
     static int compareDirs(IInterface * const *t1,IInterface * const *t2)
@@ -1478,7 +1552,8 @@ public:
         // also does directories
         log("Scanning for orphans");
         StringBuffer basedir;
-        listOrphans(NULL,basedir,abort,recentCutoffDays);
+        StringBuffer scope;
+        listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
         log("Orphan scan complete");
@@ -1993,12 +2068,15 @@ int main(int argc, char* argv[])
 #endif
 
 
+static constexpr float maxMemPercentage = 0.9; // In containerized, leave some headroom for the pod
 class CSashaXRefServer: public ISashaServer, public Thread
 {  
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
     bool ignorelazylost, suspendCoalescer;
+    Owned<IPropertyTree> props;
+    std::unordered_map<std::string, Owned<IPropertyTree>> storagePlanes;
 
     class cRunThread: public Thread
     {
@@ -2023,7 +2101,10 @@ public:
     CSashaXRefServer()
         : Thread("CSashaXRefServer")
     {
-        suspendCoalescer = true; // can be overridden by configuration setting
+        if (!isContainerized())
+            suspendCoalescer = true; // can be overridden by configuration setting
+        else
+            suspendCoalescer = false;
         stopped = false;
     }
 
@@ -2069,9 +2150,11 @@ public:
                 resumeCoalescingServer();
             }
         };
-        Owned<CSimpleInterface> suspendresume;
-        if (suspendCoalescer)
-            suspendresume.setown(new CSuspendResume());
+        if (!isContainerized()) {
+            Owned<CSimpleInterface> suspendresume;
+            if (suspendCoalescer)
+                suspendresume.setown(new CSuspendResume());
+        }
         synchronized block(runmutex);
         if (stopped)
             return;
@@ -2086,31 +2169,58 @@ public:
                 list.remove(i0);
             }
         }
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn) {
-            OERRLOG("Could not connect to /Environment/Software");
-            return;
-        }
+        // Revisit: XREF should really be plane centric only
         StringArray groups;
         StringArray cnames;
-        clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
+        // NB: must be a list of planes only
+        ForEachItemIn(i1, list) {
+            const char *planeName = list.item(i1);
+            Owned<IPropertyTree> plane = getStoragePlane(planeName);
+            if (isContainerized()) {
+                if (!plane)
+                    throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
+                groups.append(planeName);
+                cnames.append(planeName);
+            }
+            storagePlanes[planeName].setown(plane.getClear());
+        }
+        if (!isContainerized()) {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+            if (!conn) {
+                OERRLOG("Could not connect to /Environment/Software");
+                return;
+            }
+            clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
+        }
         IArrayOf<IGroup> groupsdone;
         StringArray dirsdone;
         ForEachItemIn(i,groups) {
 #ifdef TESTINGSUPERFILELINKAGE
             continue;
-#endif          
+#endif
             const char *gname = groups.item(i);
-            unsigned maxMb = serverConfig->getPropInt("DfuXRef/@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(maxMb);
+            unsigned maxMb;
+            if (isContainerized()) {
+                const char *resourcedMemory = props->queryProp("resources/@memory");
+                if (!isEmptyString(resourcedMemory)) {
+                    offset_t sizeBytes = friendlyStringToSize(resourcedMemory);
+                    maxMb = (unsigned)(sizeBytes / 0x100000);
+                }
+                else
+                    maxMb = DEFAULT_MAXMEMORY;
+                maxMb *= maxMemPercentage;
+            }
+            else
+                maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
+            CNewXRefManager manager(storagePlanes[gname],maxMb);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
                 continue;
             manager.start(updateeclwatch);
             manager.updateStatus(true);
             if (stopped)
                 break;
-            unsigned numThreads = serverConfig->getPropInt("DfuXRef/@numThreads", DEFAULT_MAXDIRTHREADS);
-            unsigned int recentCutoffDays = serverConfig->getPropInt("DfuXRef/@cutoff", DEFAULT_RECENT_CUTOFF_DAYS);
+            unsigned numThreads = props->getPropInt("@numThreads", DEFAULT_MAXDIRTHREADS);
+            unsigned int recentCutoffDays = props->getPropInt("@cutoff", DEFAULT_RECENT_CUTOFF_DAYS);
             if (manager.scanDirectories(stopped,numThreads)) {
                 manager.updateStatus(true);
                 manager.scanLogicalFiles(stopped);
@@ -2178,14 +2288,28 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
-        if (!props)
-            props.setown(createPTree("DfuXRef"));
-        bool eclwatchprovider = props->getPropBool("@eclwatchProvider");
+        if (isContainerized())
+            props.setown(getComponentConfig());
+        else
+        {
+            props.setown(serverConfig->getPropTree("DfuXRef"));
+            if (!props)
+                props.setown(createPTree("DfuXRef"));
+        }
+
+        bool eclwatchprovider = true;
+        if (!isContainerized()) // NB: containerized does not support xref any other way.
+        {
+            // eclwatchProvider sets useSasha in call to setSubmittedOk
+            eclwatchprovider = props->getPropBool("@eclwatchProvider");
+        }
+
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");
         StringBuffer clusttmp;
-        if (props->getPropBool("@checkSuperFiles",true)) {
+        // TODO: xref should support checking superfiles in containerized
+        if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true))
+        {
             if (!clusters||!*clusters)
                 clusters = "SuperFiles";
             else
@@ -2194,12 +2318,13 @@ public:
         if (!interval)
             stopped = !eclwatchprovider;
         setSubmittedOk(eclwatchprovider);
-        suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
+        if (!isContainerized())
+            suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
         ignorelazylost = props->getPropBool("@ignoreLazyLost",true);
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval) 
+        if (interval)
             schedule.init(props,interval,initinterval);
         initinterval *= 60*60*1000; // ms
         unsigned started = msTick();
@@ -2210,7 +2335,8 @@ public:
                 break;
             StringBuffer cname;
             bool byscheduler=false;
-            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear())) {         
+            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear()))
+            {
                 if (!interval||((started!=(unsigned)-1)&&(msTick()-started<initinterval)))
                     continue;
                 started = (unsigned)-1;
@@ -2218,7 +2344,8 @@ public:
                     continue;
                 byscheduler = true;
             }
-            try {
+            try
+            {
                 runXRef(cname.length()?cname.str():clusters,true,byscheduler);
                 cname.clear();
             }

@@ -2025,8 +2025,9 @@ bool constructMask(StringAttr &attr, const char *fn, unsigned p, unsigned n)
     return false;
 }
 
-bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, unsigned &nret)
+bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, unsigned &nret, unsigned &filenameLen)
 {
+    filenameLen = 0;
     const char *e = findExtension(fn);
     if (!e)
         return false;
@@ -2052,6 +2053,7 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
                         buf.append((size32_t)(e-fn),fn).append("_$P$_of_$N$");
                     if (*s=='.')
                         buf.append(s);
+                    filenameLen = (e-1)-fn;
                     mask.set(buf);
                     return true;
                 }
