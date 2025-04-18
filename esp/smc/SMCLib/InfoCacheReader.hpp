@@ -53,6 +53,7 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
     bool active = true;
     bool first = true;
     bool firstBlocked = false;
+    bool enableAutoRebuild = true;
     unsigned autoRebuildSeconds = defaultInfoCacheAutoRebuildSecond;
     unsigned forceRebuildSeconds = defaultInfoCacheForceBuildSecond;
     Owned<CInfoCache> infoCache;
@@ -64,8 +65,8 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
     std::atomic<bool> waiting = {false};
 
 public:
-    CInfoCacheReaderThread(CInfoCacheReader* _reader, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : name(_name), autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), infoCacheReader(_reader), threaded(_name)
+    CInfoCacheReaderThread(CInfoCacheReader* _reader, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds, bool _enableAutoRebuild)
+        : name(_name), autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), infoCacheReader(_reader), threaded(_name), enableAutoRebuild(_enableAutoRebuild)
     {
     };
 
@@ -139,9 +140,9 @@ public:
 
     IMPLEMENT_IINTERFACE;
 
-    CInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
+    CInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds, bool _enableAutoRebuild)
     {
-        infoCacheReaderThread.setown(new CInfoCacheReaderThread(this, _name, _autoRebuildSeconds, _forceRebuildSeconds));
+        infoCacheReaderThread.setown(new CInfoCacheReaderThread(this, _name, _autoRebuildSeconds, _forceRebuildSeconds, _enableAutoRebuild));
     }
 
     void init()
