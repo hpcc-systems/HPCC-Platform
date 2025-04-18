@@ -82,6 +82,7 @@ function formatQuery(_filter): { [id: string]: any } {
 
 const defaultUIState = {
     hasSelection: false,
+    isUTC: false, 
 };
 
 interface FilesProps {
@@ -129,6 +130,25 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasFocus]);
 
+    const toggleTimezone = () => {
+        setUIState((prevState) => ({ ...prevState, isUTC: !prevState.isUTC }));
+      };
+    
+      React.useEffect(() => {
+        localStorage.setItem("isUTC", JSON.stringify(uiState.isUTC));
+      }, [uiState.isUTC]);
+    
+      React.useEffect(() => {
+        const storedIsUTC = JSON.parse(localStorage.getItem("isUTC"));
+        if (storedIsUTC !== null) {
+          setUIState((prevState) => ({ ...prevState, isUTC: storedIsUTC }));
+        }
+      }, []);
+    
+      const currentTime = React.useCallback(timestamp => {
+        const date = new Date(timestamp);
+        return uiState.isUTC ? date.toUTCString() : date.toLocaleString();
+    }, [uiState.isUTC]);
     //  Grid ---
     const gridStore = React.useMemo(() => {
         return store ? store : CreateDFUQueryStore();
@@ -223,9 +243,11 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             MaxSkew: {
                 label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
             },
-            Modified: { label: nlsHPCC.ModifiedUTCGMT },
             Accessed: { label: nlsHPCC.LastAccessed },
-            AtRestCost: {
+            Modified: { 
+                label: uiState.isUTC ? nlsHPCC.ModifiedUTCGMT : nlsHPCC.ModifiedLocalTime, 
+                formatter: currentTime 
+            },            AtRestCost: {
                 label: nlsHPCC.FileCostAtRest,
                 formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
@@ -238,7 +260,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 },
             }
         };
-    }, []);
+    }, [uiState.isUTC, currentTime]);
 
     const copyButtons = useCopyButtons(columns, selection, "files");
 
@@ -328,7 +350,14 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, viewByScope]);
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "toggleTimezone",
+            text: uiState.isUTC ? nlsHPCC.SwitchToLocalTime : nlsHPCC.SwitchToUTCTime,
+            iconProps: { iconName: uiState.isUTC ? "Globe" : "Clock" },
+            onClick: toggleTimezone,
+          },
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, viewByScope, uiState.isUTC]);
 
     //  Filter  ---
     const filterFields: Fields = {};

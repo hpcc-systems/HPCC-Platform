@@ -1339,3 +1339,22 @@ export function removeAllExcept(arr: any, keysToKeep: string[]): void {
         }
     }
 }
+export function convertToLocalTime(dateString: string): string {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toLocaleString("en-GB", { 
+      weekday: "short", 
+      day: "2-digit", 
+      month: "short", 
+      year: "numeric", 
+      hour: "2-digit", 
+      minute: "2-digit", 
+      second: "2-digit", 
+      hour12: false, 
+      timeZoneName: "short"
+    }).replace(",", "");
+  }
+  
+  export function convertToUTCTime(dateString: string): string {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toUTCString();
+  }
