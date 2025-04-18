@@ -24,9 +24,6 @@
 #include <map>
 #include <string>
 
-using CmdCreator = std::function<IEvToolCommand*()>;
-using CmdMap = std::map<std::string, CmdCreator>;
-
 static void usage(const char* tool, const CmdMap& commands, IBufferedSerialOutputStream& out)
 {
     const char* argv[] = { tool, nullptr };
@@ -35,6 +32,7 @@ static void usage(const char* tool, const CmdMap& commands, IBufferedSerialOutpu
         Owned<IEvToolCommand> cmd = c.second();
         argv[1] = c.first.c_str();
         cmd->usage(2, argv, 1, out);
+        out.put(1, "\n");
     }
 }
 
@@ -47,6 +45,7 @@ int main(int argc, const char* argv[])
     CmdMap commands{
         { "dump", createDumpCommand },
         { "sim", createSimCommand },
+        { "index", createIndexCommand },
     };
     if (argc < 2)
     {
