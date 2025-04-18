@@ -835,7 +835,7 @@ private:
             size32_t newsize = outsize*4/5; // only compress if get better than 80%
             if (compmode==COMPRESS_METHOD_LZW) {
                 byte *compbuff = (byte *)ma.allocate(streambuffsize);
-                Owned<ICompressor> compressor = createLZWCompressor();
+                Owned<ICompressor> compressor = createLZWCompressor(false);
                 compressor->open(compbuff, newsize);
                 if (compressor->write(wrbuff, outsize)==outsize) {
                     compressor->close();
@@ -1037,7 +1037,7 @@ private:
             if (fastlz) 
                 LZMADecompressToBuffer(inbuff,buf);
             else {
-                Owned<IExpander> expander = createLZWExpander();
+                Owned<IExpander> expander = createLZWExpander(false);
                 size32_t expsize = expander->init(buf);
                 if(expsize != insize) 
                     throw MakeStringException(0, "LZW compression/expansion error");

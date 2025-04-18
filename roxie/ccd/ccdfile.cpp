@@ -460,7 +460,7 @@ public:
             if (currentIdx >= sources.length())
                 currentIdx = 0;
             if (tries==sources.length())
-                return false;
+                break; // fall out of for loop, to return no hard links
             const char *sourceName = sources.item(currentIdx).queryFilename();
             filesTried.appendf(" %s", sourceName);
             try

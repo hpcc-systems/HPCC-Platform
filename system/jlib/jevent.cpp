@@ -25,7 +25,8 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jstring.hpp"
-#include <iostream>
+#include <set>
+#include "jlzw.hpp"
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
@@ -55,6 +56,8 @@ inline void TRACEEVENT(char const * format, ...)
     VALOG(MCmonitorEvent, format, args);
     va_end(args);
 }
+
+constexpr const char magicHeader[4] = { 'H','E','V','T' };
 
 //---------------------------------------------------------------------------------------------------------------------
 //
@@ -131,7 +134,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(Path, string),
     DEFINE_ATTR(ConnectId, u8),
     DEFINE_ATTR(Enabled, bool),
-    DEFINE_ATTR(RecordedFileSize, u8),
+    DEFINE_ATTR(FileSize, u8),
     DEFINE_ATTR(RecordedTimestamp, u8),
     DEFINE_ATTR(RecordedOption, string),
     DEFINE_ATTR(EventTimeOffset, u8),
@@ -241,7 +244,7 @@ const char * queryEventAttributeName(EventAttr attr)
 //
 // Should there be a terminator at the end of the file?  If will potentially cause problems if the file is compressed...
 
-EventRecorder::EventRecorder() : buffer(OutputBufferSize)
+EventRecorder::EventRecorder() : buffer(OutputBufferSize), compressionType(COMPRESS_METHOD_LZ4)
 {
 }
 
@@ -273,12 +276,29 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
             options = (options & ~ERFstacktrace) | (valueBool ? ERFstacktrace : ERFnone);
         else if (strieq(option, "all"))
             options = (valueBool ? ~ERFnone : ERFnone);
+        else if (strieq(option, "compress"))
+        {
+            if (isdigit(*valueText))
+            {
+                compressionType = (byte) atoi(valueText);
+                if (compressionType >= COMPRESS_METHOD_LAST)
+                    compressionType = COMPRESS_METHOD_LZ4;
+            }
+            else
+            {
+                ICompressHandler * compression = queryCompressHandler(valueText);
+                if (compression)
+                    compressionType = compression->queryMethod();
+            }
+        }
         else if (strieq(option, "log"))
             outputToLog = valueBool;
     };
 
     options = defaultEventFlags;
     outputToLog = false;
+    compressionType = COMPRESS_METHOD_LZ4;
+    corruptOutput = false;
 
     processOptionString(optionsText, processOption);
     sizeMessageHeaderFooter = sizeof(EventType) + sizeof(__uint64) + sizeof(EventAttr); // event type, timestamp and end of attributes marker
@@ -288,8 +308,27 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
         sizeMessageHeaderFooter += 16;
 
     outputFilename.set(filename);
-    Owned<IFile> outputFile = createIFile(filename);
+    outputFile.setown(createIFile(filename));
     output.setown(outputFile->open(IFOcreate));
+
+    Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
+    Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);
+
+    //Write the uncompressed header:
+    bufferedDiskStream->put(sizeof(magicHeader), magicHeader);
+    bufferedDiskStream->put(sizeof(currentVersion), &currentVersion);
+    bufferedDiskStream->put(sizeof(compressionType), &compressionType);
+
+    if (compressionType != COMPRESS_METHOD_NONE)
+    {
+        ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+        const char *compressOptions = nullptr; // at least for now!
+        Owned<ICompressor> compressor = compressHandler->getCompressor(compressOptions);
+        Owned<ISerialOutputStream> compressedStream = createCompressingOutputStream(bufferedDiskStream, compressor);
+        outputStream.set(compressedStream);
+    }
+    else
+        outputStream.set(bufferedDiskStream);
 
     __uint64 startTimestamp = getTimeStampNowValue()*1000;
     numEvents = 0;
@@ -297,7 +336,6 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
-    write(pos, currentVersion);
     write(pos, options);
     write(pos, startTimestamp);
     nextOffset = pos;
@@ -342,16 +380,26 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
 
         writeBlock(nextOffset, nextOffset & blockMask);
 
+        outputStream->flush();
+        outputStream.clear();
+
         //Flush the data, after waiting for a little while (or until committed == offset)?
         if (optSummary)
         {
-            optSummary->filename.set(outputFilename);
+            if (corruptOutput)
+                optSummary->filename.set("Output deleted because it was corrupt");
+            else
+                optSummary->filename.set(outputFilename);
             optSummary->numEvents = numEvents;
             optSummary->totalSize = output->getStatistic(StSizeDiskWrite);
+            optSummary->rawSize = nextOffset;
         }
 
         output->close();
         output.clear();
+
+        if (corruptOutput)
+            outputFile->remove();
 
         isStopped = true;
     }
@@ -682,16 +730,24 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
-    //MORE: How does this know that other threads have written all their data???
-
     //MORE: Make this asynchronous - on a background thread.
-    //Could use the streaming interface and reuse those classes - possible a useful test case.
-    //MORE: Could also compress with LZ4 before writing - may well be faster than the disk write
     offset_t fileOffset = startOffset & ~blockMask;
-    assertex(fileOffset == nextWriteOffset);
 
-    size32_t blockOffset = nextWriteOffset & blockMask;
-    output->write(nextWriteOffset, size, (const byte *)buffer.get() + blockOffset);
+    //Internal consistency check which should never occur.  It can occur if blocking/discarding
+    //is not implemented and the compression takes too long (e.g. lz4hc)
+    if (fileOffset != nextWriteOffset)
+    {
+        OERRLOG("writeBlock: fileOffset %llu, nextWriteOffset %llu", fileOffset, nextWriteOffset);
+        //Avoid writing any more data to the output and delete when the recording is stopped
+        //aborting recording at this point is too complex
+        corruptOutput = true;
+    }
+
+    if (!corruptOutput)
+    {
+        size32_t blockOffset = nextWriteOffset & blockMask;
+        outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+    }
     nextWriteOffset += size;
 }
 
@@ -723,7 +779,6 @@ public:
         stream.setown(openEventFileForReading(*file));
         visitor.set(&_visitor);
 
-        readToken(version);
         //MORE: Need to handle multiple file versions
         if (version != currentVersion)
             throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", version, currentVersion);
@@ -739,13 +794,11 @@ private:
 
     bool traverseHeader()
     {
-        uint64_t startTimestamp;
-        uint64_t fileSize = file->size();
+        __uint64 startTimestamp;
 
         readToken(options);
         readToken(startTimestamp);
         return (visitor->visitFile(file->queryFilename(), version) &&
-            continuing(visitor->visitAttribute(EvAttrRecordedFileSize, fileSize)) &&
             continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, startTimestamp)) &&
             // Pass through information about which of the extra options are provided on each of the event records
             (!(options & ERFtraceid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "traceid"))) &&
@@ -778,11 +831,11 @@ private:
 
     bool traverseAttributes()
     {
-        if (!finishAttribute<uint64_t>(EvAttrEventTimeOffset))
+        if (!finishAttribute<__uint64>(EvAttrEventTimeOffset))
             return false;
         if ((options & ERFtraceid) && !finishDataAttribute(EvAttrEventTraceId, 16))
             return false;
-        if ((options & ERFthreadid) && !finishAttribute<uint64_t>(EvAttrEventThreadId))
+        if ((options & ERFthreadid) && !finishAttribute<__uint64>(EvAttrEventThreadId))
             return false;
         for (;;)
         {
@@ -815,7 +868,7 @@ private:
                 break;
             case EATu8:
             case EATtimestamp:
-                if (!finishAttribute<uint64_t>(attr))
+                if (!finishAttribute<__uint64>(attr))
                     return false;
                 break;
             case EATstring:
@@ -854,7 +907,9 @@ private:
         readToken(value);
         if (mute)
             return true;
-        return reactToVisit(visitor->visitAttribute(attr, value));
+        if (std::is_same<T, bool>::value)
+            return reactToVisit(visitor->visitAttribute(attr, bool(value)));
+        return reactToVisit(visitor->visitAttribute(attr, __uint64(value)));
     }
 
     bool finishAttribute(EventAttr attr)
@@ -983,6 +1038,28 @@ private:
             throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
         Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
         Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
+
+        char header[sizeof(magicHeader)];
+        bufferedStream->read(sizeof(header), header);
+        if (memcmp(header, magicHeader, sizeof(magicHeader)) != 0)
+            throw makeStringExceptionV(-1, "file '%s' is not an event file", file.queryFilename());
+
+        bufferedStream->read(sizeof(version), &version);
+        byte compressionType;
+        bufferedStream->read(sizeof(compressionType), &compressionType);
+
+        bytesRead += sizeof(header) + sizeof(version) + sizeof(compressionType);
+
+        if (compressionType != COMPRESS_METHOD_NONE)
+        {
+            ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+            const char *compressOptions = nullptr; // at least for now!
+            Owned<IExpander> expander = compressHandler->getExpander(compressOptions);
+
+            Owned<ISerialInputStream> decompressedStream = createDecompressingInputStream(bufferedStream, expander);
+            Owned<IBufferedSerialInputStream> bufferedDecompressedStream = createBufferedInputStream(decompressedStream, 0x100000, false);
+            return bufferedDecompressedStream.getClear();
+        }
         return bufferedStream.getClear();
     }
 };
@@ -1005,7 +1082,6 @@ bool readEvents(const char* filename, IEventVisitor& visitor)
 //       │   └── ... (other header attributes)
 //       ├── Event
 //       │   ├── @name
-//       │   ├── @id
 //       │   └── ... (other event attributes)
 //       ├── ... (more Event elements)
 //       └── Footer
@@ -1017,7 +1093,6 @@ constexpr static const char* DUMP_STRUCTURE_HEADER = "Header";
 constexpr static const char* DUMP_STRUCTURE_FILE_VERSION = "version";
 constexpr static const char* DUMP_STRUCTURE_EVENT = "Event";
 constexpr static const char* DUMP_STRUCTURE_EVENT_NAME = "name";
-constexpr static const char* DUMP_STRUCTURE_EVENT_ID = "id";
 constexpr static const char* DUMP_STRUCTURE_FOOTER = "Footer";
 constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 
@@ -1030,7 +1105,7 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //  `virtual Continuation visitEvent(EventType id) = 0;`
 //  `virtual bool departEvent() = 0;`
 //  `virtual void departFile(uint32_t bytesRead) = 0;`
-//  `virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;`
+//  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
 class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
 public:
@@ -1039,7 +1114,7 @@ public:
     virtual Continuation visitAttribute(EventAttr id, const char* value) override
     {
         if (EvAttrRecordedOption == id)
-            recordAttribute(value, "true", false);
+            recordAttribute(EvAttrNone, value, "true", false);
         else
             doVisitAttribute(id, value);
         return Continuation::visitContinue;
@@ -1051,27 +1126,7 @@ public:
         return Continuation::visitContinue;
     }
 
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) override
-    {
-        // promote value to larger integer to avoid ambiguity with unsignd char
-        // during conversion to text
-        doVisitAttribute(id, uint16_t(value));
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) override
-    {
-        doVisitAttribute(id, value);
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) override
-    {
-        doVisitAttribute(id, value);
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) override
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
     {
         doVisitAttribute(id, value);
         return Continuation::visitContinue;
@@ -1080,59 +1135,51 @@ public:
 protected:
     void doVisitHeader(const char* filename, uint32_t version)
     {
-        doVisitAttribute(DUMP_STRUCTURE_FILE_NAME, filename);
-        doVisitAttribute(DUMP_STRUCTURE_FILE_VERSION, version);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_NAME, filename);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_VERSION, __uint64(version));
     }
 
     void doVisitEvent(EventType id)
     {
-        doVisitAttribute(DUMP_STRUCTURE_EVENT_NAME, queryEventName(id));
-        // again, avoid ambiguity with unsignd char...
-        doVisitAttribute(DUMP_STRUCTURE_EVENT_ID, uint16_t(id));
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_EVENT_NAME, queryEventName(id));
     }
 
-    void doVisitAttribute(EventAttr id, uint64_t value)
+    void doVisitAttribute(EventAttr id, __uint64 value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
     void doVisitAttribute(EventAttr id, const char* value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
-    template <typename T>
-    void doVisitAttribute(EventAttr id, T value)
+    void doVisitAttribute(EventAttr id, bool value)
     {
-        doVisitAttribute(queryEventAttributeName(id), value);
+        doVisitAttribute(id, queryEventAttributeName(id), value);
     }
 
-    void doVisitAttribute(const char* name, uint64_t value)
+    void doVisitAttribute(EventAttr id, const char* name, __uint64 value)
     {
-        char buf[21];
-        sprintf(buf, "%llu", __uint64(value));
-        recordAttribute(name, buf, false);
+        recordAttribute(id, name, StringBuffer().append(value), false);
     }
 
-    void doVisitAttribute(const char* name, const char* value)
+    void doVisitAttribute(EventAttr id, const char* name, const char* value)
     {
-        recordAttribute(name, value, true);
+        recordAttribute(id, name, value, true);
     }
 
-    template <typename T>
-    void doVisitAttribute(const char* name, T value)
+    void doVisitAttribute(EventAttr id, const char* name, bool value)
     {
-        StringBuffer tmp;
-        tmp.append(value);
-        recordAttribute(name, tmp.str(), false);
+        recordAttribute(id, name, (value ? "true" : "false"), false);
     }
 
     void doVisitFooter(uint32_t bytesRead)
     {
-        doVisitAttribute(DUMP_STRUCTURE_FILE_BYTES_READ, bytesRead);
+        doVisitAttribute(EvAttrNone, DUMP_STRUCTURE_FILE_BYTES_READ, __uint64(bytesRead));
     }
 
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
 };
 
 // Concrete extension of CDumpEventVisitor<IPTreeEventVisitor> that uses an IPropertyTree to store
@@ -1169,7 +1216,7 @@ public: // IEventVisitor
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         active->addProp(VStringBuffer("@%s", name), value);
     }
@@ -1216,7 +1263,7 @@ IEventPTreeCreator* createEventPTreeCreator()
 class CDumpStreamEventVisitor : public CDumpEventVisitor
 {
 protected: // new abstract method(s)
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) = 0;
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
 
 public:
     CDumpStreamEventVisitor(IBufferedSerialOutputStream& _out)
@@ -1290,7 +1337,7 @@ public:
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         markup.append("attribute: ").append(name).append(" = ");
         if (quoted)
@@ -1365,7 +1412,7 @@ public:
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         appendXMLAttr(markup, name, value);
     }
@@ -1413,8 +1460,8 @@ public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         state = State::Header;
-        openObject();
-        openObject(DUMP_STRUCTURE_HEADER);
+        openElement();
+        openElement(DUMP_STRUCTURE_HEADER);
         doVisitHeader(filename, version);
         return true;
     }
@@ -1423,41 +1470,41 @@ public:
     {
         if (inHeader())
         {
-            closeObject();
+            closeElement();
             state = State::Events;
         }
         if (firstEvent)
         {
             openArray(DUMP_STRUCTURE_EVENT);
-            openObject();
+            openElement();
             firstEvent = false;
         }
         else
-            openObject();
+            openElement();
         doVisitEvent(id);
         return visitContinue;
     }
 
     virtual bool departEvent() override
     {
-        closeObject();
+        closeElement();
         return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
     {
         if (inHeader())
-            closeObject();
+            closeElement();
         else if (inEvents())
             closeArray();
-        openObject(DUMP_STRUCTURE_FOOTER);
+        openElement(DUMP_STRUCTURE_FOOTER);
         doVisitFooter(bytesRead);
-        closeObject();
-        closeObject(true);
+        closeElement();
+        closeElement(true);
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         conditionalDelimiter();
         indent();
@@ -1468,12 +1515,12 @@ public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
 
 protected:
-    inline void openObject()
+    inline void openElement()
     {
-        openObject(nullptr);
+        openElement(nullptr);
     }
 
-    void openObject(const char* name)
+    void openElement(const char* name)
     {
         openContainer(name, "{ ");
     }
@@ -1488,7 +1535,7 @@ protected:
         closeContainer("]");
     }
 
-    void closeObject(bool done = false)
+    void closeElement(bool done = false)
     {
         closeContainer("}");
         dump(done);
@@ -1547,7 +1594,7 @@ public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         state = State::Header;
-        openObject(DUMP_STRUCTURE_HEADER);
+        openElement(DUMP_STRUCTURE_HEADER);
         doVisitHeader(filename, version);
         return true;
     }
@@ -1556,34 +1603,34 @@ public:
     {
         if (inHeader())
         {
-            closeObject();
-            openObject(DUMP_STRUCTURE_EVENT);
+            closeElement();
+            openElement(DUMP_STRUCTURE_EVENT);
             state = State::Events;
         }
         else
-            openObject(nullptr);
+            openElement(nullptr);
         doVisitEvent(id);
         return visitContinue;
     }
 
     virtual bool departEvent() override
     {
-        closeObject();
+        closeElement();
         return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
     {
         if (inHeader())
-            closeObject();
+            closeElement();
         state = State::Footer;
-        openObject(DUMP_STRUCTURE_FOOTER);
+        openElement(DUMP_STRUCTURE_FOOTER);
         doVisitFooter(bytesRead);
-        closeObject();
+        closeElement();
     }
 
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
         indent();
         markup.append(name).append(": ").append(value).append('\n');
@@ -1592,7 +1639,7 @@ protected:
 public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
 
-    void openObject(const char* name)
+    void openElement(const char* name)
     {
         if (!isEmptyString(name))
         {
@@ -1603,7 +1650,7 @@ public:
         firstProp = true;
     }
 
-    void closeObject()
+    void closeElement()
     {
         indentLevel--;
         dump(false);
@@ -1643,65 +1690,63 @@ public:
 
         state = State::Header;
         encodeCSVColumn(markup, "EventName");
-        markup.append(",");
-        encodeCSVColumn(markup, "EventId");
-        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
         {
-            reverseLookup[queryEventAttributeName(a)] = a;
             markup.append(",");
-            encodeCSVColumn(markup, queryEventAttributeName(a));
+            encodeCSVColumn(markup, queryEventAttributeName(EventAttr(a)));
         }
         dump(true);
         return true;
     }
+
     virtual Continuation visitEvent(EventType id) override
     {
         if (inHeader())
             state = State::Events;
         encodeCSVColumn(markup, queryEventName(id));
-        markup.append(',');
-        StringBuffer tmp;
-        encodeCSVColumn(markup, tmp.append(uint16_t(id)));
-        eventAttrs = headerAttrs;
         return visitContinue;
     }
+
     virtual bool departEvent() override
     {
-        for(EventAttr a = EventAttr(byte(EvAttrNone) + 1); a < EvAttrMax; a = EventAttr(byte(a) + 1))
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
         {
             markup.append(",");
-            Attributes::const_iterator it = eventAttrs.find(a);
-            if (it != eventAttrs.end())
-                encodeCSVColumn(markup, it->second.str());
+            if (row[a].get())
+                encodeCSVColumn(markup, row[a].get());
         }
         dump(true);
-        eventAttrs.clear();
+        // Prepare for the next event by clearing only those row values set by the departed event.
+        // Header attributes are not cleared so that they can be output for each event.
+        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
+        {
+            if (row[a].get() && !headerAttrs.count(EventAttr(a)))
+                row[a].clear();
+        }
         return true;
     }
+
     virtual void departFile(uint32_t bytesRead) override
     {
-        reverseLookup.clear();
     }
+
 protected:
-    virtual void recordAttribute(const char* name, const char* value, bool quoted) override
+    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
-        ReverseLookup::const_iterator it = reverseLookup.find(name);
-        if (it != reverseLookup.end())
+        if (id != EvAttrNone)
         {
+            row[id].set(value);
             if (inHeader())
-                headerAttrs[it->second].set(value);
-            else if (inEvents())
-                eventAttrs[it->second].set(value);
+                headerAttrs.insert(id);
         }
     }
+
 public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+
 private:
-    using ReverseLookup = std::map<std::string, EventAttr>;
-    ReverseLookup reverseLookup;
-    using Attributes = std::map<EventAttr, StringAttr>;
-    Attributes headerAttrs;
-    Attributes eventAttrs;
+    StringAttr row[EvAttrMax];
+    std::set<EventAttr> headerAttrs;
 };
 
 IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)

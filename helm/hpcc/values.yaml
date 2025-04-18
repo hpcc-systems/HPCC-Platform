@@ -519,10 +519,15 @@ sasha:
     #at: "* 3 * * *"
     #expiryDays: 14
 
+  xref: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 1
+    #ignoreLazyLost: false
 
 dfuserver:
 - name: dfuserver
   maxJobs: 1
+  replicas: 1
   #resources:
   #  cpu: "1"
   #  memory: "2G"

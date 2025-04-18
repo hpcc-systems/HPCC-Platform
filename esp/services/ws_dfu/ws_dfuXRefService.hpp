@@ -101,7 +101,12 @@ public:
                 if (!xRefNode)
                     break;
 
-                if (xRefNode->useSasha()) // if sasha processing just set submitted
+                bool useSasha = xRefNode->useSasha();
+
+                // MORE: Containerized should only be using saxref and dfuXRefLib should probably be removed
+                if (isContainerized())
+                    assertex(useSasha);
+                if (useSasha) // if sasha processing just set submitted
                     xRefNode->setStatus("Submitted");
                 else
                 {

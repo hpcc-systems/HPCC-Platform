@@ -104,8 +104,8 @@ public:
 };
 
 
-extern jlib_decl ICompressor *createLZWCompressor(bool supportbigendian=false); // bigendiansupport required for cross platform with solaris
-extern jlib_decl IExpander *createLZWExpander(bool supportbigendian=false);
+extern jlib_decl ICompressor *createLZWCompressor(bool supportbigendian); // bigendiansupport required for cross platform with solaris
+extern jlib_decl IExpander *createLZWExpander(bool supportbigendian);
 
 #define RLEMAXOVERHEAD 2
 extern jlib_decl size32_t RLECompress(void *dst,const void *src,size32_t size);  // maximum will write is 2+size
