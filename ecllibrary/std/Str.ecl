@@ -452,4 +452,30 @@ EXPORT STRING EncodeBase64(DATA value, BOOLEAN insertLF = TRUE) := externals.Enc
 
 EXPORT DATA DecodeBase64(STRING value) := externals.DecodeBase64(value);
 
+/*
+ * Returns the prefix common to both strings.
+ *
+ * @param s1            A string to examine.
+ * @param s2            A string to examine.
+ * @param nocase        If true, the comparison is case-insensitive. Optional, defaults to FALSE.
+ * @return              A string containing the prefix common to both strings, as copied from
+ *                      the first argument. May be empty if the strings have no common prefix
+ *                      or if either argument is empty.
+ */
+
+EXPORT STRING CommonPrefix(STRING s1, STRING s2, BOOLEAN nocase = FALSE) := lib_stringlib.Stringlib.CommonPrefix(s1, s2, nocase);
+
+/*
+ * Returns the suffix common to both strings.
+ *
+ * @param s1            A string to examine.
+ * @param s2            A string to examine.
+ * @param nocase        If true, the comparison is case-insensitive. Optional, defaults to FALSE.
+ * @return              A string containing the suffix common to both strings, as copied from
+ *                      the first argument. May be empty if the strings have no common suffix
+ *                      or if either argument is empty.
+ */
+
+EXPORT STRING CommonSuffix(STRING s1, STRING s2, BOOLEAN nocase = FALSE) := lib_stringlib.Stringlib.CommonSuffix(s1, s2, nocase);
+
 END;

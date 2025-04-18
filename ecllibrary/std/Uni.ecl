@@ -532,4 +532,32 @@ EXPORT unsigned4 CountWords(unicode src, unicode separator, boolean allow_blank 
 EXPORT SplitWords(unicode src, unicode separator, boolean allow_blank = FALSE) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleSplitWords(src, separator, allow_blank);
 
+/*
+ * Returns the prefix common to both strings.
+ *
+ * @param s1            A string to examine.
+ * @param s2            A string to examine.
+ * @param nocase        If true, the comparison is case-insensitive. Optional, defaults to FALSE.
+ * @return              A string containing the prefix common to both strings, as copied from
+ *                      the first argument. May be empty if the strings have no common prefix
+ *                      or if either argument is empty.
+ */
+
+EXPORT UNICODE CommonPrefix(UNICODE s1, UNICODE s2, BOOLEAN nocase = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeCommonPrefix(s1, s2, nocase);
+
+/*
+ * Returns the suffix common to both strings.
+ *
+ * @param s1            A string to examine.
+ * @param s2            A string to examine.
+ * @param nocase        If true, the comparison is case-insensitive. Optional, defaults to FALSE.
+ * @return              A string containing the suffix common to both strings, as copied from
+ *                      the first argument. May be empty if the strings have no common suffix
+ *                      or if either argument is empty.
+ */
+
+EXPORT UNICODE CommonSuffix(UNICODE s1, UNICODE s2, BOOLEAN nocase = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeCommonSuffix(s1, s2, nocase);
+
 END;
