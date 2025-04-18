@@ -13302,7 +13302,7 @@ bool HqlGram::canFollowCurrentState(int yychar, const short * activeState)
   yyssp++;
 
   assertex(yyssp > maxyyssp);
-  if (yyssp - maxyyssp > MaxTempStates)
+  if (yyssp - maxyyssp > (signed)MaxTempStates)
     return false;
   tempstate[yyssp-maxyyssp-1] = yystate;
 
