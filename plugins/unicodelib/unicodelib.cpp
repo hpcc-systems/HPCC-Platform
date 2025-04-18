@@ -47,7 +47,7 @@ using icu::Normalizer2;
 #endif
 using icu::CharacterIterator;
 
-#define UNICODELIB_VERSION "UNICODELIB 1.1.06"
+#define UNICODELIB_VERSION "UNICODELIB 1.1.07"
 
 static UChar32 const u32comma = ',';
 static UChar32 const u32space = ' ';
@@ -112,6 +112,8 @@ static const char * EclDefinition =
 "  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
 "  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords';\n"
 "  SET OF UNICODE UnicodeLocaleSplitWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleSplitWords';\n"
+"  UNICODE UnicodeCommonPrefix(const UNICODE s1, const UNICODE s2, BOOLEAN nocase) : c, pure,entrypoint='ulUnicodeCommonPrefix'; \n"
+"  UNICODE UnicodeCommonSuffix(const UNICODE s1, const UNICODE s2, BOOLEAN nocase) : c, pure,entrypoint='ulUnicodeCommonSuffix'; \n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -121,6 +123,7 @@ static const char * compatibleVersions[] = {
     "UNICODELIB 1.1.03", 
     "UNICODELIB 1.1.04", 
     "UNICODELIB 1.1.05",
+    "UNICODELIB 1.1.06",
     NULL };
 
 UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -1090,6 +1093,78 @@ void splitWords(MemoryBuffer & result, const UnicodeString & source, unsigned de
         appendUnicode(result, source, startWord, source.length() - startWord);
 }
 
+void commonPrefix(UnicodeString & target, const UnicodeString & string1, UnicodeString & string2, bool nocase)
+{
+    // Checks for empty strings should be done before calling this function
+
+    int32_t string1Len = string1.countChar32();
+    int32_t string2Len = string2.countChar32();
+    int32_t maxLen = (string1Len < string2Len) ? string1Len : string2Len;
+    int32_t i = 0;
+
+    if (nocase)
+    {
+        // Make a copy of string1 because we'll be using the original
+        // as a source for the result
+        UnicodeString string1Copy(string1);
+
+        string1Copy.foldCase();
+        string2.foldCase();
+
+        for (i = 0; i < maxLen; i++)
+        {
+            if (string1Copy.char32At(i) != string2.char32At(i))
+                break;
+        }
+    }
+    else
+    {
+        for (i = 0; i < maxLen; i++)
+        {
+            if (string1.char32At(i) != string2.char32At(i))
+                break;
+        }
+    }
+
+    target.append(string1, 0, i);
+}
+
+void commonSuffix(UnicodeString & target, const UnicodeString & string1, UnicodeString & string2, bool nocase)
+{
+    // Checks for empty strings should be done before calling this function
+
+    int32_t string1Len = string1.countChar32();
+    int32_t string2Len = string2.countChar32();
+    int32_t maxLen = (string1Len < string2Len) ? string1Len : string2Len;
+    int32_t i = 0;
+
+    if (nocase)
+    {
+        // Make a copy of string1 because we'll be using the original
+        // as a source for the result
+        UnicodeString string1Copy(string1);
+
+        string1Copy.foldCase();
+        string2.foldCase();
+
+        for (i = 0; i < maxLen; i++)
+        {
+            if (string1Copy.char32At(string1Len - 1 - i) != string2.char32At(string2Len - 1 - i))
+                break;
+        }
+    }
+    else
+    {
+        for (i = 0; i < maxLen; i++)
+        {
+            if (string1.char32At(string1Len - 1 - i) != string2.char32At(string2Len - 1 - i))
+                break;
+        }
+    }
+
+    target.append(string1, string1Len - i, i);
+}
+
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
 {
@@ -2006,4 +2081,56 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleSplitWords(bool & isAllResult
     isAllResult = false;
     lenResult = out.length();
     result = out.detach();
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeCommonPrefix(unsigned & tgtLen, UChar * & tgt, unsigned s1Len, UChar const * s1, unsigned s2Len, UChar const * s2, bool nocase)
+{
+    if (s1Len == 0 || s2Len == 0)
+    {
+        tgtLen = 0;
+        tgt = nullptr;
+        return;
+    }
+
+    UnicodeString string1(s1, s1Len);
+    UnicodeString string2(s2, s2Len);
+    UnicodeString out;
+
+    commonPrefix(out, string1, string2, nocase);
+    tgtLen = out.length();
+    if (tgtLen > 0)
+    {
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+        out.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgt = nullptr;
+    }
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeCommonSuffix(unsigned & tgtLen, UChar * & tgt, unsigned s1Len, UChar const * s1, unsigned s2Len, UChar const * s2, bool nocase)
+{
+    if (s1Len == 0 || s2Len == 0)
+    {
+        tgtLen = 0;
+        tgt = nullptr;
+        return;
+    }
+
+    UnicodeString string1(s1, s1Len);
+    UnicodeString string2(s2, s2Len);
+    UnicodeString out;
+
+    commonSuffix(out, string1, string2, nocase);
+    tgtLen = out.length();
+    if (tgtLen > 0)
+    {
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+        out.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgt = nullptr;
+    }
 }
