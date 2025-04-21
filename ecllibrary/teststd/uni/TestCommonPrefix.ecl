@@ -24,6 +24,22 @@ EXPORT TestCommonPrefix := MODULE
     EXPORT Test14 := ASSERT(Uni.CommonPrefix(u'hello你好', u'hello你朋友', FALSE) = u'hello你', CONST);
     EXPORT Test15 := ASSERT(Uni.CommonPrefix(u'Hello你好', u'hello你朋友', TRUE) = u'Hello你', CONST);
 
+    EXPORT Test16 := ASSERT(Uni.CommonPrefix(u8'hello', u8'hello', FALSE) = u8'hello', CONST);
+    EXPORT Test17 := ASSERT(Uni.CommonPrefix(u8'hello', u8'hello', TRUE) = u8'hello', CONST);
+    EXPORT Test18 := ASSERT(Uni.CommonPrefix(u8'Hello', u8'hello', FALSE) = u8'', CONST);
+    EXPORT Test19 := ASSERT(Uni.CommonPrefix(u8'Hello', u8'hello', TRUE) = u8'Hello', CONST);
+    EXPORT Test20 := ASSERT(Uni.CommonPrefix(u8'hello', u8'', FALSE) = u8'', CONST);
+    EXPORT Test21 := ASSERT(Uni.CommonPrefix(u8'', u8'', FALSE) = u8'', CONST);
+    EXPORT Test22 := ASSERT(Uni.CommonPrefix(u8'hello', u8'helicopter', FALSE) = u8'hel', CONST);
+    EXPORT Test23 := ASSERT(Uni.CommonPrefix(u8'Hello', u8'helicopter', TRUE) = u8'Hel', CONST);
+    EXPORT Test24 := ASSERT(Uni.CommonPrefix(u8'abc', u8'xyz', FALSE) = u8'', CONST);
+    EXPORT Test25 := ASSERT(Uni.CommonPrefix(u8'你好世界', u8'你好朋友', FALSE) = u8'你好', CONST);
+    EXPORT Test26 := ASSERT(Uni.CommonPrefix(u8'你好世界', u8'你好朋友', TRUE) = u8'你好', CONST);
+    EXPORT Test27 := ASSERT(Uni.CommonPrefix(u8'hello', u8'hello world', FALSE) = u8'hello', CONST);
+    EXPORT Test28 := ASSERT(Uni.CommonPrefix(u8'abcdefghij', u8'abcxyz', FALSE) = u8'abc', CONST);
+    EXPORT Test29 := ASSERT(Uni.CommonPrefix(u8'hello你好', u8'hello你朋友', FALSE) = u8'hello你', CONST);
+    EXPORT Test30 := ASSERT(Uni.CommonPrefix(u8'Hello你好', u8'hello你朋友', TRUE) = u8'Hello你', CONST);
+
   END;
 
 END;

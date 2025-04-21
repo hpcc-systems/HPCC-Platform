@@ -24,6 +24,22 @@ EXPORT TestCommonSuffix := MODULE
     EXPORT Test14 := ASSERT(Uni.CommonSuffix(u'hello世界', u'my世界', FALSE) = u'世界', CONST);
     EXPORT Test15 := ASSERT(Uni.CommonSuffix(u'hello世界', u'my世界', TRUE) = u'世界', CONST);
 
+    EXPORT Test16 := ASSERT(Uni.CommonSuffix(u8'world', u8'world', FALSE) = u8'world', CONST);
+    EXPORT Test17 := ASSERT(Uni.CommonSuffix(u8'world', u8'world', TRUE) = u8'world', CONST);
+    EXPORT Test18 := ASSERT(Uni.CommonSuffix(u8'World', u8'world', FALSE) = u8'orld', CONST);
+    EXPORT Test19 := ASSERT(Uni.CommonSuffix(u8'World', u8'world', TRUE) = u8'World', CONST);
+    EXPORT Test20 := ASSERT(Uni.CommonSuffix(u8'World', u8'', FALSE) = u8'', CONST);
+    EXPORT Test21 := ASSERT(Uni.CommonSuffix(u8'', u8'', FALSE) = u8'', CONST);
+    EXPORT Test22 := ASSERT(Uni.CommonSuffix(u8'helloworld', u8'myworld', FALSE) = u8'world', CONST);
+    EXPORT Test23 := ASSERT(Uni.CommonSuffix(u8'helloworld', u8'myWORLD', TRUE) = u8'world', CONST);
+    EXPORT Test24 := ASSERT(Uni.CommonSuffix(u8'abc', u8'xyz', FALSE) = u8'', CONST);
+    EXPORT Test25 := ASSERT(Uni.CommonSuffix(u8'你好世界', u8'朋友世界', FALSE) = u8'世界', CONST);
+    EXPORT Test26 := ASSERT(Uni.CommonSuffix(u8'你好世界', u8'朋友世界', TRUE) = u8'世界', CONST);
+    EXPORT Test27 := ASSERT(Uni.CommonSuffix(u8'world', u8'helloworld', FALSE) = u8'world', CONST);
+    EXPORT Test28 := ASSERT(Uni.CommonSuffix(u8'abcdefghij', u8'xyzghij', FALSE) = u8'ghij', CONST);
+    EXPORT Test29 := ASSERT(Uni.CommonSuffix(u8'hello世界', u8'my世界', FALSE) = u8'世界', CONST);
+    EXPORT Test30 := ASSERT(Uni.CommonSuffix(u8'hello世界', u8'my世界', TRUE) = u8'世界', CONST);
+
   END;
 
 END;
