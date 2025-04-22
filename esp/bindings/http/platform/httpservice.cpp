@@ -35,6 +35,7 @@
 #include "dasds.hpp"
 
 #include <map>
+#include <inttypes.h>
 
 /***************************************************************************
  *              CEspHttpServer Implementation
@@ -2160,13 +2161,13 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
             CDateTime timeoutAtCDT;
             StringBuffer timeoutAtString, nowString;
             timetToIDateTime(&timeoutAtCDT, timeoutAt);
-            PROGLOG("Reset %s for (/%s/%s) at <%s><%ld> : expires at <%s><%ld>", PropSessionTimeoutAt,
+            PROGLOG("Reset %s for (/%s/%s) at <%s><%" PRId64 "> : expires at <%s><%" PRId64 ">", PropSessionTimeoutAt,
                 authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(), authReq.methodName.isEmpty() ? "" : authReq.methodName.str(),
-                now.getString(nowString).str(), createTime, timeoutAtCDT.getString(timeoutAtString).str(), timeoutAt);
+                now.getString(nowString).str(), (int64_t)createTime, timeoutAtCDT.getString(timeoutAtString).str(), (int64_t)timeoutAt);
         }
         else
-            ESPLOG(LogMin, "Reset %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
-                authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
+            ESPLOG(LogMin, "Reset %s for (/%s/%s) : %" PRId64 "", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+                authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), (int64_t)timeoutAt);
 
         if (format == ESPSerializationJSON)
         {
@@ -2388,8 +2389,8 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
         sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
-        ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
-            authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
+        ESPLOG(LogMin, "Updated %s for (/%s/%s) : %" PRId64 "", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+            authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), (int64_t)timeoutAt);
     }
     ///authReq.ctx->setAuthorized(true);
     VStringBuffer sessionIDStr("%u", sessionID);
@@ -2554,11 +2555,12 @@ unsigned CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* aut
     time_t createTime = now.getSimple();
 
     StringBuffer peer, sessionIDStr, sessionTag;
-    VStringBuffer idStr("%s_%ld", m_request->getPeer(peer).str(), createTime);
+    VStringBuffer idStr("%s_%" PRId64 "", m_request->getPeer(peer).str(), (int64_t)createTime);
     unsigned sessionID = hashc((unsigned char *)idStr.str(), idStr.length(), 0);
     sessionIDStr.append(sessionID);
 
     sessionTag.appendf("%s%u", PathSessionSession, sessionID);
+    ESPLOG(LogMax, "New sessionID <%u> at <%" PRId64 "> in createHTTPSession()", sessionID, (int64_t)createTime);
     Owned<IRemoteConnection> conn = getSDSConnection(authBinding->querySessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     IPropertyTree* domainSessions = conn->queryRoot();
     IPropertyTree* sessionTree = domainSessions->queryBranch(sessionTag.str());
@@ -2569,7 +2571,7 @@ unsigned CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* aut
             sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
         return sessionID;
     }
-    ESPLOG(LogMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
+    ESPLOG(LogMax, "New sessionID <%d> at <%" PRId64 "> in createHTTPSession()", sessionID, (int64_t)createTime);
 
     IPropertyTree* ptree = domainSessions->addPropTree(sessionTag.str());
     ptree->setProp(PropSessionNetworkAddress, peer.str());
