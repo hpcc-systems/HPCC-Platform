@@ -29,12 +29,12 @@ int CEvToolCommand::dispatch(int argc, const char* argv[], int pos)
             StringBuffer err;
             err << "invalid argument: " << argv[idx] << "\n\n";
             consoleErr().put(err.length(), err.str());
-            usage(argc, argv, idx, consoleErr());
+            usage(argc, argv, pos, consoleErr());
             return 1;
         }
         if (isHelp)
         {
-            usage(argc, argv, idx, consoleOut());
+            usage(argc, argv, pos, consoleOut());
             return 0;
         }
     }
@@ -160,4 +160,50 @@ void cleanupConsole()
         err->flush();
         err.clear();
     }
+}
+
+int CEvtCommandGroup::dispatch(int argc, const char* argv[], int pos)
+{
+    if (pos + 1 >= argc)
+    {
+        usage(argc, argv, pos, consoleOut());
+        return 0;
+    }
+    const char* subcmd = argv[pos + 1];
+    if (!subcmd)
+    {
+        usage(argc, argv, pos, consoleErr());
+        return 1;
+    }
+    CmdMap::iterator it = commands.find(subcmd);
+    if (commands.end() == it)
+    {
+        StringBuffer err;
+        err << "unknown command: " << subcmd << "\n\n";
+        consoleErr().put(err.length(), err.str());
+        usage(argc, argv, pos, consoleErr());
+        return 1;
+    }
+    Owned<IEvToolCommand> cmd = it->second();
+    return cmd->dispatch(argc, argv, pos + 1);
+}
+
+void CEvtCommandGroup::usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out)
+{
+    std::vector<const char*> args;
+    for (int idx = 0; idx <= pos; ++idx)
+        args.push_back(argv[idx]);
+    args.push_back(nullptr);
+    for (const CmdMap::value_type& c : commands)
+    {
+        Owned<IEvToolCommand> cmd = c.second();
+        args.back() = c.first.c_str();
+        cmd->usage(2, &args.at(0), pos + 1, out);
+        out.put(1, "\n");
+    }
+}
+
+CEvtCommandGroup::CEvtCommandGroup(CmdMap&& _commands)
+    : commands(std::move(_commands))
+{
 }
