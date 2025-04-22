@@ -34,9 +34,13 @@
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h" //opentel_trace::propagation::kTraceParent
 #include "opentelemetry/trace/provider.h" //StartSpanOptions
+#ifdef USE_OPENTEL_GRPC
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
-
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
+#else
+#include <random>
+#endif
+
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/memory/in_memory_span_data.h"
@@ -1420,6 +1424,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             LOG(MCoperatorInfo,"Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str());
             return opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
         }
+#ifdef USE_OPENTEL_GRPC
         else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
         {
             namespace otlp = opentelemetry::exporter::otlp;
@@ -1445,6 +1450,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             LOG(MCoperatorInfo, "Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str());
             return otlp::OtlpGrpcExporterFactory::Create(opts);
         }
+#endif
         else if (stricmp(exportType.str(), "JLOG")==0)
         {
             StringBuffer logFlagsStr;

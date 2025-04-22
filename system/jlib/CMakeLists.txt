@@ -44,7 +44,9 @@ find_package(yaml CONFIG REQUIRED)
 
 find_package(Protobuf REQUIRED)
 find_package(CURL CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
+if (USE_OPENTEL_GRPC)
+    find_package(gRPC CONFIG REQUIRED)
+endif ()
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 
@@ -254,8 +256,6 @@ target_link_libraries ( jlib
         opentelemetry-cpp::ext #                              - Imported target of opentelemetry-cpp::ext
         opentelemetry-cpp::logs #                             - Imported target of opentelemetry-cpp::logs
         opentelemetry-cpp::in_memory_span_exporter #          - Imported target of opentelemetry-cpp::in_memory_span_exporter
-        opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
-        opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
         opentelemetry-cpp::ostream_log_record_exporter #      - Imported target of opentelemetry-cpp::ostream_log_record_exporter
         ###These Otel import targets are not trivial to find, developers can save time by uncommenting as needed
         #   opentelemetry-cpp::version                           - Imported target of opentelemetry-cpp::version
@@ -286,6 +286,12 @@ IF (WIN32 AND USE_ZLIB)
 target_link_libraries ( jlib ZLIB::ZLIB )
 endif (WIN32 AND USE_ZLIB)
 
+if (USE_OPENTEL_GRPC)
+    target_link_libraries ( jlib 
+        opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
+        opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
+    )
+endif ()
 if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib psapi.lib )
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))

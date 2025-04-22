@@ -70,12 +70,12 @@ StringBuffer localTZ;
 void setUtcTZ()
 {
     localTZ.clear().append(getenv("TZ"));
-    setenv("TZ", "UTC");
+    setenv("TZ", "UTC", true);
 }
 
 void setLocalTZ()
 {
-    setenv("TZ", localTZ.str());
+    setenv("TZ", localTZ.str(), true);
 }
 
 #endif //_WIN32

@@ -145,7 +145,7 @@
         },
         {
             "name": "numactl",
-            "platform": "!windows & !osx"
+            "platform": "@VCPKG_NUMA@"
         },
         {
             "name": "openblas",
@@ -174,8 +174,8 @@
             "name": "opentelemetry-cpp",
             "default-features": false,
             "features": [
-                "otlp-http",
-                "otlp-grpc"
+                @VCPKG_OPENTEL_GRPC_FEATURE@
+                "otlp-http"
             ]
         },
         "pcre2",
