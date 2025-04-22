@@ -91,6 +91,8 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s,
 STRINGLIB_API unsigned STRINGLIB_CALL slMatchTimeOfDay(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats);
 STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & __result, unsigned date, const char * format);
 STRINGLIB_API void STRINGLIB_CALL slStringRepeat(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n);
+STRINGLIB_API void STRINGLIB_CALL slCommonPrefix(unsigned & tgtLen, char * & tgt, unsigned s1Len, const char * s1, unsigned s2Len, const char * s2, bool nocase);
+STRINGLIB_API void STRINGLIB_CALL slCommonSuffix(unsigned & tgtLen, char * & tgt, unsigned s1Len, const char * s1, unsigned s2Len, const char * s2, bool nocase);
 }
 
 namespace nsStringlib {
