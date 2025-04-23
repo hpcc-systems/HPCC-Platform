@@ -338,7 +338,7 @@ attribute: bytesRead = 21
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
-            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor, nullptr));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
             DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }
@@ -376,7 +376,7 @@ attribute: bytesRead = 76
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
-            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor, nullptr));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
             DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }
@@ -424,7 +424,7 @@ attribute: bytesRead = 161
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
-            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
+            CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor, nullptr));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
             DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
         }

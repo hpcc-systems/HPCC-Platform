@@ -16,12 +16,13 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "evtindex.hpp"
 #include "jevent.hpp"
 #include "jstream.hpp"
 #include "jstring.hpp"
 #include <map>
 
-class CIndexFileSummary : public CInterfaceOf<IEventVisitor>
+class CIndexFileSummary : public IEventVisitor, public CEventConsumingOp
 {
 public: // IEventVisitor
     virtual bool visitFile(const char *filename, uint32_t version) override
@@ -159,24 +160,10 @@ public: // IEventVisitor
     }
 
 public:
-    void setFile(const char *filename)
+    IMPLEMENT_IINTERFACE;
+    bool doOp() override
     {
-        file.set(filename);
-    }
-
-    void setStream(IBufferedSerialOutputStream &out)
-    {
-        this->out.set(&out);
-    }
-
-    bool ready() const
-    {
-        return !file.isEmpty() && out.get();
-    }
-
-    bool summarize()
-    {
-        return readEvents(file, *this);
+        return traverseEvents(inputPath, *this);
     }
 
 protected:
@@ -204,8 +191,6 @@ protected:
     }
 
 protected:
-    StringAttr file;
-    Linked<IBufferedSerialOutputStream> out;
     using FileInfo = std::map<unsigned, StringAttr>;
     struct NodeKindSummary
     {
@@ -231,47 +216,31 @@ protected:
     __uint64 currentNodeKind{0};
 };
 
-class CIndexSummaryCommand : public CEvToolCommand
+// Connector between the CLI and the index file summary operation.
+class CEvtIndexSummaryCommand : public TEventConsumingCommand<CIndexFileSummary>
 {
 public:
-    virtual bool acceptParameter(const char *arg) override
+    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
-        ifs.setFile(arg);
-        return true;
+        TEventConsumingCommand<CIndexFileSummary>::usageSyntax(argc, argv, pos, out);
+        static const char* usageStr =
+R"!!!([options] [filters] <filename>
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
-    virtual bool isGoodRequest() override
+    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        return ifs.ready();
+        static const char* usageStr = R"!!!(
+Summarize the index events in a binary event file.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-
-    virtual int doRequest() override
-    {
-        return ifs.summarize() ? 0 : 1;
-    }
-
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
-    {
-        StringBuffer usage;
-        usagePrefix(argc, argv, pos, out);
-        usage << "[options] <filename>" << "\n\n";
-        usage << "Summarize the index events in a binary event file." << "\n\n";
-        usage << "  -?, -h, --help  show this help message and exit" << '\n';
-        usage << "  <filename>      full path to a binary event data file" << '\n';
-        out.put(usage.length(), usage.str());
-    }
-
-public:
-    CIndexSummaryCommand()
-    {
-        ifs.setStream(consoleOut());
-    }
-
-protected:
-    CIndexFileSummary ifs;
 };
 
 IEvToolCommand* createIndexSummaryCommand()
 {
-    return new CIndexSummaryCommand();
+    return new CEvtIndexSummaryCommand();
 }

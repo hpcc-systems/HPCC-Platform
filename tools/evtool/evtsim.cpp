@@ -196,7 +196,11 @@ protected:
     StringBuffer markup;
 };
 
-// Connector between the command line tool and the logic of simulating events.
+// Connector between the CLI and the logic of recording simulating events. As a producer of events
+// the operation interface is limited to:
+// - `bool ready() const`: returns true if the operation has sufficient information to proceed
+// - `bool doOp()`: performs the operation and returns true if successful
+// - `void setInputPath(const char* path)`: sets the operation's event file path
 class CEvtSimCommand : public CEvToolCommand
 {
 public:
@@ -228,17 +232,35 @@ public:
         }
     }
 
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
-        usagePrefix(argc, argv, pos, out);
-        StringBuffer usage;
-        usage << "[options] <filename>" << "\n\n";
-        usage << "Create a binary event file containing the events specified in an external" << "\n";
-        usage << "configuration file. The configuration may use either XML or YAML formats." << "\n\n";
-        usage << "  -?, -h, --help  show this help message and exit" << "\n";
-        usage << "  <filename>      full path to an XML or YAML file containing simulated" << "\n";
-        usage << "                  events" << "\n";
-        out.put(usage.length(), usage.str());
+        CEvToolCommand::usageSyntax(argc, argv, pos, out);
+        static const char* usageStr =
+R"!!!([options] <filename>
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
+    }
+
+    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
+    {
+        static const char* usageStr = R"!!!(
+Create a binary event file containing the events specified in an external
+configuration file. The configuration may use either XML or YAML formats.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
+    }
+
+    virtual void usageParameters(IBufferedSerialOutputStream& out) override
+    {
+        static const char* usageStr = R"!!!(
+Parameters:
+    <filename>                Full path to an XML or YAML file containing
+                              simulated event specifications.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
 protected:
