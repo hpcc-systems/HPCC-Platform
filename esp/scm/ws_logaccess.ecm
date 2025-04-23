@@ -246,7 +246,7 @@ ESPenum LogAccessStatusCode : int
 ESPStruct LogAccessStatus
 {
     LogAccessStatusCode Code;
-    LogAccessStatusCode Messages;
+    ESParray<string> Messages;
 };
 
 ESPStruct LogAccessDebugReport

@@ -397,21 +397,24 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
     options.IncludeDebugReport = req.getIncludeDebugReport();
     options.IncludeSampleQuery = req.getIncludeSampleQuery();
 
+    StringArray messages;
+    StringBuffer code;
     if (!queryRemoteLogAccessor())
     {
-        status->setCode("Fail");
-        status->setMessages("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
+        messages.append("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
+        code.set("Fail");
     }
     else
     {
         IEspLogAccessDebugReport * debugReport = createLogAccessDebugReport();
         queryRemoteLogAccessor()->healthReport(options, reportDetails);
-        status->setCode(LogAccessHealthStatusToString(reportDetails.status.getCode()));
-        StringBuffer encapsulatedMessages;
-        encapsulatedMessages.append("{ ");
-        reportDetails.status.toJSONMessageList(encapsulatedMessages);
-        encapsulatedMessages.append(" }");
-        status->setMessages(encapsulatedMessages.str());
+        code.set(LogAccessHealthStatusToString(reportDetails.status.getCode()));
+
+        auto messagesArray = reportDetails.status.queryMessages();
+        for (auto & message: messagesArray)
+        {
+            messages.append(message.c_str());
+        }
 
         if (options.IncludeConfiguration)
         {
@@ -433,6 +436,8 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
         resp.setDebugReport(*debugReport);
     }
 
+    status->setCode(code.str());
+    status->setMessages(messages);
     resp.setStatus(*status);
 
     return true;
