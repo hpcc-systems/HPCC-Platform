@@ -113,9 +113,10 @@ public:
                     setRunningStatus(true);
                     Owned<IPropertyTree> tree = runXRefCluster(currentClusterName.str(), xRefNode);
                     DBGLOG("finished run XRef for %s", currentClusterName.str());
-                    clearCurrentClusterName();
                     setRunningStatus(false);
                 }
+
+                clearCurrentClusterName();
             }
         }
         catch(IException* e)
