@@ -1722,9 +1722,8 @@ typedef enum
 struct LogAccessHealthStatus
 {
 private:
-    LogAccessHealthStatusCode code;
-    StringBuffer messages;
-    bool hasMessage = false;
+    LogAccessHealthStatusCode code = LOGACCESS_STATUS_unknown;
+    std::vector<std::string> messages;
 
 public:
     LogAccessHealthStatus(LogAccessHealthStatusCode code_)
@@ -1732,25 +1731,18 @@ public:
         code = code_;
     }
 
-    void appendJSONListMessage(const char * newMessage)
-    {
-        if (!isEmptyString(newMessage))
-        {
-            if (hasMessage)
-                messages.append(", ");
-            else
-                hasMessage = true;
 
-            messages.append("\"");
-            encodeJSON(messages, newMessage);
-            messages.append("\"");
-        }
+    void appendMessage(const char * message)
+    {
+        if (!isEmptyString(message))
+             messages.push_back(message);
     }
 
-    void toJSONMessageList(StringBuffer & out)
+    std::vector<std::string> queryMessages()
     {
-        out.appendf("\"message\": [ %s ]", messages.str());
+        return messages;
     }
+
 
     bool escalateStatusCode(LogAccessHealthStatusCode newCode)
     {
