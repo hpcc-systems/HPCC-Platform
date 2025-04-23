@@ -1059,7 +1059,22 @@ EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW
 EXPORT varstring GetDefaultDropZone() :=
     lib_fileservices.FileServices.GetDefaultDropZone();
 
+
  /**
+ * Returns the name of the default Drop Zone
+ *
+ *
+ * @return              A string containing the name of the default Drop Zone.
+ *                      If more than one Drop Zone
+ *                      process is defined then the first found will
+ *                      be returned; will return an empty string if a Drop Zone
+ *                      cannot be found
+ */
+EXPORT varstring GetDefaultDropZoneName() :=
+    lib_fileservices.FileServices.GetDefaultDropZoneName();
+
+
+    /**
  * Returns a dataset with full paths to all Drop Zones
  *
  *
