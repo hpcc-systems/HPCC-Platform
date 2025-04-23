@@ -2613,7 +2613,15 @@ protected:
     void doPostProcess()
     {
         logctx.mergeStats(0, globalStats);
-        logctx.setStatistic(StTimeTotalExecute, elapsedTimer.elapsedNs());
+        unsigned __int64 elapsed = elapsedTimer.elapsedNs();
+        unsigned __int64 minTime = milliToNano(options.minTimeLimit);
+        if (minTime && (nanoToMilli(elapsed) < minTime))
+        {
+            unsigned __int64 delay = minTime - elapsed;
+            NanoSleep(delay);
+            logctx.noteStatistic(StTimeDelayed, delay);
+        }
+        logctx.setStatistic(StTimeTotalExecute, elapsed);  // Should this include delay?
         if (factory)
         {
             factory->mergeStats(logctx);
@@ -2698,6 +2706,7 @@ protected:
         }
         options.timeLimit = 0;
         options.warnTimeLimit = 0;
+        options.minTimeLimit = 0;
     }
 
 public:
@@ -2951,7 +2960,7 @@ public:
         rowManager->reportPeakStatistics(statsTarget, 0);
     }
 
-    virtual void done(bool failed)
+    virtual void done(bool failed) override
     {
         if (debugContext)
             debugContext->debugTerminate();
@@ -4043,6 +4052,7 @@ public:
             GlobalCodeContextExtra gctx(this, 0);
             p->perform(&gctx, 0);
         }
+        doPostProcess();
     }
 };
 

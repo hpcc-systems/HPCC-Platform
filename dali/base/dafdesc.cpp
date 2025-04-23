@@ -3586,6 +3586,15 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         plane->setPropBool("@fromGroup", true);
     }
 
+    // Set copy to true to be able to avoid running XRef on mirror planes
+    // that are generated from groups and aren't needed in containerized
+    if (copy != 0)
+        plane->setPropBool("@copy", true);
+
+    // Revisit: Ignore hthor planes when running XRef in bare metal
+    if (groupType == grp_hthor)
+        plane->setPropBool("@hthorplane", true);
+
     //URL style drop zones don't generate a host entry, and will have a single device
     if (ordinality() != 0)
     {

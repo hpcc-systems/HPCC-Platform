@@ -195,6 +195,7 @@ public:
 
 protected:
     const byte * queryPayload(const byte * data) const;
+    byte * expandPayload(size32_t & sizeExpanded, CompressionMethod payloadCompression, size32_t compressedLen, const byte * & data) const;
 
 protected:
     InplaceNodeSearcher searcher;
@@ -210,13 +211,14 @@ protected:
     byte sizeMask;
     byte bytesPerPosition = 0;
     bool ownedPayload = false;
+    bool expandPayloadOnDemand = false;
 };
 
 
 class jhtree_decl CJHInplaceBranchNode final : public CJHInplaceTreeNode
 {
 public:
-    virtual bool fetchPayload(unsigned int num, char *dest) const override;
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
     virtual unsigned __int64 getSequence(unsigned int num) const override;
@@ -225,10 +227,14 @@ public:
 class jhtree_decl CJHInplaceLeafNode final : public CJHInplaceTreeNode
 {
 public:
-    virtual bool fetchPayload(unsigned int num, char *dest) const override;
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
     virtual unsigned __int64 getSequence(unsigned int num) const override;
+
+protected:
+    mutable CriticalSection cs;
+    mutable std::weak_ptr<byte[]> expandedPayload;
 };
 
 class jhtree_decl CInplaceWriteNode : public CWriteNode

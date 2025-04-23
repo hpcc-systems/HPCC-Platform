@@ -684,7 +684,7 @@ unsigned CJHSplitSearchNode::expandPayload(unsigned int index, StringBuffer &tmp
     return tmp.length();
 }
 
-bool CJHSplitSearchNode::fetchPayload(unsigned int index, char *dst) const
+bool CJHSplitSearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {
     if (index >= hdr.numKeys) return false;
     if (dst)
@@ -980,6 +980,11 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
     }
 }
 
+void PayloadReference::clear()
+{
+    data.reset();
+}
+
 offset_t CJHSearchNode::prevNodeFpos() const
 {
     offset_t ll;
@@ -1007,7 +1012,7 @@ int CJHLegacySearchNode::compareValueAt(const char *src, unsigned int index) con
     return memcmp(src, keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
-bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst) const
+bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {
     if (index >= hdr.numKeys) return false;
     if (dst)
@@ -1070,13 +1075,16 @@ unsigned __int64 CJHLegacySearchNode::getSequence(unsigned int index) const
 void CJHLegacySearchNode::dump(FILE *out, int length, unsigned rowCount, bool raw) const
 {
     CJHSearchNode::dump(out, length, rowCount, raw);
+
     if (rowCount==0 || rowCount > getNumKeys())
         rowCount = getNumKeys();
     char *dst = (char *) alloca(keyHdr->getMaxKeyLength() + sizeof(offset_t));
+
+    PayloadReference activePayload;
     for (unsigned int i=0; i<rowCount; i++)
     {
         getKeyAt(i, dst);
-        fetchPayload(i, dst);
+        fetchPayload(i, dst, activePayload);
         if (raw)
         {
             fwrite(dst, 1, length, out);
@@ -1125,7 +1133,7 @@ int CJHVarTreeNode::compareValueAt(const char *src, unsigned int index) const
     return memcmp(src, recArray[index] + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
-bool CJHVarTreeNode::fetchPayload(unsigned int num, char *dst) const
+bool CJHVarTreeNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
 {
     if (num >= hdr.numKeys) return false;
 
@@ -1202,7 +1210,7 @@ int CJHRowCompressedNode::compareValueAt(const char *src, unsigned int index) co
     return rowexp->cmpRow(src,index,keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0,keyCompareLen);
 }
 
-bool CJHRowCompressedNode::fetchPayload(unsigned int num, char *dst) const
+bool CJHRowCompressedNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
 {
     if (num >= hdr.numKeys) return false;
     if (dst)
@@ -1298,6 +1306,22 @@ void CJHTreeRawDataNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
 void CJHTreeMetadataNode::get(StringBuffer & out) const
 {
     out.append(expandedSize, keyBuf);
+}
+
+void CJHTreeBloomTableNode::dump(FILE *out, int length, unsigned rowCount, bool raw) const
+{
+    CJHTreeRawDataNode::dump(out, length, rowCount, raw);
+
+    //The bloom class should not have a read member in it, but will not fix now
+    CJHTreeBloomTableNode * bloom = const_cast<CJHTreeBloomTableNode *>(this);
+    unsigned savedRead = bloom->read;
+    offset_t nextbloom = bloom->get8();
+    unsigned numHashes = bloom->get4();
+    __uint64 fields =  bloom->get8();
+    unsigned bloomTableSize = bloom->get4();
+    bloom->read = savedRead;
+
+    fprintf(out, "Node dump: next(%" I64F "d) hashes(%u) fields(%llx), size(%u)\n", nextbloom, numHashes, fields, bloomTableSize);
 }
 
 void CJHTreeBloomTableNode::get(MemoryBuffer & out) const

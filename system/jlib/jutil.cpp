@@ -219,37 +219,45 @@ void MilliSleep(unsigned milli)
     Sleep(milli);
 }
 
+void NanoSleep(__uint64 nano)
+{
+    Sleep((unsigned)((nano + 999999)/100000));
+}
+
+
 #else
 
-void MilliSleep(unsigned milli)
+void NanoSleep(__uint64 ns)
 {
-    if (milli) {
-        unsigned target = msTick()+milli;
-        for (;;) {
-            timespec sleepTime;
+    if (ns)
+    {
+        __uint64 target = nsTick()+ns;
+        for (;;)
+        {
+            constexpr __uint64 nsPerSec = 1'000'000'000;
 
-            if (milli>=1000)
-            {
-                sleepTime.tv_sec = milli/1000;
-                milli %= 1000;
-            }
-            else
-                sleepTime.tv_sec = 0;
-            sleepTime.tv_nsec = milli * 1000000;
+            timespec sleepTime;
+            sleepTime.tv_sec = ns / nsPerSec;
+            sleepTime.tv_nsec = ns % nsPerSec;
             if (nanosleep(&sleepTime, NULL)==0)
                 break;
             if (errno!=EINTR) {
-                PROGLOG("MilliSleep err %d",errno);
+                PROGLOG("NanoSleep err %d",errno);
                 break;
             }
-            milli = target-msTick();
-            if ((int)milli<=0)
+            ns = target-nsTick();
+            if ((__int64)ns<=0)
                 break;
         }
     }
     else
         ThreadYield();  // 0 means  yield
 
+}
+
+void MilliSleep(unsigned milli)
+{
+    NanoSleep((__uint64)milli*1000000);
 }
 
 #endif
@@ -2017,8 +2025,9 @@ bool constructMask(StringAttr &attr, const char *fn, unsigned p, unsigned n)
     return false;
 }
 
-bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, unsigned &nret)
+bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, unsigned &nret, unsigned &filenameLen)
 {
+    filenameLen = 0;
     const char *e = findExtension(fn);
     if (!e)
         return false;
@@ -2044,6 +2053,7 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
                         buf.append((size32_t)(e-fn),fn).append("_$P$_of_$N$");
                     if (*s=='.')
                         buf.append(s);
+                    filenameLen = (e-1)-fn;
                     mask.set(buf);
                     return true;
                 }

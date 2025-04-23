@@ -18,11 +18,11 @@
 #ifndef JEVENT_HPP
 #define JEVENT_HPP
 
-#include <ostream>
-
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
+#include "jptree.hpp"
+#include "jstream.hpp"
 #include "jstring.hpp"
 #include "jstats.h"
 
@@ -64,7 +64,7 @@ enum EventAttr : byte
     EvAttrPath,
     EvAttrConnectId,
     EvAttrEnabled,
-    EvAttrRecordedFileSize,
+    EvAttrFileSize,
     EvAttrRecordedTimestamp,
     EvAttrRecordedOption,
     EvAttrEventTimeOffset,
@@ -82,6 +82,7 @@ struct jlib_decl EventRecordingSummary
 {
     unsigned numEvents{0};
     offset_t totalSize{0};
+    offset_t rawSize{0};
     StringBuffer filename;
 };
 
@@ -190,14 +191,18 @@ protected:
     offset_type nextWriteOffset{0};
     offset_type numEvents{0};
     unsigned pendingEventCounts[numBlocks] = {0};
-    cycle_t startCycles{0};
+    std::atomic<cycle_t> startCycles{0};
     MemoryAttr buffer;
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    byte compressionType;
     bool outputToLog{false};
+    bool corruptOutput{false};
     StringBuffer outputFilename;
+    Owned<IFile> outputFile;
     Owned<IFileIO> output;
+    Owned<ISerialOutputStream> outputStream;
 };
 
 // The implementation exposes a global object so that the test for whether events are being recorded
@@ -218,14 +223,13 @@ inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRe
 //
 // For each compatibile file the visitor can expect:
 // 1. One call to visitFile
-// 2. One call to visitAttribute for EvAttrRecordedFileSize
-// 3. One call to visitAttribute for EvAttrRecordedTimestamp
-// 4. Zero or more calls to visitAttribute for EvAttrRecordedOption
-// 5. Zero or more sequences of:
+// 2. One call to visitAttribute for EvAttrRecordedTimestamp
+// 3. Zero or more calls to visitAttribute for EvAttrRecordedOption
+// 4. Zero or more sequences of:
 //    a. One call to visitEvent
 //    b. Zero or more calls to visitAttribute
 //    c. One call to departEvent
-// 6. One call to departFile
+// 5. One call to departFile
 //
 // Implementations may implement limited filtering during visitation. All methods, except
 // `departFile`, may abort visitation. Both `visitEvent` and `visitAttribute` (in the context of
@@ -250,21 +254,36 @@ interface IEventVisitor : extends IInterface
     virtual Continuation visitEvent(EventType id) = 0;
     virtual Continuation visitAttribute(EventAttr id, const char * value) = 0;
     virtual Continuation visitAttribute(EventAttr id, bool value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint8_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint16_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint32_t value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, uint64_t value) = 0;
+    virtual Continuation visitAttribute(EventAttr id, __uint64 value) = 0;
     virtual bool departEvent() = 0;
     virtual void departFile(uint32_t bytesRead) = 0;
 };
 
-// Return a new event visitor that writes to standard output for every visit.
-// `visitFile` adds two lines of text, and all other methods add one line of text.
-extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor();
+// Get a visitor that streams visited event data in JSON format.
+extern jlib_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
 
-// Return a new event visitor that writes to the given output stream for every visit.
-// `visitFile` adds two lines of text, and all other methods add one line of text.
-extern jlib_decl IEventVisitor* createVisitTrackingEventVisitor(std::ostream& out);
+// Get a visitor that streams visited event data in a flat text format.
+extern jlib_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
+
+// Get a visitor that streams visited event data in XML format.
+extern jlib_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
+
+// Get a visitor that streams visited event data in YAML format.
+extern jlib_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
+
+// Get a visitor that streams visited event data in CSV format.
+extern jlib_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out);
+
+// Encapsulation of a visitor that stores visited event data in a property tree and
+// access to the tree.
+interface IEventPTreeCreator : extends IInterface
+{
+    virtual IEventVisitor& queryVisitor() = 0;
+    virtual IPTree* queryTree() const = 0;
+};
+
+// Get an event property tree creator.
+extern jlib_decl IEventPTreeCreator* createEventPTreeCreator();
 
 // Opens and parses a single binary event data file. Parsed data is passed to the given visitor
 // until parsing completes or the visitor requests it to stop.

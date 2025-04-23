@@ -1,0 +1,145 @@
+name: Build Changelogs
+
+on:
+  workflow_call:
+    inputs:
+      current-version:
+        description: 'Current Version'
+        required: true
+        type: string
+      
+  workflow_dispatch:
+    inputs:
+      current-version:
+        type: string
+        description: 'Current Version'
+        required: true
+      previous-rc-version:
+        type: string
+        description: 'Previous RC Version'
+        required: true
+      previous-gold-version:
+        type: string
+        description: 'Previous Gold Version'
+        required: true
+
+jobs:
+  changelogs:
+    name: Generate Changelogs
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'hpcc-systems' }}
+    steps:
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/community_${{ inputs.current-version }}
+          submodules: recursive
+          path: HPCC-Platform
+          fetch-tags: true
+          fetch-depth: 0
+      - name: Checkout LN
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/LN
+          ref: refs/tags/internal_${{ inputs.current-version }}
+          submodules: recursive
+          token: ${{ secrets.LNB_TOKEN}}
+          path: LN
+          fetch-tags: true
+          fetch-depth: 0
+      - name: Checkout ECLIDE
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/ECLIDE
+          ref: refs/tags/eclide_${{ inputs.current-version }}
+          submodules: recursive
+          path: ECLIDE
+          fetch-tags: true
+          fetch-depth: 0
+      - name: Checkout PrettyGitLogs
+        uses: actions/checkout@v4
+        with:
+          repository: hpcc-systems/PrettyGitLogs
+          ref: master
+          path: PrettyGitLogs
+      - name: Get Previous Versions for workflow call
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        id: get_version
+        shell: bash
+        working-directory: HPCC-Platform
+        run: |
+          set -x
+          tag=$(git describe --exact-match --tags 2>/dev/null)
+          version=$(echo $tag | cut -d_ -f2)
+          major=$(echo $version | cut -d. -f1)
+          minor=$(echo $version | cut -d. -f2)
+          point=$(echo $version | cut -d. -f3 | cut -d- -f1)
+          type=$(echo $version | cut -d- -f2)
+          if [[ $point -eq 0 ]]; then
+            if [[ $minor -eq 0 ]]; then
+              major=$((major - 1))
+              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
+              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
+            else
+              minor=$((minor - 2))
+              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
+              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
+            fi
+          else
+            point=$((point - 2))
+            previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-rc" | head -n 1 | cut -d_ -f2 )
+            previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]" | head -n 1 | cut -d_ -f2)
+          fi
+          echo "current_version=$version" >> $GITHUB_OUTPUT
+          echo "previous_rc_version=$previous_rc" >> $GITHUB_OUTPUT
+          echo "previous_gold_version=$previous_gold" >> $GITHUB_OUTPUT
+          echo "type=$type" >> $GITHUB_OUTPUT
+      - name: Print Vars
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          echo "${{ toJSON(steps.get_version.outputs) }}"
+      - name: Generate Changelogs
+        shell: bash
+        working-directory: PrettyGitLogs
+        run: |
+          ./prettyLogs_setup.sh
+          set -x
+          echo "pwd = $(pwd)"
+          sed -i -e '/^JIRAUser/c\JIRAUser=${{ secrets.JIRA_USERNAME}}' prettylogs.conf
+          sed -i -e '/^JIRAPW/c\JIRAPW=${{ secrets.JIRA_TOKEN }}' prettylogs.conf
+          cat prettylogs.conf
+
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
+            type=${{ steps.get_version.outputs.type }}
+            current_version=${{ steps.get_version.outputs.current_version }}
+            previous_rc_version=${{ steps.get_version.outputs.previous_rc_version }}
+            previous_gold_version=${{ steps.get_version.outputs.previous_gold_version }}
+          else
+            type=$(echo "${{ github.event.inputs.current-version }}" | cut -d- -f2)
+            current_version=${{ github.event.inputs.current-version }}
+            previous_rc_version=${{ github.event.inputs.previous-rc-version }}
+            previous_gold_version=${{ github.event.inputs.previous-gold-version }}
+          fi
+
+          if [[ ! "${type}" == *"rc"* ]]; then
+            perl ./prettyLogs.pl -bt community_${current_version} -et community_${previous_gold_version} -repo ../HPCC-Platform -sort -html community_${current_version}
+            perl ./prettyLogs.pl -bt internal_${current_version} -et internal_${previous_gold_version} -repo ../LN -sort -html internal_${current_version}
+            perl ./prettyLogs.pl -bt eclide_${current_version} -et eclide_${previous_gold_version} -repo ../ECLIDE -sort -html eclide_${current_version}
+          elif [ "${type}" == "rc1" ]; then
+            perl ./prettyLogs.pl -bt community_${current_version} -et community_${previous_gold_version} -repo ../HPCC-Platform -sort -html community_${current_version}
+            perl ./prettyLogs.pl -bt internal_${current_version} -et internal_${previous_gold_version} -repo ../LN -sort -html internal_${current_version}
+            perl ./prettyLogs.pl -bt eclide_${current_version} -et eclide_${previous_gold_version} -repo ../ECLIDE -sort -html eclide_${current_version}
+          else
+            perl ./prettyLogs.pl -bt community_${current_version} -et community_${previous_rc_version} -repo ../HPCC-Platform -sort -html community_${current_version}
+            perl ./prettyLogs.pl -bt internal_${current_version} -et internal_${previous_rc_version} -repo ../LN -sort -html internal_${current_version}
+            perl ./prettyLogs.pl -bt eclide_${current_version} -et eclide_${previous_rc_version} -repo ../ECLIDE -sort -html eclide_${current_version}
+          fi
+      - name: Upload Changelogs
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          artifacts: PrettyGitLogs/community_*.html,PrettyGitLogs/internal_*.html,PrettyGitLogs/eclide_*.html
+          

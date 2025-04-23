@@ -1716,6 +1716,7 @@ void doWUQueryBySingleWU(IEspContext &context, IConstWorkUnit *cw, IEspWUQueryRe
     IArrayOf<IEspECLWorkunit> results;
     results.append(*info.getClear());
     resp.setWorkunits(results);
+    resp.setNumWUs(1);
     resp.setPageSize(1);
     resp.setCount(1);
     resp.setNumWUs(1);
@@ -2604,6 +2605,9 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     {
         WuidPattern pattern(req.getWuid());
 
+        resp.setNumWUs(0);
+
+        // assume an empty list until told otherwise
         resp.setNumWUs(0);
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))

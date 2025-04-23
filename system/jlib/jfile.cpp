@@ -217,6 +217,37 @@ const char * pathExtension(const char * path)
     return NULL;
 }
 
+enum class SafeStatBehaviour : unsigned {
+    Standard      = 0, // Fire error on anything except ENOENT and ENOTDIR
+    IgnoreEaccess = 1, // Ignore EACCES
+    IgnoreAll     = 2, // Ignore all errors (legacy behaviour)
+    Count              // count/end marker
+};
+static constexpr SafeStatBehaviour defaultSafeStatBehaviour{SafeStatBehaviour::Standard};
+static std::atomic<SafeStatBehaviour> safeStatBehaviour{defaultSafeStatBehaviour};
+static bool safeStat(const char *filename, struct stat &info)
+{
+    if (stat(filename, &info) == 0)
+        return true;
+    else if ((ENOENT == errno) || (ENOTDIR == errno)) // always also consider a missing directory as a missing file/dir
+        return false;
+    SafeStatBehaviour behaviour = safeStatBehaviour.load();
+    switch (behaviour)
+    {
+        case SafeStatBehaviour::Standard:
+            break; // fall through and fire error
+        case SafeStatBehaviour::IgnoreEaccess:
+            if (EACCES == errno)
+                return false;
+            break;
+        case SafeStatBehaviour::IgnoreAll:
+            return false;
+        default:
+            throwUnexpected();
+    }
+    throw makeErrnoExceptionV(errno, "CFile::checkFileExists %s", filename);
+}
+
 bool checkFileExists(const char * filename)
 {
 #ifdef _WIN32
@@ -232,7 +263,7 @@ bool checkFileExists(const char * filename)
     return false;
 #else
     struct stat info;
-    return (stat(filename, &info) == 0);
+    return safeStat(filename, info);
 #endif
 }
 
@@ -243,7 +274,7 @@ bool checkDirExists(const char * filename)
     return (attr != (DWORD)-1)&&(attr & FILE_ATTRIBUTE_DIRECTORY);
 #else
     struct stat info;
-    if (stat(filename, &info) != 0)
+    if (!safeStat(filename, info))
         return false;
     return S_ISDIR(info.st_mode);
 #endif
@@ -346,7 +377,7 @@ bool LinuxCreateDirectory(const char * path)
         if (EEXIST == errno)
         {
             struct stat info;
-            if (stat(path, &info) != 0)
+            if (stat(path, &info) != 0) // unlikely to fail given EEXIST
                 return false;
             return S_ISDIR(info.st_mode);
         }
@@ -469,7 +500,7 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
     FILETIMEtoIDateTime(accessedTime, timeAccessed);
 #else
     struct stat info;
-    if (stat(filename, &info) != 0)
+    if (!safeStat(filename, info))
         return false;
     timetToIDateTime(accessedTime,  info.st_atime);
     timetToIDateTime(createTime,    info.st_ctime);
@@ -498,7 +529,7 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     struct utimbuf am;
     if (!accessedTime||!modifiedTime) {
         struct stat info;
-        if (stat(filename, &info) != 0)
+        if (!safeStat(filename, info))
             return false;
         am.actime = info.st_atime;
         am.modtime = info.st_mtime;
@@ -522,7 +553,7 @@ fileBool CFile::isDirectory()
     return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
-    if (stat(filename, &info) != 0)
+    if (!safeStat(filename, info))
         return fileBool::notFound;
     return S_ISDIR(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
@@ -539,7 +570,7 @@ fileBool CFile::isFile()
     return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundNo : fileBool::foundYes;
 #else
     struct stat info;
-    if (stat(filename, &info) != 0)
+    if (!safeStat(filename, info))
         return fileBool::notFound;
     return S_ISREG(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
@@ -554,7 +585,7 @@ fileBool CFile::isReadOnly()
     return ( attr & FILE_ATTRIBUTE_READONLY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
-    if (stat(filename, &info) != 0)
+    if (!safeStat(filename, info))
         return fileBool::notFound;
     //MORE: I think this is correct, but someone with better unix knowledge should check!
     return (info.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? fileBool::foundNo : fileBool::foundYes;
@@ -1093,7 +1124,7 @@ offset_t CFile::size()
     }
 #else
     struct stat info;
-    if (stat(filename, &info) == 0)
+    if (safeStat(filename, info))
         return info.st_size;
 #endif
 #if 0
@@ -3847,7 +3878,7 @@ class CLinuxDirectoryIterator : public CDirectoryIterator
     bool loadst()
     {
         if (!gotst&&cur)
-            gotst = (stat(cur->queryFilename(), &st) == 0);
+            gotst = (stat(cur->queryFilename(), &st) == 0); // prob should use safeStat, but leaving/being conservative for now
         return gotst;
     }
     
@@ -3925,7 +3956,7 @@ public:
                     f.append(entry->d_name);
                     if (islnk||isunknown) {
                         struct stat info;
-                        if (stat(f.str(), &info) == 0)  // will follow link
+                        if (stat(f.str(), &info) == 0)  // will follow link. Prob should use safeStat, but leaving/being conservative for now
                             curisdir = S_ISDIR(info.st_mode);
                         else
                             curisdir = false;
@@ -4008,7 +4039,7 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
 {
     struct stat info;
-    if (stat(filename, &info) == 0) {
+    if (safeStat(filename, info)) {
         size = (offset_t)info.st_size;
         isdir = S_ISDIR(info.st_mode);
         timetToIDateTime(&modtime,  info.st_mtime);
@@ -7999,6 +8030,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
         if (componentConfig->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || globalConfig->getProp("expert/@disableIFileMask", fileFlagsStr))
             expertDisableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
+
+        safeStatBehaviour = static_cast<SafeStatBehaviour>(componentConfig->getPropInt("expert/@safeStatBehaviour", globalConfig->getPropInt("expert/@safeStatBehaviour", static_cast<unsigned>(defaultSafeStatBehaviour))));
+        if (safeStatBehaviour >= SafeStatBehaviour::Count) // safeguard against bad config value
+            safeStatBehaviour = defaultSafeStatBehaviour;
 
         std::string propName = "expert/@" + std::string(planeAttributeInfo[FileSyncWriteClose].name);
         if (componentConfig->hasProp(propName.c_str()))

@@ -1583,7 +1583,7 @@ Pass in dict with .root, .visibility defined
 {{- end -}}
 
 {{- define "hpcc.generateHelmVersion" -}}
-helmVersion: 9.11.0-trunk0
+helmVersion: 9.13.0-trunk0
 {{- end -}}
 
 {{/*
@@ -1700,7 +1700,7 @@ prometheusMetricsReporter: "yes"
 {{- end -}}
 
 {{/*
-Return access permssions for a given service
+Return access permissions for a given service
 */}}
 {{- define "hpcc.getSashaServiceAccess" }}
 {{- if (eq "coalescer" .name) -}}
@@ -1715,6 +1715,9 @@ dali
 dali data
 {{- else if (eq "thor-qmon" .name) -}}
 dali queues
+{{- else if (eq "debugplane-housekeeping" .name) -}}
+{{- else if (eq "xref" .name) -}}
+dali data
 {{- else -}}
 {{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}
@@ -2529,7 +2532,9 @@ This means pods only auto-restart if the non-excluded parts change.
 
 Pass in root, me, configMapHelper, component, excludeSectionRegexList and excludeKeyList
 excludeSectionRegexList is a list of regexp's that filter out top-level sections, e.g. [".*spec.yaml$" ]
-excludeKeyList is a list of key values to exclude from each section, e.g. [ "global", "esp.services" "esp.queues"]
+excludeKeyList is a list of key values with optional regex support (denoted by leading '~') to exclude from
+each section, each component of the key must be seperated by "::" due to the regex support.
+e.g. [ "global", "esp::services", "esp::queues", "~.*::logging"]
 
 The configMap data section is reconstructed based on filtering out matches.
 
@@ -2542,32 +2547,53 @@ e.g. a cache of secrets, with an auto reload/refresh mechanism, or 'replicas'.
 {{- $excludeSectionRegexList := .excludeSectionRegexList -}}
 {{- $excludeKeyList := .excludeKeyList -}}
 {{- range $configElementName, $configElementDict := $config.data -}}
-  {{- $_ := set $configCtx "excludeSection" false -}}
-  {{- range $regex := $excludeSectionRegexList -}}
-    {{- if (regexMatch $regex $configElementName) -}}
-      {{- $_ := set $configCtx "excludeSection" true -}}
-    {{- end -}}
+ {{- $_ := set $configCtx "excludeSection" false -}}
+ {{- range $regex := $excludeSectionRegexList -}}
+  {{- if (regexMatch $regex $configElementName) -}}
+   {{- $_ := set $configCtx "excludeSection" true -}}
   {{- end -}}
-  {{- if not $configCtx.excludeSection -}}
-    {{- $configDictCtx := dict -}}
-    {{- range $key := $excludeKeyList -}}
-      {{- $_ := set $configDictCtx "keyDictStr" (regexReplaceAll "(.*)\\..*$" $key "${1}") -}}
-      {{- if eq $configDictCtx.keyDictStr $key -}}{{/* single component key, e.g. "global"*/}}
-        {{- $configElementDict := (unset $configElementDict $key) -}}
-      {{- else -}}{{/* scopes component key, e.g. "eclccserver.queue"*/}}
-        {{- $_ := set $configDictCtx "keyKeyStr" (regexReplaceAll ".*\\.(.*)$" $key "${1}") -}}
-        {{- $subDict := get $configElementDict $configDictCtx.keyDictStr -}}
-        {{- if $subDict -}}
-          {{- $_ := set $configElementDict $configDictCtx.keyDictStr (unset $subDict $configDictCtx.keyKeyStr) -}}
+ {{- end -}}
+ {{- if not $configCtx.excludeSection -}}
+  {{- $configDictCtx := dict -}}
+  {{- range $key := $excludeKeyList -}}
+   {{- $keyParts := splitList "::" $key -}}
+   {{- $outerRaw := index $keyParts 0 -}}
+   {{- $outerIsWild := hasPrefix "~" $outerRaw -}}
+   {{- $outerKey := trimPrefix "~" $outerRaw -}}
+   {{- $hasSubKey := eq (len $keyParts) 2 -}}
+   {{- $innerKey := "" -}}
+   {{- $innerIsWild := false -}}
+   {{- if $hasSubKey -}}
+    {{- $innerRaw := index $keyParts 1 -}}
+    {{- $innerIsWild = hasPrefix "~" $innerRaw -}}
+    {{- $innerKey = trimPrefix "~" $innerRaw -}}
+   {{- end -}}
+   {{- range $topKey, $topVal := $configElementDict -}}
+    {{- if or (and (not $outerIsWild) (eq $outerKey $topKey)) (and $outerIsWild (regexMatch $outerKey $topKey)) -}}
+     {{- if not $hasSubKey -}}
+      {{- $configElementDict = unset $configElementDict $topKey -}}
+     {{- else -}}
+      {{- $innerDict := get $configElementDict $topKey | default dict -}}
+      {{- if (kindIs "map" $innerDict) -}}
+       {{- if $innerIsWild -}}
+        {{- range $k, $_ := $innerDict -}}
+         {{- if regexMatch $innerKey $k -}}
+          {{- $innerDict = unset $innerDict $k -}}
+         {{- end -}}
         {{- end -}}
+       {{- else -}}
+        {{- $innerDict = unset $innerDict $innerKey -}}
+       {{- end -}}
       {{- end -}}
-    {{- end -}}{{/*range $key*/}}
-    {{- $configYaml := toYaml $configElementDict -}}
-    {{- $_ := set $config.data $configElementName $configYaml -}}
-  {{- else -}}
-    {{- $configData := (unset $config.data $configElementName) -}}
-    {{- $_ := set $config "data" $configData -}}
+      {{- $_ := set $configElementDict $topKey $innerDict -}}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
   {{- end -}}
+ {{- else -}}
+  {{- $configData := (unset $config.data $configElementName) -}}
+  {{- $_ := set $config "data" $configData -}}
+ {{- end -}}
 {{- end -}}{{/*range $configElementName*/}}
 {{ toYaml $config }}
 {{- end -}}
@@ -2589,17 +2615,18 @@ Pass in root, me, configMapHelper
 A template to generate an SHA from a component config, to be used to annotate a Deployment,
 such that it will auto restart if the SHA changes.
 Uses filterConfig helper to select pertinent parts of the config to be part of the SHA.
-Pass in root, me, configMapHelper, component and excludeKeys
-excludeKeys is a comma separated list of key values to exclude from each section, e.g. "global,esp.services,esp.queues"
+Pass in root, me, configMapHelper, component and excludeKeys.
+excludeKeys is a comma separated list of key values to exclude from each section, e.g. "global,esp::services,esp::queues,~.*::replicas"
 
 globalExcludeSectionRegexList below is hard-coded list of section regexp's to exclude.
 globalExcludeList below is a hard-coded list of global keys to exclude.
 
 */}}
 {{- define "hpcc.getConfigSHA" }}
-{{- $globalExcludeList := list (printf "%s.replicas" .component) -}}
-{{- $globalExcludeSectionRegexList := list ".*spec.yaml$" -}}
-{{- $combinedExcludeKeyList := concat (splitList "," (.excludeKeys | default "")) $globalExcludeList -}}
+{{- $globalExcludeList := list "~.*::replicas" -}}
+{{- $globalExcludeSectionRegexList := list ".*-job.yaml$" -}}
+{{- $componentExcludeList := ternary (splitList "," (.excludeKeys | default "")) list (hasKey . "excludeKeys") -}}
+{{- $combinedExcludeKeyList := concat $globalExcludeList $componentExcludeList -}}
 {{- $ctx := merge (omit . "excludeKeys") (dict "excludeSectionRegexList" $globalExcludeSectionRegexList "excludeKeyList" $combinedExcludeKeyList) -}}
 {{- include "hpcc.filterConfig" $ctx | sha256sum }}
 {{- end -}}

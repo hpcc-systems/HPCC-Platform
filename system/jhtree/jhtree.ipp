@@ -18,6 +18,8 @@
 #ifndef _JHTREEI_INCL
 #define _JHTREEI_INCL
 
+#include <memory>
+
 #include "jmutex.hpp"
 #include "jhutil.hpp"
 #include "jqueue.tpp"
@@ -148,7 +150,7 @@ public:
     virtual IPropertyTree * getMetadata();
 
     unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
-    bool bloomFilterReject(const IIndexFilterList &segs) const;
+    bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
 
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
@@ -207,6 +209,7 @@ protected:
     Owned<const CJHSearchNode> parents[maxParentNodes];
     unsigned int parentNodeKeys[maxParentNodes] = {0};
     unsigned int nodeKey;
+    mutable PayloadReference activePayload;
     
     mutable bool fullBufferValid = false;
     bool eof=false;
@@ -225,7 +228,7 @@ public:
     virtual void deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
-    virtual void reset();
+    virtual void reset(IContextLogger *ctx);
     virtual bool lookup(bool exact, IContextLogger *ctx) override;
     virtual bool next(IContextLogger *ctx) override;
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx) override;

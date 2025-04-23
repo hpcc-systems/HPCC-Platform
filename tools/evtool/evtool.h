@@ -18,15 +18,20 @@
 #pragma once
 
 #include "jiface.hpp"
-#include <ostream>
+#include "jstream.hpp"
 
 // Core interface for tool commands. `dispatch` processes individual requests. `usage` provides
 // help text for the command.
 interface IEvToolCommand : extends IInterface
 {
     virtual int dispatch(int argc, const char* argv[], int pos) = 0;
-    virtual void usage(int argc, const char* argv[], int pos, std::ostream& out) = 0;
+    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) = 0;
 };
+
+extern IBufferedSerialOutputStream& consoleOut();
+extern IBufferedSerialOutputStream& consoleErr();
+extern void cleanupConsole();
 
 // Command factory functions.
 extern IEvToolCommand* createDumpCommand();
+extern IEvToolCommand* createSimCommand();

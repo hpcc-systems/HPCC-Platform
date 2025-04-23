@@ -1,3 +1,4 @@
+
 /*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -57,6 +58,7 @@
 #define PTREE_COMPRESS_THRESHOLD (4*1024)    // i.e. only use compress if > threshold
 #define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
 
+constexpr CompressionMethod defaultBinaryCompressionMethod = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
 
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
@@ -1008,9 +1010,9 @@ private:
 
 ///////////////////
 
-CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool _compressed)
+CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, CompressionMethod _compressType)
 {
-    compressed = _compressed;
+    compressType = _compressType;
     if (!raw && binary && size > PTREE_COMPRESS_THRESHOLD)
     {
         unsigned newSize = size * PTREE_COMPRESS_BOTHER_PECENTAGE / 100;
@@ -1019,14 +1021,16 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool 
         try
         {
             newData = malloc(sizeof(size32_t) + newSize);
-            compressor = createLZWCompressor();
+            CompressionMethod compressMethod = defaultBinaryCompressionMethod;
+            ICompressHandler * handler = queryCompressHandler(compressMethod);
+            compressor = handler->getCompressor();
             compressor->open(((char *)newData) + sizeof(size32_t), newSize);
             if (compressor->write(data, size)==size)
             {
                 compressor->close();
                 memcpy(newData, &size, sizeof(size32_t));
                 newSize = sizeof(size32_t) + compressor->buflen();
-                compressed = true;
+                compressType = compressMethod;
                 set(newSize, newData);
             }
             free(newData);
@@ -1041,19 +1045,24 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool 
             throw;
         }
     }
-    if (raw || !compressed)
+    if (raw || !compressType)
         set(size, data);
 }
 
-static void *uncompress(const void *src, size32_t &sz)
+static void *uncompress(const void *src, size32_t &sz, byte compressType)
 {
+    dbgassertex(compressType != COMPRESS_METHOD_LZWLEGACY);
+    if (compressType == COMPRESS_METHOD_LZWLEGACY)
+        compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
     IExpander *expander = NULL;
     void *uncompressedValue = NULL;
     try
     {
         memcpy(&sz, src, sizeof(size32_t));
         assertex(sz);
-        expander = createLZWExpander();
+
+        ICompressHandler * handler = queryCompressHandler((CompressionMethod)compressType);
+        expander = handler->getExpander();
         src = ((const char *)src) + sizeof(size32_t);
         uncompressedValue = malloc(sz);
         assertex(uncompressedValue);
@@ -1073,12 +1082,12 @@ static void *uncompress(const void *src, size32_t &sz)
 
 const void *CPTValue::queryValue() const
 {
-    if (compressed)
+    if (compressType)
     {
         size32_t sz;
-        void *uncompressedValue = uncompress(get(), sz);
+        void *uncompressedValue = uncompress(get(), sz, compressType);
         ((MemoryAttr *)this)->setOwn(sz, uncompressedValue);
-        compressed = false;
+        compressType = COMPRESS_METHOD_NONE;
     }
     return get();
 }
@@ -1090,7 +1099,7 @@ void CPTValue::serialize(MemoryBuffer &tgt)
     tgt.append(serialLen);
     if (serialLen)
     {
-        tgt.append(compressed);
+        tgt.append(compressType);
         tgt.append(serialLen, get());
     }
 }
@@ -1101,22 +1110,24 @@ void CPTValue::deserialize(MemoryBuffer &src)
     src.read(sz);
     if (sz)
     {
-        src.read(compressed);
+        src.read(compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
         set(sz, src.readDirect(sz));
     }
     else
     {
-        compressed = false;
+        compressType = COMPRESS_METHOD_NONE;
         clear();
     }
 }
 
 MemoryBuffer &CPTValue::getValue(MemoryBuffer &tgt, bool binary) const
 {
-    if (compressed)
+    if (compressType)
     {
         size32_t sz;
-        void *uncompressedValue = uncompress(get(), sz);
+        void *uncompressedValue = uncompress(get(), sz, compressType);
         if (!binary) sz -= 1;
         tgt.append(sz, uncompressedValue);
         if (uncompressedValue)
@@ -1135,13 +1146,13 @@ MemoryBuffer &CPTValue::getValue(MemoryBuffer &tgt, bool binary) const
 
 StringBuffer &CPTValue::getValue(StringBuffer &tgt, bool binary) const
 {
-    if (compressed)
+    if (compressType)
     {
         size32_t sz;
         void *uncompressedValue = NULL;
         try
         {
-            uncompressedValue = uncompress(get(), sz);
+            uncompressedValue = uncompress(get(), sz, compressType);
             if (!binary) sz -= 1;
             tgt.append(sz, (const char *)uncompressedValue);
             free(uncompressedValue);
@@ -1165,7 +1176,7 @@ StringBuffer &CPTValue::getValue(StringBuffer &tgt, bool binary) const
 
 size32_t CPTValue::queryValueSize() const
 {
-    if (compressed)
+    if (compressType)
     {
         size32_t sz;
         memcpy(&sz, get(), sizeof(size32_t));
@@ -1873,6 +1884,11 @@ bool PTree::isCompressed(const char *xpath) const
         }
     }
     return false;
+}
+
+CompressionMethod PTree::getCompressionType() const
+{
+    return value ? value->getCompressionType() : COMPRESS_METHOD_NONE;
 }
 
 bool PTree::isBinary(const char *xpath) const

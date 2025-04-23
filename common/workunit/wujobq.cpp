@@ -2185,6 +2185,7 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
     return true;
 }
 
+// NB: deprecated. Only currently used if expert/@disableQueuePriority = true
 extern bool WORKUNIT_API queueJobIfQueueWaiting(IJobQueue *queue, IJobQueueItem *item, unsigned maxTimeMs, unsigned intervalMs)
 {
     bool consumed = false;

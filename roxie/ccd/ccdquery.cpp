@@ -322,6 +322,7 @@ QueryOptions::QueryOptions()
     dynPriority = QUERY_LOW_PRIORITY_VALUE;
     timeLimit = defaultTimeLimit[0];
     warnTimeLimit = defaultWarnTimeLimit[0];
+    minTimeLimit = defaultMinTimeLimit[0];
 
     memoryLimit = defaultMemoryLimit;
 
@@ -362,6 +363,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     dynPriority = other.dynPriority.load();
     timeLimit = other.timeLimit;
     warnTimeLimit = other.warnTimeLimit;
+    minTimeLimit = other.minTimeLimit;
 
     memoryLimit = other.memoryLimit;
 
@@ -404,11 +406,13 @@ void QueryOptions::updateDynPriority(int _priority)
         // use LOW queue time limits ...
         timeLimit = defaultTimeLimit[0];
         warnTimeLimit = defaultWarnTimeLimit[0];
+        minTimeLimit = defaultMinTimeLimit[0];
     }
     else
     {
         timeLimit = defaultTimeLimit[_priority];
         warnTimeLimit = defaultWarnTimeLimit[_priority];
+        minTimeLimit = defaultMinTimeLimit[_priority];
     }
 }
 
@@ -423,11 +427,13 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
 
     updateFromWorkUnit(timeLimit, wu, "timeLimit");
     updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
+    updateFromWorkUnit(minTimeLimit, wu, "minTimeLimit");
     updateFromWorkUnitM(memoryLimit, wu, "memoryLimit");
     if (stateInfo)
     {
         updateFromContext(timeLimit, stateInfo, "@timeLimit");
         updateFromContext(warnTimeLimit, stateInfo, "@warnTimeLimit");
+        updateFromContext(minTimeLimit, stateInfo, "@minTimeLimit");
         updateFromContextM(memoryLimit, stateInfo, "@memoryLimit");
     }
 
@@ -521,6 +527,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
 
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
+        updateFromContext(minTimeLimit, ctx, "@minTimeLimit", "_MinTimeLimit");
         updateFromContextM(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
         updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
         updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");

@@ -29,28 +29,25 @@
 
 class IndexWriteActivityMaster : public CMasterActivity
 {
-    rowcount_t recordsProcessed;
+    rowcount_t recordsProcessed = 0;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;
     offset_t compressedFileSize = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
     Owned<IFileDescriptor> fileDesc;
-    bool buildTlk, isLocal, singlePartKey;
+    bool buildTlk = false, isLocal = false, singlePartKey = false;
     StringArray clusters;
-    mptag_t mpTag2;
-    bool refactor;
+    mptag_t mpTag2 = TAG_NULL;
+    bool refactor = false;
     CDfsLogicalFileName dlfn;
-    IHThorIndexWriteArg *helper;
+    IHThorIndexWriteArg *helper = nullptr;
     StringAttr fileName;
 
 public:
     IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info, indexWriteActivityStatistics)
     {
         helper = (IHThorIndexWriteArg *)queryHelper();
-        recordsProcessed = 0;
-        refactor = singlePartKey = isLocal = false;
-        mpTag2 = TAG_NULL;
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
     }
     ~IndexWriteActivityMaster()

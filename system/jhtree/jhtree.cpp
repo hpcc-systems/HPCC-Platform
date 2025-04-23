@@ -437,7 +437,7 @@ public:
             }
             if (!crappyHack)
             {
-                keyCursor->reset();
+                keyCursor->reset(activeCtx);
             }
         }
     }
@@ -1741,7 +1741,7 @@ void CKeyIndex::loadBloomFilters()
     bloomFiltersLoaded = true;
 }
 
-bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs) const
+bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const
 {
     if (segs.isUnfiltered())
         return false;
@@ -1751,11 +1751,27 @@ bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs) const
         if (!bloomFiltersLoaded)
             const_cast<CKeyIndex *>(this)->loadBloomFilters();
     }
+    bool hasMatchingBloom = false;
     ForEachItemIn(idx, bloomFilters)
     {
         IndexBloomFilter &filter = bloomFilters.item(idx);
-        if (filter.reject(segs))
+        bool isValidBloom;
+        if (filter.reject(segs, isValidBloom))
+        {
+            if (ctx)
+                ctx->noteStatistic(StNumBloomRejects, 1);
             return true;
+        }
+        if (isValidBloom)
+            hasMatchingBloom = true;
+    }
+
+    if (ctx)
+    {
+        if (hasMatchingBloom)
+            ctx->noteStatistic(StNumBloomAccepts, 1);
+        else
+            ctx->noteStatistic(StNumBloomSkips, 1);
     }
     return false;
 }
@@ -1903,12 +1919,12 @@ CKeyCursor::~CKeyCursor()
     free(recordBuffer);
 }
 
-void CKeyCursor::reset()
+void CKeyCursor::reset(IContextLogger *ctx)
 {
     node.clear();
     matched = false;
     clearParentNodes();
-    eof = key.bloomFilterReject(*filter) || !filter->canMatch();
+    eof = key.bloomFilterReject(*filter, ctx) || !filter->canMatch();
     if (!eof)
         setLow(0);
 }
@@ -1957,6 +1973,7 @@ bool CKeyCursor::_next(IContextLogger *ctx)
                                 break;
                             }
                             parents[depth].clear();
+                            activePayload.clear();
                         }
                         else
                         {
@@ -1991,7 +2008,7 @@ const byte *CKeyCursor::queryRecordBuffer() const
     assertex(node);
     if (!fullBufferValid)
     {
-        node->fetchPayload(nodeKey, recordBuffer);
+        node->fetchPayload(nodeKey, recordBuffer, activePayload);
         fullBufferValid = true;
     }
     return (const byte *) recordBuffer;
@@ -2086,6 +2103,7 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
                         }
                     }
                     parents[depth].clear();
+                    activePayload.clear();
                 }
             }
         }
@@ -2188,6 +2206,7 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
                         }
                     }
                     parents[depth].clear();
+                    activePayload.clear();
                 }
             }
         }
@@ -2248,6 +2267,7 @@ void CKeyCursor::clearParentNodes()
         parents[i].clear();
         parentNodeKeys[i] = 0;
     }
+    activePayload.clear();
 }
 
 void CKeyCursor::serializeCursorPos(MemoryBuffer &mb)
@@ -2403,7 +2423,7 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
 
 unsigned __int64 CKeyCursor::getCount(IContextLogger *ctx)
 {
-    reset();
+    reset(ctx);
     unsigned __int64 result = 0;
     unsigned lastRealSeg = filter->lastRealSeg();
     bool unfiltered = filter->isUnfiltered();
@@ -2426,7 +2446,7 @@ unsigned __int64 CKeyCursor::getCount(IContextLogger *ctx)
 
 unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, IContextLogger *ctx)
 {
-    reset();
+    reset(ctx);
     unsigned __int64 result = 0;
     unsigned lastFullSeg = filter->lastFullSeg();
     bool unfiltered = filter->isUnfiltered();
@@ -3430,7 +3450,7 @@ public:
         for (i = 0; i < numkeys; i++)
         {
             Owned<IKeyCursor> cursor = keyset->queryPart(i)->getCursor(filter, logExcessiveSeeks);
-            cursor->reset();
+            cursor->reset(ctx);
             for (;;)
             {
                 bool found;

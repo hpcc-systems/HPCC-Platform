@@ -69,6 +69,10 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
+if (NOT CMAKE_POLICY_VERSION_MINIMUM)
+    set (CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif ()
+
 set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(${HPCC_SOURCE_DIR}/version.cmake)
 include(${HPCC_SOURCE_DIR}/cmake_modules/options.cmake)
@@ -249,7 +253,7 @@ if ( WIN32 )
             install ( PROGRAMS ${MSVC_REDIST} DESTINATION tmp )
             get_filename_component(MSVC_REDIST_NAME ${MSVC_REDIST} NAME)
             list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
-                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC_REDIST_NAME} /S'
+                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC_REDIST_NAME} /quiet /norestart'
             ")
         else ()
             MESSAGE(FATAL_ERROR "-- Unable to locate vcredist_${CMAKE_MSVC_ARCH}.exe")

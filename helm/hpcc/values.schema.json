@@ -205,6 +205,9 @@
             "type": "string",
             "description": "The name of the dfuserver process"
           },
+          "replicas": {
+            "type": "integer"
+          },
           "disabled": {
             "type": "boolean"
           },
@@ -3058,6 +3061,35 @@
       },
       "additionalProperties": false
     },
+    "sasha-debugplane-housekeeping": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+      "properties": {
+        "expiryDays": {
+          "type": "integer",
+          "description": "Default number of days passed that debug plane files or directories are deleted.",
+          "default": "14"
+        },
+        "disabled": {},
+        "interval": {},
+        "at" : {},
+        "image": {},
+        "resources": {},
+        "annotations": {},
+        "labels": {},
+        "expert": {},
+        "terminationGracePeriodSeconds": {}
+      },
+      "additionalProperties": false
+    },
+    "sasha-xref": {
+        "type": "object",
+        "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+        "properties": {
+          "disabled": {}
+        },
+        "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3081,6 +3113,12 @@
             },
             "thor-qmon": {
               "$ref": "#/definitions/sasha-thor-qmon"
+            },
+            "debugplane-housekeeping": {
+              "$ref": "#/definitions/sasha-debugplane-housekeeping"
+            },
+            "xref": {
+              "$ref": "#/definitions/sasha-xref"
             },
             "disabled": {
               "type": "boolean"

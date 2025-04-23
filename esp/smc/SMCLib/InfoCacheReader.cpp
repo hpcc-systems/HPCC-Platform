@@ -27,7 +27,7 @@ bool CInfoCache::isCachedInfoValid(unsigned timeOutSeconds)
 
 void CInfoCacheReaderThread::threadmain()
 {
-    PROGLOG("CInfoCacheReaderThread %s started.", name.get());
+    PROGLOG("CInfoCacheReaderThread %s started, rebuilding every %ds.", name.get(), autoRebuildSeconds);
     unsigned int autoRebuildMillSeconds = 1000*autoRebuildSeconds;
     while (!stopping)
     {
@@ -37,7 +37,6 @@ void CInfoCacheReaderThread::threadmain()
             {
                 CCycleTimer timer;
                 Owned<CInfoCache> info = infoCacheReader->read();
-                PROGLOG("CInfoCacheReaderThread %s: InfoCache collected (%u seconds).", name.get(), timer.elapsedMs()/1000);
 
                 CriticalBlock b(crit);
                 infoCache.setown(info.getClear());

@@ -33,7 +33,7 @@ protected:
     virtual bool acceptTerseOption(char opt);
     virtual bool acceptVerboseOption(const char* opt);
     virtual bool acceptParameter(const char* arg);
-    void usagePrefix(int argc, const char* argv[], int pos, std::ostream& out);
+    void usagePrefix(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out);
 protected:
     bool isHelp = false;
 };

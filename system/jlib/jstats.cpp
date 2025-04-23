@@ -1003,6 +1003,13 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(BranchMemory), "The estimated size of the branch nodes when stored in memory" },
     { SIZESTAT(LeafMemory), "The estimated size of the leaf nodes when stored in memory"},
     { SIZESTAT(LargestExpandedLeaf), "The size of the largest leaf node when expanded in memory"},
+    { TIMESTAT(Delayed), "Time spent waiting for minimum query execution period" },
+    { CYCLESTAT(Delayed) },
+    { TIMESTAT(PostMortemCapture), "The time taken for post mortem capture" },
+    { CYCLESTAT(PostMortemCapture) },
+    { NUMSTAT(BloomAccepts), "The number of times a bloom filter accepts an index lookup" },
+    { NUMSTAT(BloomRejects), "The number of times a bloom filter rejects an index lookup" },
+    { NUMSTAT(BloomSkips), "The number of times a bloom filter cannot filter an index lookup" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -1387,6 +1394,7 @@ const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans
                                                 StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits, StCycleNodeLoadCycles, StCycleLeafLoadCycles,
                                                 StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                 StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles, StCycleIndexCacheBlockedCycles, StNumIndexMergeCompares, StNumIndexMerges, StNumIndexSkips,
+                                                StNumBloomAccepts, StNumBloomRejects, StNumBloomSkips,
                                                 StNumIndexNullSkips, StTimeLeafLoad, StTimeLeafRead, StTimeLeafFetch, StTimeIndexCacheBlocked, StTimeNodeFetch, StTimeNodeLoad, StTimeNodeRead});
 
 const StatisticsMapping allStatistics(StKindAll);
