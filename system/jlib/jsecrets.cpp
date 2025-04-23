@@ -1079,12 +1079,24 @@ public:
     }
 };
 
-IVaultManager *ensureVaultManager()
+static CConfigUpdateHook vaultManagerUpdateHook;
+static void vaultManagerConfigUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    Owned<IVaultManager> newVaultManager = new CVaultManager();
+    {
+        CriticalBlock block(secretCS);
+        vaultManager.swap(newVaultManager);
+    }
+}
+IVaultManager *getVaultManager()
 {
     CriticalBlock block(secretCS);
     if (!vaultManager)
+    {
         vaultManager.setown(new CVaultManager());
-    return vaultManager;
+        vaultManagerUpdateHook.installOnce(vaultManagerConfigUpdate, false);
+    }
+    return LINK(vaultManager);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1162,7 +1174,7 @@ static IPropertyTree *resolveVaultSecret(const char *category, const char * name
 {
     CVaultKind kind;
     StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    Owned<IVaultManager> vaultmgr = getVaultManager();
     if (isEmptyString(vaultId))
     {
         if (!vaultmgr->requestSecretByCategory(category, kind, json, name, version))
