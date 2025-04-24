@@ -74,9 +74,8 @@ using PTreeQualifierList = std::vector<std::pair<std::string, std::string>>;
 //MORE: Ideally this would be implemented by the connect() operation in dali
 //NOTE: We need to ensure that each unique combination of dimensions are rolled up independently
 //So we also need a key attribute to indicate which dimensions are present
-IPropertyTree * ensureFilteredPTree(IPropertyTree * root, const char * element, const PTreeQualifierList & qualifiers, bool ensureDistinctQualifiers)
+static void appendChildPath(StringBuffer & childPath, StringBuffer * qualificationsKeyResult, const char * element, const PTreeQualifierList & qualifiers, bool ensureDistinctQualifiers)
 {
-    StringBuffer childPath;
     childPath.append(element);
 
     StringBuffer qualificationsKey;
@@ -90,6 +89,16 @@ IPropertyTree * ensureFilteredPTree(IPropertyTree * root, const char * element, 
 
     if (ensureDistinctQualifiers)
         childPath.append("[@qualifierKey='").append(qualificationsKey).append("']");
+
+    if (qualificationsKeyResult)
+        qualificationsKeyResult->append(qualificationsKey);
+}
+
+static IPropertyTree * ensureFilteredPTree(IPropertyTree * root, const char * element, const PTreeQualifierList & qualifiers, bool ensureDistinctQualifiers)
+{
+    StringBuffer childPath;
+    StringBuffer qualificationsKey;
+    appendChildPath(childPath, &qualificationsKey, element, qualifiers, ensureDistinctQualifiers);
 
     IPropertyTree * match = root->queryPropTree(childPath);
     if (!match)
@@ -165,16 +174,34 @@ inline std::string getStatisticAttribute(StatisticKind kind)
     return std::string("@") + queryStatisticName(kind);
 }
 
+
+IRemoteConnection * getDirectMetricConnection(const char * category, const PTreeQualifierList & qualifiers, const char * startTimeslot, const char * endTimeslot)
+{
+    StringBuffer rootPath;
+    rootPath.append(GlobalMetricsDaliRoot).append('/').append(category).append('/');
+
+    appendChildPath(rootPath, nullptr, "Instance", qualifiers, true);
+    rootPath.append("/");
+    appendChildPath(rootPath, nullptr, "Timeslot", PTreeQualifierList{{"@startTime", startTimeslot},{"@endTime",endTimeslot}}, false);
+    rootPath.append("/Metrics");
+
+    return querySDS().connect(rootPath, myProcessSession(), RTM_LOCK_WRITE, updateConnectionTimeout);
+}
+
+void ensureMetricEntryBranchExists(const char * category, const PTreeQualifierList & qualifiers, const char * startTimeslot, const char * endTimeslot)
+{
+    StringBuffer rootPath;
+    rootPath.append(GlobalMetricsDaliRoot).append('/').append(category);
+    Owned<IRemoteConnection> conn = querySDS().connect(rootPath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, updateConnectionTimeout);
+
+    IPropertyTree * instance = ensureFilteredPTree(conn->queryRoot(), "Instance", qualifiers, true);
+    //NOTE: This updates a single timeslot, which has both a start and end time.
+    IPropertyTree * timeslot = ensureFilteredPTree(instance, "Timeslot", PTreeQualifierList{{"@startTime", startTimeslot},{"@endTime",endTimeslot}}, false);
+    ensurePTree(timeslot, "Metrics");
+}
+
 static void recordGlobalMetrics(const char * category, const MetricsDimensionList & dimensions, const std::vector<std::string> &attributes, const std::vector<stat_type> & deltas)
 {
-    //Ideally this would connect to:
-    //
-    //  /GlobalMetrics/<category>/Instance[@dimension1=...]/Timeslot[@start="yyyymmddhh" @rollup="h"]/Metrics
-    //
-    // but that would require connect to support the creation of tags with attributes if they did not exist (should be possible)
-    // and the initial values for @rollup would need to be provided as extra search criteria or something similar.
-    //
-
     PTreeQualifierList qualifiers;
     convertDimensionsToQualifiers(qualifiers, dimensions);
 
@@ -191,16 +218,25 @@ static void recordGlobalMetrics(const char * category, const MetricsDimensionLis
     getTimeslotValue(startTimeslot, now, false);
     getTimeslotValue(endTimeslot, now, true);
 
-    StringBuffer rootPath;
-    rootPath.append(GlobalMetricsDaliRoot).append('/').append(category);
-    Owned<IRemoteConnection> conn = querySDS().connect(rootPath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, updateConnectionTimeout);
+    //Directly connect to:
+    //
+    //  /GlobalMetrics/<category>/Instance[@dimension1=...]/Timeslot[@start="yyyymmddhh" @rollup="h"]/Metrics
+    //
+    // If it does not exist, force the creation and then try again
+    // MORE: This functionally should be directly supported by dali - combined with RTM_CREATE_QUERY
+    //
+    Owned<IRemoteConnection> metricConnection = getDirectMetricConnection(category, qualifiers, startTimeslot, endTimeslot);
+    if (!metricConnection)
+    {
+        ensureMetricEntryBranchExists(category, qualifiers, startTimeslot, endTimeslot);
+        metricConnection.setown(getDirectMetricConnection(category, qualifiers, startTimeslot, endTimeslot));
+        //If we still cannot connect the stats could have been deleted in the small window, or dali is heavily contended.
+        //Best to silently fail, rather than causing the calling component to be blocked or terminate
+        if (!metricConnection)
+            return;
+    }
 
-    IPropertyTree * instance = ensureFilteredPTree(conn->queryRoot(), "Instance", qualifiers, true);
-    //NOTE: This updates a single timeslot, which has both a start and end time.
-    IPropertyTree * timeslot = ensureFilteredPTree(instance, "Timeslot", PTreeQualifierList{{"@startTime", startTimeslot.str()},{"@endTime",endTimeslot.str()}}, false);
-    IPropertyTree * metrics = ensurePTree(timeslot, "Metrics");
-
-    daliAtomicUpdate(metrics, attributes, deltas);
+    daliAtomicUpdate(metricConnection->queryRoot(), attributes, deltas);
 }
 
 void recordGlobalMetrics(const char * category, const MetricsDimensionList & dimensions, const CRuntimeStatisticCollection & stats, const StatisticsMapping * optMapping)

@@ -3892,6 +3892,10 @@ public:
     //MORE: Need to pass the start and end time.
     virtual void processGlobalStatistics(const char * category, const MetricsDimensionList & dimensions, const char * startTime, const char * endTime, const GlobalStatisticsList & stats) override
     {
+        //Only take account of metrics that are part of the unit test
+        if (!startsWith(category, "testCategory"))
+            return;
+
         out.append(category).append("[");
         if (dimensions.size())
         {
@@ -3932,6 +3936,7 @@ class DaliGlobalMetricsTester : public CppUnit::TestFixture
         CPPUNIT_TEST(doStart);
         CPPUNIT_TEST(testGlobalMetrics);
         CPPUNIT_TEST(testTimeslots);
+        CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(doStop);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3956,7 +3961,10 @@ public:
         GlobalMetricDumper visitor;
         visitor.out.newline();  // start with a newline to allow cleaner definitions of the expected output
         gatherGlobalMetrics(optCategory, optDimensions, startTime, *endTime, visitor);
-        CPPUNIT_ASSERT_EQUAL_STR(expected, visitor.out.str());
+        if (expected)
+            CPPUNIT_ASSERT_EQUAL_STR(expected, visitor.out.str());
+        else
+            DBGLOG("Results: %s", visitor.out.str());
     }
 
     void testGlobalMetrics()
@@ -4112,6 +4120,71 @@ testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
             e->errorMessage(msg);
             e->Release();
             CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    class GlobalMetricReporter : public Thread
+    {
+    public:
+        GlobalMetricReporter(const char * _queueName, unsigned _numIterations) : queueName(_queueName), numIterations(_numIterations)
+        {
+        }
+
+        virtual int run()
+        {
+            sem.wait();
+            for (unsigned i = 0; i < numIterations; i++)
+            {
+                recordGlobalMetrics("testCategory", MetricsDimensionList{{"component","thor"},{"name",queueName.str()}}, { StTimeLocalExecute, StNumStarts }, { 1234, i });
+                MilliSleep(0);
+            }
+            return 0;
+        }
+
+    public:
+        StringAttr queueName;
+        Semaphore sem;
+        unsigned numIterations;
+    };
+
+    void testMultiThread()
+    {
+        const unsigned numQueues = 4;
+        const unsigned numThreadsPerQueue = 20;
+        const unsigned numIterations = 200;
+
+        CDateTime startTime;
+        startTime.setString("1999-01-13T12:00:00", nullptr, false);
+        setGlobalMetricNowTime("1999-01-13T12:00:00");
+
+        resetGlobalMetrics("testCategory", MetricsDimensionList());
+        resetGlobalMetrics("testCategory2", MetricsDimensionList());
+
+        CIArrayOf<GlobalMetricReporter> threads;
+        for (unsigned queue=0; queue < numQueues; queue++)
+        {
+            VStringBuffer queueName("queue%u", queue);
+            for (unsigned thread=0; thread < numThreadsPerQueue; thread++)
+            {
+                threads.append(*new GlobalMetricReporter(queueName, numIterations));
+                threads.tos().start(true);
+            }
+        }
+
+        CCycleTimer timer;
+        ForEachItemIn(i, threads)
+            threads.item(i).sem.signal();
+
+        ForEachItemIn(i2, threads)
+            threads.item(i2).join();
+
+        __uint64 elapsedNs = timer.elapsedNs();
+        unsigned numEvents = numQueues * numThreadsPerQueue * numIterations;
+        DBGLOG("Processing %u events took %lluns (%llu per event)", numEvents, elapsedNs, elapsedNs / numEvents);
+        {
+            constexpr const char * expected = nullptr;
+            DBGLOG("Expected TimeLocalExecute=%u NumStarts=%u", 1234 * numThreadsPerQueue * numIterations, numThreadsPerQueue * numIterations * (numIterations - 1) / 2);
+            verifyGlobalMetrics(nullptr, MetricsDimensionList{}, startTime, nullptr, expected);
         }
 
     }
