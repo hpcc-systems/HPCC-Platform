@@ -1,5 +1,4 @@
-name: Test Build
-
+name: PR Build and Test (build-vcpkg.yml)
 on:
   workflow_dispatch:
     inputs:
