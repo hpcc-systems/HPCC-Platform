@@ -1144,18 +1144,13 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
     fatalHdlr->clear();
 
-    if (!workunit.hasDebugValue("analyzeWorkunit") || workunit.getDebugValueBool("analyzeWorkunit", true))
+    if (!getBoolWUOption(&workunit, "analyzeInEclAgent", "analyzerOptions/@analyzeInEclAgent", defaultAnalyzeInEclAgent))
     {
-        if (!getBoolWUOption(nullptr, nullptr, "analyzerOptions/@disabled", false) &&
-            !getBoolWUOption(&workunit, "analyzeInEclAgent", "analyzerOptions/@analyzeInEclAgent", defaultAnalyzeInEclAgent))
+        if (!getBoolWUOption(&workunit, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
         {
-            if (!getBoolWUOption(&workunit, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
-            {
-                double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, queryNodeClusterWidth());
-                IPropertyTree *analyzerOptions = getGlobalConfigSP()->queryPropTree("analyzerOptions");
-                Owned<IWorkUnit> wu = &workunit.lock();
-                analyseWorkunit(wu, graphName, analyzerOptions, costPerHour);
-            }
+            double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, queryNodeClusterWidth());
+            IPropertyTree *analyzerOptions = getGlobalConfigSP()->queryPropTree("analyzerOptions");
+            analyseWorkunit(workunit, graphName, analyzerOptions, costPerHour);
         }
     }
 

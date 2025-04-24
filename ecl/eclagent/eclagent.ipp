@@ -431,7 +431,7 @@ private:
     EclAgentQueryLibrary * loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName);
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq);
     virtual IDebuggableContext *queryDebugContext() const { return debugContext; };
-    void runWorkunitAnalyser(IWorkUnit * w, const char * optGraph);
+    void runWorkunitAnalyser(IConstWorkUnit &workunit, const char * optGraph);
     void runWorkunitAnalyserAfterGraph(const char * optGraph);
 
     //protected by critical section

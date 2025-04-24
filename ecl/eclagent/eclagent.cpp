@@ -1857,16 +1857,11 @@ void EclAgent::setRetcode(int code)
 }
 
 
-void EclAgent::runWorkunitAnalyser(IWorkUnit * w, const char * optGraph)
+void EclAgent::runWorkunitAnalyser(IConstWorkUnit &workunit, const char * optGraph)
 {
-    if (w->hasDebugValue("analyzeWorkunit") && !w->getDebugValueBool("analyzeWorkunit", true))
-        return;
-    if (!getBoolWUOption(nullptr, nullptr, "analyzerOptions/@disabled", false))
-    {
-        IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-        double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, getNodes());
-        analyseWorkunit(w, optGraph, analyzerOptions, costPerHour);
-    }
+    IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
+    double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, getNodes());
+    analyseWorkunit(workunit, optGraph, analyzerOptions, costPerHour);
 }
 
 void EclAgent::runWorkunitAnalyserAfterGraph(const char * graph)
@@ -1875,8 +1870,7 @@ void EclAgent::runWorkunitAnalyserAfterGraph(const char * graph)
     {
         if (!getBoolWUOption(wuRead, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
         {
-            Owned<IWorkUnit> wu(updateWorkUnit());
-            runWorkunitAnalyser(wu, graph);
+            runWorkunitAnalyser(*wuRead, graph);
         }
     }
 }
@@ -2059,7 +2053,7 @@ void EclAgent::doProcess()
                     case WUStateFailed:
                     case WUStateAborted:
                     case WUStateCompleted:
-                        runWorkunitAnalyser(w, nullptr);
+                        runWorkunitAnalyser(*w, nullptr);
                         break;
                     }
                 }

@@ -24,6 +24,7 @@
 #include "thorcommon.hpp"
 #include "commonext.hpp"
 
+#define ERROR_ANALYSER_TIME_EXCEEDED 99999
 
 struct RoxieOptions
 {
@@ -79,6 +80,7 @@ constexpr struct WuOption wuOptionsDefaults[watOptMax]
     {watPreFilteredKJThreshold, "preFilteredKJThreshold", 50, wutOptValueTypePercent},
     /* Note watClusterCostPerHour cannot be used as debug option or config option (this is calculated) */
     {watClusterCostPerHour, "costRatePerHour", 0, wutOptValueTypeCost},
+    {watOptMaxExecuteTime, "maxExecuteTime", 5000, wutOptValueTypeMSec},
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -165,6 +167,7 @@ private:
 //-----------------------------------------------------------------------------------------------------------
 
 //MORE: Split this in two - for new code and old code.
+
 class WorkunitAnalyserBase
 {
 public:
@@ -177,13 +180,14 @@ protected:
     void collateWorkunitStats(IConstWorkUnit * workunit, const WuScopeFilter & filter);
     WuScope * selectFullScope(const char * scope);
     WuScope * resolveActivity(const char * name);
-
-protected:
+    virtual void checkMaxExecuteTime() {};
     Owned<WuScope> root;
     stat_type minTimestamp = 0;
 };
 
 //-----------------------------------------------------------------------------------------------------------
+
+#define CHECK_MAX_EXECUTE_TIME_INTERVAL 100
 
 class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 {
@@ -196,11 +200,28 @@ public:
     void check(const char * scope, IWuActivity & activity);
     void print();
     void update(IWorkUnit *wu);
+    bool hasIssues() const { return !issues.empty(); }
+    stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
 
 protected:
     CIArrayOf<AActivityRule> rules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
+    CCycleTimer timer;
+    unsigned checkTimerInterval = CHECK_MAX_EXECUTE_TIME_INTERVAL;
+    cycle_t maxExecuteCycles = 0;
+
+    virtual void checkMaxExecuteTime() override
+    {
+        if (maxExecuteCycles && checkTimerInterval-- == 0)
+        {
+            checkTimerInterval = CHECK_MAX_EXECUTE_TIME_INTERVAL;
+            if (timer.elapsedCycles() > maxExecuteCycles)
+            {
+                throw makeStringExceptionV(ERROR_ANALYSER_TIME_EXCEEDED, "Cost optimizer exceeded max execute time (%llums) - analysis incomplete",  cycle_to_millisec(maxExecuteCycles));
+            }
+        }
+    }
 };
 
 
@@ -1326,9 +1347,12 @@ void WorkunitAnalyserBase::collateWorkunitStats(IConstWorkUnit * workunit, const
             StatsGatherer callback(scope->queryAttrs(), minTimestamp);
             scope->queryAttrs()->setPropInt("@stype", iter->getScopeType());
             iter->playProperties(callback);
+            checkMaxExecuteTime();
         }
         catch (IException * e)
         {
+            if (e->errorCode() == ERROR_ANALYSER_TIME_EXCEEDED)
+                throw;
             e->Release();
         }
     }
@@ -1375,11 +1399,13 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* watClusterCostPerHour is calculated by caller and its value is set in options*/
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
+    maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
 }
 
 
 void WorkunitRuleAnalyser::check(const char * scope, IWuActivity & activity)
 {
+    checkMaxExecuteTime();
     if (activity.getStatRaw(StTimeLocalExecute, StMaxX) < options.queryOption(watOptMinInterestingTime))
         return;
     Owned<PerformanceIssue> highestCostIssue;
@@ -2102,13 +2128,57 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPropertyTree *options, double costPerHour)
+void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour)
 {
+    if (workunit.hasDebugValue("analyzeWorkunit") && !workunit.getDebugValueBool("analyzeWorkunit", true))
+        return;
+    if (options && options->getPropBool("disabled", false))
+        return;
+
+    VStringBuffer job("wuid=%s graph=%s", workunit.queryWuid(), optGraph ? optGraph : "*");
     WorkunitRuleAnalyser analyser;
-    analyser.applyConfig(options, wu, costPerHour);
-    analyser.analyse(wu, optGraph);
-    analyser.applyRules();
-    analyser.update(wu);
+    Owned<IException> error;
+
+    analyser.applyConfig(options, &workunit, costPerHour);
+    // don't both analyzing if job cost is below threshold
+    cost_type minInterestingCost = analyser.queryOption(watOptMinInterestingCost);
+    if (minInterestingCost)
+    {
+        cost_type wuCost;
+        if (workunit.getStatistic(wuCost, "", StCostExecute) && wuCost < minInterestingCost)
+            return;
+    }
+    // don't both analyzing if job time is below threshold
+    stat_type minInterestingTime = analyser.queryOption(watOptMinInterestingTime);
+    stat_type wuTime;
+    if (minInterestingTime && workunit.getStatistic(wuTime, "", StTimeElapsed) && wuTime < minInterestingTime)
+        return;
+
+    try
+    {
+        DBGLOG("Start analyzer: %s", job.str());
+        analyser.analyse(&workunit, optGraph);
+        analyser.applyRules();
+    }
+    catch (IException *e)
+    {
+        error.set(e);
+    }
+    if (analyser.hasIssues() || error)
+    {
+
+        Owned<IWorkUnit> wu = &workunit.lock();
+        if (error)
+        {
+            StringBuffer msg;
+            error->errorMessage(msg);
+            msg.appendf(" (%s)", job.str());
+            addExceptionToWorkunit(wu, SeverityWarning, CostOptimizerName, error->errorCode(), msg.str(), nullptr, 0, 0, 0);
+        }
+        if (analyser.hasIssues())
+            analyser.update(wu);
+    }
+    DBGLOG("Finished analyzer: %s", job.str());
 }
 
 void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerHour, bool updatewu)
