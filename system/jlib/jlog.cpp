@@ -2399,7 +2399,7 @@ static CConfigUpdateHook configUpdateHook;
 //          as if it was not called from the config update hook.
     void setupContainerizedLogMsgHandler(bool updateConfigOnTheFly)
 {
-    // Alow the first config update hook call to update the config as if it was not
+    // Allow the first config update hook call to update the config as if it was not
     // called from the config update hook to allow log configuration changes.
     if(updateConfigOnTheFly && queryFirstUpdateConfigHookCall())
     {
