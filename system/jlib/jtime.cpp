@@ -322,7 +322,7 @@ void CDateTime::set(unsigned year, unsigned month, unsigned day, unsigned hour, 
         local.tm_isdst = -1;
         local.tm_wday = 0;
         local.tm_yday = 0;
-        time_t simple = timelocal(&local);
+        time_t simple = mktime(&local);
         set(simple);
     }
     else
@@ -526,7 +526,7 @@ int CDateTime::queryUtcToLocalDelta() const
     struct tm ts;
     getToUtcTm(ts);
     time_t correct = timegm(&ts);
-    time_t shifted = timelocal(&ts);
+    time_t shifted = mktime(&ts);
     return ((int)(correct - shifted))/60;
 }
 
