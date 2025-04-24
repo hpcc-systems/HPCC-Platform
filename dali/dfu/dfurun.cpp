@@ -984,6 +984,7 @@ public:
             wu->setJobName(tmp.str());
             ctx.superwu->getQueue(tmp.clear());
             wu->setQueue(tmp.str());
+
             if (ctx.user) {
                 StringBuffer uname;
                 ctx.user->getUserName(uname);
@@ -1038,6 +1039,8 @@ public:
             options->setThrottle(ctx.superoptions->getThrottle());
             options->setTransferBufferSize(ctx.superoptions->getTransferBufferSize());
             options->setVerify(ctx.superoptions->getVerify());
+            options->setKeyCompression(ctx.superoptions->queryKeyCompression());
+
             StringBuffer slave;
             if (ctx.superoptions->getSlavePathOverride(slave))
                 options->setSlavePathOverride(slave);
@@ -1528,6 +1531,7 @@ public:
                         opttree->setPropBool("@nosplit", options->getNoSplit());
 
                         opttree->setPropBool("@noCommon", options->getNoCommon());
+                        opttree->setProp("@keyCompression", options->queryKeyCompression());
 
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc)

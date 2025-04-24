@@ -30,7 +30,6 @@
 #include "dadfs.hpp"
 #include "filecopy.ipp"
 #include "jptree.hpp"
-#include "dalienv.hpp"
 
 #include "daft.ipp"
 #include "daftmc.hpp"

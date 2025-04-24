@@ -39,8 +39,11 @@
 #include "daftmc.hpp"
 #include "dasds.hpp"
 #include "jlog.hpp"
-#include "dalienv.hpp"
 #include "ftbase.ipp"
+
+#ifndef _CONTAINERIZED
+#include "dalienv.hpp"
+#endif
 
 #ifdef _CONTAINERIZED
 //Temporary see HPCC-25822
@@ -99,6 +102,7 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 #define ANumask             "@umask"
 #define ANuseFtSlave        "@useFtSlave"
 #define ANsprayServiceName  "@sprayServiceName"
+#define ANkeyCompression    "@keyCompression"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -119,7 +123,11 @@ const unsigned sdsUpdateFrequency = 20000;          // time between updates in m
 
 bool TargetLocation::canPull()
 {
+#ifdef _CONTAINERIZED
+    return true;
+#else
     return queryOS(filename.queryIP()) != MachineOsSolaris;
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -137,7 +145,11 @@ FilePartInfo::FilePartInfo(unsigned _partNum) : partNum(_partNum)
 
 bool FilePartInfo::canPush()
 {
+#ifdef _CONTAINERIZED
+    return true;
+#else
     return queryOS(filename.queryIP()) != MachineOsSolaris;
+#endif
 }
 
 
@@ -334,12 +346,14 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
     ForEachItemIn(i2, progress)
         progress.item(i2).serializeExtra(msg, 1);
 
-    //NB: Any extra data must be appended at the end...
-
     msg.append(sprayer.fileUmask);
 
     ForEachItemIn(i3, progress)
         progress.item(i3).serializeExtra(msg, 2);
+
+    msg.append(sprayer.keyCompression);
+
+    //****** Any extra data must be appended at the end above this line ********
 }
 
 bool FileTransferThread::launchFtSlaveCmd()
@@ -696,6 +710,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     progressDone = false;
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
+    keyCompression.set(options->queryProp(ANkeyCompression));
     useFtSlave = options->getPropBool(ANuseFtSlave);
     sprayServiceName.set(options->queryProp(ANsprayServiceName));
 
@@ -1062,7 +1077,7 @@ bool FileSprayer::calcInputCRC()
     {
         calcedInputCRC = true;
         cachedInputCRC = false;
-        if (options->getPropBool(ANcrcCheck, true) && !compressedInput)
+        if (options->getPropBool(ANcrcCheck, true) && !compressedInput && keyCompression.isEmpty())
         {
             ForEachItemIn(idx, sources)
             {
@@ -1099,7 +1114,8 @@ void FileSprayer::calculateOne2OnePartition()
         RemoteFilename curFilename;
         curFilename.set(cur.filename);
         setCanAccessDirectly(curFilename);
-        partition.append(*new PartitionPoint(idx, idx, cur.headerSize, copyCompressed?cur.psize:cur.size, copyCompressed?cur.psize:cur.size));  // outputoffset == 0
+        offset_t outputSize = keyCompression.isEmpty() ? (copyCompressed ? cur.psize : cur.size) : 0;
+        partition.append(*new PartitionPoint(idx, idx, cur.headerSize, copyCompressed?cur.psize:cur.size, outputSize));  // outputoffset == 0
         targets.item(idx).modifiedTime.set(cur.modifiedTime);
     }
 
@@ -1463,6 +1479,8 @@ void FileSprayer::checkFormats()
                 break;
             }
             break;
+        case FFTkey:
+            throwError(DFTERR_CannotConvertKeyFile);
         }
     }
     switch (srcType)
@@ -1473,10 +1491,16 @@ void FileSprayer::checkFormats()
                 srcFormat.maxRecordSize = srcFormat.maxRecordSize > DEFAULT_MAX_XML_RECORD_SIZE ? srcFormat.maxRecordSize : DEFAULT_MAX_XML_RECORD_SIZE;
             }
             break;
+        case FFTkey:
+            compressOutput = false; // compressOutput implies that the output is a compressed file
+            break;
 
         default:
             break;
     }
+
+    if (!keyCompression.isEmpty())
+        compressOutput = false; // compressOutput implies that the output is a compressed file
 }
 
 void FileSprayer::calibrateProgress()
@@ -4049,6 +4073,13 @@ bool FileSprayer::calcUsePull() const
             return false;
         }
     }
+
+    //Have to use pull operation if compressing the target and source is not compressed.
+    if (!keyCompression.isEmpty())
+        return true;
+
+    if (compressOutput && !replicate && !copySource)
+        return true;
 
     ForEachItemIn(idx2, sources)
     {

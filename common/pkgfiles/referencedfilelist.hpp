@@ -77,6 +77,7 @@ interface IReferencedFileList : extends IInterface
     virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneRelationships()=0;
     virtual void setDfuQueue(const char *dfu_queue) = 0;
+    virtual void setKeyCompression(const char * keyCompression) = 0;
 };
 
 extern REFFILES_API const char *skipForeignOrRemote(const char *name, StringBuffer *ip=nullptr, StringBuffer *remote=nullptr);

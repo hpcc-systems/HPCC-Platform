@@ -124,7 +124,8 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
     return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *remoteLocation, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname=nullptr)
+//MORE: This should be a member function of PackageMapUpdator
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *remoteLocation, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression)
 {
     StringBuffer user;
     StringBuffer password;
@@ -136,6 +137,8 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     }
 
     Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false, jobname);
+    if (keyCompression)
+        wufiles->setKeyCompression(keyCompression);
     wufiles->addFilesFromPackageMap(packageMap);
 
     Owned<IDFUhelper> helper = createIDFUhelper();
@@ -170,13 +173,13 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     }
 }
 
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname=nullptr)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, jobname);
+    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, jobname, keyCompression);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -273,6 +276,7 @@ public:
     StringAttr process;
     StringAttr target;
     StringAttr dfuQueue;
+    StringAttr keyCompression;
     unsigned flags;
     unsigned dfuWait = 1800000; //wait for DFU Copy, default 30 minutes (only used if !req.getOnlyCopyFiles() and !req.getStopIfFilesCopied())
 
@@ -384,7 +388,7 @@ public:
         if (isEmptyString(jobname))
             jobname = pmid.str();
         if (!streq(target.get(), "*"))
-            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname);
+            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression);
         else
         {
             CConstWUClusterInfoArray clusters;
@@ -393,7 +397,7 @@ public:
             {
                 IConstWUClusterInfo &cluster = clusters.item(i);
                 if (cluster.getPlatform() == RoxieCluster)
-                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname);
+                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression);
             }
         }
     }
@@ -862,6 +866,7 @@ static void setDfuOptions(PackageMapUpdater &updater, unsigned &updateFlags, TRe
     updater.dfuQueue.set(req.getDfuQueue());
     updater.dfuWait = req.getDfuWait();
     updater.publisherWuid = req.getDfuPublisherWuid();
+    updater.keyCompression.set(req.getKeyCompression());
 }
 
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)

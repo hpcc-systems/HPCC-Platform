@@ -815,6 +815,11 @@ public:
         ::gatherFileErrors(files, errors);
     }
 
+    void setKeyCompression(const char * keyCompression)
+    {
+        files->setKeyCompression(keyCompression);
+    }
+
 private:
 #ifndef _CONTAINERIZED
     Owned <IConstWUClusterInfo> clusterInfo;
@@ -1021,6 +1026,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(queryName);
         cpr.dfu_queue.set(req.getDfuQueue());
+        cpr.setKeyCompression(req.getKeyCompression());
         cpr.copy(publisherWuid, cw, updateFlags);
 
         if (req.getIncludeFileErrors())
@@ -2192,6 +2198,7 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
                 cpr.srcCluster.set(srcCluster);
                 cpr.queryname.set(srcQueryName);
                 cpr.dfu_queue.set(req.getDfuQueue());
+                cpr.setKeyCompression(req.getKeyCompression());
                 cpr.copy(publisherWuid, cw, updateFlags);
 
                 if (req.getIncludeFileErrors())
@@ -3252,12 +3259,13 @@ public:
         else
             cloneAllLocal(cloneActiveState, nullptr);
     }
-    void enableFileCloning(unsigned _updateFlags, const char *dfsServer, const char *destProcess, const char *sourceProcess, bool allowForeign)
+    void enableFileCloning(unsigned _updateFlags, const char *dfsServer, const char *destProcess, const char *sourceProcess, bool allowForeign, const char * keyCompression)
     {
         cloneFilesEnabled = true;
         updateFlags = _updateFlags;
         splitDerivedDfsLocation(dfsServer, srcCluster, dfsIP, srcPrefix, sourceProcess, sourceProcess, NULL, NULL);
         wufiles.setown(createReferencedFileList(context->queryUserId(), context->queryPassword(), allowForeign, false));
+        wufiles->setKeyCompression(keyCompression);
         Owned<IHpccPackageSet> ps = createPackageSet(destProcess);
         pm.set(ps->queryActiveMap(target));
         if (isContainerized())
@@ -3373,7 +3381,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
                 updateFlags |= DFU_UPDATEF_OVERWRITE;
             cloner.dfu_queue.set(req.getDfuQueue());
 
-            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles());
+            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles(), req.getKeyCompression());
         }
     }
 
@@ -3507,6 +3515,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(targetQueryName);
         cpr.dfu_queue.set(req.getDfuQueue());
+        cpr.setKeyCompression(req.getKeyCompression());
 
         cpr.copy(publisherWuid, cw, updateFlags);
 
@@ -3614,7 +3623,7 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
             if (req.getAppendCluster())
                 updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
-            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles());
+            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles(), req.getKeyCompression());
         }
 
         if (req.getActiveOnly())
