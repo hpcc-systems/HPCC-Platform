@@ -321,7 +321,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
-                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (row.itemKey.indexOf("security") > -1 && !isAdmin);
+                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (["security", "daliadmin", "sasha"].some(substring => row.itemKey.indexOf(substring) > -1) && !isAdmin);
                             return <Link
                                 disabled={linkDisabled}
                                 title={row.itemKey === "/topology/logs" && !logsEnabled ? logsStatusMessage : ""}
