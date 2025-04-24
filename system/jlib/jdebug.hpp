@@ -344,8 +344,10 @@ public:
 
     //The following return get_cycles_now() - which can be used for tracking elapsed time.
     cycle_t noteWaiting();
+    cycle_t noteWaiting(unsigned numWaiting);
     cycle_t noteComplete();
     __uint64 getWaitingNs() const;
+    unsigned numInFlight() const;
 
     //A helper function to help calculate the overlapping load on the system
     void extractOverlapInfo(OverlapTimeInfo & info, bool isStart) const;

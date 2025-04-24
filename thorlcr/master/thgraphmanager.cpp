@@ -34,6 +34,7 @@
 #include "wujobq.hpp"
 #include "daclient.hpp"
 #include "daqueue.hpp"
+#include "dastats.hpp"
 
 #include "thgraphmaster.ipp"
 #include "thorport.hpp"
@@ -109,6 +110,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
     std::atomic<int> postMortemCaptureInProgress{0};
+    double thorRate{0};
+    const char * thorName{nullptr};
 
     class CPodInfo
     {
@@ -384,6 +387,9 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
     soPattern.append("so");
 #endif
     querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+    thorRate = getThorRate(queryNodeClusterWidth());
+    thorName = globals->queryProp("@name");
+    if (!thorName) thorName = "thor";
 }
 
 CJobManager::~CJobManager()
@@ -595,8 +601,6 @@ void CJobManager::run()
     setWuid(NULL);
 #ifndef _CONTAINERIZED
     SCMStringBuffer _queueNames;
-    const char *thorName = globals->queryProp("@name");
-    if (!thorName) thorName = "thor";
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
 #endif
@@ -694,9 +698,11 @@ void CJobManager::run()
                 }
             }
         } daliLock;
+
         Owned<IJobQueueItem> item;
         {
             CIdleShutdown idleshutdown(globals->getPropInt("@idleRestartPeriod", IDLE_RESTART_PERIOD));
+            CCycleTimer waitTimer;
             if (exclLockDaliMutex.get())
             {
                 for (;;)
@@ -713,6 +719,7 @@ void CJobManager::run()
                     if (stopped)
                         break;
                     unsigned connected, waiting, enqueued;
+
                     if (exclLockDaliMutex->enter(5000))
                     {
                         daliLock.set(exclLockDaliMutex, exclusiveLockName);
@@ -779,6 +786,15 @@ void CJobManager::run()
                 conversation.setown(jobq->acceptConversation(_item,30*1000));    // 30s priority transition delay
                 item.setown(_item);
             }
+
+            __uint64 waitTimeNs = waitTimer.elapsedNs();
+            double expenseWait = calcCostNs(thorRate, waitTimeNs);
+            cost_type costWait = money2cost_type(expenseWait);
+
+            if (item)
+                recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName } }, { StNumAccepts, StNumWaits, StTimeWaitSuccess, StCostWait }, { 1, 1, waitTimeNs, costWait });
+            else
+                recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName } }, { StNumWaits, StTimeWaitFailure, StCostWait }, { 1, waitTimeNs, costWait });
         }
         if (!conversation.get()||!item.get())
         {
@@ -863,7 +879,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     StringAttr user(workunit->queryUser());
 
     JobNameScope activeJobName(wuid);
-
+    CCycleTimer graphTimer;
     DBGLOG("Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     auditThorJobEvent("Start", wuid, graphName, user);
 
@@ -875,6 +891,21 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     }
     catch (IException *_e) { e.setown(_e); }
     auditThorJobEvent("Stop", wuid, graphName, user);
+
+    __uint64 executeTimeNs = graphTimer.elapsedNs();
+    double expenseExecute = calcCostNs(thorRate, executeTimeNs);
+    cost_type costExecute = money2cost_type(expenseExecute);
+    const char * username = user.str();
+    WUState state = workunit->getState();
+    bool aborted = (state == WUStateAborted) || (state == WUStateAborting);
+    bool failed = (state == WUStateFailed) || e || !allDone;
+    if (aborted)
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumAborts, StTimeLocalExecute, StCostAbort }, { 1, executeTimeNs, costExecute });
+    else if (failed)
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumFailures, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
+    else
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StTimeLocalExecute, StCostExecute }, { executeTimeNs, costExecute });
+        //TBD: Ideally this time would be spread over all the timeslots when this graph was executing
 
     if (e.get()) throw e.getClear();
     return allDone;
@@ -1399,6 +1430,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         bool disableQueuePriority = getComponentConfigSP()->getPropBool("expert/@disableQueuePriority");
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
+        const char * thorname = globals->queryProp("@name");
+        double thorRate = getThorRate(queryNodeClusterWidth());  // This doesn't feel quite right to call a global function to get the width, but ok for now.
         try
         {
             if (!isContainerized())
@@ -1571,10 +1604,11 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     PROGLOG("Lingering time left: %.2f", ((float)lingerRemaining)/1000);
 
                     StringBuffer nextJob;
+                    CCycleTimer waitTimer;
+                    unsigned __int64 priority = disableQueuePriority ? 0 : getTimeStampNowValue();
                     do
                     {
                         StringBuffer wuid;
-                        unsigned __int64 priority = disableQueuePriority ? 0 : getTimeStampNowValue();
                         int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName, priority);
                         if (ret > 0)
                         {
@@ -1586,9 +1620,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         // else - reject/ignore duff message.
                     } while (!lingerTimer.timedout(&lingerRemaining));
 
+                    __uint64 waitTimeNs = waitTimer.elapsedNs();
+                    double expenseWait = calcCostNs(thorRate, waitTimeNs);
+                    cost_type costWait = money2cost_type(expenseWait);
 
                     if (0 == currentGraphName.length())
                     {
+                        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorname } }, { StNumWaits, StTimeWaitFailure, StCostWait }, { 1, waitTimeNs, costWait });
                         if (!multiJobLinger)
                         {
                             // De-register the idle lingering entry.
@@ -1607,6 +1645,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         }
                         break;
                     }
+
+                    recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorname } }, { StNumAccepts, StNumWaits, StTimeWaitSuccess, StCostWait }, { 1, 1, waitTimeNs, costWait });
                 }
                 thorQueue.clear();
             }
