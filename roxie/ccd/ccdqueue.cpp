@@ -3220,6 +3220,9 @@ public:
         }
         else
         {
+            //row length should not be split between packets (see assert in CLocalBlockedMessageUnpackCursor::getNext())
+            //Therefore ensure the first block of data written is large enough to include the whole length
+            unsigned minSpace = variable ? sizeof(RecordLengthType) : 0;
             while (len)
             {
                 if (!currentBuffer)
@@ -3231,6 +3234,8 @@ public:
                 unsigned chunkLen = bufferRemaining;
                 if (chunkLen > len)
                     chunkLen = len;
+                if (chunkLen < minSpace)
+                    chunkLen = 0;
                 memcpy(&currentBuffer->data[dataPos], buf, chunkLen);
                 dataPos += chunkLen;
                 len -= chunkLen;
@@ -3242,6 +3247,10 @@ public:
                     buffers.append(currentBuffer);
                     currentBuffer = nullptr;
                 }
+
+                //Set minSpace to 0 because we have either written the length, or are writing to the start of a
+                //new block, so the length will no span a block boundary.
+                minSpace = 0;
             }
         }
     }

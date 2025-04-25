@@ -346,6 +346,12 @@ export const routes: RoutesEx = [
                 })
             },
             {
+                path: "/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
+                    const filter = parseSearch(ctx.search) as any;
+                    return <_.WUSSummary from={filter?.from} to={filter?.to} />;
+                })
+            },
+            {
                 path: "/security",
                 action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/topology"); } },
                 children: [
@@ -489,6 +495,12 @@ export const routes: RoutesEx = [
                         return <_.MachineUsage machine={params.Machine as string} />;
                     })
                 }]
+            },
+            {
+                path: "/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
+                    const filter = parseSearch(ctx.search) as any;
+                    return <_.WUSSummary from={filter?.from} to={filter?.to} />;
+                })
             },
             {
 
