@@ -160,7 +160,7 @@ class CActivityInfoCacheReader : public CInfoCacheReader
 {
 public:
     CActivityInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
+        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds, true) {}
 
     virtual CInfoCache* read() override
     {

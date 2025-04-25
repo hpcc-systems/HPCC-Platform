@@ -1010,6 +1010,18 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(BloomAccepts), "The number of times a bloom filter accepts an index lookup" },
     { NUMSTAT(BloomRejects), "The number of times a bloom filter rejects an index lookup" },
     { NUMSTAT(BloomSkips), "The number of times a bloom filter cannot filter an index lookup" },
+    { NUMSTAT(Accepts), "The number of items accepted for processing" },
+    { NUMSTAT(Waits), "The number of times a component waits for a entry on a queue" },
+    { TIMESTAT(Provisioning), "The total time spent provisioning a component" },
+    { CYCLESTAT(Provisioning) },
+    { COSTSTAT(Start), "The cost assocaiated with starting a component or operation" },
+    { TIMESTAT(WaitSuccess), "The time waiting for an item on a queue, when an item was eventually received" },
+    { CYCLESTAT(WaitSuccess) },
+    { TIMESTAT(WaitFailure), "The time waiting for an item on a queue, when no item was received" },
+    { CYCLESTAT(WaitFailure) },
+    { COSTSTAT(Wait), "The cost associated with a component being idle waiting for an event" },
+    { NUMSTAT(Aborts), "The number of times an abort was processed" },
+    { COSTSTAT(Abort), "The cost associated with aborted actions" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

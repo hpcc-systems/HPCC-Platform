@@ -161,6 +161,17 @@ else ()
     set(VCPKG_ECLBLAS_DYNAMIC_ARCH_FEATURE "")
 endif()
 
+set(VCPKG_NUMA "${VCPKG_SUPPRESS}")
+if (USE_NUMA)
+    set(VCPKG_NUMA "${VCPKG_INCLUDE}")
+endif()
+
+if (USE_OPENTEL_GRPC)
+    set(VCPKG_OPENTEL_GRPC_FEATURE "\"otlp-grpc\",")
+else ()
+    set(VCPKG_OPENTEL_GRPC_FEATURE "")
+endif ()
+
 configure_file("${HPCC_SOURCE_DIR}/vcpkg.json.in" "${HPCC_SOURCE_DIR}/vcpkg.json")
 
 endif()

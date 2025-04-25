@@ -105,9 +105,6 @@ export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAd
                             dojoConfig.isAdmin = account.accountType === "Administrator";
                         }
                     });
-                } else {
-                    setIsAdmin(true);
-                    dojoConfig.isAdmin = true;
                 }
                 setCurrentUser(account);
             });

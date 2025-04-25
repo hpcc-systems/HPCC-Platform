@@ -8,3 +8,4 @@ global:
     - type: OTLP-HTTP
       endpoint: "localhost:4318/v1/traces"
       consoleDebug: true
+      metered: false    #Only enable if testing span export performance

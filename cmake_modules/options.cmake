@@ -66,6 +66,9 @@ option(PORTALURL "Set url to hpccsystems portal download page")
 option(PROFILING "Set to true if planning to profile so stacks are informative" OFF)
 option(COLLECT_SERVICE_METRICS "Set to true to gather metrics for HIDL services by default" OFF)
 option(VCPKG_ECLBLAS_DYNAMIC_ARCH "Set to ON to build eclblas with dynamic architecture" ON)
+option(USE_NUMA "Configure use of numa" ON)
+option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" OFF)
+option(USE_OPENTEL_GRPC "Support gRPC communications in open telemetry" ON)
 
 set(CUSTOM_LABEL "" CACHE STRING "Appends a custom label to the final package name")
 
@@ -90,5 +93,9 @@ if (NOT USE_JAVA)
         set (SUPPRESS_JAVAEMBED ON)
     endif ()
 endif ()
+
+if (APPLE OR WIN32)
+    set(USE_NUMA OFF)
+endif()
 
 endif ()

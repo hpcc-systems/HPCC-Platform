@@ -1039,6 +1039,8 @@ protected:
     CRuntimeStatisticCollection & target;
 };
 
+inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
+inline double calcCostNs(double ratePerHour, unsigned __int64 ns) { return ratePerHour * ns / 1000000000 / 3600; }
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 
 #endif
