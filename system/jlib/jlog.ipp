@@ -553,9 +553,7 @@ public:
     virtual void handleMessage(const LogMsg & msg) override;
     virtual bool needsPrep() const override { return false; }
     virtual void prep() override {}
-    virtual unsigned queryMaxLinesToKeep() const override { return maxLinesToKeep; }
     virtual unsigned queryMessageFields() const override { return messageFields; }
-    virtual void setMaxLinesToKeep(unsigned _maxLinesToKeep) override { maxLinesToKeep = _maxLinesToKeep; }
     virtual void setMessageFields(unsigned _fields) override { messageFields = _fields; }
     virtual void addToPTree(IPropertyTree * tree) const override;
     virtual int flush() override { CriticalBlock block(crit); return fflush(handle); }
@@ -571,7 +569,7 @@ protected:
     mutable StringBuffer filename;
     mutable CriticalSection crit;
     StringBuffer curMsgText;
-    unsigned maxLinesToKeep = 0;
+    const unsigned maxLinesToKeep = 0;
     unsigned messageFields = MSGFIELD_all;
     unsigned linesInCurrent = 0;
     unsigned sequence = 0;

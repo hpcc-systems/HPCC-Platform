@@ -2377,98 +2377,68 @@ static constexpr unsigned queueLenDefault = 512;
 static constexpr unsigned queueDropDefault = 0; // disabled by default
 static constexpr bool useSysLogDefault = false;
 
-static Singleton<bool> firstUpdateConfigHookCall;
-static bool firstUpdateConfigHookCallValue{true};
-bool queryFirstUpdateConfigHookCall()
+struct LogFormatChangedDetails
 {
-    return *firstUpdateConfigHookCall.query([] () { return &firstUpdateConfigHookCallValue; });
-}
-
-auto updateConfigFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-{
-    setupContainerizedLogMsgHandler(true);
+    StringAttr logFormat;
+    bool formatChangeDetected{false};
 };
-static CConfigUpdateHook configUpdateHook;
-// NOTE:    The parameter updateConfigOnTheFly value of true signifies that the thread
-//          safe caller has completed setting up the logging configuration (normally
-//          from a main call).
-//          Any further configuration changes are from non-thread safe callers.
-//          EXCEPT: There are 2 calls to setupContainerizedLogMsgHandler that are
-//          thread-safe. In order to allow them to change the log format (if required)
-//          etc we need to allow the first config update hook call to update the config
-//          as if it was not called from the config update hook.
-    void setupContainerizedLogMsgHandler(bool updateConfigOnTheFly)
+LogFormatChangedDetails hasLogFormatChanged(const Owned<IPropertyTree> &logConfig)
 {
-    // Allow the first config update hook call to update the config as if it was not
-    // called from the config update hook to allow log configuration changes.
-    if(updateConfigOnTheFly && queryFirstUpdateConfigHookCall())
+    LogFormatChangedDetails logFormatChanged{};
+
+    if (logConfig->hasProp(logFormatAtt))
     {
-        firstUpdateConfigHookCallValue = false;
-        updateConfigOnTheFly = false;
+        const char *logConfigFormat = logConfig->queryProp(logFormatAtt);
+        logFormatChanged.logFormat.set(logConfigFormat);
+        if (streq(logConfigFormat, "xml"))
+        {
+            if (theStderrHandler->queryFormatType() != LOGFORMAT_xml)
+                logFormatChanged.formatChangeDetected = true;
+        }
+        else if (streq(logConfigFormat, "json"))
+        {
+            if (theStderrHandler->queryFormatType() != LOGFORMAT_json)
+                logFormatChanged.formatChangeDetected = true;
+        }
+        else if (streq(logConfigFormat, "table"))
+        {
+            if (theStderrHandler->queryFormatType() != LOGFORMAT_table)
+                logFormatChanged.formatChangeDetected = true;
+        }
+        else
+            LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logConfigFormat);
     }
 
+    return logFormatChanged;
+}
+
+bool configureHandlers(bool rejectOnTheFlyLogFormatChanges)
+{
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
         if (logConfig->getPropBool(logDisabledAtt, false))
         {
             removeLog();
-
-            configUpdateHook.installOnce(updateConfigFunc, false);
-            return;
+            return false;
         }
 
-        if (logConfig->hasProp(logFormatAtt))
+        if (rejectOnTheFlyLogFormatChanges)
         {
-            if (updateConfigOnTheFly)
-            {
-                UWARNLOG("JLog: Ignoring log format configuration change on the fly is not supported in a containerized environment");
-            }
-            else
-            {
-                const char *logFormat = logConfig->queryProp(logFormatAtt);
-                bool newFormatDetected = false;
-                if (streq(logFormat, "xml"))
-                {
-                    if (theStderrHandler->queryFormatType() != LOGFORMAT_xml)
-                    {
-                        newFormatDetected = true;
-                        theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
-                    }
-                }
-                else if (streq(logFormat, "json"))
-                {
-                    if (theStderrHandler->queryFormatType() != LOGFORMAT_json)
-                    {
-                        newFormatDetected = true;
-                        theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
-                    }
-                }
-                else if (streq(logFormat, "table"))
-                {
-                    if (theStderrHandler->queryFormatType() != LOGFORMAT_table)
-                    {
-                        newFormatDetected = true;
-                        theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
-                    }
-                }
-                else
-                    LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormat);
-
-                if (newFormatDetected)
-                    theManager->resetMonitors();
-            }
+            LogFormatChangedDetails logFormatChanged = hasLogFormatChanged(logConfig);
+            if (logFormatChanged.formatChangeDetected)
+                UWARNLOG("JLog: Ignoring log format configuration change on the fly, as it is not supported in a containerized environment");
         }
 
         if (logConfig->hasProp(logFieldsAtt))
         {
-            //Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+            // Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
             const char *logFields = logConfig->queryProp(logFieldsAtt);
             if (!isEmptyString(logFields))
                 theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
         }
 
-        //Only recreate filter if at least one filter attribute configured
+        // Only recreate filter if at least one filter attribute configured
         if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
         {
             LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
@@ -2476,20 +2446,70 @@ static CConfigUpdateHook configUpdateHook;
             unsigned msgClasses = MSGCLS_all;
             const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
             if (!isEmptyString(logClasses))
-            {
                 msgClasses = logMsgClassesFromAbbrevs(logClasses);
-            }
 
             unsigned msgAudiences = MSGAUD_all;
             const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
             if (!isEmptyString(logAudiences))
-            {
                 msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
-            }
 
             const bool local = true; // Do not include remote messages from other components
             Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
             theManager->changeMonitorFilter(theStderrHandler, filter);
+        }
+    }
+
+    return true;
+}
+
+auto updateConfigFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    configureHandlers(true);
+};
+static CConfigUpdateHook configUpdateHook;
+void setupContainerizedLogMsgHandler()
+{
+    configUpdateHook.installOnce(updateConfigFunc, false);
+
+    if (!configureHandlers(false)) // false return means that logging is disabled
+        return;
+
+    Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
+    if (logConfig)
+    {
+        LogFormatChangedDetails logFormatChanged = hasLogFormatChanged(logConfig);
+        if (logFormatChanged.formatChangeDetected)
+        {
+            bool newFormatDetected = false;
+            if (streq(logFormatChanged.logFormat.str(), "xml"))
+            {
+                if (theStderrHandler->queryFormatType() != LOGFORMAT_xml)
+                {
+                    newFormatDetected = true;
+                    theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
+                }
+            }
+            else if (streq(logFormatChanged.logFormat.str(), "json"))
+            {
+                if (theStderrHandler->queryFormatType() != LOGFORMAT_json)
+                {
+                    newFormatDetected = true;
+                    theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
+                }
+            }
+            else if (streq(logFormatChanged.logFormat.str(), "table"))
+            {
+                if (theStderrHandler->queryFormatType() != LOGFORMAT_table)
+                {
+                    newFormatDetected = true;
+                    theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
+                }
+            }
+            else
+                LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormatChanged.logFormat.str());
+
+            if (newFormatDetected)
+                theManager->resetMonitors();
         }
 
         unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
@@ -2513,29 +2533,17 @@ static CConfigUpdateHook configUpdateHook;
             UseSysLogForOperatorMessages();
 
         unsigned postMortemLines = logConfig->getPropInt(capturePostMortemAtt, 0);
-        if (postMortemLines)
+        if (postMortemLines && !thePostMortemHandler)
         {
-            if (!thePostMortemHandler)
-            {
-                // augment postmortem files with <pid> to avoid clashes where multiple processes are running within
-                // same process space, e.g. hthor processes running in same k8s container
-                unsigned pid = GetCurrentProcessId();
-                VStringBuffer portMortemFileBase("/tmp/postmortem.%u.log", pid);
+            // augment postmortem files with <pid> to avoid clashes where multiple processes are running within
+            // same process space, e.g. hthor processes running in same k8s container
+            unsigned pid = GetCurrentProcessId();
+            VStringBuffer portMortemFileBase("/tmp/postmortem.%u.log", pid);
 
-                thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
-                queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
-            }
-            else
-            {
-                if (thePostMortemHandler->queryMaxLinesToKeep() != postMortemLines)
-                {
-                    thePostMortemHandler->setMaxLinesToKeep(postMortemLines);
-                }
-            }
+            thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
+            queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
     }
-
-    configUpdateHook.installOnce(updateConfigFunc, false);
 }
 
 ILogMsgManager * queryLogMsgManager()
