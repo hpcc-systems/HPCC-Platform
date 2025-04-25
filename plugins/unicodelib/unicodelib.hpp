@@ -113,6 +113,8 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, UCh
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned formLen, char const * form);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems);
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleSplitWords(bool & isAllResult,size32_t & lenResult,void * & result, unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeCommonPrefix(unsigned & tgtLen, UChar * & tgt, unsigned s1Len, UChar const * s1, unsigned s2Len, UChar const * s2, bool nocase);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeCommonSuffix(unsigned & tgtLen, UChar * & tgt, unsigned s1Len, UChar const * s1, unsigned s2Len, UChar const * s2, bool nocase);
 }
 
 #endif
