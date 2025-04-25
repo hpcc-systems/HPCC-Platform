@@ -27,8 +27,20 @@ bool CInfoCache::isCachedInfoValid(unsigned timeOutSeconds)
 
 void CInfoCacheReaderThread::threadmain()
 {
-    PROGLOG("CInfoCacheReaderThread %s started.", name.get());
-    unsigned int autoRebuildMillSeconds = 1000*autoRebuildSeconds;
+    unsigned int autoRebuildMillSeconds;
+    VStringBuffer message("CInfoCacheReaderThread %s started, ", name.get());
+    if (enableAutoRebuild)
+    {
+        message.appendf("rebuilding every %ds.", autoRebuildSeconds);
+        autoRebuildMillSeconds = 1000*autoRebuildSeconds;
+    }
+    else
+    {
+        message.appendf("rebuilding on demand when %ds stale.", forceRebuildSeconds);
+        autoRebuildMillSeconds = INFINITE;
+    }
+    PROGLOG("%s", message.str());
+
     while (!stopping)
     {
         if (active)
