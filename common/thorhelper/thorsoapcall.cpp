@@ -1992,6 +1992,8 @@ private:
     void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders)
     {
         // Create the HTTP POST request
+        // NOTE: if using an http proxy and method is not https then path should be prepended with url host:port
+        //       but this would break regression tests that use esp as a proxy
         if (master->wscType == STsoap)
             request.clear().append("POST ").append(url.path).append(" HTTP/1.1\r\n");
         else
@@ -2517,6 +2519,10 @@ public:
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
 
+                    bool useProxy = false;
+                    if (!master->proxyUrlArray.empty())
+                        useProxy = true;
+
                     CCycleTimer dnsTimer;
 
                     // TODO: for DNS, do we use timeoutMS or remainingMS or remainingMS / maxRetries+1 or ?
@@ -2554,7 +2560,54 @@ public:
                         if (proto == PersistentProtocol::ProtoTLS)
                         {
 #ifdef _USE_OPENSSL
-                            Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear(), connUrl.host);
+                            if (useProxy && strieq(connUrl.method.str(), "http"))
+                            {
+                                StringBuffer urlHost;
+                                if (streq(url.host.str(), "."))
+                                    urlHost.append(GetCachedHostName());
+                                else
+                                    urlHost.append(url.host.str());
+                                StringBuffer proxyText;
+                                proxyText.appendf("CONNECT %s:%d HTTP/1.1\r\n", urlHost.str(), url.port);
+                                proxyText.append("Proxy-Connection: Keep-Alive\r\n\r\n");
+                                socket->write(proxyText.str(),proxyText.length());
+
+                                checkTimeLimitExceeded(&remainingMS);
+                                unsigned proxyTimeout = MIN(remainingMS, master->timeoutMS);
+                                char proxyResponse[MAX_HTTP_HEADERSIZE + 1];
+                                unsigned proxyRemaining = proxyTimeout;
+                                CTimeMon tm(proxyTimeout);
+                                unsigned totalRead = 0;
+                                unsigned bytesRead = 0;
+                                bool sockClosed = false;
+                                while (!sockClosed && !tm.timedout(&proxyRemaining))
+                                {
+                                    unsigned maxPoss = MAX_HTTP_HEADERSIZE - totalRead;
+                                    sockClosed = readtmsAllowClose(socket, &proxyResponse[totalRead], 1, maxPoss, bytesRead, proxyRemaining);
+                                    totalRead += bytesRead;
+                                    proxyResponse[totalRead] = 0;
+
+                                    if (strstr(proxyResponse, "\r\n\r\n"))
+                                        break;
+                                    if (totalRead >= MAX_HTTP_HEADERSIZE)
+                                        break;
+                                }
+
+                                if (tm.timedout(&proxyRemaining))
+                                    throw makeStringException(-1, "Timed out waiting for proxy response");
+
+                                bool proxyTunnelOK = false;
+                                const char *okResp = strstr(proxyResponse, "HTTP/");
+                                if (okResp)
+                                {
+                                    if (strstr(okResp, " 200 "))
+                                        proxyTunnelOK = true;
+                                }
+                                if (!proxyTunnelOK)
+                                    throw makeStringException(-1, "Invalid response from proxy");
+                            }
+
+                            Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear(), url.host);
                             if (ssock)
                             {
                                 checkTimeLimitExceeded(&remainingMS);

@@ -32,6 +32,8 @@
 #define THORMASTERLOGSEARCHSTR "thormaster."
 #define THORSLAVELOGSEARCHSTR "thorslave."
 
+#define MAX_HTTP_HEADERSIZE 16000 //arbitrary per line limit, most web servers are lower, but REST queries can be complex..
+
 interface IXmlToRawTransformer : extends IInterface
 {
     virtual IDataVal & transform(IDataVal & result, size32_t len, const void * text, bool isDataset) = 0;
