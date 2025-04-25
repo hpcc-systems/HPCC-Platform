@@ -1079,12 +1079,24 @@ public:
     }
 };
 
-IVaultManager *ensureVaultManager()
+static CConfigUpdateHook vaultManagerUpdateHook;
+static void vaultManagerConfigUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    Owned<IVaultManager> newVaultManager = new CVaultManager();
+    {
+        CriticalBlock block(secretCS);
+        vaultManager.swap(newVaultManager);
+    }
+}
+IVaultManager *getVaultManager()
 {
     CriticalBlock block(secretCS);
     if (!vaultManager)
+    {
         vaultManager.setown(new CVaultManager());
-    return vaultManager;
+        vaultManagerUpdateHook.installOnce(vaultManagerConfigUpdate, false);
+    }
+    return LINK(vaultManager);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1119,19 +1131,28 @@ static IPropertyTree * resolveLocalSecret(const char *category, const char * nam
     {
         if (entries->isDir())
             continue;
-        StringBuffer name;
-        entries->getName(name);
-        if (!validateXMLTag(name))
-            continue;
-        MemoryBuffer content;
-        Owned<IFileIO> io = entries->query().open(IFOread);
-        read(io, 0, (size32_t)-1, content);
-        if (!content.length())
+        StringBuffer secretKeyName;   // filename is used as the secret key name
+        entries->getName(secretKeyName);
+        if (!validateXMLTag(secretKeyName))
             continue;
 
-        //Always add a null terminator to data read from a file so that queryProp() can be used on the resultant tree
-        content.append((byte)0);
-        tree->setPropBin(name, content.length(), content.bufferBase());
+        Owned<IFileIO> io = entries->query().open(IFOread);
+        if (!io)
+            continue;
+
+        offset_t sz = io->size();
+        if (sz == 0)
+            continue;
+
+        StringBuffer value;
+        char *valuePtr = value.reserveTruncate(sz);
+        if (sz != io->read(0, sz, valuePtr))
+            continue;
+
+        // Remove trailing whitespace
+        value.clip();
+
+        tree->setProp(secretKeyName, value);
     }
 
     return tree.getClear();
@@ -1162,7 +1183,7 @@ static IPropertyTree *resolveVaultSecret(const char *category, const char * name
 {
     CVaultKind kind;
     StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    Owned<IVaultManager> vaultmgr = getVaultManager();
     if (isEmptyString(vaultId))
     {
         if (!vaultmgr->requestSecretByCategory(category, kind, json, name, version))

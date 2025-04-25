@@ -160,8 +160,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
-                { key: "banner", text: nlsHPCC.SetBanner, disabled: !isAdmin, onClick: () => setShowBannerConfig(true) },
-                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: !isAdmin, onClick: () => setShowTitlebarConfig(true) },
+                { key: "banner", text: nlsHPCC.SetBanner, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowBannerConfig(true) },
+                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },

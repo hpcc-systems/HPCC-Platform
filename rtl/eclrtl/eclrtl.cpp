@@ -2811,8 +2811,8 @@ int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p
     return diff;
 }
 
-const static UChar nullUStr = 0;
 #ifdef _USE_ICU
+const static UChar nullUStr = 0;
 int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale)
 {
     while(l1 && (p1[l1-1] == ' ')) l1--;

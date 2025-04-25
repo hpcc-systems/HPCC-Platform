@@ -1004,7 +1004,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CUsageCacheReader(Cws_machineEx *_service, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds), servicePtr(_service) {}
+        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds, true), servicePtr(_service) {}
 
     virtual CInfoCache *read() override;
 };

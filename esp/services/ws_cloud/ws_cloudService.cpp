@@ -44,8 +44,9 @@ void CWsCloudEx::init(IPropertyTree* cfg, const char* process, const char* servi
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/PODInfoCacheSeconds", process, service);
     unsigned k8sResourcesInfoCacheSeconds  = cfg->getPropInt(xpath.str(), defaultK8sResourcesInfoCacheForceBuildSeconds);
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/PODInfoCacheAutoRebuildSeconds", process, service);
-    unsigned k8sResourcesInfoCacheAutoRebuildSeconds = cfg->getPropInt(xpath.str(), defaultK8sResourcesInfoCacheAutoRebuildSeconds);
-    k8sResourcesInfoCacheReader.setown(new CK8sResourcesInfoCacheReader("K8s Resource Reader", k8sResourcesInfoCacheAutoRebuildSeconds, k8sResourcesInfoCacheSeconds));
+    if (cfg->hasProp(xpath.str()))
+        WARNLOG("Found PODInfoCacheAutoRebuildSeconds in ESP config. This is deprecated and will be ignored.");
+    k8sResourcesInfoCacheReader.setown(new CK8sResourcesInfoCacheReader("K8s Resource Reader", k8sResourcesInfoCacheSeconds));
     k8sResourcesInfoCacheReader->init();
 }
 

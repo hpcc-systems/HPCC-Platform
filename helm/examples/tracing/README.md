@@ -45,6 +45,7 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
       - timeOutSeconds - (default 10secs) Timeout for grpc deadline
   - batch:
     - enabled - If true, trace data is processed in a batch, if false, trace data is processed immediately
+  - metered - (default: false) If true, export operations are timed and logged. This is a relatively expensive operation (generates lengthy log entries for every span export) and should therefore only be enabled when diagnosing trace/span export issues or measuring their performance.
 
 ### Sample configuration
 Below is a sample helm values block directing the HPCC tracing framework to process span information serially, and export the data over OTLP/HTTP protocol to localhost:4318 and output export debug information to console:

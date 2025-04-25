@@ -78,7 +78,7 @@ RUN passwd -l hpcc
 
 RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
 RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
-RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
+RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystemsw
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 USER hpcc

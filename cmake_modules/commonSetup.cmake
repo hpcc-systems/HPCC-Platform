@@ -138,18 +138,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       set(USE_PARQUET OFF)
   endif()
 
-  # The following options need to be set after the project() command
-  if (APPLE OR WIN32)
-    option(USE_NUMA "Configure use of numa" OFF)
-  else()
-    option(USE_NUMA "Configure use of numa" ON)
-  endif()
-  IF (WIN32)
-    option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" OFF)
-  ELSE()
-    option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" ON)
-  ENDIF()
-
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
