@@ -10,15 +10,11 @@ import { useDfuWorkunit } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { Field, Fields } from "./forms/Fields";
+import { Fields } from "./forms/Fields";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/DFUWorkunitDetails.tsx");
-
-const createField = (label: string, value: any): Field => {
-    return { label, type: typeof value === "number" ? "number" : "string", value, readonly: true };
-};
 
 type FieldMap = { key: string, label: string };
 const sourceFieldIds: FieldMap[] = [
@@ -107,7 +103,12 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         for (const fieldId of sourceFieldIds) {
             if (workunit[fieldId.key] !== undefined) {
                 const value = fieldId.key === "SourceFormat" ? FileSpray.FormatMessages[workunit[fieldId.key]] : workunit[fieldId.key];
-                _sourceFields[fieldId.key] = createField(fieldId.label, value ?? null);
+                if (fieldId.key === "SourceFilePath") {
+                    const href = `#/landingzone/preview/~file::${workunit["SourceIP"]}::${FileSpray.lfEncode(value)}`;
+                    _sourceFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "link", href, readonly: true };
+                } else {
+                    _sourceFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "string", readonly: true };
+                }
             }
         }
         setSourceFields(_sourceFields);
@@ -123,7 +124,11 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         for (const fieldId of targetFieldIds) {
             if (workunit[fieldId.key] !== undefined) {
                 const value = fieldId.key === "DestFormat" ? FileSpray.FormatMessages[workunit[fieldId.key]] : workunit[fieldId.key];
-                _targetFields[fieldId.key] = createField(fieldId.label, value ?? null);
+                if (fieldId.key === "DestLogicalName") {
+                    _targetFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "link", href: `#/files/${value}`, readonly: true };
+                } else {
+                    _targetFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "string", readonly: true };
+                }
             }
         }
         setTargetFields(_targetFields);
