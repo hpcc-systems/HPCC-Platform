@@ -236,6 +236,8 @@ export function useLogAccessInfo(): LogAccessInfo {
                     setLogsColumns(response?.Columns?.Column);
                 }
             }
+        }).catch(e => {
+            setLogsStatusMessage(nlsHPCC.LogAccess_GenericException);
         });
     }, []);
 

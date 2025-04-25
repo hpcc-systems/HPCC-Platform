@@ -59,9 +59,9 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(ev, value) => setErrorChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "costs", onRender: () => <Checkbox defaultChecked label={`${filterCounts.cost || 0} ${nlsHPCC.Costs}`} onChange={(ev, value) => setCostChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(ev, value) => setWarningChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
+        { key: "infos", onRender: () => <Checkbox checked={infoChecked} label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
-    ], [filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
+    ], [infoChecked, filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     React.useEffect(() => {
         if (syntaxErrors.length) {
@@ -235,6 +235,14 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             }
         }
     }, [data.length]);
+
+    React.useEffect(() => {
+        if (filterCounts.error === 0 && filterCounts.warning === 0 && filterCounts.cost === 0) {
+            setInfoChecked(true);
+        } else {
+            setInfoChecked(false);
+        }
+    }, [filterCounts]);
 
     return <div style={{ height: "100%", overflow: "hidden" }}>
         <CommandBar items={buttons} farItems={copyButtons} />

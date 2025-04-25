@@ -36,9 +36,10 @@ static const char * compatibleVersions[] = {
     "STRINGLIB 1.1.11",
     "STRINGLIB 1.1.12",
     "STRINGLIB 1.1.13",
+    "STRINGLIB 1.1.14",
     NULL };
 
-#define STRINGLIB_VERSION "STRINGLIB 1.1.14"
+#define STRINGLIB_VERSION "STRINGLIB 1.1.15"
 
 static const char * EclDefinition =
 "export StringLib := SERVICE:fold\n"
@@ -91,6 +92,8 @@ static const char * EclDefinition =
 "  UNSIGNED4 MatchTimeOfDay(const string src, set of varstring formats) : c, pure,entrypoint='slMatchTimeOfDay'; \n"
 "  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate'; \n"
 "  STRING StringRepeat(const string src, unsigned4 n) : c, pure,entrypoint='slStringRepeat'; \n"
+"  STRING CommonPrefix(const STRING s1, const STRING s2, BOOLEAN nocase) : c, pure,entrypoint='slCommonPrefix'; \n"
+"  STRING CommonSuffix(const STRING s1, const STRING s2, BOOLEAN nocase) : c, pure,entrypoint='slCommonSuffix'; \n"
 "END;";
 
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -1608,5 +1611,73 @@ STRINGLIB_API void STRINGLIB_CALL slStringCleanSpaces80(char *__ret_str,unsigned
     if (len < 80)
         memset(out, ' ', 80 - len);
     memcpy(__ret_str, origout, 80);
+}
+
+STRINGLIB_API void STRINGLIB_CALL slCommonPrefix(unsigned & tgtLen, char * & tgt, unsigned s1Len, const char * s1, unsigned s2Len, const char * s2, bool nocase)
+{
+    unsigned maxLen = (s1Len < s2Len ? s1Len : s2Len);
+    unsigned i = 0;
+
+    if (nocase)
+    {
+        for (i=0; i < maxLen; i++)
+        {
+            if (tolower(s1[i]) != tolower(s2[i]))
+                break;
+        }
+    }
+    else
+    {
+        for (i=0; i < maxLen; i++)
+        {
+            if (s1[i] != s2[i])
+                break;
+        }
+    }
+
+    if (i == 0)
+    {
+        tgtLen = 0;
+        tgt = nullptr;
+        return;
+    }
+
+    tgtLen = i;
+    tgt = (char *)CTXMALLOC(parentCtx, tgtLen);
+    memcpy(tgt, s1, tgtLen);
+}
+
+STRINGLIB_API void STRINGLIB_CALL slCommonSuffix(unsigned & tgtLen, char * & tgt, unsigned s1Len, const char * s1, unsigned s2Len, const char * s2, bool nocase)
+{
+    unsigned maxLen = (s1Len < s2Len ? s1Len : s2Len);
+    unsigned i = 0;
+
+    if (nocase)
+    {
+        for (i=0; i < maxLen; i++)
+        {
+            if (tolower(s1[s1Len - 1 - i]) != tolower(s2[s2Len - 1 - i]))
+                break;
+        }
+    }
+    else
+    {
+        for (i=0; i < maxLen; i++)
+        {
+            if (s1[s1Len - 1 - i] != s2[s2Len - 1 - i])
+                break;
+        }
+    }
+
+    if (i == 0)
+    {
+        tgtLen = 0;
+        tgt = nullptr;
+        return;
+    }
+
+    tgtLen = i;
+    tgt = (char *)CTXMALLOC(parentCtx, tgtLen);
+    memcpy(tgt, s1 + s1Len - tgtLen, tgtLen);
 }
 
