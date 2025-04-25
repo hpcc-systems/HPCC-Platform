@@ -19,3 +19,34 @@ export function debounce(func: (...args: any[]) => void, timeout = 300): (...arg
     };
     return retVal;
 }
+
+export function throttle(func: (...args: any[]) => void, parallel = 4, timeout = 600): (...args: any[]) => Promise<void> {
+    const queue = [];
+    let activeCount = 0;
+
+    const processQueue = async () => {
+        if (queue.length === 0 || activeCount >= parallel) {
+            return;
+        }
+
+        activeCount++;
+        const { resolve, reject, args } = queue.shift();
+
+        try {
+            const result = await func(...args);
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        } finally {
+            activeCount--;
+            setTimeout(processQueue, timeout);
+        }
+    };
+
+    return (...args) => {
+        return new Promise((resolve, reject) => {
+            queue.push({ resolve, reject, args });
+            processQueue();
+        });
+    };
+}
