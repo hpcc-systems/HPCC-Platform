@@ -188,6 +188,8 @@ export = {
         Dali: "Dali",
         DaliAdmin: " Dali Admin",
         DaliIP: "DaliIP",
+        DaliExportConfirm: "Are you sure you want to export the Dali file system? Files can be large and take time to export.",
+        DaliExportPathConfirm: "Your path \" / \" is broad and may take a long time to export. Are you sure you want to continue?",
         DaliPromptConfirm: "Are you sure? Dali Admin submissions are permanent and cannot be undone.",
         Dashboard: "Dashboard",
         DataPatterns: "Data Patterns",
