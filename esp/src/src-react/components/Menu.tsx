@@ -196,30 +196,26 @@ const subMenuItems: SubMenuItems = {
 };
 
 const _subNavIdx: { [id: string]: string[] } = {};
-
-function subNavIdx(id) {
-    const indexOfExclamation = id.indexOf("!");
-    const indexOfSlash = id.indexOf("/", indexOfExclamation);
-    if (indexOfExclamation !== -1 && indexOfSlash !== -1) {
-        id = id.substring(0, indexOfExclamation) + id.substring(indexOfSlash);
-    }
-
-    if (!_subNavIdx[id]) {
-        _subNavIdx[id] = [];
-    }
-    return _subNavIdx[id];
-}
-
 for (const key in subMenuItems) {
     const subNav = subMenuItems[key];
     subNav.forEach(item => {
-        subNavIdx(item.itemKey).push(key);
+        if (!_subNavIdx[item.itemKey]) {
+            _subNavIdx[item.itemKey] = [];
+        }
+        _subNavIdx[item.itemKey].push(key);
     });
 }
 
 function subNavSelectedKey(hashPath) {
+    const category2 = navCategory(hashPath, 2);
+    if (_subNavIdx[category2]) {
+        return category2;
+    }
     const category = navCategory(hashPath);
-    return subNavIdx(category).length ? category : null;
+    if (_subNavIdx[category]) {
+        return category;
+    }
+    return null;
 }
 
 interface SubNavigationProps {
