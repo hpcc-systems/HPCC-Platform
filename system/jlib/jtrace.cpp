@@ -218,6 +218,13 @@ public:
     {
         return exporter->Shutdown(timeout);
     }
+
+    //Required starting opentelemetry_version 1.20.0 (HPCC v. 9.12.0+)
+    //If targeting older OTel version, this needs to be removed
+    virtual bool ForceFlush(std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
+    {
+        return exporter->ForceFlush(timeout);     
+    }
 };
 
 class MeteredExporterFactory
