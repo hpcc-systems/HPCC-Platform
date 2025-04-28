@@ -254,7 +254,7 @@ int CEclAgentExecutionServer::run()
 typedef std::tuple<IJobQueueItem *, unsigned, const char *, const char *> ThreadCtx;
 
 // NB: WaitThread only used by if pool created (see CEclAgentExecutionServer ctor)
-static std::atomic<unsigned> activeWaitThreads{0};
+static std::atomic<unsigned> nextInstanceNumber{0};
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
@@ -262,11 +262,8 @@ public:
         : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
-        myInstanceNumber = ++activeWaitThreads;
-    }
-    ~WaitThread()
-    {
-        --activeWaitThreads;
+        // The thread pool will never shrink, therefore the pool thread instance numbers will not always range between 1 and max active.
+        myInstanceNumber = ++nextInstanceNumber;
     }
     virtual void init(void *param) override
     {
