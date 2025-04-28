@@ -114,7 +114,7 @@ class CEventFileOp : public CInterface
 public:
     virtual bool ready() const;
     virtual bool doOp() = 0;
-    void setInputPath(const char* path);
+    virtual void setInputPath(const char* path);
 public:
     virtual ~CEventFileOp() = default;
 protected:
