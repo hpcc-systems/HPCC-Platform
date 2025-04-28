@@ -535,80 +535,79 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
                 diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false));
         }
     }
-    if (diskmeta)
-    {
-        const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
-        manager.setown(createLocalKeyManager(inrec, index, nullptr, true, false));
-        size32_t minRecSize = 0;
-        if (fieldSelection)
-        {
-            StringArray fieldNames;
-            fieldNames.appendList(fieldSelection, ",");
-            ForEachItemIn(idx, fieldNames)
-            {
-                unsigned fieldNum = inrec.getFieldNum(fieldNames.item(idx));
-                if (fieldNum == (unsigned) -1)
-                    throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
-                const RtlFieldInfo *field = inrec.queryOriginalField(fieldNum);
-                if (field->type->getType() == type_blob)
-                {
-                    // We can't just use the original source field in this case (as blobs are only supported in the input)
-                    // So instead, create a field in the target with the original type.
-                    field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
-                    deleteFields.append(field);
-                }
-                fields.append(field);
-                minRecSize += field->type->getMinSize();
-            }
-            fields.append(nullptr);
-            outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
-            outmeta.setown(new CDynamicOutputMetaData(*outRecType));
-            translator.setown(createRecordTranslator(outmeta->queryRecordAccessor(true), inrec));
-        }
-        else
-        {
-            // Copy all fields from the source record
-            unsigned numFields = inrec.getNumFields();
-            for (unsigned idx = 0; idx < numFields;idx++)
-            {
-                const RtlFieldInfo *field = inrec.queryOriginalField(idx);
-                if (field->type->getType() == type_blob)
-                {
-                    if (isTLK)
-                        continue;  // blob IDs in TLK are not valid
-                    // See above - blob field in source needs special treatment
-                    field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
-                    deleteFields.append(field);
-                }
-                fields.append(field);
-                minRecSize += field->type->getMinSize();
-            }
-            fields.append(nullptr);
-            outmeta.set(diskmeta);
-        }
-
-#if 0
-        //Could also filter records
-        if (filters.ordinality())
-        {
-            ForEachItemIn(idx, filters)
-            {
-                const IFieldFilter &thisFilter = rowFilter.addFilter(diskmeta->queryRecordAccessor(true), filters.item(idx));
-                unsigned idx = thisFilter.queryFieldIndex();
-                const RtlFieldInfo *field = inrec.queryOriginalField(idx);
-                if (field->flags & RFTMispayloadfield)
-                    throw MakeStringException(0, "Cannot filter on payload field '%s'", field->name);
-            }
-        }
-        rowFilter.createSegmentMonitors(manager);
-#endif
-    }
-    else
+    if (!diskmeta)
     {
         // We don't have record info - fake it? We could pretend it's a single field...
         UNIMPLEMENTED;
         // manager.setown(createLocalKeyManager(fake, index, nullptr));
     }
+
+    const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
+    manager.setown(createLocalKeyManager(inrec, index, nullptr, true, false));
+    size32_t minRecSize = 0;
+    if (fieldSelection)
+    {
+        StringArray fieldNames;
+        fieldNames.appendList(fieldSelection, ",");
+        ForEachItemIn(idx, fieldNames)
+        {
+            unsigned fieldNum = inrec.getFieldNum(fieldNames.item(idx));
+            if (fieldNum == (unsigned) -1)
+                throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
+            const RtlFieldInfo *field = inrec.queryOriginalField(fieldNum);
+            if (field->type->getType() == type_blob)
+            {
+                // We can't just use the original source field in this case (as blobs are only supported in the input)
+                // So instead, create a field in the target with the original type.
+                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
+                deleteFields.append(field);
+            }
+            fields.append(field);
+            minRecSize += field->type->getMinSize();
+        }
+        fields.append(nullptr);
+        outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
+        outmeta.setown(new CDynamicOutputMetaData(*outRecType));
+        translator.setown(createRecordTranslator(outmeta->queryRecordAccessor(true), inrec));
+    }
+    else
+    {
+        // Copy all fields from the source record
+        unsigned numFields = inrec.getNumFields();
+        for (unsigned idx = 0; idx < numFields;idx++)
+        {
+            const RtlFieldInfo *field = inrec.queryOriginalField(idx);
+            if (field->type->getType() == type_blob)
+            {
+                if (isTLK)
+                    continue;  // blob IDs in TLK are not valid
+                // See above - blob field in source needs special treatment
+                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
+                deleteFields.append(field);
+            }
+            fields.append(field);
+            minRecSize += field->type->getMinSize();
+        }
+        fields.append(nullptr);
+        outmeta.set(diskmeta);
+    }
+
+#if 0
+    //Could also filter records
+    if (filters.ordinality())
+    {
+        ForEachItemIn(idx, filters)
+        {
+            const IFieldFilter &thisFilter = rowFilter.addFilter(diskmeta->queryRecordAccessor(true), filters.item(idx));
+            unsigned idx = thisFilter.queryFieldIndex();
+            const RtlFieldInfo *field = inrec.queryOriginalField(idx);
+            if (field->flags & RFTMispayloadfield)
+                throw MakeStringException(0, "Cannot filter on payload field '%s'", field->name);
+        }
+    }
+    rowFilter.createSegmentMonitors(manager);
+#endif
+
     manager->finishSegmentMonitors();
     manager->reset();
 
@@ -634,7 +633,6 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
 
     //MORE: Need to rebuild/copy bloom filters
     Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, nullptr, outputCompression, false, isTLK);
-
 
     TrivialVirtualFieldCallback callback(manager);
     size32_t maxSizeSeen = 0;
@@ -664,14 +662,24 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
         }
         manager->releaseBlobs();
     }
-    if (keyBuilder)
+
+    //Clone any bloom filters from the input dataset - they should be rebuild if the index was ever filtered.
+    BloomFilterArray clonedBlooms;
+    for (unsigned i = 0; ; i++)
     {
-        keyBuilder->finish(metadata, nullptr, maxSizeSeen);
-        printf("New key has %" I64F "u leaves, %" I64F "u branches, %" I64F "u duplicates\n", keyBuilder->getStatistic(StNumLeafCacheAdds), keyBuilder->getStatistic(StNumNodeCacheAdds), keyBuilder->getStatistic(StNumDuplicateKeys));
-        printf("Original key size: %" I64F "u bytes\n", const_cast<IFileIO *>(index->queryFileIO())->size());
-        printf("New key size: %" I64F "u bytes (%" I64F "u bytes written in %" I64F "u writes)\n", outFileStream->size(), outFileStream->getStatistic(StSizeDiskWrite), outFileStream->getStatistic(StNumDiskWrites));
-        keyBuilder.clear();
+        const BloomFilter *bloom = index->queryBloom(i);
+        if (!bloom)
+            break;
+        clonedBlooms.push_back(bloom);
     }
+
+    keyBuilder->finish(metadata, nullptr, maxSizeSeen, &clonedBlooms);
+
+    printf("New key has %" I64F "u leaves, %" I64F "u branches, %" I64F "u duplicates\n", keyBuilder->getStatistic(StNumLeafCacheAdds), keyBuilder->getStatistic(StNumNodeCacheAdds), keyBuilder->getStatistic(StNumDuplicateKeys));
+    printf("Original key size: %" I64F "u bytes\n", const_cast<IFileIO *>(index->queryFileIO())->size());
+    printf("New key size: %" I64F "u bytes (%" I64F "u bytes written in %" I64F "u writes)\n", outFileStream->size(), outFileStream->getStatistic(StSizeDiskWrite), outFileStream->getStatistic(StNumDiskWrites));
+    keyBuilder.clear();
+
     if (outRecType)
         outRecType->doDelete();
 
