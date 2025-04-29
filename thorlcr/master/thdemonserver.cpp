@@ -98,6 +98,7 @@ private:
             }
 
             const cost_type totalCost = workunitCost + sgCost + graph.getDiskAccessCost();
+
             if (costLimit>0 && totalCost > costLimit)
             {
                 WARNLOG("ABORT job cost exceeds limit");
@@ -256,18 +257,7 @@ public:
         IConstWorkUnit & wu =  graph->queryJob().queryWorkUnit();
         workunitCost = aggregateCost(&wu);
 
-        Owned<const IPropertyTree> costs = getCostsConfiguration();
-        double softLimit = 0.0, hardLimit = 0.0;
-        if (costs)
-        {
-            softLimit = costs->getPropReal("@limit");
-            hardLimit = costs->getPropReal("@hardlimit");
-        }
-        double tmpcostLimit = wu.getDebugValueReal("maxCost", softLimit);
-        if (hardLimit && ((tmpcostLimit == 0) || (tmpcostLimit > hardLimit)))
-            costLimit = money2cost_type(hardLimit);
-        else
-            costLimit = money2cost_type(tmpcostLimit);
+        costLimit = getGuillotineCost(&wu);
         activeGraphs.append(*LINK(graph));
         unsigned startTime = msTick();
         graphStarts.append(startTime);
