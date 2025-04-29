@@ -847,6 +847,7 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
 {
     int cursorHandle;
     OutputFormat format;
+    unsigned __int64 processingTimeNS = 0;
     unsigned __int64 replyLimit = defaultDaFSReplyLimitKB * 1024;
     Linked<IRemoteActivity> activity;
     Linked<ICompressor> compressor;
@@ -1097,6 +1098,15 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
         writeActivity->write(rowDataSz, rowData);
     }
 
+    void closeRequestSpan()
+    {
+        if (requestSpan != nullptr)
+        {
+            requestSpan->setSpanAttribute("ProcessingTime", processingTimeNS);
+            requestSpan->setSpanStatusSuccess(true);
+        }
+    }
+
 public:
     CRemoteRequest(int _cursorHandle, OutputFormat _format, ICompressor *_compressor, IExpander *_expander, IRemoteActivity *_activity)
         : cursorHandle(_cursorHandle), format(_format), activity(_activity), compressor(_compressor), expander(_expander)
@@ -1113,16 +1123,14 @@ public:
 
     ~CRemoteRequest()
     {
-        if (requestSpan != nullptr)
-        {
-            requestSpan->setSpanStatusSuccess(true);
-        }
+        closeRequestSpan();
     }
 
     OutputFormat queryFormat() const { return format; }
     unsigned __int64 queryReplyLimit() const { return replyLimit; }
     IRemoteActivity *queryActivity() const { return activity; }
     ICompressor *queryCompressor() const { return compressor; }
+    ISpan* queryRequestSpan() const { return requestSpan == nullptr ? queryNullSpan() : requestSpan.query(); }
 
     void process(IPropertyTree *requestTree, MemoryBuffer &restMb, MemoryBuffer &responseMb, CClientStats &stats)
     {
@@ -1141,11 +1149,8 @@ public:
 
         if (traceParentChanged)
         {
-            // Check to see if we have an existing span that needs to be marked successful before close
-            if (requestSpan != nullptr)
-            {
-                requestSpan->setSpanStatusSuccess(true);
-            }
+            // Close existing span if we have one
+            closeRequestSpan(); 
 
             Owned<IProperties> traceHeaders = createProperties();
             traceHeaders->setProp("traceparent", fullTraceContext);
@@ -1178,10 +1183,18 @@ public:
             activity->restoreCursor(cursorMb);
         }
 
+        __uint64 processStartTime = 0;
+        if (activeSpan->isValid())
+            processStartTime = nsTick();
+
         if (activity->queryIsReadActivity())
             processRead(requestTree, responseMb);
         else if (activity->queryIsWriteActivity())
             processWrite(requestTree, restMb, responseMb);
+
+        if (activeSpan->isValid())
+            processingTimeNS += (nsTick() - processStartTime);
+
         activity->flushStatistics(stats);
 
         if (outFmt_Binary != format)
@@ -4919,6 +4932,10 @@ public:
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
 
+        ISpan* requestSpan = queryNullSpan();
+        if (fileInfo.remoteRequest)
+            requestSpan = fileInfo.remoteRequest->queryRequestSpan();
+
         StreamCmd cmd;
         const char *qCommand = requestTree->queryProp("command");
         if (!qCommand)
@@ -4935,7 +4952,11 @@ public:
         {
             auto it = streamCmdMap.find(qCommand);
             if (it == streamCmdMap.end())
-                throw makeStringExceptionV(0, "Unrecognised stream command: %s", qCommand);
+            {
+                IException* except = makeStringExceptionV(0, "Unrecognised stream command: %s", qCommand);
+                requestSpan->recordException(except);
+                throw except;
+            }
             cmd = it->second;
         }
 
@@ -4949,7 +4970,11 @@ public:
         else if (strieq("json", outputFmtStr))
             outputFormat = outFmt_Json;
         else
-            throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
+        {
+            IException* except = MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
+            requestSpan->recordException(except);
+            throw except;
+        }
 
         switch (cmd)
         {
@@ -5016,15 +5041,32 @@ public:
             case StreamCmd::CONTINUE:
             {
                 if (0 == cursorHandle)
-                    throw createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'continue' command");
+                {
+                    IException* except = createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'continue' command");
+                    requestSpan->recordException(except);
+                    throw except;
+                }
 
                 if (lookupFileIOHandle(cursorHandle, fileInfo)) // known handle, continuation
                 {
                     remoteRequest.set(fileInfo.remoteRequest);
                     outputFormat = fileInfo.remoteRequest->queryFormat();
 
-                    remoteRequest->process(requestTree, rest, reply, stats);
+                    try
+                    {
+                        remoteRequest->process(requestTree, rest, reply, stats);
+                    }
+                    catch (IException* e)
+                    {
+                        requestSpan->recordException(e);
+                        throw e;
+                    }
+
                     return;
+                }
+                else
+                {
+                    requestSpan->recordError("Unable to find cursor handle");
                 }
 
                 cursorHandle = 0; // challenge response ..
