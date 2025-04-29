@@ -18,6 +18,7 @@
 #pragma once
 
 #include "evtool.h"
+#include "jstring.hpp"
 
 // Abstract implementation of the command interface. `dispatch` is implemented with the help of
 // several virtual and abstract methods. `usage` remains for subclasses to implement.
@@ -48,4 +49,35 @@ public:
     CEvtCommandGroup(CmdMap&& _commands);
 protected:
     CmdMap commands;
+};
+
+// Abstract base class for event file operation implementations. Derived classes should be
+// independent of the command line interface. The `IEvToolCommand` interface is used to connect
+// operation implementations to the command line interface.
+//
+// A rule of thumb when defining an operation and a connecting command is that anything that
+// would be needed for an ESP to reuse the operation belongs in the operation, while anything
+// specific to converting command line arguments to operation parameters belongs in the command.
+class CEventFileOp
+{
+public:
+    virtual bool ready() const;
+    virtual int doOp() = 0;
+public:
+    virtual ~CEventFileOp() = default;
+    void setInputPath(const char* path);
+protected:
+    StringAttr inputPath;
+};
+
+// Extension of `CEventFileOp` that supports streaming output.
+// There may never be an operation that is not streaming, but the distinction is made for now.
+class CStreamingEventFileOp : public CEventFileOp
+{
+public: // CEventFileOp
+    virtual bool ready() const override;
+public:
+    void setOutput(IBufferedSerialOutputStream& _out);
+protected:
+    Linked<IBufferedSerialOutputStream> out;
 };
