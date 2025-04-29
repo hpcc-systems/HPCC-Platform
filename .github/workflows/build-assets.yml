@@ -302,6 +302,7 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
+            hpccsystems/platform-core:${{ needs.preamble.outputs.hpcc_version }}
             hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
             hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
           cache-from: |
