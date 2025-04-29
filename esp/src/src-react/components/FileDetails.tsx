@@ -99,7 +99,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             count: file?.Blooms?.DFUFileBloom?.length ?? 0
         }, {
             id: "protectby",
-            label: nlsHPCC.ProtectBy
+            label: nlsHPCC.ProtectBy,
+            count: file?.ProtectList?.DFUFileProtect?.length ?? 0
         }];
     }, [file]);
 
