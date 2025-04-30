@@ -9,7 +9,7 @@ import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useLogAccessInfo } from "../hooks/platform";
 import { useSessionStore } from "../hooks/store";
 import { useUserTheme } from "../hooks/theme";
-import { useMyAccount } from "../hooks/user";
+import { useCheckEnvAuthType, useMyAccount } from "../hooks/user";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 export interface NextPrevious {
@@ -232,6 +232,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
 
     const { theme, themeV9 } = useUserTheme();
     const { isAdmin } = useMyAccount();
+    const envHasAuth = useCheckEnvAuthType();
 
     const [favorites] = useFavorites();
     const [favoriteCount, setFavoriteCount] = React.useState(0);
@@ -323,7 +324,11 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
-                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (["security", "daliadmin", "sasha"].some(substring => row.itemKey.indexOf(substring) > -1) && !isAdmin);
+                            const restrictedRoutes = ["security"];
+                            if (envHasAuth) {
+                                restrictedRoutes.push("daliadmin", "sasha");
+                            }
+                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (restrictedRoutes.some(substring => row.itemKey.indexOf(substring) > -1) && !isAdmin);
                             return <Link
                                 disabled={linkDisabled}
                                 title={row.itemKey === "/topology/logs" && !logsEnabled ? logsStatusMessage : ""}

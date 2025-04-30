@@ -81,6 +81,31 @@ export function useUserSession(): {
     return { userSession, createUserSession, setUserSession, deleteUserSession };
 }
 
+export function useCheckEnvAuthType(): boolean {
+    const [envHasAuth, setEnvHasAuth] = React.useState(false);
+
+    React.useEffect(() => {
+        fetch("/esp/getauthtype.json").then(async response => {
+            const json = await response.json();
+            const authType = json.GetAuthTypeResponse.AuthType ?? "None";
+
+            switch (authType) {
+                case "Mixed":
+                case "PerSessionOnly":
+                    setEnvHasAuth(true);
+                    break;
+                case "PerRequestOnly":
+                case "UserNameOnly":
+                case "None":
+                default:
+                    setEnvHasAuth(false);
+            }
+        });
+    }, []);
+
+    return envHasAuth;
+}
+
 export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAdmin: boolean } {
 
     const [currentUser, setCurrentUser] = React.useState<WsAccount.MyAccountResponse>({ username: "" } as WsAccount.MyAccountResponse);
