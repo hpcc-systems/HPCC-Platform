@@ -3102,21 +3102,11 @@ void PTree::cloneIntoSelf(const IPropertyTree &srcTree, bool sub)
 void PTree::cloneContents(const IPropertyTree &srcTree, bool sub)
 {
     //MORE: Should any flags be cloned from the srcTree?
-    if (srcTree.isBinary(NULL))
-    {
-        MemoryBuffer mb;
-        verifyex(srcTree.getPropBin(NULL, mb));
-        //MORE: Avoid decompressing??
-        setPropBin(nullptr, mb.length(), mb.toByteArray(), COMPRESS_METHOD_DEFAULT);
-    }
-    else if (srcTree.isCompressed(NULL))
-    {
-        StringBuffer s;
-        verifyex(srcTree.getProp(NULL, s));
-        setProp(NULL, s.str());
-    }
-    else
-        setProp(NULL, srcTree.queryProp(NULL));
+
+    bool srcBinary = srcTree.isBinary(NULL);
+    //All implementations of IPropertyTree have PTree as a base class, therefore static cast is ok.
+    IPTArrayValue *v = static_cast<const PTree &>(srcTree).queryValue();
+    setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), srcBinary, v->getCompressionType(), COMPRESS_METHOD_NONE):NULL, srcBinary);
 
     Owned<IAttributeIterator> attrs = srcTree.getAttributes();
     if (attrs->first())
