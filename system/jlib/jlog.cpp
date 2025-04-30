@@ -2382,7 +2382,7 @@ static constexpr bool useSysLogDefault = false;
 LogHandlerFormat hasLogFormatChanged(const IPropertyTree *logConfig)
 {
     LogHandlerFormat currentFormat = theStderrHandler->queryFormatType();
-    LogHandlerFormat newFormat = LOGFORMAT_undefined;
+    LogHandlerFormat newFormat{LOGFORMAT_undefined};
     const char *newFormatString = logConfig ? logConfig->queryProp(logFormatAtt) : nullptr;
     if (!newFormatString) // absent, defaults to "table"
         newFormat = LOGFORMAT_table;
@@ -2461,7 +2461,7 @@ void setupContainerizedLogMsgHandler()
     if (logConfig && logConfig->getPropBool(logDisabledAtt, false))
     {
         removeLog();
-        return; // NB: can't be renabled dynamically via an update at present
+        return; // NB: can't be reenabled dynamically via an update at present
     }
     LogHandlerFormat newFormat = hasLogFormatChanged(logConfig); // NB: theStderrHandler is initially setup in MODULE_INIT
     if (newFormat != LOGFORMAT_undefined)

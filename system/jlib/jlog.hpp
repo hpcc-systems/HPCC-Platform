@@ -709,6 +709,7 @@ interface jlib_decl ILogMsgHandler : public IInterface
     virtual int               flush() { return 0; }
     virtual bool              getLogName(StringBuffer &name) const = 0;
     virtual offset_t          getLogPosition(StringBuffer &logFileName) const = 0;
+    virtual LogHandlerFormat  queryFormatType() const = 0;
 };
 
 // Class on manager's list of children which sends new filters to children, and holds thread which receives log messages
