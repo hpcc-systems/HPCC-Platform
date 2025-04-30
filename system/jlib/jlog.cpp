@@ -2377,141 +2377,114 @@ static constexpr unsigned queueLenDefault = 512;
 static constexpr unsigned queueDropDefault = 0; // disabled by default
 static constexpr bool useSysLogDefault = false;
 
-struct LogFormatChangedDetails
+// returns LOGFORMAT_undefined if format has not changed
+// NB: returns LOGFORMAT_table if no format specified (i.e. this is the default)
+LogHandlerFormat hasLogFormatChanged(const IPropertyTree *logConfig)
 {
-    StringAttr logFormat;
-    bool formatChangeDetected{false};
-};
-LogFormatChangedDetails hasLogFormatChanged(const Owned<IPropertyTree> &logConfig)
-{
-    LogFormatChangedDetails logFormatChanged{};
-
-    if (logConfig->hasProp(logFormatAtt))
+    LogHandlerFormat currentFormat = theStderrHandler->queryFormatType();
+    LogHandlerFormat newFormat = LOGFORMAT_undefined;
+    const char *newFormatString = logConfig ? logConfig->queryProp(logFormatAtt) : nullptr;
+    if (!newFormatString) // absent, defaults to "table"
+        newFormat = LOGFORMAT_table;
+    else
     {
-        const char *logConfigFormat = logConfig->queryProp(logFormatAtt);
-        logFormatChanged.logFormat.set(logConfigFormat);
-        if (streq(logConfigFormat, "xml"))
-        {
-            if (theStderrHandler->queryFormatType() != LOGFORMAT_xml)
-                logFormatChanged.formatChangeDetected = true;
-        }
-        else if (streq(logConfigFormat, "json"))
-        {
-            if (theStderrHandler->queryFormatType() != LOGFORMAT_json)
-                logFormatChanged.formatChangeDetected = true;
-        }
-        else if (streq(logConfigFormat, "table"))
-        {
-            if (theStderrHandler->queryFormatType() != LOGFORMAT_table)
-                logFormatChanged.formatChangeDetected = true;
-        }
+        if (streq(newFormatString, "xml"))
+            newFormat = LOGFORMAT_xml;
+        else if (streq(newFormatString, "json"))
+            newFormat = LOGFORMAT_json;
+        else if (streq(newFormatString, "table"))
+            newFormat = LOGFORMAT_table;
         else
-            LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logConfigFormat);
+            LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", newFormatString);
     }
-
-    return logFormatChanged;
+    return currentFormat != newFormat ? newFormat : LOGFORMAT_undefined;
 }
 
-bool configureHandlers(bool rejectOnTheFlyLogFormatChanges)
+void updateStdErrLogHandler(const IPropertyTree *logConfig)
+{
+    if (logConfig->hasProp(logFieldsAtt))
+    {
+        // Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+        const char *logFields = logConfig->queryProp(logFieldsAtt);
+        if (!isEmptyString(logFields))
+            theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
+    }
+
+    // Only recreate filter if at least one filter attribute configured
+    if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
+    {
+        LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
+
+        unsigned msgClasses = MSGCLS_all;
+        const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
+        if (!isEmptyString(logClasses))
+            msgClasses = logMsgClassesFromAbbrevs(logClasses);
+
+        unsigned msgAudiences = MSGAUD_all;
+        const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
+        if (!isEmptyString(logAudiences))
+            msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
+
+        const bool local = true; // Do not include remote messages from other components
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
+        theManager->changeMonitorFilter(theStderrHandler, filter);
+    }
+}
+
+static void loggingSetupUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
-    if (logConfig)
+    if (!logConfig)
+        return;
+    if (logConfig->getPropBool(logDisabledAtt, false))
     {
-        if (logConfig->getPropBool(logDisabledAtt, false))
-        {
-            removeLog();
-            return false;
-        }
-
-        if (rejectOnTheFlyLogFormatChanges)
-        {
-            LogFormatChangedDetails logFormatChanged = hasLogFormatChanged(logConfig);
-            if (logFormatChanged.formatChangeDetected)
-                UWARNLOG("JLog: Ignoring log format configuration change on the fly, as it is not supported in a containerized environment");
-        }
-
-        if (logConfig->hasProp(logFieldsAtt))
-        {
-            // Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
-            const char *logFields = logConfig->queryProp(logFieldsAtt);
-            if (!isEmptyString(logFields))
-                theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
-        }
-
-        // Only recreate filter if at least one filter attribute configured
-        if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
-        {
-            LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
-
-            unsigned msgClasses = MSGCLS_all;
-            const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
-            if (!isEmptyString(logClasses))
-                msgClasses = logMsgClassesFromAbbrevs(logClasses);
-
-            unsigned msgAudiences = MSGAUD_all;
-            const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
-            if (!isEmptyString(logAudiences))
-                msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
-
-            const bool local = true; // Do not include remote messages from other components
-            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
-            theManager->changeMonitorFilter(theStderrHandler, filter);
-        }
+        OWARNLOG("JLog: Ignoring can't be disabled dynamically via an update");
+        return;
     }
 
-    return true;
+    LogHandlerFormat newFormat = hasLogFormatChanged(logConfig);
+    if (newFormat != LOGFORMAT_undefined)
+    {
+        OWARNLOG("JLog: Ignoring log format configuration change on the fly, as it is not supported in a containerized environment");
+        return;
+    }
+    updateStdErrLogHandler(logConfig);
 }
 
-auto updateConfigFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-{
-    configureHandlers(true);
-};
 static CConfigUpdateHook configUpdateHook;
+
+// NB: it is not thread-safe to change the handler whilst other threads are logging.
+// This should only be called at startup.
 void setupContainerizedLogMsgHandler()
 {
-    configUpdateHook.installOnce(updateConfigFunc, false);
-
-    if (!configureHandlers(false)) // false return means that logging is disabled
-        return;
-
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
+    if (logConfig && logConfig->getPropBool(logDisabledAtt, false))
+    {
+        removeLog();
+        return; // NB: can't be renabled dynamically via an update at present
+    }
+    LogHandlerFormat newFormat = hasLogFormatChanged(logConfig); // NB: theStderrHandler is initially setup in MODULE_INIT
+    if (newFormat != LOGFORMAT_undefined)
+    {
+        // NB: old theStderrHandler leaks, should be fixed by separate PR.
+        switch (newFormat)
+        {
+            case LOGFORMAT_xml:
+                theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
+                break;
+            case LOGFORMAT_json:
+                theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
+                break;
+            case LOGFORMAT_table:
+                theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
+                break;
+            default:
+                throwUnexpected(); // should never reach here
+        }
+        theManager->resetMonitors();
+    }
     if (logConfig)
     {
-        LogFormatChangedDetails logFormatChanged = hasLogFormatChanged(logConfig);
-        if (logFormatChanged.formatChangeDetected)
-        {
-            bool newFormatDetected = false;
-            if (streq(logFormatChanged.logFormat.str(), "xml"))
-            {
-                if (theStderrHandler->queryFormatType() != LOGFORMAT_xml)
-                {
-                    newFormatDetected = true;
-                    theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
-                }
-            }
-            else if (streq(logFormatChanged.logFormat.str(), "json"))
-            {
-                if (theStderrHandler->queryFormatType() != LOGFORMAT_json)
-                {
-                    newFormatDetected = true;
-                    theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
-                }
-            }
-            else if (streq(logFormatChanged.logFormat.str(), "table"))
-            {
-                if (theStderrHandler->queryFormatType() != LOGFORMAT_table)
-                {
-                    newFormatDetected = true;
-                    theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
-                }
-            }
-            else
-                LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormatChanged.logFormat.str());
-
-            if (newFormatDetected)
-                theManager->resetMonitors();
-        }
-
         unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
         if (queueLen)
         {
@@ -2544,6 +2517,7 @@ void setupContainerizedLogMsgHandler()
             queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
     }
+    configUpdateHook.installOnce(loggingSetupUpdate, false);
 }
 
 ILogMsgManager * queryLogMsgManager()

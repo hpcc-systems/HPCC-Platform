@@ -691,6 +691,7 @@ interface jlib_decl ILogMsgFilter : public IInterface
 
 typedef enum
 {
+    LOGFORMAT_undefined,
     LOGFORMAT_xml,
     LOGFORMAT_json,
     LOGFORMAT_table
