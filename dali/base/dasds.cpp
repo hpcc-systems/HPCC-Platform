@@ -6700,7 +6700,7 @@ inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
         dst.deserializeSelfRT(mb);
     }
     else
-        dst.clone(src, true, false);
+        dst.cloneIntoSelf(src, false);
     dst.setServerId(src.queryServerId());
     if (src.hasChildren()) dst.addServerTreeInfo(STI_HaveChildren);
 }
