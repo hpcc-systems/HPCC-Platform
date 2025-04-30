@@ -510,15 +510,15 @@ void EventRecorder::recordRecordingActive(bool enabled)
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit)
+void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit)
 {
     if (!isRecording())
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexLookup\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"hit\": %s }", fileid, offset, nodeKind, boolToStr(hit));
+        TRACEEVENT("{ \"name\": \"IndexLookup\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"hit\": %s, \"size\": %u }", fileid, offset, nodeKind, boolToStr(hit), sizeIfHit);
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, hit);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, hit, sizeIfHit);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexLookup, pos);
@@ -526,6 +526,7 @@ void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nod
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
     write(pos, EvAttrInCache, hit);
+    write(pos, EvAttrExpandedSize, sizeIfHit);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
