@@ -2973,7 +2973,7 @@ protected:
     IHThorCompoundBaseArg & segHelper;
     IDiskRowReader * activeReader = nullptr;
     IArrayOf<IDiskRowReader> readers;
-    IDiskRowStream * inputRowStream = nullptr;
+    ILogicalRowStream * inputRowStream = nullptr;
     StringBuffer mangledHelperFileName;
     StringAttr tempFileName;
     const char * logicalFileName = "";
@@ -3066,7 +3066,7 @@ protected:
     virtual void closepart();
 
     bool openNextPart(bool prevWasMissing);
-    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * formatOptions);
+    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * providerOptions, const IPropertyTree * formatOptions);
 };
 
 

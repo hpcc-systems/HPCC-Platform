@@ -29,7 +29,7 @@
 
 #define PARQUET_FILE_TYPE_NAME "parquet"
 
-// IReadFormatMapping interface represents the mapping when reading a stream from an external source.
+// IRowReadFormatMapping interface represents the mapping when reading a stream from an external source.
 //
 //  @actualMeta - the format obtained from the meta infromation (e.g. dali)
 //  @expectedMeta - the format that is specified in the ECL
@@ -62,7 +62,7 @@ public:
 
 THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
 
-// IWriteFormatMapping interface represents the mapping when outputting a stream to a destination.
+// IRowWriteFormatMapping interface represents the mapping when outputting a stream to a destination.
 //
 //  @expectedMeta - the format that rows have in memory (rename?)
 //  @projectedMeta - the format that should be written to disk.
@@ -79,26 +79,48 @@ public:
     virtual IOutputMetaData * queryExpectedMeta() const = 0;
     virtual IOutputMetaData * queryProjectedMeta() const = 0;
     virtual RecordTranslationMode queryTranslationMode() const = 0;
+    virtual const IPropertyTree * queryFormatOptions() const = 0;
     virtual bool matches(const IRowWriteFormatMapping * other) const = 0;
 };
-THORHELPER_API IRowWriteFormatMapping * createDiskReadOutputMapping(RecordTranslationMode mode, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected);
+THORHELPER_API IRowWriteFormatMapping * createDiskWriteOutputMapping(RecordTranslationMode mode, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
 
 
 //--------------------------------------------------------------------------------------------------------------------
 
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
+
+// A IProviderRowReader provides the interface that is used to send queries to an external provider and return
+// a stream of records.  It is not yet implemented, and the interface is likely to change.
+//
+// Here to provide an idea of how it will be accessed in the future.
+interface IProviderRowReader : extends IInterface
+{
+    // Create a filtered set of records - keyed joins will call this from multiple threads.
+    // outputAllocator can be null if allocating nextRow() is not used.
+    virtual ILogicalRowStream * createRowStream(IEngineRowAllocator * optOutputAllocator, const FieldFilterArray & expectedFilter) = 0;
+};
+
+
+// The IRowReader interface is used to read a stream of rows from an external source.
+// It is used to process a single logical file at a time.
+//
+// The class is responsible for ensuring that the input file is appropriately buffered and decompressed by examining
+// options in the providerOptions.
+//
+// The row allocator is provided to the constructor - if it is null then calls to stream->nextRow() will throw an exception
+//
 interface IRowReader : extends IInterface
 {
 public:
     // get the interface for reading streams of row.  outputAllocator can be null if allocating next is not used.
-    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) = 0;
+    virtual ILogicalRowStream * queryAllocatedRowStream() = 0;
 };
 
 interface ITranslator;
 interface IDiskRowReader : extends IRowReader
 {
 public:
-    virtual bool matches(const char * format, bool streamRemote, IRowReadFormatMapping * mapping) = 0;
+    virtual bool matches(const char * format, bool streamRemote, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions) = 0;
 
     //Specify where the raw binary input for a particular file is coming from, together with its actual format.
     //Does this make sense, or should it be passed a filename?  an actual format?
@@ -106,14 +128,14 @@ public:
     virtual void clearInput() = 0;
 
     //MORE: It may be better to only have the first of these functions and have the other two functions as global functions that wrap this function
-    virtual bool setInputFile(IFile * inputFile, const char * logicalFilename, unsigned partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const IPropertyTree * providerOptions, const FieldFilterArray & expectedFilter) = 0;
-    virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * providerOptions, const FieldFilterArray & expectedFilter) = 0;
-    virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * providerOptions, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(IFile * inputFile, const char * logicalFilename, unsigned partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const FieldFilterArray & expectedFilter) = 0;
 };
 
 //Create a row reader for a thor binary file.  The expected, projected, actual and options never change.  The file providing the data can change.
-extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IRowReadFormatMapping * mapping);
-extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, IRowReadFormatMapping * mapping);
-extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IRowReadFormatMapping * mapping);
+extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
+extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
+extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
 
 #endif
