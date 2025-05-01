@@ -612,7 +612,7 @@ public:
     virtual int               flush() override { CriticalBlock block(crit); return fflush(handle); }
     virtual bool              getLogName(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return true; }
     virtual offset_t          getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
-    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_table; };
 
 protected:
     void                      checkRollover();
