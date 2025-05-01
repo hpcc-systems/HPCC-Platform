@@ -1725,6 +1725,13 @@ protected:
             }
         }
     }
+    void writeRow(const void *row)
+    {
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        UNIMPLEMENTED_X("Caller should use putRow() instead");
+    }
     IRowStream *getStream(CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool shared)
     {
         bool activateSharedCallback = false;
@@ -2125,6 +2132,10 @@ public:
             virtual void putRow(const void *row)
             {
                 parent->putRow(row);
+            }
+            virtual void writeRow(const void *row)
+            {
+                parent->writeRow(row);
             }
             virtual void flush()
             {

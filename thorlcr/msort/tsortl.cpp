@@ -238,7 +238,7 @@ public:
         }
     }
 
-    void putRow(const void *row)
+    inline void _putRow(const void *row, bool _release)
     {
         if (row==NULL) 
             stop();
@@ -251,8 +251,20 @@ public:
             if (outbuf.length()>bufsize) 
                 flush();
         }
-        ReleaseThorRow(row);
+        if (_release)
+            ReleaseThorRow(row);
     }
+
+    void putRow(const void *row)
+    {
+        _putRow(row, true);
+    }
+
+    void writeRow(const void *row)
+    {
+        _putRow(row, false);
+    }
+
     void flush()
     {
         size32_t l = outbuf.length();

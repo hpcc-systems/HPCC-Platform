@@ -519,13 +519,24 @@ public:
         // not needed?
     }
 
-    virtual void putRow(const void *src)
+    inline void _putRow(const void *src, bool _release)
     {
         buffer.deserialize(src);
         writer.put(buffer);
-        free((void *)src);
+
+        if (_release)
+            free((void *)src);
     }
 
+    virtual void putRow(const void *src)
+    {
+        _putRow(src, true);
+    }
+
+    virtual void writeRow(const void *src)
+    {
+        _putRow(src, false);
+    }
 
     offset_t getPosition()
     {
