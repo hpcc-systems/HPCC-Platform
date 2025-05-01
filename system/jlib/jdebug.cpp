@@ -4311,23 +4311,23 @@ public:
     }
 
     // interface ILogMsgHandler
-    virtual void handleMessage(const LogMsg & msg __attribute__((unused))) { counter++; }
-    virtual bool needsPrep() const { return false; }
-    virtual void prep() {}
-    virtual unsigned queryMessageFields() const { return MSGFIELD_detail; }
-    virtual void setMessageFields(unsigned _fields __attribute__((unused)) = MSGFIELD_all) {}
-    virtual void addToPTree(IPropertyTree * parent __attribute__((unused))) const {}
-    virtual int flush() { return 0; }
-    virtual bool getLogName(StringBuffer &name __attribute__((unused))) const { return false; }
-    virtual offset_t getLogPosition(StringBuffer &logFileName __attribute__((unused))) const { return 0; };
+    virtual void handleMessage(const LogMsg & msg __attribute__((unused))) override { counter++; }
+    virtual bool needsPrep() const override { return false; }
+    virtual void prep() override {}
+    virtual unsigned queryMessageFields() const override { return MSGFIELD_detail; }
+    virtual void setMessageFields(unsigned _fields __attribute__((unused)) = MSGFIELD_all) override {}
+    virtual void addToPTree(IPropertyTree * parent __attribute__((unused))) const override {}
+    virtual int flush() override { return 0; }
+    virtual bool getLogName(StringBuffer &name __attribute__((unused))) const override { return false; }
+    virtual offset_t getLogPosition(StringBuffer &logFileName __attribute__((unused))) const override { return 0; };
     virtual LogHandlerFormat queryFormatType() const override { return LOGFORMAT_undefined; };
 
     // interface IUserMetric
-    virtual unsigned __int64 queryCount() const { return counter; }
-    virtual const char *queryName() const { return metricName; }
-    virtual const char *queryMatchString() const { return regex; }
-    virtual void inc() { counter++; }
-    virtual void reset() { counter = 0; }
+    virtual unsigned __int64 queryCount() const override { return counter; }
+    virtual const char *queryName() const override { return metricName; }
+    virtual const char *queryMatchString() const override { return regex; }
+    virtual void inc() override { counter++; }
+    virtual void reset() override { counter = 0; }
 };
 
 jlib_decl IUserMetric *createUserMetric(const char *name, const char *matchString)

@@ -451,10 +451,10 @@ class HandleLogMsgHandlerJSON : implements HandleLogMsgHandler, public CInterfac
 public:
     HandleLogMsgHandlerJSON(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
     virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_json; };
 };
 
@@ -463,10 +463,10 @@ class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
 public:
     HandleLogMsgHandlerXML(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
     virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_xml; };
 };
 
@@ -475,10 +475,10 @@ class HandleLogMsgHandlerTable : implements HandleLogMsgHandler, public CInterfa
 public:
     HandleLogMsgHandlerTable(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return !prepped; }
-    void                      prep() override { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
-    void                      addToPTree(IPropertyTree * tree) const override;
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return !prepped; }
+    virtual void              prep() override { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
+    virtual void              addToPTree(IPropertyTree * tree) const override;
     virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_table; };
 private:
     bool                      prepped;
@@ -491,11 +491,11 @@ class FileLogMsgHandler : public ILogMsgHandler
 public:
     FileLogMsgHandler(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true);
     virtual ~FileLogMsgHandler();
-    unsigned                  queryMessageFields() const override { return messageFields; }
-    void                      setMessageFields(unsigned _fields) override { messageFields = _fields; }
-    int                       flush() override { CriticalBlock block(crit); return fflush(handle); }
-    bool                      getLogName(StringBuffer &name) const override { name.append(filename); return true; }
-    offset_t                  getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
+    virtual unsigned          queryMessageFields() const override { return messageFields; }
+    virtual void              setMessageFields(unsigned _fields) override { messageFields = _fields; }
+    virtual int               flush() override { CriticalBlock block(crit); return fflush(handle); }
+    virtual bool              getLogName(StringBuffer &name) const override { name.append(filename); return true; }
+    virtual offset_t          getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
 
 protected:
     FILE *                    handle;
@@ -513,11 +513,11 @@ class FileLogMsgHandlerJSON : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerJSON(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_json; };
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_json; };
 };
 
 class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
@@ -525,11 +525,11 @@ class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerXML(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_xml; };
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_xml; };
 };
 
 class FileLogMsgHandlerTable : implements FileLogMsgHandler, public CInterface
@@ -537,11 +537,11 @@ class FileLogMsgHandlerTable : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerTable(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return !prepped; }
-    void                      prep() override { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
-    void                      addToPTree(IPropertyTree * tree) const override;
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_table; };
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return !prepped; }
+    virtual void              prep() override { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_table; };
 private:
     bool                      prepped;
 };
@@ -562,7 +562,7 @@ public:
     virtual int flush() override { CriticalBlock block(crit); return fflush(handle); }
     virtual bool getLogName(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return true; }
     virtual offset_t getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
-    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_table; };
 protected:
     void checkRollover();
     void doRollover();
@@ -587,7 +587,7 @@ public:
                              const char *initialName = NULL, const char *alias = NULL, bool daily = false, long _maxLogFileSize = 0);
     virtual ~RollingFileLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override
+    virtual void              handleMessage(const LogMsg & msg) override
     {
         CriticalBlock block(crit);
         checkRollover();
@@ -604,15 +604,15 @@ public:
 
         if(flushes) fflush(handle);
     }
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    unsigned                  queryMessageFields() const override { return messageFields; }
-    void                      setMessageFields(unsigned _fields) override { messageFields = _fields; }
-    void                      addToPTree(IPropertyTree * tree) const override;
-    int                       flush() override { CriticalBlock block(crit); return fflush(handle); }
-    bool                      getLogName(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return true; }
-    offset_t                  getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_undefined; };
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual unsigned          queryMessageFields() const override { return messageFields; }
+    virtual void              setMessageFields(unsigned _fields) override { messageFields = _fields; }
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual int               flush() override { CriticalBlock block(crit); return fflush(handle); }
+    virtual bool              getLogName(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return true; }
+    virtual offset_t          getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
 
 protected:
     void                      checkRollover();
@@ -644,16 +644,16 @@ public:
     BinLogMsgHandler(const char * _filename, bool _append = false);
     virtual ~BinLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
-    unsigned                  queryMessageFields() const override { return MSGFIELD_all; }
-    void                      setMessageFields(unsigned _fields) override {}
-    int                       flush() override { return 0; }
-    bool                      getLogName(StringBuffer &name) const override { name.append(filename); return true; }
-    offset_t                  getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return fstr->tell(); }
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_undefined; };
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual unsigned          queryMessageFields() const override { return MSGFIELD_all; }
+    virtual void              setMessageFields(unsigned _fields) override {}
+    virtual int               flush() override { return 0; }
+    virtual bool              getLogName(StringBuffer &name) const override { name.append(filename); return true; }
+    virtual offset_t          getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return fstr->tell(); }
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
 protected:
     StringAttr                filename;
     bool                      append;
@@ -671,16 +671,16 @@ class SysLogMsgHandler : implements ILogMsgHandler, public CInterface
 public:
     SysLogMsgHandler(ISysLogEventLogger * _logger, unsigned _fields) : logger(_logger), fields(_fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) override;
-    bool                      needsPrep() const override { return false; }
-    void                      prep() override {}
-    void                      addToPTree(IPropertyTree * tree) const override;
-    unsigned                  queryMessageFields() const override { return fields; }
-    void                      setMessageFields(unsigned _fields) override { fields = _fields; }
-    int                       flush() override { return 0; }
-    bool                      getLogName(StringBuffer &name) const override { return false; }
-    offset_t                  getLogPosition(StringBuffer &logFileName) const override { return 0; }
-    LogHandlerFormat          queryFormatType() const override { return LOGFORMAT_undefined; };
+    virtual void              handleMessage(const LogMsg & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual unsigned          queryMessageFields() const override { return fields; }
+    virtual void              setMessageFields(unsigned _fields) override { fields = _fields; }
+    virtual int               flush() override { return 0; }
+    virtual bool              getLogName(StringBuffer &name) const override { return false; }
+    virtual offset_t          getLogPosition(StringBuffer &logFileName) const override { return 0; }
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
 protected:
     ISysLogEventLogger *      logger;
     unsigned                  fields;

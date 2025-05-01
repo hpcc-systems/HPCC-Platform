@@ -914,7 +914,6 @@ extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 extern jlib_decl ILogMsgHandler * queryPostMortemLogMsgHandler();
 extern jlib_decl bool copyPostMortemLogging(const char *target, bool clear);
 extern jlib_decl void setupContainerizedLogMsgHandler();
-bool configureHandlers(bool rejectOnTheFlyChanges);
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 

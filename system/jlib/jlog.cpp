@@ -2379,7 +2379,7 @@ static constexpr bool useSysLogDefault = false;
 
 // returns LOGFORMAT_undefined if format has not changed
 // NB: returns LOGFORMAT_table if no format specified (i.e. this is the default)
-LogHandlerFormat hasLogFormatChanged(const IPropertyTree *logConfig)
+LogHandlerFormat getConfigHandlerFormat(const IPropertyTree *logConfig)
 {
     LogHandlerFormat currentFormat = theStderrHandler->queryFormatType();
     LogHandlerFormat newFormat{LOGFORMAT_undefined};
@@ -2442,7 +2442,7 @@ static void loggingSetupUpdate(const IPropertyTree *oldComponentConfiguration, c
         return;
     }
 
-    LogHandlerFormat newFormat = hasLogFormatChanged(logConfig);
+    LogHandlerFormat newFormat = getConfigHandlerFormat(logConfig);
     if (newFormat != LOGFORMAT_undefined)
     {
         OWARNLOG("JLog: Ignoring log format configuration change on the fly, as it is not supported in a containerized environment");
@@ -2463,7 +2463,7 @@ void setupContainerizedLogMsgHandler()
         removeLog();
         return; // NB: can't be reenabled dynamically via an update at present
     }
-    LogHandlerFormat newFormat = hasLogFormatChanged(logConfig); // NB: theStderrHandler is initially setup in MODULE_INIT
+    LogHandlerFormat newFormat = getConfigHandlerFormat(logConfig); // NB: theStderrHandler is initially setup in MODULE_INIT
     if (newFormat != LOGFORMAT_undefined)
     {
         // NB: old theStderrHandler leaks, should be fixed by separate PR.
@@ -2516,6 +2516,8 @@ void setupContainerizedLogMsgHandler()
             thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
             queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
+
+        updateStdErrLogHandler(logConfig);
     }
     configUpdateHook.installOnce(loggingSetupUpdate, false);
 }
