@@ -9,7 +9,7 @@ import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useLogAccessInfo } from "../hooks/platform";
 import { useSessionStore } from "../hooks/store";
 import { useUserTheme } from "../hooks/theme";
-import { useMyAccount } from "../hooks/user";
+import { useCheckEnvAuthType, useMyAccount } from "../hooks/user";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 export interface NextPrevious {
@@ -196,30 +196,26 @@ const subMenuItems: SubMenuItems = {
 };
 
 const _subNavIdx: { [id: string]: string[] } = {};
-
-function subNavIdx(id) {
-    const indexOfExclamation = id.indexOf("!");
-    const indexOfSlash = id.indexOf("/", indexOfExclamation);
-    if (indexOfExclamation !== -1 && indexOfSlash !== -1) {
-        id = id.substring(0, indexOfExclamation) + id.substring(indexOfSlash);
-    }
-
-    if (!_subNavIdx[id]) {
-        _subNavIdx[id] = [];
-    }
-    return _subNavIdx[id];
-}
-
 for (const key in subMenuItems) {
     const subNav = subMenuItems[key];
     subNav.forEach(item => {
-        subNavIdx(item.itemKey).push(key);
+        if (!_subNavIdx[item.itemKey]) {
+            _subNavIdx[item.itemKey] = [];
+        }
+        _subNavIdx[item.itemKey].push(key);
     });
 }
 
 function subNavSelectedKey(hashPath) {
+    const category2 = navCategory(hashPath, 2);
+    if (_subNavIdx[category2]) {
+        return category2;
+    }
     const category = navCategory(hashPath);
-    return subNavIdx(category).length ? category : null;
+    if (_subNavIdx[category]) {
+        return category;
+    }
+    return null;
 }
 
 interface SubNavigationProps {
@@ -232,6 +228,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
 
     const { theme, themeV9 } = useUserTheme();
     const { isAdmin } = useMyAccount();
+    const envHasAuth = useCheckEnvAuthType();
 
     const [favorites] = useFavorites();
     const [favoriteCount, setFavoriteCount] = React.useState(0);
@@ -323,7 +320,11 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
-                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (["security", "daliadmin", "sasha"].some(substring => row.itemKey.indexOf(substring) > -1) && !isAdmin);
+                            const restrictedRoutes = ["security"];
+                            if (envHasAuth) {
+                                restrictedRoutes.push("daliadmin", "sasha");
+                            }
+                            const linkDisabled = (row.itemKey === "/topology/logs" && !logsEnabled) || (restrictedRoutes.some(substring => row.itemKey.indexOf(substring) > -1) && !isAdmin);
                             return <Link
                                 disabled={linkDisabled}
                                 title={row.itemKey === "/topology/logs" && !logsEnabled ? logsStatusMessage : ""}
