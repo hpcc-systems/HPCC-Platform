@@ -1404,6 +1404,8 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
     byte *buf;
     size32_t bufpos;
     bool autoflush;
+    Linked<IPropertyTree> formatOptions; // used by generic I/O
+    Linked<IPropertyTree> providerOptions; // used by generic I/O
 #ifdef TRACE_CREATE
     static unsigned wrnum;
 #endif
@@ -1459,6 +1461,19 @@ public:
 
     CRowStreamWriter(IFileIOStream *_stream, IOutputRowSerializer *_serializer, IEngineRowAllocator *_allocator, EmptyRowSemantics _emptyRowSemantics, bool _tallycrc, bool _autoflush)
         : stream(_stream), serializer(_serializer), allocator(_allocator), emptyRowSemantics(_emptyRowSemantics)
+    {
+#ifdef TRACE_CREATE
+        PROGLOG("createRowWriter %d = %p",++wrnum,this);
+#endif
+        tallycrc = _tallycrc;
+        nested = 0;
+        buf = (byte *)ma.allocate(ROW_WRITER_BUFFERSIZE);
+        bufpos = 0;
+        autoflush = _autoflush;
+    }
+
+    CRowStreamWriter(IFileIOStream *_stream, IOutputRowSerializer *_serializer, IEngineRowAllocator *_allocator, EmptyRowSemantics _emptyRowSemantics, bool _tallycrc, bool _autoflush, IPropertyTree * _options)
+        : stream(_stream), serializer(_serializer), allocator(_allocator), emptyRowSemantics(_emptyRowSemantics), formatOptions(_options)
     {
 #ifdef TRACE_CREATE
         PROGLOG("createRowWriter %d = %p",++wrnum,this);
@@ -1681,6 +1696,14 @@ ILogicalRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, u
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(flags);
     Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), emptyRowSemantics, TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
     return writer.getClear();
+}
+
+IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, IPropertyTree * options, unsigned flags)
+{
+    if (0 != (flags & (rw_extend|rw_buffered|COMP_MASK)))
+        throw MakeStringException(0, "Unsupported createRowWriter flags");
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(flags);
+    return new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), emptyRowSemantics, TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush), options);
 }
 
 class CDiskMerger : implements IDiskMerger, public CInterface
