@@ -57,6 +57,8 @@
 #include "roxiehelper.hpp"
 #include "securesocket.hpp"
 #include "environment.hpp"
+#include "anawu.hpp"
+#include "workunit.hpp"
 
 static const StatisticsMapping podStatistics({StNumPods});
 
@@ -1172,6 +1174,16 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
 
     fatalHdlr->clear();
+
+    if (!getBoolWUOption(&workunit, "analyzeInEclAgent", "analyzerOptions/@analyzeInEclAgent", defaultAnalyzeInEclAgent))
+    {
+        if (!getBoolWUOption(&workunit, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
+        {
+            double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, queryNodeClusterWidth());
+            IPropertyTree *analyzerOptions = getGlobalConfigSP()->queryPropTree("analyzerOptions");
+            analyseWorkunit(workunit, graphName, analyzerOptions, costPerHour);
+        }
+    }
 
     setWuid(NULL);
     return allDone;
