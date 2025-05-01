@@ -1411,6 +1411,7 @@ public:
                 branch[drv]->setPropInt64("Size",totsize[drv]);
                 branch[drv]->setProp("Modified",mostrecent[drv].getString(tmp.clear()));
                 branch[drv]->setPropInt("Numparts",f->N);
+                branch[drv]->setPropBool("IsDirPerPart", f->isDirPerPart);
             }
             if (ncomplete!=f->N) {
                 if (branch[drv]) 
