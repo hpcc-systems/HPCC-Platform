@@ -253,6 +253,8 @@ export = {
         DisableScopeScans: "Disable Scope Scans",
         DisableScopeScanConfirm: "Are you sure you want to disable Scope Scans?  Changes will revert to configuration settings on DALI reboot.",
         DiskUsage: "Disk Usage",
+        dismiss: "dismiss",
+        dismissAll: "dismiss all",
         Distance: "Distance",
         DistanceTooltip: "Maximum Activity Neighbourhood Distance",
         Dll: "Dll",

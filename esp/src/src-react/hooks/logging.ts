@@ -1,14 +1,30 @@
 import * as React from "react";
-import { useConst } from "@fluentui/react-hooks";
-import toast from "react-hot-toast";
+import { useConst, useId } from "@fluentui/react-hooks";
+import { useToastController, ToastIntent } from "@fluentui/react-components";
 import { isExceptions } from "@hpcc-js/comms";
 import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
-import { CustomToaster } from "../components/controls/CustomToaster";
 import * as Utility from "src/Utility";
+import { CustomToaster } from "../components/controls/CustomToaster";
 
 const logger = scopedLogger("../util/logging.ts");
 
 let g_logger: ECLWatchLogger;
+
+class LoggingMessage extends Message {
+
+    readonly dateTime: string;
+    readonly level: Level;
+    readonly id: string;
+    readonly message: string;
+
+    constructor(dateTime: string, level: Level, id: string, message: string) {
+        super();
+        this.dateTime = dateTime;
+        this.level = level;
+        this.id = id;
+        this.message = message;
+    }
+}
 
 interface LogEntry {
     dateTime: string;
@@ -63,10 +79,7 @@ export class ECLWatchLogger implements Writer {
         this._origWriter.write(dateTime, level, id, message);
         const row = { dateTime, level, id, message };
         this._log.push(row);
-        if (level > Level.info) {
-            toast.custom(CustomToaster({ id, level, message, dateTime }));
-        }
-        this._dispatch.post(new Message());
+        this._dispatch.post(new LoggingMessage(dateTime, level, id, message));
     }
 
     rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
@@ -87,16 +100,39 @@ export class ECLWatchLogger implements Writer {
     }
 }
 
-export function useECLWatchLogger(): [Readonly<LogEntry[]>, number] {
+export function useECLWatchLogger(): { id: string, log: Readonly<LogEntry[]>, lastUpdate: number } {
 
+    const toasterID = useId("logger");
+    const { dispatchToast, dismissAllToasts } = useToastController(toasterID);
     const eclLogger = useConst(() => ECLWatchLogger.attach());
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
 
     React.useEffect(() => {
-        return eclLogger?.listen(() => {
+        const dispose = eclLogger?.listen((_type: string, messages: LoggingMessage[]) => {
+            for (const msg of messages) {
+                if (msg.level > Level.info) {
+                    let intent: ToastIntent = "info";
+                    if (msg.level >= Level.error) {
+                        intent = "error";
+                    } else if (msg.level >= Level.warning) {
+                        intent = "warning";
+                    }
+
+                    dispatchToast(CustomToaster({
+                        id: msg.id,
+                        level: msg.level,
+                        message: msg.message,
+                        onDismissAll: dismissAllToasts
+                    }), { intent });
+                }
+            }
             setLastUpdate(Date.now());
         });
-    }, [eclLogger]);
 
-    return [eclLogger.log(), lastUpdate];
+        return () => {
+            dispose?.();
+        };
+    }, [dismissAllToasts, dispatchToast, eclLogger]);
+
+    return { id: toasterID, log: eclLogger.log(), lastUpdate };
 }
