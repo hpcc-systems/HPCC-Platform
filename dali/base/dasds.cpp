@@ -1526,7 +1526,7 @@ public:
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
                 str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.str(), false);
+                CPTValue v(str.length()+1, str.str());
                 v.serialize(mb);
             }
             else
@@ -1539,7 +1539,7 @@ public:
                 MemoryBuffer vmb;
                 Owned<IFileIO> fileIO = iFile->open(IFOread);
                 verifyex(sz == ::read(fileIO, 0, sz, vmb));
-                CPTValue v(sz, vmb.toByteArray(), true);
+                CPTValue v(sz, vmb.toByteArray(), true, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT);
                 v.serialize(mb);
             }
             else
@@ -2135,7 +2135,7 @@ void CBinaryFileExternal::readValue(const char *name, MemoryBuffer &mb)
         OWARNLOG(e, s.str());
         StringBuffer str("EXTERNAL BINARY FILE: \"");
         str.append(filename.str()).append("\" MISSING");
-        CPTValue v(str.length()+1, str.str(), false);
+        CPTValue v(str.length()+1, str.str());
         v.serialize(mb);
     }
     else
@@ -2181,7 +2181,7 @@ void CBinaryFileExternal::read(const char *name, IPropertyTree &owner, MemoryBuf
             OWARNLOG(e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.str(), false);
+            CPTValue v(str.length()+1, str.str());
             v.serialize(mb);
         }
         else
@@ -3199,7 +3199,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
     {
         bool binary=changeTree.isBinary(NULL);
         IPTArrayValue *v = ((PTree &)changeTree).queryValue();
-        setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), binary, true, v->getCompressionType()):NULL, binary);
+        setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), binary, v->getCompressionType(), COMPRESS_METHOD_NONE):NULL, binary);
         if (changeTree.getPropBool("@new"))
             mergePDState(res, PDS_New);
         mergePDState(res, PDS_Data);
@@ -3223,7 +3223,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
             getPropBin(NULL, mb);
         changeTree.getPropBin(NULL, mb);
         if (binary)
-            setPropBin(NULL, mb.length(), mb.toByteArray());
+            setPropBin(NULL, mb.length(), mb.toByteArray(), COMPRESS_METHOD_DEFAULT);
         else
         {
             mb.append('\0');
@@ -4163,7 +4163,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                 ((PTree *)tree)->setValue(v, binary);
             }
             else
-                ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, COMPRESS_METHOD_NONE), false);
+                ((PTree *)tree)->setValue(new CPTValue(), false);
 
             Owned<IAttributeIterator> attrs = clientTree->getAttributes();
             if (attrs->first())

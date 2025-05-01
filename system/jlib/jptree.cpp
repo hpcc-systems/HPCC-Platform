@@ -1010,10 +1010,10 @@ private:
 
 ///////////////////
 
-CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, CompressionMethod _compressType)
+CPTValue::CPTValue(size32_t size, const void *data, bool binary, CompressionMethod currentCompressType, CompressionMethod preferredCompressType)
 {
-    compressType = _compressType;
-    if (!raw && binary && size > PTREE_COMPRESS_THRESHOLD)
+    compressType = currentCompressType;
+    if (binary && (currentCompressType == COMPRESS_METHOD_NONE) && (preferredCompressType != COMPRESS_METHOD_NONE) && (size > PTREE_COMPRESS_THRESHOLD))
     {
         unsigned newSize = size * PTREE_COMPRESS_BOTHER_PECENTAGE / 100;
         void *newData = NULL;
@@ -1021,7 +1021,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, Compr
         try
         {
             newData = malloc(sizeof(size32_t) + newSize);
-            CompressionMethod compressMethod = defaultBinaryCompressionMethod;
+            CompressionMethod compressMethod = (preferredCompressType != COMPRESS_METHOD_DEFAULT) ? preferredCompressType : defaultBinaryCompressionMethod;
             ICompressHandler * handler = queryCompressHandler(compressMethod);
             compressor = handler->getCompressor();
             compressor->open(((char *)newData) + sizeof(size32_t), newSize);
@@ -1045,7 +1045,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, Compr
             throw;
         }
     }
-    if (raw || !compressType)
+    if (size && !get())
         set(size, data);
 }
 
@@ -1315,11 +1315,11 @@ ChildMap *PTree::checkChildren() const
     return children;
 }
 
-void PTree::setLocal(size32_t l, const void *data, bool _binary)
+void PTree::setLocal(size32_t l, const void *data, bool _binary, CompressionMethod compressType)
 {
     if (value) delete value;
     if (l)
-        value = new CPTValue(l, data, _binary);
+        value = new CPTValue(l, data, _binary, COMPRESS_METHOD_NONE, compressType);
     else
         value = NULL;
     if (_binary)
@@ -1344,7 +1344,7 @@ void PTree::appendLocal(size32_t l, const void *data, bool binary)
         data = mb.toByteArray();
     }
     if (l)
-        value = new CPTValue(l, data, binary);
+        value = new CPTValue(l, data, binary, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT);
     else
         value = NULL;
     if (binary)
@@ -1466,7 +1466,7 @@ void PTree::setProp(const char *xpath, const char *val)
                 value = NULL;
             }
             else
-                setLocal(l+1, val);
+                setLocal(l+1, val, false, COMPRESS_METHOD_NONE);
         }
     }
     else if (isAttribute(xpath))
@@ -1725,7 +1725,7 @@ void PTree::setPropInt64(const char * xpath, __int64 val)
     {
         char buf[23];
         numtostr(buf, val);
-        setLocal((size32_t)strlen(buf)+1, buf);
+        setLocal((size32_t)strlen(buf)+1, buf, false, COMPRESS_METHOD_NONE);
     }
     else if (isAttribute(xpath))
     {
@@ -1790,7 +1790,7 @@ void PTree::setPropReal(const char * xpath, double val)
     if (!xpath || '\0' == *xpath)
     {
         std::string s = std::to_string(val);
-        setLocal((size32_t)s.length()+1, s.c_str());
+        setLocal((size32_t)s.length()+1, s.c_str(), false, COMPRESS_METHOD_NONE);
     }
     else if (isAttribute(xpath))
     {
@@ -1995,21 +1995,21 @@ bool PTree::getPropBin(const char *xpath, MemoryBuffer &ret) const
     }
 }
 
-void PTree::setPropBin(const char * xpath, size32_t size, const void *data)
+void PTree::setPropBin(const char * xpath, size32_t size, const void *data, CompressionMethod preferredCompression)
 {
     CHECK_ATTRIBUTE(xpath);
     if (!xpath || '\0' == *xpath)
-        setLocal(size, data, true);
+        setLocal(size, data, true, preferredCompression);
     else
     {
         const char *prop;
         IPropertyTree *branch = splitBranchProp(xpath, prop, true);
         if (isAttribute(prop))
-            branch->setPropBin(prop, size, data);
+            branch->setPropBin(prop, size, data, preferredCompression);
         else
         {
             IPropertyTree *propBranch = queryCreateBranch(branch, prop);
-            propBranch->setPropBin(NULL, size, data);
+            propBranch->setPropBin(NULL, size, data, preferredCompression);
         }
     }
 }
@@ -2036,7 +2036,7 @@ void PTree::addPropBin(const char *xpath, size32_t size, const void *data)
         else if (child)
             child->addPropBin(qualifier, size, data);
         else
-            setPropBin(path, size, data);
+            setPropBin(path, size, data, COMPRESS_METHOD_DEFAULT);
     }
 }
 
@@ -2062,7 +2062,7 @@ void PTree::appendPropBin(const char *xpath, size32_t size, const void *data)
         else if (child)
             child->appendPropBin(qualifier, size, data);
         else
-            setPropBin(path, size, data);
+            setPropBin(path, size, data, COMPRESS_METHOD_DEFAULT);
     }
 }
 
@@ -3104,7 +3104,8 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
     {
         MemoryBuffer mb;
         verifyex(srcTree.getPropBin(NULL, mb));
-        dstTree.setPropBin(NULL, mb.length(), mb.toByteArray());
+        //MORE: Avoid decompressing??
+        dstTree.setPropBin(NULL, mb.length(), mb.toByteArray(), COMPRESS_METHOD_DEFAULT);
     }
     else if (srcTree.isCompressed(NULL))
     {
@@ -3230,7 +3231,7 @@ IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath, bool cre
 void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
 {
     if (!l) return; // right thing to do on addProp("x", NULL) ?
-    IPTArrayValue *newValue = new CPTValue(l, data, _binary);
+    IPTArrayValue *newValue = new CPTValue(l, data, _binary, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT);
     Owned<IPropertyTree> tree = create(queryName(), newValue);
     PTree *_tree = QUERYINTERFACE(tree.get(), PTree); assertex(_tree);
 
@@ -4477,7 +4478,7 @@ void _synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool 
     if (!equal)
     {
         if (target->isBinary())
-            target->setPropBin(NULL, srcMb.length(), srcMb.toByteArray());
+            target->setPropBin(NULL, srcMb.length(), srcMb.toByteArray(), COMPRESS_METHOD_DEFAULT);
         else
             target->setProp(NULL, src);
     }
@@ -9876,7 +9877,8 @@ void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropert
         {
             MemoryBuffer value;
             source.getPropBin(sourceName, value);
-            target.setPropBin(targetName, value.length(), value.toByteArray());
+            //MORE: Avoid decompression?
+            target.setPropBin(targetName, value.length(), value.toByteArray(), COMPRESS_METHOD_DEFAULT);
         }
         else
             target.setProp(targetName, source.queryProp(sourceName));
@@ -9891,7 +9893,7 @@ void copyProp(IPropertyTree & target, IPropertyTree & source, const char * name)
         {
             MemoryBuffer value;
             source.getPropBin(name, value);
-            target.setPropBin(name, value.length(), value.toByteArray());
+            target.setPropBin(name, value.length(), value.toByteArray(), COMPRESS_METHOD_DEFAULT);
         }
         else
             target.setProp(name, source.queryProp(name));

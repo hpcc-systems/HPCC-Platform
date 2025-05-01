@@ -201,7 +201,10 @@ public:
     { 
         deserialize(src); 
     }
-    CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, CompressionMethod _compressType = COMPRESS_METHOD_NONE);
+    explicit CPTValue() = default;   //MORE: Should there be a single shared null instance?
+    CPTValue(size32_t size, const void *data) : CPTValue(size, data, false, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT)
+    {}
+    CPTValue(size32_t size, const void *data, bool binary, CompressionMethod currentCompressType, CompressionMethod preferredCompressType);
 
     virtual bool isArray() const override { return false; }
     virtual CQualifierMap *queryMap() override { return nullptr; }
@@ -228,7 +231,7 @@ public:
     virtual void deserialize(MemoryBuffer &src) override;
 
 private:
-    mutable byte compressType;
+    mutable byte compressType = COMPRESS_METHOD_NONE;
 };
 
 #define IptFlagTst(fs, f) (0!=(fs&(f)))
@@ -684,7 +687,7 @@ public:
     virtual void addPropInt(const char *xpath, int val) override;
     virtual double getPropReal(const char *xpath, double dft=0.0) const override;
     virtual bool getPropBin(const char * xpath, MemoryBuffer &ret) const override;
-    virtual void setPropBin(const char * xpath, size32_t size, const void *data) override;
+    virtual void setPropBin(const char * xpath, size32_t size, const void *data, CompressionMethod preferredCompression) override;
     virtual void appendPropBin(const char *xpath, size32_t size, const void *data) override;
     virtual void addPropBin(const char *xpath, size32_t size, const void *data) override;
     virtual IPropertyTree *getPropTree(const char *xpath) const override;
@@ -720,7 +723,7 @@ protected:
 
     virtual ChildMap *checkChildren() const;
     virtual bool isEquivalent(IPropertyTree *tree) const { return (nullptr != QUERYINTERFACE(tree, PTree)); }
-    virtual void setLocal(size32_t l, const void *data, bool binary=false);
+    virtual void setLocal(size32_t l, const void *data, bool binary, CompressionMethod compressType);
     virtual void appendLocal(size32_t l, const void *data, bool binary=false);
     virtual void addingNewElement(IPropertyTree &child, int pos) { }
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
