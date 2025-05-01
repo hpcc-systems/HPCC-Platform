@@ -1,10 +1,9 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Stack, Text, useTheme } from "@fluentui/react";
-import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox } from "@fluentui/react-components";
+import { useBoolean } from "@fluentui/react-hooks";
+import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox, Toaster } from "@fluentui/react-components";
 import { WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
-import { useBoolean } from "@fluentui/react-hooks";
-import { Toaster } from "react-hot-toast";
 import { cookie } from "dojo/main";
 
 import nlsHPCC from "src/nlsHPCC";
@@ -23,7 +22,6 @@ import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { AppPanel } from "./AppPanel";
 import { MyAccount } from "./MyAccount";
-import { toasterScale } from "./controls/CustomToaster";
 import { debounce } from "../util/throttle";
 
 const logger = scopedLogger("src-react/components/Title.tsx");
@@ -116,7 +114,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         };
     }, [currentUser]);
 
-    const [log, logLastUpdated] = useECLWatchLogger();
+    const { id: toasterId, log, lastUpdate: logLastUpdated } = useECLWatchLogger();
 
     const { setModernMode } = useModernMode();
     const onTechPreviewClick = React.useCallback(
@@ -349,10 +347,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
                     </Stack.Item>
                 </Stack>
-                <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
-                    top: toasterScale(57),
-                    right: 8 - (180 - toasterScale(180))
-                }} />
+                <Toaster toasterId={toasterId} position={"top-end"} pauseOnHover />
             </Stack.Item>
         </Stack>
         <AppPanel show={showAppPanel} onDismiss={dismissAppPanel} />

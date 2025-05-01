@@ -302,6 +302,7 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
+            hpccsystems/platform-core:${{ needs.preamble.outputs.hpcc_version }}
             hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
             hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
           cache-from: |
@@ -496,3 +497,10 @@ jobs:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
     secrets: inherit
 
+  deploy_wordpress:
+    needs: [preamble, build-docker]
+    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
+    uses: ./.github/workflows/wordpress_automation.yml
+    with:
+      tag: ${{ needs.preamble.outputs.community_tag }}
+    secrets: inherit

@@ -1,4 +1,4 @@
-name: Build Documentation
+name: Test Documentation Builds
 
 on:
   workflow_call:

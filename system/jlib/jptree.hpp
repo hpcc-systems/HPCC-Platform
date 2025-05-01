@@ -110,7 +110,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual double getPropReal(const char *xpath, double dft=0.0) const = 0;
 
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const = 0;
-    virtual void setPropBin(const char *xpath, size32_t size, const void *data) = 0;
+    virtual void setPropBin(const char *xpath, size32_t size, const void *data, CompressionMethod preferredCompression = COMPRESS_METHOD_DEFAULT) = 0;
     virtual void addPropBin(const char *xpath, size32_t size, const void *data) = 0;
     virtual void appendPropBin(const char *xpath, size32_t size, const void *data) = 0;
 

@@ -289,10 +289,19 @@ export function updateState(key: string, val?: string | string[] | number | bool
     globalHistory.replaceState(state, "");
 }
 
-export function navCategory(hash: string): string {
-    let category = hash.split("/").slice(0, 2).join("/");
-    if (category.indexOf("?") > -1) {
-        category = category.substring(0, category.indexOf("?"));
+export function navCategory(hashPath: string, depth: number = 1): string {
+    const indexOfExclamation = hashPath.indexOf("!");
+    if (indexOfExclamation !== -1) {
+        const indexOfSlash = hashPath.indexOf("/", indexOfExclamation);
+        if (indexOfSlash !== -1) {
+            hashPath = hashPath.substring(0, indexOfExclamation) + hashPath.substring(indexOfSlash);
+        }
+    }
+
+    let category = hashPath.split("/").slice(0, depth + 1).join("/");
+    const indexOfQuestion = category.indexOf("?");
+    if (indexOfQuestion !== -1) {
+        category = category.substring(0, indexOfQuestion);
     }
     return category;
 }

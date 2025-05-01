@@ -2717,7 +2717,7 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size
             trailer.blockSize = FASTCOMPRESSEDFILEBLOCKSIZE;
             trailer.recordSize = 0;
         }
-        else if ((_compMethod == COMPRESS_METHOD_LZ4) || (_compMethod == COMPRESS_METHOD_LZ4HC))
+        else if ((_compMethod == COMPRESS_METHOD_LZ4) || (_compMethod == COMPRESS_METHOD_LZ4HC) || (_compMethod == COMPRESS_METHOD_LZ4HC3))
         {
             trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
             trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
@@ -3116,6 +3116,18 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
+    class CLZ4HC3CompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "LZ4HC3"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4HC3; }
+        virtual ICompressor *getCompressor(const char *options) {
+            StringBuffer opts(options);
+            opts.append(',').append("hclevel=3"); // note extra leading comma will be ignored
+            return createLZ4Compressor(opts, true);
+        }
+        virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
+    };
     class CLZ4SCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -3195,7 +3207,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CRDiffCompressHandler());
     addCompressorHandler(new CRandRDiffCompressHandler());
     addCompressorHandler(new CFLZCompressHandler());
-    addCompressorHandler(new CLZ4HCCompressHandler());    
+    addCompressorHandler(new CLZ4HCCompressHandler());
+    addCompressorHandler(new CLZ4HC3CompressHandler());
     ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
     defaultCompressor.set(lz4Compressor);
     addCompressorHandler(lz4Compressor);
@@ -3262,6 +3275,8 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZMA;
         else if (strieq("LZ4HC", compStr))
             compMethod = COMPRESS_METHOD_LZ4HC;
+        else if (strieq("LZ4HC3", compStr))
+            compMethod = COMPRESS_METHOD_LZ4HC3;
         else if (strieq("LZ4", compStr))
             compMethod = COMPRESS_METHOD_LZ4;
         else if (strieq("LZ4SHC", compStr))
@@ -3289,6 +3304,8 @@ const char *translateFromCompMethod(unsigned compMethod)
             return "LZ4";
         case COMPRESS_METHOD_LZ4HC:
             return "LZ4HC";
+        case COMPRESS_METHOD_LZ4HC3:
+            return "LZ4HC3";
         case COMPRESS_METHOD_LZ4S:
             return "LZ4S";
         case COMPRESS_METHOD_LZ4SHC:

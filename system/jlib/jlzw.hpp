@@ -38,10 +38,12 @@ enum CompressionMethod
     COMPRESS_METHOD_LZW_LITTLE_ENDIAN,
     COMPRESS_METHOD_LZ4S,
     COMPRESS_METHOD_LZ4SHC,
+    COMPRESS_METHOD_LZ4HC3,
     COMPRESS_METHOD_LAST,
 
 
     COMPRESS_METHOD_AES = 0x80,
+    COMPRESS_METHOD_DEFAULT = 0xFF,
     COMPRESS_METHOD_LZWLEGACY = 1,  // Matches value of boolean 'true' used to indicate LZW little endian compression by legacy compressToBuffer
 };
 

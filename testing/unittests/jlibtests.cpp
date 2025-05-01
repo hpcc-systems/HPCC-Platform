@@ -60,6 +60,7 @@ public:
         CPPUNIT_TEST(testTraceConfig);
         CPPUNIT_TEST(testRootServerSpan);
         CPPUNIT_TEST(testPropegatedServerSpan);
+        CPPUNIT_TEST(testGeneratedGlobalID);
         CPPUNIT_TEST(testInvalidPropegatedServerSpan);
         CPPUNIT_TEST(testInternalSpan);
         CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
@@ -911,9 +912,28 @@ protected:
         }
     }
 
+    void testGeneratedGlobalID()
+    {
+        StringArray emptyHeadersContainer;
+
+        OwnedActiveSpanScope serverSpan1 = queryTraceManager().createServerSpan("StringArrayPropegatedServerSpan1", emptyHeadersContainer, SpanFlags::EnsureGlobalId);
+        Owned<IProperties> retrievedSpanCtxAttributes1 = createProperties();
+        serverSpan1->getSpanContext(retrievedSpanCtxAttributes1.get());
+        const char * guid1 = retrievedSpanCtxAttributes1->queryProp(kGlobalIdHttpHeaderName);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty GlobalID detected", false, isEmptyString(guid1));
+
+        OwnedActiveSpanScope serverSpan2 = queryTraceManager().createServerSpan("StringArrayPropegatedServerSpan2", emptyHeadersContainer, SpanFlags::EnsureGlobalId);
+        Owned<IProperties> retrievedSpanCtxAttributes2 = createProperties();
+        serverSpan2->getSpanContext(retrievedSpanCtxAttributes2.get());
+        const char * guid2 = retrievedSpanCtxAttributes2->queryProp(kGlobalIdHttpHeaderName);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty GlobalID detected", false, isEmptyString(guid2));
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected duplicate GlobalID value detected", false, strsame(guid1, guid2));
+    }
+
     void testStringArrayPropegatedServerSpan()
     {
-         StringArray mockHTTPHeadersSA;
+        StringArray mockHTTPHeadersSA;
         //mock opentel traceparent context 
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
         //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
@@ -1087,6 +1107,11 @@ void testEncodeCSVColumn()
         source.set("abbabaabaaaababaababababaaabababababbabbbbabbabbbbbbaa");
         source.replaceString("abab", "");
         CPPUNIT_ASSERT_EQUAL_STR("abbabaabaaaaaaabbabbbbabbabbbbbbaa", source.str());
+
+        // HPCC-32795
+        source.set("ou=roxieuser,ou=hpccinternal,ou=files,ou=dataland_ecl");
+        source.replaceString("ou=files,ou=dataland_ecl", nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("ou=roxieuser,ou=hpccinternal,", source.str());
     }
 };
 
