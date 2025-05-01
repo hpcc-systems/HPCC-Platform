@@ -640,7 +640,13 @@ void CHThorDiskWriteActivity::open()
         rwFlags |= rw_grouped;
     if (true) // MORE: Should this be controlled by an activity hint/flag?
         rwFlags |= rw_crc;
-    IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
+
+    IExtRowWriter * writer = nullptr;
+    if (useGenericReadWrites)
+        // providerOptions ignored for now
+        writer = createRowWriter(diskout, rowIf, formatOptions, rwFlags);
+    else
+        writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
 
 }
