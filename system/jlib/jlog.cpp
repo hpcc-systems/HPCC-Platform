@@ -2395,7 +2395,7 @@ LogHandlerFormat hasLogFormatChanged(const IPropertyTree *logConfig)
         else if (streq(newFormatString, "table"))
             newFormat = LOGFORMAT_table;
         else
-            LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", newFormatString);
+            OWARNLOG("JLog: Invalid log format configuration detected '%s'!", newFormatString);
     }
     return currentFormat != newFormat ? newFormat : LOGFORMAT_undefined;
 }
