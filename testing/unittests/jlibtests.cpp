@@ -1087,6 +1087,11 @@ void testEncodeCSVColumn()
         source.set("abbabaabaaaababaababababaaabababababbabbbbabbabbbbbbaa");
         source.replaceString("abab", "");
         CPPUNIT_ASSERT_EQUAL_STR("abbabaabaaaaaaabbabbbbabbabbbbbbaa", source.str());
+
+        // HPCC-32795
+        source.set("ou=roxieuser,ou=hpccinternal,ou=files,ou=dataland_ecl");
+        source.replaceString("ou=files,ou=dataland_ecl", nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("ou=roxieuser,ou=hpccinternal,", source.str());
     }
 };
 
