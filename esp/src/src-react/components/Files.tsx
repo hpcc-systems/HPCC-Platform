@@ -152,8 +152,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
                 sortable: false,
-                formatter: (_protected) => {
-                    if (_protected === true) {
+                formatter: (_protected, row) => {
+                    if (row.IsProtected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
@@ -165,8 +165,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 headerTooltip: nlsHPCC.Compressed,
                 width: 16,
                 sortable: false,
-                formatter: (compressed) => {
-                    if (compressed === true) {
+                formatter: (_compressed, row) => {
+                    if (row.IsCompressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
                     return "";
