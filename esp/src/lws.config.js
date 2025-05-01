@@ -29,6 +29,7 @@ let rewrite = [
     { from: "/esp/lock", to: protocol + "://" + ip + ":" + port + "/esp/lock" },
     { from: "/esp/reset_session_timeout", to: protocol + "://" + ip + ":" + port + "/esp/reset_session_timeout" },
     { from: "/esp/getauthtype", to: protocol + "://" + ip + ":" + port + "/esp/getauthtype" },
+    { from: "/esp/getauthtype.json", to: protocol + "://" + ip + ":" + port + "/esp/getauthtype.json" },
     { from: "/esp/files/esp/getauthtype", to: protocol + "://" + ip + ":" + port + "/esp/getauthtype" },
     { from: "/esp/files/esp/lock", to: protocol + "://" + ip + ":" + port + "/esp/lock" },
     { from: "/esp/unlock.json", to: protocol + "://" + ip + ":" + port + "/esp/unlock.json" },

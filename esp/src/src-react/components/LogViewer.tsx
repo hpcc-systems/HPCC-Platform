@@ -23,7 +23,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     const [infoChecked, setInfoChecked] = React.useState(true);
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
-    const [log, lastUpdate] = useECLWatchLogger();
+    const { log, lastUpdate } = useECLWatchLogger();
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,

@@ -88,7 +88,8 @@ void usage(const char * action = nullptr)
                "   results <workunits> - Dump results from specified workunits\n"
                "   info <workunits> <filter>\n"
                "                       - Display information from a workunit\n"
-               "   analyze <workunit>  - Analyse the workunit to highlight potential cost savings\n"
+               "   analyse <workunit> [UPDATEWU=1] [GRAPH=graph_name]\n"
+               "                       - Analyse workunit to highlight potential cost savings\n"
                "\n"
                "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
                "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
@@ -239,7 +240,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     else if (stricmp(action, "analyze")==0 || stricmp(action, "analyse")==0)
     {
         // can't calculate cost in terms of money (pricing table not available and size of cluster not known here)
-        analyseAndPrintIssues(&w, 0, globals->getPropBool("UPDATEWU"));
+        analyseAndPrintIssues(&w, globals->queryProp("graph"), 0, globals->getPropBool("UPDATEWU"));
     }
     else if (stricmp(action, "critical")==0)
     {

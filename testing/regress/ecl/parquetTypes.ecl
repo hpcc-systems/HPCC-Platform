@@ -28,6 +28,7 @@ compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
 IMPORT Std;
 IMPORT Parquet;
 
+dropZoneName := Std.File.GetDefaultDropZoneName();
 dropzoneDirectory := Std.File.GetDefaultDropZone() + '/regress/parquet/' + WORKUNIT + '-';
 
 // Covers data types supported by ECL and Arrow
@@ -357,17 +358,17 @@ SEQUENTIAL(
     OUTPUT(setResult, NAMED('SetTest')),
     // Clean up temporary files
     PARALLEL(
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'BooleanTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'IntegerTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UnsignedTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'RealTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'DecimalTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'StringTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'DataTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'VarStringTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'QStringTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UTF8Test.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'UnicodeTest.parquet'),
-        FileServices.DeleteExternalFile('.', dropzoneDirectory + 'SetTest.parquet')
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'BooleanTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'IntegerTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'UnsignedTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'RealTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'DecimalTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'StringTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'DataTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'VarStringTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'QStringTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'UTF8Test.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'UnicodeTest.parquet', dropZoneName),
+        FileServices.DeleteExternalFile('', dropzoneDirectory + 'SetTest.parquet', dropZoneName)
     )
 );
