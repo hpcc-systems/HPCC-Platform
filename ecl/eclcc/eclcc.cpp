@@ -156,38 +156,19 @@ static void restoreSignalHandlers()
 //If eclcc is terminated while a git fetch operation is in process then there are situations where orphaned
 //lock files are left in the directory.  To avoid this, prevent termination until the git fetch is complete.
 static std::atomic<unsigned> terminateRequests = 0;
-static void sighandler(int signum, siginfo_t *info, void *extra)
+static bool eclccAbortHandler()
 {
     if (!checkAbortGitFetch() && (++terminateRequests < 2))
     {
         //Delaying termination while fetching from git.  Terminate 2 times (or use kill -9) to force closure.
         //Cannot output any logging here because that is not a safe function to call from an interupt handler
+        return false;
     }
     else
     {
         enableMemLeakChecking(false);
-        _exit(2);
+        return true;
     }
-}
-
-static void installSignalHandlers()
-{
-    struct sigaction act;
-    act.sa_sigaction = &sighandler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = SA_SIGINFO; // set so sa_sigaction field is used
-    sigaction(SIGTERM, &act, nullptr);
-    sigaction(SIGINT, &act, nullptr);
-}
-
-static void restoreSignalHandlers()
-{
-    struct sigaction act;
-    act.sa_handler = SIG_DFL;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;       // sa_handler field is used
-    sigaction(SIGTERM, &act, nullptr);
-    sigaction(SIGINT, &act, nullptr);
 }
 
 void initLeakCheck(const char *)
@@ -621,9 +602,11 @@ int main(int argc, const char *argv[])
             queryCodeSigner().initForContainer();
         }
 #endif
-        installSignalHandlers();
-        exitCode = doMain(argc, argv);
-        restoreSignalHandlers();
+
+        {
+            LocalAbortHandler abortHandler(eclccAbortHandler);
+            exitCode = doMain(argc, argv);
+        }
         stopPerformanceMonitor();
     }
     catch (IException *E)
