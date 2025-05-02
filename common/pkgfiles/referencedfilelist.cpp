@@ -311,7 +311,10 @@ public:
     {
         dfu_queue.set(queue);
     }
-
+    virtual void setKeyCompression(const char * _keyCompression) override
+    {
+        keyCompression.set(_keyCompression);
+    }
 
 public:
     Owned<IUserDescriptor> user;
@@ -322,6 +325,7 @@ public:
     StringAttr remotePrefix;
     StringAttr jobName; //used to populate DFU job name, but could be used elsewhere
     StringAttr dfu_queue;
+    StringAttr keyCompression;
     bool allowForeign;
     bool allowSizeCalc;
 };
@@ -1245,6 +1249,9 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
             publisher->setQueue(dfuQueueName);
             publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
             publisherWuid.set(publisher->queryId());
+
+            if (keyCompression)
+                publisher->queryUpdateOptions()->setKeyCompression(keyCompression);
         }
     }
 

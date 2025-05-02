@@ -10512,9 +10512,9 @@ void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph)
     IPropertyTree *xgmml = p->setPropTree("xgmml");
     MemoryBuffer mb;
     _graph->serialize(mb);
-    // Note - we could compress further but that would introduce compatibility concerns, so don't bother
-    // Cassandra workunit code actually lzw compresses the parent anyway
-    xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray());
+    // Compress using LZ4HC because it significantly reduces the size of the graph, and
+    // expands much faster - which is a notable part of the roxie startup time.
+    xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray(), COMPRESS_METHOD_LZ4HC);
     graph.setown(_graph);
 }
 

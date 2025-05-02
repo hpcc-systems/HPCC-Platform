@@ -33,6 +33,7 @@ typedef enum
     FFTutf16, FFTutf16be, FFTutf16le,
     FFTutf32, FFTutf32be, FFTutf32le,
     FFTrecfmvb, FFTrecfmv, FFTvariablebigendian,
+    FFTkey,
     FFTlast
  } FileFormatType;
 
@@ -45,6 +46,7 @@ constexpr const char * FileFormatTypeStr[] =
         "FFTutf16", "FFTutf16be", "FFTutf16le",
         "FFTutf32", "FFTutf32be", "FFTutf32le",
         "FFTrecfmvb", "FFTrecfmv", "FFTvariablebigendian",
+        "FFTkey",
         "FFTlast"
 };
 enum { FTactionpull, FTactionpush, FTactionpartition };

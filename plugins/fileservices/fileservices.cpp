@@ -2996,7 +2996,6 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteExternalFile(ICodeContext *ctx,c
 {
     implementDeleteExternalFile(ctx,location,path,nullptr);
 }
-
 FILESERVICES_API void FILESERVICES_CALL fsDeleteExternalFile_v2(ICodeContext *ctx,const char *location,const char *path,const char *planename)
 {
     implementDeleteExternalFile(ctx,location,path,planename);
@@ -3334,6 +3333,15 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
     if (dropZones->first())
         dropZones->query().getProp("@prefix", dropZonePath);        // Why the directory? seems a very stange choice
     return strdup(dropZonePath.str());
+}
+
+FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZoneName()
+{
+    StringBuffer dropZoneName;
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[@category='lz']");
+    if (dropZones->first())
+        dropZones->query().getProp("@name", dropZoneName);
+    return strdup(dropZoneName.str());
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)

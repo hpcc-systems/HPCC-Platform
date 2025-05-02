@@ -503,7 +503,6 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
     return { "", 0 };
 }
 
-
 static unsigned podInfoInitCBId = 0;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

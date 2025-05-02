@@ -368,7 +368,6 @@ void WuHotspotResult::reportTime()
 }
 
 //-----------------------------------------------------------------------------------------------------------
-
 void WuScope::applyRules(WorkunitRuleAnalyser & analyser)
 {
     for (auto & cur : scopes)
@@ -2111,19 +2110,43 @@ void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPrope
     analyser.update(wu);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerHour, bool updatewu)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu)
 {
+    printf("Analyze %s", wu->queryWuid());
+    if (optGraph)
+        printf(" (graph %s)\n", optGraph);
+    else
+        printf("\n");
     WorkunitRuleAnalyser analyser;
-    analyser.applyConfig(nullptr, wu, costPerHour);
-    analyser.analyse(wu, nullptr);
-    analyser.applyRules();
+    StringBuffer timingInfo;
+    CCycleTimer totalTimer;
+    {
+        CCycleTimer collateTimer;
+        analyser.applyConfig(nullptr, wu, costPerHour);
+        analyser.analyse(wu, optGraph);
+        timingInfo.append(" collate ");
+        formatStatistic(timingInfo, cycle_to_nanosec(collateTimer.elapsedCycles()), SMeasureTimeNs);
+    }
+    {
+        CCycleTimer analyzeTimer;
+        analyser.applyRules();
+        timingInfo.append(" analyze ");
+        formatStatistic(timingInfo, cycle_to_nanosec(analyzeTimer.elapsedCycles()), SMeasureTimeNs);
+    }
+
     analyser.print();
     if (updatewu)
     {
+        CCycleTimer updateTimer;
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions(CostOptimizerName);
         analyser.update(lockedwu);
+        timingInfo.append(" update ");
+        formatStatistic(timingInfo, cycle_to_nanosec(updateTimer.elapsedCycles()), SMeasureTimeNs);
     }
+    timingInfo.append(" total ");
+    formatStatistic(timingInfo, cycle_to_nanosec(totalTimer.elapsedCycles()), SMeasureTimeNs);
+    printf("Timings:%s\n", timingInfo.str());
 }
 
 /*

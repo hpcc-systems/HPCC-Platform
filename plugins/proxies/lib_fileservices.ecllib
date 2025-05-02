@@ -107,6 +107,7 @@ export FileServices := SERVICE : plugin('fileservices'), time
   DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec';
   varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL';
   varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone';
+  varstring GetDefaultDropZoneName() : c,once,entrypoint='fsGetDefaultDropZoneName';
   dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones';
   dataset(FsLandingZoneRecord) GetLandingZones() : c,context,entrypoint='fsGetLandingZones';
   integer4 GetExpireDays(const varstring lfn) : c,context,entrypoint='fsGetExpireDays';

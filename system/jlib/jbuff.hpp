@@ -178,6 +178,7 @@ public:
     const byte *    readDirect(size32_t len);                                       // for efficiency
     MemoryBuffer &  readPacked(unsigned & value);
     MemoryBuffer &  readPacked(unsigned __int64 & value);
+    MemoryBuffer &  readOpt(StringAttr & value);                // read but set to null if blank
 
     inline MemoryBuffer &  readMemSize(memsize_t & value) { __int64 val; read(val); value = (memsize_t)val; assertex(val == (__int64) value); return *this; }
     MemoryBuffer &  skip(unsigned len);

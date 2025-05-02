@@ -795,11 +795,11 @@ ChangeInfo *CClientRemoteTree::queryChanges()
     return connection.queryChangeInfo(*this);
 }
 
-void CClientRemoteTree::setLocal(size32_t size, const void *data, bool _binary)
+void CClientRemoteTree::setLocal(size32_t size, const void *data, bool _binary, CompressionMethod compressType)
 {
     clearState(CPS_PropAppend);
     mergeState(CPS_Changed);
-    PARENT::setLocal(size, data, _binary);
+    PARENT::setLocal(size, data, _binary, compressType);
 }
 
 void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary)
@@ -965,10 +965,10 @@ void CClientRemoteTree::setPropReal(const char *xpath, double val)
     CRemoteTreeBase::setPropReal(xpath, val);
 }
 
-void CClientRemoteTree::setPropBin(const char *xpath, size32_t size, const void *data)
+void CClientRemoteTree::setPropBin(const char *xpath, size32_t size, const void *data, CompressionMethod preferredCompression)
 {
     CConnectionLock b(connection);
-    CRemoteTreeBase::setPropBin(xpath, size, data);
+    CRemoteTreeBase::setPropBin(xpath, size, data, preferredCompression);
 }
 
 IPropertyTree *CClientRemoteTree::setPropTree(const char *xpath, IPropertyTree *val)
@@ -1179,10 +1179,10 @@ IPropertyTree *CClientRemoteTree::collateData()
         if (queryValue())
         {
             bool binary=isBinary(NULL);
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, true, getCompressionType()), binary);
+            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, getCompressionType(), COMPRESS_METHOD_NONE), binary);
         }
         else
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(0, NULL, false, true, COMPRESS_METHOD_NONE), false);
+            ((PTree *)ct.queryTree())->setValue(new CPTValue(), false);
     }
     else if (CPS_PropAppend & state)
     {
@@ -1195,7 +1195,7 @@ IPropertyTree *CClientRemoteTree::collateData()
         MemoryBuffer mb;
         bool binary=isBinary(NULL);
         queryValue()->getValue(mb, true);
-        ((PTree *)ct.queryTree())->setValue(new CPTValue(mb.length()-from, mb.toByteArray()+from, binary), binary);
+        ((PTree *)ct.queryTree())->setValue(new CPTValue(mb.length()-from, mb.toByteArray()+from, binary, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT), binary);
     }
 
     Owned<IPropertyTree> childTree;

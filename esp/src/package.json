@@ -80,7 +80,6 @@
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-hook-form": "7.54.2",
-    "react-hot-toast": "2.5.1",
     "react-reflex": "4.2.7",
     "react-singleton-hook": "3.4.0",
     "react-sizeme": "3.0.2",

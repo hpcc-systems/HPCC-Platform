@@ -115,6 +115,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_INIT_PUBLISHER_WUID "--init-publisher-wuid"
 #define ECLOPT_DFU_QUEUE "--dfu-queue"
 #define ECLOPT_DFU_WAIT "--dfu-wait"
+#define ECLOPT_KEY_COMPRESSION "--key-compression"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ACTIVE_ONLY "--active-only"
@@ -466,6 +467,7 @@ public:
         req->setStopIfFilesCopied(optStopIfFilesCopied);
         req->setOnlyCopyFiles(optOnlyCopyFiles);
         req->setDfuPublisherWuid(optDfuPublisherWuid);
+        req->setKeyCompression(optKeyCompression);
     }
 
     void preallocatePublisherWuid(EclCmdCommon &cmd);
@@ -504,6 +506,8 @@ public:
             return true;
         if (iter.matchFlag(optOnlyCopyFiles, ECLOPT_ONLY_COPY_FILES))
             return true;
+        if (iter.matchOption(optKeyCompression, ECLOPT_KEY_COMPRESSION))
+            return true;
         return false;
     }
     void usage()
@@ -521,13 +525,15 @@ public:
             "   --stop-if-files-copied If all files already exist, publish the query.\n"
             "                          Otherwise, copy the files needed for the query, but don't publish the query\n"
             "   --init-publisher-wuid  Allocate and display the publisher wuid immediately, so that it can be tracked\n"
-            "                           even if the command line is disconnected\n",
+            "                           even if the command line is disconnected\n"
+            "   --keyCompression       When copyying a key file, allows the copy to be re-encoded using the new compression\n",
             stdout);
     }
 public:
     StringAttr optDfuPublisherWuid;
     StringAttr optRemoteStorage;
     StringAttr optDfuQueue;
+    StringAttr optKeyCompression;
     unsigned optDfuWaitSec = 1800; //30 minutes
     bool optDfuCopyFiles = false;
     bool optDfuOverwrite = false;

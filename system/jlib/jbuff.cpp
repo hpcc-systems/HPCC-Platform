@@ -728,6 +728,19 @@ MemoryBuffer & MemoryBuffer::read(StringAttr & value)
     return *this;
 }
 
+MemoryBuffer & MemoryBuffer::readOpt(StringAttr & value)
+{
+    char * src = buffer + readPos;
+    size32_t len = (size32_t)strlen(src);
+    CHECKREADPOS(len+1);
+    if (len)
+        value.set(src, len);
+    else
+        value.clear();
+    readPos += (len+1);
+    return *this;
+}
+
 MemoryBuffer & MemoryBuffer::read(StringBuffer & value)
 {
     char * src = buffer + readPos;

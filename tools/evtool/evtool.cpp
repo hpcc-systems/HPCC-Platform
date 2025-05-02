@@ -207,3 +207,23 @@ CEvtCommandGroup::CEvtCommandGroup(CmdMap&& _commands)
     : commands(std::move(_commands))
 {
 }
+
+bool CEventFileOp::ready() const
+{
+    return !inputPath.isEmpty();
+}
+
+void CEventFileOp::setInputPath(const char* path)
+{
+    inputPath.set(path);
+}
+
+bool CStreamingEventFileOp::ready() const
+{
+    return CEventFileOp::ready() && out.get();
+}
+
+void CStreamingEventFileOp::setOutput(IBufferedSerialOutputStream& _out)
+{
+    out.set(&_out);
+}

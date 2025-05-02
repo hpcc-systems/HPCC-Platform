@@ -1100,7 +1100,7 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
                     if (lastCopied != targetOffset && likely(lastCopied != offset))
                         memcpy(buffer + targetOffset, buffer + lastCopied, offset - lastCopied);
                     targetOffset += offset - lastCopied;
-                    memcpy(buffer + targetOffset, newStr, newlen);
+                    memcpy_iflen(buffer + targetOffset, newStr, newlen);
                     offset += oldlen;
                     targetOffset += newlen;
                     lastCopied = offset;
