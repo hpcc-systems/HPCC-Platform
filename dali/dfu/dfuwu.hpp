@@ -178,6 +178,7 @@ interface IConstDFUoptions : extends IInterface
     virtual StringBuffer &getUMask(StringBuffer &str)const =0;
     virtual int getExpireDays() const = 0;
     virtual bool getNoCommon() const = 0;
+    virtual const char * queryKeyCompression() const = 0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -220,6 +221,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setUMask(const char *val) = 0;
     virtual void setExpireDays(int val) = 0;
     virtual void setNoCommon(bool val=false) = 0;
+    virtual void setKeyCompression(const char * value) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface

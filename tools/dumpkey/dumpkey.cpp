@@ -242,6 +242,7 @@ int main(int argc, const char **argv)
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();
+            bool isTLK = index->isTopLevelKey();
             if (optFullHeader)
             {
                 Owned<CKeyHdr> header = new CKeyHdr;
@@ -439,14 +440,16 @@ int main(int argc, const char **argv)
                     bool isVariable = outmeta->isVariableSize();
                     size32_t fileposSize = hasTrailingFileposition(outmeta->queryTypeInfo()) ? sizeof(offset_t) : 0;
                     size32_t maxDiskRecordSize;
-                    if (isVariable)
+                    if (isTLK)
+                        maxDiskRecordSize = keyedSize;
+                    else if (isVariable)
                         maxDiskRecordSize = KEYBUILD_MAXLENGTH;
                     else
                         maxDiskRecordSize = outmeta->getFixedSize()-fileposSize;
                     const RtlRecord &indexRecord = outmeta->queryRecordAccessor(true);
                     size32_t keyedSize = indexRecord.getFixedOffset(indexRecord.getNumKeyedFields());
                     MyIndexWriteArg helper(filename, globals->queryProp("recode"), outmeta);  // MORE - is lifetime ok? Bloom support? May need longer lifetime once we add bloom support...
-                    keyBuilder.setown(createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, &helper, nullptr, false, false));
+                    keyBuilder.setown(createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, &helper, nullptr, false, index->isTopLevelKey()));
                 }
                 MyIndexVirtualFieldCallback callback(manager);
                 size32_t maxSizeSeen = 0;

@@ -358,6 +358,7 @@ protected:
     size32_t                transferBufferSize;
     StringAttr              encryptKey;
     StringAttr              decryptKey;
+    StringAttr              keyCompression;
     bool                    preserveCompression;
     offset_t                headerSize;
     offset_t                footerSize;

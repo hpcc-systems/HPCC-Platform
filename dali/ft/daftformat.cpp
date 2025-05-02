@@ -2386,6 +2386,9 @@ IOutputProcessor * createOutputProcessor(const FileFormat & format)
 
 IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid)
 {
+    if ((srcFormat.type == FFTkey) || (tgtFormat.type == FFTkey))
+        throwUnexpected();
+
     bool sameFormats = sameEncoding(srcFormat, tgtFormat);
     LOG(MCdebugProgressDetail, "createFormatProcessor(srcFormat.type:'%s', tgtFormat.type:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
     if (sameFormats)
