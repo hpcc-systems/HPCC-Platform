@@ -1036,32 +1036,33 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                // Check if subdirectory is a stripe directory
-                const char *dir = fname.str();
-                bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
-                if (isDirStriped) {
-                    dir++;
-                    while (*dir) {
-                        if (!isdigit(*(dir++))) {
-                            isDirStriped = false;
-                            break;
+                if (pdir==root && isPlaneStriped) {
+                    // Check if subdirectory is a stripe directory
+                    const char *dir = fname.str();
+                    bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
+                    if (isDirStriped) {
+                        dir++;
+                        while (*dir) {
+                            if (!isdigit(*(dir++))) {
+                                isDirStriped = false;
+                                break;
+                            }
+                        }
+                        if (isDirStriped) {
+                            // To properly match all file parts, we need to remove the stripe directory from the path
+                            // so that the cDirDesc hierarchy matches the logical scope hierarchy
+                            // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
+                            // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
+                            // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
+                            if (!scanDirectory(node,ep,path,drv,pdir,NULL))
+                                return false;
+
+                            path.setLength(dsz);
+                            continue;
                         }
                     }
-                    // Check that top level subdirectories match isPlaneStriped from plane details
-                    if ((pdir==root) && (isPlaneStriped != isDirStriped))
-                        OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
-                    if (isDirStriped) {
-                        // To properly match all file parts, we need to remove the stripe directory from the path
-                        // so that the cDirDesc hierarchy matches the logical scope hierarchy
-                        // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
-                        // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
-                        // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                        if (!scanDirectory(node,ep,path,drv,pdir,NULL))
-                            return false;
-
-                        path.setLength(dsz);
-                        continue;
-                    }
+                    // Top-level directory is not striped, but isPlaneStriped is true. Throw an error, but continue processing directory as normal
+                    OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
                 }
                 dirs.append(fname.str());
             }
