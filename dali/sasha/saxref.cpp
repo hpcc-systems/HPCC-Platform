@@ -366,6 +366,7 @@ struct cDirDesc
         if (!file) {
             if (!mem)
                 return NULL;
+            // dirPerPart is set to false during scanDirectories, and later updated in listOrphans by normalizeFileDesc
             file = cFileDesc::create(*mem,fn,nf,false,filenameLen);
             files.add(file);
         }
@@ -1035,7 +1036,7 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                // Check if subdirectory is a dirPerPart or stripe directory
+                // Check if subdirectory is a stripe directory
                 const char *dir = fname.str();
                 bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
                 if (isDirStriped) {
