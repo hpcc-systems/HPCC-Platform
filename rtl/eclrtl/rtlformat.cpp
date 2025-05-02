@@ -593,7 +593,7 @@ void CommonJsonWriter::outputString(unsigned len, const char *field, const char 
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
+    appendJSONStringValue(out, checkItemName(fieldname), len, (field ? field : ""), true);
 }
 
 void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)
@@ -678,7 +678,7 @@ void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *f
     if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONStringValue(out, checkItemName(fieldname), rtlUtf8Size(len, field), field, true);
+    appendJSONStringValue(out, checkItemName(fieldname), rtlUtf8Size(len, field), (field ? field : ""), true);
 }
 
 void CommonJsonWriter::prepareBeginArray(const char *fieldname)
