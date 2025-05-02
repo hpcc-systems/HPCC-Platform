@@ -31,7 +31,6 @@ class IndexWriteActivityMaster : public CMasterActivity
 {
     rowcount_t recordsProcessed = 0;
     unsigned __int64 duplicateKeyCount = 0;
-    unsigned __int64 cummulativeDuplicateKeyCount = 0;
     offset_t compressedFileSize = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
@@ -244,7 +243,6 @@ public:
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         updateActivityResult(container.queryJob().queryWorkUnit(), 0, helper->getSequence(), fileName, recordsProcessed);
 
-        cummulativeDuplicateKeyCount += duplicateKeyCount;
         // MORE - add in the extra entry somehow
         if (fileName.get())
         {
@@ -326,6 +324,7 @@ public:
             mb.read(r);
             mb.read(slaveDuplicateKeyCount);
 
+            statsCollection.setStatistic(slaveIdx, StNumDuplicateKeys, slaveDuplicateKeyCount);
             recordsProcessed += r;
             duplicateKeyCount += slaveDuplicateKeyCount;
 
@@ -403,7 +402,6 @@ public:
     virtual void getActivityStats(IStatisticGatherer & stats) override
     {
         CMasterActivity::getActivityStats(stats);
-        stats.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         diskAccessCost = calcDiskWriteCost(clusters, statsCollection.getStatisticSum(StNumDiskWrites));
         if (diskAccessCost)
             stats.addStatistic(StCostFileAccess, diskAccessCost);
