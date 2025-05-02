@@ -128,7 +128,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     //  Scopes Table  ---
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setScopeFilter(newValue || "");
+        setScopeFilter(newValue ?? "");
     }, []);
 
     const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, lineageSelection?: string, selection: IScope[] = []) => {

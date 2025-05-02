@@ -69,7 +69,7 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
             setResult(response.Result);
           })
           .catch(err => logger.error(err));
-          break;
+        break;
       case "archiveECLWorkUnit":
         sashaService.ArchiveWU({
           Wuid: wuid,
@@ -171,61 +171,61 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
             <TextField
               label={nlsHPCC.WUID}
               value={wuid}
-              onChange={(event, newValue?: string) => setWuid(newValue || "")}
+              onChange={(event, newValue?: string) => setWuid(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="Cluster"
               value={cluster}
-              onChange={(event, newValue?: string) => setCluster(newValue || "")}
+              onChange={(event, newValue?: string) => setCluster(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="Owner"
               value={owner}
-              onChange={(event, newValue?: string) => setOwner(newValue || "")}
+              onChange={(event, newValue?: string) => setOwner(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="Job Name"
               value={jobName}
-              onChange={(event, newValue?: string) => setJobName(newValue || "")}
+              onChange={(event, newValue?: string) => setJobName(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="State"
               value={stateFilter}
-              onChange={(event, newValue?: string) => setStateFilter(newValue || "")}
+              onChange={(event, newValue?: string) => setStateFilter(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="From Date"
               value={fromDate}
-              onChange={(event, newValue?: string) => setFromDate(newValue || "")}
+              onChange={(event, newValue?: string) => setFromDate(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="To Date"
               value={toDate}
-              onChange={(event, newValue?: string) => setToDate(newValue || "")}
+              onChange={(event, newValue?: string) => setToDate(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="Before WU"
               value={beforeWU}
-              onChange={(event, newValue?: string) => setBeforeWU(newValue || "")}
+              onChange={(event, newValue?: string) => setBeforeWU(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="After WU"
               value={afterWU}
-              onChange={(event, newValue?: string) => setAfterWU(newValue || "")}
+              onChange={(event, newValue?: string) => setAfterWU(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <TextField
               label="Output Fields"
               value={outputFields}
-              onChange={(event, newValue?: string) => setOutputFields(newValue || "")}
+              onChange={(event, newValue?: string) => setOutputFields(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
             <Stack horizontal tokens={{ childrenGap: 20 }}>
@@ -256,7 +256,7 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
             <TextField
               label={nlsHPCC.WUID}
               value={wuid}
-              onChange={(event, newValue?: string) => setWuid(newValue || "")}
+              onChange={(event, newValue?: string) => setWuid(newValue ?? "")}
               styles={{ fieldGroup: { width: 400 } }}
             />
           )
