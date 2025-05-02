@@ -388,6 +388,8 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
 
 bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthReportRequest &req, IEspGetHealthReportResponse &resp)
 {
+    double version = context.getClientVersion();
+
     IEspLogAccessStatus * status = createLogAccessStatus("","");
 
     StringBuffer report;
@@ -437,7 +439,11 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
     }
 
     status->setCode(code.str());
-    status->setMessages(messages);
+
+    if(version > 1.07)
+        status->setMessageArray(messages);
+    else // prior to 1.08, the messages field was incorrectly declared as str code type
+        status->setMessages(messages.length() > 0 ? messages.item(0) : "");
     resp.setStatus(*status);
 
     return true;
