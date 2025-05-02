@@ -508,6 +508,7 @@ ESPrequest [nil_remove] Copy
     [min_ver("1.12")] bool preserveCompression(true);
     [min_ver("1.14")] string DFUServerQueue;
     [min_ver("1.17")] int ExpireDays;
+    [min_ver("1.27")] string KeyCompression;
 };
 
 ESPresponse [exceptions_inline]
@@ -727,7 +728,7 @@ ESPresponse [exceptions_inline, nil_remove] GetRemoteTargetsResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.26"),
+    version("1.27"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);

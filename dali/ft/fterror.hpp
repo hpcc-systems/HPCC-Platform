@@ -86,6 +86,8 @@
 #define DFTERR_LocalhostAddressUsed             8113
 #define DFTERR_InvalidSuperindexCopy            8114
 #define DFTERR_NoMatchingDropzonePlane          8115
+#define DFTERR_CannotConvertKeyFile             8116
+#define DFTERR_CannotCompressKey                8117
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -159,6 +161,9 @@
 #define DFTERR_NoMatchingDropzonePlane_Text     "No Drop Zone for '%s'"
 #define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
 #define DFTERR_InvalidSuperindexCopy_Text       "Source file %s is a super index file but copying as a simple logical file"
+#define DFTERR_CannotConvertKeyFile_Text        "Cannot convert key file to a different format"
+#define DFTERR_CannotCompressKey_Text           "Compress output is not compatible with copying a key file"
+
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"
 #define DFTERR_NoSolarisDir_Text                "Directory not yet supported for solaris"

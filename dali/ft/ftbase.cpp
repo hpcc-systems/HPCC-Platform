@@ -30,10 +30,12 @@
 #include "daftmc.hpp"
 #include "dasds.hpp"
 #include "daftcfg.hpp"
-#include "environment.hpp"
-#include "dalienv.hpp"
 #include "rmtspawn.hpp"
 
+#ifndef _CONTAINERIZED
+#include "environment.hpp"
+#include "dalienv.hpp"
+#endif
 
 //----------------------------------------------------------------------------
 
@@ -184,7 +186,7 @@ const char * FFTtext[FFTlast] = {
     "utf-8", "utf-8n",
     "utf-16", "utf-16be", "utf-16le",
     "utf-32", "utf-32be", "utf-32le",
-    "recfm-vb", "recfm-v", "variablebigendian"
+    "recfm-vb", "recfm-v", "variablebigendian", "key"
 };
 
 void FileFormat::deserialize(MemoryBuffer & in)
@@ -243,6 +245,7 @@ unsigned FileFormat::getUnitSize() const
     case FFTcsv:
     case FFTutf:
     case FFTutf8: case FFTutf8n:
+    case FFTkey:
         return 1;
     case FFTutf16: case FFTutf16be: case FFTutf16le:
         return 2;
@@ -346,6 +349,13 @@ bool FileFormat::restore(IPropertyTree * props)
         type = FFTrecfmvb;
     else if ((stricmp(format, "recfmv")==0)||(stricmp(format, "recfm-v")==0))
         type = FFTrecfmv;
+#if 0
+    else if (strieq(props->queryProp("@kind"), "key"))
+    {
+        //MORE: Will this cause issues for backward compatibility?
+        type = FFTkey;
+    }
+#endif
     else if (props->hasProp(FPrecordSize))
     {
         type = FFTfixed;
@@ -401,6 +411,10 @@ void FileFormat::save(IPropertyTree * props)
     case FFTrecfmv:
         props->setProp(FPformat, FFTtext[type]);
         props->setProp(FPkind, FFTtext[FFTrecfmv]);
+        break;
+    case FFTkey:
+        props->setProp(FPformat, FFTtext[type]);
+        props->setProp(FPkind, FFTtext[type]);
         break;
     default:
         PROGLOG("unknown type %d",(int)type);
@@ -751,7 +765,9 @@ bool daftAbortHandler()
     // hit ^C 3 times to really stop it...
     if (breakCount++ >= 2)
     {
+#ifndef _CONTAINERIZED
         closeEnvironment();
+#endif
         return true;
     }
     return false;

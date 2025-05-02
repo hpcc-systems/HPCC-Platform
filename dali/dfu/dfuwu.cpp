@@ -2068,6 +2068,10 @@ public:
         return queryRoot()->queryProp("@splitPrefix");
     }
 
+    const char * queryKeyCompression() const override
+    {
+        return queryRoot()->queryProp("@keyCompression");
+    }
 
     void setNoDelete(bool val)
     {
@@ -2330,6 +2334,10 @@ public:
     void setNoCommon(bool val)
     {
         queryRoot()->setPropBool("@noCommon",val);
+    }
+    virtual void setKeyCompression(const char * value) override
+    {
+        queryRoot()->setProp("@keyCompression", value);
     }
 };
 

@@ -34,15 +34,23 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/remote 
-         ./../../fs/dafsclient
-         ./../../system/mp 
-         ./../base 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../common/environment
-         ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
     )
+
+if (NOT CONTAINERIZED)
+    include_directories ( ${HPCC_SOURCE_DIR}/common/environment )
+endif()
 
 HPCC_ADD_LIBRARY( dalift SHARED ${SRCS} )
 set_target_properties (dalift PROPERTIES 
@@ -52,6 +60,9 @@ set_target_properties (dalift PROPERTIES
 install ( TARGETS dalift RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( dalift 
          jlib
+         eclrtl
+         jhtree
+         hql
          mp 
          hrpc 
          dafsclient

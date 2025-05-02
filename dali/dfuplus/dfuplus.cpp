@@ -932,6 +932,7 @@ int CDfuPlusHelper::copy()
         req->setExpireDays(globals->getPropInt("expireDays"));
     if(globals->hasProp("ensure"))
         req->setEnsure(globals->getPropBool("ensure"));
+    req->setKeyCompression(globals->queryProp("keyCompression"));
 
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
     const char* wuid = result->getResult();

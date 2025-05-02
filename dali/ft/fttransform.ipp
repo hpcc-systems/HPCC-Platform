@@ -245,6 +245,7 @@ protected:
     size32_t                transferBufferSize;
     StringAttr              encryptKey;
     StringAttr              decryptKey;
+    StringAttr              keyCompression;
     int                     fileUmask;
 };
 

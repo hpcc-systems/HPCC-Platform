@@ -2803,6 +2803,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         }
         wuFSpecDest->setLogicalName(dstname);
         wuFSpecDest->setFileMask(fileMask.str());
+
         wuOptions->setOverwrite(req.getOverwrite());
         wuOptions->setEnsure(req.getEnsure());
         wuOptions->setPreserveCompression(req.getPreserveCompression());
@@ -2813,6 +2814,10 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             wuOptions->setNoSplit(true);
         if (!req.getNoCommon_isNull())
             wuOptions->setNoCommon(req.getNoCommon());
+
+        const char * keyCompression = req.getKeyCompression();
+        if (keyCompression)
+            wuOptions->setKeyCompression(keyCompression);
 
         if (bRoxie)
         {
