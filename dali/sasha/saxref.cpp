@@ -470,7 +470,7 @@ struct cMessage: public CInterface
 };
 
 
-unsigned getDirPerPartNum(cDirDesc *dir)
+static unsigned getDirPerPartNum(cDirDesc *dir)
 {
     StringBuffer dirName;
     dir->getName(dirName);
@@ -487,7 +487,7 @@ unsigned getDirPerPartNum(cDirDesc *dir)
     return num;
 }
 
-void normalizeFileDesc(cDirDesc *parent, cDirDesc *dir, const char *currentPath, CLargeMemoryAllocator *mem)
+static void normalizeFileDesc(cDirDesc *parent, cDirDesc *dir, const char *currentPath, CLargeMemoryAllocator *mem)
 {
     if (!isContainerized())
         return;
