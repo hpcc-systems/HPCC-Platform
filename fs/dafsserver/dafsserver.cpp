@@ -4932,10 +4932,6 @@ public:
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
 
-        ISpan* requestSpan = queryNullSpan();
-        if (fileInfo.remoteRequest)
-            requestSpan = fileInfo.remoteRequest->queryRequestSpan();
-
         StreamCmd cmd;
         const char *qCommand = requestTree->queryProp("command");
         if (!qCommand)
@@ -4952,11 +4948,7 @@ public:
         {
             auto it = streamCmdMap.find(qCommand);
             if (it == streamCmdMap.end())
-            {
-                IException* except = makeStringExceptionV(0, "Unrecognised stream command: %s", qCommand);
-                requestSpan->recordException(except);
-                throw except;
-            }
+                throw makeStringExceptionV(0, "Unrecognised stream command: %s", qCommand);
             cmd = it->second;
         }
 
@@ -4970,11 +4962,7 @@ public:
         else if (strieq("json", outputFmtStr))
             outputFormat = outFmt_Json;
         else
-        {
-            IException* except = MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
-            requestSpan->recordException(except);
-            throw except;
-        }
+            throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
 
         switch (cmd)
         {
@@ -5040,6 +5028,10 @@ public:
             }
             case StreamCmd::CONTINUE:
             {
+                ISpan* requestSpan = queryNullSpan();
+                if (fileInfo.remoteRequest)
+                    requestSpan = fileInfo.remoteRequest->queryRequestSpan();
+
                 if (0 == cursorHandle)
                 {
                     IException* except = createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'continue' command");
