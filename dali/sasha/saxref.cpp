@@ -535,6 +535,9 @@ static void normalizeFileDesc(cDirDesc *parent, cDirDesc *dir, const char *curre
                             }
                             // mark part present in parent dir
                             file->setpresent(0, k);
+                            // carry over marked status
+                            if (dirPerPartFile->testmarked(0, k))
+                                file->setmarked(0, k);
                             // delete part from dir-per-part cDirDesc
                             dirPerPartDir->files.remove(dirPerPartFile);
                         }
