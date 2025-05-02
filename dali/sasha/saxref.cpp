@@ -517,6 +517,7 @@ static void normalizeFileDesc(cDirDesc *parent, cDirDesc *dir, const char *curre
                 StringBuffer fname;
                 file->getNameMask(fname);
 
+                cFileDesc *movedFile = nullptr;
                 for (unsigned k=0;k<file->N;k++)
                 {
                     cDirDesc *dirPerPartDir = parent->dirs.find(std::to_string(k+1).c_str(), false);
@@ -525,20 +526,18 @@ static void normalizeFileDesc(cDirDesc *parent, cDirDesc *dir, const char *curre
                         cFileDesc *dirPerPartFile = dirPerPartDir->files.find(fname,false);
                         if (dirPerPartFile)
                         {
-                            // Ensure file is created in parent dir
-                            cFileDesc *file = parent->files.find(fname, false);
-                            if (!file) {
-                                if (!mem)
-                                    return;
-                                file = cFileDesc::create(*mem,fname.str(),dirPerPartFile->N,true,dirPerPartFile->filenameLen);
-                                parent->files.add(file);
+                            if (movedFile == nullptr)
+                            {
+                                parent->files.add(dirPerPartFile);
+                                movedFile = dirPerPartFile;
+                                movedFile->isDirPerPart = true;
                             }
-                            // mark part present in parent dir
-                            file->setpresent(0, k);
-                            // carry over marked status
-                            if (dirPerPartFile->testmarked(0, k))
-                                file->setmarked(0, k);
-                            // delete part from dir-per-part cDirDesc
+                            else
+                            {
+                                movedFile->setpresent(0, k);
+                                if (dirPerPartFile->testmarked(0, k))
+                                    movedFile->setmarked(0, k);
+                            }
                             dirPerPartDir->files.remove(dirPerPartFile);
                         }
                     }
