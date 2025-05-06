@@ -54,6 +54,7 @@ bool CWsCloudEx::onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGe
 {
     try
     {
+
         Owned<CK8sResourcesInfoCache> k8sResourcesInfoCache = (CK8sResourcesInfoCache*) k8sResourcesInfoCacheReader->getCachedInfo();
         if (k8sResourcesInfoCache == nullptr)
             throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get POD Info. Please try later.");
@@ -62,7 +63,63 @@ bool CWsCloudEx::onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGe
         if (isEmptyString(podInfo))
             throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Unable to query POD Info. Please try later.");
 
-        resp.setResult(podInfo);
+        if (context.getClientVersion() < 1.02)
+        {
+            resp.setResult(podInfo);
+        } else {
+            Owned<IPropertyTree> podsTree = createPTreeFromJSONString(podInfo);
+            if (podsTree == nullptr)
+                throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Unable to parse POD Info.");
+
+            Owned<IPropertyTreeIterator> podsItr = podsTree->getElements("items");
+            IArrayOf<IEspPodItem> respPods;
+            ForEach(*podsItr)
+            {
+                Owned<IEspPodItem> respPod = createPodItem();
+                IPropertyTree& podTree = podsItr->query();
+
+                respPod->setName(podTree.queryProp("metadata/name"));
+                respPod->setStatus(podTree.queryProp("status/phase"));
+                respPod->setCreationTimestamp(podTree.queryProp("metadata/creationTimestamp"));
+
+                Owned<IPropertyTreeIterator> statuses = podTree.getElements("status/containerStatuses");
+                int containerCount = 0;
+                int totalRestarts = 0;
+                int readyCount = 0;
+                StringBuffer containerName;
+                ForEach(*statuses)
+                {
+                    containerCount++;
+                    IPropertyTree& status = statuses->query();
+                    if (status.getPropBool("ready"))
+                        readyCount++;
+                    totalRestarts += status.getPropInt("restartCount");
+                    if (isEmptyString(containerName) && !streq(status.queryProp("name"), "postrun"))
+                        containerName.set(status.queryProp("name"));
+                }
+
+                respPod->setContainerCount(containerCount);
+                respPod->setContainerRestartCount(totalRestarts);
+                respPod->setContainerReadyCount(readyCount);
+                respPod->setContainerName(containerName.str());
+
+                Owned<IPropertyTreeIterator> ports = podTree.getElements("//ports");
+                IArrayOf<IEspPort> respPorts;
+                ForEach(*ports)
+                {
+                    IPropertyTree& port = ports->query();
+                    Owned<IEspPort> respPort = createPort();
+                    respPort->setContainerPort(port.getPropInt("containerPort"));
+                    respPort->setName(port.queryProp("name"));
+                    respPort->setProtocol(port.queryProp("protocol"));
+                    respPorts.append(*respPort.getLink());
+                }
+                respPod->setPorts(respPorts);
+                respPods.append(*respPod.getLink());
+            }
+
+            resp.setPods(respPods);
+        }
     }
     catch(IException* e)
     {
@@ -149,10 +206,45 @@ bool CWsCloudEx::onGetServices(IEspContext& context, IEspGetServicesRequest& req
     return true;
 }
 
+// Note: metadata.namespace is only included to ensure the hpcc4j regression tests pass.
+// The metadata.labels.app.kubernetes.io/part-of is included to ensure compatibility with
+// older client code targeting versions <1.02. Because of the slash it does not render
+// correctly when converted to PTree and output as XML, which is OK because its not used
+// in the structured XML/SOAP response.
+constexpr const char* jsonpath = R"!!(
+{"{"}"items": [{range .items[*]}
+    {"{"}
+        "metadata": {"{"}
+            "name": "{.metadata.name}",
+            "namespace": "{.metadata.namespace}",
+            "creationTimestamp": "{.metadata.creationTimestamp}",
+            "labels": {"{"} "app.kubernetes.io/part-of": "{.metadata.labels.app\.kubernetes\.io/part-of}" {"}"}
+        {"}"},
+        "status": {"{"}
+            "phase": "{.status.phase}",
+            "containerStatuses": [{range .status.containerStatuses[*]}{"{"}"name": "{.name}","ready": {.ready},"restartCount": {.restartCount}{"}"},{end}]
+        {"}"},
+        "spec": {"{"}
+            "containers": [{range .spec.containers[*]} {"{"}
+                "ports": [{range .ports[*]} {"{"}
+                    "containerPort": {.containerPort},
+                    "name": "{.name}",
+                    "protocol": "{.protocol}"
+                {"}"},{end}]
+            {"}"},{end}]
+        {"}"}
+    {"}"},{end}]
+{"}"}
+)!!";
+
+
 void CK8sResourcesInfoCache::read()
 {
     StringBuffer podsBuf, servicesBuf;
-    readToBuffer("kubectl get pods --output=json", podsBuf);
+    // Due to how IPipeProcess parses parameters we need the jsonpath argument
+    // quoted as shown below, or it will be treated as multiple arguments.
+    VStringBuffer command("kubectl get pods -o 'jsonpath=%s'", jsonpath);
+    readToBuffer(command.str(), podsBuf);
     readToBuffer("kubectl get svc --output=json", servicesBuf);
 
     if (podsBuf.isEmpty() && servicesBuf.isEmpty())
@@ -160,7 +252,11 @@ void CK8sResourcesInfoCache::read()
 
     timeCached.setNow();
     if (!podsBuf.isEmpty())
+    {
+        // Remove trailing commas from json arrays to make it compatible with older client code
+        podsBuf.replaceString(",]", " ]");
         pods.swapWith(podsBuf);
+    }
     if (!servicesBuf.isEmpty())
         services.swapWith(servicesBuf);
 }
