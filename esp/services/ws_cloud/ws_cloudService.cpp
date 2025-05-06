@@ -54,6 +54,9 @@ bool CWsCloudEx::onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGe
 {
     try
     {
+        if(context.getClientVersion() < 1.02)
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Versions <1.02 are deprecated.");
+
         Owned<CK8sResourcesInfoCache> k8sResourcesInfoCache = (CK8sResourcesInfoCache*) k8sResourcesInfoCacheReader->getCachedInfo();
         if (k8sResourcesInfoCache == nullptr)
             throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get POD Info. Please try later.");
@@ -62,7 +65,58 @@ bool CWsCloudEx::onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGe
         if (isEmptyString(podInfo))
             throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Unable to query POD Info. Please try later.");
 
-        resp.setResult(podInfo);
+        Owned<IPropertyTree> podsTree = createPTreeFromJSONString(podInfo);
+        if (podsTree == nullptr)
+            throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Unable to parse POD Info.");
+
+        Owned<IPropertyTreeIterator> podsItr = podsTree->getElements("__item__");
+        IArrayOf<IEspPodItem> respPods;
+        ForEach(*podsItr)
+        {
+            Owned<IEspPodItem> respPod = createPodItem();
+            IPropertyTree& podTree = podsItr->query();
+
+            respPod->setName(podTree.queryProp("name"));
+            respPod->setStatus(podTree.queryProp("status"));
+            respPod->setCreationTimestamp(podTree.queryProp("creationTimestamp"));
+
+            Owned<IPropertyTreeIterator> statuses = podTree.getElements("containerStatuses");
+            int containerCount = 0;
+            int totalRestarts = 0;
+            int readyCount = 0;
+            StringBuffer containerName;
+            ForEach(*statuses)
+            {
+                containerCount++;
+                IPropertyTree& status = statuses->query();
+                if (status.getPropBool("ready"))
+                    readyCount++;
+                totalRestarts += status.getPropInt("restartCount");
+                if (isEmptyString(containerName) && !streq(status.queryProp("name"), "postrun"))
+                    containerName.set(status.queryProp("name"));
+            }
+
+            respPod->setContainerCount(containerCount);
+            respPod->setContainerRestartCount(totalRestarts);
+            respPod->setContainerReadyCount(readyCount);
+            respPod->setContainerName(containerName.str());
+
+            Owned<IPropertyTreeIterator> ports = podTree.getElements("ports");
+            IArrayOf<IEspPort> respPorts;
+            ForEach(*ports)
+            {
+                IPropertyTree& port = ports->query();
+                Owned<IEspPort> respPort = createPort();
+                respPort->setContainerPort(port.getPropInt("containerPort"));
+                respPort->setName(port.queryProp("name"));
+                respPort->setProtocol(port.queryProp("protocol"));
+                respPorts.append(*respPort.getLink());
+            }
+            respPod->setPorts(respPorts);
+            respPods.append(*respPod.getLink());
+        }
+
+        resp.setPods(respPods);
     }
     catch(IException* e)
     {
@@ -149,10 +203,39 @@ bool CWsCloudEx::onGetServices(IEspContext& context, IEspGetServicesRequest& req
     return true;
 }
 
+// Indented for reference and ease of reading
+// constexpr const char* jsonpath = R"!!(
+//     [{range .items[*]}{"{"}
+//     "name": "{.metadata.name}",
+//     "creationTimestamp": "{.metadata.creationTimestamp}",
+//     "containerStatuses": [
+//       {range .status.containerStatuses[*]}{"{"}
+//         "ready": {.ready},
+//         "restartCount": {.restartCount},
+//         "name": "{.name}"
+//       {"}"},{end}
+//     ],
+//     "ports": [
+//       {range .spec.containers[*].ports[*]}{"{"}
+//         "containerPort": {.containerPort},
+//         "name": "{.name}",
+//         "protocol": "{.protocol}"
+//       {"}"},{end}
+//     ],
+//     "status": "{.status.phase}",
+//     {"}"},{end}]
+//     )!!";
+
+// Single line for compact logging
+constexpr const char* jsonpath = R"!!([{range .items[*]}{"{"}"name": "{.metadata.name}","creationTimestamp": "{.metadata.creationTimestamp}","containerStatuses": [{range .status.containerStatuses[*]}{"{"}"ready": {.ready},"restartCount": {.restartCount},"name": "{.name}"{"}"},{end}],"ports": [{range .spec.containers[*].ports[*]}{"{"}"containerPort": {.containerPort},"name": "{.name}","protocol": "{.protocol}"{"}"},{end}],"status": "{.status.phase}",{"}"},{end}])!!";
+
 void CK8sResourcesInfoCache::read()
 {
     StringBuffer podsBuf, servicesBuf;
-    readToBuffer("kubectl get pods --output=json", podsBuf);
+    // Due to how IPipeProcess parses parameters we need the jsonpath argument
+    // quoted as shown below, or it will be treated as multiple arguments.
+    VStringBuffer command("kubectl get pods --selector=app.kubernetes.io/part-of=HPCC-Platform -o 'jsonpath=%s'", jsonpath);
+    readToBuffer(command.str(), podsBuf);
     readToBuffer("kubectl get svc --output=json", servicesBuf);
 
     if (podsBuf.isEmpty() && servicesBuf.isEmpty())
