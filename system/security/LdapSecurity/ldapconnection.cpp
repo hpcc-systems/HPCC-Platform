@@ -6409,7 +6409,9 @@ private:
             }
         }
 
+#ifdef _DEBUG
         DBGLOG("getManagedScopeTree() found %d scopes under '%s'", scopes.length(), basednbuf.str());
+#endif
         return scopes.length();
     }
 
