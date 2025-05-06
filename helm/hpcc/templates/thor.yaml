@@ -28,7 +28,6 @@ Pass in dict with root and me
 {{- define "hpcc.thorConfigMap" -}}
 {{- $eclAgentType := .me.eclAgentType | default "hthor" }}
 {{- $hthorName := printf "%s-%s" .me.name $eclAgentType }}
-{{- $analyzerOptions := dict "analyzerOptions" (.root.Values.global.analyzerOptions | default dict) -}}
 {{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "auxQueues" "expert" "keepJobs" "logging" "tracing") ((hasKey .me "holdAgent") | ternary (dict "hold" .me.holdAgent) dict) }}
 {{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "expert" "keepJobs" "logging" "tracing") ((hasKey .me "holdThorAgent") | ternary (dict "hold" .me.holdThorAgent) dict) }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
@@ -63,10 +62,12 @@ data:
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+{{ include "hpcc.generateAnalyzerOptions" (dict "root" .root "me" $hthorScope) | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
     eclagent: # main agent Q handler
 {{ toYaml (omit $eclAgentScope "logging" "tracing") | indent 6 }}
+{{ include "hpcc.generateAnalyzerOptions" (dict "root" .root "me" $thorScope) | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
     thoragent: # Thor graph handler

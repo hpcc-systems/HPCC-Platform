@@ -383,12 +383,12 @@
               "description": "Only report issues that may be costing more than this value (decimal $ value)",
               "type": "number"
             },
-            "minInterestingWaste": {
+            "minInterestingTimeWaste": {
               "description": "Only report issues that may be wasting more than this time (milliseconds)",
               "type": "number"
             },
             "minInterestingTime": {
-              "description": "Only analyse activities that have a longer execute time than this threshold (milleseconds)",
+              "description": "Only analyse activities that have a longer execute time than this threshold (milliseconds)",
               "type": "number"
             },
             "skewThreshold": {

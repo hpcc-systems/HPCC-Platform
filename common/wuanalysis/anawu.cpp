@@ -72,15 +72,15 @@ struct WuOption
 };
 
 constexpr struct WuOption wuOptionsDefaults[watOptMax]
-= { {watOptMinInterestingTime, "minInterestingTime", 1000, wutOptValueTypeMSec},
+= { {watOptMinInterestingTime, "minInterestingTime", msecs2StatUnits(1000), wutOptValueTypeMSec},
     {watOptMinInterestingCost, "minInterestingCost", money2cost_type(1.00) /* $1.00 */, wutOptValueTypeCost},
-    {watOptMinInterestingWaste, "minInterestingTimeWaste", 30000, wutOptValueTypeMSec},
-    {watOptSkewThreshold, "skewThreshold", 20, wutOptValueTypePercent},
+    {watOptMinInterestingWaste, "minInterestingTimeWaste", msecs2StatUnits(30000), wutOptValueTypeMSec},
+    {watOptSkewThreshold, "skewThreshold", statPercent(20), wutOptValueTypePercent},
     {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount},
-    {watPreFilteredKJThreshold, "preFilteredKJThreshold", 50, wutOptValueTypePercent},
+    {watPreFilteredKJThreshold, "preFilteredKJThreshold", statPercent(50), wutOptValueTypePercent},
     /* Note watClusterCostPerHour cannot be used as debug option or config option (this is calculated) */
     {watClusterCostPerHour, "costRatePerHour", 0, wutOptValueTypeCost},
-    {watOptMaxExecuteTime, "maxExecuteTime", 5000, wutOptValueTypeMSec},
+    {watOptMaxExecuteTime, "maxExecuteTime", msecs2StatUnits(5000), wutOptValueTypeMSec},
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -96,7 +96,7 @@ public:
    WuAnalyserOptions()
     {
         for (int opt = watOptFirst; opt < watOptMax; opt++)
-            setOptionValue(static_cast<WutOptionType>(opt), wuOptionsDefaults[opt].defaultValue);
+            wuOptions[opt] = wuOptionsDefaults[opt].defaultValue;
     }
 
     void setOptionValue(WutOptionType opt, __int64 val)
@@ -187,8 +187,6 @@ protected:
 
 //-----------------------------------------------------------------------------------------------------------
 
-#define CHECK_MAX_EXECUTE_TIME_INTERVAL 100
-
 class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 {
 public:
@@ -208,14 +206,12 @@ protected:
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
     CCycleTimer timer;
-    unsigned checkTimerInterval = CHECK_MAX_EXECUTE_TIME_INTERVAL;
     cycle_t maxExecuteCycles = 0;
 
     virtual void checkMaxExecuteTime() override
     {
-        if (maxExecuteCycles && checkTimerInterval-- == 0)
+        if (maxExecuteCycles)
         {
-            checkTimerInterval = CHECK_MAX_EXECUTE_TIME_INTERVAL;
             if (timer.elapsedCycles() > maxExecuteCycles)
             {
                 throw makeStringExceptionV(ERROR_ANALYSER_TIME_EXCEEDED, "Cost optimizer exceeded max execute time (%llums) - analysis incomplete",  cycle_to_millisec(maxExecuteCycles));
@@ -2130,17 +2126,16 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour)
 {
-    if (workunit.hasDebugValue("analyzeWorkunit") && !workunit.getDebugValueBool("analyzeWorkunit", true))
+    if (!workunit.getDebugValueBool("analyzeWorkunit", true))
         return;
     if (options && options->getPropBool("disabled", false))
         return;
 
-    VStringBuffer job("wuid=%s graph=%s", workunit.queryWuid(), optGraph ? optGraph : "*");
     WorkunitRuleAnalyser analyser;
     Owned<IException> error;
 
     analyser.applyConfig(options, &workunit, costPerHour);
-    // don't both analyzing if job cost is below threshold
+    // don't bother analyzing if job cost is below threshold
     cost_type minInterestingCost = analyser.queryOption(watOptMinInterestingCost);
     if (minInterestingCost)
     {
@@ -2148,7 +2143,7 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
         if (workunit.getStatistic(wuCost, "", StCostExecute) && wuCost < minInterestingCost)
             return;
     }
-    // don't both analyzing if job time is below threshold
+    // don't bother analyzing if job time is below threshold
     stat_type minInterestingTime = analyser.queryOption(watOptMinInterestingTime);
     stat_type wuTime;
     if (minInterestingTime && workunit.getStatistic(wuTime, "", StTimeElapsed) && wuTime < minInterestingTime)
@@ -2156,29 +2151,26 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
 
     try
     {
-        DBGLOG("Start analyzer: %s", job.str());
         analyser.analyse(&workunit, optGraph);
         analyser.applyRules();
     }
     catch (IException *e)
     {
-        error.set(e);
+        error.setown(e);
     }
     if (analyser.hasIssues() || error)
     {
-
         Owned<IWorkUnit> wu = &workunit.lock();
         if (error)
         {
             StringBuffer msg;
             error->errorMessage(msg);
-            msg.appendf(" (%s)", job.str());
+            msg.appendf(" (wuid=%s graph=%s)", workunit.queryWuid(), optGraph ? optGraph : "*");
             addExceptionToWorkunit(wu, SeverityWarning, CostOptimizerName, error->errorCode(), msg.str(), nullptr, 0, 0, 0);
         }
         if (analyser.hasIssues())
             analyser.update(wu);
     }
-    DBGLOG("Finished analyzer: %s", job.str());
 }
 
 void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerHour, bool updatewu)
@@ -2195,6 +2187,33 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerHou
         analyser.update(lockedwu);
     }
 }
+
+static bool getBoolWUOption(const IConstWorkUnit * workunit, IPropertyTree *cfg, const char * wuOption, const char * cfgOption, bool defaultValue)
+{
+    if (workunit && workunit->hasDebugValue(wuOption))
+        return workunit->getDebugValueBool(wuOption, defaultValue);
+    return cfg ? cfg->getPropBool(cfgOption, defaultValue) : defaultValue;
+}
+
+void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour)
+{
+    Owned<IPropertyTree> analyzerCfg = cfg->getPropTree("analyzerOptions");
+    bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
+    // Analyze when
+    // - analyzeInEclAgent is true and inEclAgent is true OR
+    // - analyzeInEclAgent is false and inEclAgent is false
+    if (optAnalyzeInEclAgent == inEclAgent)
+    {
+        bool optAnalyzeWhenComplete = getBoolWUOption(&workunit, analyzerCfg, "analyzeWhenComplete", "@analyzeWhenComplete", defaultAnalyzeWhenComplete);
+        bool graphSpecified = !isEmptyString(optGraph);
+        // Analyze when
+        // - analyzeWhenComplete is true and graph is not specified OR
+        // - analyzeWhenComplete is false and graph is specified
+        if (optAnalyzeWhenComplete != graphSpecified)
+            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour);
+    }
+}
+
 
 /*
 Syntax:

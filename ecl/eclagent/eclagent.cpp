@@ -1856,25 +1856,6 @@ void EclAgent::setRetcode(int code)
     retcode = code;
 }
 
-
-void EclAgent::runWorkunitAnalyser(IConstWorkUnit &workunit, const char * optGraph)
-{
-    IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-    double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, getNodes());
-    analyseWorkunit(workunit, optGraph, analyzerOptions, costPerHour);
-}
-
-void EclAgent::runWorkunitAnalyserAfterGraph(const char * graph)
-{
-    if (getBoolWUOption(wuRead, "analyzeInEclAgent", "analyzerOptions/@analyzeInEclAgent", defaultAnalyzeInEclAgent))
-    {
-        if (!getBoolWUOption(wuRead, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
-        {
-            runWorkunitAnalyser(*wuRead, graph);
-        }
-    }
-}
-
 void EclAgent::doProcess()
 {
 #ifdef _DEBUG
@@ -2041,30 +2022,6 @@ void EclAgent::doProcess()
             break;
         }
 
-
-        if (getClusterType(clusterType)==ThorLCRCluster)
-        {
-            if (getBoolWUOption(w, "analyzeWhenComplete", "analyzerOptions/@analyzeWhenComplete", defaultAnalyzeWhenComplete))
-            {
-                if (getBoolWUOption(w, "analyzeInEclAgent", "analyzerOptions/@analyzeInEclAgent", defaultAnalyzeInEclAgent))
-                {
-                    switch (w->getState())
-                    {
-                    case WUStateFailed:
-                    case WUStateAborted:
-                    case WUStateCompleted:
-                        runWorkunitAnalyser(*w, nullptr);
-                        break;
-                    }
-                }
-                else
-                {
-                    // Log warning message if unsupported option combination is set (defaultAnalyzeWhenComplete==true and defaultAnalyzeInEclAgent==false)
-                    logException(SeverityWarning, MSGAUD_user, 0, "Unsupported combination of options for cost optimizer (either set to analyzeWhenComplete to false or analyzeInEclAgent to true)", false);
-                }
-            }
-        }
-
         if(w->queryEventScheduledCount() > 0)
             switch(w->getState())
             {
@@ -2153,6 +2110,11 @@ void EclAgent::doProcess()
         e->Release();
     }
     DBGLOG("Workunit written complete");
+
+    if (getClusterType(clusterType)==ThorLCRCluster)
+    {
+        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCost(3600000, getNodes()));
+    }
 }
 
 void EclAgent::runProcess(IEclProcess *process)
