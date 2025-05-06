@@ -85,8 +85,8 @@ public:
             case EvAttrRecordedTimestamp:
                 value = 1000;
                 break;
-            case EvAttrEventTimeOffset:
-                value = 10;
+            case EvAttrEventTimestamp:
+                value = 1010;
                 break;
             case EvAttrEventThreadId:
                 value = 100;
@@ -359,7 +359,7 @@ attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: EventTimeOffset = 10
+attribute: EventTimestamp = 1010
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: FileId = 12345
@@ -397,7 +397,7 @@ attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: EventTimeOffset = 10
+attribute: EventTimestamp = 1010
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: FileId = 12345
@@ -406,7 +406,7 @@ attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
 event: DaliConnect
 attribute: name = 'DaliConnect'
-attribute: EventTimeOffset = 10
+attribute: EventTimestamp = 1010
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: Path = '/Workunits/Workunit/abc.wu'
