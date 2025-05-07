@@ -1585,6 +1585,8 @@ bool CSafeSocket::readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper
                     }
                     break;
                 }
+                if (totalRead >= MAX_HTTP_HEADERSIZE)
+                    throw makeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
             }
 
             if (tm.timedout(&remaining))
