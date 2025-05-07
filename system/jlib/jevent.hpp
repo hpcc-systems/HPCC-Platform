@@ -199,6 +199,7 @@ protected:
     byte compressionType;
     bool outputToLog{false};
     bool corruptOutput{false};
+    bool createSpans{false};
     StringBuffer outputFilename;
     Owned<IFile> outputFile;
     Owned<IFileIO> output;

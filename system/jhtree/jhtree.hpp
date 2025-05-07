@@ -324,5 +324,6 @@ constexpr bool isIndexReadActivity(ThorActivityKind actKind)
 }
 
 extern jhtree_decl void setDynamicPayloadExpansion(bool value);
+extern jhtree_decl const char * queryIndexNodeTypeText(NodeType type);
 
 #endif

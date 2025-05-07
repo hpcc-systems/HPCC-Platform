@@ -125,6 +125,12 @@ struct SpanTimeStamp
         steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
     }
 
+    void adjust(std::chrono::nanoseconds adjustment)
+    {
+        systemClockTime += adjustment;
+        steadyClockTime += adjustment;
+    }
+
     bool isInitialized() const
     {
         return systemClockTime != std::chrono::nanoseconds::zero();
@@ -261,6 +267,9 @@ interface ITraceManager : extends IInterface
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual bool isTracingEnabled() const = 0;
  };
+
+ //Create an internal span that has now completed, but which started in the past.
+ extern jlib_decl ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs);
 
 extern jlib_decl ISpan * queryNullSpan();
 extern jlib_decl ISpan * getNullSpan();

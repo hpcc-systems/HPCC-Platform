@@ -59,6 +59,22 @@ inline void TRACEEVENT(char const * format, ...)
 
 constexpr const char magicHeader[4] = { 'H','E','V','T' };
 
+//Unfortunate, but this needs to be cloned from jhtree because jlib cannot have a dependency on jhtree.
+static const char * queryIndexNodeTypeText(unsigned type)
+{
+    switch (type)
+    {
+    case 0:   return "Branch";
+    case 1:   return "Leaf";
+    case 2:   return "Blob";
+    case 3:   return "Meta";
+    case 4:   return "Bloom";
+    case 127: return "None";
+    default:
+        return "unknown";
+    }
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 //
 // Meta information about events and attributes.
@@ -293,10 +309,13 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
         }
         else if (strieq(option, "log"))
             outputToLog = valueBool;
+        else if (strieq(option, "span"))
+            createSpans = valueBool;
     };
 
     options = defaultEventFlags;
     outputToLog = false;
+    createSpans = false;
     compressionType = COMPRESS_METHOD_LZ4;
     corruptOutput = false;
 
@@ -538,6 +557,16 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
     if (unlikely(outputToLog))
         TRACEEVENT("{ \"name\": \"IndexLoad\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"size\": %u, \"elapsed\": %llu, \"read\": %llu }", fileid, offset, nodeKind, size, elapsedTime, readTime);
 
+    if (unlikely(createSpans))
+    {
+        Owned<ISpan> span = createBackdatedInternalSpan("IndexLoad", elapsedTime);
+        span->setSpanAttribute("id", fileid);
+        span->setSpanAttribute("offset", offset);
+        span->setSpanAttribute("kind", queryIndexNodeTypeText(nodeKind));
+        span->setSpanAttribute("expandedSize", size);
+        span->setSpanAttribute("readTimeNs", readTime);
+    }
+
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, elapsedTime, readTime);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
@@ -578,6 +607,14 @@ void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 
     if (unlikely(outputToLog))
         TRACEEVENT("{ \"name\": \"%s\", \"path\": \"%s\", \"id\"=0x%llx, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), path, id, elapsedNs, dataSize);
 
+    if (unlikely(createSpans))
+    {
+        Owned<ISpan> span = createBackdatedInternalSpan(queryEventName(event), elapsedNs);
+        span->setSpanAttribute("xpath", path);
+        span->setSpanAttribute("id", id);
+        span->setSpanAttribute("dataSize", dataSize);
+    }
+
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(path, id, elapsedNs, dataSize);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
@@ -596,6 +633,13 @@ void EventRecorder::recordDaliEvent(EventType event, __int64 id, stat_type elaps
 
     if (unlikely(outputToLog))
         TRACEEVENT("{ \"name\": \"%s\", \"id\"=0x%llx, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), id, elapsedNs, dataSize);
+
+    if (unlikely(createSpans))
+    {
+        Owned<ISpan> span = createBackdatedInternalSpan(queryEventName(event), elapsedNs);
+        span->setSpanAttribute("id", id);
+        span->setSpanAttribute("dataSize", dataSize);
+    }
 
     //MORE: Should the time stamp be adjusted by the elapsed time??
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id, elapsedNs, dataSize);

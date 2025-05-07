@@ -3771,6 +3771,21 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
     return new CIndexLookup(keyManager);
 }
 
+const char * queryIndexNodeTypeText(NodeType type)
+{
+    switch (type)
+    {
+    case NodeBranch:  return "Branch";
+    case NodeLeaf:    return "Leaf";
+    case NodeBlob:    return "Blob";
+    case NodeMeta:    return "Meta";
+    case NodeBloom:   return "Bloom";
+    case NodeNone:    return "None";
+    default:
+        return "unknown";
+    }
+}
+
 
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
