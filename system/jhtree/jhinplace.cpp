@@ -1855,7 +1855,8 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     default:
                     {
                         ICompressHandler * handler = queryCompressHandler(payloadCompression);
-                        assertex(handler);
+                        if (!handler)
+                            throw makeStringExceptionV(JHTREE_KEY_UNKNOWN_COMPRESSION, "Unknown payload compression method %d", (int)payloadCompression);
                         const char * options = nullptr;
                         Owned<IExpander> exp = handler->getExpander(options);
                         size32_t len = exp->init(data);
