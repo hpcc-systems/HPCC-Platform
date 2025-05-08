@@ -8729,6 +8729,11 @@ __int64 getConfigInt64(const char *xpath, __int64 defaultValue)
     return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropInt64);
 }
 
+double getConfigReal(const char *xpath, double defaultValue)
+{
+    return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropReal);
+}
+
 bool getConfigString(const char *xpath, StringBuffer &result)
 {
     if (getComponentConfigSP()->getProp(xpath, result))
@@ -9863,10 +9868,6 @@ void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, uns
     toYAML(tree, stream, indent, flags);
 }
 
-jlib_decl IPropertyTree * getCostsConfiguration()
-{
-    return getComponentConfigSP()->getPropTree("cost");
-}
 
 void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
 {

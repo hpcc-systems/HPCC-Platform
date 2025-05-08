@@ -323,7 +323,6 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree * defaultConfig, IProp
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr, bool monitor=true);
 jlib_decl void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig);
 jlib_decl void initNullConfiguration();
-jlib_decl IPropertyTree * getCostsConfiguration();
 
 //The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().
 jlib_decl IPropertyTree * getGlobalConfig();
@@ -336,6 +335,7 @@ jlib_decl const char * queryComponentName();
 jlib_decl bool getConfigBool(const char *xpath, bool defaultValue=false);
 jlib_decl __int64 getConfigInt64(const char *xpath, __int64 defaultValue=0);
 jlib_decl bool getConfigString(const char *xpath, StringBuffer &result);
+jlib_decl double getConfigReal(const char *xpath, double defaultValue=0.0);
 
 
 // ConfigUpdateFunc calls are made in a mutex, but after new confis are swapped in

@@ -563,20 +563,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             w->setXmlParams(_queryXML);
         updateSuppliedXmlParams(w);
     }
-    agentMachineCost = getMachineCostRate();
-    if (agentMachineCost > 0.0)
-    {
-        Owned<const IPropertyTree> costs = getCostsConfiguration();
-        if (costs)
-        {
-            double softCostLimit = costs->getPropReal("@limit");
-            double guillotineCost = wu->getDebugValueReal("maxCost", softCostLimit);
-            double hardCostLimit = costs->getPropReal("@hardlimit");
-            if (hardCostLimit && ((guillotineCost == 0) || (guillotineCost > hardCostLimit)))
-                guillotineCost = hardCostLimit;
-            abortmonitor->setGuillotineCost(money2cost_type(guillotineCost));
-        }
-    }
+    abortmonitor->setGuillotineCost(getGuillotineCost(wu));
     configurePreferredPlanes();
 }
 
