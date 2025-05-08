@@ -137,7 +137,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(FileSize, u8),
     DEFINE_ATTR(RecordedTimestamp, u8),
     DEFINE_ATTR(RecordedOption, string),
-    DEFINE_ATTR(EventTimeOffset, u8),
+    DEFINE_ATTR(EventTimestamp, u8),
     DEFINE_ATTR(EventTraceId, string),
     DEFINE_ATTR(EventThreadId, u8),
     DEFINE_ATTR(EventStackTrace, string),
@@ -769,6 +769,7 @@ private:
     Linked<IEventVisitor> visitor;
     unsigned version{0};
     uint32_t options{0};
+    __uint64 baseTimestamp{0};
     size32_t bytesRead{0};
     bool mute{false};
 
@@ -794,12 +795,10 @@ private:
 
     bool traverseHeader()
     {
-        __uint64 startTimestamp;
-
         readToken(options);
-        readToken(startTimestamp);
+        readToken(baseTimestamp);
         return (visitor->visitFile(file->queryFilename(), version) &&
-            continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, startTimestamp)) &&
+            continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, baseTimestamp)) &&
             // Pass through information about which of the extra options are provided on each of the event records
             (!(options & ERFtraceid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "traceid"))) &&
             (!(options & ERFthreadid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "threadid"))) &&
@@ -831,7 +830,7 @@ private:
 
     bool traverseAttributes()
     {
-        if (!finishAttribute<__uint64>(EvAttrEventTimeOffset))
+        if (!finishAttribute<__uint64>(EvAttrEventTimestamp))
             return false;
         if ((options & ERFtraceid) && !finishDataAttribute(EvAttrEventTraceId, 16))
             return false;
@@ -909,6 +908,9 @@ private:
             return true;
         if (std::is_same<T, bool>::value)
             return reactToVisit(visitor->visitAttribute(attr, bool(value)));
+        // normalize event timestamp as a combination of header timestamp and event offset
+        if (EvAttrEventTimestamp == attr)
+            value += baseTimestamp;
         return reactToVisit(visitor->visitAttribute(attr, __uint64(value)));
     }
 

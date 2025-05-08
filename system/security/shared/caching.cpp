@@ -686,19 +686,34 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
         // completes after now is set which could result in elapsedTimeSinceLastFill being negative.
         if (elapsedTimeSinceLastFill >= m_cacheTimeoutInSeconds)
         {
-            fillManagedFileScopesCache(false);
-            waitTimeSeconds = m_cacheTimeoutInSeconds;
+            try
+            {
+                fillManagedFileScopesCache(false);
 
-            // m_useLegacyDefaultFileScopePermissionCache to be deprecated (security hole)
-            if (m_useLegacyDefaultFileScopePermissionCache)
-            {
-                m_defaultPermission = SecAccess_Unknown; // THIS IS A SECURITY HOLE - NEEDS TO BE REMOVED
+                // m_useLegacyDefaultFileScopePermissionCache to be deprecated (security hole)
+                if (m_useLegacyDefaultFileScopePermissionCache)
+                {
+                    m_defaultPermission = SecAccess_Unknown; // THIS IS A SECURITY HOLE - NEEDS TO BE REMOVED
+                }
+                else
+                {
+                    CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+                    m_userDefaultFileScopePermissions.clear();
+                }
             }
-            else
+            catch (IException *e)
             {
-                CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
-                m_userDefaultFileScopePermissions.clear();
+                StringBuffer errorMsg;
+                e->errorMessage(errorMsg);
+                OERRLOG("CACHE: Exception retrieving managed scopes in fill thread, error=%d, message=%s", e->errorCode(), errorMsg.str());
+                e->Release();
             }
+            catch (...)
+            {
+                OERRLOG("CACHE: Unknown exception retrieving managed scopes in fill thread");
+            }
+
+            waitTimeSeconds = m_cacheTimeoutInSeconds;
         }
         else
         {
