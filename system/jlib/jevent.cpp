@@ -135,9 +135,9 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ConnectId, u8),
     DEFINE_ATTR(Enabled, bool),
     DEFINE_ATTR(FileSize, u8),
-    DEFINE_ATTR(RecordedTimestamp, u8),
+    DEFINE_ATTR(RecordedTimestamp, timestamp),
     DEFINE_ATTR(RecordedOption, string),
-    DEFINE_ATTR(EventTimestamp, u8),
+    DEFINE_ATTR(EventTimestamp, timestamp),
     DEFINE_ATTR(EventTraceId, string),
     DEFINE_ATTR(EventThreadId, u8),
     DEFINE_ATTR(EventStackTrace, string),
@@ -1164,6 +1164,17 @@ protected:
 
     void doVisitAttribute(EventAttr id, const char* name, __uint64 value)
     {
+        if (attrInformation[id].type == EATtimestamp)
+        {
+            StringBuffer timestamp;
+            CDateTime dt;
+            dt.setTimeStampNs(value);
+            dt.getString(timestamp);
+            // assumes CDateTime output is in microseconds
+            timestamp.appendf("%03llu", value % 1000);
+            recordAttribute(id, name, timestamp, true);
+            return;
+        }
         recordAttribute(id, name, StringBuffer().append(value), false);
     }
 
