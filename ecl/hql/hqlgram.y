@@ -1784,7 +1784,7 @@ persistOpts
 persistOpt
     : fewMany
     | expireAttr
-    | queueAttr
+    | planeAttr
     | REFRESH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_boolean, true);
