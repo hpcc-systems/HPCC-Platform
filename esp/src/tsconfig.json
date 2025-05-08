@@ -22,7 +22,7 @@
         "jsx": "react",
         "lib": [
             "DOM",
-            "ES2019"
+            "ES2020"
         ],
         "typeRoots": [],
         "types": [],
