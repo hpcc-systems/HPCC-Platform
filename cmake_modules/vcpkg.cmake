@@ -38,7 +38,7 @@ if (WIN32)
 else ()
     set(VCPKG_BOOTSTRAP_FILE "./bootstrap-vcpkg.sh")
 endif ()
-file(SHA256 "${VCPKG_ROOT}/${VCPKG_BOOTSTRAP_FILE}" VCPKG_SCRIPT_HASH)
+file(SHA256 "${VCPKG_ROOT}/scripts/vcpkg-tool-metadata.txt" VCPKG_SCRIPT_HASH)
 set(VCPKG_HASH_FILE "${VCPKG_FILES_DIR}/bootstrap-vcpkg-hash.txt")
 
 set(SAVED_VCPKG_SCRIPT_HASH "")
