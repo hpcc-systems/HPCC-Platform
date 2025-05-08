@@ -1099,50 +1099,50 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
         else
         {
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
-            status.appendJSONListMessage("ALA Pluging Configuration tree is empty!!!");
+            status.appendMessage("ALA Plug-in Configuration tree is empty!!!");
         }
 
         report.Configuration.set(configuration.str()); //empty if !(options.IncludeConfiguration)
 
         if (m_logAnalyticsWorkspaceID.length() == 0)
         {
-            status.appendJSONListMessage("Target Azure Log Analytics workspace ID is empty!");
+            status.appendMessage("Target Azure Log Analytics workspace ID is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
         if (m_aadTenantID.length() == 0)
         {
-            status.appendJSONListMessage("Target Azure Tenant ID is empty!");
+            status.appendMessage("Target Azure Tenant ID is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
         if (m_aadClientID.length() == 0)
         {
-            status.appendJSONListMessage("Target Azure Log Analytics Client Application ID is empty!");
+            status.appendMessage("Target Azure Log Analytics Client Application ID is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
         if (m_aadClientSecret.length()==0)
         {
-            status.appendJSONListMessage("Target Azure Log Analytics Client Secret is empty!");
+            status.appendMessage("Target Azure Log Analytics Client Secret is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
         if (!m_disableComponentNameJoins)
         {
-            status.appendJSONListMessage("Costly query joins used to fetch component names are enabled!");
+            status.appendMessage("Costly query joins used to fetch component names are enabled!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (!m_blobMode)
         {
-            status.appendJSONListMessage("Blob mode not enabled, slow server response is likely");
+            status.appendMessage("Blob mode not enabled, slow server response is likely");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (!targetIsContainerLogV2)
         {
-            status.appendJSONListMessage("Azure Log Analytics container schema V1 enabled, V2 is recommended");
+            status.appendMessage("Azure Log Analytics container schema V1 enabled, V2 is recommended");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
@@ -1231,12 +1231,12 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
                 VStringBuffer description("Exception while requesting sample token (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 e->Release();
             }
             catch(...)
             {
-                status.appendJSONListMessage("Unknown exception while requesting sample token");
+                status.appendMessage("Unknown exception while requesting sample token");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             sampleQueryReport.append(" }"); //close sample token request
@@ -1288,7 +1288,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
                 if (resultDetails.totalReceived==0)
                 {
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
-                    status.appendJSONListMessage("Query succeeded but returned 0 log entries");
+                    status.appendMessage("Query succeeded but returned 0 log entries");
                 }
                 sampleQueryReport.appendf(", \"Results\": %s", resultDetails.totalReceived==0 ? "\"Sample query returned zero log records!\"" : logs.str());
             }
@@ -1298,13 +1298,13 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
                 e->errorMessage(description);
                 appendJSONStringValue(sampleQueryReport, "Results", description.str(), true);
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 e->Release();
             }
             catch(...)
             {
                 appendJSONStringValue(sampleQueryReport, "Results", "Unknown exception while executing sample ALA query", false);
-                status.appendJSONListMessage("Unknown exception while executing sample ALA query");
+                status.appendMessage("Unknown exception while executing sample ALA query");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             sampleQueryReport.append(" }}"); //close sample query object and top level json container
@@ -1316,7 +1316,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
     catch(...)
     {
         status.escalateStatusCode(LOGACCESS_STATUS_fail);
-        status.appendJSONListMessage("Encountered unexpected exception during health report");
+        status.appendMessage("Encountered unexpected exception during health report");
     }
 
     report.status = status;

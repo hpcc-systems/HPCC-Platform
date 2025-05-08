@@ -775,44 +775,44 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
         else
         {
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
-            status.appendJSONListMessage("Grafana/Loki Pluging Configuration tree is empty!!!");
+            status.appendMessage("Grafana/Loki Plug-in Configuration tree is empty!!!");
         }
 
         report.Configuration.set(configuration.str()); //this would be empty if !options.IncludeConfiguration
 
         if (m_grafanaConnectionStr.length() == 0)
         {
-            status.appendJSONListMessage("Connection String to target Grafana/Loki is empty!");
+            status.appendMessage("Connection String to target Grafana/Loki is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
         if (m_grafanaUserName.length() == 0)
         {
-            status.appendJSONListMessage("Grafana user name is empty!");
+            status.appendMessage("Grafana user name is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (m_grafanaPassword.length() == 0)
         {
-            status.appendJSONListMessage("Grafana password is empty!");
+            status.appendMessage("Grafana password is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (m_targetDataSource.id.length() == 0)
         {
-            status.appendJSONListMessage("Target Grafana datasource ID is empty!");
+            status.appendMessage("Target Grafana datasource ID is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (m_targetDataSource.name.length() == 0)
         {
-            status.appendJSONListMessage("Target Grafana datasource Name is empty!");
+            status.appendMessage("Target Grafana datasource Name is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
         if (m_targetNamespace.length() == 0)
         {
-            status.appendJSONListMessage("Target log data namespace is empty!");
+            status.appendMessage("Target log data namespace is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_warning);
         }
 
@@ -891,7 +891,7 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 {
                     //debugReport.appendf("\"Empty GrafanaHealth response\"");
                     appendJSONStringValue(debugReport, "GrafanaHealth", "Empty GrafanaHealth response", false);
-                    status.appendJSONListMessage("Could not populate GrafanaHealth");
+                    status.appendMessage("Could not populate GrafanaHealth");
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 }
 
@@ -901,14 +901,14 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 VStringBuffer description("Exception fetching Grafana health (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 appendJSONStringValue(debugReport, "GrafanaHealth", description.str(), true);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 e->Release();
             }
             catch(...)
             {
                 debugReport.append("\"Unknown exception while fetching target Grafana health\"");
-                status.appendJSONListMessage("Unknown exception while fetching target Grafana health");
+                status.appendMessage("Unknown exception while fetching target Grafana health");
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
             }
 
@@ -924,14 +924,14 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 VStringBuffer description("Exception fetching available Datasources (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 debugReport.appendf("\"%s\"", description.str());
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 e->Release();
             }
             catch(...)
             {
                 debugReport.append("\"Unknown exception while fetching available Datasources\"");
-                status.appendJSONListMessage("Unknown exception while fetching available Datasources");
+                status.appendMessage("Unknown exception while fetching available Datasources");
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
             }
 
@@ -946,7 +946,7 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 if (!labelsResp)
                 {
                     debugReport.append("\"Labels response not in expected JSON format!\"");
-                    status.appendJSONListMessage("Labels response not in expected JSON format!");
+                    status.appendMessage("Labels response not in expected JSON format!");
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 }
                 else
@@ -993,14 +993,14 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 VStringBuffer description("Exception fetching available labels (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 debugReport.appendf("\"%s\"", description.str());
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 e->Release();
             }
             catch(...)
             {
                 debugReport.append("\"Unknown exception while fetching target Grafana/Loki labels\"");
-                status.appendJSONListMessage("Unknown exception while fetching target Grafana/Loki labels");
+                status.appendMessage("Unknown exception while fetching target Grafana/Loki labels");
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
             }
 
@@ -1056,8 +1056,8 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 appendJSONValue(sampleQuery, "ResultCount", resultDetails.totalReceived);
                 if (resultDetails.totalReceived == 0)
                 {
-                    status = LOGACCESS_STATUS_warning;
-                    status.appendJSONListMessage("Sample query returned zero log records!");
+                    status.escalateStatusCode(LOGACCESS_STATUS_warning);
+                    status.appendMessage("Sample query returned zero log records!");
                 }
 
                 sampleQuery.appendf(", \"Results\": %s", logs.length() == 0 ? "Sample query returned zero log records!" : logs.str());
@@ -1067,14 +1067,14 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
                 VStringBuffer description("Exception while executing sample query (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 appendJSONStringValue(sampleQuery, "Results", description.str(), true);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 e->Release();
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             catch(...)
             {
                 appendJSONStringValue(sampleQuery, "Results", "Unknown exception while executing samplequery", false);
-                status.appendJSONListMessage("Unknown exception while executing samplequery");
+                status.appendMessage("Unknown exception while executing samplequery");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             sampleQuery.append(" }}"); //close sample query object and top level json container
@@ -1085,8 +1085,8 @@ void GrafanaLogAccessCurlClient::healthReport(LogAccessHealthReportOptions optio
     }
     catch(...)
     {
-        status.appendJSONListMessage("Encountered unexpected exception during health report");
-        status = LOGACCESS_STATUS_fail;
+        status.appendMessage("Encountered unexpected exception during health report");
+        status.escalateStatusCode(LOGACCESS_STATUS_fail);
     }
 
     report.status = status;
