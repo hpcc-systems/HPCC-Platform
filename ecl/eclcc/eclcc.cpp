@@ -124,15 +124,10 @@ void initLeakCheck(const char * title)
 /**
  * Error handler for ctrl-break:  Don't care about memory leaks.
  */
-void __cdecl IntHandler(int)
+static bool eclccAbortHandler()
 {
     enableMemLeakChecking(false);
-    exit(2);
-}
-
-static void installSignalHandlers()
-{
-    signal(SIGINT, IntHandler);
+    return true;
 }
 
 #else
@@ -141,15 +136,12 @@ void initLeakCheck(const char *)
 {
 }
 
-static void installSignalHandlers()
+static bool eclccAbortHandler()
 {
+    return true;
 }
 
 #endif
-
-static void restoreSignalHandlers()
-{
-}
 
 #else
 
