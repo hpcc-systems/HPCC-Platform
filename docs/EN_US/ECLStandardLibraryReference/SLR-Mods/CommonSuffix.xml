@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CommonSuffix">
+  <title>CommonSuffix</title>
+
+  <para><emphasis role="bold">STD.Str.CommonSuffix<indexterm>
+      <primary>STD.Str.CommonSuffix</primary>
+    </indexterm><indexterm>
+      <primary>Str.CommonSuffix</primary>
+    </indexterm><indexterm>
+      <primary>CommonSuffix</primary>
+    </indexterm>(</emphasis> <emphasis>s1, s2 </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,nocase</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CommonSuffix<indexterm>
+      <primary>STD.Uni.CommonSuffix</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CommonSuffix</primary>
+    </indexterm><indexterm/>(</emphasis> <emphasis>s1, s2 </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,nocase</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="85*"/>
+
+      <colspec colwidth="915*"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>s1</emphasis></entry>
+
+          <entry>A string to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>s2</emphasis></entry>
+
+          <entry>A string to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>nocase</emphasis></entry>
+
+          <entry>Optional. If TRUE, the comparison is case-insensitive. If
+          omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CommonSuffix returns either a STRING or UNICODE value, as
+          appropriate. It contains the longest suffix common to both strings,
+          as copied from the first argument. The result is empty if the
+          strings have no common suffix or if either argument is
+          empty.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CommonSuffix</emphasis> function returns the
+  longest suffix common to both strings. This can be useful for identifying
+  shared endings between strings, which can be helpful in text processing
+  tasks such as pattern matching, data normalization, or linguistic
+  analysis.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+Std.Str.CommonSuffix('SUNLIGHT', 'MOONLIGHT',nocase:=FALSE); // NLIGHT
+Std.Str.CommonSuffix('TABLETOP', 'Laptop',FALSE);            // empty
+Std.Str.CommonSuffix('TABLETOP', 'Laptop',TRUE);             // TOP
+Std.Str.CommonSuffix('APPLES', 'ORANGES',FALSE);             // ES </programlisting>
+
+  <para>See Also: <link linkend="CommonPrefix">CommonPrefix</link></para>
+</sect1>
