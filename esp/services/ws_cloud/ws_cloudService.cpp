@@ -206,11 +206,17 @@ bool CWsCloudEx::onGetServices(IEspContext& context, IEspGetServicesRequest& req
     return true;
 }
 
+// Note: metadata.namespace is only included to ensure the hpcc4j regression tests pass.
+// The metadata.labels.app.kubernetes.io/part-of is included to ensure compatibility with
+// older client code targeting versions <1.02. Because of the slash it does not render
+// correctly when converted to PTree and output as XML, which is OK because its not used
+// in the structured XML/SOAP response.
 constexpr const char* jsonpath = R"!!(
 {"{"}"items": [{range .items[*]}
     {"{"}
         "metadata": {"{"}
             "name": "{.metadata.name}",
+            "namespace": "{.metadata.namespace}",
             "creationTimestamp": "{.metadata.creationTimestamp}",
             "labels": {"{"} "app.kubernetes.io/part-of": "{.metadata.labels.app\.kubernetes\.io/part-of}" {"}"}
         {"}"},
