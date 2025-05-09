@@ -1099,7 +1099,10 @@ void CPTValue::serialize(MemoryBuffer &tgt)
     tgt.append(serialLen);
     if (serialLen)
     {
-        tgt.append(compressType);
+        //Ensure backwards compatibility if the compression is the "legacy" compression.
+        //Preserve the old encoding so that if a new version of the system updates a dali value, old systems can still read it.
+        byte serialCompressType = (compressType == COMPRESS_METHOD_LZW_LITTLE_ENDIAN) ? (byte)COMPRESS_METHOD_LZWLEGACY : compressType;
+        tgt.append(serialCompressType);
         tgt.append(serialLen, get());
     }
 }
