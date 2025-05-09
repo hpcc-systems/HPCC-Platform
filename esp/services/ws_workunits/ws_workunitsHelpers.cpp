@@ -3573,6 +3573,16 @@ bool addToQueryString(StringBuffer &queryString, const char *name, const char *v
     return true;
 }
 
+bool addDoubleToQueryString(StringBuffer &queryString, const char *name, double value)
+{
+    if (value > 0)
+    {
+        VStringBuffer valueStr("%g", value);
+        return addToQueryString(queryString, name, valueStr.str());
+    }
+    return false;
+}
+
 int WUSchedule::run()
 {
     PROGLOG("ECLWorkunit WUSchedule Thread started.");

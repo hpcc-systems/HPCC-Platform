@@ -6157,6 +6157,11 @@ public:
         query.append('"').append(value).append("\"]");
     };
 
+    static void appendMinCostToQueryString(StringBuffer& query, WUSortField filter, const char* value)
+    {
+        query.append('[').append(queryFilterXPath(filter)).append(">=\"").append(money2cost_type(atof(value))).append("\"]");
+    };
+
     IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField sortorder, // field to sort by (and flags for desc sort etc)
                                                 WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
@@ -6368,6 +6373,10 @@ public:
                         query.append("[@protected=\"1\"]");
                     else
                         query.append("[@protected!=\"1\"]"); //The @protected is set to '0' or not set.
+                }
+                else if (subfmt==WUSFcostcompile || subfmt==WUSFcostexecute || subfmt==WUSFcostfileaccess )
+                {
+                    appendMinCostToQueryString(query, (WUSortField)subfmt, fv);
                 }
                 else if (!*fv)
                 {
