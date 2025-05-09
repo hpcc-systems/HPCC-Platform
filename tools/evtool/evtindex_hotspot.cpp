@@ -426,14 +426,14 @@ private:
     BucketKind currentBucketKind{BucketAmbiguous}; // last observed index node kind
 };
 
-class CIndexHotspotOp : public CStreamingEventFileOp
+class CIndexHotspotOp : public CEventConsumingOp
 {
 public:
     virtual bool ready() const override
     {
-        return CStreamingEventFileOp::ready() && observedEvent != EventNone;
+        return CEventConsumingOp::ready() && observedEvent != EventNone;
     }
-    virtual int doOp() override
+    virtual bool doOp() override
     {
         Owned<IBucketVisitor> analyzer;
         if (limit)
@@ -442,7 +442,7 @@ public:
             analyzer.setown(new CAllBucketVisitor(*out));
 
         CHotspotEventVisitor visitor(*analyzer, observedEvent, granularityBits);
-        return (readEvents(inputPath, visitor) ? 0 : 1);
+        return traverseEvents(inputPath, visitor);
     }
 
 public:
@@ -468,91 +468,91 @@ protected:
     byte limit{10};
 };
 
-class CIndexHotspotCommand : public CEvToolCommand
+// Connector between the CLI and index file hotspot analysis operation.
+class CEvtIndexHotspotCommand : public TEventConsumingCommand<CIndexHotspotOp>
 {
 public:
-    virtual bool acceptParameter(const char *arg) override
-    {
-        iho.setInputPath(arg);
-        return true;
-    }
     virtual bool acceptVerboseOption(const char* opt) override
     {
-        bool accepted = CEvToolCommand::acceptVerboseOption(opt);
+        bool accepted = TEventConsumingCommand<CIndexHotspotOp>::acceptVerboseOption(opt);
         if (!accepted)
         {
             if (streq(opt, "lookup"))
             {
-                iho.setObservedEvent(EventIndexLookup);
+                op.setObservedEvent(EventIndexLookup);
                 accepted = true;
             }
             else if (streq(opt, "load"))
             {
-                iho.setObservedEvent(EventIndexLoad);
+                op.setObservedEvent(EventIndexLoad);
                 accepted = true;
-            }
-            else
-            {
-                // All other accepted options require a value to be provided.
-                //     name '=' value
-                const char* valueDelim = strchr(opt, '=');
-                if (!valueDelim || !valueDelim[1])
-                    return false;
-                __uint64 value = 0;
-                if (!strncmp(opt, "granularity", valueDelim - opt))
-                {
-                    if (extractVerboseValue(valueDelim + 1, value, 0, 10))
-                    {
-                        iho.setGranularity(byte(value));
-                        accepted = true;
-                    }
-                }
-                if (!strncmp(opt, "top", valueDelim - opt))
-                {
-                    if (extractVerboseValue(valueDelim + 1, value, 0, 100))
-                    {
-                        iho.setLimit(value);
-                        accepted = true;
-                    }
-                }
             }
         }
         return accepted;
     }
-    virtual bool isGoodRequest() override
+    virtual bool acceptKVOption(const char* key, const char* value) override
     {
-        return iho.ready();
-    }
-    virtual int doRequest() override
-    {
-        return iho.doOp();
+        __uint64 tmp;
+        if (streq(key, "granularity"))
+        {
+            if (!extractVerboseValue(value, tmp, 0, 10))
+                return false;
+            op.setGranularity(byte(tmp));
+            return true;
+        }
+        else if (streq(key, "top"))
+        {
+            if (!extractVerboseValue(value, tmp, 0, 100))
+                return false;
+            op.setLimit(tmp);
+            return true;
+        }
+        return TEventConsumingCommand<CIndexHotspotOp>::acceptKVOption(key, value);
     }
 
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
-        static const char* usageFmtStr = R"!!!(<event> [options] <filename>
-
+        TEventConsumingCommand<CIndexHotspotOp>::usageSyntax(argc, argv, pos, out);
+        static const char* usageStr =
+R"!!!(<event> [options] [filters] <filename>
+)!!!";
+        static size32_t usageStrLength = strlen(usageStr);
+        out.put(usageStrLength, usageStr);
+    }
+    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
+    {
+        static const char* usageStr = R"!!!(
 Identify activity hotspots for each index file referenced within a recorded
 event file. The activity to be analyzed is specified by a obligatory event
 selector correlating to a single event type. Additional options determine the
 analysis to be performed.
 
 Events:
-    --load                 Analyze index load events.
-    --lookup               Analyze index lookup events.
+    --load                    Analyze index load events.
+    --lookup                  Analyze index lookup events.
+)!!!";
+        static size32_t usageStrLength = strlen(usageStr);
+        out.put(usageStrLength, usageStr);
+    }
 
-Options:
-    -?, -h, --help         Show this help message and exit.
-    --granularity=[0..10]  Set the analysis resolution, where the resolution
-                           is 2^granularity pages per bucket; default is 0, or
-                           one page per bucket.
-    --top=[0..100]         The maximum number of leaf and branch buckets
-                           reported per file, or 0 to report all buckets;
-                           default is 10.
+    virtual void usageOptions(IBufferedSerialOutputStream& out) override
+    {
+        TEventConsumingCommand<CIndexHotspotOp>::usageOptions(out);
+        static const char* usageStr =
+R"!!!(    --granularity=[0..10]     Set the analysis resolution, where the resolution
+                              is 2^granularity pages per bucket; default is 0,
+                              or one page per bucket.
+    --top=[0..100]            The maximum number of leaf and branch buckets
+                              reported per file, or 0 to report all buckets;
+                              default is 10.
+)!!!";
+        static size32_t usageStrLength = strlen(usageStr);
+        out.put(usageStrLength, usageStr);
+    }
 
-Parameters:
-    <filename>             Path to a binary event data file to be analyzed.
-
+    virtual void usageDetails(IBufferedSerialOutputStream& out) override
+    {
+        static const char* usageStr = R"!!!(
 Activity is reported in terms of buckets. Buckets are groups of one or more
 consecutive pages of an index file, where each page is a block of 8KB that
 starts at an event reported ofsset. The default bucket size is one page and
@@ -664,15 +664,8 @@ file:
     buckets: 1
     total: 11
 )!!!";
-        static size32_t usageFmtStrLength = size32_t(strlen(usageFmtStr));
-        usagePrefix(argc, argv, pos, out);
-        out.put(usageFmtStrLength, usageFmtStr);
-    }
-
-public:
-    CIndexHotspotCommand()
-    {
-        iho.setOutput(consoleOut());
+        static size32_t usageStrLength = strlen(usageStr);
+        out.put(usageStrLength, usageStr);
     }
 
 protected:
@@ -685,12 +678,9 @@ protected:
             return false;
         return true;
     }
-
-protected:
-    CIndexHotspotOp iho;
 };
 
 IEvToolCommand* createIndexHotspotCommand()
 {
-    return new CIndexHotspotCommand;
+    return new CEvtIndexHotspotCommand;
 }

@@ -94,6 +94,7 @@ public:
     void getTime(unsigned & hour, unsigned & minute, unsigned & second, unsigned & nano, bool local = false) const;
     time_t getSimple() const;
     unsigned __int64 getTimeStamp() const;
+    unsigned __int64 getTimeStampNs() const;
     StringBuffer & getString(StringBuffer & str, bool local = false) const;
     StringBuffer & getDateString(StringBuffer & str, bool local = false) const;
     StringBuffer & getTimeString(StringBuffer & str, bool local = false) const;

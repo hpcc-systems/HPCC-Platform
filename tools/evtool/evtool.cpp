@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "jevent.hpp"
 #include "jfile.hpp"
 #include "jstring.hpp"
 #include <iostream>
@@ -47,6 +48,16 @@ int CEvToolCommand::dispatch(int argc, const char* argv[], int pos)
         return 1;
     }
     return doRequest();
+}
+
+void CEvToolCommand::usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out)
+{
+    usageSyntax(argc, argv, pos, out);
+    usageSynopsis(out);
+    usageOptions(out);
+    usageFilters(out);
+    usageParameters(out);
+    usageDetails(out);
 }
 
 bool CEvToolCommand::accept(const char* arg)
@@ -96,6 +107,19 @@ bool CEvToolCommand::acceptVerboseOption(const char* opt)
         isHelp = true;
         return true;
     }
+    else
+    {
+        const char* valueDelim = strchr(opt, '=');
+        if (!valueDelim || !valueDelim[1])
+            return false;
+        StringAttr key(opt, valueDelim - opt);
+        return acceptKVOption(key, valueDelim + 1);
+    }
+    return false;
+}
+
+bool CEvToolCommand::acceptKVOption(const char* key, const char* value)
+{
     return false;
 }
 
@@ -104,7 +128,7 @@ bool CEvToolCommand::acceptParameter(const char* arg)
     return false;
 }
 
-void CEvToolCommand::usagePrefix(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out)
+void CEvToolCommand::usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out)
 {
     StringBuffer prefix("usage: ");
     const char* delim = strrchr(argv[0], PATHSEPCHAR);
@@ -116,6 +140,32 @@ void CEvToolCommand::usagePrefix(int argc, const char* argv[], int pos, IBuffere
     for (int idx = 1; idx <= pos; ++idx)
         prefix << argv[idx] << " ";
     out.put(prefix.length(), prefix.str());
+}
+
+void CEvToolCommand::usageSynopsis(IBufferedSerialOutputStream& out)
+{
+}
+
+void CEvToolCommand::usageOptions(IBufferedSerialOutputStream& out)
+{
+    static const char* usageStr = R"!!!(
+Options:
+    -?, -h, --help            Show this help message and exit.
+)!!!";
+    static size32_t usageStrLength = size32_t(strlen(usageStr));
+    out.put(usageStrLength, usageStr);
+}
+
+void CEvToolCommand::usageFilters(IBufferedSerialOutputStream& out)
+{
+}
+
+void CEvToolCommand::usageParameters(IBufferedSerialOutputStream& out)
+{
+}
+
+void CEvToolCommand::usageDetails(IBufferedSerialOutputStream& out)
+{
 }
 
 namespace
@@ -218,12 +268,34 @@ void CEventFileOp::setInputPath(const char* path)
     inputPath.set(path);
 }
 
-bool CStreamingEventFileOp::ready() const
+bool CEventConsumingOp::ready() const
 {
     return CEventFileOp::ready() && out.get();
 }
 
-void CStreamingEventFileOp::setOutput(IBufferedSerialOutputStream& _out)
+void CEventConsumingOp::setOutput(IBufferedSerialOutputStream& _out)
 {
     out.set(&_out);
+}
+
+bool CEventConsumingOp::acceptEvents(const char* eventNames)
+{
+    return ensureFilter()->acceptEvents(eventNames);
+}
+
+bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
+{
+    return ensureFilter()->acceptAttribute(attr, values);
+}
+
+IEventFilter* CEventConsumingOp::ensureFilter()
+{
+    if (!filter)
+        filter.setown(createEventFilter());
+    return filter;
+}
+
+bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
+{
+    return readEvents(path, visitor, filter);
 }
