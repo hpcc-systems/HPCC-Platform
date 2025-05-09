@@ -3085,47 +3085,48 @@ void PTree::deserializeSelf(MemoryBuffer &src)
     else value = NULL;
 }
 
-IPropertyTree *PTree::clone(IPropertyTree &srcTree, bool self, bool sub)
+IPropertyTree *PTree::clone(const IPropertyTree &srcTree, bool sub)
 {
-    IPropertyTree *_dstTree = self ? this : create(srcTree.queryName());
-    PTree *dstTree = QUERYINTERFACE(_dstTree, PTree);
-    dbgassertex(dstTree);
-    if (self)
-        dstTree->setName(srcTree.queryName());
-    clone(srcTree, *dstTree, sub);
-    return _dstTree;
+    Owned<IPropertyTree> _dstTree = create(srcTree.queryName());
+    PTree *dstTree = static_cast<PTree *>(_dstTree.get());
+    dstTree->cloneContents(srcTree, sub);
+    return _dstTree.getClear();
 }
 
-void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
+void PTree::cloneIntoSelf(const IPropertyTree &srcTree, bool sub)
 {
-    PTree *_dstTree = QUERYINTERFACE((&dstTree), PTree); assertex(_dstTree); //JCSMORE
-    flags = _dstTree->flags;
+    setName(srcTree.queryName());
+    cloneContents(srcTree, sub);
+}
+
+void PTree::cloneContents(const IPropertyTree &srcTree, bool sub)
+{
+    //MORE: Should any flags be cloned from the srcTree?
     if (srcTree.isBinary(NULL))
     {
         MemoryBuffer mb;
         verifyex(srcTree.getPropBin(NULL, mb));
         //MORE: Avoid decompressing??
-        dstTree.setPropBin(NULL, mb.length(), mb.toByteArray(), COMPRESS_METHOD_DEFAULT);
+        setPropBin(nullptr, mb.length(), mb.toByteArray(), COMPRESS_METHOD_DEFAULT);
     }
     else if (srcTree.isCompressed(NULL))
     {
         StringBuffer s;
         verifyex(srcTree.getProp(NULL, s));
-        dstTree.setProp(NULL, s.str());
+        setProp(NULL, s.str());
     }
     else
-        dstTree.setProp(NULL, srcTree.queryProp(NULL));
+        setProp(NULL, srcTree.queryProp(NULL));
 
-    IAttributeIterator *attrs = srcTree.getAttributes();
+    Owned<IAttributeIterator> attrs = srcTree.getAttributes();
     if (attrs->first())
     {
         do
         {
-            dstTree.setProp(attrs->queryName(), attrs->queryValue());
+            setProp(attrs->queryName(), attrs->queryValue());
         }
         while (attrs->next());
     }
-    attrs->Release();
 
     if (sub)
     {
@@ -3135,8 +3136,8 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
             do
             {
                 IPropertyTree &child = iter->query();
-                IPropertyTree *newChild = clone(child, false, sub);
-                dstTree.addPropTree(newChild->queryName(), newChild);
+                IPropertyTree *newChild = clone(child, sub);
+                addPropTree(newChild->queryName(), newChild);
             }
             while (iter->next());
         }
@@ -3147,7 +3148,7 @@ IPropertyTree *PTree::ownPTree(IPropertyTree *tree)
 {
     if (!isEquivalent(tree) || tree->IsShared() || isCaseInsensitive() != tree->isCaseInsensitive())
     {
-        IPropertyTree *newTree = clone(*tree);
+        IPropertyTree *newTree = clone(*tree, true);
         tree->Release();
         return newTree;
     }
@@ -4395,7 +4396,7 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags)
 {
     Owned<PTree> tree = (PTree *)createPTree(NULL, flags);
-    return tree->clone(*srcTree->queryBranch(NULL));
+    return tree->clone(*srcTree->queryBranch(NULL), true);
 }
 
 void mergePTree(IPropertyTree *target, IPropertyTree *toMerge)

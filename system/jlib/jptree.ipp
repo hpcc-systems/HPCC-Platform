@@ -626,8 +626,11 @@ public:
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void deserializeSelf(MemoryBuffer &src);
     void serializeAttributes(MemoryBuffer &tgt);
-    IPropertyTree *clone(IPropertyTree &srcTree, bool self=false, bool sub=true);
-    void clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub=true);
+
+    void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
+    IPropertyTree * clone(const IPropertyTree &srcTree, bool sub);  // create a node (that matches the type of this) and clone the source
+    void cloneContents(const IPropertyTree &srcTree, bool sub);
+
     inline void setOwner(IPTArrayValue *_arrayOwner) { arrayOwner = _arrayOwner; }
     IPropertyTree *queryCreateBranch(IPropertyTree *branch, const char *prop, bool *existing=NULL);
     IPropertyTree *splitBranchProp(const char *xpath, const char *&_prop, bool error=false);
