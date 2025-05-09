@@ -778,6 +778,10 @@ public:
     {
         return 0;
     }
+    virtual LogHandlerFormat queryFormatType() const override
+    {
+         return LOGFORMAT_undefined;
+    };
 private:
     unsigned messageFields = MSGFIELD_all;
 };
