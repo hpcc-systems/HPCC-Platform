@@ -432,7 +432,7 @@ protected:
         }
     }
 
-    virtual void finish(IPropertyTree * metadata, unsigned * fileCrc, size32_t maxRecordSizeSeen, BloomFilterArray * optBloomFilters) override
+    virtual void finish(IPropertyTree * metadata, unsigned * fileCrc, size32_t maxRecordSizeSeen, const BloomFilterArray * optBloomFilters) override
     {
         if (maxRecordSizeSeen)
             keyHdr->setMaxKeyLength(maxRecordSizeSeen);

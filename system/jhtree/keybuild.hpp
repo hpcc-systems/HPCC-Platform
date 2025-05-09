@@ -97,7 +97,7 @@ typedef IArrayOf<CNodeInfo> NodeInfoArray;
 typedef std::vector<const BloomFilter *> BloomFilterArray;
 interface IKeyBuilder : public IInterface
 {
-    virtual void finish(IPropertyTree * metadata, unsigned * crc, size32_t maxRecordSizeSeen, BloomFilterArray * optBloomFilters) = 0;
+    virtual void finish(IPropertyTree * metadata, unsigned * crc, size32_t maxRecordSizeSeen, const BloomFilterArray * optBloomFilters) = 0;
     virtual void processKeyData(const char *keyData, offset_t pos, size32_t recsize) = 0;
     virtual void addLeafInfo(CNodeInfo *info) = 0;
     virtual unsigned __int64 createBlob(size32_t size, const char * _ptr) = 0;

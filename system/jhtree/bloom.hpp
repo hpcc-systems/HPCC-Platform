@@ -35,7 +35,7 @@ public:
      * @param cardinality Expected number of values to be added. This will be used to determine the appropriate size and hash count
      * @param probability Desired probability of false positives. This will be used to determine the appropriate size and hash count
      */
-    BloomFilter(const __uint64 _fields, unsigned cardinality, double probability=0.1);
+    BloomFilter(const __uint64 _fields, unsigned cardinality, double probability);
     /*
      * Create a bloom filter from a previously-generated table. Parameters must batch those used when building the table.
      *

@@ -233,7 +233,7 @@ const BloomFilter * SortedBloomBuilder::build() const
 {
     if (!valid())
         return nullptr;
-    BloomFilter *b = new BloomFilter(hashes.length(), probability);
+    BloomFilter *b = new BloomFilter(fields, hashes.length(), probability);
     ForEachItemIn(idx, hashes)
     {
         b->add(hashes.item(idx));
@@ -347,7 +347,7 @@ const BloomFilter * UnsortedBloomBuilder::build() const
 {
     if (!valid())
         return nullptr;
-    BloomFilter *b = new BloomFilter(tableCount, probability);
+    BloomFilter *b = new BloomFilter(fields, tableCount, probability);
     for (unsigned idx = 0; idx < tableSize; idx++)
     {
         hash64_t val = hashes[idx];
