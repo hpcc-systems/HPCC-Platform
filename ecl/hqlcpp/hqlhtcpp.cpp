@@ -11014,7 +11014,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     IHqlExpression * dataset  = expr->queryChild(0);
     IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
-    bool useGenericReadWrites = options.genericDiskReadWrites;
+    bool useGenericReadWrites = false;
 
     if (dataset->isDictionary())
     {
@@ -11026,80 +11026,94 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         return doBuildActivityOutputWorkunit(ctx, expr, isRoot);
 
     OwnedHqlExpr filename = foldHqlExpression(rawFilename);
-    IHqlExpression * program  = queryRealChild(expr, 2);
-    IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
-    bool isJson = false;
-    IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
-    if (!xmlAttr)
+
+    IHqlExpression * pipeProgramOrFileTypeExpr  = queryRealChild(expr, 2);
+    StringBuffer genericFileTypeFormat;
+    IHqlExpression *pipe = NULL;
+    if (pipeProgramOrFileTypeExpr)
     {
-        xmlAttr = expr->queryAttribute(jsonAtom);
-        if (xmlAttr)
-            isJson=true;
+        // Force use of generic I/O if we're using file type plugins;
+        // assign the format based on the file type.
+        if (pipeProgramOrFileTypeExpr->getOperator() == no_filetype)
+        {
+            useGenericReadWrites = true;
+            IHqlExpression * fileType = queryAttributeChild(pipeProgramOrFileTypeExpr, fileTypeAtom, 0);
+            getStringValue(genericFileTypeFormat, fileType);
+            genericFileTypeFormat.toLowerCase();
+        }
+        else if (pipeProgramOrFileTypeExpr->getOperator() == no_pipe)
+        {
+            pipe = pipeProgramOrFileTypeExpr->queryChild(0);
+        }
     }
+    else if (filename->getOperator() == no_pipe)
+    {
+        pipe = filename->queryChild(0);
+    }
+
+    // It may not make sense to enable generic I/O without the TYPE() ECL syntax, but
+    // if it does then set it here
+    useGenericReadWrites |= options.genericDiskReadWrites;
+
     LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
     IHqlExpression * seq = querySequence(expr);
 
-    IHqlExpression *pipe = NULL;
-    if (program)
-    {
-        // Force use of generic I/O if we're using file type plugins
-        if (program->getOperator() == no_filetype)
-            useGenericReadWrites = true;
-        if (program->getOperator() == no_pipe)
-            pipe = program->queryChild(0);
-    }
-    else if (filename->getOperator() == no_pipe)
-        pipe = filename->queryChild(0);
-
-    if (pipe && expr->hasAttribute(_disallowed_Atom))
-        throwError(HQLERR_PipeNotAllowed);
-
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
-    StringBuffer format;
     ThorActivityKind kind = TAKdiskwrite;
     const char * activityArgName = "DiskWrite";
     SummaryType summaryType = SummaryType::WriteFile;
-    if (expr->getOperator() == no_spill)
+
+    IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
+    bool isJson = false;
+    IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
+
+    if (!useGenericReadWrites)
     {
-        kind = TAKspill;
-        activityArgName = "Spill";
-        summaryType = SummaryType::SpillFile;
-    }
-    else if (pipe)
-    {
-        kind = TAKpipewrite;
-        activityArgName = "PipeWrite";
-        summaryType = SummaryType::None;
-    }
-    else if (csvAttr)
-    {
-        kind = TAKcsvwrite;
-        activityArgName = "CsvWrite";
-        format.append("csv");
-    }
-    else if (xmlAttr)
-    {
-        activityArgName = "XmlWrite";
-        if (isJson)
+        if (!xmlAttr)
         {
-            kind = TAKjsonwrite;
-            format.append("json");
+            xmlAttr = expr->queryAttribute(jsonAtom);
+            if (xmlAttr)
+                isJson = true;
         }
-        else
+
+        if (pipe && expr->hasAttribute(_disallowed_Atom))
+            throwError(HQLERR_PipeNotAllowed);
+
+        if (expr->getOperator() == no_spill)
         {
-            kind = TAKxmlwrite;
-            format.append("xml");
+            kind = TAKspill;
+            activityArgName = "Spill";
+            summaryType = SummaryType::SpillFile;
         }
+        else if (pipe)
+        {
+            kind = TAKpipewrite;
+            activityArgName = "PipeWrite";
+            summaryType = SummaryType::None;
+        }
+        else if (csvAttr)
+        {
+            kind = TAKcsvwrite;
+            activityArgName = "CsvWrite";
+        }
+        else if (xmlAttr)
+        {
+            activityArgName = "XmlWrite";
+            if (isJson)
+                kind = TAKjsonwrite;
+            else
+                kind = TAKxmlwrite;
+        }
+        else if (expr->hasAttribute(_spill_Atom))
+        {
+            kind = TAKspillwrite;
+            summaryType = SummaryType::SpillFile;
+        }
+        if (expr->hasAttribute(jobTempAtom))
+            summaryType = SummaryType::JobTemp;
+        else if (expr->hasAttribute(_workflowPersist_Atom))
+            summaryType = SummaryType::PersistFile;
     }
-    else if (expr->hasAttribute(_spill_Atom))
-    {
-        kind = TAKspillwrite;
-        summaryType = SummaryType::SpillFile;
-    }
-    if (expr->hasAttribute(jobTempAtom))
-        summaryType = SummaryType::JobTemp;
-    else if (expr->hasAttribute(_workflowPersist_Atom))
-        summaryType = SummaryType::PersistFile;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
@@ -11133,8 +11147,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
     buildInstancePrefix(instance);
 
-    if (useGenericReadWrites && !format.isEmpty())
-        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", format.str());
+    if (useGenericReadWrites && !genericFileTypeFormat.isEmpty())
+        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", genericFileTypeFormat.str());
 
     noteResultDefined(ctx, instance, seq, filename, isRoot);
 
@@ -11244,8 +11258,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
-            if (useGenericReadWrites && program)
-                buildFormatOptionsFunction(instance->createctx, program);
+            if (useGenericReadWrites && pipeProgramOrFileTypeExpr)
+                buildFormatOptionsFunction(instance->createctx, pipeProgramOrFileTypeExpr);
 
             //virtual const char * queryRecordECL() = 0;
             //Ensure the ECL for the record reflects its serialized form, not the internal form
