@@ -80,14 +80,18 @@ class MockEventVisitor : public CNoOpEventVisitorDecorator
 public:
     virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
     {
+        // Timestamps and thread ID are not predictable. Hard code predictable values.
+        CDateTime dt;
         switch (id)
         {
             case EvAttrRecordedTimestamp:
-                value = 1000;
-                break;
+                dt.setString("2025-05-08T00:00:00.000001000");
+                value = dt.getTimeStampNs();
+                return CNoOpEventVisitorDecorator::visitAttribute(id, value);
             case EvAttrEventTimestamp:
-                value = 1010;
-                break;
+                dt.setString("2025-05-08T00:00:00.000001010");
+                value = dt.getTimeStampNs();
+                return CNoOpEventVisitorDecorator::visitAttribute(id, value);
             case EvAttrEventThreadId:
                 value = 100;
                 break;
@@ -325,7 +329,7 @@ public:
         {
             static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = 1000
+attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
 attribute: traceid = true
 attribute: threadid = true
 attribute: stack = true
@@ -353,13 +357,13 @@ attribute: bytesRead = 21
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = 1000
+attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
 attribute: traceid = true
 attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: EventTimestamp = 1010
+attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: FileId = 12345
@@ -391,13 +395,13 @@ attribute: bytesRead = 76
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = 1000
+attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
 attribute: traceid = true
 attribute: threadid = true
 attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
-attribute: EventTimestamp = 1010
+attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: FileId = 12345
@@ -406,7 +410,7 @@ attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
 event: DaliConnect
 attribute: name = 'DaliConnect'
-attribute: EventTimestamp = 1010
+attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
 attribute: Path = '/Workunits/Workunit/abc.wu'
