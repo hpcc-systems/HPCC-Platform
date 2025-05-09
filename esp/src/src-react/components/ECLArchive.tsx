@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack } from "@fluentui/react";
+import { ToggleButton } from "@fluentui/react-components";
+import { TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
 import { Workunit, WsWorkunits, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -7,6 +9,7 @@ import { useWorkunitArchive } from "../hooks/workunit";
 import { useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
+import { AutosizeComponent } from "../layouts/HpccJSAdapter";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { ECLArchiveTree } from "./ECLArchiveTree";
@@ -14,6 +17,8 @@ import { ECLArchiveEditor } from "./ECLArchiveEditor";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 
 const logger = scopedLogger("src-react/components/ECLArchive.tsx");
+
+const filterIcon: IIconProps = { iconName: "Filter" };
 
 const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
@@ -43,6 +48,8 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     const [markers, setMarkers] = React.useState<{ lineNum: number, label: string }[]>([]);
     const [selectionText, setSelectionText] = React.useState<string>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
+    const [matchCase, setMatchCase] = React.useState(false);
+    const [treeFilter, setTreeFilter] = React.useState("");
 
     selection = selection ?? archive?.queryId();
 
@@ -71,6 +78,10 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     const setSelectedItem = React.useCallback((selId: string) => {
         pushUrl(`${parentUrl}/${selId}`);
     }, [parentUrl]);
+
+    const onChangeTreeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+        setTreeFilter(newValue ?? "");
+    }, []);
 
     React.useEffect(() => {
         if (dockpanel) {
@@ -115,7 +126,17 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                 <DockPanelItem key="scopesTable" title="Files" >
                     {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
                         archive?.modAttrs.length &&
-                        <ECLArchiveTree archive={archive} selectedAttrIDs={[selection]} setSelectedItem={setSelectedItem} />
+                        <HolyGrail
+                            header={<Stack horizontal>
+                                <Stack.Item grow>
+                                    <SearchBox value={treeFilter} onChange={onChangeTreeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                </Stack.Item>
+                                <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
+                            </Stack>}
+                            main={<AutosizeComponent>
+                                <ECLArchiveTree archive={archive} filter={treeFilter} matchCase={matchCase} selectedAttrIDs={[selection]} setSelectedItem={setSelectedItem} />
+                            </AutosizeComponent>}
+                        />
                     }
                 </DockPanelItem>
                 <DockPanelItem key="eclEditor" title="ECL" padding={4} location="split-right" relativeTo="scopesTable">

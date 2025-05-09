@@ -94,7 +94,7 @@ export const AddLabel: React.FunctionComponent<AddLabelProps> = ({
 }) => {
     const [label, setLabel] = React.useState("");
     const onChangeAddLabel = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setLabel(newValue || "");
+        setLabel(newValue ?? "");
     }, [],);
 
     return <MessageBox title={nlsHPCC.Add} show={show} setShow={setShow} minWidth={width}
