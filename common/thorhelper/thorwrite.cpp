@@ -45,7 +45,7 @@ class DiskWriteMapping : public CInterfaceOf<IRowWriteFormatMapping>
 {
 public:
     DiskWriteMapping(RecordTranslationMode _mode, const char * _format, IOutputMetaData & _projected, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, const IPropertyTree * _formatOptions)
-    : mode(_mode), format(_format), expectedCrc(_expectedCrc), projectedMeta(&_projected), expectedMeta(&_expected), projectedCrc(_projectedCrc), formatOptions(_formatOptions)
+    : mode(_mode), format(_format), expectedCrc(_expectedCrc), projectedMeta(&_projected), projectedCrc(_projectedCrc), expectedMeta(&_expected), formatOptions(_formatOptions)
     {}
 
     virtual const char * queryFormat() const override { return format; }

@@ -643,10 +643,7 @@ void CHThorDiskWriteActivity::open()
 
     ILogicalRowWriter * writer = nullptr;
     if (useGenericReadWrites)
-    {
-        // TODO
-        UNIMPLEMENTED;
-    }
+        throwUnexpected(); // generic write not yet supported
     else
         writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
