@@ -2103,6 +2103,26 @@ static void getRecordSizeText(StringBuffer & out, IHqlExpression * record)
         out.append(minSize);
 }
 
+static void getFieldListText(StringBuffer & out, IHqlExpression * record)
+{
+    ForEachChild(idx, record)
+    {
+        IHqlExpression * cur = record->queryChild(idx);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            getFieldListText(out, cur);
+            break;
+        case no_ifblock:
+            getFieldListText(out, cur->queryChild(1));
+            break;
+        case no_field:
+            out.append(",").append(str(cur->queryId()));
+            break;
+        }
+    }
+}
+
 void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alwaysExecuted)
 {
     IPropertyTree * parentGraphNode = subgraph ? subgraph->tree.get() : defaultSubGraph;
@@ -2240,6 +2260,14 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                     StringBuffer temp;
                     getRecordSizeText(temp, record);
                     addAttribute(WaRecordSize, temp.str());
+                }
+
+                if (options.noteFieldsInGraph)
+                {
+                    StringBuffer temp;
+                    getFieldListText(temp, record);
+                    if (temp.length())
+                        addAttribute(WaFields, temp.str()+1);
                 }
                 if (options.generateActivityFormats)
                     translator.addFormatAttribute(*this, WaRecordFormat, record);

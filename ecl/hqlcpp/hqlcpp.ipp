@@ -760,6 +760,7 @@ struct HqlCppOptions
     bool                forceVariableWuid = false;
     bool                okToDeclareAndAssign = false;       // long time ago gcc had problems doing this for very complex functions
     bool                noteRecordSizeInGraph = false;
+    bool                noteFieldsInGraph = false;
     bool                convertRealAssignToMemcpy = false;
     bool                allowActivityForKeyedJoin = false;
     bool                forceActivityForKeyedJoin = false;

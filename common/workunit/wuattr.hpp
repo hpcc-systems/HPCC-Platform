@@ -137,6 +137,7 @@ enum WuAttr : unsigned
     WaServiceName,
     WaSizeComplexHelper,
     WaIsBalanced,
+    WaFields,
     WaMax
 };
 inline WuAttr & operator++(WuAttr & x) { assert(x<WaMax); x = (WuAttr)(x+1); return x; }
