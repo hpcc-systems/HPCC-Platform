@@ -243,7 +243,7 @@ void CK8sResourcesInfoCache::read()
     StringBuffer podsBuf, servicesBuf;
     // Due to how IPipeProcess parses parameters we need the jsonpath argument
     // quoted as shown below, or it will be treated as multiple arguments.
-    VStringBuffer command("kubectl get pods --selector=app.kubernetes.io/part-of=HPCC-Platform -o 'jsonpath=%s'", jsonpath);
+    VStringBuffer command("kubectl get pods -o 'jsonpath=%s'", jsonpath);
     readToBuffer(command.str(), podsBuf);
     readToBuffer("kubectl get svc --output=json", servicesBuf);
 
