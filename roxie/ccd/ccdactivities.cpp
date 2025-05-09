@@ -2243,7 +2243,6 @@ class CParallelRoxieDiskGroupAggregateActivity : public CParallelRoxieActivity
 protected:
     IHThorDiskGroupAggregateArg *helper;
     RowAggregator resultAggregator;
-    Owned<IRowManager> rowManager;
 
 public:
     CParallelRoxieDiskGroupAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
