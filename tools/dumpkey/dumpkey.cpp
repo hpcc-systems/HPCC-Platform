@@ -511,7 +511,7 @@ int main(int argc, const char **argv)
                 }
                 if (keyBuilder)
                 {
-                    keyBuilder->finish(metadata, nullptr, maxSizeSeen);
+                    keyBuilder->finish(metadata, nullptr, maxSizeSeen, nullptr);
                     printf("New key has %" I64F "u leaves, %" I64F "u branches, %" I64F "u duplicates\n", keyBuilder->getStatistic(StNumLeafCacheAdds), keyBuilder->getStatistic(StNumNodeCacheAdds), keyBuilder->getStatistic(StNumDuplicateKeys));
                     printf("Original key size: %" I64F "u bytes\n", const_cast<IFileIO *>(index->queryFileIO())->size());
                     printf("New key size: %" I64F "u bytes (%" I64F "u bytes written in %" I64F "u writes)\n", outFileStream->size(), outFileStream->getStatistic(StSizeDiskWrite), outFileStream->getStatistic(StNumDiskWrites));

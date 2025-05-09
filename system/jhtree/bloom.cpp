@@ -23,7 +23,8 @@
 #include "eclhelper.hpp"
 #include "rtlrecord.hpp"
 
-BloomFilter::BloomFilter(unsigned _cardinality, double _probability)
+BloomFilter::BloomFilter(const __uint64 _fields, unsigned _cardinality, double _probability)
+: fields(_fields)
 {
     unsigned cardinality = _cardinality ? _cardinality : 1;
     double probability = _probability >= 0.3 ? 0.3 : (_probability < 0.01 ? 0.01 : _probability);
@@ -34,7 +35,8 @@ BloomFilter::BloomFilter(unsigned _cardinality, double _probability)
     table = (byte *) calloc(tableSize, 1);
 }
 
-BloomFilter::BloomFilter(unsigned _numHashes, unsigned _tableSize, byte *_table)
+BloomFilter::BloomFilter(const __uint64 _fields, unsigned _numHashes, unsigned _tableSize, byte *_table)
+: fields(_fields)
 {
     numBits = _tableSize * 8;
     numHashes = _numHashes;
@@ -78,8 +80,8 @@ bool BloomFilter::test(hash64_t hash) const
     return true;
 }
 
-IndexBloomFilter::IndexBloomFilter(unsigned _numHashes, unsigned _tableSize, byte *_table, __uint64 _fields)
-: BloomFilter(_numHashes, _tableSize, _table), fields(_fields)
+IndexBloomFilter::IndexBloomFilter(__uint64 _fields, unsigned _numHashes, unsigned _tableSize, byte *_table)
+: BloomFilter(_fields, _numHashes, _tableSize, _table)
 {}
 
 int IndexBloomFilter::compare(CInterface *const *_a, CInterface *const *_b)
@@ -169,13 +171,14 @@ class jhtree_decl SortedBloomBuilder : public CInterfaceOf<IBloomBuilder>
 {
 public:
     SortedBloomBuilder(const IBloomBuilderInfo &_helper);
-    SortedBloomBuilder(unsigned _maxHashes, double _probability);
+    SortedBloomBuilder(__uint64 _fields, unsigned _maxHashes, double _probability);
     virtual const BloomFilter * build() const override;
     virtual bool add(hash64_t val) override;
     virtual unsigned queryCount() const override;
     virtual bool valid() const override;
 
 protected:
+    const __uint64 fields;
     ArrayOf<hash64_t> hashes;
     const unsigned maxHashes;
     hash64_t lastHash = 0;
@@ -184,15 +187,16 @@ protected:
 };
 
 SortedBloomBuilder::SortedBloomBuilder(const IBloomBuilderInfo &helper)
-: maxHashes(helper.getBloomLimit()),
+: fields(helper.getBloomFields()),
+  maxHashes(helper.getBloomLimit()),
   probability(helper.getBloomProbability())
 {
     if (maxHashes==0 || !helper.getBloomEnabled())
         isValid = false;
 }
 
-SortedBloomBuilder::SortedBloomBuilder(unsigned _maxHashes, double _probability)
-: maxHashes(_maxHashes),
+SortedBloomBuilder::SortedBloomBuilder(__uint64 _fields, unsigned _maxHashes, double _probability)
+: fields(_fields), maxHashes(_maxHashes),
   probability(_probability)
 {
     if (maxHashes==0)
@@ -229,7 +233,7 @@ const BloomFilter * SortedBloomBuilder::build() const
 {
     if (!valid())
         return nullptr;
-    BloomFilter *b = new BloomFilter(hashes.length(), probability);
+    BloomFilter *b = new BloomFilter(fields, hashes.length(), probability);
     ForEachItemIn(idx, hashes)
     {
         b->add(hashes.item(idx));
@@ -243,7 +247,7 @@ class jhtree_decl UnsortedBloomBuilder : public CInterfaceOf<IBloomBuilder>
 {
 public:
     UnsortedBloomBuilder(const IBloomBuilderInfo &_helper);
-    UnsortedBloomBuilder(unsigned _maxHashes, double _probability);
+    UnsortedBloomBuilder(const __uint64 _fields, unsigned _maxHashes, double _probability);
     ~UnsortedBloomBuilder();
     virtual const BloomFilter * build() const override;
     virtual bool add(hash64_t val) override;
@@ -251,6 +255,7 @@ public:
     virtual bool valid() const override;
 
 protected:
+    const __uint64 fields;
     hash64_t *hashes = nullptr;
     const unsigned maxHashes;
     const unsigned tableSize;
@@ -260,7 +265,8 @@ protected:
 
 
 UnsortedBloomBuilder::UnsortedBloomBuilder(const IBloomBuilderInfo &helper)
-: maxHashes(helper.getBloomLimit()),
+: fields(helper.getBloomFields()),
+  maxHashes(helper.getBloomLimit()),
   tableSize(((helper.getBloomLimit()*4)/3)+1),
   probability(helper.getBloomProbability())
 {
@@ -271,8 +277,9 @@ UnsortedBloomBuilder::UnsortedBloomBuilder(const IBloomBuilderInfo &helper)
 
 }
 
-UnsortedBloomBuilder::UnsortedBloomBuilder(unsigned _maxHashes, double _probability)
-: maxHashes(_maxHashes),
+UnsortedBloomBuilder::UnsortedBloomBuilder(const __uint64 _fields, unsigned _maxHashes, double _probability)
+: fields(_fields),
+  maxHashes(_maxHashes),
   tableSize(((_maxHashes*4)/3)+1),
   probability(_probability)
 {
@@ -340,7 +347,7 @@ const BloomFilter * UnsortedBloomBuilder::build() const
 {
     if (!valid())
         return nullptr;
-    BloomFilter *b = new BloomFilter(tableCount, probability);
+    BloomFilter *b = new BloomFilter(fields, tableCount, probability);
     for (unsigned idx = 0; idx < tableSize; idx++)
     {
         hash64_t val = hashes[idx];
@@ -384,6 +391,7 @@ extern jhtree_decl IRowHasher *createRowHasher(const RtlRecord &recInfo, __uint6
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
+constexpr __uint64 dummyFieldsValue = (__uint64)-1;
 class BloomTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(BloomTest);
@@ -396,7 +404,7 @@ class BloomTest : public CppUnit::TestFixture
     const unsigned count = 1000000;
     void testSortedBloom()
     {
-        SortedBloomBuilder b(count, 0.01);
+        SortedBloomBuilder b(dummyFieldsValue, count, 0.01);
         for (unsigned val = 0; val < count; val++)
         {
             b.add(rtlHash64Data(sizeof(val), &val, HASH64_INIT));
@@ -420,7 +428,7 @@ class BloomTest : public CppUnit::TestFixture
 
     void testUnsortedBloom()
     {
-        UnsortedBloomBuilder b(count, 0.01);
+        UnsortedBloomBuilder b(dummyFieldsValue, count, 0.01);
         for (unsigned val = 0; val < count; val++)
             b.add(rtlHash64Data(sizeof(val), &val, HASH64_INIT));
         for (unsigned val = 0; val < count; val++)
@@ -443,13 +451,13 @@ class BloomTest : public CppUnit::TestFixture
 
     void testFailedSortedBloomBuilder()
     {
-        SortedBloomBuilder b1(0, 0.01);
+        SortedBloomBuilder b1(dummyFieldsValue, 0, 0.01);
         ASSERT(!b1.valid())
         ASSERT(!b1.add(0))
-        SortedBloomBuilder b2(1, 0.01);
+        SortedBloomBuilder b2(dummyFieldsValue, 1, 0.01);
         ASSERT(b2.add(1))
         ASSERT(!b2.add(2))
-        SortedBloomBuilder b3(10, 0.01);
+        SortedBloomBuilder b3(dummyFieldsValue, 10, 0.01);
         ASSERT(b3.add(1))
         ASSERT(b3.add(0))  // ok to add 0 to sorted bloom tables
         ASSERT(b3.add(2))
@@ -457,13 +465,13 @@ class BloomTest : public CppUnit::TestFixture
 
     void testFailedUnsortedBloomBuilder()
     {
-        UnsortedBloomBuilder b1(0, 0.01);
+        UnsortedBloomBuilder b1(dummyFieldsValue, 0, 0.01);
         ASSERT(!b1.valid())
         ASSERT(!b1.add(0))
-        UnsortedBloomBuilder b2(1, 0.01);
+        UnsortedBloomBuilder b2(dummyFieldsValue, 1, 0.01);
         ASSERT(b2.add(1))
         ASSERT(!b2.add(2))
-        UnsortedBloomBuilder b3(10, 0.01);
+        UnsortedBloomBuilder b3(dummyFieldsValue, 10, 0.01);
         ASSERT(b3.add(1))
         ASSERT(!b3.add(0))   // Not ok to add hash value 0 to unsorted
         ASSERT(!b3.add(2))

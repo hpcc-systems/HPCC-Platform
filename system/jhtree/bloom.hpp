@@ -35,7 +35,7 @@ public:
      * @param cardinality Expected number of values to be added. This will be used to determine the appropriate size and hash count
      * @param probability Desired probability of false positives. This will be used to determine the appropriate size and hash count
      */
-    BloomFilter(unsigned cardinality, double probability=0.1);
+    BloomFilter(const __uint64 _fields, unsigned cardinality, double probability);
     /*
      * Create a bloom filter from a previously-generated table. Parameters must batch those used when building the table.
      *
@@ -43,7 +43,7 @@ public:
      * @param tableSize  Size (in bytes) of the table
      * @param table      Bloom table. Note that the BloomFilter object will take ownership of this memory, so it must be allocated on the heap.
      */
-    BloomFilter(unsigned numHashes, unsigned tableSize, byte *table);
+    BloomFilter(const __uint64 _fields, unsigned numHashes, unsigned tableSize, byte *table);
     /*
      * BloomFilter destructor
      */
@@ -94,7 +94,14 @@ public:
      * @return       Table data.
      */
     inline const byte *queryTable() const { return table; }
+    /*
+     * Which fields are included in this bloom filter - a bitmask
+     *
+     * @return       bitmask of fields
+     */
+    __uint64 queryFields() const { return fields; }
 protected:
+    const __uint64 fields;
     unsigned numBits;
     unsigned numHashes;
     byte *table;
@@ -111,12 +118,10 @@ public:
      * @param table      Bloom table. Note that the BloomFilter object will take ownership of this memory, so it must be allocated on the heap.
      * @param fields     Bitmap storing the field indices
      */
-    IndexBloomFilter(unsigned numHashes, unsigned tableSize, byte *table, __uint64 fields);
+    IndexBloomFilter(__uint64 _fields, unsigned numHashes, unsigned tableSize, byte *table);
     inline __int64 queryFields() const { return fields; }
     bool reject(const IIndexFilterList &filters, bool & isValidBloom) const;
     static int compare(CInterface *const *a, CInterface *const *b);
-private:
-    const __uint64 fields;
 };
 
 /**
