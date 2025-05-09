@@ -226,8 +226,8 @@ public:
         static const char* usageStr =
 R"!!!([options] [filters] <filename>
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
@@ -235,8 +235,8 @@ R"!!!([options] [filters] <filename>
         static const char* usageStr = R"!!!(
 Summarize the index events in a binary event file.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 };
 

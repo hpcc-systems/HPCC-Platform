@@ -152,8 +152,8 @@ void CEvToolCommand::usageOptions(IBufferedSerialOutputStream& out)
 Options:
     -?, -h, --help            Show this help message and exit.
 )!!!";
-    static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-    out.put(usageStrLengthgth, usageStr);
+    static size32_t usageStrLength = size32_t(strlen(usageStr));
+    out.put(usageStrLength, usageStr);
 }
 
 void CEvToolCommand::usageFilters(IBufferedSerialOutputStream& out)

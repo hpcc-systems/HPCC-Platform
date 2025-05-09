@@ -238,8 +238,8 @@ public:
         static const char* usageStr =
 R"!!!([options] <filename>
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
@@ -248,8 +248,8 @@ R"!!!([options] <filename>
 Create a binary event file containing the events specified in an external
 configuration file. The configuration may use either XML or YAML formats.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageParameters(IBufferedSerialOutputStream& out) override
@@ -259,8 +259,8 @@ Parameters:
     <filename>                Full path to an XML or YAML file containing
                               simulated event specifications.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
 protected:

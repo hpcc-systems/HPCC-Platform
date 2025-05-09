@@ -130,8 +130,8 @@ public:
         static const char* usageStr =
 R"!!!([options] [filters] <filename>
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
@@ -139,8 +139,8 @@ R"!!!([options] [filters] <filename>
         static const char* usageStr = R"!!!(
 Parse a binary event file and write its contents to standard output.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override
@@ -152,8 +152,8 @@ R"!!!(    -c                        Output as comma separated values.
     -x                        Output as XML.
     -y                        Output as YAML.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageDetails(IBufferedSerialOutputStream& out) override
@@ -175,8 +175,8 @@ Structured output would, if represented in a property tree, resemble:
 CSV output includes columns for event name, plus one for each event attribute
 used by the event recorder.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 };
 

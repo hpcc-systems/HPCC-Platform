@@ -96,8 +96,8 @@ protected:
 Parameters:
     <filename>                Full path to an event data file.
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
 protected:
@@ -258,8 +258,8 @@ Filters:
                                 - RecordedTimestamp
                                 - RecordedOption
 )!!!";
-        static size32_t usageStrLengthgth = size32_t(strlen(usageStr));
-        out.put(usageStrLengthgth, usageStr);
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 };
 
