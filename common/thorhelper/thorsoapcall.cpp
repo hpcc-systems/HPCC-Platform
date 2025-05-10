@@ -790,7 +790,7 @@ interface IWSCAsyncFor: public IInterface
     virtual void processException(const Url &url, ConstPointerArray &inputRows, IException *e) = 0;
     virtual void checkTimeLimitExceeded(unsigned * _remainingMS) = 0;
 
-    virtual void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders) = 0;
+    virtual void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders, StringBuffer &proxyHeaders) = 0;
     virtual int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive, StringBuffer &contentType) = 0;
     virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta, const char *contentType) = 0;
 
@@ -1989,15 +1989,20 @@ private:
         }
     }
 
-    void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders)
+    void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders, StringBuffer &proxyHeaders)
     {
-        // Create the HTTP POST request
-        // NOTE: if using an http proxy and method is not https then path should be prepended with url host:port
-        //       but this would break regression tests that use esp as a proxy
-        if (master->wscType == STsoap)
-            request.clear().append("POST ").append(url.path).append(" HTTP/1.1\r\n");
+        request.clear();
+
+        if (!proxyHeaders.isEmpty())
+            request.append(proxyHeaders);
         else
-            request.clear().append(master->service).append(" ").append(url.path).append(" HTTP/1.1\r\n");
+        {
+            // Create the HTTP POST request
+            if (master->wscType == STsoap)
+                request.append("POST ").append(url.path).append(" HTTP/1.1\r\n");
+            else
+                request.append(master->service).append(" ").append(url.path).append(" HTTP/1.1\r\n");
+        }
 
         const char *httpheaders = master->httpHeaders.get();
         if (httpheaders && *httpheaders)
@@ -2512,8 +2517,10 @@ public:
             SocketEndpoint ep;
             Owned<ISocket> socket;
             CCycleTimer timer;
+            StringBuffer proxyHeaders;
             for (;;)
             {
+                proxyHeaders.clear();
                 try
                 {
                     checkTimeLimitExceeded(&remainingMS);
@@ -2630,6 +2637,20 @@ public:
                             throw makeStringException(0, err.str());
 #endif
                         }
+                        else if (useProxy && strieq(connUrl.method.str(), "http"))
+                        {
+                            StringBuffer urlHost;
+                            if (streq(url.host.str(), "."))
+                                urlHost.append(GetCachedHostName());
+                            else
+                                urlHost.append(url.host.str());
+
+                            if (master->wscType == STsoap)
+                                proxyHeaders.append("POST http://").appendf("%s:%d", urlHost.str(), url.port).append(url.path).append(" HTTP/1.1\r\n");
+                            else
+                                proxyHeaders.append(master->service).append(" http://").appendf("%s:%d", urlHost.str(), url.port).append(url.path).append(" HTTP/1.1\r\n");
+                            proxyHeaders.append("Proxy-Connection: Keep-Alive\r\n");
+                        }
 
                         unsigned __int64 connNs = connTimer.elapsedNs();
                         master->logctx.noteStatistic(StTimeSoapcallConnect, connNs);
@@ -2689,7 +2710,7 @@ public:
                 requestSpan->setSpanAttribute("service.name", master->service.str());
 
                 Owned<IProperties> traceHeaders = ::getClientHeaders(requestSpan);
-                createHttpRequest(request, url, traceHeaders);
+                createHttpRequest(request, url, traceHeaders, proxyHeaders);
 
                 socket->write(request.str(), request.length());
 
