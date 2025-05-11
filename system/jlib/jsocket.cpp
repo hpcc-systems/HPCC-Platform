@@ -2410,18 +2410,30 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
     }
     size32_t res=0;
     DEFINE_SOCKADDR(u); 
-    for (;;) {
+    for (;;)
+    {
         socklen_t  ul = setSockAddr(u,ep,ep.port);      
         int rc = sendto(sock, (char*)buf, size, 0, &u.sa, ul);
-        if (rc < 0) {
+        if (rc < 0)
+        {
             int err=SOCKETERRNO();
             if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==JSE_CONNREFUSED))
                 break; // ignore
-            if (err!=JSE_INTR) {
+            if (err == JSE_WOULDBLOCK || err == JSE_EAGAIN)
+            {
+                int retCode = wait_write(WAIT_FOREVER);
+                if (retCode < 0)
+                    THROWJSOCKTARGETEXCEPTION(SOCKETERRNO());
+                else if (retCode == 0)
+                    THROWJSOCKTARGETEXCEPTION(JSOCKERR_timeout_expired);
+            }
+            else if (err!=JSE_INTR)
+            {
                 THROWJSOCKTARGETEXCEPTION(err);
             }
         }
-        else {
+        else
+        {
             res = (size32_t)rc;
             break;
         }
