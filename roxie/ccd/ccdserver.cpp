@@ -77,8 +77,6 @@
 #include "rtldynfield.hpp"
 #include "engineerr.hpp"
 
-#define MAX_HTTP_HEADERSIZE 8000
-
 #ifdef _WIN32
 #pragma warning(disable : 4355)
 #endif

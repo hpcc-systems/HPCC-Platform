@@ -1855,4 +1855,14 @@ public:
     inline operator StringBuffer& () { return pattern; }
 };
 
+inline cost_type getGuillotineCost(IConstWorkUnit *wu)
+{
+    cost_type wuMaxCost = money2cost_type(wu->getDebugValueReal("maxCost", 0));
+    cost_type guillotineCost = wuMaxCost ? wuMaxCost : money2cost_type(getConfigReal("cost/@limit"));
+    cost_type hardCostLimit = money2cost_type(getConfigReal("cost/@hardlimit"));
+    if (hardCostLimit && ((guillotineCost == 0) || (guillotineCost > hardCostLimit)))
+        guillotineCost = hardCostLimit;
+    return guillotineCost;
+}
+
 #endif

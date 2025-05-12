@@ -11,7 +11,7 @@ import { ShortVerticalDivider } from "./Common";
 import { FlatItem, HelpersTree } from "./HelpersTree";
 import { FetchEditor } from "./SourceEditor";
 
-function getURL(item: HelperRow, option?) {
+function getURL(wuid: string, item: HelperRow, option?: number) {
     let params = "";
 
     const uriEncodedParams: { [key: string]: any } = {
@@ -23,7 +23,7 @@ function getURL(item: HelperRow, option?) {
         "ProcessName": encodeURIComponent(item.Orig?.ProcessName ?? ""),
         "SlaveNumber": encodeURIComponent(item.Orig?.SlaveNumber ?? ""),
         "Type": encodeURIComponent(item.Type ?? ""),
-        "Wuid": encodeURIComponent(item.workunit.Wuid),
+        "Wuid": encodeURIComponent(wuid),
     };
 
     switch (item.Type) {
@@ -100,15 +100,15 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     React.useEffect(() => {
         helpers.forEach(helper => {
             helper.Orig = {
-                url: getURL(helper),
+                url: getURL(wuid, helper),
                 ...helper.Orig
             };
         });
-    }, [helpers]);
+    }, [helpers, wuid]);
 
     React.useEffect(() => {
-        setSelection(helpers.filter(item => url === getURL(item))[0]);
-    }, [helpers, url]);
+        setSelection(helpers.filter(item => url === getURL(wuid, item))[0]);
+    }, [helpers, url, wuid]);
 
     React.useEffect(() => {
         if (helpers.length && selection !== undefined) {
@@ -206,7 +206,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             key: "file", text: nlsHPCC.File, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
                 checkedRows.forEach(item => {
-                    window.open(getURL(item, 1));
+                    window.open(getURL(wuid, item, 1));
                 });
             }
         },
@@ -214,7 +214,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             key: "zip", text: nlsHPCC.Zip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
                 checkedRows.forEach(item => {
-                    window.open(getURL(item, 2));
+                    window.open(getURL(wuid, item, 2));
                 });
             }
         },
@@ -222,11 +222,11 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             key: "gzip", text: nlsHPCC.GZip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
             onClick: () => {
                 checkedRows.forEach(item => {
-                    window.open(getURL(item, 3));
+                    window.open(getURL(wuid, item, 3));
                 });
             }
         }
-    ], [checkedItems, checkedRows, parentUrl, refreshData, treeItemLeafNodes]);
+    ], [wuid, checkedItems.length, checkedRows, parentUrl, refreshData, treeItemLeafNodes]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {

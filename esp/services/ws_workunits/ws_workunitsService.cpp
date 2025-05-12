@@ -1774,6 +1774,16 @@ bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer 
     return true;
 }
 
+bool addWUQueryFilterDouble(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, double double_num, WUSortField value)
+{
+    if (double_num == 0)
+        return false;
+    VStringBuffer vBuf("%f", double_num);
+    filters[count++] = value;
+    buff.append(vBuf);
+    return true;
+}
+
 bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *stime, WUSortField value)
 {
     if (isEmpty(stime))
@@ -1918,6 +1928,9 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
+    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumCompileCost(), WUSFcostcompile);
+    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumExecuteCost(), WUSFcostexecute);
+    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumFileAccessCost(), WUSFcostfileaccess);
     CWUProtectFilter protectedFilter = req.getProtected();
     if (protectedFilter != CWUProtectFilter_All)
         addWUQueryFilter(filters, filterCount, filterbuf, (protectedFilter == CWUProtectFilter_Protected) ? "1" : "0", WUSFprotected);
@@ -2641,6 +2654,12 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         addToQueryString(basicQuery, "Type", req.getType());
         if (addToQueryString(basicQuery, "LogicalFile", req.getLogicalFile()))
             addToQueryString(basicQuery, "LogicalFileSearchType", req.getLogicalFileSearchType());
+        if (version >= 2.02)
+        {
+            addDoubleToQueryString(basicQuery, "MinimumCompileCost", req.getMinimumCompileCost());
+            addDoubleToQueryString(basicQuery, "MinimumExecuteCost", req.getMinimumExecuteCost());
+            addDoubleToQueryString(basicQuery, "MinimumFileAccessCost", req.getMinimumFileAccessCost());
+        }
         resp.setFilters(basicQuery.str());
 
         if (notEmpty(req.getSortby()) && !strstr(basicQuery.str(), StringBuffer(req.getSortby()).append('=').str()))

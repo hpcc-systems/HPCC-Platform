@@ -748,6 +748,7 @@ public:
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid);
 
 bool addToQueryString(StringBuffer &queryString, const char *name, const char *value, const char delim = '&');
+bool addDoubleToQueryString(StringBuffer &queryString, const char *name, double value);
 
 void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret);
 

@@ -971,31 +971,41 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
         return 0;
 
     CCycleTimer timer;
-    while (true)
+
+    size32_t bytesWritten = 0;
+    size32_t bytesRemaining = size;
+    char *cbuf = (char *)buf;
+    ERR_clear_error();
+    while (bytesRemaining)
     {
-        int rc = SSL_write(m_ssl, buf, size);
+        size32_t bytesChunk = MIN(bytesRemaining, 0x4000);
+        int rc = SSL_write(m_ssl, &cbuf[bytesWritten], bytesChunk);
         if (rc > 0)
         {
             // NB: minSize not used here, because not using SSL_MODE_ENABLE_PARTIAL_WRITE
-            dbgassertex(size == rc);
-
-            cycle_t elapsedCycles = timer.elapsedCycles();
-            if (!SSTATS)
-                SSTATS = getSocketStatPtr();
-            SSTATS->writes++;
-            SSTATS->writesize += rc;
-            SSTATS->writetimecycles += elapsedCycles;
-            stats.ioWrites++;
-            stats.ioWriteBytes += rc;
-            stats.ioWriteCycles += elapsedCycles;
-
-            return rc;
+            dbgassertex(bytesChunk == rc);
+            bytesRemaining -= rc;
+            bytesWritten += rc;
         }
-        int ssl_err = SSL_get_error(m_ssl, rc);
-        unsigned remainingMs = timer.remainingMs(timeoutMs);
-        handleError(ssl_err, true, true, remainingMs, "SSL_write");
+        else
+        {
+            int ssl_err = SSL_get_error(m_ssl, rc);
+            unsigned remainingMs = timer.remainingMs(timeoutMs);
+            handleError(ssl_err, true, true, remainingMs, "SSL_write");
+        }
     }
-    throwUnexpected(); // should never get here
+
+    cycle_t elapsedCycles = timer.elapsedCycles();
+    if (!SSTATS)
+        SSTATS = getSocketStatPtr();
+    SSTATS->writes++;
+    SSTATS->writesize += bytesWritten;
+    SSTATS->writetimecycles += elapsedCycles;
+    stats.ioWrites++;
+    stats.ioWriteBytes += bytesWritten;
+    stats.ioWriteCycles += elapsedCycles;
+
+    return bytesWritten;
 }
 
 size32_t CSecureSocket::write(void const* buf, size32_t size)

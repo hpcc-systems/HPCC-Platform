@@ -5100,9 +5100,10 @@ public:
         double sizeGB = getDiskSize(true, false) / ((double)1024 * 1024 * 1024);
         const IPropertyTree *attrs = root->queryPropTree("Attr");
 
+        //This array must still exist when getReadCost() etc. is called, otherwise cluster will have been freed.
+        StringArray clusterNames;
         if (isEmptyString(cluster))
         {
-            StringArray clusterNames;
             unsigned countClusters = getClusterNames(clusterNames);
             for (unsigned i = 0; i < countClusters; i++)
                 atRestCost += calcFileAtRestCost(clusterNames[i], sizeGB, fileAgeDays);
