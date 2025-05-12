@@ -1022,6 +1022,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { COSTSTAT(Wait), "The cost associated with a component being idle waiting for an event" },
     { NUMSTAT(Aborts), "The number of times an abort was processed" },
     { COSTSTAT(Abort), "The cost associated with aborted actions" },
+    { NUMSTAT(RowsRead), "The number of rows read from an input" },
+    { NUMSTAT(RowsWritten), "The number of rows written to an output" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

@@ -1706,7 +1706,7 @@ class CRowPullDistributor: public CDistributorBase
         }
     } *txthread;
 
-    class cSortedDistributeMerger : implements IRowProvider, public CSimpleInterface
+    class cSortedDistributeMerger : implements IMergeRowProvider, public CSimpleInterface
     {
         CDistributorBase &parent;
         Owned<IRowStream> out;
@@ -2362,7 +2362,7 @@ public:
                     activity->getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
                     setCompFlag(compType, rwFlags);
                 }
-                Owned<IExtRowWriter> out = createRowWriter(tempfile, activity, rwFlags);
+                Owned<ILogicalRowWriter> out = createRowWriter(tempfile, activity, rwFlags);
                 if (!out)
                     throw MakeStringException(-1,"Could not created file %s",tempname.str());
                 for (;;)
@@ -2822,6 +2822,10 @@ public:
     virtual void flush() override
     {
         writer->flush();
+    }
+    virtual void noteStopped() override
+    {
+        writer->noteStopped();
     }
 };
 

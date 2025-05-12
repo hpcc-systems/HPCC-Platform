@@ -436,7 +436,7 @@ void IEngineRowStream::readAll(RtlLinkedDatasetBuilder &builder)
 
 using roxiemem::OwnedConstRoxieRow;
 
-class InputReaderBase  : public CInterfaceOf<IGroupedInput>
+class InputReaderBase  : public CInterfaceOf<IEngineRowStream>
 {
 protected:
     IEngineRowStream *input;
@@ -585,25 +585,25 @@ public:
     }
 };
 
-extern IGroupedInput *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare)
+extern IEngineRowStream *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare)
 {
     dbgassertex(_input && _groupCompare);
     return new GroupedInputReader(_input, _groupCompare);
 }
 
-extern IGroupedInput *createDegroupedInputReader(IEngineRowStream *_input)
+extern IEngineRowStream *createDegroupedInputReader(IEngineRowStream *_input)
 {
     dbgassertex(_input);
     return new DegroupedInputReader(_input);
 }
 
-extern IGroupedInput *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter)
+extern IEngineRowStream *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter)
 {
     dbgassertex(_input && _sorter);
     return new SortedInputReader(_input, _sorter);
 }
 
-extern IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
+extern IEngineRowStream *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
 {
     dbgassertex(_input && _groupCompare && _sorter);
     return new SortedGroupedInputReader(_input, _groupCompare, _sorter);

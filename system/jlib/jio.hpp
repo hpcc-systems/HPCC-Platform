@@ -125,11 +125,6 @@ interface IRowWriter: extends IInterface
     virtual void putRow(const void *row) = 0;   // takes ownership of row
     virtual void flush() = 0;
     virtual void writeRow(const void *row) = 0; // does not take ownership of row, row may not be linkable, or live beyond the next call
-};
-
-interface IRowWriterEx : extends IRowWriter
-{
-public:
     virtual void noteStopped() = 0;
 };
 
@@ -139,7 +134,7 @@ interface IRowLinkCounter: extends IInterface
     virtual void releaseRow(const void *row)=0;
 };
 
-interface IRowProvider: extends IRowLinkCounter
+interface IMergeRowProvider: extends IRowLinkCounter
 {
     virtual const void *nextRow(unsigned idx)=0;
     virtual void stop(unsigned idx)=0;

@@ -113,7 +113,7 @@ class CDiskWriteSlaveActivityBase : public ProcessSlaveActivity, implements ICop
 protected:
     IHThorDiskWriteArg *diskHelperBase;
     Owned<IFileIO> outputIO;
-    Owned<IExtRowWriter> out;
+    Owned<ILogicalRowWriter> out;
     Owned<IFileIOStream> outraw;
     Owned<IPartDescriptor> partDesc;
     StringAttr fName;

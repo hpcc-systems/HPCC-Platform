@@ -433,13 +433,8 @@ public:
     virtual void stop() override { stream->stop(); }
     virtual offset_t getOffset() const override { return stream->getOffset(); }
     virtual offset_t getLastRowOffset() const override { return stream->getLastRowOffset(); }
-    virtual unsigned __int64 queryProgress() const override { return stream->queryProgress(); }
     virtual const void *prefetchRow(size32_t & size) override { return stream->prefetchRow(size); }
     virtual void prefetchDone() override { stream->prefetchDone(); }
-    virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows) override
-    {
-        stream->reinit(offset, len, maxRows);
-    }
     virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         return stream->getStatistic(kind);

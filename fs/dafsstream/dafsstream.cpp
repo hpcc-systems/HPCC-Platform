@@ -1464,6 +1464,9 @@ IRowWriter *createRowWriter(IDFUFilePartWriter *partWriter)
                 nested.clear();
             }
         }
+        virtual void noteStopped() override
+        {
+        }
     public:
         CRowWriter(IDFUFilePartWriter *_partWriter) : partWriter(_partWriter)
         {

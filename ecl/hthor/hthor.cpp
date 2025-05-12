@@ -452,7 +452,7 @@ void CHThorDiskWriteActivity::execute()
 
 void CHThorDiskWriteActivity::stop()
 {
-    outSeq->flush(NULL);
+    outSeq->flush();
     if(blockcompressed)
         uncompressedBytesWritten = outSeq->getPosition();
     close();
@@ -618,7 +618,7 @@ void CHThorDiskWriteActivity::open()
         rwFlags |= rw_grouped;
     if (true) // MORE: Should this be controlled by an activity hint/flag?
         rwFlags |= rw_crc;
-    IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
+    ILogicalRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
 
 }

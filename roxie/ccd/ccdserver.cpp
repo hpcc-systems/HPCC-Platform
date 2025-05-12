@@ -12074,7 +12074,7 @@ public:
 class CRoxieServerDiskWriteActivity : public CRoxieServerInternalSinkActivity, implements IRoxiePublishCallback
 {
 protected:
-    Owned<IExtRowWriter> outSeq;
+    Owned<ILogicalRowWriter> outSeq;
     Owned<IOutputRowSerializer> rowSerializer;
     Linked<IFileIOStream> diskout;
     bool blockcompressed;
@@ -13094,8 +13094,8 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     OwnedConstRoxieRow defaultRight;
     Owned<IEngineRowAllocator> defaultLeftAllocator;
     Owned<IEngineRowAllocator> defaultRightAllocator;
-    Owned<IGroupedInput> sortedLeft;
-    Owned<IGroupedInput> groupedSortedRight;
+    Owned<IEngineRowStream> sortedLeft;
+    Owned<IEngineRowStream> groupedSortedRight;
 
     bool cloneLeft;
 
@@ -13248,7 +13248,7 @@ public:
     void fillLeft()
     {
         matchedLeft = false;
-        left = sortedLeft->nextRow(); // NOTE: already degrouped by the IGroupedInput we attached
+        left = sortedLeft->nextRow(); // NOTE: already degrouped by the IEngineRowStream we attached
         if (betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
             fillRight();
         if (limitedhelper && 0==rightIndex)
@@ -18734,7 +18734,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
-    Owned<IGroupedInput> groupedInput;
+    Owned<IEngineRowStream> groupedInput;
     IRowStream *dualCacheInput;
 
     bool fillGroup()

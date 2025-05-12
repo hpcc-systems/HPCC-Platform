@@ -1824,7 +1824,7 @@ protected:
 
     // NB: Only used by channel 0
     Owned<CFileOwner> overflowWriteFile;
-    Owned<IExtRowWriter> overflowWriteStream;
+    Owned<ILogicalRowWriter> overflowWriteStream;
     OwnedIFileIO overflowWriteFileIO;
     mutable CriticalSection critOverflowWriteFileIO;
     rowcount_t overflowWriteCount;

@@ -184,7 +184,7 @@ public:
         CDiskPartHandlerBase::gatherStats(merged);
         mergeStats(merged, in);
         if (in)
-            merged.mergeStatistic(StNumDiskRowsRead, in->queryProgress());
+            merged.mergeStatistic(StNumDiskRowsRead, in->getStatistic(StNumRowsRead));
     }
 };
 
@@ -400,7 +400,7 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     }
     if (partStream)
     {
-        closedPartFileStats.mergeStatistic(StNumDiskRowsRead, partStream->queryProgress());
+        closedPartFileStats.mergeStatistic(StNumDiskRowsRead, partStream->getStatistic(StNumRowsRead));
         activity.mergeFileStats(partDesc, partStream);
         partStream->stop();
         fileCRC = partStream->queryCRC();

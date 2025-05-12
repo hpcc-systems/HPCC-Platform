@@ -53,7 +53,7 @@ public:
 interface IManyToOneRowStream : extends IRowStream
 {
 public:
-    virtual IRowWriterEx * getWriter(unsigned n) = 0;
+    virtual IRowWriter * getWriter(unsigned n) = 0;
     virtual void abort() = 0;
 };
 

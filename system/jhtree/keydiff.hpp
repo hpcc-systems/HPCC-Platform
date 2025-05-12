@@ -76,23 +76,4 @@ extern jhtree_decl StringBuffer & getKeyDiffVersion(StringBuffer & buff);
 extern jhtree_decl StringBuffer & getKeyDiffMinDiffVersionForPatch(StringBuffer & buff);
 extern jhtree_decl StringBuffer & getKeyDiffMinPatchVersionForDiff(StringBuffer & buff);
 
-// KeyReader and KeyWriter
-
-interface IPropertyTree;
-
-
-interface IKeyFileRowReader: extends IRowStream
-{
-    virtual IPropertyTree *queryHeader()=0;
-};
-
-interface IKeyFileRowWriter: extends IRowWriter
-{
-};
-
-
-extern jhtree_decl IKeyFileRowReader *createKeyFileRowReader(const char *filename);
-extern jhtree_decl IKeyFileRowWriter *createKeyFileRowWriter(const char *filename,IPropertyTree *header, bool overwrite);
-
-
 #endif
