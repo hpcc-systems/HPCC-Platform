@@ -2848,3 +2848,14 @@ Pass in dict with .root, .me
 {{ $key }}: {{ $value | quote }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate infrastructure info
+Pass in dict with root
+*/}}
+{{- define "hpcc.generateInfrastructureInfo" -}}
+{{- if .root.Values.global.infrastructure }}
+infrastructure:
+{{ toYaml .root.Values.global.infrastructure | indent 2 }}
+{{- end -}}
+{{- end -}}
