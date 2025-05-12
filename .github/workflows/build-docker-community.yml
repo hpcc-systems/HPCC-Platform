@@ -1,0 +1,240 @@
+name: Build Community Platform
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'Operating System'
+        required: true
+        type: string
+      container:
+        description: 'Containerized build'
+        required: false
+        default: false
+        type: boolean
+      community_ref:
+        description: 'Community Ref'
+        required: true
+        type: string
+      build-docker-image:
+        description: 'Build Docker Image'
+        required: false
+        default: false
+        type: boolean
+      cmake-options-extra:
+        description: 'Extra CMake options'
+        required: false
+        type: string
+        default: ''
+
+  workflow_dispatch:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: true
+      container:
+        type: boolean
+        description: 'Containerized build'
+        required: false
+        default: false
+      community_ref:
+        type: string
+        description: 'Community Ref'
+        required: true
+      build-docker-image:
+        type: boolean
+        description: 'Build Docker Image'
+        required: false
+        default: false
+      cmake-options-extra:
+        type: string
+        description: 'Extra CMake options'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    name: Build Community Platform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        continue-on-error: true
+        run: |
+          df -h
+          sudo rm -rf ${ANDROID_HOME}
+          sudo rm -rf ${JAVA_HOME_8_X64}
+          sudo rm -rf ${JAVA_HOME_11_X64}
+          sudo rm -rf ${JAVA_HOME_17_X64}
+          sudo rm -rf ${JAVA_HOME_21_X64}
+          sudo rm -rf ${CHROMEWEBDRIVER}
+          sudo rm -rf ${EDGEWEBDRIVER}
+          sudo rm -rf ${GECKOWEBDRIVER}
+          sudo rm -rf ${SELENIUM_JAR_PATH}
+
+      - name: Display disk space (post free)
+        run: |
+          df -h
+
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/HPCC-Platform
+          ref: ${{ inputs.community_ref }}
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: recursive
+          path: ${{ github.workspace }}/HPCC-Platform
+
+      - name: Calculate Variables
+        id: vars
+        working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
+        run: |
+          echo "folder_platform=${{ github.workspace }}/HPCC-Platform" >> $GITHUB_OUTPUT
+          echo "folder_eclide"=${{ github.workspace }}/ECLIDE >> $GITHUB_OUTPUT
+          echo "folder_prettygitlogs"=${{ github.workspace }}/PrettyGitLogs >> $GITHUB_OUTPUT
+          echo 'mount_platform=source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          echo "folder_ln=${{ github.workspace }}/LN" >> $GITHUB_OUTPUT
+          echo 'mount_ln=source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          echo "folder_build=${{ github.workspace }}/build" >> $GITHUB_OUTPUT
+          echo 'mount_build=source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          community_ref=${{ github.ref }}
+          echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
+          echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "eclide_ref=$(echo $community_ref | sed 's/community/eclide/')" >> $GITHUB_OUTPUT
+          community_tag=$(echo $community_ref | cut -d'/' -f3)
+          echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
+          echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "hpcc_version=$(echo $community_tag | sed 's/community_//' | sed 's/-[0-9]$//')" >> $GITHUB_OUTPUT
+          echo "hpcc_version_full=$(echo $community_tag | sed 's/community_//')" >> $GITHUB_OUTPUT
+          community_base_ref=${{ github.event.base_ref || github.ref }}
+          candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
+          echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
+          candidate_base_branch=$(echo $candidate_branch | awk -F'.' -v OFS='.' '{ $3="x"; print }')
+          echo "candidate_base_branch=$candidate_base_branch" >> $GITHUB_OUTPUT
+          echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=${{ github.repository_owner == 'hpcc-systems' && 'ON' || 'OFF' }}" >> $GITHUB_OUTPUT
+          echo 'gpg_import=gpg --batch --import /hpcc-dev/build/private.key' >> $GITHUB_OUTPUT
+          latest_tag=$(git tag -l | grep -E "^community_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,3}-[0-9]{1,2}" | sort -V | tail -n 1)
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "is_latest=$(echo $latest_tag | grep -q $community_tag && echo true || echo false)" >> $GITHUB_OUTPUT
+          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
+          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:$candidate_base_branch" >> $GITHUB_OUTPUT
+
+      - name: Print Vars
+        run: echo "${{ toJson(steps.vars.outputs)}}"
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create Build Image
+        uses: docker/build-push-action@v5
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/${{ inputs.os }}.dockerfile
+          context: ${{ steps.vars.outputs.folder_platform }}/dockerfiles
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          load: ${{ github.repository_owner != 'hpcc-systems' }}
+          build-args: |
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+          tags: |
+            ${{ steps.vars.outputs.docker_tag_candidate_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
+            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
+          cache-to: type=inline
+
+      - name: CMake Packages
+        if: ${{ !inputs.container }}
+        run: |
+          mkdir -p ${{ steps.vars.outputs.folder_build }}
+          echo "${{ secrets.SIGNING_SECRET }}" > ${{ steps.vars.outputs.folder_build }}/private.key
+          plugins=("PLATFORM" "CLIENTTOOLS_ONLY")
+          for plugin in "${plugins[@]}"; do
+            sudo rm -f ${{ steps.vars.outputs.folder_build }}/CMakeCache.txt
+            sudo rm -rf ${{ steps.vars.outputs.folder_build }}/CMakeFiles
+            docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ steps.vars.outputs.gpg_import }} && \
+              cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -D$plugin=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ inputs.cmake-options-extra }} && \
+              cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+            # Disabled as not currently needed ---
+            # docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
+            # docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          done
+          cd ${{ steps.vars.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*))
+          for i in "${packages[@]}"; do
+            md5sum "$i" > "$i.md5sum"
+          done
+
+      - name: CMake Containerized Packages
+        if: ${{ inputs.container }}
+        run: |
+          mkdir -p ${{ steps.vars.outputs.folder_build }}
+          echo "${{ secrets.SIGNING_SECRET }}" > ${{ steps.vars.outputs.folder_build }}/private.key
+          sudo rm -f ${{ steps.vars.outputs.folder_build }}/CMakeCache.txt
+          sudo rm -rf ${{ steps.vars.outputs.folder_build }}/CMakeFiles
+          docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ steps.vars.outputs.gpg_import }} && \
+            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ inputs.cmake-options-extra }} && \
+            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ steps.vars.outputs.gpg_import }} && \
+            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ inputs.cmake-options-extra }} && \
+            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+  
+      - name: Upload Assets
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          artifacts: ${{ steps.vars.outputs.folder_build }}/*.md5sum, ${{ steps.vars.outputs.folder_build }}/*.${{ contains(inputs.os, 'ubuntu') && 'deb' || 'rpm' }}
+
+      - name: Locate k8s deb file
+        if: ${{ inputs.build-docker-image }}
+        id: container
+        run: |
+          k8s_pkg_path=$(ls -t ${{ steps.vars.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
+          k8s_pkg_file=$(basename "$k8s_pkg_path")
+          echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_OUTPUT
+          echo "$k8s_pkg_file"
+  
+      - name: Create Docker Image
+        uses: docker/build-push-action@v5
+        if: ${{ inputs.build-docker-image }}
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/platform-core-${{ inputs.os }}/Dockerfile
+          context: ${{ steps.vars.outputs.folder_build }}
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          build-args: |
+            PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
+          tags: |
+            hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}
+            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.community_tag }}
+            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+          cache-from: |
+            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+  
+      - name: Cleanup Environment
+        if: always()
+        run: rm -f ${{ steps.vars.outputs.folder_build }}/private.key
+
+      - name: Upload error logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-platform-community-${{ inputs.os }}${{ inputs.container && '-containerized' || '' }}-logs
+          path: ${{ steps.vars.outputs.folder_build }}/**/*.log
+
+
+      
+      

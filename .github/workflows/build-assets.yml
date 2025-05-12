@@ -96,344 +96,68 @@ jobs:
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ steps.vars.outputs.is_latest }}
 
-  build-docker:
-    name: Build Docker
+  build-docker-community:
+    name: Build Docker Community
     needs: preamble
-    runs-on: ubuntu-22.04
     strategy:
       matrix:
+        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
+        container: [ true, false ]
+        build-docker-image: [ false ]
         include:
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04
-            name: k8s
-            container: true
           - os: ubuntu-22.04
-          - os: ubuntu-22.04
-            name: k8s
             container: true
             build-docker-image: true
-          - os: ubuntu-20.04
-          - os: ubuntu-20.04
-            name: k8s
-            container: true
+        exclude:
           - os: rockylinux-8
-          - os: ubuntu-24.04
-            name: LN k8s
-            ln: true
             container: true
-          - os: ubuntu-22.04
-            name: LN k8s
-            ln: true
-            container: true
-            build-docker-image: true
-          - os: ubuntu-20.04
-            name: LN k8s
-            ln: true
-            container: true
-          - os: ubuntu-24.04
-            name: LN
-            ln: true
-          - os: ubuntu-22.04
-            name: LN
-            ln: true
-          - os: ubuntu-24.04
-            name: Enterprise
-            ee: true
-          - os: ubuntu-22.04
-            name: Enterprise
-            ee: true
-          - os: ubuntu-20.04
-            name: LN
-            ln: true
-          - os: rockylinux-8
-            name: LN
-            cmake_options_extra: ""
-            ln: true
-          - os: centos-7
-            name: LN
-            ln: true
       fail-fast: false
+    uses: ./.github/workflows/build-docker-community.yml
+    with:
+      os: ${{ matrix.os }}
+      container: ${{ matrix.container }}
+      build-docker-image: ${{ matrix.build-docker-image }}
+      community_ref: ${{ needs.preamble.outputs.community_ref }}
+    secrets: inherit
 
-    steps:
-      - name: Free additional disk space (remove Android SDK + Tools)
-        continue-on-error: true
-        run: |
-          df -h
-          sudo rm -rf ${ANDROID_HOME}
-          sudo rm -rf ${JAVA_HOME_8_X64}
-          sudo rm -rf ${JAVA_HOME_11_X64}
-          sudo rm -rf ${JAVA_HOME_17_X64}
-          sudo rm -rf ${JAVA_HOME_21_X64}
-          sudo rm -rf ${CHROMEWEBDRIVER}
-          sudo rm -rf ${EDGEWEBDRIVER}
-          sudo rm -rf ${GECKOWEBDRIVER}
-          sudo rm -rf ${SELENIUM_JAR_PATH}
+  build-docker-internal:
+    name: Build Docker Internal
+    needs: preamble
+    strategy:
+      matrix:
+        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
+        container: [ true, false ]
+        build-docker-image: [ false ]
+        include:
+          - os: ubuntu-22.04
+            container: true
+            build-docker-image: true
+        exclude:
+          - os: centos-7
+            container: true
+          - os: rockylinux-8
+            container: true
+      fail-fast: false
+    uses: ./.github/workflows/build-docker-internal.yml
+    with:
+      os: ${{ matrix.os }}
+      container: ${{ matrix.container }}
+      community_ref: ${{ needs.preamble.outputs.community_ref }}
+      build-docker-image: ${{ matrix.build-docker-image }}
+    secrets: inherit
 
-      - name: Display disk space (post free)
-        run: |
-          df -h
-
-      - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_platform }}
-
-      - name: Checkout LN
-        if: ${{ matrix.ln || matrix.ee }} 
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ needs.preamble.outputs.internal_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_ln }}
-
-      - name: Calculate vars
-        id: vars
-        working-directory: ${{ needs.preamble.outputs.folder_platform }}/vcpkg
-        run: |
-          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
-          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-${{ matrix.os }}
-          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
-
-      - name: Print vars
-        run: |
-          echo "${{ toJSON(needs.preamble.outputs) }})"
-          echo "${{ toJSON(steps.vars.outputs) }})"
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Create Build Image
-        uses: docker/build-push-action@v5
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/${{ matrix.os }}.dockerfile
-          context: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
-          load: ${{ github.repository_owner != 'hpcc-systems' }}
-          build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
-          tags: |
-            ${{ steps.vars.outputs.docker_tag_candidate_base }}
-          cache-from: |
-            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
-            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
-          cache-to: type=inline
-
-      # Community Build
-      - name: CMake Packages (community)
-        if: ${{ !matrix.ln && !matrix.ee && !matrix.container }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          plugins=("PLATFORM" "CLIENTTOOLS_ONLY")
-          for plugin in "${plugins[@]}"; do
-            sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-            sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-              cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -D$plugin=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-              cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-            # Disabled as not currently needed ---
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-          done
-          cd ${{ needs.preamble.outputs.folder_build }}
-          packages=($(ls -1 hpccsystems-*))
-          for i in "${packages[@]}"; do
-            md5sum "$i" > "$i.md5sum"
-          done
-
-      - name: CMake Containerized Packages (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.container }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-
-      - name: Upload Assets (community)
-        if: ${{ !matrix.ln && !matrix.ee }}
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: |
-            ${{ needs.preamble.outputs.folder_build }}/*.deb,
-            ${{ needs.preamble.outputs.folder_build }}/*.rpm,
-            ${{ needs.preamble.outputs.folder_build }}/*.md5sum
-
-      - name: Locate k8s deb file (community)
-        if: ${{ !matrix.ln && !matrix.ee && matrix.build-docker-image}}
-        id: container
-        run: |
-          k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
-          k8s_pkg_file=$(basename "$k8s_pkg_path")
-          echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_OUTPUT
-          echo "$k8s_pkg_file"
-
-      - name: Create Docker Image (community)
-        uses: docker/build-push-action@v5
-        if: ${{ !matrix.ln && !matrix.ee && matrix.build-docker-image }}
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/platform-core-${{ matrix.os }}/Dockerfile
-          context: ${{ needs.preamble.outputs.folder_build }}
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
-          build-args: |
-            PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
-          tags: |
-            hpccsystems/platform-core:${{ needs.preamble.outputs.hpcc_version }}
-            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
-            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
-          cache-from: |
-            type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
-
-      #  Internal Build  ---
-      - name: Login to JFrog (internal)
-        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.JFROG_REGISTRY }}
-          username: ${{ secrets.JFROG_USERNAME }}
-          password: ${{ secrets.JFROG_PASSWORD }}
-
-      - name: Setup JFrog CLI (internal)
-        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
-        uses: jfrog/setup-jfrog-cli@v3
-        env:
-          JF_URL: https://${{ secrets.JFROG_REGISTRY }}
-          JF_USER: ${{ secrets.JFROG_USERNAME }}
-          JF_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-
-      - name: CMake Packages (internal)
-        if: ${{ matrix.ln && !matrix.container }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          plugins=("PLATFORM" "CLIENTTOOLS_ONLY")
-          for plugin in "${plugins[@]}"; do
-            sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-            sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-              cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -D$plugin=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-              cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-            # Disabled as not currently needed ---
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON"
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-          done
-
-      - name: CMake Containerized Packages (internal)
-        if: ${{ matrix.ln && matrix.container }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-            cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-            cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-
-      - name: Upload Assets to Jfrog (debian internal)
-        if: ${{ matrix.ln && contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
-        shell: bash
-        run: |
-          cd ${{ needs.preamble.outputs.folder_build }}
-          version=$(echo "${{ needs.preamble.outputs.internal_tag }}" | sed 's/internal_//')
-          packages=($(ls -1 hpccsystems-*.deb ))
-          for _package in ${packages[@]}; do
-            distribution=$( echo "${_package}" | sed "s/^.*${version}//" | awk -F '_' '{print $1;}' )
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-debian-local/pool/LN/${_package};deb.distribution=${distribution};deb.component=LN;deb.architecture=amd64" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
-          done
-
-      - name: Upload Assets to Jfrog (centos internal)
-        if: ${{ matrix.ln && !matrix.container && !contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
-        shell: bash
-        run: |
-          cd ${{ needs.preamble.outputs.folder_build }}
-          packages=($(ls -1 hpccsystems-*.rpm ))
-          for _package in ${packages[@]}; do
-            distribution=$( echo "${_package}" | awk -F '.' '{print $4;}' )
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-rpm-local/LN/${distribution}/x86_64/${_package}" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
-          done
-
-      - name: Locate k8s deb file (internal)
-        if: ${{ matrix.ln && matrix.build-docker-image}}
-        id: ln-container
-        run: |
-          k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
-          k8s_pkg_file=$(basename "$k8s_pkg_path")
-          echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_OUTPUT
-          echo "$k8s_pkg_file"
-
-      - name: Create Docker Image (internal)
-        uses: docker/build-push-action@v5
-        if: ${{ matrix.ln && matrix.build-docker-image }}
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/platform-core-${{ matrix.os }}/Dockerfile
-          context: ${{ needs.preamble.outputs.folder_build }}
-          push: false
-          load: true
-          build-args: |
-            PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
-          tags: |
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }}
-          cache-from: |
-            type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
-
-      - name: JFrog Docker Push and Publish
-        if: ${{ matrix.ln && matrix.build-docker-image && github.repository_owner == 'hpcc-systems' }}
-        run: |
-          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
-          jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
-
-
-      #  Enterprise Build ---
-      - name: CMake Packages (enterprise)
-        if: ${{ matrix.ee }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
-          cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DBUILD_LEVEL=ENTERPRISE -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DPLATFORM=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
-          cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-      
-      #  Common  ---
-      - name: Cleanup Environment
-        if: always()
-        run: rm -f ${{ needs.preamble.outputs.folder_build }}/private.key
-
-      - name: Upload error logs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-logs
-          path: ${{ needs.preamble.outputs.folder_build }}/**/*.log
+  build-docker-enterprise:
+    name: Build Docker Enterprise
+    needs: preamble
+    strategy:
+      matrix:
+        os: [ ubuntu-24.04, ubuntu-22.04 ]
+      fail-fast: false
+    uses: ./.github/workflows/build-docker-enterprise.yml
+    with:
+      os: ${{ matrix.os }}
+      community_ref: ${{ needs.preamble.outputs.community_ref }}
+    secrets: inherit
 
   build-documentation:
     needs: preamble
@@ -498,7 +222,7 @@ jobs:
     secrets: inherit
 
   deploy_wordpress:
-    needs: [preamble, build-docker]
+    needs: [preamble, build-docker-community]
     if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
     uses: ./.github/workflows/wordpress_automation.yml
     with:
