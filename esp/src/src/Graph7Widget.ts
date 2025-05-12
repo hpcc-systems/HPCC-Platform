@@ -9,10 +9,10 @@ import { ScopeGraph, Workunit } from "@hpcc-js/comms";
 import { Graph as GraphWidget, Subgraph, Vertex } from "@hpcc-js/graph";
 import { hashSum } from "@hpcc-js/util";
 
-// @ts-ignore
+// @ts-expect-error
 import * as _Widget from "hpcc/_Widget";
 
-// @ts-ignore
+// @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/Graph7Widget.html";
 
 import "dijit/form/Button";
