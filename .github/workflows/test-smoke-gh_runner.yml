@@ -77,6 +77,13 @@ jobs:
           sudo apt-get install -y gdb
           echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
 
+          # Install, configure and start TinyProxy
+          sudo apt-get install -y tinyproxy
+          echo "Port 8888"    > tinyproxy.conf
+          echo "Timeout 600" >> tinyproxy.conf
+          tinyproxy -c tinyproxy.conf
+          pgrep tinyproxy
+
       - name: Install Package
         shell: "bash"
         run: |

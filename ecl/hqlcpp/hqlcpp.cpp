@@ -1823,6 +1823,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.forceVariableWuid,"forceVariableWuid", false),
         DebugOption(options.okToDeclareAndAssign,"okToDeclareAndAssign", false),
         DebugOption(options.noteRecordSizeInGraph,"noteRecordSizeInGraph", true),
+        DebugOption(options.noteFieldsInGraph,"noteFieldsInGraph", false),
         DebugOption(options.convertRealAssignToMemcpy,"convertRealAssignToMemcpy", false),
         DebugOption(options.allowActivityForKeyedJoin,"allowActivityForKeyedJoin", false),
         DebugOption(options.forceActivityForKeyedJoin,"forceActivityForKeyedJoin", false),

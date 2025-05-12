@@ -56,6 +56,8 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espapi.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espshell.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
+         commonJsonWriterTests.cpp
+         rtlxmltests.cpp
     )
 
 if (NOT CONTAINERIZED)

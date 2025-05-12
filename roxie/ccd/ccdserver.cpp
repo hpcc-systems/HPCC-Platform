@@ -77,8 +77,6 @@
 #include "rtldynfield.hpp"
 #include "engineerr.hpp"
 
-#define MAX_HTTP_HEADERSIZE 8000
-
 #ifdef _WIN32
 #pragma warning(disable : 4355)
 #endif
@@ -3831,16 +3829,14 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
 
         void append(IRoxieServerQueryPacket *p, unsigned seq)
         {
-            HeapEntry &h = *new HeapEntry(adaptor, LINK(p), seq);
+            Owned<HeapEntry> h = new HeapEntry(adaptor, LINK(p), seq);
             IMessageResult *result = p->queryResult();
             assertex(result);
-            if (h.noteResult(result->getCursor(rowManager), isCompleteMatchFlag(result)))
+            if (h->noteResult(result->getCursor(rowManager), isCompleteMatchFlag(result)))
             {
-                heapEntries.append(h);
+                heapEntries.append(*h.getClear());
                 heap.append(heap.ordinality());
             }
-            else
-                h.Release();
         }
 
         void removeHeap(unsigned idx)

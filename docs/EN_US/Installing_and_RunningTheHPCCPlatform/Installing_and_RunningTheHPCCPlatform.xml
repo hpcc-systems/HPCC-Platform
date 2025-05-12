@@ -143,7 +143,7 @@
           <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
           Ubuntu/Debian:</para>
 
-          <programlisting> sudo dpkg -i &lt;deb filename&gt; </programlisting>
+          <programlisting> sudo apt install &lt;filename&gt; </programlisting>
 
           <para>Then to update dependencies:</para>
 
@@ -300,10 +300,9 @@ sudo yum install -y &lt;hpccsystems platform rpm package&gt;</programlisting>
         <sect3 id="Installing_Ubuntu-Debian">
           <title>Ubuntu/Debian</title>
 
-          <para>For Ubuntu installations a Debian package is provided. To
-          install the package, use:</para>
+          <para>For Ubuntu installations, to install the package, use:</para>
 
-          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+          <programlisting>sudo apt install &lt;filename&gt;</programlisting>
 
           <para>After installing the package, run the following to update any
           dependencies.</para>

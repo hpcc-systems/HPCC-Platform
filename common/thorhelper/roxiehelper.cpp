@@ -1537,7 +1537,6 @@ bool CSafeSocket::readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper
         bool sockClosed = false;
         if (pHttpHelper && pHttpHelper->isHttp())
         {
-#define MAX_HTTP_HEADERSIZE 16000 //arbitrary per line limit, most web servers are lower, but REST queries can be complex..
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
             CTimeMon tm(timeoutms);
             unsigned totalRead = 0;
@@ -1585,6 +1584,8 @@ bool CSafeSocket::readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper
                     }
                     break;
                 }
+                if (totalRead >= MAX_HTTP_HEADERSIZE)
+                    throw makeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
             }
 
             if (tm.timedout(&remaining))

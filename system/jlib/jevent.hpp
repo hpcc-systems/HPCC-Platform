@@ -114,7 +114,7 @@ public:
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
-    void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit);
+    void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 elapsedTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
 

@@ -191,6 +191,11 @@ def calculateSummaryStats(curRow, numCpus, numRows):
     if perCpuTransactionsPerSecond:
         curRow["CpuLoad@10q/s"] = 10 / perCpuTransactionsPerSecond
 
+def calculateAverageStats(avgRow, totalRow, numRows):
+    for statName in allStats:
+        if statName in totalRow and type(totalRow[statName]) != str:
+            avgRow[statName] = float(totalRow[statName]) / numRows if numRows else 0
+
 def printRow(curRow):
 
     print(f'{curRow["_id_"]}', end='')
@@ -228,10 +233,12 @@ if __name__ == "__main__":
     parser.add_argument("--ignorecase", "-i", help="Use case-insensitive query names", action='store_true')
     parser.add_argument("--nosummary", "-n", help="Avoid including a summary", action='store_true')
     parser.add_argument("--summaryonly", "-s", help="Only generate a summary", action='store_true')
+    parser.add_argument("--avgonly", "-v", help="Only generate average summary", action='store_true')
     args = parser.parse_args()
     combineServices = args.all
-    suppressDetails = args.summaryonly
-    reportSummary = not args.nosummary or args.summaryonly
+    averageOnly = args.avgonly
+    suppressDetails = args.summaryonly or averageOnly
+    reportSummary = not args.nosummary or args.summaryonly or args.avgonly
     ignoreQueryCase = args.ignorecase
     cpus = args.cpu
 
@@ -393,7 +400,6 @@ if __name__ == "__main__":
         minTime = datetime.datetime.strptime(minTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
         maxTime = datetime.datetime.strptime(maxTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
         elapsed = (maxTime - minTime).seconds + minElapsed/1000
-        print(f"Time range: ['{minTimeStamp}'..'{maxTimeStamp}'] = {elapsed}s")
 
     except:
         pass
@@ -405,7 +411,11 @@ if __name__ == "__main__":
 
     globalTotalRow = dict(_id_="summary")
     numGlobalRows = 0
-    for service in allServices:
+
+    if averageOnly:
+        print(headings)
+
+    for service in sorted(allServices.keys()):
         allRows = allServices[service]
         numGlobalRows += len(allRows)
 
@@ -416,16 +426,17 @@ if __name__ == "__main__":
 
         # MORE: Min and max for the derived statistics are not correct
 
-        if not combineServices:
+        if not combineServices and not averageOnly:
             print(f"-----------{service} {len(allRows)} ------------")
 
-        print(headings)
+        if not averageOnly:
+            print(headings)
 
         if not suppressDetails:
             for curRow in allRows:
                 printRow(curRow)
+            print()
 
-        print()
 
         if reportSummary:
 
@@ -447,11 +458,11 @@ if __name__ == "__main__":
 
             # Average for all queries - should possibly also report average when stats are actually supplied
             numRows = len(allRows)
-            avgRow = dict(_id_="avg", totalRow="avg")
-            for statName in allStats:
-                if statName in totalRow and type(totalRow[statName]) != str:
-                    avgRow[statName] = float(totalRow[statName]) / numRows
+            avgLabel = f"{service} x{len(allRows)}" if averageOnly else "avg"
+            avgRow = dict(_id_=avgLabel, totalRow="avg")
+            calculateAverageStats(avgRow, totalRow, numRows)
             calculateDerivedStats(avgRow)
+            calculateSummaryStats(avgRow, cpus, 1)
 
             # Now calculate the field values for each of the centiles that are requested
             centileRows = dict()
@@ -474,17 +485,27 @@ if __name__ == "__main__":
             if not suppressDetails:
                 print(headings)
 
-            printRow(totalRow)
-            printRow(avgRow)
-            for centile in centiles:
-                printRow(centileRows[centile])
-
-            print()
+            if not averageOnly:
+                printRow(totalRow)
+                printRow(avgRow)
+                for centile in centiles:
+                    printRow(centileRows[centile])
+                print()
+            else:
+                printRow(avgRow)
 
     #These stats are only really revelant if it is including all the transactions from all services
     if reportSummary and elapsed and numGlobalRows:
         calculateDerivedStats(globalTotalRow)
         calculateSummaryStats(globalTotalRow, cpus, numGlobalRows)
+        globalAvgRow = dict(_id_="summary avg", totalRow="avg")
+        calculateAverageStats(globalAvgRow, globalTotalRow, numGlobalRows)
+        calculateDerivedStats(globalAvgRow)
+        calculateSummaryStats(globalAvgRow, cpus, 1)
+        printRow(globalAvgRow)
+
+        if not averageOnly:
+            printRow(globalTotalRow)
 
         perCpuTransactionsPerSecond = globalTotalRow["perCpuTransactionsPerSecond"]
         totalDiskReads = (globalTotalRow.get("NumNodeDiskFetches", 0) + globalTotalRow.get("NumLeafDiskFetches", 0))
@@ -492,8 +513,8 @@ if __name__ == "__main__":
         expectedCpuLoad = actualTransationsPerSecond / perCpuTransactionsPerSecond if perCpuTransactionsPerSecond else 0
         iops = totalDiskReads / elapsed
         throughput = iops * 8192
-        printRow(globalTotalRow)
         print()
+        print(f"Time range: ['{minTimeStamp}'..'{maxTimeStamp}'] = {elapsed}s")
         print(f"Transactions {numGlobalRows}q {elapsed}s: Throughput={actualTransationsPerSecond:.3f}q/s Time={1/actualTransationsPerSecond:.3f}s/q")
         print(f"ExpectedCpuLoad={expectedCpuLoad:.3f} iops={iops:.3f}/s DiskThroughput={throughput/1000000:.3f}MB/s")
 

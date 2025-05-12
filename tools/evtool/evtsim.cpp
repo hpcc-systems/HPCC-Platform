@@ -81,7 +81,8 @@ public:
                 offset_t offset = (offset_t)evt.getPropInt64("@offset");
                 byte nodeKind = (byte)evt.getPropInt("@nodeKind");
                 bool hit = evt.getPropBool("@hit");
-                recorder.recordIndexLookup(fileId, offset, nodeKind, hit);
+                size32_t size = (size32_t)evt.getPropInt("@size");
+                recorder.recordIndexLookup(fileId, offset, nodeKind, hit, size);
             }
             else if (streq(name, "IndexLoad"))
             {

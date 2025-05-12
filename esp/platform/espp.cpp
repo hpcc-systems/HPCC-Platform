@@ -50,6 +50,7 @@
 #include "jmetrics.hpp"
 #include "workunit.hpp"
 #include "esptrace.h"
+#include "jevent.hpp"
 
 using namespace hpccMetrics;
 
@@ -432,6 +433,44 @@ static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
     return extractedOptions.getClear();
 }
 
+bool startEspEventRecording(const char * options, const char * filename)
+{
+    if (isEmptyString(options))
+        options = "threadid";
+
+    StringBuffer outputFilename;
+    const char * path = filename;
+    if (!isAbsolutePath(filename))
+    {
+        getTempFilePath(outputFilename, "eventrecorder", nullptr);
+        outputFilename.append(PATHSEPCHAR);
+        if (!isEmptyString(filename))
+        {
+            outputFilename.append(filename);
+        }
+        else
+        {
+            //MORE: Revisit this at a later date
+            unsigned seq = (unsigned)(get_cycles_now() % 100000);
+            outputFilename.append("espevents.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
+        }
+
+        path = outputFilename.str();
+        //MORE: The caller will need to know the full pathname
+    }
+
+    recursiveCreateDirectoryForFile(path);
+    if (!queryRecorder().startRecording(options, path, false))
+        return false;
+
+    return true;
+}
+
+bool stopEspEventRecording(EventRecordingSummary * optSummary)
+{
+    return queryRecorder().stopRecording(optSummary);
+}
+
 int init_main(int argc, const char* argv[])
 {
     if (!checkCreateDaemon(argc, argv))
@@ -573,6 +612,14 @@ int init_main(int argc, const char* argv[])
             config.setown(cfg);
             abortHandler.setConfig(cfg);
         }
+
+        if (procpt->getPropBool("expert/@recordEvents", false))
+        {
+            const char * recordEventOptions = procpt->queryProp("expert/@recordEventOptions");
+            const char * optRecordEventFilename = procpt->queryProp("expert/@recordEventFilename");
+            startEspEventRecording(recordEventOptions, optRecordEventFilename);
+        }
+
     }
     catch(IException* e)
     {
@@ -625,6 +672,8 @@ int init_main(int argc, const char* argv[])
         writeSentinelFile(sentinelFile);
 
         result = work_main(*config, *server.get());
+
+        (void)stopEspEventRecording(nullptr);
     }
     else
     {

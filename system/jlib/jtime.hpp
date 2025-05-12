@@ -82,6 +82,7 @@ public:
     void set(time_t simple);
     void setFromFILETIME(__int64 fileTime);
     void setTimeStamp(timestamp_type ts);
+    void setTimeStampNs(timestamp_type ts);
 
     void setString(char const * str, char const * * end = NULL, bool local = false); // Sets to date and time given as yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
     void setDateString(char const * str, char const * * end = NULL); // Sets to midnight UTC on date given as yyyy-mm-dd
@@ -94,6 +95,7 @@ public:
     void getTime(unsigned & hour, unsigned & minute, unsigned & second, unsigned & nano, bool local = false) const;
     time_t getSimple() const;
     unsigned __int64 getTimeStamp() const;
+    unsigned __int64 getTimeStampNs() const;
     StringBuffer & getString(StringBuffer & str, bool local = false) const;
     StringBuffer & getDateString(StringBuffer & str, bool local = false) const;
     StringBuffer & getTimeString(StringBuffer & str, bool local = false) const;

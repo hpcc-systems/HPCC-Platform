@@ -2796,7 +2796,7 @@ public:
         if (SDSManager->ignoreExternals) return COMPRESS_METHOD_NONE;
         if (!hasProp(EXT_ATTR))
             return COMPRESS_METHOD_NONE;
-        return (CompressionMethod)getPropInt(COMPRESS_ATTR, COMPRESS_METHOD_LZW);
+        return (CompressionMethod)getPropInt(COMPRESS_ATTR, COMPRESS_METHOD_LZW_LITTLE_ENDIAN);
     }
 
     bool getProp(const char *xpath, StringBuffer &ret) const override
@@ -6700,7 +6700,7 @@ inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
         dst.deserializeSelfRT(mb);
     }
     else
-        dst.clone(src, true, false);
+        dst.cloneIntoSelf(src, false);
     dst.setServerId(src.queryServerId());
     if (src.hasChildren()) dst.addServerTreeInfo(STI_HaveChildren);
 }

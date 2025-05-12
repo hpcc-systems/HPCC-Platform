@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, ECLEditor, XMLEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -11,6 +12,8 @@ import { useWorkunitXML } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
 
 import "eclwatch/css/cmDarcula.css";
+
+const logger = scopedLogger("src-react/components/SourceEditor.tsx");
 
 type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml";
 
@@ -278,6 +281,7 @@ interface FetchEditor {
     readonly?: boolean;
     toolbar?: boolean;
     noDataMsg?: string;
+    loadingMsg?: string;
     mode?: "ecl" | "xml" | "text" | "yaml";
 }
 
@@ -286,28 +290,50 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
     wuid,
     readonly = true,
     toolbar,
-    noDataMsg = "",
+    noDataMsg = nlsHPCC.noDataMessage,
+    loadingMsg = nlsHPCC.loadingMessage,
     mode = "text"
 }) => {
 
     const [text, setText] = React.useState("");
 
     React.useEffect(() => {
+        setText(loadingMsg);
+        let cancelled = false;
         if (wuid) {
             const wu = Workunit.attach({ baseUrl: "" }, wuid);
             wu.fetchQuery().then(function (query) {
-                setText(query?.Text ?? "");
+                if (!cancelled) {
+                    setText(query?.Text ?? "");
+                }
+            }).catch(e => {
+                logger.error(e);
+                if (!cancelled) {
+                    setText(e.message);
+                }
             });
         } else if (url) {
             fetch(url).then(response => {
-                return response.text();
+                if (!cancelled) {
+                    return response.text();
+                }
             }).then(content => {
-                setText(content);
+                if (!cancelled) {
+                    setText(content);
+                }
+            }).catch(e => {
+                logger.error(e);
+                if (!cancelled) {
+                    setText(e.message);
+                }
             });
         } else {
             setText(noDataMsg);
         }
-    }, [noDataMsg, url, wuid]);
+        return () => {
+            cancelled = true;
+        };
+    }, [loadingMsg, noDataMsg, url, wuid]);
 
     return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode={mode}></SourceEditor>;
 };

@@ -613,6 +613,12 @@ void readStaticTopology()
 }
 #endif
 
+static bool roxieAbortHandler()
+{
+    (void)stopRoxieEventRecording(nullptr);
+    return true;
+}
+
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
     if (!checkCreateDaemon(argc, argv))
@@ -703,6 +709,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     codeDirectory.set(currentDirectory);
     addNonEmptyPathSepChar(codeDirectory);
     PerfTracer startupTracer;
+    addAbortHandler(roxieAbortHandler);
+
     try
     {
         Owned<IFile> sentinelFile = createSentinelTarget();
