@@ -462,7 +462,8 @@ bool CDfsLogicalFileName::getExternalPlane(StringBuffer & plane) const
 
     const char * start = lfn.str() + strlen(PLANE_SCOPE "::");
     const char * end = strstr(start,"::");
-    assertex(end);
+    if (!end)
+        end = start + strlen(start);
     plane.append(end-start, start);
     return true;
 }
@@ -618,11 +619,8 @@ bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * file
 {
     if (e)
         *e = NULL;
-    if (!s) {
-        if (e)
-            *e = MakeStringException(-1,"Invalid format for external file (%s)",filename);
-        return false;
-    }
+    if (!s)
+        return true; // plane::<planename> without a trailing scope
     if (s[2]=='>') {
         dir.append('/');
         tail.append(s+2);
@@ -855,9 +853,12 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
 
     normalizeScope(name, name, s-name, str, strict, false); // "file" or "plane" or "remote"
     const char *s1 = s+2; // this will be the file host/ip, or plane name, or remote service name
+    size32_t nodeLength = 0;
     const char *ns1 = strstr(s1,"::");
-    if (!ns1)
-        return false;
+    if (ns1)
+        nodeLength = ns1 - s1;
+    else
+        nodeLength = strlen(s1);
 
     switch (lfnType)
     {
@@ -866,12 +867,12 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             //syntax file::<ip>::<path>
 
             SocketEndpoint ep;
-            normalizeNodeName(s1, ns1-s1, ep, strict);
+            normalizeNodeName(s1, nodeLength, ep, strict);
             if (ep.isNull())
                 return false;
 
             ep.getEndpointHostText(str.append("::"));
-            if (ns1[2] == '>')
+            if (ns1 && ns1[2] == '>')
             {
                 str.append("::");
                 tailpos = str.length();
@@ -891,7 +892,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             //Syntax plane::<plane>::<path>
 
             StringBuffer planeName;
-            normalizeScope(s1, s1, ns1-s1, planeName, strict, false);
+            normalizeScope(s1, s1, nodeLength, planeName, strict, false);
 
             str.append("::").append(planeName);
             //Allow wildcards in plane path
@@ -909,17 +910,18 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             break;
         }
     }
-
     str.toLowerCase();
-    str.append("::");
-    // handle trailing scopes+name
-    StringAttr tail;
-    normalizeName(ns1+2, tail, strict, false); // +2 skipping "::", validated at start
-    // normalizeName sets tailpos relative to ns1+2
-    tailpos += str.length(); // length of <file|plane|remote>::<name>::
-    str.append(tail);
+    if (ns1)
+    {
+        str.append("::");
+        // handle trailing scopes+name
+        StringAttr tail;
+        normalizeName(ns1+2, tail, strict, false); // +2 skipping "::", validated at start
+        // normalizeName sets tailpos relative to ns1+2
+        tailpos += str.length(); // length of <file|plane|remote>::<name>::
+        str.append(tail);
+    }
     res.set(str);
-
     return true;
 }
 
@@ -1439,7 +1441,7 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
         {
             const char * end = strstr(startPlane,"::");
             if (!end)
-                return false;
+                end = startPlane + strlen(startPlane);
 
             //Resolve the plane, and return the ip if it is a bare metal zone (or a legacy drop zone)
             StringBuffer planeName(end - startPlane, startPlane);
@@ -1522,10 +1524,11 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         if (startPlane)
         {
             s = strstr(startPlane,"::");
+            size32_t planeLen = s ? s - startPlane : strlen(startPlane);
 
-            if (s)
+            if (planeLen)
             {
-                StringBuffer planeName(s - startPlane, startPlane);
+                StringBuffer planeName(planeLen, startPlane);
                 Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
                 if (!plane)
                 {
