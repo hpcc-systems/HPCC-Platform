@@ -12,12 +12,12 @@ import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 import { Report } from "./DataPatterns/Report";
 import { getStateIconClass } from "./ESPWorkunit";
 
-// @ts-ignore
+// @ts-expect-error
 import * as _TabContainerWidget from "hpcc/_TabContainerWidget";
-// @ts-ignore
+// @ts-expect-error
 import * as DelayLoadWidget from "hpcc/DelayLoadWidget";
 
-// @ts-ignore
+// @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/DataPatternsWidget.html";
 
 import "dijit/Fieldset";
