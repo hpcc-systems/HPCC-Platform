@@ -1,0 +1,23 @@
+apiVersion: v2
+name: eck4hpccobservability
+description: A Helm chart for launching a lightweight Elastic Stack cluster using Kubernetes
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 1.0.0
+
+# Dependencies can be automatically updated via HELM dependancy update command:
+# > 'helm dependency update' command
+# or helm install parameter —dependency-update
+# > helm install myelastic ./ —-dependency-update
+dependencies:
+  #- name: eck-operator-crds
+  #version: 3.0.0
+  #repository:  https://helm.elastic.co
+- name: opentelemetry-collector
+  version: 0.122.5
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+- name: eck-stack 
+  version: 0.15.0
+  repository: https://helm.elastic.co
