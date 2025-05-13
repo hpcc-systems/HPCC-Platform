@@ -616,11 +616,8 @@ void CHThorDiskWriteActivity::open()
     unsigned rwFlags = rw_autoflush;
     if (grouped)
         rwFlags |= rw_grouped;
-    if (true) // MORE: Should this be controlled by an activity hint/flag?
-        rwFlags |= rw_crc;
     ILogicalRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
-
 }
 
 

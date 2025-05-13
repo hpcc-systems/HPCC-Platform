@@ -40,7 +40,6 @@ class SpillSlaveActivity : public CSlaveActivity
     MemoryBuffer spillBuf;
     offset_t uncompressedBytesWritten;
     bool hadrow;
-    CRC32 fileCRC;
     unsigned usageCount;
 
 public:
@@ -104,8 +103,6 @@ public:
         unsigned rwFlags = (DEFAULT_RWFLAGS & ~rw_autoflush); // flushed by close()
         if (compress)
             rwFlags |= rw_compress;
-        else
-            rwFlags |= rw_crc; // only if !compress
         if (grouped)
             rwFlags |= rw_grouped;
         out.setown(createRowWriter(file, this, rwFlags));
@@ -115,10 +112,7 @@ public:
     {
         if (out)
         {
-            if (compress)
-                out->flush();
-            else
-                out->flush(&fileCRC);
+            out->flush();
             uncompressedBytesWritten = out->getPosition();
             out.clear();
         }
@@ -138,7 +132,7 @@ public:
         Owned<IFile> ifile = createIFile(fileName.str());
         offset_t sz = ifile->size();
         mb.append(getDataLinkCount()).append(compress?uncompressedBytesWritten:sz).append(sz);
-        unsigned crc = compress?~0:fileCRC.get();
+        unsigned crc = ~0;
         mb.append(crc);
         CDateTime createTime, modifiedTime, accessedTime;
         ifile->getTime(&createTime, &modifiedTime, &accessedTime);
