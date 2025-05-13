@@ -9869,6 +9869,19 @@ void HqlCppTranslator::doBuildExprTransfer(BuildCtx & ctx, IHqlExpression * expr
         {
             switch (to->getTypeCode())
             {
+            case type_utf8:
+                if (size->isConstant())
+                {
+                    tgt.length.setown(getSizetConstant(rtlUtf8Length((size32_t)getIntValue(size), bound.expr->queryValue()->queryValue())));
+                }
+                else
+                {
+                    HqlExprArray args;
+                    args.append(*LINK(size));
+                    args.append(*getElementPointer(bound.expr));
+                    tgt.length.setown(bindTranslatedFunctionCall(utf8LengthId, args));
+                }
+                break;
             case type_unicode:
                 if (size->isConstant())
                     tgt.length.setown(getSizetConstant((size32_t)getIntValue(size)/sizeof(UChar)));
