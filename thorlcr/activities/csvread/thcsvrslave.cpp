@@ -120,7 +120,6 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 partFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
                 if (!partFileIO)
                     throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                checkFileCrc = false;
             }
             else
                 partFileIO.setown(iFile->open(IFOread));

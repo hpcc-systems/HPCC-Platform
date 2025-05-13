@@ -46,7 +46,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         CXmlReadSlaveActivity &activity;
         IXmlToRowTransformer *xmlTransformer;
         Linked<IColumnProvider> lastMatch;
-        Owned<ICrcIOStream> crcStream;
         Owned<IXMLParse> xmlParser;
         CRC32 inputCRC;
         OwnedIFileIO iFileIO;
@@ -75,7 +74,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 partFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
                 if (!partFileIO)
                     throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                checkFileCrc = false;
             }
             else
                 partFileIO.setown(iFile->open(IFOread));
@@ -86,11 +84,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
             }
 
             Owned<IIOStream> stream = createIOStream(iFileIO);
-            if (stream && checkFileCrc)
-            {
-                crcStream.setown(createCrcPipeStream(stream));
-                stream.set(crcStream);
-            }
             inputIOstream.setown(createBufferedIOStream(stream));
             OwnedRoxieString xmlIterator(activity.helper->getXmlIteratorPath());
             if (activity.queryContainer().getKind()==TAKjsonread)
@@ -103,11 +96,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         {
             xmlParser.clear();
             inputIOstream.clear();
-            if (checkFileCrc)
-            {
-                fileCRC.reset(~crcStream->queryCrc()); // MORE should prob. change stream to use CRC32
-                crcStream.clear();
-            }
             Owned<IFileIO> partFileIO;
             {
                 CriticalBlock block(inputCs);
