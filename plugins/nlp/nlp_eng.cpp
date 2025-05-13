@@ -17,7 +17,7 @@
 
 // NLP-ENGINE requires LINUX to be set for linux compiles.
 // The NLP-ENGINE needs to be updated to __linux__.
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 #define LINUX 1
 #endif
 

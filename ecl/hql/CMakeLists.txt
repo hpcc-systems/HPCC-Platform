@@ -179,6 +179,9 @@ endif()
 ADD_DEFINITIONS( -D_USRDLL -DHQL_EXPORTS -DHQLFOLD_EXPORTS -DHQLTRANS_EXPORTS )
 
 HPCC_ADD_LIBRARY( hql SHARED ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp  )
+if (EMSCRIPTEN)
+    set_target_properties(hql PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -Wno-error=nontrivial-memcall -Wno-error=unused-variable")
+endif ()
 install ( TARGETS hql RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( hql
          jlib

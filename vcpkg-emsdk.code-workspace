@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"name": "HPCC-Platform",
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.generator": "Ninja",
+		"cmake.configureArgs": [
+			"-DEMSCRIPTEN=ON",
+			"-DCONTAINERIZED=OFF",
+			"-DUSE_OPTIONAL=OFF",
+			"-DUSE_CPPUNIT=ON",
+			"-DINCLUDE_PLUGINS=ON",
+			"-DSUPPRESS_V8EMBED=ON",
+			"-DSUPPRESS_REMBED=ON"
+		],
+		"editor.formatOnSave": false
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.cpptools-extension-pack",
+			"ms-vscode.cmake-tools"
+		]
+	}
+}

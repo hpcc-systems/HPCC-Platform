@@ -278,6 +278,13 @@ target_link_libraries ( jlib
         #   opentelemetry-cpp::opentracing_shim                  - Imported target of opentelemetry-cpp::opentracing_shim
         )
 
+if (NOT EMSCRIPTEN)
+    target_link_libraries ( jlib
+        opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
+        opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
+    )
+endif ()
+
 IF (USE_OPENSSL)
 target_link_libraries ( jlib ${OPENSSL_LIBRARIES})
 endif (USE_OPENSSL)

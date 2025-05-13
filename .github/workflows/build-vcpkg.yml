@@ -80,6 +80,13 @@ jobs:
       tag_postfix: "-arm"
     secrets: inherit
 
+  build-docker-wasm32-emscripten:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: wasm32-emscripten
+    secrets: inherit
+
   build-docker-ubuntu-24_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
