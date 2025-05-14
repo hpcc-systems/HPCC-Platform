@@ -1284,7 +1284,7 @@ void CHThorIndexWriteActivity::execute()
             }
             reccount++;
         }
-        builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
+        builder->finish(metadata, &fileCrc, maxRecordSizeSeen, nullptr);
         duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
         cummulativeDuplicateKeyCount += duplicateKeyCount;
         numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
