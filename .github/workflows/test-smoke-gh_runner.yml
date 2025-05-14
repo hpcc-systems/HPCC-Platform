@@ -80,7 +80,7 @@ jobs:
           # Install, configure and start TinyProxy
           sudo apt-get install -y tinyproxy
           echo "Port 8888"    > tinyproxy.conf
-          echo "Timeout 600" >> tinyproxy.conf
+          echo "Timeout 60" >> tinyproxy.conf
           echo "StartServers 5" >> tinyproxy.conf
           echo "MaxClients 5" >> tinyproxy.conf
           echo "DisableViaHeader yes" >> tinyproxy.conf
@@ -117,6 +117,7 @@ jobs:
               /opt/HPCCSystems/testing/regress/ecl-test setup --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
 
           curl -v --proxy localhost:8888 -o proxytest.txt http://localhost:8010/WsWorkunits/WUQuery.json?PageSize=25000&Sortby=Jobname
+          sleep 3m
           ls -l
 
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
