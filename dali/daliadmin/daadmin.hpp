@@ -96,5 +96,7 @@ extern DALIADMIN_API void daliping(const char *dalis, unsigned connecttime, unsi
 
 extern DALIADMIN_API void validateStore(bool fix, bool deleteFiles, bool verbose);
 extern DALIADMIN_API void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct);
+extern DALIADMIN_API void cleanStaleGroups(const char *groupPattern, bool dryRun);
+
 
 } // namespace daadmin

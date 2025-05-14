@@ -15,8 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "platform.h"
 #include "portlist.h"
@@ -3458,6 +3459,71 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
     {
         cycle_t avgCycles = timer.elapsedCycles() / total;
         PROGLOG("%sChecked: [%u / %u] - deletes: %u, auxDeletes: %u, persists: %u. [Avg ms: %2.2f]", dryrun?"DRYRUN:":"", checked, total, deletes, auxDeletes, existingPersists, static_cast<unsigned>(cycle_to_microsec(avgCycles))/1000.0);
+    }
+}
+
+
+void cleanStaleGroups(const char *groupPattern, bool dryRun)
+{
+    PROGLOG("Collecting group names from logical files");
+    Owned<IRemoteConnection> conn = querySDS().connect("/Files", myProcessSession(), 0, daliConnectTimeoutMs);
+
+    std::unordered_set<std::string> fileGroups;
+    Owned<IPropertyTreeIterator> filesIter = conn->queryRoot()->getElements("//File", iptiter_remote);
+    ForEach(*filesIter)
+    {
+        IPropertyTree &file = filesIter->query();
+        const char *group = file.queryProp("@group");
+        if (!isEmptyString(group))
+            fileGroups.insert(group);
+    }
+    PROGLOG("Found %zu unique groups in /Files", fileGroups.size());
+    conn.clear();
+
+    PROGLOG("Collecting group names from /Groups");
+    conn.setown(querySDS().connect("/Groups", myProcessSession(), dryRun ? 0 : RTM_LOCK_WRITE, daliConnectTimeoutMs));
+    if (!conn)
+    {
+        PROGLOG("Failed to connect to /Groups");
+        return;
+    }
+
+    std::unordered_set<std::string> groupToDelete;
+
+    StringBuffer xpath("Group");
+    if (!isEmptyString(groupPattern))
+        xpath.appendf("[@name=~'%s']", groupPattern);
+    Owned<IPropertyTreeIterator> publishedGroupIter = conn->queryRoot()->getElements(xpath, iptiter_remote);
+    ForEach(*publishedGroupIter)
+    {
+        IPropertyTree &file = publishedGroupIter->query();
+        const char *group = file.queryProp("@name");
+        if (!isEmptyString(group))
+        {
+            if (fileGroups.find(group) == fileGroups.end())
+            {
+                PROGLOG("Group %s is published but not used by any file", group);
+                groupToDelete.insert(group);
+            }
+        }
+    }
+    PROGLOG("Found %zu groups in /Groups that are not referenced by any file", groupToDelete.size());
+
+    if (!dryRun)
+    {
+        size_t deleteCount = 0;
+        PROGLOG("Deleting %zu unreferenced groups", groupToDelete.size());
+        for (auto &group : groupToDelete)
+        {
+            VStringBuffer xpath("Group[@name='%s']", group.c_str());
+            if (conn->queryRoot()->removeProp(xpath))
+                deleteCount++;
+            else
+                WARNLOG("Failed to remove group: %s", group.c_str());
+        }
+        PROGLOG("Committing changes");
+        conn->commit();
+        PROGLOG("Complete - %zu groups deleted", deleteCount);
     }
 }
 

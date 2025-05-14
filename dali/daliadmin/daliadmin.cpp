@@ -93,6 +93,7 @@ void usage(const char *exe)
   printf("Other dali server and misc commands:\n");
   printf("  auditlog <fromdate> <todate> <match>\n");
   printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
+  printf("  cleanstalegroups [<group-pattern>] [dryrun]\n");
   printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
   printf("  coalesce                        -- force transaction coalesce\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
@@ -592,6 +593,36 @@ int main(int argc, const char* argv[])
                                 reconstruct = false;
                         }
                         removeOrphanedGlobalVariables(dryrun, reconstruct);
+                    }
+                    else if (strieq(cmd, "cleanstalegroups"))
+                    {
+                        // The 'cleanstalegroups' command removes stale groups from the system.
+                        // Parameters:
+                        //   1. (Optional) groupPattern: A string pattern to filter groups. If not provided, all groups are considered.
+                        //   2. (Optional) "dryrun": A flag indicating that no actual changes will be made. Can appear as the first or second parameter.
+                        // Example usage:
+                        //   cleanstalegroups "myGroup*" dryrun
+                        //   cleanstalegroups dryrun
+                        CHECKPARAMS(0, 2);
+                        bool dryrun = false;
+                        const char *groupPattern = nullptr;
+                        if (np > 0)
+                        {
+                            const char *param = params.item(1);
+                            if (strieq(param, "dryrun"))
+                                dryrun = true;
+                            else
+                            {
+                                groupPattern = param;
+                                if (np > 1)
+                                {
+                                    const char *param = params.item(2);
+                                    if (strieq(param, "dryrun"))
+                                        dryrun = true;
+                                }
+                            }
+                        }
+                        cleanStaleGroups(groupPattern, dryrun);
                     }
                     else if (strieq(cmd, "remotetest"))
                         remoteTest(params.item(1), true);
