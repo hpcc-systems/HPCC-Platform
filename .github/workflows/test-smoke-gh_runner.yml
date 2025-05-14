@@ -116,7 +116,7 @@ jobs:
           /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
               /opt/HPCCSystems/testing/regress/ecl-test setup --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
 
-          curl -v --proxy localhost:8888 -o proxytest.txt http://localhost:8010/WsWorkunits/WUQuery.json?PageSize=25000&Sortby=Jobname
+          curl -v --proxy localhost:8888 --no-keepalive -o proxytest.txt http://localhost:8010/WsWorkunits/WUQuery.json?PageSize=25000&Sortby=Jobname
           sleep 20
           ls -l
 
