@@ -24,10 +24,6 @@ gantt
     axisFormat %Y-Q%q
     tickInterval 3month
     dateFormat YYYY-MM-DD
-    section v9.0.x
-        Active:          active, 2023-04-03, 6M
-        Critical:        3M
-        Security:        6M
     section v9.2.x
         Active:          active, 2023-07-04, 9M
         Critical:        3M
@@ -39,7 +35,7 @@ gantt
     section v9.6.x
         Active:          active, 2024-04-04, 6M
         Critical:        3M
-        Security:        3M
+        Security:        6M
     section v9.8.x
         Active:          active, 2024-07-02, 9M
         Critical:        3M
@@ -49,7 +45,11 @@ gantt
         Critical:        3M
         Security:        3M
     section v9.12.x
-        Expected:        active, 2025-04-01, 6M
+        Active:          active, 2025-05-01, 5M
+        Critical:        3M
+        Security:        3M
+    section v10.0.x
+        Expected:        milestone, 2025-07-01, 0M
 ```
 
 # Architecture
