@@ -117,7 +117,7 @@ jobs:
               /opt/HPCCSystems/testing/regress/ecl-test setup --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
 
           curl -v --proxy localhost:8888 -o proxytest.txt http://localhost:8010/WsWorkunits/WUQuery.json?PageSize=25000&Sortby=Jobname
-          ls -l proxytest.txt
+          ls -l
 
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
           if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
