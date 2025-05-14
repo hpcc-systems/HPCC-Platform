@@ -3113,23 +3113,30 @@ StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized)
     return sanitized;
 }
 
+constexpr int GROUP_SIZE = 3;
 StringBuffer& formatWithCommas(unsigned __int64 value, StringBuffer& formatted)
 {
     std::string s = std::to_string(value);
     int n = s.length();
-    int firstGroupLen = n % 3;
+    int firstGroupLen = n % GROUP_SIZE;
     if (firstGroupLen == 0)
     {
-        if (n < 4)
+        if (n < GROUP_SIZE + 1)
             firstGroupLen = n;
         else
-            firstGroupLen = 3;
+            firstGroupLen = GROUP_SIZE;
     }
-
-    formatted.append(s.substr(0, firstGroupLen));
-    for (int i = firstGroupLen; i < n; i += 3) {
+    int i = 0;
+    for (; i < firstGroupLen; i++)
+    {
+        formatted.append(s[i]);
+    }
+    for (i = firstGroupLen; i < n; i += GROUP_SIZE)
+    {
         formatted.append(',');
-        formatted.append(s.substr(i, 3));
+        for (int j = 0; j < GROUP_SIZE && (i + j) < n; j++) {
+            formatted.append(s[i + j]);
+        }
     }
     return formatted;
 }

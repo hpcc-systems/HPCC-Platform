@@ -3487,6 +3487,7 @@ public:
         return tree.getClear();
     }
 
+    // Test method to ensure that the Dali Regressions tree is deserialized correctly
     bool isDaliRegressionsXml(Owned<IPropertyTree> &testTree)
     {
         bool esdlFound{false};
@@ -3581,12 +3582,13 @@ public:
         StringBuffer formattedResult_depth;
         StringBuffer formattedResult_iterations;
         StringBuffer formattedResult_serializedLength;
-        DBGLOG("Test Regression Dali Tree: nodes %s; depth %s; content: text; iterations: %s\tDeserialized: %s bytes\tRuntime: %llu ms",
+        StringBuffer formattedResult_runtime;
+        DBGLOG("Test Regression Dali Tree: nodes %s; depth %s; content: text; iterations: %s\tDeserialized: %s bytes\tRuntime: %s ms",
                formatWithCommas(testTree->numChildren(), formattedResult_numNodes).str(),
                formatWithCommas(testTree->getAttributeCount(), formattedResult_depth).str(),
                formatWithCommas(iterations, formattedResult_iterations).str(),
                formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
-               cycle_to_millisec(totalCycles));
+               formatWithCommas(cycle_to_millisec(totalCycles), formattedResult_runtime).str());
     }
 
     void testDeserializePerformance(const char *description, unsigned numNodes, unsigned depth, bool binary, unsigned iterations)
@@ -3629,14 +3631,15 @@ public:
         StringBuffer formattedResult_depth;
         StringBuffer formattedResult_iterations;
         StringBuffer formattedResult_serializedLength;
-        DBGLOG("Test %s: nodes %s; depth %s; content: %s; iterations: %s\tDeserialized: %s bytes\tRuntime: %llu ms",
+        StringBuffer formattedResult_runtime;
+        DBGLOG("Test %s: nodes %s; depth %s; content: %s; iterations: %s\tDeserialized: %s bytes\tRuntime: %s ms",
                description,
                formatWithCommas(numNodes, formattedResult_numNodes).str(),
                formatWithCommas(depth, formattedResult_depth).str(),
                binary ? "binary" : "text",
                formatWithCommas(iterations, formattedResult_iterations).str(),
                formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
-               cycle_to_millisec(totalCycles));
+               formatWithCommas(cycle_to_millisec(totalCycles), formattedResult_runtime).str());
     }
 
     void testSmallTreeDeserialize()
