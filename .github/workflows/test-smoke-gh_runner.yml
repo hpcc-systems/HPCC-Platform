@@ -79,6 +79,8 @@ jobs:
 
           # Install, configure and start TinyProxy
           sudo apt-get install -y tinyproxy
+          echo "TinyProxy pid(s): $(pgrep tinyproxy)"
+
           echo "Port 8888"    > tinyproxy.conf
           echo "Timeout 10" >> tinyproxy.conf
           echo "StartServers 5" >> tinyproxy.conf
