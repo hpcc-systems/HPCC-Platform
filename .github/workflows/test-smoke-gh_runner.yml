@@ -81,8 +81,15 @@ jobs:
           sudo apt-get install -y tinyproxy
           echo "Port 8888"    > tinyproxy.conf
           echo "Timeout 600" >> tinyproxy.conf
-          tinyproxy -c tinyproxy.conf
-          pgrep tinyproxy
+          echo "StartServers 5" >> tinyproxy.conf
+          echo "MaxClients 5" >> tinyproxy.conf
+          echo "DisableViaHeader yes" >> tinyproxy.conf
+          echo "#SysLog On" >> tinyproxy.conf
+          res=$( sudo tinyproxy -c tinyproxy.conf 2>&1 )
+          retCode=$?
+          echo "retCode:$retCode"
+          echo "res:$res"
+          echo "TinyProxy pid(s): $(pgrep tinyproxy)"
 
       - name: Install Package
         shell: "bash"
@@ -108,6 +115,10 @@ jobs:
           ulimit -c
           /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
               /opt/HPCCSystems/testing/regress/ecl-test setup --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
+
+          curl -v --proxy localhost:8888 -o proxytest.txt http://localhost:8010/WsWorkunits/WUQuery.json?PageSize=25000&Sortby=Jobname
+          ls -l proxytest.txt
+
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
           if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
 
