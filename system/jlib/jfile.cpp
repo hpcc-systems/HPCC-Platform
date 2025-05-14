@@ -6525,38 +6525,6 @@ IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs,
 }
 
 
-class CIoSerialStream: public CSerialStreamBase
-{
-    Linked<IFileIOStream> io;
-    offset_t lastpos;
-
-
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
-    {
-        if (lastpos!=pos)
-            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
-        size32_t rd = io->read(max_size,ptr);
-        lastpos = pos+rd;
-        return rd;
-    }
-
-public:
-    CIoSerialStream(IFileIOStream * _io,offset_t _offset, size32_t _bufsize)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize), io(_io)
-    {
-        lastpos = _offset;
-    }
-};
-
-
-IBufferedSerialInputStream *createFileSerialStream(IFileIOStream *io,size32_t bufsize)
-{
-    if (!io)
-        return NULL;
-    return new CIoSerialStream(io,0,bufsize);
-}
-
-
 class CSocketSerialStream: public CSerialStreamBase
 {
     Linked<ISocket> socket;
