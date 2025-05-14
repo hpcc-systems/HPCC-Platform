@@ -607,6 +607,7 @@ export = {
         NameOfEnvironment: "Name Of Environment",
         NamePrefix: "Name Prefix",
         NamePrefixPlaceholder: "some::prefix",
+        NavWide: "Navigation Wide Mode",
         NetworkAddress: "Network Address",
         Newest: "Newest",
         NewPassword: "New Password",

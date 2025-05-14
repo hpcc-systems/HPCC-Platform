@@ -1,6 +1,17 @@
 import * as React from "react";
-import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Link, mergeStyleSets, Nav, Stack } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
+import { ToggleButton } from "@fluentui/react-components";
+import { NavDrawer, NavDrawerBody, NavDrawerFooter, NavItem } from "@fluentui/react-nav-preview";
+import { makeStyles, tokens } from "@fluentui/react-components";
+import {
+    Home20Filled, Home20Regular, TextGrammarLightning20Filled, TextGrammarLightning20Regular,
+    DatabaseWindow20Filled, DatabaseWindow20Regular,
+    Globe20Filled, Globe20Regular,
+    Organization20Filled, Organization20Regular,
+    ShieldBadge20Filled, ShieldBadge20Regular,
+    WeatherSunnyRegular, WeatherMoonRegular,
+    bundleIcon, FluentIcon
+} from "@fluentui/react-icons";
+import { IconButton, IContextualMenuItem, Link, mergeStyleSets, Stack } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { navCategory } from "../util/history";
@@ -24,43 +35,95 @@ export function useNextPrev(val?: NextPrevious): [NextPreviousT, (val: NextPrevi
 }
 
 //  Top Level Nav  ---
-function navLinkGroups(): INavLinkGroup[] {
-    let links: INavLink[] = [
+
+const useStyles = makeStyles({
+    root: {
+        overflow: "hidden",
+        display: "flex",
+        height: "100%"
+    },
+    nav: {
+        maxWidth: "200px",
+    },
+    navSmall: {
+        maxWidth: "48px", // changed from 52px to 48px
+        minWidth: "48px", // add this to enforce fixed width
+        width: "48px",    // add this to enforce fixed width
+    },
+    content: {
+        flex: "1",
+        padding: "16px",
+        display: "grid",
+        justifyContent: "flex-start",
+        alignItems: "flex-start",
+    },
+    field: {
+        display: "flex",
+        marginTop: "4px",
+        marginLeft: "8px",
+        flexDirection: "column",
+        gridRowGap: tokens.spacingVerticalS,
+    },
+});
+
+interface NavItemData {
+    name: string;
+    href: string;
+    icon: FluentIcon;
+    key: string;
+    value: string;
+}
+
+const Home = bundleIcon(Home20Filled, Home20Regular);
+const TextGrammarLightning = bundleIcon(TextGrammarLightning20Filled, TextGrammarLightning20Regular);
+const DatabaseWindow = bundleIcon(DatabaseWindow20Filled, DatabaseWindow20Regular);
+const Globe = bundleIcon(Globe20Filled, Globe20Regular);
+const Organization = bundleIcon(Organization20Filled, Organization20Regular);
+const ShieldBadge = bundleIcon(ShieldBadge20Filled, ShieldBadge20Regular);
+
+function navLinkGroups(): NavItemData[] {
+    let links: NavItemData[] = [
         {
             name: nlsHPCC.Activities,
-            url: "#/activities",
-            icon: "Home",
-            key: "activities"
+            href: "#/activities",
+            icon: Home,
+            key: "activities",
+            value: "activities"
         },
         {
             name: nlsHPCC.ECL,
-            url: "#/workunits",
-            icon: "SetAction",
-            key: "workunits"
+            href: "#/workunits",
+            icon: TextGrammarLightning,
+            key: "workunits",
+            value: "workunits"
         },
         {
             name: nlsHPCC.Files,
-            url: "#/files",
-            icon: "PageData",
-            key: "files"
+            href: "#/files",
+            icon: DatabaseWindow,
+            key: "files",
+            value: "files"
         },
         {
             name: nlsHPCC.PublishedQueries,
-            url: "#/queries",
-            icon: "Globe",
-            key: "queries"
+            href: "#/queries",
+            icon: Globe,
+            key: "queries",
+            value: "queries"
         },
         {
             name: nlsHPCC.Topology,
-            url: "#/topology",
-            icon: "Org",
-            key: "topology"
+            href: "#/topology",
+            icon: Organization,
+            key: "topology",
+            value: "topology"
         },
         {
             name: nlsHPCC.Operations,
-            url: "#/operations",
-            icon: "Admin",
-            key: "operations"
+            href: "#/operations",
+            icon: ShieldBadge,
+            key: "operations",
+            value: "operations"
         }
     ];
     if (!containerized) {
@@ -69,12 +132,12 @@ function navLinkGroups(): INavLinkGroup[] {
     if (!bare_metal) {
         links = links.filter(l => l.key !== "operations");
     }
-    return [{ links }];
+    return links;
 }
 
 const _navIdx: { [id: string]: MainNav[] } = {};
 
-function navIdx(id) {
+function navIdx(id: string) {
     id = id.split("!")[0];
     if (!_navIdx[id]) {
         _navIdx[id] = [];
@@ -106,45 +169,6 @@ function navSelectedKey(hashPath) {
     return null;
 }
 
-const FIXED_WIDTH = 38;
-
-interface MainNavigationProps {
-    hashPath: string;
-}
-
-export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
-    hashPath
-}) => {
-
-    const menu = useConst(() => [...navLinkGroups()]);
-    const { theme, setTheme, isDark } = useUserTheme();
-
-    const selKey = React.useMemo(() => {
-        return navSelectedKey(hashPath);
-    }, [hashPath]);
-
-    return <Stack verticalAlign="space-between" styles={{ root: { width: `${FIXED_WIDTH}px`, height: "100%", position: "relative", backgroundColor: theme.palette.themeLighterAlt } }}>
-        <Stack.Item>
-            <Nav selectedKey={selKey} groups={menu} />
-        </Stack.Item>
-        <Stack.Item>
-            <IconButton
-                iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }}
-                onClick={() => {
-                    setTheme(isDark ? "light" : "dark");
-                    const themeChangeEvent = new CustomEvent("eclwatch-theme-toggle", {
-                        detail: { dark: !isDark }
-                    });
-                    document.dispatchEvent(themeChangeEvent);
-                }}
-            />
-            {/* Disable Theme editor button for launch of 9.0 */}
-            {/* <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} /> */}
-        </Stack.Item>
-    </Stack>;
-};
-
-//  Second Level Nav  ---
 interface SubMenu {
     headerText: string;
     itemKey: string;
@@ -217,6 +241,85 @@ function subNavSelectedKey(hashPath) {
     }
     return null;
 }
+
+interface MainNavigationProps {
+    hashPath: string;
+    navWideMode: boolean;
+}
+
+export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
+    hashPath,
+    navWideMode
+}) => {
+    const styles = useStyles();
+
+    const selKey = React.useMemo(() => {
+        return navSelectedKey(hashPath);
+    }, [hashPath]);
+
+    const subNav = React.useMemo(() => {
+        return subNavSelectedKey(hashPath);
+    }, [hashPath]);
+
+    const { setTheme, isDark } = useUserTheme();
+
+    return <div className={styles.root}>
+        <NavDrawer selectedValue={selKey} open={true} type={"inline"} density="medium" className={navWideMode ? styles.nav : styles.navSmall} >
+            <NavDrawerBody>
+                {
+                    navLinkGroups().map((item: NavItemData) => (
+                        <React.Fragment key={item.key}>
+                            <NavItem
+                                href={item.href}
+                                icon={<item.icon href={item.href} />}
+                                value={item.value}
+                                style={{
+                                    paddingLeft: "4px", paddingRight: "4px", color: selKey === item.value ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
+                                }}
+                            >
+                                {navWideMode ? item.name : ""}
+                            </NavItem>
+                            {navWideMode && selKey === item.value && subMenuItems[item.value]?.length > 0 && (
+                                <>
+                                    {subMenuItems[item.value].map((sub) => (
+                                        <NavItem
+                                            key={sub.itemKey}
+                                            href={`#${sub.itemKey}`}
+                                            value={sub.itemKey}
+                                            style={{
+                                                padding: "4px 0 4px 32px",
+                                                color: subNav === sub.itemKey ? tokens.colorBrandForeground2 : tokens.colorNeutralForeground1,
+                                                fontWeight: subNav === sub.itemKey ? tokens.fontWeightSemibold : tokens.fontWeightRegular,
+                                                background: "none",
+                                                textDecoration: "none"
+                                            }}
+                                        >
+                                            {sub.headerText}
+                                        </NavItem>
+                                    ))}
+                                </>
+                            )}
+                        </React.Fragment>
+                    ))
+                }
+            </NavDrawerBody>
+
+            <NavDrawerFooter>
+                <ToggleButton appearance="transparent" icon={isDark ? <WeatherSunnyRegular /> : <WeatherMoonRegular />} style={{ justifyContent: "flex-start", width: "100%" }} onClick={() => {
+                    setTheme(isDark ? "light" : "dark");
+                    const themeChangeEvent = new CustomEvent("eclwatch-theme-toggle", {
+                        detail: { dark: !isDark }
+                    });
+                    document.dispatchEvent(themeChangeEvent);
+                }} >
+                    {navWideMode ? nlsHPCC.Theme : ""}
+                </ToggleButton>
+            </NavDrawerFooter>
+        </NavDrawer>
+    </div >;
+};
+
+//  Second Level Nav  ---
 
 interface SubNavigationProps {
     hashPath: string;
