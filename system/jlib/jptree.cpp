@@ -3683,7 +3683,12 @@ void LocalPTree::setName(const char *_name)
         return;
     AttrStr *oname = name.getPtr();  // Don't free until after we copy - they could overlap
     if (!name.set(_name))
-        name.setPtr(AttrStr::create(_name));
+    {
+        if (_name)
+            name.setPtr(AttrStr::create(_name));
+        else
+            name.setPtr(nullptr);
+    }
     if (oname)
         AttrStr::destroy(oname);
 }

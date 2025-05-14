@@ -52,7 +52,7 @@ class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibTraceTest);
-        //Invalid since tracemanager initialized at component load time 
+        //Invalid since tracemanager initialized at component load time
         //CPPUNIT_TEST(testTraceDisableConfig);
         CPPUNIT_TEST(testStringArrayPropegatedServerSpan);
         CPPUNIT_TEST(testDisabledTracePropegatedValues);
@@ -270,7 +270,7 @@ protected:
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
             //14:49:13.776139   904 MsTickOffset span actual start-time timestamp: 1702669753775893057
-            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d", 
+            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d",
             //"start": 1702669753725771035, "duration": 50285323 }
             //Actual start - declared start: 1702669753775893057-1702669753725771035 = 50162022
         }
@@ -285,7 +285,7 @@ protected:
             //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
             MilliSleep(75);
 
-            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663", 
+            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663",
             //"start": 1702668157790080022,
             //"duration": 75316248 }
         }
@@ -323,13 +323,13 @@ protected:
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
-            serverSpan->recordError(SpanError("Error Message!!", 23, true, false)); 
+            serverSpan->recordError(SpanError("Error Message!!", 23, true, false));
         }//{ "type": "span", "name": "containsErrorAndMessageFailedNotEscapedSpan", "trace_id": "02f4b2d215f8230b15063862f8a91e41", "span_id": "c665ec371d6db147", "start": 1709675573581678954, "duration": 3467489486, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675576145074240, "attributes": {"code": 23,"escaped": 0,"message": "Error Message!!" } } ] }
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
             serverSpan->recordException( makeStringExceptionV(76,"Mock exception"), false, false);
-        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ] 
+        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ]
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
@@ -727,7 +727,7 @@ protected:
         {
             Owned<IProperties> spanContext = createProperties();
             ISpan * activeSpan =  queryThreadedActiveSpan();
-            
+
             CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
 
             activeSpan->getSpanContext(spanContext);
@@ -786,7 +786,7 @@ protected:
             //15:07:56.490232  3788 720009f32a9db04f68f2b6545717ebe5 a7ef8749b5926acf This log entry should report traceID: '720009f32a9db04f68f2b6545717ebe5' and spanID: 'a7ef8749b5926acf'
         }
     }
-    
+
     void testInvalidPropegatedServerSpan()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
@@ -952,7 +952,7 @@ protected:
     void testStringArrayPropegatedServerSpan()
     {
         StringArray mockHTTPHeadersSA;
-        //mock opentel traceparent context 
+        //mock opentel traceparent context
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
         //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
         mockHTTPHeadersSA.append("tracestate:hpcc=4b960b3e4647da3f");
@@ -3400,6 +3400,246 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
 
 
+/*
+ * PTree Timing tests
+ *
+ */
+
+#include <cmath>
+
+class PTreeDeserializeTimingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeDeserializeTimingTest);
+        CPPUNIT_TEST(testSmallTreeDeserialize);
+        CPPUNIT_TEST(testMediumTreeDeserialize);
+        CPPUNIT_TEST(testLargeTreeDeserialize);
+        CPPUNIT_TEST(testExtraLargeTreeDeserialize);
+        CPPUNIT_TEST(testHugeTreeDeserialize);
+        CPPUNIT_TEST(testDeepVsWideTreeDeserialize);
+        CPPUNIT_TEST(testCustomTreeDeserialize);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    // Helper method to create a tree with the specified number of nodes
+    IPropertyTree *createTree(unsigned numNodes, unsigned depth, bool binary = false)
+    {
+        Owned<IPropertyTree> tree = createPTree("root");
+
+        if (depth <= 1) // Wide tree
+        {
+            for (unsigned i = 0; i < numNodes; i++)
+            {
+                StringBuffer name;
+                name.append("node").append(i);
+                Owned<IPropertyTree> child = createPTree(name.str());
+
+                // Add attributes
+                child->setProp("@attr1", "value1");
+                child->setProp("@attr2", "value2");
+
+                // Add some text content
+                child->setProp(NULL, "Some text content for this node");
+
+                // Add binary content for some nodes
+                if (binary && (i % 5 == 0))
+                {
+                    MemoryBuffer mb;
+                    mb.append(100, "binary data");
+                    child->setPropBin("binaryProp", mb.length(), mb.toByteArray());
+                }
+
+                tree->addPropTree(name.str(), child.getClear());
+            }
+        }
+        else // Deep tree
+        {
+            unsigned nodesPerLevel = (numNodes > depth) ? (numNodes / depth) : 1;
+
+            std::function<void(IPropertyTree *, unsigned, unsigned)> buildLevel =
+                [&](IPropertyTree *parent, unsigned level, unsigned remaining)
+            {
+                if (level >= depth || remaining == 0)
+                    return;
+
+                unsigned nodeCount = std::min(nodesPerLevel, remaining);
+
+                for (unsigned i = 0; i < nodeCount; i++)
+                {
+                    StringBuffer name;
+                    name.append("level").append(level).append("_").append(i);
+
+                    Owned<IPropertyTree> child = createPTree(name.str());
+                    child->setPropInt("@level", level);
+                    child->setPropInt("@index", i);
+                    child->setProp(NULL, "Node content");
+
+                    parent->addPropTree(name.str(), child.getClear());
+
+                    // Recursively build the next level
+                    buildLevel(parent->queryPropTree(name.str()), level + 1,
+                               (remaining - 1) / nodeCount);
+                }
+            };
+
+            buildLevel(tree, 1, numNodes);
+        }
+
+        return tree.getClear();
+    }
+
+    void testDeserializePerformance(Owned<IPropertyTree> &testTree, unsigned iterations)
+    {
+        // Create and serialize tree
+        MemoryBuffer serialized;
+        testTree->serialize(serialized);
+        serialized.reset();
+
+        // Measure deserialization time
+        CCycleTimer timer;
+        cycle_t totalCycles{0};
+        unsigned __int64 totalSize{0};
+
+        for (unsigned i = 0; i < iterations; i++)
+        {
+            Owned<IPropertyTree> testTree = createPTree();
+
+            serialized.reset();
+            timer.reset();
+
+            testTree->deserialize(serialized);
+
+            cycle_t elapsed = timer.elapsedCycles();
+            totalCycles += elapsed;
+            totalSize += serialized.length();
+        }
+
+        // Calculate and report results
+        StringBuffer formattedResult_numNodes;
+        StringBuffer formattedResult_depth;
+        StringBuffer formattedResult_iterations;
+        StringBuffer formattedResult_serializedLength;
+        DBGLOG("Test Regression Dali Tree: nodes %s; depth %s; content: text; iterations: %s\tDeserialized: %s bytes\tRuntime: %llu ms",
+               formatWithCommas(testTree->numChildren(), formattedResult_numNodes).str(),
+               formatWithCommas(testTree->getAttributeCount(), formattedResult_depth).str(),
+               formatWithCommas(iterations, formattedResult_iterations).str(),
+               formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
+               cycle_to_millisec(totalCycles));
+    }
+
+    void testDeserializePerformance(const char *description, unsigned numNodes, unsigned depth, bool binary, unsigned iterations)
+    {
+        // Create and serialize tree
+        Owned<IPropertyTree> originalTree = createTree(numNodes, depth, binary);
+        MemoryBuffer serialized;
+        originalTree->serialize(serialized);
+
+        // Measure deserialization time
+        CCycleTimer timer;
+        cycle_t totalCycles{0};
+        unsigned __int64 totalSize{0};
+
+        for (unsigned i = 0; i < iterations; i++)
+        {
+            Owned<IPropertyTree> testTree = createPTree();
+
+            serialized.reset();
+            timer.reset();
+
+            testTree->deserialize(serialized);
+
+            cycle_t elapsed = timer.elapsedCycles();
+            totalCycles += elapsed;
+            totalSize += serialized.length();
+
+            // Verify first and last iterations
+            if (i == 0 || i == iterations - 1)
+            {
+                // Simple verification - check some key attributes
+                bool match = (testTree->hasProp("@attr1") == originalTree->hasProp("@attr1")) &&
+                             (testTree->numChildren() == originalTree->numChildren());
+                CPPUNIT_ASSERT_MESSAGE("Deserialized tree doesn't match original", match);
+            }
+        }
+
+        // Calculate and report results
+        StringBuffer formattedResult_numNodes;
+        StringBuffer formattedResult_depth;
+        StringBuffer formattedResult_iterations;
+        StringBuffer formattedResult_serializedLength;
+        DBGLOG("Test %s: nodes %s; depth %s; content: %s; iterations: %s\tDeserialized: %s bytes\tRuntime: %llu ms",
+               description,
+               formatWithCommas(numNodes, formattedResult_numNodes).str(),
+               formatWithCommas(depth, formattedResult_depth).str(),
+               binary ? "binary" : "text",
+               formatWithCommas(iterations, formattedResult_iterations).str(),
+               formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
+               cycle_to_millisec(totalCycles));
+    }
+
+    void testSmallTreeDeserialize()
+    {
+        testDeserializePerformance("Small Tree (wide)", 100, 1, false, 1000);
+        testDeserializePerformance("Small Tree (deep)", 100, 1000, false, 1000);
+    }
+
+    void testMediumTreeDeserialize()
+    {
+        testDeserializePerformance("Medium Tree (wide)", 1000, 1, false, 100);
+        testDeserializePerformance("Medium Tree (deep)", 1000, 1000, false, 100);
+    }
+
+    void testLargeTreeDeserialize()
+    {
+        testDeserializePerformance("Large Tree (wide)", 10000, 1, false, 100);
+        testDeserializePerformance("Large Tree (wide)", 10000, 1, true, 100);
+    }
+
+    void testExtraLargeTreeDeserialize()
+    {
+        testDeserializePerformance("Extra Large Tree (wide)", 100000, 1, false, 50);
+        testDeserializePerformance("Extra Large Tree (wide)", 100000, 1, true, 50);
+    }
+
+    void testHugeTreeDeserialize()
+    {
+        testDeserializePerformance("Huge Tree (wide)", 1000000, 1, false, 5);
+        testDeserializePerformance("Huge Tree (wide)", 1000000, 1, true, 5);
+    }
+
+    void testDeepVsWideTreeDeserialize()
+    {
+        // Compare trees with same node count but different structures
+        unsigned nodeCount = 5000;
+
+        testDeserializePerformance("Deep Tree", nodeCount, 5000, false, 100);
+        testDeserializePerformance("Wide Tree", nodeCount, 1, false, 100);
+        testDeserializePerformance("Balanced Tree", nodeCount, (unsigned)sqrt(nodeCount), false, 100);
+    }
+
+    static constexpr const char *TEST_XML_FILENAME{"testing/unittests/jlibtestsCustomPTree.xml"};
+    void testCustomTreeDeserialize()
+    {
+        try
+        {
+            Owned<IPropertyTree> customTree = createPTreeFromXMLFile(TEST_XML_FILENAME);
+            testDeserializePerformance(customTree, 10);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            msg.append("Unexpected toString format failure detected: ");
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeDeserializeTimingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeDeserializeTimingTest, "PTreeDeserializeTimingTest");
+
+
+
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
@@ -3527,7 +3767,7 @@ public:
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
                 : startSem(_startSem), endSem(_endSem),
-                  lock1(_lock1), lock2(_lock2), 
+                  lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
             {
@@ -4699,7 +4939,7 @@ protected:
         CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
-        
+
         unsigned cipherlen = ciphertext1.length() - lenPrefix;
 
         /* Decrypt the ciphertext */
@@ -4784,8 +5024,8 @@ protected:
                 CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
                 E->Release();
             }
-        }        
-    // Note: Using OpenTelemetry null span 
+        }
+    // Note: Using OpenTelemetry null span
     }
 
     void test()
