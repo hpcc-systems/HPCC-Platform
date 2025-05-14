@@ -33,8 +33,8 @@ typedef unsigned __int64 cost_type; // Decimal currency amount multiplied by 10^
 const unsigned __int64 MaxStatisticValue = (unsigned __int64)0-1U;
 const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum value to also represent unknown, since it is unlikely to ever occur.
 
-inline constexpr stat_type seconds2StatUnits(stat_type secs) { return secs * 1000000000; }
-inline constexpr stat_type msecs2StatUnits(stat_type ms) { return ms * 1000000; }
+inline constexpr stat_type seconds2StatUnits(__uint64 secs) { return secs * 1000000000; }
+inline constexpr stat_type msecs2StatUnits(__uint64 ms) { return ms * 1000000; }
 inline constexpr double statUnits2seconds(stat_type stat) {return ((double)stat) / 1000000000; }
 inline constexpr double statUnits2msecs(stat_type stat) {return ((double)stat) / 1000000; }
 
