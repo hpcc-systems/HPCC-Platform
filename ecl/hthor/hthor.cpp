@@ -487,11 +487,17 @@ void CHThorDiskWriteActivity::resolve()
 
     if (useGenericReadWrites)
     {
-        // Merge options from helper into providerOptions and formatOptions
-        CPropertyTreeWriter providerOptsWriter(providerOptions);
-        helper.getProviderOptions(providerOptsWriter);
-        CPropertyTreeWriter formatOptsWriter(formatOptions);
-        helper.getFormatOptions(formatOptsWriter);
+        // Merge options from helper into providerOptions and formatOptions if required
+        if (helperFlags & TDXdynprovideroptions)
+        {
+            CPropertyTreeWriter providerOptsWriter(providerOptions);
+            helper.getProviderOptions(providerOptsWriter);
+        }
+        if (helperFlags & TDXdynformatoptions)
+        {
+            CPropertyTreeWriter formatOptsWriter(formatOptions);
+            helper.getFormatOptions(formatOptsWriter);
+        }
     }
 
     if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)

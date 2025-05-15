@@ -11072,11 +11072,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         else if (fileTypeOptionsExpr->getOperator() == no_pipe)
         {
             pipe = fileTypeOptionsExpr->queryChild(0);
+            useGenericReadWrites = false;
         }
     }
     else if (filename->getOperator() == no_pipe)
     {
         pipe = filename->queryChild(0);
+        useGenericReadWrites = false;
     }
 
     LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
@@ -11091,53 +11093,51 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     bool isJson = false;
     IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
 
-    if (!useGenericReadWrites)
+    if (!xmlAttr)
     {
-        if (!xmlAttr)
-        {
-            xmlAttr = expr->queryAttribute(jsonAtom);
-            if (xmlAttr)
-                isJson = true;
-        }
-
-        if (pipe && expr->hasAttribute(_disallowed_Atom))
-            throwError(HQLERR_PipeNotAllowed);
-
-        if (expr->getOperator() == no_spill)
-        {
-            kind = TAKspill;
-            activityArgName = "Spill";
-            summaryType = SummaryType::SpillFile;
-        }
-        else if (pipe)
-        {
-            kind = TAKpipewrite;
-            activityArgName = "PipeWrite";
-            summaryType = SummaryType::None;
-        }
-        else if (csvAttr)
-        {
-            kind = TAKcsvwrite;
-            activityArgName = "CsvWrite";
-        }
-        else if (xmlAttr)
-        {
-            activityArgName = "XmlWrite";
-            if (isJson)
-                kind = TAKjsonwrite;
-            else
-                kind = TAKxmlwrite;
-        }
-        else if (expr->hasAttribute(_spill_Atom))
-        {
-            kind = TAKspillwrite;
-            summaryType = SummaryType::SpillFile;
-        }
-        if (expr->hasAttribute(jobTempAtom))
-            summaryType = SummaryType::JobTemp;
-        else if (expr->hasAttribute(_workflowPersist_Atom))
-            summaryType = SummaryType::PersistFile;
+        xmlAttr = expr->queryAttribute(jsonAtom);
+        if (xmlAttr)
+            isJson = true;
     }
+
+    if (pipe && expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
+
+    if (expr->getOperator() == no_spill)
+    {
+        kind = TAKspill;
+        activityArgName = "Spill";
+        summaryType = SummaryType::SpillFile;
+    }
+    else if (pipe)
+    {
+        kind = TAKpipewrite;
+        activityArgName = "PipeWrite";
+        summaryType = SummaryType::None;
+    }
+    else if (csvAttr)
+    {
+        kind = TAKcsvwrite;
+        activityArgName = "CsvWrite";
+    }
+    else if (xmlAttr)
+    {
+        activityArgName = "XmlWrite";
+        if (isJson)
+            kind = TAKjsonwrite;
+        else
+            kind = TAKxmlwrite;
+    }
+    else if (expr->hasAttribute(_spill_Atom))
+    {
+        kind = TAKspillwrite;
+        summaryType = SummaryType::SpillFile;
+    }
+
+    if (expr->hasAttribute(jobTempAtom))
+        summaryType = SummaryType::JobTemp;
+    else if (expr->hasAttribute(_workflowPersist_Atom))
+        summaryType = SummaryType::PersistFile;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
@@ -11173,6 +11173,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
     if (!genericFileTypeFormat.isEmpty())
         instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", genericFileTypeFormat.str());
+    else
+        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", str(expr->queryChild(2)->queryName()));
 
     noteResultDefined(ctx, instance, seq, filename, isRoot);
 
