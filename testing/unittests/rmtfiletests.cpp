@@ -34,6 +34,9 @@
 extern void setDafsLocalMountRedirect(const IpAddress &ip, const char *dir, const char *mountdir);
 extern IFile *createFileLocalMount(const IpAddress &ip, const char *filename);
 
+constexpr const char * testIp_127_0_0_1 = "127.0.0.1";
+constexpr const char * testIp_127_0_0_2 = "127.0.0.2";
+
 // Thread class for testing concurrent access to createFileLocalMount
 class CCreateFileLocalMountThread : public CSimpleInterfaceOf<IInterface>, implements IThreaded
 {
@@ -103,7 +106,7 @@ private:
     {
         // Setup a dummy IP to match all IPs
         IpAddress ip1;
-        ip1.ipset("192.168.1.1");
+        ip1.ipset(testIp_127_0_0_1);
         setDafsLocalMountRedirect(ip1, "/remote/path", nullptr);
         setDafsLocalMountRedirect(ip1, "/remote/path1", nullptr);
         setDafsLocalMountRedirect(ip1, "/remote/path2", nullptr);
@@ -114,7 +117,7 @@ private:
 #endif
 
         IpAddress ip2;
-        ip2.ipset("192.168.1.2");
+        ip2.ipset(testIp_127_0_0_2);
         setDafsLocalMountRedirect(ip2, "/remote/path", nullptr);
         setDafsLocalMountRedirect(ip2, "/remote/path1", nullptr);
         setDafsLocalMountRedirect(ip2, "/remote/path2", nullptr);
@@ -177,7 +180,7 @@ public:
     void testLocalMountRedirects()
     {
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
         const char *remoteDir = "/remote/path";
         const char *localDir = "/local/path";
 
@@ -185,18 +188,15 @@ public:
         setDafsLocalMountRedirect(ip, remoteDir, localDir);
 
         // Use similar function as in createFileLocalMount to check if mount was set
-        IFile *file = createFileLocalMount(ip, "/remote/path/file.txt");
+        Owned<IFile> file = createFileLocalMount(ip, "/remote/path/file.txt");
         CPPUNIT_ASSERT(file != nullptr);
-
-        // Clean up
-        file->Release();
     }
 
     void testMultithreadedLocalMountRedirects()
     {
         // Set up a mount and IP for testing
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
         const char *remoteDir = "/remote/path";
         const char *localDir = "/local/path";
 
@@ -227,7 +227,7 @@ public:
     void testCreateFileLocalMount()
     {
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
         const char *remoteDir = "/remote/path";
         const char *localDir = "/local/path";
 
@@ -235,46 +235,43 @@ public:
         setDafsLocalMountRedirect(ip, remoteDir, localDir);
 
         // Test with file in the mount path
-        IFile *file = createFileLocalMount(ip, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file != nullptr);
-        CPPUNIT_ASSERT_EQUAL_STR("/local/path/file.txt", file->queryFilename());
-        file->Release();
+        Owned<IFile> file1 = createFileLocalMount(ip, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file1 != nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("/local/path/file.txt", file1->queryFilename());
 
         // Test with file exactly at the mount path
-        file = createFileLocalMount(ip, "/remote/path");
-        CPPUNIT_ASSERT(file != nullptr);
-        CPPUNIT_ASSERT_EQUAL_STR("/local/path", file->queryFilename());
-        file->Release();
+        Owned<IFile> file2 = createFileLocalMount(ip, "/remote/path");
+        CPPUNIT_ASSERT(file2 != nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("/local/path", file2->queryFilename());
     }
 
     void testPartialPathMatch()
     {
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
 
         // Set up a local mount redirect
         setDafsLocalMountRedirect(ip, "/remote/path", "/local/path");
 
         // These should match
-        IFile *file = createFileLocalMount(ip, "/remote/path/subdir/file.txt");
-        CPPUNIT_ASSERT(file != nullptr);
-        CPPUNIT_ASSERT_EQUAL_STR("/local/path/subdir/file.txt", file->queryFilename());
-        file->Release();
+        Owned<IFile> file1 = createFileLocalMount(ip, "/remote/path/subdir/file.txt");
+        CPPUNIT_ASSERT(file1 != nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("/local/path/subdir/file.txt", file1->queryFilename());
 
         // This should not match because it's not the same directory
-        file = createFileLocalMount(ip, "/remote/pathother/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file2 = createFileLocalMount(ip, "/remote/pathother/file.txt");
+        CPPUNIT_ASSERT(file2 == nullptr);
 
         // This should not match because it's a partial directory name
-        file = createFileLocalMount(ip, "/remote/pat/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file3 = createFileLocalMount(ip, "/remote/pat/file.txt");
+        CPPUNIT_ASSERT(file3 == nullptr);
     }
 
     void testMultipleMounts()
     {
         IpAddress ip1, ip2;
-        ip1.ipset("192.168.1.1");
-        ip2.ipset("192.168.1.2");
+        ip1.ipset(testIp_127_0_0_1);
+        ip2.ipset(testIp_127_0_0_2);
 
         // Set up multiple mounts
         setDafsLocalMountRedirect(ip1, "/remote/path1", "/local/path1");
@@ -282,87 +279,81 @@ public:
         setDafsLocalMountRedirect(ip2, "/remote/path3", "/local/path3");
 
         // Test each mount
-        IFile *file1 = createFileLocalMount(ip1, "/remote/path1/file.txt");
+        Owned<IFile> file1 = createFileLocalMount(ip1, "/remote/path1/file.txt");
         CPPUNIT_ASSERT(file1 != nullptr);
         CPPUNIT_ASSERT_EQUAL_STR("/local/path1/file.txt", file1->queryFilename());
-        file1->Release();
 
-        IFile *file2 = createFileLocalMount(ip1, "/remote/path2/file.txt");
+        Owned<IFile> file2 = createFileLocalMount(ip1, "/remote/path2/file.txt");
         CPPUNIT_ASSERT(file2 != nullptr);
         CPPUNIT_ASSERT_EQUAL_STR("/local/path2/file.txt", file2->queryFilename());
-        file2->Release();
 
-        IFile *file3 = createFileLocalMount(ip2, "/remote/path3/file.txt");
+        Owned<IFile> file3 = createFileLocalMount(ip2, "/remote/path3/file.txt");
         CPPUNIT_ASSERT(file3 != nullptr);
         CPPUNIT_ASSERT_EQUAL_STR("/local/path3/file.txt", file3->queryFilename());
-        file3->Release();
     }
 
     void testRemoveMounts()
     {
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
 
         // Set up a mount
         setDafsLocalMountRedirect(ip, "/remote/path", "/local/path");
 
         // Verify it's set
-        IFile *file = createFileLocalMount(ip, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file != nullptr);
-        file->Release();
+        Owned<IFile> file1 = createFileLocalMount(ip, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file1 != nullptr);
 
         // Remove the mount by setting mountdir to nullptr
         setDafsLocalMountRedirect(ip, "/remote/path", nullptr);
 
         // Verify it's removed
-        file = createFileLocalMount(ip, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file2 = createFileLocalMount(ip, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file2 == nullptr);
 
         // Test removing all mounts for an IP
         setDafsLocalMountRedirect(ip, "/remote/path", "/local/path");
         setDafsLocalMountRedirect(ip, "/remote/path2", "/local/path2");
 
         // Verify they're set
-        file = createFileLocalMount(ip, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file != nullptr);
-        file->Release();
+        Owned<IFile> file3 = createFileLocalMount(ip, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file3 != nullptr);
 
-        file = createFileLocalMount(ip, "/remote/path2/file.txt");
-        CPPUNIT_ASSERT(file != nullptr);
-        file->Release();
+        Owned<IFile> file4 = createFileLocalMount(ip, "/remote/path2/file.txt");
+        CPPUNIT_ASSERT(file4 != nullptr);
 
         // Remove all mounts for this IP
         setDafsLocalMountRedirect(ip, "/remote/path", nullptr);
         setDafsLocalMountRedirect(ip, "/remote/path2", nullptr);
 
         // Verify they're removed
-        file = createFileLocalMount(ip, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file5 = createFileLocalMount(ip, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file5 == nullptr);
 
-        file = createFileLocalMount(ip, "/remote/path2/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file6 = createFileLocalMount(ip, "/remote/path2/file.txt");
+        CPPUNIT_ASSERT(file6 == nullptr);
     }
 
     void testNonMatchingCases()
     {
         IpAddress ip1, ip2;
-        ip1.ipset("192.168.1.1");
-        ip2.ipset("192.168.1.2");
+        ip1.ipset(testIp_127_0_0_1);
+        ip2.ipset(testIp_127_0_0_2);
 
         // Set up a mount for ip1 only
         setDafsLocalMountRedirect(ip1, "/remote/path", "/local/path");
 
         // Test with wrong IP
-        IFile *file = createFileLocalMount(ip2, "/remote/path/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file1 = createFileLocalMount(ip2, "/remote/path/file.txt");
+        CPPUNIT_ASSERT(file1 == nullptr);
 
         // Test with wrong path
-        file = createFileLocalMount(ip1, "/different/path/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file2 = createFileLocalMount(ip1, "/different/path/file.txt");
+        CPPUNIT_ASSERT(file2 == nullptr);
 
         // Test with file that is not in the mount path
-        file = createFileLocalMount(ip1, "/file.txt");
-        CPPUNIT_ASSERT(file == nullptr);
+        Owned<IFile> file3 = createFileLocalMount(ip1, "/file.txt");
+        CPPUNIT_ASSERT(file3 == nullptr);
     }
 
     void testCaseSensitivity()
@@ -371,29 +362,24 @@ public:
         // On Windows, this might not detect issues with case sensitivity
 
         IpAddress ip;
-        ip.ipset("192.168.1.1");
+        ip.ipset(testIp_127_0_0_1);
 
         // Set up a mount
         setDafsLocalMountRedirect(ip, "/Remote/Path", "/local/path");
 
         // Test with exact case match
-        IFile *file = createFileLocalMount(ip, "/Remote/Path/file.txt");
-        if (file) // May be null on case-insensitive filesystems
-        {
-            CPPUNIT_ASSERT_EQUAL_STR("/local/path/file.txt", file->queryFilename());
-            file->Release();
-        }
+        Owned<IFile> file1 = createFileLocalMount(ip, "/Remote/Path/file.txt");
+        if (file1) // May be null on case-insensitive filesystems
+            CPPUNIT_ASSERT_EQUAL_STR("/local/path/file.txt", file1->queryFilename());
 
         // Test with different case
-        file = createFileLocalMount(ip, "/remote/path/file.txt");
+        Owned<IFile> file2 = createFileLocalMount(ip, "/remote/path/file.txt");
 #ifdef _WIN32
         // Windows is case-insensitive
-        CPPUNIT_ASSERT(file != nullptr);
-        if (file)
-            file->Release();
+        CPPUNIT_ASSERT(file2 != nullptr);
 #else
         // Unix-like systems are case-sensitive
-        CPPUNIT_ASSERT(file == nullptr);
+        CPPUNIT_ASSERT(file2 == nullptr);
 #endif
     }
 };
