@@ -3881,7 +3881,7 @@ public:
     }
 };
 
-IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc)
+extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc)
 {
     return new FileReadPropertiesUpdater(udesc);
 }

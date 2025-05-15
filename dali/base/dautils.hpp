@@ -597,6 +597,6 @@ public:
     virtual void publish() = 0;
 };
 
-IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);
+extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);
 
 #endif
