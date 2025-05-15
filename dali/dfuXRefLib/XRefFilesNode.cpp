@@ -24,6 +24,23 @@
 #include "jlzw.hpp"
 #include "dautils.hpp"
 
+
+static unsigned lookupNumStripedDevices(const char *clusterName)
+{
+    Owned<IPropertyTree> storagePlane = getStoragePlane(clusterName);
+    if (!storagePlane)
+    {
+        OWARNLOG("lookupNumStripedDevices: Storage plane %s not found", clusterName);
+        return 1;
+    }
+
+    unsigned numDevices = storagePlane->getPropInt("@numDevices");
+    bool isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
+
+    return isPlaneStriped ? numDevices : 1;
+}
+
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -176,7 +193,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
 
     int numparts = subBranch->getPropInt("Numparts");
     bool isDirPerPart = subBranch->getPropBool("IsDirPerPart");
-    unsigned numStripedDevices = subBranch->getPropInt("NumStripedDevices");
+    unsigned numStripedDevices = lookupNumStripedDevices(clustername);
 
     StringBuffer path;
     const char * fileMask = splitDirTail(Partmask, path);
