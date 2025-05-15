@@ -286,13 +286,13 @@ public:
 #endif
 #else
             if (!noport)            // expect all filenames that specify port to be dafilesrc or daliservix
-                return createDaliServixFile(filename);  
+                return createDaliServixFile(filename);
             if (filename.isUnixPath()
-#ifdef TEST_DAFILESRV_FOR_UNIX_PATHS        
+#ifdef TEST_DAFILESRV_FOR_UNIX_PATHS
                 &&testDaliServixPresent(ep)
 #endif
                 )
-                return createDaliServixFile(filename);  
+                return createDaliServixFile(filename);
 #endif
         }
         else if (forceRemotePattern)
@@ -1769,16 +1769,15 @@ IFile *createFileLocalMount(const IpAddress &ip, const char *filename)
         CLocalMountRec &mount = localMounts.item(i);
         if (mount.ip.ipequals(ip)) {
             size32_t bl = mount.dir.length();
-            if (bl > 0) {
-                if (isPathSepChar(mount.dir[bl - 1]))
-                    bl--;
-                if ((memcmp((void *)filename, (void *)mount.dir.get(), bl) == 0) && (isPathSepChar(filename[bl]) || !filename[bl])) { // match
-                    StringBuffer locpath(mount.local);
-                    if (filename[bl])
-                        addPathSepChar(locpath).append(filename + bl + 1);
-                    locpath.replace((PATHSEPCHAR == '\\') ? '/' : '\\', PATHSEPCHAR);
-                    return createIFile(locpath.str());
-                }
+            dbgassertex(bl > 0);
+            if (isPathSepChar(mount.dir[bl - 1]))
+                bl--;
+            if ((memcmp((void *)filename, (void *)mount.dir.get(), bl) == 0) && (isPathSepChar(filename[bl]) || !filename[bl])) { // match
+                StringBuffer locpath(mount.local);
+                if (filename[bl])
+                    addPathSepChar(locpath).append(filename + bl + 1);
+                locpath.replace((PATHSEPCHAR == '\\') ? '/' : '\\', PATHSEPCHAR);
+                return createIFile(locpath.str());
             }
         }
     }
@@ -1856,7 +1855,7 @@ void disconnectRemoteIoOnExit(IFileIO *fileio,bool set)
 
 bool resetRemoteFilename(IFile *file, const char *newname)
 {
-    return clientResetFilename(file,newname); 
+    return clientResetFilename(file,newname);
 }
 
 
@@ -1943,7 +1942,7 @@ public:
             : eps(_eps), sockets(_sockets), failures(_failures),
               failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect),
               dataDir(_dataDir), mirrorDir(_mirrorDir)
-        { 
+        {
             chkv = _chkv;
             filename = _filename;
         }

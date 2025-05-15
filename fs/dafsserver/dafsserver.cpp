@@ -598,13 +598,11 @@ public:
     }
     void join()
     {
-        CLeavableCriticalBlock block(sect);
+        CriticalBlock block(sect);
         unsigned i;
         CAsyncJob *j=jobtable.first(i);
         while (j) {
-            block.leave();
             j->join();
-            block.enter();
             j=jobtable.next(i);
         }
     }
@@ -627,7 +625,7 @@ public:
         CAsyncCopySection * job;
         Linked<CAsyncJob> cjob;
         {
-            CLeavableCriticalBlock block(sect);
+            CriticalBlock block(sect);
             cjob.set(jobtable.find(uuid,false));
             if (cjob) {
                 job = QUERYINTERFACE(cjob.get(),CAsyncCopySection);
@@ -639,9 +637,7 @@ public:
                 job = new CAsyncCopySection(*this, uuid, fromFile, toFile, toOfs, fromOfs, size);
                 cjob.setown(job);
                 jobtable.add(cjob.getLink());
-                block.leave();
                 cjob->start();
-                block.enter();
             }
         }
         AsyncCommandStatus ret = ACSerror;
