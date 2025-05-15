@@ -293,7 +293,7 @@ public:
         tempFileIO.clear();
     }
 
-    void putRow(const void *row)
+    virtual void putRow(const void *row) override
     {
         REENTRANCY_CHECK(putrecheck)
         size32_t sz = thorRowMemoryFootprint(serializer, row);
@@ -314,12 +314,16 @@ public:
         }
     }
 
-    void writeRow(const void *row)
+    virtual void writeRow(const void *row) override
     {
 #ifdef _DEBUG
         PrintStackReport();
 #endif
         UNIMPLEMENTED_X("Caller should use putRow() instead");
+    }
+
+    virtual void noteStopped() override
+    {
     }
 
     void stop()
@@ -534,14 +538,18 @@ public:
             ReleaseThorRow(row);
     }
 
-    void putRow(const void *row)
+    virtual void putRow(const void *row) override
     {
         _putRow(row, true);
     }
 
-    void writeRow(const void *row)
+    virtual void writeRow(const void *row) override
     {
         _putRow(row, false);
+    }
+
+    virtual void noteStopped() override
+    {
     }
 
     const void *nextRow()
@@ -1229,6 +1237,9 @@ public:
         }
         flushWaitSem.wait();
     }
+    virtual void noteStopped() override
+    {
+    }
 };
 
 
@@ -1293,6 +1304,10 @@ public:
     virtual void flush()
     {
         eoi = true;
+    }
+    virtual void noteStopped() override
+    {
+        writer->noteStopped();
     }
 };
 
@@ -1803,6 +1818,9 @@ public:
         CriticalBlock b(crit);
         writeAtEof = true;
         signalReaders();
+    }
+    virtual void noteStopped() override
+    {
     }
 // ISharedRowStreamReader
     virtual IRowStream *queryOutput(unsigned output) override
@@ -2844,6 +2862,9 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
         {
             if (rows.ordinality())
                 owner.addRows(rows);
+        }
+        virtual void noteStopped() override
+        {
         }
     };
 

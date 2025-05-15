@@ -294,7 +294,7 @@ protected:
     bool outputPlaneCompressed = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
-    Owned<IExtRowWriter> outSeq;
+    Owned<ILogicalRowWriter> outSeq;
     unsigned __int64 numRecords = 0;
     stat_type numDiskWrites = 0;
     cost_type diskAccessCost = 0;
@@ -1355,8 +1355,8 @@ class CHThorJoinActivity : public CHThorActivityBase
     Owned<IException> failingLimit;
     ConstPointerArray filteredRight;
     Owned<IRHLimitedCompareHelper> limitedhelper;
-    Owned<IGroupedInput> sortedLeftInput;
-    Owned<IGroupedInput> groupedSortedRightInput;
+    Owned<IEngineRowStream> sortedLeftInput;
+    Owned<IEngineRowStream> groupedSortedRightInput;
 
 //MORE: Following are good candidates for a join base class + others
     OwnedConstRoxieRow defaultLeft;
@@ -1436,7 +1436,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     Owned<IEngineRowAllocator> defaultAllocator;    
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
-    Owned<IGroupedInput> groupedInput;
+    Owned<IEngineRowStream> groupedInput;
     IRowStream *dualCacheInput;
 private:
     bool fillGroup();

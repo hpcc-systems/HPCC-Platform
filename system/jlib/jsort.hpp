@@ -93,7 +93,7 @@ extern jlib_decl bool heap_push_down(unsigned p, unsigned num, unsigned * heap, 
 // assuming that all elements <c form a heap, this function pushes c up to its correct position; it returns true if no change is made
 extern jlib_decl bool heap_push_up(unsigned c, unsigned * heap, const void ** rows, ICompare * compare);
 
-extern jlib_decl IRowStream *createRowStreamMerger(unsigned numstreams,IRowProvider &provider,ICompare *icmp, bool partdedup=false);
+extern jlib_decl IRowStream *createRowStreamMerger(unsigned numstreams,IMergeRowProvider &provider,ICompare *icmp, bool partdedup=false);
 extern jlib_decl IRowStream *createRowStreamMerger(unsigned numstreams,IRowStream **instreams,ICompare *icmp, bool partdedup, IRowLinkCounter *linkcounter);
 
 class ISortedRowProvider

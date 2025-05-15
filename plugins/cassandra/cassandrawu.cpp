@@ -1756,7 +1756,7 @@ private:
     unsigned lastAccess;
 };
 
-class CassMultiIterator : public CInterface, implements IRowProvider, implements ICompare, implements IConstWorkUnitIteratorEx
+class CassMultiIterator : public CInterface, implements IMergeRowProvider, implements ICompare, implements IConstWorkUnitIteratorEx
 {
 public:
     IMPLEMENT_IINTERFACE;

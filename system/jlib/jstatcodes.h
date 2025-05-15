@@ -355,6 +355,8 @@ enum StatisticKind
     StCostWait,
     StNumAborts,
     StCostAbort,
+    StNumRowsRead,
+    StNumRowsWritten,
     StMax,
 
     //For any quantity there is potentially the following variants.

@@ -76,18 +76,19 @@ class CThorGraphResult : implements IThorResult, implements IRowWriter, public C
         }
 
     //IRowWriterMultiReader
-        virtual void putRow(const void *row)
+        virtual void putRow(const void *row) override
         {
             rows.append(row);
         }
-        virtual void writeRow(const void *row)
+        virtual void writeRow(const void *row) override
         {
 #ifdef _DEBUG
             PrintStackReport();
 #endif
             UNIMPLEMENTED_X("Caller should use putRow() instead");
         }
-        virtual void flush() { }
+        virtual void flush() override { }
+        virtual void noteStopped() override {}
         virtual IRowStream *getReader()
         {
             return rows.createRowStream(0, (rowidx_t)-1, false);
@@ -127,6 +128,7 @@ public:
     }
     virtual void flush() { }
     virtual offset_t getPosition() { UNIMPLEMENTED; return 0; }
+    virtual void noteStopped() override {}
 
 // IThorResult
     virtual IRowWriter *getWriter()

@@ -343,58 +343,6 @@ private:
     offset_t progressCount = 0;
 };
 
-class CKeyFileReader: extends IKeyFileRowReader, public CInterface
-{
-    CKeyReader reader;
-    Owned<IPropertyTree> header;
-    RowBuffer buffer;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CKeyFileReader(const char *filename)
-        : reader(filename)
-    {
-        size32_t rowsize = reader.queryRowSize();
-        bool isvar = reader.isVariableWidth();
-        buffer.init(rowsize,isvar);
-
-        header.setown(createPTree("Index"));
-        header->setPropInt("@rowSize",rowsize);
-        header->setPropInt("@keyedSize",reader.queryKeyedSize());
-        header->setPropBool("@variableWidth",isvar);
-        header->setPropBool("@quickCompressed",reader.isQuickCompressed());
-        header->setPropBool("@noSeek",(reader.getFlags() & TRAILING_HEADER_ONLY) != 0);
-#if 0
-        PROGLOG("rowSize = %d",rowsize);
-        PROGLOG("keyedSize = %d",reader.queryKeyedSize());
-        PROGLOG("variableWidth = %s",isvar?"true":"false");
-        PROGLOG("quickCompressed = %s",reader.isQuickCompressed()?"true":"false");
-#endif
-        
-    }
-
-    const void *nextRow()
-    {
-        if (!reader.get(buffer)) 
-            return NULL;
-        void *ret = malloc(buffer.serializeRowSize());
-        buffer.serialize(ret);
-        return ret;
-    }       
-
-    
-    void stop()
-    {
-    }
-
-    IPropertyTree *queryHeader()
-    {
-        return header;
-    }
-};
-
-
-
 class CKeyWriter: public CInterface
 {
 public:
@@ -493,58 +441,6 @@ private:
     unsigned short mjr;
     unsigned short mnr;
 };
-
-
-class CKeyFileWriter: extends IKeyFileRowWriter, public CInterface
-{
-    CKeyWriter writer;
-    Owned<IPropertyTree> header;
-    RowBuffer buffer;
-
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CKeyFileWriter(const char *filename, IPropertyTree *_header, bool overwrite, unsigned nodeSize)
-        : header(createPTreeFromIPT(_header))
-    {
-        writer.init(filename,overwrite,header->getPropInt("@keyedSize"), header->getPropInt("@rowSize"), header->getPropBool("@variableWidth"), header->getPropBool("@quickCompressed"), header->getPropInt("@nodeSize", NODESIZE), header->getPropBool("@noSeek"));
-        size32_t rowsize = header->getPropInt("@rowSize");
-        bool isvar = header->getPropBool("@variableWidth");
-        buffer.init(rowsize,isvar);
-    }
-
-
-    void flush()
-    {
-        // not needed?
-    }
-
-    inline void _putRow(const void *src, bool _release)
-    {
-        buffer.deserialize(src);
-        writer.put(buffer);
-
-        if (_release)
-            free((void *)src);
-    }
-
-    virtual void putRow(const void *src)
-    {
-        _putRow(src, true);
-    }
-
-    virtual void writeRow(const void *src)
-    {
-        _putRow(src, false);
-    }
-
-    offset_t getPosition()
-    {
-        return writer.getPosition();
-    }
-
-};
-
 
 
 class KeyDiffHeader
@@ -1540,16 +1436,6 @@ StringBuffer & getKeyDiffMinDiffVersionForPatch(StringBuffer & buff)
 StringBuffer & getKeyDiffMinPatchVersionForDiff(StringBuffer & buff)
 {
     return buff.append(CKeyDiff::minPatchVersionForDiff.queryMajor()).append('.').append(CKeyDiff::minPatchVersionForDiff.queryMinor());
-}
-
-IKeyFileRowReader *createKeyFileReader(const char *filename)
-{
-    return new CKeyFileReader(filename);
-}
-
-IKeyFileRowWriter *createKeyWriter(const char *filename,IPropertyTree *header, bool overwrite, unsigned nodeSize)
-{
-    return new CKeyFileWriter(filename,header,overwrite, nodeSize);
 }
 
 

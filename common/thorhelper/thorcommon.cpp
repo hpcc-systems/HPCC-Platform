@@ -1169,19 +1169,6 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IExtRowStream>)
 
-    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
-    {
-        assertex(_maxrows == 0);
-        eoi = false;
-        eos = (_len==0);
-        eog = false;
-        hadMatchInGroup = false;
-        bufofs = 0;
-        progress = 0;
-        strm->reset(_ofs,_len);
-        currentRowOffset = _ofs;
-    }
-
     virtual const void *nextRow() override
     {
         if (eog)
@@ -1284,13 +1271,14 @@ public:
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
+        switch (kind)
+        {
+        case StNumRowsRead:
+            return progress;
+        }
         if (fileio)
             return fileio->getStatistic(kind);
         return 0;
-    }
-    virtual unsigned __int64 queryProgress() const override
-    {
-        return progress;
     }
     virtual void setFilters(IConstArrayOf<IFieldFilter> &filters)
     {
@@ -1327,15 +1315,6 @@ public:
         maxrows = _maxrows;
         rownum = 0;
         eos = maxrows==0;
-    }
-
-    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
-    {
-        CRowStreamReader::reinit(_ofs, _len, 0);
-        if (_maxrows==0)
-            eos = true;
-        maxrows = _maxrows;
-        rownum = 0;
     }
 
     virtual const void *nextRow() override
@@ -1411,7 +1390,7 @@ void useMemoryMappedRead(bool on)
 }
 
 #define ROW_WRITER_BUFFERSIZE (0x100000)
-class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter, public CSimpleInterface
+class CRowStreamWriter final : private IRowSerializerTarget, implements ILogicalRowWriter, public CSimpleInterface
 {
     Linked<IFileIOStream> stream;
     Linked<IOutputRowSerializer> serializer;
@@ -1506,7 +1485,7 @@ public:
         }
     }
 
-    void putRow(const void *row)
+    virtual void putRow(const void *row) override
     {
         if (row)
         {
@@ -1549,7 +1528,7 @@ public:
         }
     }
 
-    void writeRow(const void *row)
+    virtual void writeRow(const void *row) override
     {
 #ifdef _DEBUG
         PrintStackReport();
@@ -1557,18 +1536,22 @@ public:
         UNIMPLEMENTED_X("Caller should use putRow() instead");
     }
 
-    void flush()
+    virtual void flush() override
     {
         flushBuffer(true);
         streamFlush();
     }
 
-    void flush(CRC32 *crcout)
+    virtual void flush(CRC32 *crcout) override
     {
         flushBuffer(true);
         streamFlush();
         if (crcout)
             *crcout = crc;
+    }
+
+    virtual void noteStopped() override
+    {
     }
 
     offset_t getPosition()
@@ -1656,7 +1639,7 @@ static IFileIO * createCompressedFileWriter(T file, IRowInterfaces *rowIf, unsig
     return compressedFileIO;
 }
 
-IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
+ILogicalRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
@@ -1672,7 +1655,7 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
     return createRowWriter(iFileIO, rowIf, flags);
 }
 
-IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
+ILogicalRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
     Owned<IFileIO> compressedFileIO;
     if (TestRwFlag(flags, rw_compress))
@@ -1691,7 +1674,7 @@ IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned
     return createRowWriter(stream, rowIf, flags);
 }
 
-IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsigned flags)
+ILogicalRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsigned flags)
 {
     if (0 != (flags & (rw_extend|rw_buffered|COMP_MASK)))
         throw MakeStringException(0, "Unsupported createRowWriter flags");

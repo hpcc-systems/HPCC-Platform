@@ -34,7 +34,7 @@ class SpillSlaveActivity : public CSlaveActivity
 
     StringBuffer fileName;
     Owned<IPartDescriptor> partDesc;
-    Owned<IExtRowWriter> out;
+    Owned<ILogicalRowWriter> out;
     bool compress;
     bool grouped;
     MemoryBuffer spillBuf;

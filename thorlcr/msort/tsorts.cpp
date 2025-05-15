@@ -223,7 +223,7 @@ public:
             }
         }
 
-        Owned<IExtRowWriter> output = createRowWriter(&(dataFile->queryIFile()), rowIf, rwFlags, nullptr, compBlkSz);
+        Owned<ILogicalRowWriter> output = createRowWriter(&(dataFile->queryIFile()), rowIf, rwFlags, nullptr, compBlkSz);
 
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");

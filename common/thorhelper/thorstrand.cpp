@@ -1542,7 +1542,7 @@ extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager &
 //---------------------------------------------------------------------------------------------------------------------
 
 
-class BlockedRowStreamWriter : public CInterfaceOf<IRowWriterEx>
+class BlockedRowStreamWriter : public CInterfaceOf<IRowWriter>
 {
 public:
     BlockedRowStreamWriter(IRowQueue * _queue, RowBlockAllocator & _allocator) : queue(_queue), allocator(_allocator)
@@ -1653,7 +1653,7 @@ public:
             curBlock = (RoxieRowBlock *)next;
         }
     }
-    virtual IRowWriterEx * getWriter(unsigned n)
+    virtual IRowWriter * getWriter(unsigned n)
     {
         return LINK(producers[n]);
     }

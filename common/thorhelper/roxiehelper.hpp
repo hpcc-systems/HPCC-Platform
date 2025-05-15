@@ -361,14 +361,10 @@ extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm alg
 
 //=========================================================================================
 
-interface IGroupedInput : extends IEngineRowStream  // MORE rename to IGroupedRowStream
-{
-};
-
-extern THORHELPER_API IGroupedInput *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare);
-extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IEngineRowStream *_input);
-extern THORHELPER_API IGroupedInput *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter);
-extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
+extern THORHELPER_API IEngineRowStream *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare);
+extern THORHELPER_API IEngineRowStream *createDegroupedInputReader(IEngineRowStream *_input);
+extern THORHELPER_API IEngineRowStream *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter);
+extern THORHELPER_API IEngineRowStream *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
 
 //=========================================================================================
 

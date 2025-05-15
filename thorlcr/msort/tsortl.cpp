@@ -283,6 +283,9 @@ public:
             initbuf = true;
         }
     }
+    virtual void noteStopped() override
+    {
+    }
     virtual offset_t getPosition()
     {
         return pos;
