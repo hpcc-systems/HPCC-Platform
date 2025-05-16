@@ -6221,9 +6221,39 @@ IReplicatedFile *createReplicatedFile()
 
 // ---------------------------------------------------------------------------------
 
-class CSerialInputStreamBase : public CInterfaceOf<ISerialInputStream>
+class CSimpleInputStream : public CInterfaceOf<ISerialInputStream>
 {
+public:
+    virtual void reset(offset_t _offset, offset_t _flen)
+    {
+        throwUnimplementedX("reset() not supported by this input stream");
+    }
 
+    virtual void get(size32_t len, void * ptr) override
+    {
+        size32_t sizeRead = read(len, ptr);
+        if (unlikely(sizeRead != len))
+        {
+            Owned<IException> e = makeStringExceptionV(-1,"InputStream::get read past end of stream (%u,%u) @offset %llu",(unsigned)len,(unsigned)sizeRead, tell());
+            ERRLOG(e);
+            throw e.getClear();
+        }
+    }
+
+    // A very poor base implementation - suitable for small data streams that reads and discards data
+    virtual void skip(size32_t sz)
+    {
+        constexpr size_t tempSkipSize = 0x4000;
+        byte tempSkipBuffer[tempSkipSize];
+        while (sz > tempSkipSize)
+        {
+            read(tempSkipSize, tempSkipBuffer);
+            sz -= tempSkipSize;
+        }
+
+        if (sz)
+            read(sz, tempSkipBuffer);
+    }
 };
 
 // ---------------------------------------------------------------------------------
@@ -6466,39 +6496,44 @@ IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs,
     return new CFileSerialStream(fileio,ofs,flen,bufsize);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
-class CSocketSerialStream: public CSerialStreamBase
+class CSimpleSocketInputStream final : public CSimpleInputStream
 {
-    Linked<ISocket> socket;
-    unsigned timeout;
-    offset_t lastpos;
-
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+public:
+    CSimpleSocketInputStream(ISocket * _socket, unsigned _timeout)
+    : socket(_socket), timeout(_timeout)
     {
-        if (lastpos!=pos)
-            throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
         size32_t size_read;
-        readtmsAllowClose(socket, ptr, 1, max_size, size_read, timeout);
-        lastpos = pos+size_read;
+        readtmsAllowClose(socket, ptr, 1, len, size_read, timeout);
+        lastpos += size_read;
         return size_read;
     }
-
-public:
-    CSocketSerialStream(ISocket * _socket, unsigned _timeout, offset_t _offset, size32_t _bufsize)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize), socket(_socket), timeout(_timeout)
+    virtual offset_t tell() const override
     {
-        lastpos = _offset;
+        return lastpos;
     }
+protected:
+    Linked<ISocket> socket;
+    offset_t lastpos = 0;
+    unsigned timeout;
 };
 
 
-IBufferedSerialInputStream *createSocketSerialStream(ISocket * socket, unsigned timeoutms, size32_t bufsize)
+//NOTE: This class/factory method is not currently used.  It is here as an example.
+ISerialInputStream *createSocketSerialStream(ISocket * socket, unsigned timeoutms, size32_t bufsize)
 {
     if (!socket)
         return NULL;
-    return new CSocketSerialStream(socket,timeoutms,0,bufsize);
+    //MORE: This should probably be wrapped in a buffer if it was actually used.
+    return new CSimpleSocketInputStream(socket,timeoutms);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 class CSimpleReadSerialStream: public CSerialStreamBase
 {
