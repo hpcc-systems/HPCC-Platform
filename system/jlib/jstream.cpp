@@ -413,6 +413,34 @@ ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream *
 
 //---------------------------------------------------------------------------
 
+void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in)
+{
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(1,got);
+        if (!start)
+            break;  // eof before nul detected;
+
+        const char * cur = start;
+        const char * end = start + got;
+        while (cur != end)
+        {
+            if (!*cur)
+            {
+                out.append(cur - start, start);
+                in.skip((cur - start) + 1); // skip the text and the nul
+                return;
+            }
+            cur++;
+        }
+        out.append(got, start);
+        in.skip(got);
+    }
+}
+
+//---------------------------------------------------------------------------
+
 class CFileSerialInputStream final : public CInterfaceOf<ISerialInputStream>
 {
 public:

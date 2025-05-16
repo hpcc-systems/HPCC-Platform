@@ -41,38 +41,23 @@ interface ISerialInputStream : extends IInterface
     virtual size32_t read(size32_t len, void * ptr) = 0;            // returns size read, result < len does NOT imply end of file
     virtual void skip(size32_t sz) = 0;
     virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
-    virtual void reset(offset_t _offset, offset_t _flen) = 0;       // input stream has changed - restart reading
+    virtual void reset(offset_t _offset, offset_t _flen) = 0;       // start streaming from a difference section of the input (which may have changed)
+                                                                    // throws an error if the input is not seekable (e.g. socket)
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
 interface IBufferedSerialInputStream : extends ISerialInputStream
 {
-    virtual bool eos() = 0;                                         // no more data
-    virtual const void * peek(size32_t wanted, size32_t &got) = 0;   // try and ensure wanted bytes are available.
+    virtual bool eos() = 0;                                         // no more data - will perform a read if necessary
+    virtual const void * peek(size32_t wanted, size32_t &got) = 0;  // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
+                                                                    // if returns null then eos
 };
-/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip
-{
-    for (;;) {
-        const char *s = peek(1,got);
-        if (!s)
-            break;  // eof before nul detected;
-        const char *p = s;
-        const char *e = p+got;
-        while (p!=e) {
-            if (!*p) {
-                out.append(p-s,s);
-                skip(p-s+1); // include nul
-                return;
-            }
-            p++;
-        }
-        out.append(got,s);
-        skip(got);
-    }
-}
-*/
+
+/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip */
+void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in);
+
 
 interface ISerialOutputStream : extends IInterface
 {
