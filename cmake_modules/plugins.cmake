@@ -22,8 +22,8 @@ MACRO(SET_PLUGIN_PACKAGE plugin)
     set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
 ENDMACRO()
 
-set(VCPKG_INCLUDE "(windows | osx | linux)")
-set(VCPKG_SUPPRESS "(!windows & !osx & !linux)")
+set(VCPKG_INCLUDE "(windows | osx | linux | emscripten)")
+set(VCPKG_SUPPRESS "(!windows & !osx & !linux & !emscripten)")
 
 set(PLUGINS_LIST
     CASSANDRAEMBED
