@@ -82,6 +82,7 @@ data:
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
 {{- if eq .me.application "eclwatch" }}
  {{- include "hpcc.generateWarnings" (dict "root" .root) | nindent 6 }}
+ {{- include "hpcc.generateInfrastructureInfo" (dict "root" .root) | nindent 6 }}
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
