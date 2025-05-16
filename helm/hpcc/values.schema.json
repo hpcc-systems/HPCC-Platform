@@ -437,6 +437,11 @@
         },
         "plugins": {
           "$ref": "#/definitions/plugins"
+        },
+        "infrastructure": {
+          "type": "object",
+          "additionalProperties": { "type": ["integer", "string", "boolean", "object", "array"] },
+          "description": "External infrastructure information"
         }
       },
       "additionalProperties": false

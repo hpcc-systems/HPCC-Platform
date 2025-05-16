@@ -98,5 +98,7 @@ extern DALIADMIN_API void validateStore(bool fix, bool deleteFiles, bool verbose
 extern DALIADMIN_API void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct);
 extern DALIADMIN_API void cleanJobQueues(bool dryRun);
 extern DALIADMIN_API void cleanGeneratedDlls(bool dryRun, bool backup);
+extern DALIADMIN_API void cleanStaleGroups(const char *groupPattern, bool dryRun);
+
 
 } // namespace daadmin
