@@ -6246,17 +6246,17 @@ public:
         throwUnexpectedX("Skip called on an input stream that is being tallied");
         in->skip(sz);
     }
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         offset_t pos = in->tell();
         in->get(len, ptr);
         tally.process(pos, len, ptr);
     }
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         in->reset(_offset, _flen);
     }
-    virtual offset_t tell() const
+    virtual offset_t tell() const override
     {
         return in->tell();
     }
@@ -6575,7 +6575,7 @@ public:
         lastpos = _offset;
     }
 
-    void reset(offset_t _ofs, offset_t _len)
+    virtual void reset(offset_t _ofs, offset_t _len) override
     {
         // assume knows what doing
         lastpos = _ofs;
@@ -6600,7 +6600,6 @@ class CMemoryMappedSerialStream: implements IBufferedSerialInputStream, public C
     memsize_t mmsize;
     memsize_t mmofs;
     bool eoinput;
-    IFileSerialStreamCallback *tally = nullptr;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -6657,8 +6656,6 @@ public:
             IERRLOG("CFileSerialStream::get read past end of stream.3 (%u,%u)",(unsigned)len,(unsigned)left);
             throw MakeStringException(-1,"CMemoryMappedSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
         }
-        if (tally)
-            tally->process(mmofs,len,mmbase+mmofs);
         memcpy(ptr,mmbase+mmofs,len);
         mmofs += len;
     }
@@ -6668,8 +6665,6 @@ public:
         memsize_t left = mmsize-mmofs;
         if (len>left)
             len = left;
-        if (tally)
-            tally->process(mmofs,len,mmbase+mmofs);
         memcpy(ptr,mmbase+mmofs,len);
         mmofs += len;
         return len;
@@ -6685,8 +6680,6 @@ public:
         memsize_t left = mmsize-mmofs;
         if (len>left)
             throw MakeStringException(-1,"CMemoryMappedSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
-        if (tally)
-            tally->process(mmofs,len,mmbase+mmofs);
         mmofs += len;
     }
 
@@ -6710,12 +6703,11 @@ IBufferedSerialInputStream *createMemorySerialStream(const void *buffer, memsize
 class CMemoryBufferSerialStream: implements IBufferedSerialInputStream, public CInterface
 {
     MemoryBuffer & buffer;
-    IFileSerialStreamCallback *tally;
 
 public:
     IMPLEMENT_IINTERFACE;
     CMemoryBufferSerialStream(MemoryBuffer & _buffer)
-        : buffer(_buffer), tally(nullptr)
+        : buffer(_buffer)
     {
     }
 
@@ -6732,8 +6724,6 @@ public:
             throw MakeStringException(-1,"CMemoryBufferSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
         }
         const void * data = buffer.readDirect(len);
-        if (tally)
-            tally->process(buffer.getPos()-len,len,data);
         memcpy(ptr,data,len);
     }
 
@@ -6742,8 +6732,6 @@ public:
         if (len>buffer.remaining())
             len = buffer.remaining();
         const void * data = buffer.readDirect(len);
-        if (tally)
-            tally->process(buffer.getPos()-len,len,data);
         memcpy(ptr,data,len);
         return len;
     }
@@ -6758,9 +6746,7 @@ public:
         if (len>buffer.remaining())
             throw MakeStringException(-1,"CMemoryBufferSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
 
-        const void * data = buffer.readDirect(len);
-        if (tally)
-            tally->process(buffer.getPos()-len,len,data);
+        buffer.skip(len);
     }
 
     virtual offset_t tell() const override
