@@ -104,23 +104,6 @@ protected:
     EventOp op;
 };
 
-// Abstract base class for event file operation implementations. Derived classes should be
-// independent of the command line interface.
-//
-// The `TEvtCLIConnector` class is used to connect operation implementations to the command line
-// interface. This satisfies the requirements for that class' template parameter.
-class CEventFileOp : public CInterface
-{
-public:
-    virtual bool ready() const;
-    virtual bool doOp() = 0;
-    void setInputPath(const char* path);
-public:
-    virtual ~CEventFileOp() = default;
-protected:
-    StringAttr inputPath;
-};
-
 // Extension of `TEvtCLIConnector` that provides a common base for most, if not all, commands that
 // consume event data files. It relies on a single instance of template type `event_consuming_op_t`
 // to perform command logic, making this class and its subclasses responsible only for translating
@@ -261,27 +244,6 @@ Filters:
         static size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
-};
-
-// Extension of `CEventFileOp` that supports streaming output and event filtering by trace ID,
-// thread ID, and timestamp range. This satisfies the requirements for the `event_consuming_op_t`
-// template parameter of `TEventConsumingCommand`.
-//
-// Subclasses are expected to add support for additional options.
-class CEventConsumingOp : public CEventFileOp
-{
-public: // CEventFileOp
-    virtual bool ready() const override;
-public:
-    void setOutput(IBufferedSerialOutputStream& _out);
-    bool acceptEvents(const char* eventNames);
-    bool acceptAttribute(EventAttr attr, const char* values);
-protected:
-    IEventFilter* ensureFilter();
-    bool traverseEvents(const char* path, IEventVisitor& visitor);
-protected:
-    Linked<IBufferedSerialOutputStream> out;
-    Owned<IEventFilter> filter;
 };
 
 // Concrete implementation of the command interface that manages a choice of multiple subcommands.

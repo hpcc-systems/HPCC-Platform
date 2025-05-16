@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "eventoperation.h"
 #include "evtindex.hpp"
 #include "jevent.hpp"
 #include "jstream.hpp"

@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtindex.hpp"
+#include "eventoperation.h"
 #include "jevent.hpp"
 #include <map>
 
