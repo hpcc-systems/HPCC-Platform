@@ -843,6 +843,22 @@ interface IRemoteWriteActivity : extends IRemoteActivity
     virtual void write(size32_t sz, const void *row) = 0;
 };
 
+class AccumulatingTimeScope
+{
+    unsigned __int64 &timeNS;
+    unsigned __int64 startTimeNS;
+public:
+    AccumulatingTimeScope(unsigned __int64 &_timeNS) : timeNS(_timeNS)
+    {
+        startTimeNS = nsTick();
+    }
+
+    ~AccumulatingTimeScope()
+    {
+        timeNS += (nsTick() - startTimeNS);
+    }
+};
+
 class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
 {
     int cursorHandle;
@@ -1183,17 +1199,14 @@ public:
             activity->restoreCursor(cursorMb);
         }
 
-        __uint64 processStartTime = 0;
-        if (activeSpan->isValid())
-            processStartTime = nsTick();
+        {
+            AccumulatingTimeScope processTimeScope(processingTimeNS);
 
-        if (activity->queryIsReadActivity())
-            processRead(requestTree, responseMb);
-        else if (activity->queryIsWriteActivity())
-            processWrite(requestTree, restMb, responseMb);
-
-        if (activeSpan->isValid())
-            processingTimeNS += (nsTick() - processStartTime);
+            if (activity->queryIsReadActivity())
+                processRead(requestTree, responseMb);
+            else if (activity->queryIsWriteActivity())
+                processWrite(requestTree, restMb, responseMb);
+        }
 
         activity->flushStatistics(stats);
 
