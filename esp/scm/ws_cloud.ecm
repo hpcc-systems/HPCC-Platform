@@ -21,9 +21,29 @@ ESPrequest GetPODsRequest
 {
 };
 
+ESPstruct Port
+{
+    int ContainerPort;
+    string Name;
+    string Protocol;
+};
+
+ESPstruct PodItem
+{
+    string Name;
+    string Status;
+    string CreationTimestamp;
+    string ContainerName;
+    int ContainerCount;
+    int ContainerReadyCount;
+    int ContainerRestartCount;
+    ESParray<ESPstruct Port, Port> Ports;
+};
+
 ESPresponse [encode(0)] GetPODsResponse
 {
-    [json_inline(1)] string Result;
+    [depr_ver("1.02"),json_inline(1)] string Result;
+    [min_ver("1.02")] ESParray<ESPstruct PodItem, Pod> Pods;
 };
 
 ESPrequest GetServicesRequest
@@ -35,7 +55,7 @@ ESPresponse [encode(0)] GetServicesResponse
     [json_inline(1)] string Result;
 };
 
-ESPservice [auth_feature("CloudAccess:ACCESS"), version("1.01"), generated_client_version("0.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsCloud
+ESPservice [auth_feature("CloudAccess:ACCESS"), version("1.02"), generated_client_version("0.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsCloud
 {
     ESPmethod [auth_feature("CloudAccess:READ")] GetPODs(GetPODsRequest, GetPODsResponse);
     ESPmethod [auth_feature("CloudAccess:READ"), min_ver("1.01")] GetServices(GetServicesRequest, GetServicesResponse);
