@@ -246,7 +246,8 @@ ESPenum LogAccessStatusCode : int
 ESPStruct LogAccessStatus
 {
     LogAccessStatusCode Code;
-    LogAccessStatusCode Messages;
+    [min_ver("1.08")] ESParray<string> MessageArray;
+    [max_ver("1.07")] LogAccessStatusCode Messages;
 };
 
 ESPStruct LogAccessDebugReport
@@ -263,7 +264,7 @@ ESPResponse [exceptions_inline] GetHealthReportResponse
     string Configuration;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.07"), default_client_version("1.07"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.08"), default_client_version("1.08"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
