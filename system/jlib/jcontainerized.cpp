@@ -225,7 +225,9 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     }
     jobYaml.replaceString("_HPCC_JOBNAME_", jobName.str());
 
-    VStringBuffer args("\"--workunit=%s\"", wuid);
+    StringBuffer args;
+    if (wuid)
+        args.appendf("\"--workunit=%s\"", wuid);
     args.append(" \"--k8sJob=true\"");
     const char *baseImageVersion = getenv("baseImageVersion");
     const char *runtimeImageVersion = baseImageVersion; // runtime image version will equal base version unless changed dynamically below
