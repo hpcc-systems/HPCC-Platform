@@ -431,6 +431,11 @@
           "type": "object",
           "additionalProperties": { "type": "string" },
           "description": "Global component annotations, generated into all components"
+        },
+        "infrastructure": {
+          "type": "object",
+          "additionalProperties": { "type": ["integer", "string", "boolean", "object", "array"] },
+          "description": "External infrastructure information"
         }
       },
       "additionalProperties": false
