@@ -239,7 +239,7 @@ public:
                 }
                 if (tmpBuilder)
                 {
-                    tmpBuilder->finish(metadata, &crc, maxRecordSizeSeen);
+                    tmpBuilder->finish(metadata, &crc, maxRecordSizeSeen, nullptr);
                     mergeStats(inactiveStats, tmpBuilder, indexWriteActivityStatistics);
                 }
             }

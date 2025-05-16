@@ -12842,7 +12842,7 @@ public:
             }
             duplicateKeyCount = builder->getStatistic(StNumDuplicateKeys);
             cummulativeDuplicateKeyCount += duplicateKeyCount;
-            builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
+            builder->finish(metadata, &fileCrc, maxRecordSizeSeen, nullptr);
             numLeafNodes = builder->getStatistic(StNumLeafCacheAdds);
             numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);
             numBlobNodes = builder->getStatistic(StNumBlobCacheAdds);

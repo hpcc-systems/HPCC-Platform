@@ -432,7 +432,7 @@ protected:
         }
     }
 
-    void finish(IPropertyTree * metadata, unsigned * fileCrc, size32_t maxRecordSizeSeen)
+    virtual void finish(IPropertyTree * metadata, unsigned * fileCrc, size32_t maxRecordSizeSeen, const BloomFilterArray * optBloomFilters) override
     {
         if (maxRecordSizeSeen)
             keyHdr->setMaxKeyLength(maxRecordSizeSeen);
@@ -482,7 +482,14 @@ protected:
                 if (bloomBuilder.valid())
                 {
                     Owned<const BloomFilter> filter = bloomBuilder.build();
-                    writeBloomFilter(*filter, rowHashers.item(idx).queryFields());
+                    writeBloomFilter(*filter);
+                }
+            }
+            if (optBloomFilters)
+            {
+                for (auto bloom : *optBloomFilters)
+                {
+                    writeBloomFilter(*bloom);
                 }
             }
         }
@@ -508,12 +515,13 @@ protected:
         }
     }
 
-    void addLeafInfo(CNodeInfo *info)
+    //MORE: I don't think this function is used any more.
+    virtual void addLeafInfo(CNodeInfo *info) override
     {
         leafInfo.append(* info);
     }
 
-    void processKeyData(const char *keyData, offset_t pos, size32_t recsize)
+    virtual void processKeyData(const char *keyData, offset_t pos, size32_t recsize) override
     {
         records++;
         if (NULL == activeNode)
@@ -581,7 +589,7 @@ protected:
         }
     }
 
-    virtual unsigned __int64 createBlob(size32_t size, const char * ptr)
+    virtual unsigned __int64 createBlob(size32_t size, const char * ptr) override
     {
         if (!size)
             return 0;
@@ -651,7 +659,7 @@ protected:
         writeNode(prevNode, prevNode->getFpos());
     }
 
-    void writeBloomFilter(const BloomFilter &filter, __uint64 fields)
+    void writeBloomFilter(const BloomFilter &filter)
     {
         size32_t size = filter.queryTableSize();
         if (!size)
@@ -663,7 +671,7 @@ protected:
         // Table info is serialized into first page. Note that we assume that it fits (would need to have a crazy-small page size for that to not be true)
         node->put8(prevBloom);
         node->put4(filter.queryNumHashes());
-        node->put8(fields);
+        node->put8(filter.queryFields());
         node->put4(size);
         const byte *data = filter.queryTable();
         while (size)

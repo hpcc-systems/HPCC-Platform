@@ -157,6 +157,7 @@ public:
     virtual bool needsRowBuffer() const;
     virtual bool prewarmPage(offset_t page, NodeType type);
     virtual offset_t queryFirstBranchOffset() override;
+    virtual const BloomFilter * queryBloom(unsigned i) const override;
 
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override = 0;  // Must be implemented in derived classes

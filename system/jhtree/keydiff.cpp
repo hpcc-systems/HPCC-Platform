@@ -379,7 +379,7 @@ public:
     ~CKeyWriter()
     {
         if (keyBuilder)
-            keyBuilder->finish(nullptr, nullptr, maxRecordSizeSeen);
+            keyBuilder->finish(nullptr, nullptr, maxRecordSizeSeen, nullptr);
     }
 
     void put(RowBuffer & buffer)

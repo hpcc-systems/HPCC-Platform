@@ -1704,6 +1704,19 @@ offset_t CKeyIndex::queryFirstBranchOffset()
     }
 }
 
+const BloomFilter * CKeyIndex::queryBloom(unsigned i) const
+{
+    if (!bloomFiltersLoaded)
+    {
+        CriticalBlock b(cacheCrit);
+        if (!bloomFiltersLoaded)
+            const_cast<CKeyIndex *>(this)->loadBloomFilters();
+    }
+    if (i < bloomFilters.length())
+        return &bloomFilters.item(i);
+    return nullptr;
+}
+
 void CKeyIndex::loadBloomFilters()
 {
     offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
@@ -1735,7 +1748,7 @@ void CKeyIndex::loadBloomFilters()
         }
         assertex(bloomTable.length()==bloomTableSize);
         //DBGLOG("Creating bloomfilter(%d, %d) for fields %" I64F "x",numHashes, bloomTableSize, fields);
-        bloomFilters.append(*new IndexBloomFilter(numHashes, bloomTableSize, (byte *) bloomTable.detach(), fields));
+        bloomFilters.append(*new IndexBloomFilter(fields, numHashes, bloomTableSize, (byte *) bloomTable.detach()));
     }
     bloomFilters.sort(IndexBloomFilter::compare);
     bloomFiltersLoaded = true;
@@ -2880,6 +2893,7 @@ public:
         realKey->mergeStats(stats);
     }
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
+    virtual const BloomFilter * queryBloom(unsigned i) const { return checkOpen().queryBloom(i); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
@@ -3988,7 +4002,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
                 }
             }
         }
-        builder->finish(nullptr, nullptr, maxRecordSizeSeen);
+        builder->finish(nullptr, nullptr, maxRecordSizeSeen, nullptr);
         out->flush();
         DBGLOG("Size %s=%llu", filename, file->size());
     }
