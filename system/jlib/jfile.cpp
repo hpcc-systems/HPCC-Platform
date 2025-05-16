@@ -6225,46 +6225,6 @@ class CSerialInputStreamBase : public CInterfaceOf<ISerialInputStream>
 {
 
 };
-class CTallyInputStream : public CSerialInputStreamBase
-{
-public:
-    CTallyInputStream(Linked<ISerialInputStream> _in, IFileSerialStreamCallback & _tally)
-    : in(_in), tally(_tally)
-    {
-    }
-
-    virtual size32_t read(size32_t len, void * ptr) override
-    {
-        offset_t pos = in->tell();
-        size32_t ret = in->read(len, ptr);
-        tally.process(pos, ret, ptr);
-        return ret;
-
-    }
-    virtual void skip(size32_t sz) override
-    {
-        throwUnexpectedX("Skip called on an input stream that is being tallied");
-        in->skip(sz);
-    }
-    virtual void get(size32_t len, void * ptr) override
-    {
-        offset_t pos = in->tell();
-        in->get(len, ptr);
-        tally.process(pos, len, ptr);
-    }
-    virtual void reset(offset_t _offset, offset_t _flen) override
-    {
-        in->reset(_offset, _flen);
-    }
-    virtual offset_t tell() const override
-    {
-        return in->tell();
-    }
-
-private:
-    Linked<ISerialInputStream> in;
-    IFileSerialStreamCallback & tally;
-};
 
 // ---------------------------------------------------------------------------------
 
@@ -6279,7 +6239,6 @@ private:
     MemoryAttr ma;
     byte *buf;
     bool eoinput;
-    IFileSerialStreamCallback *tally = nullptr;
 
     inline size32_t doread(offset_t pos, size32_t max_size, void *ptr)
     {
@@ -6289,10 +6248,7 @@ private:
             if (endpos-pos<max_size)
                 max_size = (size32_t)(endpos-pos);
         }
-        size32_t size_read = rawread(pos, max_size, ptr);
-        if (tally)
-            tally->process(pos,size_read,ptr);
-        return size_read;
+        return rawread(pos, max_size, ptr);
     }
 
     const void * dopeek(size32_t sz, size32_t &got) __attribute__((noinline))
@@ -6373,9 +6329,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSerialStreamBase(offset_t _offset, offset_t _len, size32_t _bufsize, IFileSerialStreamCallback *_tally = nullptr)
+    CSerialStreamBase(offset_t _offset, offset_t _len, size32_t _bufsize)
     {
-        tally = _tally;
         bufsize = _bufsize;
         if (bufsize==(size32_t)-1)
             bufsize = DEFAULT_STREAM_BUFFER_SIZE; 
@@ -6461,17 +6416,8 @@ public:
         if (!eoinput) {
             while (len>=bufsize) {
                 size32_t rd;
-                if (tally) {
-                    rd = doread(bufbase,bufsize,buf);
-                    if (rd!=bufsize) {
-                        eoinput = true;
-                        throw MakeStringException(-1,"CFileSerialStream::skip read past end of stream");
-                    }
-                }
-                else {
-                    rd = (len/bufsize)*bufsize;
-                    //rd=doskip(bufbase,bufsize,buf); to cope with reading from sockets etc?
-                }
+                rd = (len/bufsize)*bufsize;
+                //rd=doskip(bufbase,bufsize,buf); to cope with reading from sockets etc?
                 bufbase += rd;
                 len -= bufsize;
             }
@@ -6506,18 +6452,18 @@ class CFileSerialStream: public CSerialStreamBase
     }
 
 public:
-    CFileSerialStream(IFileIO *_fileio,offset_t _offset, offset_t _len, size32_t _bufsize, IFileSerialStreamCallback *_tally)
-      : CSerialStreamBase(_offset, _len, _bufsize, _tally), fileio(_fileio)
+    CFileSerialStream(IFileIO *_fileio,offset_t _offset, offset_t _len, size32_t _bufsize)
+      : CSerialStreamBase(_offset, _len, _bufsize), fileio(_fileio)
     {
     }
 };
 
 
-IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs, offset_t flen, size32_t bufsize, IFileSerialStreamCallback * tally)
+IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs, offset_t flen, size32_t bufsize)
 {
     if (!fileio)
         return NULL;
-    return new CFileSerialStream(fileio,ofs,flen,bufsize, tally);
+    return new CFileSerialStream(fileio,ofs,flen,bufsize);
 }
 
 
