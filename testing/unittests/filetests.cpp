@@ -57,7 +57,7 @@ public:
     void createCompressed()
     {
         Owned<IFile> file(createIFile(testFilename));
-        Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr));
+        Owned<IFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr));
 
         constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
@@ -84,7 +84,7 @@ public:
         try
         {
             Owned<IFile> file(createIFile(testFilename));
-            Owned<ICompressedFileIO> io(createCompressedFileReader(file));
+            Owned<IFileIO> io(createCompressedFileReader(file));
 
             constexpr size_t cnt = 10000;
             constexpr size_t size = 1000;

@@ -699,7 +699,7 @@ class CFuseDaliDFS: public CFuseBase
                 bool blocked;
                 bool compressed = file->isCompressed(&blocked);
                 if (compressed&&blocked) {
-                    Owned<ICompressedFileIO> cmpio = createCompressedFileReader(srcio);
+                    Owned<IFileIO> cmpio = createCompressedFileReader(srcio);
                     if (cmpio.get())
                         srcio.setown(cmpio.getClear());
                 }
