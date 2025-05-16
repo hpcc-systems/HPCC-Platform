@@ -590,4 +590,13 @@ extern da_decl void logNullUser(IUserDescriptor *userDesc);
 inline void logNullUser(IUserDescriptor *userDesc) { }
 #endif
 
+interface IFileReadPropertiesUpdater : extends IInterface
+{
+public:
+    virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) = 0;
+    virtual void publish() = 0;
+};
+
+extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);
+
 #endif
