@@ -41,13 +41,13 @@ interface ISerialInputStream : extends IInterface
     virtual size32_t read(size32_t len, void * ptr) = 0;            // returns size read, result < len does NOT imply end of file
     virtual void skip(size32_t sz) = 0;
     virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
-    virtual bool eos() = 0;                                         // no more data
     virtual void reset(offset_t _offset, offset_t _flen) = 0;       // input stream has changed - restart reading
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
 interface IBufferedSerialInputStream : extends ISerialInputStream
 {
+    virtual bool eos() = 0;                                         // no more data
     virtual const void * peek(size32_t wanted, size32_t &got) = 0;   // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
