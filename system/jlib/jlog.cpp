@@ -814,9 +814,9 @@ void SessionLogMsgFilter::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("filter", filterTree);
 }
 
-bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const 
-{ 
-    if(localFlag && msg.queryRemoteFlag()) return false; 
+bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const
+{
+    if(localFlag && msg.queryRemoteFlag()) return false;
     SpinBlock b(lock);
     return const_cast<RegExpr &>(regex).find(msg.queryText()) != NULL;
 }
@@ -1303,7 +1303,7 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName)
             }
         }
     }
-    if(!handle) 
+    if(!handle)
     {
         handle = getNullHandle();
         OWARNLOG("RollingFileLogMsgHandler::doRollover : could not open log file %s for output", filename.str());
@@ -1420,9 +1420,9 @@ void LogMsgMonitor::addToPTree(IPropertyTree * tree) const
 void CLogMsgManager::MsgProcessor::push(LogMsg * msg)
 {
     //assertex(more); an assertex will just recurse here
-    if (!more) // we are effective stopped so don't bother even dropping (and leak parameter) as drop will involve 
-               // interaction with the base class which is stopped and could easily crash (as this condition 
-               // is expected not to occur - typically occurs if the user has incorrectly called exit on one thread 
+    if (!more) // we are effective stopped so don't bother even dropping (and leak parameter) as drop will involve
+               // interaction with the base class which is stopped and could easily crash (as this condition
+               // is expected not to occur - typically occurs if the user has incorrectly called exit on one thread
                // while still in the process of logging on another)
                // cf Bug #53695 for more discussion of the issue
         return;
@@ -1578,14 +1578,14 @@ void CLogMsgManager::enterQueueingMode()
 
 void CLogMsgManager::setQueueBlockingLimit(unsigned lim)
 {
-    CriticalBlock crit(modeLock); 
+    CriticalBlock crit(modeLock);
     if(processor)
         processor->setBlockingLimit(lim);
 }
 
 void CLogMsgManager::setQueueDroppingLimit(unsigned lim, unsigned numToDrop)
 {
-    CriticalBlock crit(modeLock); 
+    CriticalBlock crit(modeLock);
     if(processor)
         processor->setDroppingLimit(lim, numToDrop);
 }
@@ -1925,8 +1925,8 @@ void CLogMsgManager::addAllMonitorsToPTree(IPropertyTree * tree) const
         monitors.item(i).addToPTree(tree);
 }
 
-bool CLogMsgManager::rejectsCategory(const LogMsgCategory & cat) const 
-{ 
+bool CLogMsgManager::rejectsCategory(const LogMsgCategory & cat) const
+{
     if (!prefilter.includeCategory(cat))
         return true;
 
@@ -2329,7 +2329,7 @@ public:
 
 static CNullManager nullManager;
 static Singleton<IRemoteLogAccess> logAccessor;
-static CriticalSection logAccessCrit;
+
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
 {
@@ -2377,70 +2377,114 @@ static constexpr unsigned queueLenDefault = 512;
 static constexpr unsigned queueDropDefault = 0; // disabled by default
 static constexpr bool useSysLogDefault = false;
 
+// returns LOGFORMAT_undefined if format has not changed
+// NB: returns LOGFORMAT_table if no format specified (i.e. this is the default)
+LogHandlerFormat getConfigHandlerFormat(const IPropertyTree *logConfig)
+{
+    LogHandlerFormat currentFormat = theStderrHandler->queryFormatType();
+    LogHandlerFormat newFormat{LOGFORMAT_undefined};
+    const char *newFormatString = logConfig ? logConfig->queryProp(logFormatAtt) : nullptr;
+    if (!newFormatString) // absent, defaults to "table"
+        newFormat = LOGFORMAT_table;
+    else
+    {
+        if (streq(newFormatString, "xml"))
+            newFormat = LOGFORMAT_xml;
+        else if (streq(newFormatString, "json"))
+            newFormat = LOGFORMAT_json;
+        else if (streq(newFormatString, "table"))
+            newFormat = LOGFORMAT_table;
+        else
+            OWARNLOG("JLog: Invalid log format configuration detected '%s'!", newFormatString);
+    }
+    return currentFormat != newFormat ? newFormat : LOGFORMAT_undefined;
+}
+
+void updateStdErrLogHandler(const IPropertyTree *logConfig)
+{
+    if (logConfig->hasProp(logFieldsAtt))
+    {
+        // Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+        const char *logFields = logConfig->queryProp(logFieldsAtt);
+        if (!isEmptyString(logFields))
+            theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
+    }
+
+    // Only recreate filter if at least one filter attribute configured
+    if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
+    {
+        LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
+
+        unsigned msgClasses = MSGCLS_all;
+        const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
+        if (!isEmptyString(logClasses))
+            msgClasses = logMsgClassesFromAbbrevs(logClasses);
+
+        unsigned msgAudiences = MSGAUD_all;
+        const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
+        if (!isEmptyString(logAudiences))
+            msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
+
+        const bool local = true; // Do not include remote messages from other components
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
+        theManager->changeMonitorFilter(theStderrHandler, filter);
+    }
+}
+
+static void loggingSetupUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
+    if (!logConfig)
+        return;
+    if (logConfig->getPropBool(logDisabledAtt, false))
+    {
+        OWARNLOG("JLog: Ignoring can't be disabled dynamically via an update");
+        return;
+    }
+
+    LogHandlerFormat newFormat = getConfigHandlerFormat(logConfig);
+    if (newFormat != LOGFORMAT_undefined)
+    {
+        OWARNLOG("JLog: Ignoring log format configuration change on the fly, as it is not supported in a containerized environment");
+    }
+
+    updateStdErrLogHandler(logConfig);
+}
+
+static CConfigUpdateHook configUpdateHook;
+
+// NB: it is not thread-safe to change the handler whilst other threads are logging.
+// This should only be called at startup.
 void setupContainerizedLogMsgHandler()
 {
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
+    if (logConfig && logConfig->getPropBool(logDisabledAtt, false))
+    {
+        removeLog();
+        return; // NB: can't be reenabled dynamically via an update at present
+    }
+    LogHandlerFormat newFormat = getConfigHandlerFormat(logConfig); // NB: theStderrHandler is initially setup in MODULE_INIT
+    if (newFormat != LOGFORMAT_undefined)
+    {
+        // NB: old theStderrHandler leaks, should be fixed by separate PR.
+        switch (newFormat)
+        {
+            case LOGFORMAT_xml:
+                theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
+                break;
+            case LOGFORMAT_json:
+                theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
+                break;
+            case LOGFORMAT_table:
+                theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
+                break;
+            default:
+                throwUnexpected(); // should never reach here
+        }
+        theManager->resetMonitors();
+    }
     if (logConfig)
     {
-        if (logConfig->getPropBool(logDisabledAtt, false))
-        {
-            removeLog();
-            return;
-        }
-
-        if (logConfig->hasProp(logFormatAtt))
-        {
-            const char *logFormat = logConfig->queryProp(logFormatAtt);
-            bool newFormatDetected = false;
-            if (streq(logFormat, "xml"))
-            {
-                theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
-                newFormatDetected = true;
-            }
-            else if (streq(logFormat, "json"))
-            {
-                theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
-                newFormatDetected = true;
-            }
-            else if (!streq(logFormat, "table"))
-                LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormat);
-
-            if (newFormatDetected)
-                theManager->resetMonitors();
-        }
-
-        if (logConfig->hasProp(logFieldsAtt))
-        {
-            //Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
-            const char *logFields = logConfig->queryProp(logFieldsAtt);
-            if (!isEmptyString(logFields))
-                theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
-        }
-
-        //Only recreate filter if at least one filter attribute configured
-        if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
-        {
-            LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
-
-            unsigned msgClasses = MSGCLS_all;
-            const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
-            if (!isEmptyString(logClasses))
-            {
-                msgClasses = logMsgClassesFromAbbrevs(logClasses);
-            }
-
-            unsigned msgAudiences = MSGAUD_all;
-            const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
-            if (!isEmptyString(logAudiences))
-            {
-                msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
-            }
-
-            const bool local = true; // Do not include remote messages from other components
-            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
-            theManager->changeMonitorFilter(theStderrHandler, filter);
-        }
-
         unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
         if (queueLen)
         {
@@ -2472,7 +2516,10 @@ void setupContainerizedLogMsgHandler()
             thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
             queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
+
+        updateStdErrLogHandler(logConfig);
     }
+    configUpdateHook.installOnce(loggingSetupUpdate, false);
 }
 
 ILogMsgManager * queryLogMsgManager()
@@ -2504,7 +2551,7 @@ ISysLogEventLogger * querySysLogEventLogger()
 
 ILogMsgHandler * getSysLogMsgHandler(unsigned fields)
 {
-    return new SysLogMsgHandler(theSysLogEventLogger, fields); 
+    return new SysLogMsgHandler(theSysLogEventLogger, fields);
 }
 
 #ifdef _WIN32
@@ -2555,7 +2602,7 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
                 char src[_MAX_PATH+1];
                 LPTSTR tail;
                 DWORD res = SearchPath(NULL,"JELOG.DLL",NULL,sizeof(src),src,&tail);
-                if (res>0) 
+                if (res>0)
                     copyFile(path,src);
                 else
                     throw makeOsException(GetLastError());
@@ -2570,20 +2617,20 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
 
         }
         HKEY hk;
-        if (RegCreateKeyEx(HKEY_LOCAL_MACHINE,"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\Seisint", 
+        if (RegCreateKeyEx(HKEY_LOCAL_MACHINE,"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\Seisint",
                            NULL, NULL, 0, KEY_ALL_ACCESS, NULL, &hk, NULL)==0) {
             DWORD sizedata = 0;
             DWORD type = REG_EXPAND_SZ;
             if ((RegQueryValueEx(hk,"EventMessageFile",NULL, &type, NULL, &sizedata)!=0)||!sizedata) {
-                StringAttr str("%SystemRoot%\\System32\\JELOG.dll"); 
+                StringAttr str("%SystemRoot%\\System32\\JELOG.dll");
                 RegSetValueEx(hk,"EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE) str.get(), (DWORD)str.length() + 1);
                 RegSetValueEx(hk,"CategoryMessageFile", 0, REG_EXPAND_SZ, (LPBYTE) str.get(), (DWORD)str.length() + 1);
-                DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE | EVENTLOG_AUDIT_SUCCESS | EVENTLOG_AUDIT_FAILURE; 
+                DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE | EVENTLOG_AUDIT_SUCCESS | EVENTLOG_AUDIT_FAILURE;
                 RegSetValueEx(hk, "TypesSupported", 0, REG_DWORD,  (LPBYTE) &dwData,  sizeof(DWORD));
                 dwData = 16;
                 RegSetValueEx(hk, "CategoryCount", 0, REG_DWORD,  (LPBYTE) &dwData,  sizeof(DWORD));
             }
-            RegCloseKey(hk); 
+            RegCloseKey(hk);
         }
         hEventLog = RegisterEventSource(NULL,"Seisint");
         if (!hEventLog) {
@@ -2621,8 +2668,8 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
 
 CSysLogEventLogger::~CSysLogEventLogger()
 {
-    if (hEventLog!=0) 
-        DeregisterEventSource(hEventLog); 
+    if (hEventLog!=0)
+        DeregisterEventSource(hEventLog);
 }
 
 #else
@@ -2631,7 +2678,7 @@ CSysLogEventLogger::~CSysLogEventLogger()
 
 #define CATEGORY_AUDIT_FUNCTION_REQUIRED
 #define AUDIT_TYPES_BEGIN int auditTypeDataMap[NUM_AUDIT_TYPES+1] = {
-#define MAKE_AUDIT_TYPE(name, type, categoryid, eventid, level) level, 
+#define MAKE_AUDIT_TYPE(name, type, categoryid, eventid, level) level,
 #define AUDIT_TYPES_END 0 };
 #include "jelogtype.hpp"
 #undef CATEGORY_AUDIT_FUNCTION_REQUIRED
@@ -2932,7 +2979,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use)
         return;
     if (use) {
         msgHandler = getSysLogMsgHandler();
-        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);  
+        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);
         queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
     }
     else {
@@ -3435,7 +3482,7 @@ TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_lis
     return dft;
 }
 
-void ctxlogReport(const LogMsgCategory & cat, const char * format, ...) 
+void ctxlogReport(const LogMsgCategory & cat, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -3443,7 +3490,7 @@ void ctxlogReport(const LogMsgCategory & cat, const char * format, ...)
     va_end(args);
 }
 
-void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args) 
+void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args)
 {
     ctxlogReportVA(cat, NoLogMsgCode, format, args);
 }
