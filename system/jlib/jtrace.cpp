@@ -1857,6 +1857,14 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
     return new CServerSpan(name, httpHeaders, flags, spanStartTimeStamp);
 }
 
+ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs)
+{
+    SpanTimeStamp spanStartTimeStamp;
+    spanStartTimeStamp.now();
+    spanStartTimeStamp.adjust(std::chrono::nanoseconds(-elapsedNs));
+    return queryThreadedActiveSpan()->createInternalSpan(name, &spanStartTimeStamp);
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 ActiveSpanScope::ActiveSpanScope(ISpan * _ptr) : ActiveSpanScope(_ptr, queryThreadedActiveSpan()) {}
