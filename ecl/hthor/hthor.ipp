@@ -2314,8 +2314,6 @@ protected:
     StringBuffer &translateLFNtoLocal(const char *filename, StringBuffer &localName);
     virtual void closepart();
     bool checkOpenedFile(char const * filename, char const * filenamelist);
-    virtual unsigned queryReadBufferSize() = 0;
-
     inline void queryUpdateProgress()
     {
         agent.reportProgress(NULL);
@@ -2373,7 +2371,6 @@ protected:
     virtual void open();
     virtual bool openNext();
     virtual void closepart();
-    virtual unsigned queryReadBufferSize();
 
     inline bool segMonitorsMatch(const void * buffer)
     {
@@ -2431,7 +2428,6 @@ public:
 protected:
     void checkOpenNext();
     virtual bool openNext();
-    virtual unsigned queryReadBufferSize() { return (unsigned)-1; } //default buffering
     virtual void gatherInfo(IFileDescriptor * fileDesc);
     virtual void calcFixedDiskRecordSize();
 
@@ -2467,7 +2463,6 @@ public:
 protected:
     virtual bool openNext();
     virtual void closepart();
-    virtual unsigned queryReadBufferSize() { return (unsigned)-1; } //default buffering
     virtual void gatherInfo(IFileDescriptor * fileDesc);
     virtual void calcFixedDiskRecordSize();
 

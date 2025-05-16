@@ -304,15 +304,9 @@ extern jlib_decl IDiscretionaryLock *createDiscretionaryLock(IFileIO *fileio);
 
 // useful stream based reader 
 
-interface IFileSerialStreamCallback  // used for CRC tallying
-{
-    virtual void process(offset_t ofs, size32_t sz, const void *buf) = 0;
-};
-
-
+extern jlib_decl ISerialInputStream *createSocketSerialStream(ISocket * in, unsigned timeoutms);
 extern jlib_decl IBufferedSerialInputStream *createSimpleSerialStream(ISimpleReadStream * in, size32_t bufsize = (size32_t)-1);
-extern jlib_decl IBufferedSerialInputStream *createSocketSerialStream(ISocket * in, unsigned timeoutms, size32_t bufsize = (size32_t)-1);
-extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio, offset_t ofs=0, offset_t flen=(offset_t)-1,size32_t bufsize = (size32_t)-1, IFileSerialStreamCallback *_tally = nullptr);
+extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio, offset_t ofs=0, offset_t flen=(offset_t)-1,size32_t bufsize = (size32_t)-1);
 extern jlib_decl IBufferedSerialInputStream *createFileSerialStream(IMemoryMappedFile *mmapfile, offset_t ofs=0, offset_t flen=(offset_t)-1);
 extern jlib_decl IBufferedSerialInputStream *createMemorySerialStream(const void *buffer, memsize_t len);
 extern jlib_decl IBufferedSerialInputStream *createMemoryBufferSerialStream(MemoryBuffer & buffer);
