@@ -1,7 +1,6 @@
 import * as React from "react";
-import { CloudService } from "@hpcc-js/comms";
+import { CloudService, WsCloud } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import type { V1Pod } from "@kubernetes/client-node";
 import nlsHPCC from "src/nlsHPCC";
 import { useCounter } from "./util";
 
@@ -27,44 +26,39 @@ function formatAge(milliseconds: number): string {
     return `${milliseconds}ms`;
 }
 
-export interface Pod {
-    name: string;
-    container: string;
-    port: string;
-    ready: string;
-    status: string;
-    restarts: number;
-    age: string;
-    payload: V1Pod;
+function extractPorts(pod: WsCloud.Pod): string[] {
+    return pod.Ports?.Port?.reduce((acc, port) => {
+        if (port.ContainerPort && port.Protocol) {
+            acc.push(`${port.ContainerPort}/${port.Protocol}`);
+        } else if (port.ContainerPort) {
+            acc.push(`${port.ContainerPort}`);
+        }
+        return acc;
+    }, []) ?? [];
 }
 
-export function usePods(): [Pod[], () => void] {
+interface PodEx extends WsCloud.Pod {
+    ready: string;
+    ports: string;
+    age: string;
+}
 
-    const [retVal, setRetVal] = React.useState<Pod[]>([]);
+export function usePods(): [PodEx[], () => void] {
+
+    const [retVal, setRetVal] = React.useState<PodEx[]>([]);
     const [refreshTick, refresh] = useCounter();
 
     React.useEffect(() => {
-        service.getPODs().then((pods: V1Pod[]) => {
+        service.getPODs().then(pods => {
             const now = Date.now();
             setRetVal(pods
-                .filter(pod => {
-                    const labels = pod?.metadata?.labels ?? {};
-                    return "app.kubernetes.io/part-of" in labels && labels["app.kubernetes.io/part-of"] === "HPCC-Platform";
-                })
                 .map(pod => {
-                    const started = new Date(pod.metadata?.creationTimestamp);
+                    const started = new Date(pod.CreationTimestamp);
                     return {
-                        name: pod.metadata.name,
-                        container: pod.status?.containerStatuses?.reduce((prev, curr) => prev ? prev : curr.name, ""),
-                        port: pod.spec?.containers?.reduce((prev, curr) => {
-                            prev.push(curr.ports?.map(p => `${p.containerPort}/${p.protocol}`).join(", "));
-                            return prev;
-                        }, []).join(", "),
-                        ready: `${pod.status?.containerStatuses?.reduce((prev, curr) => prev + (curr.ready ? 1 : 0), 0)}/${pod.status?.containerStatuses?.length}`,
-                        status: pod.status?.phase,
-                        restarts: pod.status?.containerStatuses?.reduce((prev, curr) => prev + curr.restartCount, 0),
+                        ...pod,
+                        ready: `${pod.ContainerReadyCount}/${pod.ContainerCount}`,
+                        ports: extractPorts(pod).join(", "),
                         age: formatAge(now - +started),
-                        payload: pod
                     };
                 })
             );
@@ -80,7 +74,7 @@ export function useContainerNames(): [string[], () => void] {
 
     const [pods, refreshData] = usePods();
     const containers = React.useMemo(() => {
-        return [...new Set(pods.map(pod => pod.container))];
+        return [...new Set(pods.map(pod => pod.ContainerName))];
     }, [pods]);
 
     return [containers, refreshData];
@@ -90,7 +84,7 @@ export function usePodNames(): [string[], () => void] {
 
     const [pods, refreshData] = usePods();
     const podNames = React.useMemo(() => {
-        return pods.map(pod => pod.name);
+        return pods.map(pod => pod.Name);
     }, [pods]);
 
     return [podNames, refreshData];
