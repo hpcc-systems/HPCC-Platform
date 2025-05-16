@@ -1078,7 +1078,7 @@ public:
     {
         IPropertyTree *deltaTree;
         struct
-        {       
+        {
             void *data;
             unsigned dataLength;
             std::atomic<bool> pendingWrite;
@@ -2461,7 +2461,8 @@ void CRemoteTreeBase::deserializeChildrenRT(MemoryBuffer &src)
 
 void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb)
 {
-    deserializeSelf(mb);
+    DeserializeContext deserializeContext;
+    deserializeSelf(mb, deserializeContext);
     assertex(!isnocase());
     __int64 _serverId;
     mb.read(_serverId);
@@ -4149,7 +4150,8 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
         if (CPS_Changed & state)
         {
             Owned<PTree> clientTree = new LocalPTree();
-            clientTree->deserializeSelf(mb);
+            DeserializeContext deserializeContext;
+            clientTree->deserializeSelf(mb, deserializeContext);
             __int64 serverId;
             mb.read(serverId);
             byte STIInfo;
