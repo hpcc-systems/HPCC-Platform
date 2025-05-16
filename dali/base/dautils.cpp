@@ -58,6 +58,21 @@ static IPropertyTree *getPlaneHostGroup(IPropertyTree *plane)
     return nullptr;
 }
 
+unsigned getNumPlaneStripes(const char *clusterName)
+{
+    Owned<IPropertyTree> storagePlane = getStoragePlane(clusterName);
+    if (!storagePlane)
+    {
+        OWARNLOG("lookupNumStripedDevices: Storage plane %s not found", clusterName);
+        return 1;
+    }
+
+    unsigned numDevices = storagePlane->getPropInt("@numDevices");
+    bool isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
+
+    return isPlaneStriped ? numDevices : 1;
+}
+
 bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
 {
     Owned<IPropertyTree> planeGroup = getPlaneHostGroup(plane);
