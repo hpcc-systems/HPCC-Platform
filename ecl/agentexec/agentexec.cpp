@@ -36,11 +36,13 @@ public:
     CEclAgentExecutionServer(IPropertyTree *config);
     ~CEclAgentExecutionServer();
 
-    int run();
+    void init();
+    void run();
     virtual IPooledThread *createNew() override;
     virtual bool onAbort() override;
 private:
     bool executeWorkunit(IJobQueueItem *item);
+    void maintainPrevPools();
 
     const char *agentName;
     const char *daliServers;
@@ -48,10 +50,21 @@ private:
     Owned<IJobQueue> queue;
     Owned<IJobQueue> lingerQueue; // used if thor agent for a thor configured with multiJobLinger=true
     Linked<IPropertyTree> config;
-    Owned<IThreadPool> pool; // for containerized only
-    std::atomic<bool> running = { false };
-    bool isThorAgent = false;
-    bool disableQueuePriority = false; // temporary JIC, while new client priority queuing beds in.
+    std::atomic<bool> running{false};
+    bool isThorAgent{false};
+    bool disableQueuePriority{false}; // temporary JIC, while new client priority queuing beds in.
+#ifdef _CONTAINERIZED
+    StringBuffer queueNames;
+#else
+    SCMStringBuffer queueNames;
+#endif
+    IFile *sentinelFile{nullptr};
+
+    CriticalSection poolCS;
+    IThreadPool *pool{nullptr};
+    IArrayOf<IThreadPool> prevPools;
+    unsigned poolSize{0};
+    CConfigUpdateHook updateConfigHook;
 
 friend class WaitThread;
 };
@@ -89,36 +102,56 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     else if (strieq(apptype, "thor"))
         ctype = SCTthor;
     setStatisticsComponentName(ctype, agentName, true);
-
-    if (isContainerized()) // JCS - the pool approach would also work in bare-metal if it could be configured.
-    {
-        unsigned poolSize = config->getPropInt("@maxActive", 100);
-        pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
-    }
 }
 
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
+    updateConfigHook.clear();
+
+    ForEachItemInRev(poolIdx, prevPools)
+    {
+        IThreadPool &prevPool = prevPools.item(poolIdx);
+        prevPool.joinAll(false, INFINITE);
+        prevPools.remove(poolIdx);
+        prevPool.Release();
+    }
     if (pool)
+    {
         pool->joinAll(false, INFINITE);
+        pool->Release();
+    }
 
     if (queue)
         queue->cancelAcceptConversation();
+
+    if (sentinelFile)
+        sentinelFile->Release();
 }
 
 
 //---------------------------------------------------------------------------------
 
-int CEclAgentExecutionServer::run()
+void CEclAgentExecutionServer::maintainPrevPools()
 {
-#ifdef _CONTAINERIZED
-    StringBuffer queueNames;
-#else
-    SCMStringBuffer queueNames;
-#endif
-    Owned<IFile> sentinelFile = createSentinelTarget();
-    removeSentinelFile(sentinelFile);
+    ForEachItemInRev(poolIdx, prevPools)
+    {
+        IThreadPool &prevPool = prevPools.item(poolIdx);
+        if (prevPool.runningCount() == 0)
+        {
+            prevPools.remove(poolIdx);
+            prevPool.Release();
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------
+
+void CEclAgentExecutionServer::init()
+{
+    sentinelFile = createSentinelTarget();
+    if (sentinelFile)
+        removeSentinelFile(sentinelFile);
     try
     {
         Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
@@ -161,7 +194,6 @@ int CEclAgentExecutionServer::run()
     {
         EXCLOG(e, "Server queue create/connect: ");
         e->Release();
-        return -1;
     }
     catch(...)
     {
@@ -172,19 +204,57 @@ int CEclAgentExecutionServer::run()
     serverStatus.queryProperties()->setProp("@queue",queueNames.str());
     serverStatus.queryProperties()->setProp("@cluster", agentName);
     serverStatus.commitProperties();
-    writeSentinelFile(sentinelFile);
+    if (sentinelFile)
+        writeSentinelFile(sentinelFile);
+}
+
+//---------------------------------------------------------------------------------
+
+void CEclAgentExecutionServer::run()
+{
+    running = true;
+    LocalIAbortHandler abortHandler(*this);
+    unsigned __int64 priority = 0;
+
+    auto updateFunc = [this](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        if (running)
+        {
+            CriticalBlock b(poolCS);
+            maintainPrevPools();
+
+            Owned<IPropertyTree> config = getComponentConfigSP();
+            unsigned newPoolSize = config->getPropInt("@maxActive", 100);
+            if (newPoolSize != poolSize)
+            {
+                poolSize = newPoolSize;
+
+                if (pool)
+                {
+                    if (pool->runningCount())
+                        prevPools.append(*pool);
+                    else
+                        pool->Release();
+                }
+
+                DBGLOG("New agentPool created for poolSize: %d", poolSize);
+                pool = createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE);
+            }
+        }
+    };
+    updateConfigHook.installOnce(updateFunc, true);
 
     try
     {
-        running = true;
-        LocalIAbortHandler abortHandler(*this);
-        unsigned __int64 priority = 0;
         while (running)
         {
-            if (pool)
             {
-                if (!pool->waitAvailable(10000))
+                CLeavableCriticalBlock b(poolCS);
+                maintainPrevPools();
+                if (pool && !pool->waitAvailable(10000))
                 {
+                    b.leave();
+
                     if (config->getPropInt("@traceLevel", 0) > 2)
                         DBGLOG("Blocked for 10 seconds waiting for an available agent slot");
                     continue;
@@ -212,7 +282,8 @@ int CEclAgentExecutionServer::run()
             }
             else
             {
-                removeSentinelFile(sentinelFile); // no reason to restart
+                if (sentinelFile)
+                    removeSentinelFile(sentinelFile); // no reason to restart
                 break;
             }
 
@@ -228,7 +299,6 @@ int CEclAgentExecutionServer::run()
         }
         DBGLOG("Closing down");
     }
-
     catch (IException *e)
     {
         EXCLOG(e, "Server Exception: ");
@@ -245,8 +315,8 @@ int CEclAgentExecutionServer::run()
         EXCLOG(e, "Server queue disconnect: ");
         e->Release();
     }
+
     PROGLOG("Exiting agentexec");
-    return 1;
 }
 
 //---------------------------------------------------------------------------------
@@ -425,8 +495,12 @@ private:
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
-    if (nullptr == pool)
-        throwUnexpected();
+    {
+        CriticalBlock b(poolCS);
+        if (nullptr == pool)
+            throwUnexpected();
+    }
+
     return new WaitThread(*this, daliServers, apptype, agentName);
 }
 
@@ -446,19 +520,23 @@ bool CEclAgentExecutionServer::executeWorkunit(IJobQueueItem *item)
     const char *graphName = nullptr;
     ThreadCtx threadCtx;
     const char *wuid = item->queryWUID();
-    if (pool)
+
     {
-        if (isThorAgent)
+        CriticalBlock b(poolCS);
+        if (pool)
         {
-            // NB: In the case of handling apptype='thor', the queued items is of the form <wfid>/<wuid>/<graphName>
-            // wfid and graphName not needed in other contexts
-            sArray.appendList(wuid, "/");
-            assertex(3 == sArray.ordinality());
-            wfid = atoi(sArray.item(0));
-            wuid = sArray.item(1);
-            graphName = sArray.item(2);
+            if (isThorAgent)
+            {
+                // NB: In the case of handling apptype='thor', the queued items is of the form <wfid>/<wuid>/<graphName>
+                // wfid and graphName not needed in other contexts
+                sArray.appendList(wuid, "/");
+                assertex(3 == sArray.ordinality());
+                wfid = atoi(sArray.item(0));
+                wuid = sArray.item(1);
+                graphName = sArray.item(2);
+            }
+            threadCtx = std::make_tuple(item, wfid, wuid, graphName);
         }
-        threadCtx = std::make_tuple(item, wfid, wuid, graphName);
     }
 
     {
@@ -467,10 +545,13 @@ bool CEclAgentExecutionServer::executeWorkunit(IJobQueueItem *item)
         addTimeStamp(workunit, wfid, graphName, StWhenDequeued);
     }
 
-    if (pool)
     {
-        pool->start((void *) &threadCtx);
-        return true;
+        CriticalBlock b(poolCS);
+        if (pool)
+        {
+            pool->start((void *) &threadCtx);
+            return true;
+        }
     }
 
     //build eclagent command line
@@ -547,6 +628,7 @@ int main(int argc, const char *argv[])
     try
     {
         CEclAgentExecutionServer server(config);
+        server.init();
         server.run();
     }
     catch (...)
