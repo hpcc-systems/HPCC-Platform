@@ -6252,10 +6252,6 @@ public:
         in->get(len, ptr);
         tally.process(pos, len, ptr);
     }
-    virtual bool eos()
-    {
-        return in->eos();
-    }
     virtual void reset(offset_t _offset, offset_t _flen)
     {
         in->reset(_offset, _flen);

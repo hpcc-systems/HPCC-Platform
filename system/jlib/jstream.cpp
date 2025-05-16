@@ -382,11 +382,6 @@ public:
         throwUnexpected();
     }
 
-    virtual bool eos() override
-    {
-        return input->eos();
-    }
-
     virtual void skip(size32_t sz) override
     {
         skipPending += sz;
@@ -440,11 +435,6 @@ public:
         size32_t numRead = read(len, ptr);
         if (numRead != len)
             throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
-    }
-
-    virtual bool eos() override
-    {
-        return nextOffset == input->size();
     }
 
     virtual void skip(size32_t len) override
