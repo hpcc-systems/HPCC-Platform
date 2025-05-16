@@ -77,12 +77,22 @@ jobs:
           sudo apt-get install -y gdb
           echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
 
-          # Install, configure and start TinyProxy
+          # Install, configure and [stop/]start TinyProxy
           sudo apt-get install -y tinyproxy
-          echo "Port 8888"    > tinyproxy.conf
-          echo "Timeout 600" >> tinyproxy.conf
-          tinyproxy -c tinyproxy.conf
-          pgrep tinyproxy
+          echo "TinyProxy pid(s): $(pgrep tinyproxy)"
+          [[ -n "$(pgrep tinyproxy)" ]] && sudo systemctl stop tinyproxy
+          echo "TinyProxy pid(s): $(pgrep tinyproxy)"
+          echo "Port 8888" > tinyproxy.conf
+          echo "Timeout 60" >> tinyproxy.conf
+          echo "DisableViaHeader yes" >> tinyproxy.conf
+          echo "LogLevel Info" >> tinyproxy.conf
+          echo "Syslog On" >> tinyproxy.conf
+          echo "Allow 127.0.0.1" >> tinyproxy.conf
+          res=$( sudo tinyproxy -c tinyproxy.conf 2>&1 )
+          retCode=$?
+          echo "retCode:$retCode"
+          echo "res:$res"
+          echo "TinyProxy pid(s): $(pgrep tinyproxy)"
 
       - name: Install Package
         shell: "bash"
@@ -137,7 +147,7 @@ jobs:
           /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
               /opt/HPCCSystems/testing/regress/ecl-test query --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${{ steps.select-tests.outputs.queries }}
           grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
-          if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+          if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then cat /var/log/syslog ; exit 1; fi
 
       - name: Check for Core files
         shell: "bash"
