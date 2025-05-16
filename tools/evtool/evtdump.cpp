@@ -38,39 +38,21 @@ enum class OutputFormat : byte
     tree,
 };
 
-// Open and parse a binary event file.
-class EventFileDump
+// Open and parse a binary event file, generating any one of several supported output formats. As
+// an extension of CEventConsumingOp, the public interface adds:
+// - `void setFormat(OutputFormat)`: set the output format
+// - `bool filterEventType(const char* eventNames)`: add an event type filter to the operation
+class CDumpEventsOp : public CEventConsumingOp
 {
 public:
-    // Cache the filename to be opened and parsed.
-    void setFile(const char* filename)
-    {
-        file.set(filename);
-    }
-
     // Cache the requested output format.
     void setFormat(OutputFormat format)
     {
         this->format = format;
     }
 
-    // Cache the output stream to receive the parsed data.
-    // - a command line request might use console output
-    // - a unit test might use a string-backed output stream
-    // - an ESP might select a string stream or something else
-    void setOutput(IBufferedSerialOutputStream& out)
-    {
-        this->out.set(&out);
-    }
-
-    // Return true if a valid request can be attempted.
-    bool ready() const
-    {
-        return !file.isEmpty() && out;
-    }
-
     // Perform the requested action.
-    bool dump()
+    bool doOp()
     {
         Owned<IEventVisitor> visitor;
         switch (format)
@@ -93,7 +75,7 @@ public:
         case OutputFormat::tree:
             {
                 Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
-                if (readEvents(file.str(), creator->queryVisitor()))
+                if (traverseEvents(inputPath.str(), creator->queryVisitor()))
                 {
                     StringBuffer yaml;
                     toYAML(creator->queryTree(), yaml, 2, 0);
@@ -106,112 +88,96 @@ public:
         default:
             throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
         }
-        return readEvents(file.str(), *visitor);
+        return traverseEvents(inputPath.str(), *visitor);
     }
+
 protected:
-    StringAttr file;
     OutputFormat format = OutputFormat::text;
-    Linked<IBufferedSerialOutputStream> out;
 };
 
-// Connector between the command line tool and the logic of dumping an event file.
-class CEvtDumpCommand : public CEvToolCommand
+// Connector between the CLI and the logic of dumping an event file's data as text.
+class CEvtDumpCommand : public TEventConsumingCommand<CDumpEventsOp>
 {
 public:
     virtual bool acceptTerseOption(char opt) override
     {
-        bool accepted = CEvToolCommand::acceptTerseOption(opt);
-        if (!accepted)
+        switch (opt)
         {
-            switch (opt)
-            {
-            case 'j':
-                efd.setFormat(OutputFormat::json);
-                accepted = true;
-                break;
-            case 'x':
-                efd.setFormat(OutputFormat::xml);
-                accepted = true;
-                break;
-            case 'y':
-                efd.setFormat(OutputFormat::yaml);
-                accepted = true;
-                break;
-            case 'c':
-                efd.setFormat(OutputFormat::csv);
-                accepted = true;
-                break;
-            case 'p':
-                efd.setFormat(OutputFormat::tree);
-                accepted = true;
-                break;
-            default:
-                break;
-            }
+        case 'j':
+            op.setFormat(OutputFormat::json);
+            break;
+        case 'x':
+            op.setFormat(OutputFormat::xml);
+            break;
+        case 'y':
+            op.setFormat(OutputFormat::yaml);
+            break;
+        case 'c':
+            op.setFormat(OutputFormat::csv);
+            break;
+        case 'p':
+            op.setFormat(OutputFormat::tree);
+            break;
+        default:
+            return TEventConsumingCommand<CDumpEventsOp>::acceptTerseOption(opt);
         }
-        return accepted;
-    }
-    virtual bool acceptParameter(const char* arg) override
-    {
-        efd.setFile(arg);
         return true;
     }
-    virtual bool isGoodRequest() override
+
+    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
-        return efd.ready();
+        TEventConsumingCommand<CDumpEventsOp>::usageSyntax(argc, argv, pos, out);
+        static const char* usageStr =
+R"!!!([options] [filters] <filename>
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-    virtual int doRequest() override
+
+    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        try
-        {
-            return efd.dump() ? 0 : 1;
-        }
-        catch (IException* e)
-        {
-            StringBuffer msg("exception dumping event file: ");
-            e->errorMessage(msg);
-            e->Release();
-            msg.append('\n');
-            consoleErr().put(msg.length(), msg.str());
-            return 1;
-        }
+        static const char* usageStr = R"!!!(
+Parse a binary event file and write its contents to standard output.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+
+    virtual void usageOptions(IBufferedSerialOutputStream& out) override
     {
-        usagePrefix(argc, argv, pos, out);
-        StringBuffer usage;
-        usage << "[options] <filename>" << "\n\n";
-        usage << "Parse a binary event file and write its contents to standard output." << "\n\n";
-        usage << "  -?, -h, --help  show this help message and exit" << '\n';
-        usage << "  -c              output as comma separated values" << '\n';
-        usage << "  -j              output as JSON" << '\n';
-        usage << "  -x              output as XML" << '\n';
-        usage << "  -y              output as YAML" << '\n';
-        usage << "  <filename>      full path to a binary event data file" << '\n';
-        usage << '\n';
-        usage << "Structured output would, if represented in a property tree, resemble:" << '\n';
-        usage << "  EventFile" << '\n';
-        usage << "    ├── Header" << '\n';
-        usage << "    |   ├── @filename" << '\n';
-        usage << "    |   ├── @version" << '\n';
-        usage << "    |   └── ... (other header properties)" << '\n';
-        usage << "    ├── Event" << '\n';
-        usage << "    |   ├── @name" << '\n';
-        usage << "    |   └── ... (other event properties)" << '\n';
-        usage << "    ├── ... (more events)" << '\n';
-        usage << "    └── Footer" << '\n';
-        usage << "        ├── @bytesRead" << '\n';
-        usage << '\n';
-        usage << "CSV output includes columns for event name, plus one for each event" << '\n';
-        usage << "attribute used by the event recorder." << '\n';
-        out.put(usage.length(), usage.str());
+        TEventConsumingCommand<CDumpEventsOp>::usageOptions(out);
+        static const char* usageStr =
+R"!!!(    -c                        Output as comma separated values.
+    -j                        Output as JSON.
+    -x                        Output as XML.
+    -y                        Output as YAML.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-    CEvtDumpCommand()
+
+    virtual void usageDetails(IBufferedSerialOutputStream& out) override
     {
-        efd.setOutput(consoleOut());
+        static const char* usageStr = R"!!!(
+Structured output would, if represented in a property tree, resemble:
+  EventFile
+    ├── Header
+    |   ├── @filename
+    |   ├── @version
+    |   └── ... (other header properties)
+    ├── Event
+    |   ├── @name
+    |   └── ... (other event properties)
+    ├── ... (more events)
+    └── Footer
+        └── @bytesRead
+
+CSV output includes columns for event name, plus one for each event attribute
+used by the event recorder.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-protected:
-    EventFileDump efd;
 };
 
 // Create a file dump command instance as needed.

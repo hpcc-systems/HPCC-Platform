@@ -276,7 +276,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
             else
             {
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
-                status.appendJSONListMessage("Elastic Pluging Configuration tree is empty!!!");
+                status.appendMessage("Elastic Plug-in Configuration tree is empty!!!");
             }
 
             report.Configuration.set(configuration.str()); //will be empty if !options.IncludeConfiguration
@@ -284,7 +284,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
 
         if (m_esConnectionStr.length() == 0)
         {
-            status.appendJSONListMessage("Connection String to target Elastic instance is empty!");
+            status.appendMessage("Connection String to target Elastic instance is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
@@ -354,7 +354,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 else
                 {
                     debugReport.append("\"Unable to fetch Available Indices for Global Index Pattern\"");
-                    status.appendJSONListMessage("Could not populate Available Indices for Global Index Pattern");
+                    status.appendMessage("Could not populate Available Indices for Global Index Pattern");
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 }
             }
@@ -365,13 +365,13 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 e->errorMessage(description);
                 e->Release();
                 debugReport.append("\"Unable to fetch Available Indices\"");
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
             }
             catch(...)
             {
                 debugReport.append("\"Unable to fetch Available Indices\"");
-                status.appendJSONListMessage("Unknown exception while fetching available ES indices");
+                status.appendMessage("Unknown exception while fetching available ES indices");
                 status.escalateStatusCode(LOGACCESS_STATUS_warning);
             }
 
@@ -386,7 +386,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 else
                 {
                     debugReport.appendf("\"Could not populate ES timestamp format for IndexPattern %s\"", m_globalIndexSearchPattern.str());
-                    status.appendJSONListMessage("Could not populate Available Indices for Global Index Pattern");
+                    status.appendMessage("Could not populate Available Indices for Global Index Pattern");
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 }
             }
@@ -395,14 +395,14 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 VStringBuffer description("\"Exception fetching target ES timestamp format (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 debugReport.appendf("\"%s\"", description.str());
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 e->Release();
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             catch(...)
             {
                 debugReport.append("\"Unknown exception while fetching target ES timestamp format\"");
-                status.appendJSONListMessage("Unknown exception while fetching target ES timestamp format");
+                status.appendMessage("Unknown exception while fetching target ES timestamp format");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
 
@@ -417,7 +417,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 }
                 else
                 {
-                    status.appendJSONListMessage("Could not populate ES Status");
+                    status.appendMessage("Could not populate ES Status");
                     debugReport.append("\"Could not populate ES Status\"");
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
                 }
@@ -429,11 +429,11 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 debugReport.appendf("\"Exception fetching ES Status (%d) - %s\"", e->errorCode(), description.str());
                 e->Release();
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
             }
             catch(...)
             {
-                status.appendJSONListMessage("Unknown exception while fetching ES Status");
+                status.appendMessage("Unknown exception while fetching ES Status");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
 
@@ -487,7 +487,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 if (resultDetails.totalReceived == 0)
                 {
                     status.escalateStatusCode(LOGACCESS_STATUS_warning);
-                    status.appendJSONListMessage("Sample query returned zero log records!");
+                    status.appendMessage("Sample query returned zero log records!");
                 }
 
                 sampleQuery.appendf(", \"Results\": %s", logs.str());
@@ -497,14 +497,14 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 VStringBuffer description("Exception while executing sample query (%d) - ", e->errorCode());
                 e->errorMessage(description);
                 appendJSONStringValue(sampleQuery, "Results", description.str(), true);
-                status.appendJSONListMessage(description.str());
+                status.appendMessage(description.str());
                 e->Release();
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             catch(...)
             {
                 appendJSONStringValue(sampleQuery, "Results", "Unknown exception while executing samplequery", false);
-                status.appendJSONListMessage("Unknown exception while executing samplequery");
+                status.appendMessage("Unknown exception while executing samplequery");
                 status.escalateStatusCode(LOGACCESS_STATUS_fail);
             }
             sampleQuery.append(" }}"); //close query, and top level json container
@@ -516,7 +516,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
     catch(...)
     {
         status.escalateStatusCode(LOGACCESS_STATUS_fail);
-        status.appendJSONListMessage("Encountered unexpected exception during health report");
+        status.appendMessage("Encountered unexpected exception during health report");
     }
 
     report.status = std::move(status);

@@ -32,31 +32,17 @@
 // - support events per trace ID (requires enabling tracing)
 
 // Record configured events to a configured location.
-class EventFileSim
+class CSimulateEventsOp : public CEventFileOp
 {
 public:
-    // Load configuration from a file.
-    void setFile(const char* filename)
-    {
-        markup.clear().loadFile(filename);
-    }
-
-    // Accept a configuration string.
-    void setMarkup(const char* markup)
-    {
-        this->markup.set(markup);
-    }
-
-    // Return true if a configuration has been provided.
-    bool ready() const
-    {
-        return !markup.isEmpty();
-    }
-
     // Perform the requested action.
-    bool sim()
+    virtual bool doOp() override
     {
         Owned<IPTree> tree;
+        StringBuffer markup;
+        markup.loadFile(inputPath);
+        if (markup.isEmpty())
+            throw makeStringException(-1, "failed to load configuration");
         if (markup.charAt(0) == '<') // looks like XML
             tree.setown(createPTreeFromXMLString(markup));
         else // assume YAML
@@ -191,58 +177,43 @@ public:
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }
-
-protected:
-    StringBuffer markup;
 };
 
-// Connector between the command line tool and the logic of simulating events.
-class CEvtSimCommand : public CEvToolCommand
+// Extension of TEvtCLIConnector responsible for the creation of user configured events. No
+// additional operation options are supported.
+class CEvtSimCommand : public TEvtCLIConnector<CSimulateEventsOp>
 {
 public:
-    virtual bool acceptParameter(const char* arg) override
+    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
-        efs.setFile(arg);
-        return true;
+        CEvToolCommand::usageSyntax(argc, argv, pos, out);
+        static const char* usageStr =
+R"!!!([options] <filename>
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
-    virtual bool isGoodRequest() override
+    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        return efs.ready();
+        static const char* usageStr = R"!!!(
+Create a binary event file containing the events specified in an external
+configuration file. The configuration may use either XML or YAML formats.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
-    virtual int doRequest() override
+    virtual void usageParameters(IBufferedSerialOutputStream& out) override
     {
-        try
-        {
-            return efs.sim() ? 0 : 1;
-        }
-        catch (IException* e)
-        {
-            StringBuffer msg("exception simulating event file: ");
-            e->errorMessage(msg);
-            e->Release();
-            msg.append('\n');
-            consoleErr().put(msg.length(), msg.str());
-            return 1;
-        }
+        static const char* usageStr = R"!!!(
+Parameters:
+    <filename>                Full path to an XML or YAML file containing
+                              simulated event specifications.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
-
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
-    {
-        usagePrefix(argc, argv, pos, out);
-        StringBuffer usage;
-        usage << "[options] <filename>" << "\n\n";
-        usage << "Create a binary event file containing the events specified in an external" << "\n";
-        usage << "configuration file. The configuration may use either XML or YAML formats." << "\n\n";
-        usage << "  -?, -h, --help  show this help message and exit" << "\n";
-        usage << "  <filename>      full path to an XML or YAML file containing simulated" << "\n";
-        usage << "                  events" << "\n";
-        out.put(usage.length(), usage.str());
-    }
-
-protected:
-    EventFileSim efs;
 };
 
 // Create an event simulation command instance as needed.

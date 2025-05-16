@@ -49,6 +49,16 @@ enum EventType : byte
     EventMax
 };
 
+enum EventContext : byte
+{
+    EventCtxDali,
+    EventCtxIndex,
+    EventCtxOther,
+    EventCtxMax
+};
+
+extern jlib_decl EventContext queryEventContext(EventType event);
+
 // The attributes that can be associated with each event
 // The order should not be changed, or items removed.  New values should always be appended before EvAttrMax
 enum EventAttr : byte
@@ -75,7 +85,9 @@ enum EventAttr : byte
     EvAttrMax
 };
 
+extern jlib_decl EventType queryEventType(const char* name);
 extern jlib_decl const char * queryEventName(EventType event);
+extern jlib_decl EventAttr queryEventAttribute(const char* name);
 extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
 
 struct jlib_decl EventRecordingSummary
@@ -199,6 +211,7 @@ protected:
     byte compressionType;
     bool outputToLog{false};
     bool corruptOutput{false};
+    bool createSpans{false};
     StringBuffer outputFilename;
     Owned<IFile> outputFile;
     Owned<IFileIO> output;
@@ -285,11 +298,56 @@ interface IEventPTreeCreator : extends IInterface
 // Get an event property tree creator.
 extern jlib_decl IEventPTreeCreator* createEventPTreeCreator();
 
+// Extension of IEventVisitor that supports filtering of visited files and events. Implementations
+// will decorate another visitor, forwarding all visits not blocked by the specified constraints to
+// the decorated visitor.
+//
+// A file blocked by a version constraint must visit and immediately depart the file.
+//
+// An event blocked by a type or context constraint must not be forwarded to the decorated visitor.
+//
+// An event blocked by an attribute constraint must not be forwarded to the decorated visitor.
+// Events that do not include a constrained attribute are not blocked.
+interface IEventFilter : extends IEventVisitor
+{
+    // Filter on a single event type. All events are accepted by default.
+    virtual bool acceptEvent(EventType type) = 0;
+    // Filter on all events of a given context. All events are accepted by default.
+    virtual bool acceptEvents(EventContext context) = 0;
+    // Filter on a comma-delimited list of event type names and/or event context names. All events
+    // are accepted by default.
+    virtual bool acceptEvents(const char* types) = 0;
+    // Filter on a comma-delimited list of attribute value tokens. The internal type of the given
+    // attribute is used to determine token processing requirements.
+    // - Integral token options are:
+    //   - #: a single numeric value
+    //   - #-#: a range of numeric values, bounded on both ends
+    //   - #-: a range of numeric values, bounded only on the lower end
+    //   - -#: a range of numeric values, bounded only on the upper end
+    // - String token options include exact matches and regular expressions.
+    // - Boolean token options are text representations of true and false recognized by strToBool.
+    //   Specification of multiple Boolean values is unnecessary - either they will be repetitive
+    //   or will cancel each other out.
+    //
+    // Supported special cases include:
+    // - Timestamps may be given using a standard date/time format, such as "2025-01-01T00:00:00".
+    // - A filter for the integral EvAttrFileId may include string tokens that will be applied to
+    //   a corresponding EvAttrPath attribute previously observed in a MetaFileInformation event.
+    virtual bool acceptAttribute(EventAttr attr, const char* values) = 0;
+
+    // Install the recipient of unfiltered visits. `readEvents` will call this method before
+    // beginning visitation.
+    virtual void setTarget(IEventVisitor& visitor) = 0;
+};
+
+// Obtain a new instance of a standard event filter.
+extern jlib_decl IEventFilter* createEventFilter();
+
 // Opens and parses a single binary event data file. Parsed data is passed to the given visitor
 // until parsing completes or the visitor requests it to stop.
 //
 // Exceptions are thrown on error. False is returned if parsing was stopped prematurely. True is
 // returned if all data was parsed successfully.
-extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
+extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor, IEventFilter* filter);
 
 #endif

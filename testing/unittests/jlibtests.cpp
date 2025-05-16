@@ -70,6 +70,7 @@ public:
         CPPUNIT_TEST(manualTestsEventsOutput);
         CPPUNIT_TEST(manualTestsDeclaredFailures);
         CPPUNIT_TEST(manualTestScopeEnd);
+        CPPUNIT_TEST(manualTestBackdatedSpan);
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
         CPPUNIT_TEST(testSpanIsValid);
@@ -666,6 +667,25 @@ protected:
             }
         }
     }
+
+    //not able to programmatically test yet, but can visually inspect trace output
+    void manualTestBackdatedSpan()
+    {
+        Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+        OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
+
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes);
+
+        {
+            OwnedActiveSpanScope internalSpan = createBackdatedInternalSpan("internalSpan", 1'000'000'000);
+            DBGLOG("Now = %llu", (__uint64)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        }
+        //Now = 1747317725729197367
+        //{ "type": "span", "name": "internalSpan", "trace_id": "c15305e4d2a6c20a87a49bd20449d996", "span_id": "4d2d7e5de8d008f5", "start": 1747317724729151340, "duration": 1000059222, "parent_span_id": "bfb21030afbf51ac" }
+        //NOTE: The start time should be 1,000,000,000ns before now, and the duration should be at least 1,000,000,000
+    }
+
 
     void testRootServerSpan()
     {

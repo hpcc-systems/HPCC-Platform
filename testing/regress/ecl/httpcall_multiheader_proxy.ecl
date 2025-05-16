@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2023 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,8 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
+//class=proxy
+//class=3rdparty
+
 string TargetIP := '.' : stored('TargetIP');
-string storedHeader := 'StoredHeaderDefault' : stored('storedHeader');
+string storedHeader := 'StoredHeaderDefault' : stored('StoredHeader');
+
 
 httpEchoServiceResponseRecord :=
     RECORD
@@ -29,19 +33,15 @@ httpEchoServiceResponseRecord :=
 
 string TargetURL := 'http://' + TargetIP + ':8010/WsSmc/HttpEcho?name=doe,joe&number=1';
 
-
-httpEchoServiceRequestRecord :=
-    RECORD
-       string Name{xpath('Name')} := 'Doe, Joe',
-       unsigned id{xpath('ADL')} := 999999,
-       real8 score := 88.88,
-    END;
-
 string constHeader := 'constHeaderValue';
 
-soapcallResult := SOAPCALL(TargetURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'),
-                httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader),
-                httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http111'),
-                httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01'));
+//test proxyaddress functionality by using tinyproxy on port 8888
+string targetProxy := 'http://' + 'localhost' + ':8888';
 
-output(soapcallResult, named('soapcallResult'));
+proxyResult := HTTPCALL(TargetURL,'GET', 'text/xml', httpEchoServiceResponseRecord, xpath('Envelope/Body/HttpEchoResponse'), proxyaddress(targetProxy),
+                TIMEOUT(30), TIMELIMIT(40),
+                httpheader('literalHeader','literalValue'), httpheader('constHeader','constHeaderValue'),
+                httpheader('storedHeader', storedHeader), httpheader('HPCC-Global-Id','9876543210'),
+                httpheader('HPCC-Caller-Id','http222'), httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-f123456789abcdef-01'));
+
+output(proxyResult, named('proxyResult'));
