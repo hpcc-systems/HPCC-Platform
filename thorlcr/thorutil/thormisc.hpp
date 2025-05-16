@@ -128,6 +128,9 @@
 #define THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY "readAheadTempFileGranularity"     // Splitter temp file granularity (default = 1GB)
 #define THOROPT_ROXIEMEM_GLOBALSORT_PARTITION "useRoxieMemGlobalSortPartition"    // Use roxiemem for global sort partitioning (default = true)
 #define THOROPT_JOBINFO_CAPTURE_BEHAVIOUR "jobInfoCaptureBehaviour"               // controls behaviour of job info collection (default = 0)
+#define THOROPT_CHECK_FILE_DATES "verifyFileDates"                                // Enable a check that the modification date on the file matches the meta data (default = false)
+
+
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000 // max of row matches before selfjoin emits warning
 
 #define THOR_SEM_RETRY_TIMEOUT 2

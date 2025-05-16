@@ -1430,7 +1430,7 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
             const void *row = rows[i];
             if (i == nextCBI)
             {
-                writer->flush(NULL);
+                writer->flush();
                 do
                 {
                     nextCB->filePosition(writer->getPosition());

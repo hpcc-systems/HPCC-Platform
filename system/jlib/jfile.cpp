@@ -6221,6 +6221,57 @@ IReplicatedFile *createReplicatedFile()
 
 // ---------------------------------------------------------------------------------
 
+class CSerialInputStreamBase : public CInterfaceOf<ISerialInputStream>
+{
+
+};
+class CTallyInputStream : public CSerialInputStreamBase
+{
+public:
+    CTallyInputStream(Linked<ISerialInputStream> _in, IFileSerialStreamCallback & _tally)
+    : in(_in), tally(_tally)
+    {
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        offset_t pos = in->tell();
+        size32_t ret = in->read(len, ptr);
+        tally.process(pos, ret, ptr);
+        return ret;
+
+    }
+    virtual void skip(size32_t sz) override
+    {
+        throwUnexpectedX("Skip called on an input stream that is being tallied");
+        in->skip(sz);
+    }
+    virtual void get(size32_t len, void * ptr)
+    {
+        offset_t pos = in->tell();
+        in->get(len, ptr);
+        tally.process(pos, len, ptr);
+    }
+    virtual bool eos()
+    {
+        return in->eos();
+    }
+    virtual void reset(offset_t _offset, offset_t _flen)
+    {
+        in->reset(_offset, _flen);
+    }
+    virtual offset_t tell() const
+    {
+        return in->tell();
+    }
+
+private:
+    Linked<ISerialInputStream> in;
+    IFileSerialStreamCallback & tally;
+};
+
+// ---------------------------------------------------------------------------------
+
 class CSerialStreamBase : implements IBufferedSerialInputStream, public CInterface
 {
 private:
@@ -6232,7 +6283,7 @@ private:
     MemoryAttr ma;
     byte *buf;
     bool eoinput;
-    IFileSerialStreamCallback *tally;
+    IFileSerialStreamCallback *tally = nullptr;
 
     inline size32_t doread(offset_t pos, size32_t max_size, void *ptr)
     {
@@ -6326,7 +6377,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSerialStreamBase(offset_t _offset, offset_t _len, size32_t _bufsize, IFileSerialStreamCallback *_tally)
+    CSerialStreamBase(offset_t _offset, offset_t _len, size32_t _bufsize, IFileSerialStreamCallback *_tally = nullptr)
     {
         tally = _tally;
         bufsize = _bufsize;
@@ -6466,43 +6517,11 @@ public:
 };
 
 
-IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs, offset_t flen, size32_t bufsize,IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs, offset_t flen, size32_t bufsize, IFileSerialStreamCallback * tally)
 {
     if (!fileio)
         return NULL;
-    return new CFileSerialStream(fileio,ofs,flen,bufsize,callback);
-}
-
-
-class CIoSerialStream: public CSerialStreamBase
-{
-    Linked<IFileIOStream> io;
-    offset_t lastpos;
-
-
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
-    {
-        if (lastpos!=pos)
-            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
-        size32_t rd = io->read(max_size,ptr);
-        lastpos = pos+rd;
-        return rd;
-    }
-
-public:
-    CIoSerialStream(IFileIOStream * _io,offset_t _offset, size32_t _bufsize, IFileSerialStreamCallback *_tally)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize, _tally), io(_io)
-    {
-        lastpos = _offset;
-    }
-};
-
-
-IBufferedSerialInputStream *createFileSerialStream(IFileIOStream *io,size32_t bufsize,IFileSerialStreamCallback *callback)
-{
-    if (!io)
-        return NULL;
-    return new CIoSerialStream(io,0,bufsize,callback);
+    return new CFileSerialStream(fileio,ofs,flen,bufsize, tally);
 }
 
 
@@ -6523,19 +6542,19 @@ class CSocketSerialStream: public CSerialStreamBase
     }
 
 public:
-    CSocketSerialStream(ISocket * _socket, unsigned _timeout, offset_t _offset, size32_t _bufsize, IFileSerialStreamCallback *_tally)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize, _tally), socket(_socket), timeout(_timeout)
+    CSocketSerialStream(ISocket * _socket, unsigned _timeout, offset_t _offset, size32_t _bufsize)
+      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize), socket(_socket), timeout(_timeout)
     {
         lastpos = _offset;
     }
 };
 
 
-IBufferedSerialInputStream *createSocketSerialStream(ISocket * socket, unsigned timeoutms, size32_t bufsize, IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createSocketSerialStream(ISocket * socket, unsigned timeoutms, size32_t bufsize)
 {
     if (!socket)
         return NULL;
-    return new CSocketSerialStream(socket,timeoutms,0,bufsize,callback);
+    return new CSocketSerialStream(socket,timeoutms,0,bufsize);
 }
 
 
@@ -6554,8 +6573,8 @@ class CSimpleReadSerialStream: public CSerialStreamBase
     }
 
 public:
-    CSimpleReadSerialStream(ISimpleReadStream * _input, offset_t _offset, size32_t _bufsize, IFileSerialStreamCallback *_tally)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize, _tally), input(_input)
+    CSimpleReadSerialStream(ISimpleReadStream * _input, offset_t _offset, size32_t _bufsize)
+      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize), input(_input)
     {
         lastpos = _offset;
     }
@@ -6570,11 +6589,11 @@ public:
 };
 
 
-IBufferedSerialInputStream *createSimpleSerialStream(ISimpleReadStream * input, size32_t bufsize, IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createSimpleSerialStream(ISimpleReadStream * input, size32_t bufsize)
 {
     if (!input)
         return NULL;
-    return new CSimpleReadSerialStream(input,0,bufsize,callback);
+    return new CSimpleReadSerialStream(input,0,bufsize);
 }
 
 
@@ -6585,14 +6604,13 @@ class CMemoryMappedSerialStream: implements IBufferedSerialInputStream, public C
     memsize_t mmsize;
     memsize_t mmofs;
     bool eoinput;
-    IFileSerialStreamCallback *tally;
+    IFileSerialStreamCallback *tally = nullptr;
 
 public:
     IMPLEMENT_IINTERFACE;
-    CMemoryMappedSerialStream(IMemoryMappedFile *_mmfile, offset_t ofs, offset_t flen, IFileSerialStreamCallback *_tally)
+    CMemoryMappedSerialStream(IMemoryMappedFile *_mmfile, offset_t ofs, offset_t flen)
         : mmfile(_mmfile)
     {
-        tally = _tally;
         offset_t fs = mmfile->fileSize();
         if ((memsize_t)fs!=fs)
             throw MakeStringException(-1,"CMemoryMappedSerialStream file too big to be mapped");
@@ -6615,9 +6633,8 @@ public:
         eoinput = false;
     }
 
-    CMemoryMappedSerialStream(const void *buf, memsize_t len, IFileSerialStreamCallback *_tally)
+    CMemoryMappedSerialStream(const void *buf, memsize_t len)
     {
-        tally = _tally;
         mmsize = len;
         mmofs = 0;
         mmbase = (const byte *)buf;
@@ -6684,14 +6701,14 @@ public:
 
 };
 
-IBufferedSerialInputStream *createFileSerialStream(IMemoryMappedFile *mmfile, offset_t ofs, offset_t flen, IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createFileSerialStream(IMemoryMappedFile *mmfile, offset_t ofs, offset_t flen)
 {
-    return new CMemoryMappedSerialStream(mmfile,ofs,flen,callback);
+    return new CMemoryMappedSerialStream(mmfile,ofs,flen);
 }
 
-IBufferedSerialInputStream *createMemorySerialStream(const void *buffer, memsize_t len, IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createMemorySerialStream(const void *buffer, memsize_t len)
 {
-    return new CMemoryMappedSerialStream(buffer,len,callback);
+    return new CMemoryMappedSerialStream(buffer,len);
 }
 
 class CMemoryBufferSerialStream: implements IBufferedSerialInputStream, public CInterface
@@ -6701,8 +6718,8 @@ class CMemoryBufferSerialStream: implements IBufferedSerialInputStream, public C
 
 public:
     IMPLEMENT_IINTERFACE;
-    CMemoryBufferSerialStream(MemoryBuffer & _buffer, IFileSerialStreamCallback * _tally)
-        : buffer(_buffer), tally(_tally)
+    CMemoryBufferSerialStream(MemoryBuffer & _buffer)
+        : buffer(_buffer), tally(nullptr)
     {
     }
 
@@ -6764,9 +6781,9 @@ public:
     }
 };
 
-IBufferedSerialInputStream *createMemoryBufferSerialStream(MemoryBuffer & buffer, IFileSerialStreamCallback *callback)
+IBufferedSerialInputStream *createMemoryBufferSerialStream(MemoryBuffer & buffer)
 {
-    return new CMemoryBufferSerialStream(buffer,callback);
+    return new CMemoryBufferSerialStream(buffer);
 }
 
 

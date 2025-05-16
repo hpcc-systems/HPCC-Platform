@@ -243,8 +243,6 @@ void CDiskRecordPartHandler::open()
     partStream.clear();
 
     unsigned rwFlags = 0;
-    if (checkFileCrc) // NB: if compressed, this will be turned off by base class
-        rwFlags |= rw_crc;
     if (activity.grouped)
         rwFlags |= rw_grouped;
 
@@ -318,7 +316,6 @@ void CDiskRecordPartHandler::open()
                 iRemoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(partDesc->queryPartIndex()).str());
                 rfn.getPath(path.clear());
                 filename.set(path);
-                checkFileCrc = false;
 
                 try
                 {
