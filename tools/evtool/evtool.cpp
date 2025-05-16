@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "eventfilter.h"
 #include "jevent.hpp"
 #include "jfile.hpp"
 #include "jstring.hpp"
@@ -256,46 +257,4 @@ void CEvtCommandGroup::usage(int argc, const char* argv[], int pos, IBufferedSer
 CEvtCommandGroup::CEvtCommandGroup(CmdMap&& _commands)
     : commands(std::move(_commands))
 {
-}
-
-bool CEventFileOp::ready() const
-{
-    return !inputPath.isEmpty();
-}
-
-void CEventFileOp::setInputPath(const char* path)
-{
-    inputPath.set(path);
-}
-
-bool CEventConsumingOp::ready() const
-{
-    return CEventFileOp::ready() && out.get();
-}
-
-void CEventConsumingOp::setOutput(IBufferedSerialOutputStream& _out)
-{
-    out.set(&_out);
-}
-
-bool CEventConsumingOp::acceptEvents(const char* eventNames)
-{
-    return ensureFilter()->acceptEvents(eventNames);
-}
-
-bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
-{
-    return ensureFilter()->acceptAttribute(attr, values);
-}
-
-IEventFilter* CEventConsumingOp::ensureFilter()
-{
-    if (!filter)
-        filter.setown(createEventFilter());
-    return filter;
-}
-
-bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
-{
-    return readEvents(path, visitor, filter);
 }

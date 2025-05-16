@@ -24,6 +24,7 @@
 project(evtool)
 
 include_directories (
+    ${HPCC_SOURCE_DIR}/common/eventconsumption
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/include
 )
@@ -44,8 +45,13 @@ HPCC_ADD_EXECUTABLE ( evtool ${SRCS} )
 
 install ( TARGETS evtool RUNTIME DESTINATION ${EXEC_DIR} )
 
-add_dependencies ( evtool jlib )
+add_dependencies (
+    evtool
+    jlib
+    eventconsumption
+)
 
 target_link_libraries( evtool
     jlib
+    eventconsumption
 )

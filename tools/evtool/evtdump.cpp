@@ -16,6 +16,8 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "eventdump.h"
+#include "eventoperation.h"
 #include "jevent.hpp"
 #include "jfile.hpp"
 #include "jptree.hpp"

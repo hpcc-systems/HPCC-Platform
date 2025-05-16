@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,22 +13,24 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (deftype)
-HPCC_ADD_SUBDIRECTORY (dllserver)
-if (NOT CONTAINERIZED)
-    HPCC_ADD_SUBDIRECTORY (environment)
-ENDIF()
-if ("${BUILD_LEVEL}" STREQUAL "INTERNAL")
-    HPCC_ADD_SUBDIRECTORY (fileview2)
-else ()
-    HPCC_ADD_SUBDIRECTORY (fileview2 "PLATFORM")
-endif ()
-HPCC_ADD_SUBDIRECTORY (monitoring "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (remote)
-HPCC_ADD_SUBDIRECTORY (roxiecommlib)
-HPCC_ADD_SUBDIRECTORY (thorhelper)
-HPCC_ADD_SUBDIRECTORY (pkgfiles)
-HPCC_ADD_SUBDIRECTORY (workunit)
-HPCC_ADD_SUBDIRECTORY (wuanalysis)
-HPCC_ADD_SUBDIRECTORY (wuwebview "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (eventconsumption)
+
+project(eventconsumption)
+
+include_directories (
+    ${HPCC_SOURCE_DIR}/system/jlib
+    ${HPCC_SOURCE_DIR}/system/include
+)
+
+set (
+    SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpstream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpptree.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventfilter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
+)
+
+ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
+
+HPCC_ADD_LIBRARY(eventconsumption SHARED ${SRCS})
+install ( TARGETS eventconsumption RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( eventconsumption jlib )
