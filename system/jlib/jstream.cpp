@@ -207,7 +207,7 @@ public:
         return nextBlockOffset + bufferOffset - dataLength;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         endOfStream = false;
         nextBlockOffset = _offset;
@@ -391,7 +391,7 @@ public:
         return nextOffset + skipPending;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen=(offset_t)-1)
+    virtual void reset(offset_t _offset, offset_t _flen=(offset_t)-1) override
     {
         nextOffset = _offset;
         skipPending = 0;
@@ -478,7 +478,7 @@ public:
         return nextOffset;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         nextOffset = _offset;
         lastOffset = _flen;

@@ -52,7 +52,7 @@ interface IBufferedSerialInputStream : extends ISerialInputStream
     virtual const void * peek(size32_t wanted, size32_t &got) = 0;  // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
-                                                                    // if returns null then eos
+                                                                    // null may be returned at eos, but not guaranteed
 };
 
 /* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip */
