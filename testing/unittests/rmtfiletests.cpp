@@ -98,6 +98,8 @@ class RmtFileTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRemoveMounts);
     CPPUNIT_TEST(testNonMatchingCases);
     CPPUNIT_TEST(testCaseSensitivity);
+    CPPUNIT_TEST(testPassingNulls);
+    CPPUNIT_TEST(testPassingEmptyStrings);
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -381,6 +383,56 @@ public:
         // Unix-like systems are case-sensitive
         CPPUNIT_ASSERT(file2 == nullptr);
 #endif
+    }
+
+    void testPassingNulls()
+    {
+        IpAddress ip;
+        ip.ipset(testIp_127_0_0_1);
+        const char *remoteDir = "/remote/path";
+        const char *localDir = "/local/path";
+
+        setDafsLocalMountRedirect(ip, remoteDir, nullptr);
+        setDafsLocalMountRedirect(ip, nullptr, localDir);
+        setDafsLocalMountRedirect(ip, nullptr, nullptr);
+
+        Owned<IFile> file = createFileLocalMount(ip, nullptr);
+        CPPUNIT_ASSERT(file == nullptr);
+    }
+
+    void testPassingEmptyStrings()
+    {
+        IpAddress ip;
+        ip.ipset(testIp_127_0_0_1);
+        const char *remoteDir = "/remote/path";
+        const char *localDir = "/local/path";
+
+        setDafsLocalMountRedirect(ip, remoteDir, "");
+        setDafsLocalMountRedirect(ip, "", localDir);
+        setDafsLocalMountRedirect(ip, "", "");
+
+        try
+        {
+            Owned<IFile> file1 = createFileLocalMount(ip, "");
+            CPPUNIT_FAIL("dbgassertex expected");
+        }
+        catch(IException *E)
+        {
+            StringBuffer msg;
+            E->errorMessage(msg);
+
+            // Check error code
+            int errorCode = E->errorCode();
+            CPPUNIT_ASSERT_MESSAGE("Expected assertion error code in 3xxx range", errorCode/1000 == 3);
+
+            // Check for expected error message with a helpful failure message
+            const char* expectedText = "assert(bl > 0) failed - file: rmtfile.cpp";
+            CPPUNIT_ASSERT_MESSAGE(
+                VStringBuffer("Error message doesn't contain expected text. Got: '%s'", msg.str()).str(),
+                strstr(msg.str(), expectedText) != nullptr);
+
+            E->Release();
+        }
     }
 };
 
