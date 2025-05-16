@@ -15,6 +15,7 @@ import { DesprayFile } from "./forms/DesprayFile";
 import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
 import { replaceUrl } from "../util/history";
+import { useProtectedUsersCount } from "./ProtectedBy";
 
 const logger = scopedLogger("src-react/components/IndexFileSummary.tsx");
 
@@ -44,6 +45,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [showReplicateFile, setShowReplicateFile] = React.useState(false);
+    const protectedUserCount = useProtectedUsersCount(cluster, logicalFile);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -162,6 +164,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                 "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
                 "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
                 "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
+                "countProtectedUsers": { label: nlsHPCC.ProtectedByMultipleUsers, type: "string", value: protectedUserCount.toString(), readonly: true },
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
@@ -192,6 +195,8 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                         setProtected(value);
                         file?.update({
                             Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                        }).then(() => {
+                            refresh();
                         }).catch(err => logger.error(err));
                         break;
                     case "isRestricted":
