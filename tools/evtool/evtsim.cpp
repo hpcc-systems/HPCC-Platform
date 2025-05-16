@@ -32,31 +32,17 @@
 // - support events per trace ID (requires enabling tracing)
 
 // Record configured events to a configured location.
-class EventFileSim
+class CSimulateEventsOp : public CEventFileOp
 {
 public:
-    // Load configuration from a file.
-    void setFile(const char* filename)
-    {
-        markup.clear().loadFile(filename);
-    }
-
-    // Accept a configuration string.
-    void setMarkup(const char* markup)
-    {
-        this->markup.set(markup);
-    }
-
-    // Return true if a configuration has been provided.
-    bool ready() const
-    {
-        return !markup.isEmpty();
-    }
-
     // Perform the requested action.
-    bool sim()
+    virtual bool doOp() override
     {
         Owned<IPTree> tree;
+        StringBuffer markup;
+        markup.loadFile(inputPath);
+        if (markup.isEmpty())
+            throw makeStringException(-1, "failed to load configuration");
         if (markup.charAt(0) == '<') // looks like XML
             tree.setown(createPTreeFromXMLString(markup));
         else // assume YAML
@@ -191,47 +177,13 @@ public:
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }
-
-protected:
-    StringBuffer markup;
 };
 
-// Connector between the CLI and the logic of recording simulating events. As a producer of events
-// the operation interface is limited to:
-// - `bool ready() const`: returns true if the operation has sufficient information to proceed
-// - `bool doOp()`: performs the operation and returns true if successful
-// - `void setInputPath(const char* path)`: sets the operation's event file path
-class CEvtSimCommand : public CEvToolCommand
+// Extension of TEvtCLIConnector responsible for the creation of user configured events. No
+// additional operation options are supported.
+class CEvtSimCommand : public TEvtCLIConnector<CSimulateEventsOp>
 {
 public:
-    virtual bool acceptParameter(const char* arg) override
-    {
-        efs.setFile(arg);
-        return true;
-    }
-
-    virtual bool isGoodRequest() override
-    {
-        return efs.ready();
-    }
-
-    virtual int doRequest() override
-    {
-        try
-        {
-            return efs.sim() ? 0 : 1;
-        }
-        catch (IException* e)
-        {
-            StringBuffer msg("exception simulating event file: ");
-            e->errorMessage(msg);
-            e->Release();
-            msg.append('\n');
-            consoleErr().put(msg.length(), msg.str());
-            return 1;
-        }
-    }
-
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         CEvToolCommand::usageSyntax(argc, argv, pos, out);
@@ -262,9 +214,6 @@ Parameters:
         static size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
-
-protected:
-    EventFileSim efs;
 };
 
 // Create an event simulation command instance as needed.
