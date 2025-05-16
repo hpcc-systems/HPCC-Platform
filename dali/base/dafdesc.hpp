@@ -423,7 +423,7 @@ extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      
 extern da_decl IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType, const char *groupName, IGroup *grp);
 extern da_decl IFileDescriptor *createExternalFileDescriptor(const char *logicalname);
 extern da_decl IFileDescriptor *getExternalFileDescriptor(const char *logicalname);
-extern da_decl ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *attr);        // ownership of attr tree is taken
+extern da_decl ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *attr, FileDescriptorFlags fileFlags);        // ownership of attr tree is taken
 extern da_decl IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb);
 extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupStore *resolver=NULL, unsigned flags=0);  // flags IFDSF_*
 extern da_decl IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb);
