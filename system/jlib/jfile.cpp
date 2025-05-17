@@ -6229,15 +6229,25 @@ public:
         throwUnimplementedX("reset() not supported by this input stream");
     }
 
+    //MORE: This should possibly be a global helper function instead of a member - the logic should be the same for all stream instances.
     virtual void get(size32_t len, void * ptr) override
     {
-        size32_t sizeRead = read(len, ptr);
-        if (unlikely(sizeRead != len))
+        assertex(len);
+        size32_t totalRead = 0;
+        //Keep reading until either the whole requested size is returned, or 0 is return from read() i.e. no more data.
+        for (;;)
         {
-            Owned<IException> e = makeStringExceptionV(-1,"InputStream::get read past end of stream (%u,%u) @offset %llu",(unsigned)len,(unsigned)sizeRead, tell());
-            ERRLOG(e);
-            throw e.getClear();
+            size32_t sizeRead = read(len - totalRead, (byte *)ptr + totalRead);
+            if (sizeRead == 0)
+                break;
+            totalRead += sizeRead;
+            if (totalRead == len)
+                return;
         }
+
+        Owned<IException> e = makeStringExceptionV(-1,"InputStream::get read past end of stream (%u,%u) @offset %llu",(unsigned)len,(unsigned)totalRead, tell()-totalRead);
+        ERRLOG(e);
+        throw e.getClear();
     }
 
     // A very poor base implementation - suitable for small data streams that reads and discards data
@@ -6508,8 +6518,10 @@ public:
 
     virtual size32_t read(size32_t len, void * ptr) override
     {
+        if (closed)
+            return 0;
         size32_t size_read;
-        readtmsAllowClose(socket, ptr, 1, len, size_read, timeout);
+        closed = readtmsAllowClose(socket, ptr, 1, len, size_read, timeout);
         lastpos += size_read;
         return size_read;
     }
@@ -6521,6 +6533,7 @@ protected:
     Linked<ISocket> socket;
     offset_t lastpos = 0;
     unsigned timeout;
+    bool closed = false;
 };
 
 
