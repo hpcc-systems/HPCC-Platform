@@ -28,7 +28,8 @@
 #endif
 #include "jlzw.hpp"
 
-constexpr size32_t defaultBlockReadSize = 0x10000;
+constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
+constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
 
 //================================================================================
 void CStringBufferOutputStream::writeByte(byte b)
@@ -109,13 +110,18 @@ public:
     CBlockedSerialInputStream(ISerialInputStream * _input, size32_t _blockReadSize)
     : input(_input), blockReadSize(_blockReadSize)
     {
-        if (blockReadSize == (size32_t)-1)
+        // A blockReadSize of 0 is often used for a fetch from a file, where only a single record is likely to be read.
+        // So choose a sensible low value that will avoid too many reads, but not use too much memory.
+        if (blockReadSize < minBlockReadSize)
+            blockReadSize = minBlockReadSize;
+        else if (blockReadSize == (size32_t)-1)
             blockReadSize = defaultBlockReadSize;
 
         //Allocate the input buffer slightly bigger than the block read size, so that a small peek at the end of a block
         //does not have to expand the block.  (Avoid extra allocation for for pathological unittests where blockReadSize <= 1024)
         size32_t extraSize = (blockReadSize > 1024) ? 1024 : 0;
         buffer.allocate(blockReadSize + extraSize);
+        nextBlockOffset = input->tell();
     }
 
     virtual size32_t read(size32_t len, void * ptr) override
@@ -323,7 +329,6 @@ protected:
 
 IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize)
 {
-    assertex(blockReadSize != 0);
     return new CBlockedSerialInputStream(input, blockReadSize);
 }
 
