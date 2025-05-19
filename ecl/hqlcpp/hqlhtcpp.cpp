@@ -11173,8 +11173,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
     if (!genericFileTypeFormat.isEmpty())
         instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", genericFileTypeFormat.str());
-    else
-        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", str(expr->queryChild(2)->queryName()));
 
     noteResultDefined(ctx, instance, seq, filename, isRoot);
 
