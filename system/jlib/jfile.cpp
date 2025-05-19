@@ -84,13 +84,6 @@
 #endif
 
 
-#ifdef __64BIT__
-#define DEFAULT_STREAM_BUFFER_SIZE 0x100000
-#else
-// Restrict buffer sizes on 32-bit systems
-#define DEFAULT_STREAM_BUFFER_SIZE 0x10000
-#endif
-
 #ifdef _WIN32
 #define NULLFILE INVALID_HANDLE_VALUE
 #else
@@ -6268,242 +6261,13 @@ public:
 
 // ---------------------------------------------------------------------------------
 
-class CSerialStreamBase : implements IBufferedSerialInputStream, public CInterface
-{
-private:
-    size32_t bufsize;
-    size32_t bufpos;
-    size32_t bufmax;
-    offset_t bufbase;
-    offset_t endpos; // -1 if not known
-    MemoryAttr ma;
-    byte *buf;
-    bool eoinput;
-
-    inline size32_t doread(offset_t pos, size32_t max_size, void *ptr)
-    {
-        if (endpos!=(offset_t)-1) {
-            if (pos>=endpos)
-                return 0;
-            if (endpos-pos<max_size)
-                max_size = (size32_t)(endpos-pos);
-        }
-        return rawread(pos, max_size, ptr);
-    }
-
-    const void * dopeek(size32_t sz, size32_t &got) __attribute__((noinline))
-    {
-        for (;;)
-        {
-            size32_t left = bufmax-bufpos;
-            got = left;
-            if (left>=sz) 
-                return buf+bufpos;
-            if (eoinput) 
-                return left?(buf+bufpos):NULL;
-            size32_t reqsz = sz+bufsize;  // NB not sz-left as want some slack
-            if (ma.length()<reqsz) {
-                MemoryAttr ma2;
-                void *nb = ma2.allocate(reqsz);
-                memcpy(nb,buf+bufpos,left);
-                ma.setOwn(reqsz,ma2.detach());
-                buf = (byte *)nb;
-            }
-            else 
-                memmove(buf,buf+bufpos,left);
-            bufbase += bufpos;
-            size32_t rd = doread(bufbase+left,bufsize,buf+left);
-            if (!rd) 
-                eoinput = true;
-            bufmax = rd+left;
-            bufpos = 0;
-        }
-    }
-
-    size32_t getreadnext(size32_t len, void * ptr, bool failAtEnd) __attribute__((noinline))
-    {
-        bufbase += bufmax;
-        bufpos = 0;
-        bufmax = 0;
-        size32_t rd = 0;
-        size32_t totalRead = 0;
-        if (!eoinput) {
-            //If reading >= bufsize, read any complete blocks directly into the target
-            if (len>=bufsize) {
-                size32_t tord = (len/bufsize)*bufsize;
-                rd =  doread(bufbase,tord,ptr);
-                bufbase += rd;
-                if (rd!=tord) {
-                    eoinput = true;
-                    if (failAtEnd)
-                    {
-                        PrintStackReport();
-                        IERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
-                        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
-                    }
-                }
-                len -= rd;
-                totalRead += rd;
-                if (!len)
-                    return totalRead;
-                ptr = (byte *)ptr+rd;
-            }
-            const void *p = dopeek(len,rd);
-            if (len<=rd) {
-                memcpy(ptr,p,len);
-                bufpos += len;
-                return totalRead + len;
-            }
-        }
-        if (failAtEnd)
-        {
-            PrintStackReport();
-            IERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
-            throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
-        }
-        return 0;
-    }
-
-protected:
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr) = 0;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CSerialStreamBase(offset_t _offset, offset_t _len, size32_t _bufsize)
-    {
-        bufsize = _bufsize;
-        if (bufsize==(size32_t)-1)
-            bufsize = DEFAULT_STREAM_BUFFER_SIZE; 
-        if (bufsize<4096)
-            bufsize = 4096;
-        else
-            bufsize = ((bufsize+4095)/4096)*4096;
-        buf = (byte *)ma.allocate(bufsize+4096); // 4K initial slack
-        bufpos = 0;
-        bufmax = 0;
-        bufbase = _offset;
-        if (_len==(offset_t)-1)
-            endpos = (offset_t)-1;
-        else
-            endpos = _offset+_len;
-        eoinput = (_len==0);
-    }
-
-    virtual void reset(offset_t _offset, offset_t _len) override
-    {
-        bufpos = 0;
-        bufmax = 0;
-        bufbase = _offset;
-        if (_len==(offset_t)-1)
-            endpos = (offset_t)-1;
-        else
-            endpos = _offset+_len;
-        eoinput = (_len==0);
-    }
-
-    virtual const void *peek(size32_t sz,size32_t &got) override
-    {
-        return dopeek(sz, got);
-    }
-
-    virtual void get(size32_t len, void * ptr) override
-    {
-        size32_t cpy = bufmax-bufpos;
-        if (cpy>len)
-            cpy = len;
-        memcpy(ptr,(const byte *)buf+bufpos,cpy);
-        len -= cpy;
-        if (len==0) {
-            bufpos += cpy;
-            return;
-        }
-        getreadnext(len, (byte *)ptr+cpy, true);
-    }
-
-    virtual size32_t read(size32_t len, void * ptr) override
-    {
-        size32_t cpy = bufmax-bufpos;
-        if (cpy>len)
-            cpy = len;
-        memcpy(ptr,(const byte *)buf+bufpos,cpy);
-        len -= cpy;
-        if (len==0) {
-            bufpos += cpy;
-            return cpy;
-        }
-        return getreadnext(len, (byte *)ptr+cpy, false) + cpy;
-    }
-
-    virtual bool eos() override
-    {
-        if (bufmax-bufpos)
-            return false;
-        size32_t rd;
-        return dopeek(1,rd)==NULL;
-    }
-
-    virtual void skip(size32_t len) override
-    {
-        size32_t left = bufmax-bufpos;
-        if (left>=len) {
-            bufpos += len;
-            return;
-        }
-        len -= left;
-        bufbase += bufmax;
-        bufpos = 0;
-        bufmax = 0;
-        if (!eoinput) {
-            while (len>=bufsize) {
-                size32_t rd;
-                rd = (len/bufsize)*bufsize;
-                //rd=doskip(bufbase,bufsize,buf); to cope with reading from sockets etc?
-                bufbase += rd;
-                len -= bufsize;
-            }
-            if (len==0)
-                return;
-            size32_t got;
-            dopeek(len,got);
-            if (len<=got) {
-                bufpos += got;
-                return;
-            }
-        }
-        throw MakeStringException(-1,"CFileSerialStream::skip read past end of stream");
-    }
-
-    virtual offset_t tell() const override
-    {
-        return bufbase+bufpos;
-    }
-
-};
-
-
-
-class CFileSerialStream: public CSerialStreamBase
-{
-    Linked<IFileIO> fileio;
-
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
-    {
-        return fileio->read(pos,max_size,ptr);
-    }
-
-public:
-    CFileSerialStream(IFileIO *_fileio,offset_t _offset, offset_t _len, size32_t _bufsize)
-      : CSerialStreamBase(_offset, _len, _bufsize), fileio(_fileio)
-    {
-    }
-};
-
-
 IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs, offset_t flen, size32_t bufsize)
 {
     if (!fileio)
         return NULL;
-    return new CFileSerialStream(fileio,ofs,flen,bufsize);
+
+    Owned<ISerialInputStream> fileStream = createSerialInputStream(fileio, ofs, flen);
+    return createBufferedInputStream(fileStream, bufsize);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -6548,45 +6312,40 @@ ISerialInputStream *createSocketSerialStream(ISocket * socket, unsigned timeoutm
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CSimpleReadSerialStream: public CSerialStreamBase
+class CSimpleReadInputStream final : public CSimpleInputStream
 {
-    Linked<ISimpleReadStream> input;
-    offset_t lastpos;
-
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+public:
+    CSimpleReadInputStream(ISimpleReadStream * _input)
+    : input(_input)
     {
-        if (lastpos!=pos)
-            throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
-        size32_t rd = input->read(max_size, ptr);
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t rd = input->read(len, ptr);
         lastpos += rd;
         return rd;
     }
-
-public:
-    CSimpleReadSerialStream(ISimpleReadStream * _input, offset_t _offset, size32_t _bufsize)
-      : CSerialStreamBase(_offset, (offset_t)-1, _bufsize), input(_input)
+    virtual offset_t tell() const override
     {
-        lastpos = _offset;
+        return lastpos;
     }
-
-    virtual void reset(offset_t _ofs, offset_t _len) override
-    {
-        // assume knows what doing
-        lastpos = _ofs;
-        CSerialStreamBase::reset(_ofs,_len);
-    }
-
+protected:
+    Linked<ISimpleReadStream> input;
+    offset_t lastpos = 0;
 };
 
 
-IBufferedSerialInputStream *createSimpleSerialStream(ISimpleReadStream * input, size32_t bufsize)
+//NOTE: This class/factory method is not currently used.  It is here as an example.
+IBufferedSerialInputStream * createSimpleSerialStream(ISimpleReadStream * input, size32_t bufsize)
 {
     if (!input)
         return NULL;
-    return new CSimpleReadSerialStream(input,0,bufsize);
+    Owned<ISerialInputStream> stream = new CSimpleReadInputStream(input);
+    return createBufferedInputStream(stream, bufsize);
 }
 
-
+//---------------------------------------------------------------------------------------------------------------------
 class CMemoryMappedSerialStream: implements IBufferedSerialInputStream, public CInterface
 {
     Linked<IMemoryMappedFile> mmfile;
@@ -6626,6 +6385,7 @@ public:
     {
         mmsize = len;
         mmofs = 0;
+
         mmbase = (const byte *)buf;
         eoinput = false;
     }
