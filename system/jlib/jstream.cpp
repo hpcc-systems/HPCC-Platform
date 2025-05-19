@@ -28,6 +28,8 @@
 #endif
 #include "jlzw.hpp"
 
+constexpr size32_t defaultBlockReadSize = 0x10000;
+
 //================================================================================
 void CStringBufferOutputStream::writeByte(byte b)
 {
@@ -107,6 +109,9 @@ public:
     CBlockedSerialInputStream(ISerialInputStream * _input, size32_t _blockReadSize)
     : input(_input), blockReadSize(_blockReadSize)
     {
+        if (blockReadSize == (size32_t)-1)
+            blockReadSize = defaultBlockReadSize;
+
         //Allocate the input buffer slightly bigger than the block read size, so that a small peek at the end of a block
         //does not have to expand the block.  (Avoid extra allocation for for pathological unittests where blockReadSize <= 1024)
         size32_t extraSize = (blockReadSize > 1024) ? 1024 : 0;
@@ -131,7 +136,9 @@ public:
         //While there are blocks larger than the buffer size read directly into the target buffer
         while (unlikely(sizeRead + blockReadSize <= len))
         {
-            size32_t got = readNextBlock(blockReadSize, target+sizeRead);
+            //Read multiple blocks in a single operation
+            size32_t numBlocks = (len - sizeRead) / blockReadSize;
+            size32_t got = readNextBlock(blockReadSize * numBlocks, target+sizeRead);
             if ((got == 0) || (got == BufferTooSmall))
                 break;
             sizeRead += got;
@@ -444,9 +451,11 @@ void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInput
 class CFileSerialInputStream final : public CInterfaceOf<ISerialInputStream>
 {
 public:
-    CFileSerialInputStream(IFileIO * _input)
-    : input(_input)
+    CFileSerialInputStream(IFileIO * _input, offset_t startOffset, offset_t length)
+    : input(_input), nextOffset(startOffset)
     {
+        if (length != UnknownOffset)
+            lastOffset = startOffset + length;
     }
 
     virtual size32_t read(size32_t len, void * ptr) override
@@ -494,7 +503,13 @@ protected:
 //Temporary class - long term goal is to have IFile create this directly and avoid an indirect call.
 ISerialInputStream * createSerialInputStream(IFileIO * input)
 {
-    return new CFileSerialInputStream(input);
+    return new CFileSerialInputStream(input, 0, UnknownOffset);
+}
+
+
+ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length)
+{
+    return new CFileSerialInputStream(input, startOffset, length);
 }
 
 
