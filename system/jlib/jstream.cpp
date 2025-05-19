@@ -138,7 +138,7 @@ public:
         {
             //Read multiple blocks in a single operation
             size32_t numBlocks = (len - sizeRead) / blockReadSize;
-            size32_t got = readNextBlock(blockReadSize * numBlocks, target+sizeRead);
+            size32_t got = readNext(blockReadSize * numBlocks, target+sizeRead);
             if ((got == 0) || (got == BufferTooSmall))
                 break;
             sizeRead += got;
@@ -180,6 +180,8 @@ public:
             readNextBlock(); // will be appended onto the end of the existing buffer
         }
         got = available();
+        if (unlikely(got == 0))
+            return nullptr;
         return data(bufferOffset);
     }
 
@@ -192,7 +194,11 @@ public:
 
     virtual bool eos() override
     {
-        return endOfStream && (dataLength == bufferOffset);
+        if (available())
+            return false;
+
+        size32_t got;
+        return peek(1, got) == nullptr;
     }
 
     virtual void skip(size32_t sz) override
@@ -273,7 +279,7 @@ private:
         for (;;)
         {
             expandBuffer(remaining + nextReadSize);
-            size32_t got = readNextBlock(nextReadSize, data(remaining)); // will set endOfStream if finished
+            size32_t got = readNext(nextReadSize, data(remaining)); // will set endOfStream if finished
             if (likely(got != BufferTooSmall))
             {
                 nextBlockOffset += got;
@@ -286,7 +292,7 @@ private:
         }
     }
 
-    size32_t readNextBlock(size32_t len, void * ptr)
+    size32_t readNext(size32_t len, void * ptr)
     {
         size32_t got = input->read(len, ptr);
         if (got == 0)
