@@ -25,6 +25,7 @@
 #include <daclient.hpp>
 #include <dasess.hpp>
 #include <danqs.hpp>
+#include <unordered_set>
 
 #include "environment.hpp"
 #include "workunit.hpp"
@@ -63,83 +64,63 @@ void initSignals()
     signal(SIGALRM, caughtSIGALRM);
 
 #endif
-}   
-
-//=========================================================================================
-
-class Waiter : implements IAbortHandler, public CInterface
-{
-    Semaphore aborted;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    bool wait(unsigned timeout)
-    {
-        return aborted.wait(timeout);
-    }
-    void wait()
-    {
-        aborted.wait();
-    }
-    bool onAbort()
-    {
-        aborted.signal();
-#ifdef _DEBUG
-        return false; // we want full leak checking info
-#else
-        return true; // we don't care - just exit as fast as we can
-#endif
-    }
-} waiter;
+}
 
 //=========================================================================================
 
 class EclScheduler : public CInterface, implements IExceptionHandler
 {
 private:
+    IAbortHandler *owner;
+    StringAttr serverName;
+
     class WUExecutor : public CInterface, implements IScheduleEventExecutor
     {
     public:
-        WUExecutor(EclScheduler * _owner) : owner(_owner) {}
+        WUExecutor(EclScheduler *_owner) : owner(_owner) {}
         IMPLEMENT_IINTERFACE;
-        virtual void execute(char const * wuid, char const * name, char const * text)
+        virtual void execute(char const *wuid, char const *name, char const *text)
         {
             owner->execute(wuid, name, text);
         }
+
     private:
-        EclScheduler * owner;
+        EclScheduler *owner;
     };
 
     friend class WUExecutor;
 
 public:
-    EclScheduler(const char *serverName)
+    EclScheduler(IAbortHandler *_owner, const char *_serverName) : owner(_owner), serverName(_serverName)
     {
         executor.setown(new WUExecutor(this));
         processor.setown(getScheduleEventProcessor(serverName, executor.getLink(), this));
     }
+    const char *getServerName() const { return serverName; }
     void start() { processor->start(); }
     void stop() { processor->stop(); }
-    virtual bool fireException(IException *e) 
-    { 
+    virtual bool fireException(IException *e) override
+    {
         StringBuffer msg;
-        OERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); 
-        OERRLOG("Scheduler will now terminate"); 
-        waiter.onAbort();
-        return false; 
+        OERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str());
+        e->Release();
+        OERRLOG("Scheduler will now terminate");
+        if (owner)
+            owner->onAbort();
+        return false;
     }
 
 private:
-    void execute(char const * wuid, char const * name, char const * text)
+    void execute(char const *wuid, char const *name, char const *text)
     {
         Owned<IWorkflowScheduleConnection> wfconn(getWorkflowScheduleConnection(wuid));
         wfconn->lock();
         wfconn->push(name, text);
-        if(!wfconn->queryActive())
+        if (!wfconn->queryActive())
         {
             if (!runWorkUnit(wuid))
             {
-                //The work unit failed to run for some reason.. check if it has disappeared
+                // The work unit failed to run for some reason.. check if it has disappeared
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
                 if (!w)
@@ -158,6 +139,7 @@ private:
     Owned<WUExecutor> executor;
 };
 
+//=========================================================================================
 
 void openLogFile()
 {
@@ -172,13 +154,182 @@ void openLogFile()
 
 //=========================================================================================
 
-static constexpr const char * defaultYaml = R"!!(
+static constexpr const char *defaultYaml = R"!!(
 version: "1.0"
 eclscheduler:
   daliServers: dali
   enableSysLog: true
   name: myeclscheduler
 )!!";
+
+//=========================================================================================
+
+class EclSchedulerServer : public CSimpleInterfaceOf<IAbortHandler>
+{
+public:
+    EclSchedulerServer()
+    {
+        addAbortHandler(*this);
+    }
+    ~EclSchedulerServer()
+    {
+        if (updateConfigCBId)
+            removeConfigUpdateHook(updateConfigCBId);
+
+        removeAbortHandler(*this);
+    }
+
+    // IAbortHandler
+    virtual bool onAbort() override
+    {
+        DBGLOG("onAbort()");
+        running = false;
+        configChangeOrAbort.signal();
+
+#ifdef _DEBUG
+        return false; // we want full leak checking info
+#else
+        return true; // we don't care - just exit as fast as we can
+#endif
+    }
+
+    void init()
+    {
+        auto updateFunc = [this](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+        {
+            configQueueNamesHasChanged();
+        };
+        updateConfigCBId = installConfigUpdateHook(updateFunc, true);
+    }
+
+    void run()
+    {
+        running = true;
+        LocalIAbortHandler abortHandler(*this);
+        while (running)
+        {
+            // wait for either a config change or an abort
+            configChangeOrAbort.wait();
+
+            if (running)
+            {
+                // Process a config change if one is pending
+                try
+                {
+                    CriticalBlock b(updateSchedulersCS);
+                    // onAbort could have been triggered, so check running before any updates are made
+                    if (!running)
+                        break;
+                    updateSchedulerQueues();
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
+                catch (...)
+                {
+                    IERRLOG("Unknown exception caught in eclscheduler processQueues - restarting");
+                }
+            }
+        }
+        DBGLOG("eclscheduler closing");
+        stop();
+    }
+
+private:
+    std::unordered_set<std::string> getQueues()
+    {
+        std::unordered_set<std::string> newSchedulerQueues;
+        Owned<IPropertyTree> config = getComponentConfigSP();
+#ifdef _CONTAINERIZED
+        Owned<IPTreeIterator> queues = config->getElements("queues");
+        ForEach(*queues)
+        {
+            IPTree &queue = queues->query();
+            const char *qname = queue.queryProp("@name");
+            newSchedulerQueues.emplace(qname);
+        }
+#else
+        const char *processName = config->queryProp("@name");
+        Owned<IStringIterator> targetClusters = getTargetClusters("EclSchedulerProcess", processName);
+        ForEach(*targetClusters)
+        {
+            SCMStringBuffer targetCluster;
+            targetClusters->str(targetCluster);
+            newSchedulerQueues.emplace(targetCluster.str());
+        }
+#endif
+        return newSchedulerQueues;
+    }
+
+    void configQueueNamesHasChanged()
+    {
+        std::unordered_set<std::string> newSchedulerQueues = getQueues();
+        CriticalBlock b(updateSchedulersCS);
+        if (newSchedulerQueues != schedulerQueues)
+        {
+            schedulerQueues = newSchedulerQueues;
+            configChangeOrAbort.signal();
+        }
+    }
+
+    void updateSchedulerQueues()
+    {
+        std::unordered_set<std::string> newQueueNames = schedulerQueues;
+        // stop and remove schedulers not in the new list as they are no longer needed
+        // for those in the new list, if they are already running, leave them alone
+        ForEachItemInRev(schedIdx, schedulers)
+        {
+            EclScheduler &scheduler = schedulers.item(schedIdx);
+            if (newQueueNames.find(scheduler.getServerName()) == newQueueNames.end())
+            {
+                // Queue has been removed
+                DBGLOG("Stopped listening to queue %s", scheduler.getServerName());
+                scheduler.stop();
+                schedulers.remove(schedIdx);
+            }
+            else
+            {
+                // "New" queue already running
+                newQueueNames.erase(scheduler.getServerName());
+            }
+        }
+
+        // only new schedulers will be left in the list
+        for (auto &newQueueName : newQueueNames)
+        {
+            DBGLOG("Start listening to queue %s", newQueueName.c_str());
+            Owned<EclScheduler> scheduler = new EclScheduler(this, newQueueName.c_str());
+            scheduler->start();
+            schedulers.append(*scheduler.getClear());
+        }
+
+        if (schedulers.empty())
+            WARNLOG("No clusters found to schedule for");
+    }
+
+    void stop()
+    {
+        DBGLOG("stop()");
+        CriticalBlock b(updateSchedulersCS);
+        ForEachItemIn(schedIdx, schedulers)
+        {
+            schedulers.item(schedIdx).stop();
+        }
+    }
+
+    unsigned updateConfigCBId{0};
+
+    CriticalSection updateSchedulersCS;
+    CIArrayOf<EclScheduler> schedulers;
+    std::unordered_set<std::string> schedulerQueues;
+
+    std::atomic<bool> running{false};
+    Semaphore configChangeOrAbort;
+};
+
+//=========================================================================================
 
 int main(int argc, const char *argv[])
 {
@@ -194,23 +345,23 @@ int main(int argc, const char *argv[])
     removeSentinelFile(sentinelFile);
 
     const char *iniFileName = nullptr;
-    if (checkFileExists("eclscheduler.xml") )
+    if (checkFileExists("eclscheduler.xml"))
         iniFileName = "eclscheduler.xml";
-    else if (checkFileExists("eclccserver.xml") )
+    else if (checkFileExists("eclccserver.xml"))
         iniFileName = "eclccserver.xml";
 
-    Owned<IPropertyTree> globals;
+    Owned<IPropertyTree> componentConfig;
     try
     {
-        globals.setown(loadConfiguration(defaultYaml, argv, "eclscheduler", "ECLSCHEDULER", iniFileName, nullptr));
+        componentConfig.setown(loadConfiguration(defaultYaml, argv, "eclscheduler", "ECLSCHEDULER", iniFileName, nullptr));
     }
-    catch (IException * e)
+    catch (IException *e)
     {
         UERRLOG(e);
         e->Release();
         return 1;
     }
-    catch(...)
+    catch (...)
     {
         if (iniFileName)
             OERRLOG("Failed to load configuration %s", iniFileName);
@@ -221,10 +372,10 @@ int main(int argc, const char *argv[])
 
     openLogFile();
 
-    setStatisticsComponentName(SCThthor, globals->queryProp("@name"), true);
-    if (globals->getPropBool("@enableSysLog",true))
+    setStatisticsComponentName(SCThthor, componentConfig->queryProp("@name"), true);
+    if (componentConfig->getPropBool("@enableSysLog", true))
         UseSysLogForOperatorMessages();
-    const char *daliServers = globals->queryProp("@daliServers");
+    const char *daliServers = componentConfig->queryProp("@daliServers");
     if (!daliServers)
     {
         OWARNLOG("No Dali server list specified - assuming local");
@@ -235,52 +386,23 @@ int main(int argc, const char *argv[])
     {
         initClientProcess(serverGroup, DCR_EclScheduler);
 
-        CIArrayOf<EclScheduler> schedulers;
-
-#ifdef _CONTAINERIZED
-        Owned<IPTreeIterator> queues = globals->getElements("queues");
-        ForEach(*queues)
-        {
-            IPTree &queue = queues->query();
-            const char *qname = queue.queryProp("@name");
-            DBGLOG("Start listening to queue %s", qname);
-            Owned<EclScheduler> scheduler = new EclScheduler(qname);
-            scheduler->start();
-            schedulers.append(*scheduler.getClear());
-        }
-#else
-        Owned <IStringIterator> targetClusters = getTargetClusters("EclSchedulerProcess", globals->queryProp("@name"));
-        ForEach (*targetClusters)
-        {
-            SCMStringBuffer targetCluster;
-            targetClusters->str(targetCluster);
-            Owned<EclScheduler> scheduler = new EclScheduler(targetCluster.str());
-            scheduler->start();
-            schedulers.append(*scheduler.getClear());
-        }
-#endif
-        if (schedulers.empty())
-            throw MakeStringException(0, "No clusters found to schedule for");
-
+        EclSchedulerServer server;
+        server.init();
         // if we got here, eclscheduler is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
         writeSentinelFile(sentinelFile);
-        LocalIAbortHandler abortHandler(waiter);
-        waiter.wait();
-        ForEachItemIn(schedIdx, schedulers)
-        {
-            schedulers.item(schedIdx).stop();
-        }
+
+        server.run();
     }
-    catch (IException * e)
+    catch (IException *e)
     {
         EXCLOG(e, "Terminating unexpectedly");
         e->Release();
     }
-    catch(...)
+    catch (...)
     {
         IERRLOG("Terminating unexpectedly");
     }
-    globals.clear();
+    componentConfig.clear();
     UseSysLogForOperatorMessages(false);
     ::closedownClientProcess(); // dali client closedown
     releaseAtoms();
