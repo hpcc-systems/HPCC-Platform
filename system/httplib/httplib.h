@@ -5461,7 +5461,7 @@ namespace detail {
 
 template <typename U, typename V>
 inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
-                    U SSL_connect_or_accept, V setup) {
+                    U SSL_connect_lambda, V setup) {
   SSL *ssl = nullptr;
   {
     std::lock_guard<std::mutex> guard(ctx_mutex);
@@ -5472,7 +5472,7 @@ inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
     auto bio = BIO_new_socket(static_cast<int>(sock), BIO_NOCLOSE);
     SSL_set_bio(ssl, bio, bio);
 
-    if (!setup(ssl) || SSL_connect_or_accept(ssl) != 1) {
+    if (!setup(ssl) || SSL_connect_lambda(ssl) != 1) {
       SSL_shutdown(ssl);
       {
         std::lock_guard<std::mutex> guard(ctx_mutex);
@@ -5703,11 +5703,99 @@ inline SSLServer::~SSLServer() {
 
 inline bool SSLServer::is_valid() const { return ctx_; }
 
+enum SSLMethod { SSL_ACCEPT_METHOD, SSL_CONNECT_METHOD };
+
+inline int SSL_handleWait(SSL *ssl, int sock, int errCode, int *sslErr, unsigned remainingMs)
+{
+    int retCode;
+    unsigned secs = remainingMs / 1000;
+    unsigned usecs = (remainingMs % 1000) * 1000;
+    *sslErr = SSL_get_error(ssl, errCode);
+    switch (*sslErr)
+    {
+        case SSL_ERROR_WANT_READ:
+        {
+            retCode = detail::select_read(sock, secs, usecs);
+            break;
+        }
+        case SSL_ERROR_WANT_WRITE:
+        {
+            retCode = detail::select_write(sock, secs, usecs);
+            break;
+        }
+        default:
+        {
+            retCode = -1;
+            break;
+        }
+    }
+
+    return retCode;
+}
+
+inline int SSL_timedAcceptorConnect(SSL *ssl, int sock, SSLMethod method)
+{
+    unsigned timeoutMs = 60*1000;
+    unsigned remainingMs;
+    CCycleTimer timer;
+    int retCode;
+    int result;
+    int sslErr;
+    while (true)
+    {
+        ERR_clear_error();
+
+        if (method == 0)
+            retCode = SSL_accept(ssl);
+        else
+            retCode = SSL_connect(ssl);
+        if (retCode > 0)
+            return 1;
+
+        remainingMs = timer.remainingMs(timeoutMs);
+
+        result = SSL_handleWait(ssl, sock, retCode, &sslErr, remainingMs);
+        if (result == 0)
+        {
+            OERRLOG("HTTPLIB Error : %s timed out", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"));
+            break;
+        }
+        else if (result < 0)
+        {
+            char errbuf[512];
+            ERR_error_string_n(sslErr, errbuf, 512);
+            VStringBuffer errmsg("%s %d - %s", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"), sslErr, errbuf);
+            OERRLOG("HTTPLIB Error : %s", errmsg.str());
+            break;
+        }
+    }
+
+    return result;
+}
+
 inline bool SSLServer::process_and_close_socket(socket_t sock) {
-  auto ssl = detail::ssl_new(sock, ctx_, ctx_mutex_, SSL_accept,
-                             [](SSL * /*ssl*/) { return true; });
+  SSL *ssl = nullptr;
+  {
+    std::lock_guard<std::mutex> guard(ctx_mutex_);
+    ssl = SSL_new(ctx_);
+  }
 
   if (ssl) {
+    detail::set_nonblocking(sock, true);
+    auto bio = BIO_new_socket(static_cast<int>(sock), BIO_NOCLOSE);
+    SSL_set_bio(ssl, bio, bio);
+    int retCode = SSL_timedAcceptorConnect(ssl, static_cast<int>(sock), SSL_ACCEPT_METHOD);
+    detail::set_nonblocking(sock, false);
+    if (retCode != 1) {
+      SSL_shutdown(ssl);
+      {
+        std::lock_guard<std::mutex> guard(ctx_mutex_);
+        SSL_free(ssl);
+      }
+      detail::close_socket(sock);
+      return false;
+    }
+
     auto ret = detail::process_server_socket_ssl(
         ssl, sock, keep_alive_max_count_, read_timeout_sec_, read_timeout_usec_,
         write_timeout_sec_, write_timeout_usec_,
@@ -5895,8 +5983,11 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
         }
 
-        if (SSL_connect(ssl) != 1) {
-          OERRLOG("HTTPLIB Error connecting ssl");
+        detail::set_nonblocking(socket.sock, true);
+        int retCode = SSL_timedAcceptorConnect(ssl, socket.sock, SSL_CONNECT_METHOD);
+        detail::set_nonblocking(socket.sock, false);
+
+        if (retCode != 1) {
           error_ = Error::SSLConnection;
           return false;
         }
