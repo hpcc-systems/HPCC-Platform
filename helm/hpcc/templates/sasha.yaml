@@ -88,7 +88,7 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 6 }}
 ---
 {{- if (hasKey $sasha "service") -}}
-{{- if $sasha.service.servicePort -}}
+{{- if (int $sasha.service.servicePort) -}}
 {{- include "hpcc.addService" ( dict "root" $ "name" $serviceName "service" $sasha.service "selector" $serviceName "defaultPort" 8877 ) | nindent 0 }}
 ---
 {{- end }}
