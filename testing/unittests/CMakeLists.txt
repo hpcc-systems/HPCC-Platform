@@ -90,6 +90,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/common/dllserver
+         ${HPCC_SOURCE_DIR}/common/eventconsumption
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/esp/bindings
@@ -125,6 +126,7 @@ target_link_libraries ( unittests
          esdllib
          logginglib
          workunit
+         eventconsumption
          ${CppUnit_LIBRARIES}
     )
 
