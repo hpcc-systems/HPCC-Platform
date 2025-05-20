@@ -56,7 +56,7 @@ Pass in dict with root and warnings
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
  {{- /* Warn if any storage planes uses default cost values */ -}}
- {{- if or (eq .root.Values.global.cost.storageWrites 0.0500000000001) (or (eq .root.Values.global.cost.storageAtRest 0.0208000000001) (eq .root.Values.global.cost.storageReads 0.00400000000001)) -}}
+ {{- if or (eq (float64 .root.Values.global.cost.storageWrites) 0.0500000000001) (or (eq (float64 .root.Values.global.cost.storageAtRest) 0.0208000000001) (eq (float64 .root.Values.global.cost.storageReads) 0.00400000000001)) -}}
   {{- $_ := set $ctx "planesWithDefaultCosts" list -}}
   {{- range $storagePlane := .root.Values.storage.planes -}}
    {{- if not $storagePlane.disabled -}}
@@ -110,7 +110,7 @@ Pass in dict with root and warnings
   {{- end -}}
  {{- end -}}
  {{- /* Warn when resources not provided, default cpu rate used and components requiring resources for cost calcs */ -}}
- {{- if eq .root.Values.global.cost.perCpu 0.0565000000001 -}}
+ {{- if eq (float64 .root.Values.global.cost.perCpu) 0.0565000000001 -}}
   {{- $_ := set $ctx "usingDefaultCpuCost" "true" -}}
  {{- end -}}
  {{- $_ := set $ctx "missingResources" list -}}
