@@ -79,10 +79,7 @@ runs:
               """)
               message += testFailureMessages
 
-              # Escape result for json
-              message = json.dumps(message)
-              curlCommand = 'curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": %s }\'' % ( comments_url, github_token, message)
-              os.system(curlCommand)
+              print(message)
 
               sys.exit(1)
         else:
