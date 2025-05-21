@@ -18,6 +18,7 @@
 #pragma once
 
 #include "evtool.h"
+#include "eventoperation.h"
 #include "jevent.hpp"
 #include "jstring.hpp"
 

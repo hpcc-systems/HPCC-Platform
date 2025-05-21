@@ -19,6 +19,7 @@
 
 #include "eventconsumption.h"
 #include "eventvisitor.h"
+#include "eventoperation.h"
 
 // Get a visitor that streams visited event data in JSON format.
 extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
@@ -45,3 +46,31 @@ interface IEventPTreeCreator : extends IInterface
 
 // Get an event property tree creator.
 extern event_decl IEventPTreeCreator* createEventPTreeCreator();
+
+// Supported dump output formats.
+enum class OutputFormat : byte
+{
+    text,
+    json,
+    xml,
+    yaml,
+    csv,
+    tree,
+};
+
+// Open and parse a binary event file, generating any one of several supported output formats. As
+// an extension of CEventConsumingOp, the public interface adds:
+// - `void setFormat(OutputFormat)`: set the output format
+// - `bool filterEventType(const char* eventNames)`: add an event type filter to the operation
+class event_decl CDumpEventsOp : public CEventConsumingOp
+{
+public:
+    // Cache the requested output format.
+    void setFormat(OutputFormat format);
+
+    // Perform the requested action.
+    virtual bool doOp() override;
+
+protected:
+    OutputFormat format = OutputFormat::text;
+};

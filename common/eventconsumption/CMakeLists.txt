@@ -23,6 +23,7 @@ include_directories (
 
 set (
     SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdump.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpstream.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpptree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventfilter.cpp
