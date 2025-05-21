@@ -2318,6 +2318,14 @@ public:
         unsigned defaultPersistExpireDays = props->getPropInt("@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
+
+
+        StringAttr filters;
+        bool allMatchingFilesReceived;
+        Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
+            nullptr, nullptr, udesc, true, allMatchingFilesReceived);
+
+
         ForEach(*iter)
         {
             IPropertyTree &attr=iter->query();
@@ -2431,4 +2439,13 @@ ISashaServer *createSashaFileExpiryServer()
 #endif
     sashaExpiryServer = new CSashaExpiryServer(config);
     return sashaExpiryServer;
+}
+
+void testExpiry()
+{
+    Owned<IPropertyTree> config = serverConfig->getPropTree("DfuExpiry");
+    if (!config)
+        config.setown(createPTree("DfuExpiry"));
+    Owned<CSashaExpiryServer> sashaExpiryServer = new CSashaExpiryServer(config);
+    sashaExpiryServer->runExpiry();
 }
