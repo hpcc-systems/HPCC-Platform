@@ -86,6 +86,7 @@ enum MDFSRequestKind
     MDFS_SET_FILE_PROTECT,
     MDFS_ITERATE_FILTEREDFILES,
     MDFS_ITERATE_FILTEREDFILES2,
+    MDFS_ITERATE_FILTEREDFILES3,
     MDFS_GET_FILE_TREE2,
     MDFS_MAX
 };
@@ -9544,7 +9545,7 @@ const char* DFUQFilterFieldNames[] = { "", "@description", "@directory", "@group
     "@partmask", "@OrigName", "Attr", "Attr/@job", "Attr/@owner", "Attr/@recordCount", "Attr/@recordSize", "Attr/@size",
     "Attr/@compressedsize", "Attr/@workunit", "Cluster", "Cluster/@defaultBaseDir", "Cluster/@defaultReplDir", "Cluster/@mapFlags",
     "Cluster/@name", "Part", "Part/@name", "Part/@num", "Part/@size", "SuperOwner", "SuperOwner/@name",
-    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind", "Attr/@accessed", "Attr/@maxSkew", "Attr/@minSkew" };
+    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind", "Attr/@accessed", "Attr/@maxSkew", "Attr/@minSkew", "Attr/@expireDays" };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild)
 {
@@ -11223,23 +11224,45 @@ public:
         mb.writeDirect(0,sizeof(count),&count);
     }
 
-    void iterateFilteredFiles(TransactionLog &transactionLog, CMessageBuffer &mb,StringBuffer &trc, bool returnAllFilesFlag)
+    IPropertyTree *createLegacyIterFilesRequest(MemoryBuffer &mb)
     {
+        Owned<IPropertyTree> request = createPTree();
         Owned<IUserDescriptor> udesc;
         StringAttr filters;
         bool recursive;
         mb.read(filters).read(recursive);
-        trc.appendf("iterateFilteredFiles(%s,%s)",filters.str(),recursive?"recursive":"");
-        if (queryTransactionLogging())
-            transactionLog.log("%s", trc.str());
         if (mb.getPos()<mb.length())
         {
             udesc.setown(createUserDescriptor());
             udesc->deserialize(mb);
+            StringBuffer userName;
+            udesc->getUserName(userName);
+            request->setProp("@user", userName);
         }
+        request->setProp("@filters", filters);
+        request->setPropBool("@recursive", recursive);
+        return request.getClear();
+    }
 
-        mb.clear();
+    void iterateFilteredFilesCommon(TransactionLog &transactionLog, const IPropertyTree *request, CMessageBuffer &mb, StringBuffer &trc)
+    {
+        StringAttr filters = request->queryProp("@filters");
+        bool recursive = request->getPropBool("@recursive");
+        const char *userName = request->queryProp("@user");
+        Owned<IUserDescriptor> udesc;
+        if (!isEmptyString(userName))
+        {
+            udesc.setown(createUserDescriptor());
+            udesc->set(userName, nullptr);
+        }
+        bool suppressAllFilesFlag = request->getPropBool("@suppressAllFilesFlag");
+
+        trc.appendf("iterateFilteredFiles(%s,%s)",filters.str(),recursive?"recursive":"");
+        if (queryTransactionLogging())
+            transactionLog.log("%s", trc.str());
+
         unsigned count=0;
+        unsigned startPos = mb.length();
         mb.append(count);
 
         Owned<CIterateFileFilterContainer> iterateFileFilterContainer =  new CIterateFileFilterContainer();
@@ -11270,7 +11293,7 @@ public:
             e->Release();
             returnAllMatchingFiles = false;
         }
-        if (returnAllFilesFlag)
+        if (!suppressAllFilesFlag)
             mb.append(returnAllMatchingFiles);
 
         tookMs = msTick()-start;
@@ -11300,19 +11323,32 @@ public:
         if (tookMs>100)
             PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
 
-        mb.writeDirect(0,sizeof(count),&count);
+        mb.writeDirect(startPos, sizeof(count), &count);
     }
 
-    void iterateFilteredFiles(CMessageBuffer &mb,StringBuffer &trc)
+    void iterateFilteredFiles(CMessageBuffer &mb, StringBuffer &trc)
     {
         TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES, mb.getSender());
-        iterateFilteredFiles(transactionLog, mb, trc, false);
+        Owned<IPropertyTree> request = createLegacyIterFilesRequest(mb);
+        request->setPropBool("@suppressAllFilesFlag", true); // because client doesn't support
+        mb.clear();
+        iterateFilteredFilesCommon(transactionLog, request, mb, trc);
     }
 
-    void iterateFilteredFiles2(CMessageBuffer &mb,StringBuffer &trc)
+    void iterateFilteredFiles2(CMessageBuffer &mb, StringBuffer &trc)
     {
         TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES2, mb.getSender());
-        iterateFilteredFiles(transactionLog, mb, trc, true);
+        Owned<IPropertyTree> request = createLegacyIterFilesRequest(mb);
+        mb.clear();
+        iterateFilteredFilesCommon(transactionLog, request, mb, trc);
+    }
+
+    void iterateFilteredFiles3(CMessageBuffer &mb, StringBuffer &trc)
+    {
+        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES3, mb.getSender());
+        Owned<IPropertyTree> request = createPTree(mb);
+        mb.clear();
+        iterateFilteredFilesCommon(transactionLog, request, mb, trc);
     }
 
     void iterateRelationships(CMessageBuffer &mb,StringBuffer &trc)
@@ -11653,6 +11689,11 @@ public:
                     iterateFilteredFiles2(mb, trc);
                     break;
                 }
+                case MDFS_ITERATE_FILTEREDFILES3:
+                {
+                    iterateFilteredFiles3(mb, trc);
+                    break;
+                }
                 case MDFS_ITERATE_RELATIONSHIPS:
                 {
                     iterateRelationships(mb, trc);
@@ -11723,6 +11764,8 @@ public:
             return ret.append("MDFS_ITERATE_FILTEREDFILES");
         case MDFS_ITERATE_FILTEREDFILES2:
             return ret.append("MDFS_ITERATE_FILTEREDFILES2");
+        case MDFS_ITERATE_FILTEREDFILES3:
+            return ret.append("MDFS_ITERATE_FILTEREDFILES3");
         case MDFS_ITERATE_RELATIONSHIPS:
             return ret.append("MDFS_ITERATE_RELATIONSHIPS");
         case MDFS_GET_FILE_TREE:
@@ -13796,14 +13839,41 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     CMessageBuffer mb;
     CDaliVersion serverVersionNeeded("3.13");
     bool legacy = (queryDaliServerVersion().compare(serverVersionNeeded) < 0);
+    bool iptRquestFmtSupport = false;
     if (legacy)
         mb.append((int)MDFS_ITERATE_FILTEREDFILES);
     else
-        mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
-    mb.append(filters).append(recursive);
-    if (user)
     {
-        user->serializeWithoutPassword(mb);
+        if (!foreigndali)
+        {
+            CDaliVersion serverVersionNeeded("3.18");
+            iptRquestFmtSupport = (queryDaliServerVersion().compare(serverVersionNeeded) >= 0);
+        }
+        if (!iptRquestFmtSupport)
+            mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
+        else
+            mb.append((int)MDFS_ITERATE_FILTEREDFILES3);
+    }
+    if (iptRquestFmtSupport)
+    {
+        Owned<IPropertyTree> request = createPTree();
+        request->setProp("@filters", filters);
+        request->setPropBool("@recursive", recursive);
+        if (user)
+        {
+            StringBuffer userName;
+            user->getUserName(userName);
+            request->setProp("@user", userName.str());
+        }
+        request->serialize(mb); // maybe I should serialize as xml or yaml
+    }
+    else
+    {
+        mb.append(filters).append(recursive);
+        if (user)
+        {
+            user->serializeWithoutPassword(mb);
+        }
     }
 
     if (foreigndali)
