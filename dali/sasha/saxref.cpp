@@ -2317,15 +2317,10 @@ public:
         unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
         unsigned defaultPersistExpireDays = props->getPropInt("@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
-
-
         StringAttr filters;
         bool allMatchingFilesReceived;
-        Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
+        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
             nullptr, nullptr, udesc, true, allMatchingFilesReceived);
-
-
         ForEach(*iter)
         {
             IPropertyTree &attr=iter->query();
