@@ -26,6 +26,8 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 import Std.File AS FileServices;
 import $.setup;
+import Sleep from Std.System.Debug;
+
 prefix := setup.Files(false, false).QueryFilePrefix;
 filename := prefix + 'workflow_9bFile';
 
@@ -54,6 +56,8 @@ conditionalDelete(string lfn) := FUNCTION
 END;
 SEQUENTIAL(
   conditionalDelete(filename),
-  SEQUENTIAL(A,B,A2,B),
+  SEQUENTIAL(A,B,
+    Sleep(1000), // Only 1 second granularity can be guaranteed on the modification dates - so sleep to ensure the update is spotted
+    A2,B),
   FileServices.DeleteLogicalFile(filename)
 );
