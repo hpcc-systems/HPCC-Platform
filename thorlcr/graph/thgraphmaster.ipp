@@ -32,6 +32,7 @@
 #include "thgraphmaster.hpp"
 #include "thmfilemanager.hpp"
 #include "thgraphmanager.hpp"
+#include "dautils.hpp"
 
 
 interface ILoadedDllEntry;
@@ -106,6 +107,8 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     bool sentGlobalInit = false;
     CThorStatsCollection graphStats;
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
+    AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
+    CriticalSection fileReadPropsUpdaterCrit;
 
     void sendQuery();
     void jobDone();
@@ -141,7 +144,8 @@ public:
     IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-
+    IFileReadPropertiesUpdater * queryFileReadPropsUpdater();
+    virtual void end() override;
 // IExceptionHandler
     virtual bool fireException(IException *e);
 // IThorChildGraph impl.
