@@ -2317,7 +2317,18 @@ public:
         unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
         unsigned defaultPersistExpireDays = props->getPropInt("@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
+
+        StringBuffer filterBuf;
+        // all non-superfiles
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+        // hasProp,SuperOwner,"false" - meaning not owned by a superfile
+        filterBuf.append(DFUQFThasProp).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFsuperowner)).append(DFUQFilterSeparator).append("false").append(DFUQFilterSeparator);
+        // hasProp,Attr/@expireDays,"true" - meaning file has @expireDays attribute
+        filterBuf.append(DFUQFThasProp).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFexpiredays)).append(DFUQFilterSeparator).append("true").append(DFUQFilterSeparator);
+
+        bool allMatchingFilesReceived;
+        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesTreeIterator(filterBuf,
+            nullptr, nullptr, udesc, true, allMatchingFilesReceived);
         ForEach(*iter)
         {
             IPropertyTree &attr=iter->query();
@@ -2432,4 +2443,13 @@ ISashaServer *createSashaFileExpiryServer()
 #endif
     sashaExpiryServer = new CSashaExpiryServer(config);
     return sashaExpiryServer;
+}
+
+void runExpiryCLI()
+{
+    Owned<IPropertyTree> config = serverConfig->getPropTree("DfuExpiry");
+    if (!config)
+        config.setown(createPTree("DfuExpiry"));
+    Owned<CSashaExpiryServer> sashaExpiryServer = new CSashaExpiryServer(config);
+    sashaExpiryServer->runExpiry();
 }
