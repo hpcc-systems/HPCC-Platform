@@ -35,7 +35,7 @@ ESPenum LogAccessLogFormat : int
     XML(0, "XML"),
     JSON(1, "JSON"),
     CSV(2, "CSV")
-} ;
+};
 
 ESPenum LogSelectColumnMode : int
 {
@@ -218,7 +218,7 @@ ESPRequest GetLogsRequest
     int64 LogLineStartFrom(0);
     [min_ver("1.01")] ESPenum LogSelectColumnMode SelectColumnMode(1);
     ESParray<string> Columns;
-    LogAccessLogFormat Format("JSON");
+    ESPenum LogAccessLogFormat Format("JSON");
     [min_ver("1.03")] ESParray<ESPstruct SortCondition> SortBy;
 };
 

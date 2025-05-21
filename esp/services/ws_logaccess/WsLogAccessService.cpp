@@ -373,7 +373,7 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
     }
     StringBuffer logcontent;
     LogQueryResultDetails LogQueryResultDetails;
-    queryRemoteLogAccessor()->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));
+    queryRemoteLogAccessor()->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormatAsString()));
 
     if (version >= 1.02)
     {
