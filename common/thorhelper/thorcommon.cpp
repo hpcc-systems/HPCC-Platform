@@ -1131,16 +1131,16 @@ protected:
         return nullptr;
     }
 public:
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
         : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
         if (fileio)
-            strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
+            strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1));
         else
-            strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
+            strm.setown(createFileSerialStream(mmfile,_ofs,_len));
         currentRowOffset = _ofs;
         if (translatorContainer)
         {
@@ -1309,8 +1309,8 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics, translatorContainer, _fieldCallback)
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _emptyRowSemantics, translatorContainer, _fieldCallback)
     {
         maxrows = _maxrows;
         rownum = 0;
@@ -1334,9 +1334,9 @@ IExtRowStream *createRowStreamEx(IFileIO *fileIO, IRowInterfaces *rowIf, offset_
 {
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
     if (maxrows == (unsigned __int64)-1)
-        return new CRowStreamReader(fileIO, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+        return new CRowStreamReader(fileIO, NULL, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
     else
-        return new CLimitedRowStreamReader(fileIO, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+        return new CLimitedRowStreamReader(fileIO, NULL, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
 }
 
 bool UseMemoryMappedRead = false;
@@ -1352,9 +1352,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!mmfile)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
     }
     else
     {
@@ -1370,9 +1370,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
     }
 }
 
@@ -1395,9 +1395,7 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
     Linked<IFileIOStream> stream;
     Linked<IOutputRowSerializer> serializer;
     Linked<IEngineRowAllocator> allocator;
-    CRC32 crc;
     EmptyRowSemantics emptyRowSemantics;
-    bool tallycrc;
     unsigned nested;
     MemoryAttr ma;
     MemoryBuffer extbuf;  // may need to spill to disk at some point
@@ -1414,8 +1412,6 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
         {
             if (bufpos) {
                 stream->write(bufpos,buf);
-                if (tallycrc)
-                    crc.tally(bufpos,buf);
                 bufpos = 0;
             }
             size32_t extpos = extbuf.length();
@@ -1425,8 +1421,6 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
                 extpos = (extpos/ROW_WRITER_BUFFERSIZE)*ROW_WRITER_BUFFERSIZE;
             if (extpos) {
                 stream->write(extpos,extbuf.toByteArray());
-                if (tallycrc)
-                    crc.tally(extpos,extbuf.toByteArray());
             }
             if (extpos<extbuf.length()) {
                 bufpos = extbuf.length()-extpos;
@@ -1457,13 +1451,12 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowStreamWriter(IFileIOStream *_stream, IOutputRowSerializer *_serializer, IEngineRowAllocator *_allocator, EmptyRowSemantics _emptyRowSemantics, bool _tallycrc, bool _autoflush)
+    CRowStreamWriter(IFileIOStream *_stream, IOutputRowSerializer *_serializer, IEngineRowAllocator *_allocator, EmptyRowSemantics _emptyRowSemantics, bool _autoflush)
         : stream(_stream), serializer(_serializer), allocator(_allocator), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("createRowWriter %d = %p",++wrnum,this);
 #endif
-        tallycrc = _tallycrc;
         nested = 0;
         buf = (byte *)ma.allocate(ROW_WRITER_BUFFERSIZE);
         bufpos = 0;
@@ -1540,14 +1533,6 @@ public:
     {
         flushBuffer(true);
         streamFlush();
-    }
-
-    virtual void flush(CRC32 *crcout) override
-    {
-        flushBuffer(true);
-        streamFlush();
-        if (crcout)
-            *crcout = crc;
     }
 
     virtual void noteStopped() override
@@ -1679,7 +1664,7 @@ ILogicalRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, u
     if (0 != (flags & (rw_extend|rw_buffered|COMP_MASK)))
         throw MakeStringException(0, "Unsupported createRowWriter flags");
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(flags);
-    Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), emptyRowSemantics, TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
+    Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), emptyRowSemantics, TestRwFlag(flags, rw_autoflush));
     return writer.getClear();
 }
 

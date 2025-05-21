@@ -66,11 +66,10 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, unsigned nparts, IPartDesc
 CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity) 
     : activity(_activity), closedPartFileStats(diskReadPartStatistics)
 {
-    checkFileCrc = activity.checkFileCrc;
     which = 0;
     eoi = false;
     kindStr = activityKindStr(activity.queryContainer().getKind());
-    compressed = blockCompressed = firstInGroup = checkFileCrc = false;
+    compressed = blockCompressed = firstInGroup = false;
 }
 
 void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc)
@@ -80,7 +79,6 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc)
     compressed = partDesc->queryOwner().isCompressed(&blockCompressed);
     if (NULL != activity.eexp.get())
         compressed = true;
-    checkFileCrc = activity.checkFileCrc?partDesc->getCrc(storedCrc):false;
     fileBaseOffset = partDesc->queryProperties().getPropInt64("@offset");
 
     which = partDesc->queryPartIndex();
@@ -123,8 +121,8 @@ void CDiskPartHandlerBase::open()
         throw e;
     }
     filename.set(iFile->queryFilename());
-    ActPrintLog(&activity, "%s[part=%d]: reading physical file '%s' (logical file = %s), checkFileCrc=%s", kindStr, which, filePath.str(), activity.logicalFilename.get(), checkFileCrc?"true":"false");
-    if (checkFileCrc)
+    ActPrintLog(&activity, "%s[part=%d]: reading physical file '%s' (logical file = %s)", kindStr, which, filePath.str(), activity.logicalFilename.get());
+    if (activity.checkFileDates)
     {
         CDateTime createTime, modifiedTime, accessedTime;
         iFile->getTime(&createTime, &modifiedTime, &accessedTime);
@@ -143,23 +141,6 @@ void CDiskPartHandlerBase::open()
     if (compressed)
     {
         ActPrintLog(&activity, "Reading %s compressed file: %s", (NULL != activity.eexp.get())?"encrypted":blockCompressed?"block":"row", filename.get());
-        if (checkFileCrc)
-        {
-            checkFileCrc = false;
-            if (activity.crcCheckCompressed) // applies to encrypted too, (optional, default off)
-            {
-                ActPrintLog(&activity, thorDetailedLogLevel, "Calculating crc for file: %s", filename.get());
-                unsigned calcCrc = iFile->getCRC();
-                // NB: for compressed files should always be ~0
-                ActPrintLog(&activity, thorDetailedLogLevel, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
-                if (calcCrc != storedCrc)
-                {
-                    IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());
-                    e->setAudience(MSGAUD_operator);
-                    throw e;
-                }
-            }
-        }
     }
 }
 
@@ -167,17 +148,8 @@ void CDiskPartHandlerBase::stop()
 {
     if (!iFile)
         return;
-    if (!eoi)
-        checkFileCrc = false; // cannot perform file CRC if diskread has not read whole file.
     CRC32 fileCRC;
     close(fileCRC);
-    if (!activity.abortSoon && checkFileCrc)
-    {
-        ActPrintLog(&activity, "%s[part=%d]: CRC Stored=%x, calculated=%x file(%s)", kindStr, which, storedCrc, fileCRC.get(), filename.get());
-        if (fileCRC.get() != storedCrc)
-            throw MakeThorOperatorException(TE_FileCrc, "CRC Failure having read file: %s", filename.get());
-        checkFileCrc = false;
-    }
     iFile.clear();
 }
 
@@ -207,10 +179,8 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
         baseHelper.set(_helper);
     helper = (IHThorDiskReadBaseArg *)queryHelper();
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
-    crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);
     markStart = gotMeta = false;
-    checkFileCrc = !getExpertOptBool("fileCrcDisabled", false);
-    checkFileCrc = getOptBool(THOROPT_READ_CRC, checkFileCrc);
+    checkFileDates = getOptBool(THOROPT_CHECK_FILE_DATES, checkFileDates);
 }
 
 // IThorSlaveActivity
@@ -376,11 +346,6 @@ void CDiskWriteSlaveActivityBase::open()
             diskRowMinSz += 1;
     }
 
-    if (compress)
-        calcFileCrc = getOptBool(THOROPT_WRITECOMPRESSED_CRC, false);
-    else
-        calcFileCrc = getOptBool(THOROPT_WRITE_CRC, true);
-
     bool external = dlfn.isExternal();
     bool query = dlfn.isQuery();
     if (query && compress)
@@ -406,9 +371,8 @@ void CDiskWriteSlaveActivityBase::open()
     if (compress)
     {
         ActPrintLog("Performing compression on output file: %s", fName.get());
-        // NB: block compressed output has implicit crc of 0, no need to calculate in row  writer.
-        calcFileCrc = false;
     }
+
     Owned<IFileIOStream> stream;
     if (wantRaw())
     {
@@ -421,15 +385,13 @@ void CDiskWriteSlaveActivityBase::open()
         unsigned rwFlags = 0;
         if (grouped)
             rwFlags |= rw_grouped;
-        if (calcFileCrc)
-            rwFlags |= rw_crc;
         out.setown(createRowWriter(stream, ::queryRowInterfaces(input), rwFlags));
     }
 
     //If writing to an external file, each of the slaves appends to th file in turn.
     if (extend || (external && !query))
         stream->seek(0,IFSend);
-    ActPrintLog("Created output stream for %s, calcFileCrc=%s", fName.get(), calcFileCrc?"true":"false");
+    ActPrintLog("Created output stream for %s", fName.get());
 }
 
 void CDiskWriteSlaveActivityBase::removeFiles()
@@ -451,16 +413,7 @@ void CDiskWriteSlaveActivityBase::close()
             if (out)
             {
                 uncompressedBytesWritten = out->getPosition();
-                if (calcFileCrc)
-                {
-                    if (diskHelperBase->getFlags() & TDWextend)
-                    {
-                        assertex(!"TBD need to merge CRC");
-                    }
-                    else
-                        out->flush(&fileCRC);
-                }
-                else if (!abortSoon)
+                if (!abortSoon)
                     out->flush();
                 out.clear();
             }
@@ -509,7 +462,7 @@ CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *cont
 {
     diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
     grouped = false;
-    compress = calcFileCrc = false;
+    compress = false;
     uncompressedBytesWritten = 0;
     replicateDone = 0;
     usageCount = 0;
@@ -523,13 +476,6 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
     dlfn.set(logicalFilename);
     if (diskHelperBase->getFlags() & TDXtemporary)
         data.read(usageCount);
-    if (diskHelperBase->getFlags() & TDWextend)
-    {
-        assertex(!"TBD extended CRC broken");
-        unsigned crc;
-        if (partDesc->getCrc(crc))
-            fileCRC.reset(~crc);
-    }
     partDesc.setown(deserializePartFileDescriptor(data));
 
     // put temp files in temp dir
@@ -595,59 +541,45 @@ void CDiskWriteSlaveActivityBase::process()
         free(ekey);
         compress = true;
     }
-    calcFileCrc = false;
     uncompressedBytesWritten = 0;
     replicateDone = 0;
     StringBuffer tmpStr;
     fName.set(getPartFilename(*partDesc, 0, tmpStr).str());
     if (diskHelperBase->getFlags() & TDXtemporary && !container.queryJob().queryUseCheckpoints())
         tmpUsage = container.queryTempHandler()->registerFile(fName, container.queryOwner().queryGraphId(), usageCount, true);
+
+    ActPrintLog("handling fname : %s", fName.get());
+
     try
     {
-        ActPrintLog("handling fname : %s", fName.get());
-
-        try
-        {
-            open();
-            assertex(out||outraw);
-            write();
-        }
-        catch (IException *)
-        {
-            abortSoon = true;
-            try { close(); }
-            catch (IException *e)
-            {
-                IWARNLOG(e, "close()"); // NB: primary exception will be rethrown
-                e->Release();
-            }
-            throw;
-        }
-        catch (CATCHALL)
-        {
-            abortSoon = true;
-            try { close(); }
-            catch (IException *e)
-            {
-                IWARNLOG(e, "close()");
-                e->Release();
-            }
-            throw;
-        }
-        close();
+        open();
+        assertex(out||outraw);
+        write();
     }
     catch (IException *)
     {
-        calcFileCrc = false;
+        abortSoon = true;
+        try { close(); }
+        catch (IException *e)
+        {
+            IWARNLOG(e, "close()"); // NB: primary exception will be rethrown
+            e->Release();
+        }
         throw;
     }
-    catch(CATCHALL)
+    catch (CATCHALL)
     {
-        calcFileCrc = false;
+        abortSoon = true;
+        try { close(); }
+        catch (IException *e)
+        {
+            IWARNLOG(e, "close()");
+            e->Release();
+        }
         throw;
     }
-    unsigned crc = compress?~0:fileCRC.get();
-    ActPrintLog("Wrote %" RCPF "d records%s", processed & THORDATALINK_COUNT_MASK, calcFileCrc?StringBuffer(", crc=0x").appendf("%X", crc).str() : "");
+    close();
+    ActPrintLog("Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
 }
 
 void CDiskWriteSlaveActivityBase::endProcess()
@@ -667,9 +599,6 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     Owned<IFile> ifile = createIFile(fName);
     offset_t sz = ifile->size();
     mb.append(_processed).append(compress?uncompressedBytesWritten:sz).append(sz);
-    // NB: block compressed output has implicit crc of 0.
-    unsigned crc = compress?~0:fileCRC.get();
-    mb.append(crc);
 
     CDateTime createTime, modifiedTime, accessedTime;
     ifile->getTime(&createTime, &modifiedTime, &accessedTime);
