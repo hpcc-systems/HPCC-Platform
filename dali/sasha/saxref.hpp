@@ -6,7 +6,7 @@ interface ISashaCommand;
 extern ISashaServer *createSashaXrefServer();
 extern void processXRefRequest(ISashaCommand *cmd);
 extern ISashaServer *createSashaFileExpiryServer();
-extern void testExpiry();
+extern void runExpiryCLI();
 
 
 #endif

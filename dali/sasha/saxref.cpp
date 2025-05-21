@@ -2444,7 +2444,7 @@ ISashaServer *createSashaFileExpiryServer()
     return sashaExpiryServer;
 }
 
-void testExpiry()
+void runExpiryCLI()
 {
     Owned<IPropertyTree> config = serverConfig->getPropTree("DfuExpiry");
     if (!config)
