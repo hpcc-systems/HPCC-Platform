@@ -19,7 +19,6 @@ import { replaceUrl } from "../util/history";
 const logger = scopedLogger("src-react/components/LogicalFileSummary.tsx");
 
 import "react-reflex/styles.css";
-
 const dfuService = new DFUService({ baseUrl: "" });
 
 interface LogicalFileSummaryProps {
@@ -44,6 +43,11 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [showReplicateFile, setShowReplicateFile] = React.useState(false);
+    
+    const protectedUserCount = React.useMemo(() => {
+        const protects = file?.ProtectList?.DFUFileProtect;
+        return new Set(protects?.map(r => r.Owner)).size;
+    }, [file?.ProtectList?.DFUFileProtect]);
 
     const [showMessageBar, setShowMessageBar] = React.useState(false);
     const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
@@ -184,6 +188,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
                 "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
                 "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
+                "countProtectedUsers": { label: nlsHPCC.ProtectedByMultipleUsers, type: "string", value: protectedUserCount.toString(), readonly: true }, 
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
@@ -214,6 +219,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                         setProtected(value);
                         file?.update({
                             Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                        }).then(() => {
+                            refresh();
                         }).catch(err => logger.error(err));
                         break;
                     case "isRestricted":
