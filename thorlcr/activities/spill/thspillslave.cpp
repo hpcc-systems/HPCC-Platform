@@ -132,8 +132,6 @@ public:
         Owned<IFile> ifile = createIFile(fileName.str());
         offset_t sz = ifile->size();
         mb.append(getDataLinkCount()).append(compress?uncompressedBytesWritten:sz).append(sz);
-        unsigned crc = ~0;
-        mb.append(crc);
         CDateTime createTime, modifiedTime, accessedTime;
         ifile->getTime(&createTime, &modifiedTime, &accessedTime);
         // round file time down to nearest sec. Nanosec accuracy is not preserved elsewhere and can lead to mismatch later.

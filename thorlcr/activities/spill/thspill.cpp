@@ -114,9 +114,6 @@ public:
             mb.read(size);
             mb.read(physicalSize);
 
-            unsigned fileCrc;
-            mb.read(fileCrc);
-
             CDateTime modifiedTime(mb);
             StringBuffer timeStr;
             modifiedTime.getString(timeStr);
@@ -127,7 +124,6 @@ public:
             props.setPropInt64("@recordCount", slaveProcessed);
             if (fileDesc->isCompressed())
                 props.setPropInt64("@compressedSize", physicalSize);
-            props.setPropInt("@fileCrc", fileCrc);
             props.setProp("@modified", timeStr.str());
         }
     }

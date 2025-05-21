@@ -599,9 +599,6 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     Owned<IFile> ifile = createIFile(fName);
     offset_t sz = ifile->size();
     mb.append(_processed).append(compress?uncompressedBytesWritten:sz).append(sz);
-    // NB: block compressed output has implicit crc of 0.
-    unsigned crc = ~0;
-    mb.append(crc);
 
     CDateTime createTime, modifiedTime, accessedTime;
     ifile->getTime(&createTime, &modifiedTime, &accessedTime);
