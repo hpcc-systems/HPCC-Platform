@@ -64,7 +64,7 @@
 
 #define EMPTY_LOOP_LIMIT 1000
 
-static unsigned const hthorReadBufferSize = 0x10000;
+static unsigned const hthorReadBufferSize = 0x100000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 
 using roxiemem::IRowManager;

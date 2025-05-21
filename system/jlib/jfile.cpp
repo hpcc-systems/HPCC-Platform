@@ -1322,12 +1322,12 @@ unsigned CFile::getCRC()
         return 0;   // dummy value
     unsigned crc=~0;
     MemoryAttr ma;
-    void *buf = ma.allocate(0x10000);
+    void *buf = ma.allocate(DEFAULT_STREAM_BUFFER_SIZE);
     Owned<IFileIO> fileio = open(IFOread);
     if (fileio) {
         offset_t pos=0;
         for (;;) {
-            size32_t rd = fileio->read(pos,0x10000,buf);
+            size32_t rd = fileio->read(pos,DEFAULT_STREAM_BUFFER_SIZE,buf);
             if (!rd)
                 break;
             crc=crc32((const char *)buf,rd,crc);
@@ -1760,7 +1760,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         {
             if (!file)
                 return 0;
-            const size32_t buffsize = 0x10000;
+            const size32_t buffsize = DEFAULT_STREAM_BUFFER_SIZE;
             void * buffer = mb.reserve(buffsize);
             Owned<IFileIO> fileio = file->open(IFOread);
             offset_t ret=0;
@@ -1912,7 +1912,7 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
         return 0;
     CriticalBlock procedure(cs);
     MemoryAttr mb;
-    const size32_t buffsize = 0x10000;
+    const size32_t buffsize = DEFAULT_STREAM_BUFFER_SIZE;
     void * buffer = mb.allocate(buffsize);
     Owned<IFileIO> fileio = file->open(IFOread);
     offset_t ret=0;

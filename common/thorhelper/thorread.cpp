@@ -211,7 +211,7 @@ THORHELPER_API IDiskReadMapping * createUnprojectedMapping(IDiskReadMapping * ma
 
 //---------------------------------------------------------------------------------------------------------------------
 
-constexpr size32_t defaultReadBufferSize = 0x10000;
+constexpr size32_t defaultReadBufferSize = 0x100000;
 
 /*
  * The base class for reading rows from an external file.  Each activity will have an instance of a disk reader for
