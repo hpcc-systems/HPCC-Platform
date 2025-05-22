@@ -18650,15 +18650,18 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
         return;
     }
 
-    IHqlExpression * pattern = expr->queryChild(0);
-    IHqlExpression * search = expr->queryChild(1);
-    ITypeInfo * searchStringType = search->queryType();
-    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, pattern, searchStringType, !expr->hasAttribute(noCaseAtom));
+    IHqlExpression * patternExpr = expr->queryChild(0);
+    ITypeInfo * patternStringType = patternExpr->queryType();
+    OwnedITypeInfo argType = getStretchedType(UNKNOWN_LENGTH, patternStringType); // our arguments' datatypes need to match
+    OwnedHqlExpr searchExpr = ensureExprType(expr->queryChild(1), argType);
+    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, patternExpr, patternStringType, !expr->hasAttribute(noCaseAtom));
 
     // Because the search instance is created locally, the search parameter is always going to be valid
     // as long as the find instance.  Only exception could be if call created a temporary class instance.
     if (expr->getOperator() == no_regex_replace)
     {
+        OwnedHqlExpr replaceExpr = ensureExprType(expr->queryChild(2), argType);
+
         // If the target is a preallocated fixed-length buffer and the
         // datatype matches the result expression datatype, we can call an optimized replace function
         if (target && target->isFixedSize() && target->queryType()->getTypeCode() == expr->queryType()->getTypeCode())
@@ -18668,23 +18671,23 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
             IHqlExpression * targetVar = target->expr;
             unsigned targetSize = target->queryType()->getStringLen();
 
-            CHqlBoundExpr searchExpr, replaceExpr;
-            buildCachedExpr(ctx, search, searchExpr);
-            buildCachedExpr(ctx, expr->queryChild(2), replaceExpr);
+            CHqlBoundExpr cachedSearchExpr, cachedReplaceExpr;
+            buildCachedExpr(ctx, searchExpr, cachedSearchExpr);
+            buildCachedExpr(ctx, replaceExpr, cachedReplaceExpr);
 
             HqlExprArray args;
             args.append(*LINK(compiled)); // instance on which method is called
             args.append(*getSizetConstant(targetSize)); // size of the output buffer in code units
             args.append(*getElementPointer(targetVar)); // pointer to the output buffer
-            args.append(*getBoundLength(searchExpr)); // length of regex expression, in characters
-            args.append(*LINK(searchExpr.expr)); // pointer to regex expression
-            args.append(*getBoundLength(replaceExpr)); // length of replacement expression, in characters
-            args.append(*LINK(replaceExpr.expr)); // pointer to replacement expression
+            args.append(*getBoundLength(cachedSearchExpr)); // length of regex expression, in characters
+            args.append(*LINK(cachedSearchExpr.expr)); // pointer to regex expression
+            args.append(*getBoundLength(cachedReplaceExpr)); // length of replacement expression, in characters
+            args.append(*LINK(cachedReplaceExpr.expr)); // pointer to replacement expression
 
             IIdAtom * func = nullptr;
-            if (isUTF8Type(searchStringType))
+            if (isUTF8Type(patternStringType))
                 func = regexNewU8StrReplaceFixedId;
-            else if (isUnicodeType(searchStringType))
+            else if (isUnicodeType(patternStringType))
                 func = regexNewUStrReplaceFixedId;
             else
                 func = regexNewStrReplaceFixedId;
@@ -18694,12 +18697,12 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
         {
             HqlExprArray args;
             args.append(*LINK(compiled));
-            args.append(*LINK(search));
-            args.append(*LINK(expr->queryChild(2)));
+            args.append(*LINK(searchExpr));
+            args.append(*LINK(replaceExpr));
             IIdAtom * func = nullptr;
-            if (isUTF8Type(searchStringType))
+            if (isUTF8Type(patternStringType))
                 func = regexNewU8StrReplaceXId;
-            else if (isUnicodeType(searchStringType))
+            else if (isUnicodeType(patternStringType))
                 func = regexNewUStrReplaceXId;
             else
                 func = regexNewStrReplaceXId;
@@ -18711,15 +18714,15 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
     else
     {
         bool cloneSearch = false;
-        IHqlExpression * findInstance = doBuildRegexFindInstance(ctx, compiled, search, cloneSearch);
+        IHqlExpression * findInstance = doBuildRegexFindInstance(ctx, compiled, searchExpr, cloneSearch);
         if(expr->queryType() == queryBoolType())
         {
             HqlExprArray args;
             args.append(*LINK(findInstance));
             IIdAtom * func = nullptr;
-            if (isUTF8Type(searchStringType))
+            if (isUTF8Type(patternStringType))
                 func = regexNewU8StrFoundId;
-            else if (isUnicodeType(searchStringType))
+            else if (isUnicodeType(patternStringType))
                 func = regexNewUStrFoundId;
             else
                 func = regexNewStrFoundId;
@@ -18742,9 +18745,9 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
                 args.append(*LINK(expr->queryChild(2))); // capture group to find and return
 
                 IIdAtom * func = nullptr;
-                if (isUTF8Type(searchStringType))
+                if (isUTF8Type(patternStringType))
                     func = regexNewU8StrFoundXFixedId;
-                else if (isUnicodeType(searchStringType))
+                else if (isUnicodeType(patternStringType))
                     func = regexNewUStrFoundXFixedId;
                 else
                     func = regexNewStrFoundXFixedId;
@@ -18756,9 +18759,9 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
                 args.append(*LINK(findInstance));
                 args.append(*LINK(expr->queryChild(2)));
                 IIdAtom * func = nullptr;
-                if (isUTF8Type(searchStringType))
+                if (isUTF8Type(patternStringType))
                     func = regexNewU8StrFoundXId;
-                else if (isUnicodeType(searchStringType))
+                else if (isUnicodeType(patternStringType))
                     func = regexNewUStrFoundXId;
                 else
                     func = regexNewStrFoundXId;
@@ -18789,18 +18792,19 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
         return;
     }
 
-    IHqlExpression * pattern = expr->queryChild(0);
-    IHqlExpression * search = expr->queryChild(1);
-    ITypeInfo * searchStringType = search->queryType();
-    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, pattern, searchStringType, !expr->hasAttribute(noCaseAtom));
+    IHqlExpression * patternExpr = expr->queryChild(0);
+    ITypeInfo * patternStringType = patternExpr->queryType();
+    OwnedITypeInfo argType = getStretchedType(UNKNOWN_LENGTH, patternStringType); // our arguments' datatypes need to match
+    OwnedHqlExpr searchExpr = ensureExprType(expr->queryChild(1), argType);
+    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, patternExpr, patternStringType, !expr->hasAttribute(noCaseAtom));
 
     HqlExprArray args;
     args.append(*LINK(compiled));
-    args.append(*LINK(search));
+    args.append(*LINK(searchExpr));
     IIdAtom * func = nullptr;
-    if (isUTF8Type(searchStringType))
+    if (isUTF8Type(patternStringType))
         func = regexU8StrMatchSetId;
-    else if (isUnicodeType(searchStringType))
+    else if (isUnicodeType(patternStringType))
         func = regexUStrMatchSetId;
     else
         func = regexMatchSetId;
