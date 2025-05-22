@@ -133,7 +133,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             let parentValue;
             const fileName = helper.Name?.split("/").pop();
             if (helper.Path) {
-                const pathDirs = helper.Path.split("/");
+                const helperPath = helper.Path.startsWith("/") ? helper.Path.slice(1) : helper.Path;
+                const pathDirs = helperPath.split("/");
                 let parentFolder;
                 let folderName;
                 for (let i = 0; i < pathDirs.length; i++) {
@@ -153,7 +154,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                     }
                 }
                 flatTreeItems.push({
-                    value: helper.Path + "/" + fileName,
+                    value: helperPath + "/" + fileName,
                     content: fileName,
                     fileSize: helper.FileSize,
                     parentValue: parentFolder,
