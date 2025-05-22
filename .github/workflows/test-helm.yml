@@ -51,8 +51,10 @@ jobs:
           mkdir ${{ runner.temp }}/new
           mkdir ${{ runner.temp }}/old
 
+          helm version
           #Generate the output for the default values file, and each of the specialised test files.
           #Check to see if anything has changed between old and new, and report the differences
+          echo Generating helm template output for PR changes
           helm template helm/hpcc > ${{ runner.temp }}/new/output.txt
           for file in testing/helm/tests/*.yaml
           do
@@ -64,6 +66,7 @@ jobs:
           echo git checkout ${{ github.base_ref }}
           git checkout ${{ github.base_ref }}
 
+          echo Generating helm template for base branch
           helm template helm/hpcc > ${{ runner.temp }}/old/output.txt
           for file in testing/helm/tests/*.yaml
           do

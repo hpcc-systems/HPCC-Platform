@@ -200,7 +200,7 @@ kind: ConfigMap
 {{ include "hpcc.generateConfig" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories "configMapHelper" "hpcc.sashaConfigMap") }}
 ---
 {{- if (hasKey $sasha "service") -}}
-{{- if $sasha.service.servicePort -}}
+{{- if (int $sasha.service.servicePort) -}}
 {{ include "hpcc.addService" ( dict "root" $ "name" (printf "sasha-%s" $sasha.name) "service" $sasha.service "selector" $dali.name "defaultPort" 8877 ) }}
 ---
 {{- end }}
