@@ -442,6 +442,7 @@ export = {
         InfoDialog: "Info Dialog",
         InheritedPermissions: "Inherited permission:",
         Inputs: "Inputs",
+        InstanceNumber: "Instance Number",
         InUse: "In Use",
         InvalidResponse: "(Invalid response)",
         InvalidUsernamePassword: "Invalid username or password, try again.",
