@@ -5043,6 +5043,65 @@ void HqlCppTranslator::noteResultAccessed(BuildCtx & ctx, IHqlExpression * seq, 
     }
 }
 
+//---------------------------------------------------------------------------
+
+void HqlCppTranslator::buildFormatOption(BuildCtx & ctx, IHqlExpression * name, IHqlExpression * value)
+{
+    if (value->isAttribute())
+    {
+    }
+    else if (value->isList())
+    {
+        node_operator op = value->getOperator();
+        if ((op == no_list) && value->numChildren())
+        {
+            ForEachChild(i, value)
+                buildFormatOption(ctx, name, value->queryChild(i));
+        }
+        else if ((op == no_list) || (op == no_null))
+        {
+            //MORE: There should be a better way of doing this!
+            buildXmlSerializeBeginNested(ctx, name, false);
+            buildXmlSerializeEndNested(ctx, name);
+        }
+    }
+    else
+    {
+        buildXmlSerializeScalar(ctx, value, name);
+    }
+}
+
+void HqlCppTranslator::buildFormatOptions(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * pluggableFileTypeAtom = expr->queryAttribute(fileTypeAtom); // null if pluggable file type not used
+    
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+
+        // Skip if expression is a pluggable file type (we don't want it appearing as an option)
+        // or if it is not an attribute
+        if (cur != pluggableFileTypeAtom && cur->isAttribute())
+        {
+            OwnedHqlExpr name = createConstant(str(cur->queryName()));
+            if (cur->numChildren())
+            {
+                ForEachChild(c, cur)
+                    buildFormatOption(ctx, name, cur->queryChild(c));
+            }
+            else
+                buildXmlSerializeScalar(ctx, queryBoolExpr(true), name);
+        }
+    }
+}
+
+void HqlCppTranslator::buildFormatOptionsFunction(BuildCtx & ctx, IHqlExpression * expr)
+{
+    MemberFunction formatFunc(*this, ctx, "virtual void getFormatOptions(IXmlWriter & out) override", MFopt);
+
+    buildFormatOptions(formatFunc.ctx, expr);
+}
+
 void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * boundTarget, const CHqlBoundTarget * targetAssign)
 {
     IHqlExpression * seq = queryAttributeChild(expr, sequenceAtom, 0);
@@ -10983,6 +11042,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     IHqlExpression * dataset  = expr->queryChild(0);
     IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
+    bool useGenericReadWrites = options.genericDiskReadWrites;
+
     if (dataset->isDictionary())
     {
         //OUTPUT(dictionary,,'filename') should never be generated - it should go via a dataset
@@ -10993,35 +11054,55 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         return doBuildActivityOutputWorkunit(ctx, expr, isRoot);
 
     OwnedHqlExpr filename = foldHqlExpression(rawFilename);
-    IHqlExpression * program  = queryRealChild(expr, 2);
-    IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
-    bool isJson = false;
-    IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
-    if (!xmlAttr)
+
+    IHqlExpression * fileTypeOptionsExpr  = queryRealChild(expr, 2); // PIPE() or TYPE() on output
+    StringBuffer genericFileTypeFormat;
+    IHqlExpression * pipe = NULL;
+    if (fileTypeOptionsExpr)
     {
-        xmlAttr = expr->queryAttribute(jsonAtom);
-        if (xmlAttr)
-            isJson=true;
+        if (fileTypeOptionsExpr->getOperator() == no_filetype)
+        {
+            // Force use of generic I/O if we're using file type plugins;
+            // assign the format based on the file type.
+            useGenericReadWrites = true;
+            IHqlExpression * fileType = queryAttributeChild(fileTypeOptionsExpr, fileTypeAtom, 0);
+            getStringValue(genericFileTypeFormat, fileType);
+            genericFileTypeFormat.toLowerCase();
+        }
+        else if (fileTypeOptionsExpr->getOperator() == no_pipe)
+        {
+            pipe = fileTypeOptionsExpr->queryChild(0);
+            useGenericReadWrites = false;
+        }
     }
+    else if (filename->getOperator() == no_pipe)
+    {
+        pipe = filename->queryChild(0);
+        useGenericReadWrites = false;
+    }
+
     LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
     IHqlExpression * seq = querySequence(expr);
-
-    IHqlExpression *pipe = NULL;
-    if (program)
-    {
-        if (program->getOperator()==no_pipe)
-            pipe = program->queryChild(0);
-    }
-    else if (filename->getOperator()==no_pipe)
-        pipe = filename->queryChild(0);
-
-    if (pipe && expr->hasAttribute(_disallowed_Atom))
-        throwError(HQLERR_PipeNotAllowed);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
     const char * activityArgName = "DiskWrite";
     SummaryType summaryType = SummaryType::WriteFile;
+
+    IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
+    bool isJson = false;
+    IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
+
+    if (!xmlAttr)
+    {
+        xmlAttr = expr->queryAttribute(jsonAtom);
+        if (xmlAttr)
+            isJson = true;
+    }
+
+    if (pipe && expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
+
     if (expr->getOperator() == no_spill)
     {
         kind = TAKspill;
@@ -11041,14 +11122,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     }
     else if (xmlAttr)
     {
-        kind = (isJson) ? TAKjsonwrite : TAKxmlwrite;
         activityArgName = "XmlWrite";
+        if (isJson)
+            kind = TAKjsonwrite;
+        else
+            kind = TAKxmlwrite;
     }
     else if (expr->hasAttribute(_spill_Atom))
     {
         kind = TAKspillwrite;
         summaryType = SummaryType::SpillFile;
     }
+
     if (expr->hasAttribute(jobTempAtom))
         summaryType = SummaryType::JobTemp;
     else if (expr->hasAttribute(_workflowPersist_Atom))
@@ -11085,6 +11170,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     buildActivityFramework(instance, isRoot && !isInternalSeq(seq));
 
     buildInstancePrefix(instance);
+
+    if (!genericFileTypeFormat.isEmpty())
+        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", genericFileTypeFormat.str());
 
     noteResultDefined(ctx, instance, seq, filename, isRoot);
 
@@ -11186,12 +11274,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (hasDynamicFilename(expr)) flags.append("|TDXdynamicfilename");
             if (expr->hasAttribute(jobTempAtom)) flags.append("|TDXjobtemp");
             if (updateAttr) flags.append("|TDWupdatecrc");
+            if (useGenericReadWrites) flags.append("|TDXgeneric");
             if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TDWupdate");
             if (expires) flags.append("|TDWexpires");
             if (expr->hasAttribute(restrictedAtom)) flags.append("|TDWrestricted");
 
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+
+            if (fileTypeOptionsExpr)
+                buildFormatOptionsFunction(instance->createctx, fileTypeOptionsExpr);
 
             //virtual const char * queryRecordECL() = 0;
             //Ensure the ECL for the record reflects its serialized form, not the internal form
@@ -11240,11 +11332,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         }
         buildClusterHelper(instance->startctx, expr);
 
-        //Both csv write and pipe with csv/xml format
-        if (csvAttr)
-            buildCsvWriteMembers(instance, outputDs, csvAttr);
-        if (xmlAttr)
-            buildXmlWriteMembers(instance, outputDs, xmlAttr);
+        if (!useGenericReadWrites)
+        {
+            //Both csv write and pipe with csv/xml format
+            if (csvAttr)
+                buildCsvWriteMembers(instance, outputDs, csvAttr);
+            if (xmlAttr)
+                buildXmlWriteMembers(instance, outputDs, xmlAttr);
+        }
 
         buildEncryptHelper(instance->startctx, expr->queryAttribute(encryptAtom));
     }
