@@ -3804,3 +3804,104 @@ void logNullUser(IUserDescriptor * userDesc)
     }
 }
 #endif
+
+// FileReadPropertiesUpdater:
+// - aggregates the readCost and the numDiskReads for each logical file (using addCostAndNumReads method).
+// - upon publishing (calling publish method), it:
+//   - it traverses up the owning superfiles, computing the cumulative readCost and numDiskReads for the subfile owners.
+//   - it subsequently updates file properties for both the files and their owning superfiles with the newly derived statistics.
+// It is designed to optimize the update process for readCost and read count by:
+// * reducing the frequency of getOwningSuperFiles calls, as these operations are resource-intensive.
+// * performing a single-pass update of file properties (e.g. at the end of a graph execution).
+class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesUpdater>
+{
+    struct FileStatItem
+    {
+        Owned<IDistributedFile> file;
+        stat_type numDiskReads = 0;
+        cost_type readCost = 0;
+    };
+    using FileStatMap = std::unordered_map<std::string, FileStatItem>;
+    FileStatMap stats;
+    Linked<IUserDescriptor> udesc;
+
+    // Add the readCost and numDiskReads to owners stats
+    FileStatItem & appendOwnersCostAndNumReads(FileStatMap & ownerStats, IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost)
+    {
+        FileStatItem & curStatItem = ownerStats[file->queryLogicalName()];
+        if (!curStatItem.file)
+            curStatItem.file.set(file);
+        curStatItem.numDiskReads += numDiskReads;
+        curStatItem.readCost += curReadCost;
+        return curStatItem;
+    }
+    // Update the readCost and numDiskReads for owning superfiles
+    // - this will recurse up the superfiles tree updating the owning superfiles
+    // n.b. fileStatItem.file must be set to a valid IDistributedFile
+    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem)
+    {
+        // getOwningSuperFiles iterator is slow, so only call it once (say at the end of graph)
+        Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles();
+        ForEach(*iter)
+        {
+            IDistributedSuperFile & cur = iter->query();
+            const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, fileStatItem.numDiskReads, fileStatItem.readCost);
+            updateOwnersStats(ownerStats, owningFileStatItem);
+        }
+    }
+
+public:
+    FileReadPropertiesUpdater(IUserDescriptor * udesc) : udesc(udesc) {}
+
+    // Track and accumulate the readCost and numDiskReads to stats tracking map (to be written to properties later)
+    // - if curReadCost is 0, it will be calculated using calcFileAccessCost
+    virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) override
+    {
+        if (!numDiskReads)
+            return 0;
+
+        if (!curReadCost)
+            curReadCost = calcFileAccessCost(file, 0, numDiskReads);
+        // Add the readCost and numDiskReads to stats tracking map
+        FileStatItem & curStatItem = stats[file->queryLogicalName()];
+        curStatItem.numDiskReads += numDiskReads;
+        curStatItem.readCost += curReadCost;
+        return curReadCost;
+    }
+
+    // Publish the readCost and numDiskReads to the file properties and for owning superfiles
+    // N.b. It is ok for fileStatItem.file to be null when calling this function
+    virtual void publish() override
+    {
+        FileStatMap ownerStats;
+        // Iterate through files, updating the ownerStats
+        // (Also, set FileStatItem::file to a valid IDistributedFile, if possible)
+        for (auto & [logicalName, curStatItem] : stats)
+        {
+            curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+            if (!curStatItem.file) // File may have been deleted
+            {
+                OERRLOG("FileReadPropertiesUpdater: File not found: %s", logicalName.c_str());
+                continue;
+            }
+            updateOwnersStats(ownerStats, curStatItem);
+        }
+        // Update the file properties with the new stats
+        for (auto & [logicalName, curStatItem] : stats)
+        {
+            if (curStatItem.file)
+                updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
+        }
+        // Update the owner file propertiers owners stats
+        for (auto & [logicalName, curStatItem] : ownerStats)
+        {
+            updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
+        }
+        stats.clear(); // ensure all IDistributedFiles are released
+    }
+};
+
+IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc)
+{
+    return new FileReadPropertiesUpdater(udesc);
+}

@@ -63,7 +63,7 @@ if type kubeval >/dev/null 2> /dev/null; then
    helm template $hpccchart ${options} | kubeval --strict - >results.txt 2>errors.txt
    if [ $? -ne 0 ]
    then
-      echo $file failed
+      echo kubeval --strict failed
       cat errors.txt
       cat results.txt
       failed=1

@@ -1295,6 +1295,8 @@ void EclGraph::execute(const byte * parentExtract)
             wu->setGraphState(queryGraphName(), wfid, WUGraphFailed);
         throw;
     }
+    if (fileReadPropsUpdater.query())
+        fileReadPropsUpdater.query()->publish();
 }
 
 void EclGraph::executeLibrary(const byte * parentExtract, IHThorGraphResults * results)
@@ -1359,6 +1361,11 @@ void EclGraph::updateLibraryProgress()
         Owned<IStatisticCollection> statsCollection = stats.getResult();
         agent->mergeAggregatorStats(*statsCollection, wfid, queryGraphName(), cur.id);
     }
+}
+
+IFileReadPropertiesUpdater * EclGraph::queryFileReadPropsUpdater()
+{
+    return fileReadPropsUpdater.query([this] { return createFileReadPropertiesUpdater(this->agent->queryCodeContext()->queryUserDescriptor()); }, fileReadPropsUpdaterCrit);
 }
 
 //---------------------------------------------------------------------------

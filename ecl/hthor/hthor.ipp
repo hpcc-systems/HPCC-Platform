@@ -2430,7 +2430,7 @@ public:
 protected:
     void checkOpenNext();
     virtual bool openNext();
-    virtual unsigned queryReadBufferSize() { return 0; } //buffering done manually
+    virtual unsigned queryReadBufferSize() { return (unsigned)-1; } //default buffering
     virtual void gatherInfo(IFileDescriptor * fileDesc);
     virtual void calcFixedDiskRecordSize();
 
@@ -2466,7 +2466,7 @@ public:
 protected:
     virtual bool openNext();
     virtual void closepart();
-    virtual unsigned queryReadBufferSize() { return 0; } //buffering done by CXMLReaderBase<CXMLStream> class
+    virtual unsigned queryReadBufferSize() { return (unsigned)-1; } //default buffering
     virtual void gatherInfo(IFileDescriptor * fileDesc);
     virtual void calcFixedDiskRecordSize();
 

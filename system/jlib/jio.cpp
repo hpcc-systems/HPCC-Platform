@@ -33,11 +33,6 @@
 #include <io.h>
 #endif
 
-#define DEFAULTBUFFERSIZE 0x10000  // 64K
-#define RANDOM_BUFFER_SIZE                  DEFAULTBUFFERSIZE
-#define MAX_RANDOM_CACHE_SIZE               0x10000
-#define RANDOM_CACHE_DEPTH                  10
-
 #define MINCOMPRESSEDROWSIZE 16
 #define MAXCOMPRESSEDROWSIZE 0x4000
 
