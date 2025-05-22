@@ -63,7 +63,7 @@
 
 #define EMPTY_LOOP_LIMIT 1000
 
-static unsigned const hthorReadBufferSize = 0x10000;
+static unsigned const hthorReadBufferSize = 0x100000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 
 using roxiemem::IRowManager;
@@ -8548,14 +8548,18 @@ void CHThorDiskReadBaseActivity::closepart()
             {
                 if (superfile)
                 {
-                    unsigned subfile, lnum;
-                    if (superfile->mapSubPart(previousPartNum, subfile, lnum))
+                    unsigned subfileNum, lnum;
+                    if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
                     {
-                        IDistributedSuperFile *super = dFile->querySuperFile();
-                        dFile = &(super->querySubFile(subfile, true));
+                        IDistributedSuperFile * super = dFile->querySuperFile();
+                        IDistributedFile & subfile = super->querySubFile(subfileNum, true);
+                        graph.queryFileReadPropsUpdater()->addCostAndNumReads(&subfile, curDiskReads, 0);
                     }
                 }
-                updateCostAndNumReads(dFile, curDiskReads);
+                else
+                {
+                    graph.queryFileReadPropsUpdater()->addCostAndNumReads(dFile, curDiskReads, 0);
+                }
             }
             numDiskReads += curDiskReads;
         }

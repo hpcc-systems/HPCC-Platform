@@ -17,9 +17,7 @@
 
 #pragma once
 
-#include "evtool.hpp"
+// MORE: If jevent.hpp replaces readEvents with a function that returns a reader instance, from
+// which events are pulled instead of visisted, then this file will declare the IEventVisisot
+// interface and the adapter to convert pulled events into visisted events.
 #include "jevent.hpp"
-#include "jstream.hpp"
-
-extern IEvToolCommand* createIndexSummaryCommand();
-extern IEvToolCommand* createIndexHotspotCommand();

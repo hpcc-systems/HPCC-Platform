@@ -135,20 +135,21 @@ public:
     LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : parentNode(_parentNode), cid(_cid), pid(_pid), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }
     ~LinkToParentLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(LogMsg const & msg);
-    bool                      needsPrep() const { return false; }
-    void                      prep() {}
-    void                      addToPTree(IPropertyTree * tree) const;
-    unsigned                  queryMessageFields() const { return MSGFIELD_all; }
-    void                      setMessageFields(unsigned _fields = MSGFIELD_all) {}
+    virtual void              handleMessage(LogMsg const & msg) override;
+    virtual bool              needsPrep() const override { return false; }
+    virtual void              prep() override {}
+    virtual void              addToPTree(IPropertyTree * tree) const override;
+    virtual unsigned          queryMessageFields() const override { return MSGFIELD_all; }
+    virtual void              setMessageFields(unsigned _fields = MSGFIELD_all) override {}
     ILogMsgFilter *           receiveFilter() const;
     void                      startReceiver() { receiverThread->start(false); }
     void                      connect();
     void                      disconnect();
     bool                      queryConnected() const { return connected; }
     void                      markDisconnected() { connected = false; }
-    bool                      getLogName(StringBuffer &name) const { return false; }
-    offset_t                  getLogPosition(StringBuffer &name) const { return 0; }
+    virtual bool              getLogName(StringBuffer &name) const override { return false; }
+    virtual offset_t          getLogPosition(StringBuffer &name) const override { return 0; }
+    virtual LogHandlerFormat  queryFormatType() const override { return LOGFORMAT_undefined; };
 private:
     Linked<INode>             parentNode;
     MPLogId                   cid;

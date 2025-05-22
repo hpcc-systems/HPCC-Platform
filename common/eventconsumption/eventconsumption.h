@@ -17,9 +17,12 @@
 
 #pragma once
 
-#include "evtool.hpp"
+#include "platform.h"
+#include "jiface.hpp"
 #include "jevent.hpp"
-#include "jstream.hpp"
 
-extern IEvToolCommand* createIndexSummaryCommand();
-extern IEvToolCommand* createIndexHotspotCommand();
+#ifdef EVENTCONSUMPTION_EXPORTS
+ #define event_decl DECL_EXPORT
+#else
+ #define event_decl DECL_IMPORT
+#endif

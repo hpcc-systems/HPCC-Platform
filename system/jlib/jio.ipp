@@ -24,10 +24,12 @@
 
 #include "jio.hpp"
 
+#ifdef __64BIT__
+#define DEFAULT_BUFFER_SIZE     0x100000  // Always buffer 1MB on 64bit systems
+#else
+// Restrict buffer sizes on 32-bit systems
 #define DEFAULT_BUFFER_SIZE     0x10000
-
-
-
+#endif
 
 class CBufferedIOStreamBase: public CInterface
 {

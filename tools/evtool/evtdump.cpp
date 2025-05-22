@@ -16,84 +16,13 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "eventdump.h"
 #include "jevent.hpp"
 #include "jfile.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <map>
 #include <set>
-
-// Future enhancements may include:
-// - support for multiple input files
-// - support for event filtering
-
-// Supported dump output formats.
-enum class OutputFormat : byte
-{
-    text,
-    json,
-    xml,
-    yaml,
-    csv,
-    tree,
-};
-
-// Open and parse a binary event file, generating any one of several supported output formats. As
-// an extension of CEventConsumingOp, the public interface adds:
-// - `void setFormat(OutputFormat)`: set the output format
-// - `bool filterEventType(const char* eventNames)`: add an event type filter to the operation
-class CDumpEventsOp : public CEventConsumingOp
-{
-public:
-    // Cache the requested output format.
-    void setFormat(OutputFormat format)
-    {
-        this->format = format;
-    }
-
-    // Perform the requested action.
-    bool doOp()
-    {
-        Owned<IEventVisitor> visitor;
-        switch (format)
-        {
-        case OutputFormat::json:
-            visitor.setown(createDumpJSONEventVisitor(*out));
-            break;
-        case OutputFormat::text:
-            visitor.setown(createDumpTextEventVisitor(*out));
-            break;
-        case OutputFormat::xml:
-            visitor.setown(createDumpXMLEventVisitor(*out));
-            break;
-        case OutputFormat::yaml:
-            visitor.setown(createDumpYAMLEventVisitor(*out));
-            break;
-        case OutputFormat::csv:
-            visitor.setown(createDumpCSVEventVisitor(*out));
-            break;
-        case OutputFormat::tree:
-            {
-                Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
-                if (traverseEvents(inputPath.str(), creator->queryVisitor()))
-                {
-                    StringBuffer yaml;
-                    toYAML(creator->queryTree(), yaml, 2, 0);
-                    out->put(yaml.length(), yaml.str());
-                    out->put(1, "\n");
-                    return true;
-                }
-                return false;
-            }
-        default:
-            throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
-        }
-        return traverseEvents(inputPath.str(), *visitor);
-    }
-
-protected:
-    OutputFormat format = OutputFormat::text;
-};
 
 // Connector between the CLI and the logic of dumping an event file's data as text.
 class CEvtDumpCommand : public TEventConsumingCommand<CDumpEventsOp>

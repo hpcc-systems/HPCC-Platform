@@ -548,6 +548,7 @@ extern da_decl IPropertyTree * getDropZonePlane(const char * name);
 extern da_decl IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch);
 extern da_decl IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch);
 extern da_decl bool validateDropZone(IPropertyTree *plane, const char *path, const char *host, bool ipMatch);
+extern da_decl unsigned getNumPlaneStripes(const char *clusterName);
 extern da_decl bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch);
 extern da_decl bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which);
 extern da_decl void getPlaneHosts(StringArray &hosts, IPropertyTree *plane);
@@ -589,5 +590,14 @@ extern da_decl void logNullUser(IUserDescriptor *userDesc);
 #else
 inline void logNullUser(IUserDescriptor *userDesc) { }
 #endif
+
+interface IFileReadPropertiesUpdater : extends IInterface
+{
+public:
+    virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) = 0;
+    virtual void publish() = 0;
+};
+
+extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);
 
 #endif

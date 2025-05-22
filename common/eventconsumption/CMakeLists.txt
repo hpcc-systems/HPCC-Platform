@@ -14,44 +14,27 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: evtool
-
-#####################################################
-# Description:
-# ------------
-#    Cmake Input File for evtool
-#####################################################
-project(evtool)
+project(eventconsumption)
 
 include_directories (
-    ${HPCC_SOURCE_DIR}/common/eventconsumption
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/include
 )
 
-set (  SRCS
-       evtmain.cpp
-       evtool.cpp
-       evtdump.cpp
-       evtsim.cpp
-       evtindex.cpp
-       evtindex_summary.cpp
-       evtindex_hotspot.cpp
-    )
-
-ADD_DEFINITIONS(-D_CONSOLE)
-
-HPCC_ADD_EXECUTABLE ( evtool ${SRCS} )
-
-install ( TARGETS evtool RUNTIME DESTINATION ${EXEC_DIR} )
-
-add_dependencies (
-    evtool
-    jlib
-    eventconsumption
+set (
+    SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdump.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpstream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpptree.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventfilter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindexhotspot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindexsummarize.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
 )
 
-target_link_libraries( evtool
-    jlib
-    eventconsumption
-)
+ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
+
+HPCC_ADD_LIBRARY(eventconsumption SHARED ${SRCS})
+install ( TARGETS eventconsumption RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( eventconsumption jlib )
