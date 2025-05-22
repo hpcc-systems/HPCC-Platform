@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "./.github/workflows"
+		},
+		{
+			"path": "./esp/src"
+		}
+	],
+	"settings": {
+		"terminal.integrated.cwd": "../../esp/src"
+	}
+}

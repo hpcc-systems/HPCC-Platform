@@ -212,3 +212,19 @@ jobs:
       build-type: 'Release'
       cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
+
+  build-eclwatch:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-eclwatch.yml
+    with:
+      asset-name: 'eclwatch'
+    secrets: inherit
+
+  test-eclwatch:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-eclwatch
+    uses: ./.github/workflows/test-eclwatch.yml
+    with:
+      asset-name: 'eclwatch'
+    secrets: inherit
+  
