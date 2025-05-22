@@ -596,28 +596,28 @@ define([
         _onSuspend: function () {
             var context = this;
             WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Suspend").then(function (response) {
-                context.refreshGrid();
+                context.refreshGrid(true);
             });
         },
 
         _onUnsuspend: function () {
             var context = this;
             WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Unsuspend").then(function (response) {
-                context.refreshGrid();
+                context.refreshGrid(true);
             });
         },
 
         _onActivate: function () {
             var context = this;
             WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Activate").then(function (response) {
-                context.refreshGrid();
+                context.refreshGrid(true);
             });
         },
 
         _onDeactivate: function () {
             var context = this;
             WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Deactivate").then(function (response) {
-                context.refreshGrid();
+                context.refreshGrid(true);
             });
         },
 
