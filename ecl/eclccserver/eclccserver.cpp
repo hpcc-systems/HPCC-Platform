@@ -995,7 +995,7 @@ public:
 #endif
     }
 
-    WUState compileWorkunit(const char * _wuid, bool compileLocal)
+    WUState compileWorkunit(StringBuffer * username, const char * _wuid, bool compileLocal)
     {
         wuid.set(_wuid);
         setDefaultJobName(wuid);
@@ -1010,6 +1010,9 @@ public:
             DBGLOG("Workunit %s no longer exists", wuid.get());
             return WUStateUnknown;
         }
+
+        if (username)
+            username->append(workunit->queryUser());
 
         if (isContainerized())
         {
@@ -1119,6 +1122,7 @@ public:
                 }
                 else
                 {
+                    result = WUStateCompiled;
                     workunit->schedule();
                     SCMStringBuffer dllBuff;
                     Owned<IConstWUQuery> wuQuery = workunit->getQuery();
@@ -1146,9 +1150,13 @@ public:
         }
         else if (workunit->getState() != WUStateAborted)
             workunit->setState(WUStateFailed);
+
         if (workunit)
+        {
             workunit->commit();
-        result = workunit->getState();
+            result = workunit->getState();
+        }
+
         workunit.clear();
         wuid.clear();
         return result;
@@ -1174,7 +1182,7 @@ public:
 
     virtual void threadmain() override
     {
-        compiler.compileWorkunit(wuid, false);
+        compiler.compileWorkunit(nullptr, wuid, false);
     }
 
     virtual bool stop() override
@@ -1202,7 +1210,8 @@ public:
     EclccLingeringCompiler(IPropertyTree * globals, unsigned _idx)
     : instanceName(globals->queryProp("@name")), compiler(instanceName, _idx)
     {
-        lingerTimeMs = globals->getPropInt("@lingerPeriod") * 1000;
+        const unsigned defaultLingerSeconds = 30;
+        lingerTimeMs = globals->getPropInt("@lingerPeriod", defaultLingerSeconds) * 1000;
         costPerHour = getMachineCostRate();
 
         //This could spot updates to the queues, but if they change, the lingering compile servers
@@ -1222,6 +1231,7 @@ public:
         {
             __uint64 priority = getTimeStampNowValue();
             CCycleTimer waitTimer;
+
             Owned<IJobQueueItem> item = queue->dequeuePriority(priority, lingerTimeMs);
             __uint64 waitTimeNs = waitTimer.elapsedNs();
             cost_type costWait = money2cost_type(calcCostNs(costPerHour, waitTimeNs));
@@ -1234,19 +1244,19 @@ public:
 
             recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName } }, { StNumAccepts, StNumWaits, StTimeWaitSuccess, StCostWait }, { 1, 1, waitTimeNs, costWait });
 
-            WUState state = compiler.compileWorkunit(item->queryWUID(), true);
+            StringBuffer username;
+            WUState state = compiler.compileWorkunit(&username, item->queryWUID(), true);
 
             __uint64 executeTimeNs = waitTimer.elapsedNs() - waitTimeNs;
             cost_type costExecute = money2cost_type(calcCostNs(costPerHour, executeTimeNs));
-            const char * username = "MORE";
 
             if (state == WUStateAborted)
-                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username } }, { StNumAborts, StTimeLocalExecute, StCostAbort }, { 1, executeTimeNs, costExecute });
+                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumAborts, StTimeLocalExecute, StCostAbort }, { 1, executeTimeNs, costExecute });
             else if (state == WUStateFailed)
-                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username } }, { StNumFailures, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
+                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumFailures, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
             else if (state != WUStateUnknown)
-                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username } }, { StTimeLocalExecute, StCostExecute }, { executeTimeNs, costExecute });
-            }
+                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumSuccesses, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
+        }
     }
 };
 
