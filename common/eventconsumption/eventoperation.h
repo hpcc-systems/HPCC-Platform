@@ -20,29 +20,18 @@
 #include "eventconsumption.h"
 #include "eventfilter.h"
 
-// Abstract base class for event file operation implementations.
-class event_decl CEventFileOp : public CInterface
-{
-public:
-    virtual bool ready() const;
-    virtual bool doOp() = 0;
-    void setInputPath(const char* path);
-public:
-    virtual ~CEventFileOp() = default;
-protected:
-    StringAttr inputPath;
-};
-
 // Extension of `CEventFileOp` that supports streaming output and event filtering by trace ID,
 // thread ID, and timestamp range. This satisfies the requirements for the `event_consuming_op_t`
 // template parameter of `TEventConsumingCommand`.
 //
 // Subclasses are expected to add support for additional options.
-class event_decl CEventConsumingOp : public CEventFileOp
+class event_decl CEventConsumingOp : public CInterface
 {
-public: // CEventFileOp
-    virtual bool ready() const override;
+public: // abstract method(s)
+    virtual bool doOp() = 0;
 public:
+    virtual bool ready() const;
+    void setInputPath(const char* path);
     void setOutput(IBufferedSerialOutputStream& _out);
     bool acceptEvents(const char* eventNames);
     bool acceptAttribute(EventAttr attr, const char* values);
@@ -50,6 +39,7 @@ protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(const char* path, IEventVisitor& visitor);
 protected:
+    StringAttr inputPath;
     Linked<IBufferedSerialOutputStream> out;
     Owned<IEventFilter> filter;
 };

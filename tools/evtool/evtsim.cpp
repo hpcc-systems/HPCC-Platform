@@ -32,11 +32,16 @@
 // - support events per trace ID (requires enabling tracing)
 
 // Record configured events to a configured location.
-class CSimulateEventsOp : public CEventFileOp
+class CSimulateEventsOp
 {
 public:
+    bool ready() const
+    {
+        return !inputPath.isEmpty();
+    }
+
     // Perform the requested action.
-    virtual bool doOp() override
+    bool doOp()
     {
         Owned<IPTree> tree;
         StringBuffer markup;
@@ -177,6 +182,14 @@ public:
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }
+
+    void setInputPath(const char* path)
+    {
+        inputPath.set(path);
+    }
+
+protected:
+    StringAttr inputPath;
 };
 
 // Extension of TEvtCLIConnector responsible for the creation of user configured events. No

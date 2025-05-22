@@ -18,19 +18,14 @@
 #include "eventoperation.h"
 #include "eventfilter.h"
 
-bool CEventFileOp::ready() const
-{
-    return !inputPath.isEmpty();
-}
-
-void CEventFileOp::setInputPath(const char* path)
-{
-    inputPath.set(path);
-}
-
 bool CEventConsumingOp::ready() const
 {
-    return CEventFileOp::ready() && out.get();
+    return !inputPath.isEmpty() && out.get();
+}
+
+void CEventConsumingOp::setInputPath(const char* path)
+{
+    inputPath.set(path);
 }
 
 void CEventConsumingOp::setOutput(IBufferedSerialOutputStream& _out)
