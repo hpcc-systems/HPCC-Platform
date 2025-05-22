@@ -27,6 +27,8 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpstream.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpptree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventfilter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindexhotspot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexsummarize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
 )
