@@ -174,14 +174,33 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         return false;
 
 
-    RemoteFilenameArray files;
     int numparts = subBranch->getPropInt("Numparts");
+    bool isDirPerPart = subBranch->getPropBool("IsDirPerPart");
+    unsigned numStripedDevices = getNumPlaneStripes(clustername);
+
+    StringBuffer path;
+    const char * fileMask = splitDirTail(Partmask, path);
+    unsigned lfnHash = getFilenameHash(lfn.str());
+    size32_t rootLen = rootdir.length()+1; // Include trailing path separator
+    StringBuffer remoteFile(rootLen, path.str());
+
+    RemoteFilenameArray files;
     Owned<IPropertyTreeIterator> partItr =  subBranch->getElements("Part");
     ForEach(*partItr)
     {
         IPropertyTree& part = partItr->query();
-        StringBuffer remoteFile;
-        expandMask(remoteFile, Partmask, part.getPropInt("Num")-1, numparts);
+        unsigned partNum = part.getPropInt("Num");
+
+        unsigned stripeNum = calcStripeNumber(partNum, lfnHash, numStripedDevices);
+        if (stripeNum)
+            addPathSepChar(remoteFile.append('d').append(stripeNum));
+
+        remoteFile.append(path.length()-rootLen, path.str()+rootLen);
+
+        if (isDirPerPart)
+            addPathSepChar(remoteFile.append(partNum));
+
+        expandMask(remoteFile, fileMask, partNum-1, numparts);
         /////////////////////////////////
         StringBuffer xpath;
         unsigned i = 0;
@@ -212,6 +231,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
                 rmtFile.setPath(ip,remoteFile.str()); 
             files.append(rmtFile);
         }
+        remoteFile.setLength(rootLen);
     }
         
     CriticalSection crit;
