@@ -88,7 +88,6 @@ extern THORHELPER_API IRowInterfaces *createRowInterfaces(IOutputMetaData *meta,
 enum RowReaderWriterFlags
 {
     rw_grouped        = 0x1,
-    rw_crc            = 0x2,
     rw_extend         = 0x4,
     rw_compress       = 0x8,
     rw_compressblkcrc = 0x10, // block compression, this sets/checks crc's at block level
@@ -167,8 +166,6 @@ interface IExtRowStream: extends IRowStream
 interface ILogicalRowWriter: extends IRowWriter
 {
     virtual offset_t getPosition() = 0;
-    using IRowWriter::flush;
-    virtual void flush(CRC32 *crcout) = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 

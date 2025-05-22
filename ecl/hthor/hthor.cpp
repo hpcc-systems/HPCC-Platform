@@ -63,7 +63,7 @@
 
 #define EMPTY_LOOP_LIMIT 1000
 
-static unsigned const hthorReadBufferSize = 0x10000;
+static unsigned const hthorReadBufferSize = 0x100000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 
 using roxiemem::IRowManager;
@@ -616,11 +616,8 @@ void CHThorDiskWriteActivity::open()
     unsigned rwFlags = rw_autoflush;
     if (grouped)
         rwFlags |= rw_grouped;
-    if (true) // MORE: Should this be controlled by an activity hint/flag?
-        rwFlags |= rw_crc;
     ILogicalRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
-
 }
 
 
@@ -8874,7 +8871,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
             agent.fail(1, s.str());
         }
 
-        unsigned readBufferSize = queryReadBufferSize();
+        unsigned readBufferSize = hthorReadBufferSize; // more should depend on the storage plane
         inputstream.setown(createFileSerialStream(inputfileio, 0, filesize, readBufferSize));
 
         StringBuffer report("Reading file ");
@@ -8963,11 +8960,6 @@ void CHThorBinaryDiskReadBase::closepart()
     prefetchBuffer.clearStream();
     deserializeSource.clearStream();
     CHThorDiskReadBaseActivity::closepart();
-}
-
-unsigned CHThorBinaryDiskReadBase::queryReadBufferSize()
-{
-    return hthorReadBufferSize;
 }
 
 void CHThorBinaryDiskReadBase::open()
@@ -9734,12 +9726,7 @@ bool CHThorXmlReadActivity::openNext()
     localOffset = 0;
     if (CHThorDiskReadBaseActivity::openNext())
     {
-        unsigned readBufferSize = queryReadBufferSize();
-        OwnedIFileIOStream inputfileiostream;
-        if(readBufferSize)
-            inputfileiostream.setown(createBufferedIOStream(inputfileio, readBufferSize));
-        else
-            inputfileiostream.setown(createIOStream(inputfileio));
+        OwnedIFileIOStream inputfileiostream = createIOStream(inputfileio);
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
         if (kind==TAKjsonread)
