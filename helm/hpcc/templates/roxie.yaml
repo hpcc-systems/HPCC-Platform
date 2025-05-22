@@ -100,6 +100,7 @@ data:
 {{- $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
 {{- if not $singleNode -}}
 {{- $servername := printf "%s-server" $roxie.name -}}
+{{- $serverReplicas := (int $roxie.serverReplicas) -}}
 {{- $udpkeyname := $roxie.name -}}
 {{- range $service := $roxie.services }}
  {{- range $remoteClient := $service.remoteClients }}
@@ -225,14 +226,14 @@ kind: ConfigMap
 ---
 
 {{- $_ := set $commonCtx "instanceNames" list -}}
-{{ if $roxie.serverReplicas -}}
+{{ if $serverReplicas -}}
 {{ $_ := set $commonCtx "instanceNames" (list $servername) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $servername | quote }}
 spec:
-  replicas: {{ $roxie.serverReplicas }}
+  replicas: {{ $serverReplicas }}
   selector:
     matchLabels:
       run: {{ $servername | quote }}
@@ -346,7 +347,7 @@ spec:
       labels:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-agent" "name" "roxie" "instance" $name) | indent 8 }}
         run: {{ $name | quote}}
-{{- if not $roxie.serverReplicas }}        
+{{- if not $serverReplicas }}
         server: {{ $servername | quote }}
 {{- end }}
         roxie-cluster: {{ $roxie.name | quote }}
@@ -380,13 +381,13 @@ spec:
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" (dict "root" $ "component" "Roxie" "optional" false) }},
                 "--channels={{ $channel }}", 
-                "--server={{ not $roxie.serverReplicas }}",
+                "--server={{ not $serverReplicas }}",
               ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $roxie.name }}.sentinel"
-{{- if not $roxie.serverReplicas }}
+{{- if not $serverReplicas }}
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.servicePort)  0 }}
@@ -412,7 +413,7 @@ spec:
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
-{{- if not $roxie.serverReplicas }}
+{{- if not $serverReplicas }}
 
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-agent" "name" $agentPublicCertName "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 8 }}
@@ -424,7 +425,7 @@ spec:
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
-{{- if not $roxie.serverReplicas }}
+{{- if not $serverReplicas }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $agentPublicCertName "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 6 }}
 {{ include "hpcc.addUDPCertificateVolume" (dict "root" $ "component" "udpkey" "name" $udpkeyname) | indent 6 }}
