@@ -147,6 +147,7 @@ public:
 
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);
+
 private: // long depreciated
     StringBuffer &  append(long value);
     StringBuffer &  append(unsigned long value);
@@ -164,7 +165,7 @@ protected:
     void _insert(size_t offset, size_t insertLen);
     void _realloc(size_t newLen);
 
-private:    
+private:
     char                internalBuffer[InternalBufferSize];
     char *              buffer;
     size_t              curLen;
@@ -210,7 +211,7 @@ public:
     String(String & value);
     String(StringBuffer & value);
     ~String();
-    
+
     char    charAt(size32_t index) const;
     int     compareTo(const String & value) const;
     int     compareTo(const char* value) const;
@@ -241,9 +242,9 @@ public:
     String *  toString();               // Links this
     String *  toUpperCase() const;
     String *  trim() const;
-    
 
-    
+
+
 protected:
     char * text;
 };
@@ -267,7 +268,7 @@ public:
         text = const_cast<char *>("<use-after-free>");
 #endif
     }
-    
+
     inline operator const char * () const       { return text; }
     inline void clear()                         { setown(NULL); }
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
@@ -322,7 +323,7 @@ public:
 
     virtual const char * str() const { return buffer.str(); };
     virtual void set(const char *val) { clear(); buffer.append(val); };
-    virtual void clear() { buffer.setLength(initsize); } 
+    virtual void clear() { buffer.setLength(initsize); }
     virtual void setLen(const char *val, unsigned length) { clear(); buffer.append(length, val); };
     virtual unsigned length() const { return buffer.length(); };
 
@@ -368,15 +369,15 @@ public:
     StringAttrItem(void) {}
     StringAttrItem(const char * _text) : text(_text) {}
     StringAttrItem(const char * _text, unsigned _len);
-    
+
 public:
     StringAttr      text;
 };
 
 // --$appendURL-----------------------------------------------------------------
-// appends the URL encoded version of src to dest 
-// if len is unspecified, then src is assumed to be an NTS 
-// if lower is TRUE a-f is used for hex numbers, otherwise A-F is used 
+// appends the URL encoded version of src to dest
+// if len is unspecified, then src is assumed to be an NTS
+// if lower is TRUE a-f is used for hex numbers, otherwise A-F is used
 // -----------------------------------------------------------------------------
 #define ENCODE_SPACES 1
 #define ENCODE_NEWLINES 2
@@ -624,7 +625,7 @@ inline bool hasPrefix(const char * text, const char * prefix, bool caseSensitive
 extern jlib_decl unsigned matchString(const char * search, const char * const * strings);
 
 extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
-extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 
+extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len);
 extern jlib_decl size32_t memcount(size32_t len, const char * str, char search);
 
 extern jlib_decl const char * nullText(const char * text);
@@ -681,5 +682,8 @@ extern jlib_decl const void * jmemmem(size_t lenHaystack, const void * haystack,
 
 // For preventing command injection, sanitize the argument to be passed to the system command
 extern jlib_decl StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized);
+
+// For formatting integer values into comma separated string
+extern jlib_decl StringBuffer& formatWithCommas(unsigned __int64 value, StringBuffer& formatted);
 
 #endif

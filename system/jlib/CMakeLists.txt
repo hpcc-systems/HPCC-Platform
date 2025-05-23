@@ -221,6 +221,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
          ${HPCC_SOURCE_DIR}/system/httplib
+         ${HPCC_SOURCE_DIR}/testing/unittests
          ${OPENTELEMETRY_CPP_INCLUDE_DIRS}
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file
          ${CMAKE_BINARY_DIR}
@@ -238,6 +239,7 @@ target_link_libraries ( jlib
         lz4::lz4
         libbase58
         yaml
+        ${CppUnit_LIBRARIES}
        )
 
 if ( ${HAVE_LIBDL} )
@@ -249,7 +251,7 @@ target_link_libraries ( jlib crypt)
 endif ( ${HAVE_LIBCRYPT} )
 
 target_link_libraries ( jlib
-        
+
         opentelemetry-cpp::ostream_span_exporter
         opentelemetry-cpp::api #                               - Imported target of opentelemetry-cpp::api
         opentelemetry-cpp::sdk #                              - Imported target of opentelemetry-cpp::sdk
@@ -287,7 +289,7 @@ target_link_libraries ( jlib ZLIB::ZLIB )
 endif (WIN32 AND USE_ZLIB)
 
 if (USE_OPENTEL_GRPC)
-    target_link_libraries ( jlib 
+    target_link_libraries ( jlib
         opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
         opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
     )
