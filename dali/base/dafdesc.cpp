@@ -952,6 +952,10 @@ public:
             StringBuffer tmp;
             if (!ep.isNull())
                 pt->setProp("@node",ep.getEndpointHostText(tmp).str());
+
+            // JCSMORE - this makes little sense. @name -> overridename
+            // It is being set here specifically for a 1 part file, but without it (tested) it will construct
+            // the name from the mask as normal.
             if (overridename.isEmpty()&&!parent.partmask.isEmpty()) {
                 expandMask(tmp.clear(), parent.partmask, 0, 1);
                 pt->setProp("@name",tmp.str());
@@ -1136,6 +1140,12 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     {
         if (!pending) {
             pending = new SocketEndpointArray;
+
+            // NB: deliberately not using setFlags, which as a side-effect calls closePending()
+            fileFlags |= FileDescriptorFlags::absoluteparts;
+            // NB: attr guaranteed to be non-null here
+            attr->setPropInt("@flags", static_cast<int>(fileFlags));
+
             if (setupdone)
                 throw MakeStringException(-1,"IFileDescriptor - setup already done");
             setupdone = true;
@@ -1371,8 +1381,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
             }
 
-            // Adding striping and/or aliasing to path already done if part overridename set
-            if (pt.overridename.isEmpty())
+            // Adding striping and/or aliasing to path unless this is a IFileDescriptor constructed with absolute paths
+            if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
             {
                 // The following code manipulates the directory for striping and aliasing if necessary.
                 // To do so, it needs the plane details.
@@ -1417,8 +1427,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
             else
                 buf.swapWith(fullpath);
 
-            // Adding dir-per-part directory to path already done if part overridename set
-            if (pt.overridename.isEmpty())
+            // Adding dir-per-part directory unless this is a IFileDescriptor constructed with absolute paths
+            if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
             {
                 if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
                     addPathSepChar(buf).append(idx+1); // part subdir 1 based
