@@ -328,7 +328,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         if (CMAKE_COMPILER_IS_CLANGXX)
           SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
         else()
-          SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+          SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fprofile-update=atomic")
         endif()
       endif()
       # Handle forced default char type
