@@ -193,8 +193,9 @@ typedef IIteratorOf<IPartDescriptor> IPartDescriptorIterator;
 enum class FileDescriptorFlags
 {
     none          = 0x00,
-    dirperpart    = 0x01,
-    foreign       = 0x02
+    dirperpart    = 0x01, // each part is in a separate directory (named by part number)
+    foreign       = 0x02, // the file descriptor is for a foreign file
+    absoluteparts = 0x04  // the file descriptor has been constructed with parts with absolute filenames (see doSetPart)
 };
 BITMASK_ENUM(FileDescriptorFlags);
 
