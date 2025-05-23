@@ -6520,6 +6520,7 @@ public:
         attrs.removeProp("@minSkew");
         attrs.removeProp("@maxSkewPart");
         attrs.removeProp("@minSkewPart");
+        attrs.removeProp("@lfnHash");
 
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)
