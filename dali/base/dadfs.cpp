@@ -3542,6 +3542,10 @@ protected:
                     pt->setProp("@name",override);
                 else {
                     pt->removeProp("@name");
+
+                    // JCSMORE - this makes little sense. @name -> overridename
+                    // It is being set here specifically for a 1 part file, but without it (tested) it will construct
+                    // the name from the mask as normal.
                     const char *mask=queryPartMask();
                     if (mask&&*mask) {
                         StringBuffer tmp;
