@@ -41,6 +41,7 @@ public:
     virtual bool onAbort() override;
 private:
     bool executeWorkunit(IJobQueueItem *item);
+    void maintainPrevPools();
 
     const char *agentName;
     const char *daliServers;
@@ -48,10 +49,15 @@ private:
     Owned<IJobQueue> queue;
     Owned<IJobQueue> lingerQueue; // used if thor agent for a thor configured with multiJobLinger=true
     Linked<IPropertyTree> config;
-    Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
     bool isThorAgent = false;
     bool disableQueuePriority = false; // temporary JIC, while new client priority queuing beds in.
+
+    // for containerized only
+    Owned<IThreadPool> pool;
+    IArrayOf<IThreadPool> prevPools;
+    unsigned poolSize;
+    unsigned updateConfigCBId;
 
 friend class WaitThread;
 };
@@ -89,17 +95,14 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     else if (strieq(apptype, "thor"))
         ctype = SCTthor;
     setStatisticsComponentName(ctype, agentName, true);
-
-    if (isContainerized()) // JCS - the pool approach would also work in bare-metal if it could be configured.
-    {
-        unsigned poolSize = config->getPropInt("@maxActive", 100);
-        pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
-    }
 }
 
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
+    if (updateConfigCBId)
+        removeConfigUpdateHook(updateConfigCBId);
+
     if (pool)
         pool->joinAll(false, INFINITE);
 
@@ -110,9 +113,48 @@ CEclAgentExecutionServer::~CEclAgentExecutionServer()
 
 //---------------------------------------------------------------------------------
 
+void CEclAgentExecutionServer::maintainPrevPools()
+{
+    DBGLOG("maintainPrevPools()");
+    ForEachItemInRev(poolIdx, prevPools)
+    {
+        IThreadPool &prevPool = prevPools.item(poolIdx);
+        DBGLOG("maintainPrevPools()\t%d: %d", poolIdx, prevPool.runningCount());
+        if (prevPool.runningCount() == 0)
+            prevPools.remove(poolIdx);
+    }
+    DBGLOG("maintainPrevPools()\t%d", prevPools.ordinality());
+}
+
+//---------------------------------------------------------------------------------
+
 int CEclAgentExecutionServer::run()
 {
-#ifdef _CONTAINERIZED
+    auto updateFunc = [this](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        DBGLOG("updateFunc()");
+        maintainPrevPools();
+
+        // JCS - the pool approach would also work in bare-metal if it could be configured.
+        Owned<IPropertyTree> config = getComponentConfigSP();
+        unsigned newPoolSize = config->getPropInt("@maxActive", 100);
+        DBGLOG("updateFunc()\tnewPoolSize: %d", newPoolSize);
+        if (newPoolSize != poolSize)
+        {
+            poolSize = newPoolSize;
+
+            if (pool->runningCount())
+            {
+                prevPools.append(*(pool.getClear()));
+            }
+            DBGLOG("updateFunc()\tcreateThreadPool agentPool: %d", newPoolSize);
+            pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
+        }
+    };
+    if (isContainerized())
+        updateConfigCBId = installConfigUpdateHook(updateFunc, true);
+
+    #ifdef _CONTAINERIZED
     StringBuffer queueNames;
 #else
     SCMStringBuffer queueNames;
