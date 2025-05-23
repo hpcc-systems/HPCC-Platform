@@ -378,6 +378,8 @@ int main(int argc, const char* argv[])
                 writeSentinelFile(sentinelFile);
         }
 #endif
+        bool runExpiry = serverConfig->hasProp("@runExpiry");
+
         StringBuffer daliServer;
         if (!serverConfig->getProp("@daliServers", daliServer))
             serverConfig->getProp("@DALISERVERS", daliServer); // @DALISERVERS legacy/bare-metal
@@ -387,9 +389,11 @@ int main(int argc, const char* argv[])
             return 1;
         }
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
-        initClientProcess(serverGroup, DCR_SashaServer, port, nullptr, nullptr, MP_WAIT_FOREVER, true);
+        initClientProcess(serverGroup, DCR_SashaServer, runExpiry ? 0 : port, nullptr, nullptr, MP_WAIT_FOREVER, true);
 
-        if (stop)
+        if (runExpiry)
+            runExpiryCLI();
+        else if (stop)
             stopSashaServer((argc>2)?argv[2]:"", DEFAULT_SASHA_PORT);
         else
         {
