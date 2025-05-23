@@ -1923,6 +1923,13 @@ public:
 
 enum LockStatus { LockFailed, LockHeld, LockTimedOut, LockSucceeded };
 
+enum SaveStoreFlags
+{
+    ssf_none  = 0x0,
+    ssf_flush = 0x1,
+    ssf_stop  = 0x2
+};
+BITMASK_ENUM(SaveStoreFlags);
 class CCovenSDSManager : public CSDSManagerBase, implements ISDSManagerServer, implements ISubscriptionManager, implements IExceptionHandler
 {
 public:
@@ -1936,7 +1943,7 @@ public:
     void restart(IException * e);
 
     void loadStore(const char *store=NULL, const bool *abort=NULL);
-    void saveStore(const char *store=NULL, bool currentEdition=false, bool flush=true);
+    void saveStore(const char *store, SaveStoreFlags flags);
     void checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv);
     bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
     void unlockAll(__int64 treeId);
@@ -5676,14 +5683,14 @@ public:
         }
         return res;
     }
-    virtual void saveStore(IPropertyTree *root, unsigned *_newEdition, bool currentEdition=false)
+    virtual void saveStore(IPropertyTree *root, unsigned *_newEdition)
     {
         LOG(MCdebugProgress, "Saving store");
 
         refreshStoreInfo();
 
         unsigned edition = storeInfo.edition;
-        unsigned newEdition = currentEdition?edition:nextEditionN(edition);
+        unsigned newEdition = nextEditionN(edition);
         bool done = false;
         try
         {
@@ -5810,7 +5817,7 @@ public:
         if (done)
         {
 #ifndef NODELETE
-            unsigned toDeleteEdition = prevEditionN(edition, keepStores+(currentEdition?1:0));
+            unsigned toDeleteEdition = prevEditionN(edition, keepStores);
             StringBuffer filename(location);
             constructStoreName(storeName, toDeleteEdition, filename);
             OwnedIFile iFile = createIFile(filename.str());
@@ -6536,7 +6543,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         if (saveNeeded)
         {
             LOG(MCdebugInfo, "Saving converted store");
-            SDSManager->saveStore();
+            SDSManager->saveStore(nullptr, ssf_flush);
         }
     }
     catch (IException *e)
@@ -6586,20 +6593,26 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     initializeStorageGroups(oldEnvironment);
 }
 
-void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition, bool flush)
+void CCovenSDSManager::saveStore(const char *storeName, SaveStoreFlags flags)
 {
     struct CIgnore
     {
         CIgnore() { SDSManager->ignoreExternals=true; }
         ~CIgnore() { SDSManager->ignoreExternals=false; }
     } ignore;
-    if (flush)
+    if (hasMask(flags, ssf_stop))
     {
-        // lock blockingaveCrit after flush, since deltaWriter itself blocks on blockedSaveCrit
+        // Dali is stopping, we don't care about any inflight transactions any more, we're about to save and quit
+        // Wait for delta writer thread to finish, to ensure no dangling writes after we've saved
+        deltaWriter.stop();
+    }
+    else if (hasMask(flags, ssf_flush))
+    {
+        // lock blockedSaveCrit after flush, since deltaWriter itself blocks on blockedSaveCrit
         deltaWriter.flush(); // transactions will be blocked at this stage, no new deltas will be added to writer
     }
     CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
-    iStoreHelper->saveStore(root, NULL, currentEdition);
+    iStoreHelper->saveStore(root, NULL);
     unsigned initNodeTableSize = allNodes.maxElements()+OVERFLOWSIZE;
     queryCoven().setInitSDSNodes(initNodeTableSize>INIT_NODETABLE_SIZE?initNodeTableSize:INIT_NODETABLE_SIZE);
 }
@@ -7263,7 +7276,7 @@ void CCovenSDSManager::restart(IException * e)
     connections.kill();
     DBGLOG("-------: stopped");
     DBGLOG("-------: saving current store . . . . . .");
-    saveStore();
+    saveStore(nullptr, ssf_flush);
     DBGLOG("-------: store saved.");
     DBGLOG("-------: restarting SDS server restart");
     start();
@@ -8209,7 +8222,7 @@ void CCovenSDSManager::blockingSave(unsigned *writeTransactions)
     if (writeTransactions)
         *writeTransactions = SDSManager->writeTransactions;
     // JCS - could in theory, not block, but abort save.
-    SDSManager->saveStore();
+    SDSManager->saveStore(nullptr, ssf_flush);
 }
 
 bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
@@ -8793,7 +8806,7 @@ bool CCovenSDSManager::fireException(IException *e)
                     msg.append("Unhandled exception, shutting down: ").append(e->errorCode()).append(": ");
                     e->errorMessage(msg);
                     manager.stop();
-                    manager.saveStore();
+                    manager.saveStore(nullptr, ssf_stop);
                 }
                 manager.unhandledThread.clear();
             }
@@ -8979,7 +8992,7 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
         DISLOG("Due to earlier failures, attempting forced/blocking save of Dali store");
         while (todo.size())
             todo.pop();
-        SDSManager->saveStore(nullptr, false, false);
+        SDSManager->saveStore(nullptr, ssf_none);
     }
     if (thresholdDuration)
         lastSaveTime = get_cycles_now();
@@ -9072,7 +9085,7 @@ public:
         if (storeLoaded)
         {
             manager->stop();
-            manager->saveStore();
+            manager->saveStore(nullptr, ssf_stop);
         }
         removeThreadExceptionHandler(manager);
         ::Release(manager);
