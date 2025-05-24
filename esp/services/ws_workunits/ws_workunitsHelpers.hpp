@@ -316,7 +316,7 @@ struct WUComponentLogOptions
     {
         Owned<ILogAccessFilter> logFetchFilter = getJobIDLogAccessFilter(wuid);
 
-        const char * requestedLogFormat = logFilterReq.getFormat();
+        const char * requestedLogFormat = logFilterReq.getFormatAsString();
         if (!isEmptyString(requestedLogFormat))
             logDataFormat = logAccessFormatFromName(requestedLogFormat);
 
