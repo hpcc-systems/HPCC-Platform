@@ -23,7 +23,7 @@
 #include "ccdcache.hpp"
 
 #ifdef _STANDALONE_CCDCACHE
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 #include <sys/mman.h>
 #endif
 #include <setjmp.h>

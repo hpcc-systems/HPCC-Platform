@@ -768,7 +768,7 @@ BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
     }
     return FALSE; 
 } 
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 static void UnixAbortHandler(int signo)
 {
     ahType type = ahInterrupt;
@@ -790,7 +790,7 @@ void queryInstallAbortHandler()
 
 #if defined(_WIN32)
     SetConsoleCtrlHandler( WindowsAbortHandler, TRUE ); 
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
     struct sigaction action;
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;

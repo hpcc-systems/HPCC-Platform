@@ -44,6 +44,9 @@
   #define REGPARAMS 6
   #define EVEN_STACK_ALIGNMENT
 #endif
+#elif defined (EMSCRIPTEN)
+ #define ALIGNMENT 4
+ #define REGSIZE 4
 #elif defined (_ARCH_X86_)
  #define ALIGNMENT 4
  #define REGSIZE 4

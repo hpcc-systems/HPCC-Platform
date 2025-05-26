@@ -2403,7 +2403,7 @@ protected:
         int run()
         {
             // Raise the priority so ibyti's get through in a timely fashion
-#if defined( __linux__) || defined(__APPLE__)
+#if defined( __linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
             setLinuxThreadPriority(3);
 #else
             adjustPriority(1);

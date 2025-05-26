@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 
-#if defined (__linux__) || defined (__APPLE__)
+#if defined (__linux__) || defined (__APPLE__) || defined (EMSCRIPTEN)
 #include <time.h>
 #include <dirent.h>
 #include <utime.h>
@@ -508,6 +508,10 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
 #endif
     return true;
 }
+
+#if defined (EMSCRIPTEN)
+#define _utimbuf utimbuf
+#endif
 
 bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime)
 {
@@ -2621,6 +2625,9 @@ public:
 
     bool getResult(size32_t &ret,bool wait)
     {
+#if defined(EMSCRIPTEN)
+        throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
+#else
         if (value==(size32_t)-1) {
             for (;;) {
                 int aio_errno = aio_error(&cb);
@@ -2652,6 +2659,7 @@ public:
             }
         }
         ret = value;
+#endif
         return true;
     }
 };
@@ -2674,7 +2682,11 @@ void CFileAsyncIO::close()
         HANDLE tmpHandle = NULLFILE;
         std::swap(tmpHandle, file);
 
+#if defined(EMSCRIPTEN)
+        throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
+#else
         aio_cancel(tmpHandle, NULL);
+#endif
         if (_lclose(tmpHandle) < 0)
             throw makeErrnoException(errno, "CFileAsyncIO::close");
     }
@@ -2728,9 +2740,14 @@ IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * dat
     res->cb.aio_nbytes = len;
     res->cb.aio_sigevent.sigev_notify = SIGEV_NONE;
 
+#if defined(EMSCRIPTEN)
+    throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
+#else
+
     int retval = aio_read(&(res->cb));
     if (retval==-1)
         throw makeErrnoException(errno, "CFileAsyncIO::readAsync");
+#endif
     return res;
 }
 
@@ -2747,9 +2764,14 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
     res->cb.aio_sigevent.sigev_notify = SIGEV_NONE;
     res->cb.aio_sigevent.sigev_value.sival_ptr = (void*)res;
 
+#if defined(EMSCRIPTEN)
+    throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
+#else
+
     int retval = aio_write(&(res->cb));
     if (retval==-1)
         throw makeErrnoException(errno, "CFileAsyncIO::writeAsync");
+#endif
     return res;
 }
 

@@ -23,8 +23,7 @@
 #include "jexcept.hpp"
 #include "jerror.hpp"
 
-#ifndef __GNUC__
-
+#if !defined(__GNUC__) || defined(EMSCRIPTEN)
 #if _WIN32 //this appears to be the best way of controlling timezone information used by mktime
 
 void setUtcTZ()
