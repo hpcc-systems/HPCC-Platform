@@ -750,15 +750,17 @@ void CMemberInfo::checkConditionalAssignOk(HqlCppTranslator & translator, BuildC
 
 void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newSize, unsigned fixedExtra)
 {
+    BoundRow * row = selector->queryRootRow();
+
     //If no size beyond the constant value then this can't be increasing the size of the row => no need to check
-    if (matchesConstantValue(newSize, 0))
+    //This cannot be removed for a serialization - since the max size cannot be calculated until the end
+    if (matchesConstantValue(newSize, 0) && !row->isSerialization())
         return;
 
     CHqlBoundExpr bound;
     SizeStruct totalSize;
     gatherMaxRowSize(totalSize, newSize, fixedExtra, selector);
 
-    BoundRow * row = selector->queryRootRow();
     if (row->isSerialization())
     {
         //<any-following-fixed-size> is unknown at this point.
