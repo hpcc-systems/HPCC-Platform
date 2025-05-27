@@ -763,6 +763,11 @@ void fastLZDecompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
     size32_t expsz;
     size32_t cmpsz;
     in.read(expsz).read(cmpsz);
+
+    size32_t inRemaining = in.length() - in.getPos();
+    if (cmpsz > inRemaining)
+        throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data, expected len: %d actual len: %d", cmpsz, inRemaining);
+
     void *o = out.reserve(expsz);
     if (cmpsz!=expsz) {
         size32_t written = fastlz_decompress(in.readDirect(cmpsz),cmpsz,o,expsz);
