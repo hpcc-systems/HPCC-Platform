@@ -1007,10 +1007,12 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
         else
             _e->Release();
     }
+
+    elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
+
     if (e)
         throw e;
 
-    elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
     executed = true;
 }
 
@@ -1034,17 +1036,27 @@ void EclSubGraph::execute(const byte * parentExtract)
         debugContext->checkBreakpoint(DebugStateGraphStart, NULL, parent.queryGraphName() );    //debug probes exist so we can now check breakpoints
     if (localResults)
         localResults->clear();
-    doExecute(parentExtract, false);
 
-    if(!owner)
+    try
     {
-        PROGLOG("Completed subgraph %u", id);
-        if (!parent.queryLibrary())
+        doExecute(parentExtract, false);
+
+        if(!owner)
         {
-            updateProgress();
-            cleanupActivities();
-            agent->updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
+            PROGLOG("Completed subgraph %u", id);
+            if (!parent.queryLibrary())
+            {
+                updateProgress();
+                cleanupActivities();
+                agent->updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
+            }
         }
+    }
+    catch (...)
+    {
+        if (!owner && !parent.queryLibrary())
+            updateProgress();
+        throw;
     }
 }
 
@@ -1261,45 +1273,53 @@ void EclGraph::execute(const byte * parentExtract)
         addTimeStamp(wu, SSTgraph, queryGraphName(), StWhenStarted, wfid);
     }
 
+    Owned<IException> exception;
+    unsigned startTime = msTick();
+
     try
     {
-        unsigned startTime = msTick();
         ForEachItemIn(idx, graphs)
         {
             EclSubGraph & cur = graphs.item(idx);
             if (cur.isSink)
                 cur.execute(parentExtract);
         }
-
-        {
-            unsigned elapsed = msTick()-startTime;
-
-            Owned<IWorkUnit> wu(agent->updateWorkUnit());
-
-            StringBuffer description;
-            formatGraphTimerLabel(description, queryGraphName(), 0, 0);
-
-            unsigned __int64 elapsedNs = milliToNano(elapsed);
-            updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, wfid);
-
-            StringBuffer scope;
-            scope.append(WorkflowScopePrefix).append(wfid).append(":").append(queryGraphName());
-            const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), elapsed));
-            if (cost)
-                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-        }
-
-        if (agent->queryRemoteWorkunit())
-            wu->setGraphState(queryGraphName(), wfid, WUGraphComplete);
     }
-    catch (...)
+    catch (IException * e)
+    {
+        exception.setown(e);
+    }
+
+    {
+        unsigned elapsed = msTick()-startTime;
+
+        Owned<IWorkUnit> wu(agent->updateWorkUnit());
+
+        StringBuffer description;
+        formatGraphTimerLabel(description, queryGraphName(), 0, 0);
+
+        unsigned __int64 elapsedNs = milliToNano(elapsed);
+        updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, wfid);
+
+        StringBuffer scope;
+        scope.append(WorkflowScopePrefix).append(wfid).append(":").append(queryGraphName());
+        const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), elapsed));
+        if (cost)
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+    }
+
+    if (fileReadPropsUpdater.query())
+        fileReadPropsUpdater.query()->publish();
+
+    if (exception)
     {
         if (agent->queryRemoteWorkunit())
             wu->setGraphState(queryGraphName(), wfid, WUGraphFailed);
-        throw;
+        throw exception.getClear();
     }
-    if (fileReadPropsUpdater.query())
-        fileReadPropsUpdater.query()->publish();
+
+    if (agent->queryRemoteWorkunit())
+        wu->setGraphState(queryGraphName(), wfid, WUGraphComplete);
 }
 
 void EclGraph::executeLibrary(const byte * parentExtract, IHThorGraphResults * results)
