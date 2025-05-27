@@ -900,7 +900,7 @@ BUILD(FilterDsLib1);
             role="bold">'inplace:lz4s'</emphasis> </emphasis></entry>
 
             <entry>Causes inplace compression on the key fields and lz4s
-            compression on the payload. This uses the stream LZ4 API to avoid
+            compression on the payload. This uses the LZ4 stream API to avoid
             recompressing the data and reduce the index build times.</entry>
           </row>
 
@@ -908,15 +908,21 @@ BUILD(FilterDsLib1);
             <entry><emphasis role="bold"><emphasis
             role="bold">'inplace:lz4shc'</emphasis> </emphasis></entry>
 
-            <entry>The default compression for inplace indexes in versions
-            after versions 9.6.90, 9.8.66, and 9.10.12. Causes inplace
-            compression on the key fields and lz4shc compression on the
-            payload. This uses the stream LZ4 API to avoid recompressing the
-            data and reduce the index build times.</entry>
+            <entry>Causes inplace compression on the key fields and lz4shc
+            compression on the payload. This uses the high compression (HC)
+            version of the LZ4 stream API to avoid recompressing the data and
+            reduce the index build times. The default compression for inplace
+            indexes in versions after versions 9.6.90, 9.8.66, and 9.10.12.
+            </entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
+
+    <para>The inplace index compression format (introduced in version 9.2.0)
+    improves compression of keyed fields and allows them to be searched
+    without decompression. The original index compression implementation
+    decompresses the rows when they are read from disk.</para>
 
     <para>The lz4s and lz4hc inplace index compression formats (introduced in
     versions 9.6.90, 9.8.66, and 9.10.12 9.2.0 or later) improves compression
