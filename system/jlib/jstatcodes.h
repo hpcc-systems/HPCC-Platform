@@ -345,8 +345,8 @@ enum StatisticKind
     StNumBloomSkips,
     StNumAccepts,
     StNumWaits,
-    StTimeProvisioning,
-    StCycleProvisioningCycles,
+    StTimeProvision,
+    StCycleProvisionCycles,
     StCostStart,
     StTimeWaitSuccess,
     StCycleWaitSuccessCycles,
@@ -355,6 +355,10 @@ enum StatisticKind
     StCostWait,
     StNumAborts,
     StCostAbort,
+    StNumRowsRead,
+    StNumRowsWritten,
+    StTimeQueryConsume,
+    StCycleQueryConsumeCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

@@ -1776,6 +1776,8 @@ readAnother:
             return;
         }
 
+        SpanTimeStamp spanStartTimeStamp(true);
+
         PerfTracer perf;
         IRoxieContextLogger &logctx = static_cast<IRoxieContextLogger&>(*msgctx->queryLogContext());
         bool isHTTP = httpHelper.isHttp();
@@ -1900,6 +1902,8 @@ readAnother:
                 unsigned readFlags = (unsigned) global->defaultXmlReadFlags | ptr_ignoreNameSpaces;
                 readFlags &= ~ptr_ignoreWhiteSpace;
                 readFlags |= (whitespace == WhiteSpaceHandling::Strip ? ptr_ignoreWhiteSpace : ptr_none);
+
+                CCycleTimer xmlTimer;
                 try
                 {
                     createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive|ipt_fast, (PTreeReaderOptions)readFlags, queryName);
@@ -1915,7 +1919,12 @@ readAnother:
                 Owned<IProperties> inlineTraceHeaders = createProperties(true);
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineTraceHeaders);
 
-                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders);
+                __uint64 timeProcessQueryText = xmlTimer.elapsedNs();
+
+                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders, &spanStartTimeStamp);
+
+                //This must be set after the startSpan - since that resets the stats in the logctx
+                logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span an complete lines.
 
                 if (!uid)
                     uid = "-";

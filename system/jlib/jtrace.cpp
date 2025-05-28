@@ -1860,7 +1860,7 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
 ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs)
 {
     SpanTimeStamp spanStartTimeStamp;
-    spanStartTimeStamp.now();
+    spanStartTimeStamp.setNow();
     spanStartTimeStamp.adjust(std::chrono::nanoseconds(-elapsedNs));
     return queryThreadedActiveSpan()->createInternalSpan(name, &spanStartTimeStamp);
 }

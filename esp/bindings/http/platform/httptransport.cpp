@@ -2089,7 +2089,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
     char oneline[MAX_HTTP_HEADER_LEN + 2];
 
     int lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN + 1, me);
-    m_receivedAt.now(); // use receipt of a first line as the start time for a server span
+    m_receivedAt.setNow(); // use receipt of a first line as the start time for a server span
     if(lenread <= 0) //special case client connected and disconnected, load balancer ping?
         return -1;
     else if (lenread > MAX_HTTP_HEADER_LEN)

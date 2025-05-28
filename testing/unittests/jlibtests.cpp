@@ -229,7 +229,7 @@ protected:
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         SpanTimeStamp declaredSpanStartTime;
-        declaredSpanStartTime.now(); // must be initialized via now(), or setMSTickTime
+        declaredSpanStartTime.setNow(); // must be initialized via setNow(), or setMSTickTime
         MilliSleep(125);
 
         {
@@ -238,8 +238,7 @@ protected:
             //{ "type": "span", "name": "declaredSpanStartTime", "trace_id": "0a2eff24e1996540056745aaeb2f5824", "span_id": "46d0faf8b4da893e",
             //"start": 1702672311203213259, "duration": 125311051 }
 
-            SpanTimeStamp clientSpanTimeStamp;
-            clientSpanTimeStamp.now();
+            SpanTimeStamp clientSpanTimeStamp(true);
             MilliSleep(20);
             OwnedActiveSpanScope clientSpan = serverSpan->createClientSpan("clientSpanStartTime", &clientSpanTimeStamp);
             //{ "type": "span", "name": "clientSpanStartTime", "trace_id": "f73b171fdcd120f88ca5b656866befee", "span_id": "7c798125d10ee0ec",
@@ -256,8 +255,7 @@ protected:
         MilliSleep(50);
 
         {
-            SpanTimeStamp nowTimeStamp; //not used, printed out as "start" time for manual comparison
-            nowTimeStamp.now();
+            SpanTimeStamp nowTimeStamp(true); //not used, printed out as "start" time for manual comparison
             {
                 OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("msTickOffsetStartTime", emptyMockHTTPHeaders, &msTickOffsetTimeStamp);
 
