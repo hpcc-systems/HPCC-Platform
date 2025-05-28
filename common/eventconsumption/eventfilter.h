@@ -20,7 +20,7 @@
 #include "eventconsumption.h"
 #include "eventvisitor.h"
 
-// Extension of IEventVisitor that supports filtering of visited files and events. Implementations
+// Extension of IEventAttributeVisitor that supports filtering of visited files and events. Implementations
 // will decorate another visitor, forwarding all visits not blocked by the specified constraints to
 // the decorated visitor.
 //
@@ -30,7 +30,7 @@
 //
 // An event blocked by an attribute constraint must not be forwarded to the decorated visitor.
 // Events that do not include a constrained attribute are not blocked.
-interface IEventFilter : extends IEventVisitor
+interface IEventFilter : extends IEventAttributeVisitor
 {
     // Filter on a single event type. All events are accepted by default.
     virtual bool acceptEvent(EventType type) = 0;
@@ -59,7 +59,7 @@ interface IEventFilter : extends IEventVisitor
 
     // Install the recipient of unfiltered visits. `readEvents` will call this method before
     // beginning visitation.
-    virtual void setTarget(IEventVisitor& visitor) = 0;
+    virtual void setTarget(IEventAttributeVisitor& visitor) = 0;
 };
 
 // Obtain a new instance of a standard event filter.

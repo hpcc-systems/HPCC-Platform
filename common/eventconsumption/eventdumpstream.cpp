@@ -123,7 +123,7 @@ protected:
     }
 };
 
-IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
+IEventAttributeVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpTextEventVisitor(out);
 }
@@ -207,7 +207,7 @@ private:
     unsigned indentLevel{0};
 };
 
-IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventAttributeVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpXMLEventVisitor(out);
 }
@@ -341,7 +341,7 @@ private:
     bool firstEvent{true};
 };
 
-IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
+IEventAttributeVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpJSONEventVisitor(out);
 }
@@ -437,7 +437,7 @@ protected:
     uint8_t indentLevel{0};
 };
 
-IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventAttributeVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpYAMLEventVisitor(out);
 }
@@ -509,7 +509,7 @@ private:
     std::set<EventAttr> headerAttrs;
 };
 
-IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
+IEventAttributeVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpCSVEventVisitor(out);
 }

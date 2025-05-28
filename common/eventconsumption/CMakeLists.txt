@@ -31,6 +31,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexhotspot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexsummarize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventvisitor.cpp
 )
 
 ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
