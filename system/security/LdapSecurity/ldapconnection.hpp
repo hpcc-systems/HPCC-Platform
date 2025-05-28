@@ -337,6 +337,7 @@ interface ILdapClient : extends IInterface
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) = 0;
     virtual bool organizationalUnitExists(const char * ou) const = 0;
     virtual bool addUser(ISecUser & user, const char* basedn) = 0;
+    virtual void setUseLegacySuperUserStatusCheck(bool value) = 0;
 };
 
 ILdapClient* createLdapClient(IPropertyTree* cfg);
