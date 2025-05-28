@@ -28,6 +28,8 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 import Std.File AS FileServices;
 import $.setup;
+import Sleep from Std.System.Debug;
+
 prefix := setup.Files(false, false).QueryFilePrefix;
 filename := prefix + 'workflow_9bFile';
 
@@ -56,6 +58,12 @@ conditionalDelete(string lfn) := FUNCTION
 END;
 SEQUENTIAL(
   conditionalDelete(filename),
-  SEQUENTIAL(A,output(B,named('B2')),A2,output(B,named('B4'))),
+  SEQUENTIAL(
+    A,output(B,named('B2')),
+    // Roxie caches files by crc and modification date
+    // Only 1 second granularity can be guaranteed on the modification dates - so sleep to ensure the update is spotted
+    Sleep(1000),
+    A2,output(B,named('B4'))
+  ),
   FileServices.DeleteLogicalFile(filename)
 ) : WHEN(CRON('* * * * *'), count(1));

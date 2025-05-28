@@ -12082,10 +12082,7 @@ protected:
     IHThorDiskWriteArg &helper;
     Owned<IRecordSize> diskmeta;
     Owned<IRoxieWriteHandler> writer;
-
-    bool tallycrc;
     unsigned __int64 uncompressedBytesWritten;
-    CRC32 crc;
 
     void updateWorkUnitResult(unsigned __int64 reccount)
     {
@@ -12199,7 +12196,6 @@ public:
             blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && ((0 == fixedSize) || (fixedSize >= MIN_ROWCOMPRESS_RECSIZE)))); //always use new compression
         }
         encrypted = false; // set later
-        tallycrc = true;
         uncompressedBytesWritten = 0;
     }
 
@@ -12244,14 +12240,11 @@ public:
         diskout.setown(createBufferedIOStream(io));
         if (extend)
             diskout->seek(0, IFSend);
-        tallycrc = !blockcompressed; // MORE: Should this be controlled by an activity hint/flag?
         Owned<IRowInterfaces> rowIf = createRowInterfaces(input->queryOutputMeta(), activityId, factory->getHeapFlags(), ctx->queryCodeContext());
         rowSerializer.set(rowIf->queryRowSerializer());
         unsigned rwFlags = rw_autoflush;
         if(grouped)
             rwFlags |= rw_grouped;
-        if(tallycrc)
-            rwFlags |= rw_crc;
         outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
 
@@ -12267,7 +12260,7 @@ public:
             else
             {
                 if (outSeq)
-                    outSeq->flush(&crc);
+                    outSeq->flush();
                 if (outSeq)
                     uncompressedBytesWritten = outSeq->getPosition();
                 outSeq.clear();
@@ -12299,7 +12292,6 @@ public:
         outSeq.clear();
         writer.clear();
         uncompressedBytesWritten = 0;
-        crc.reset();
     }
 
     virtual void onExecute()
@@ -12331,8 +12323,6 @@ public:
             partProps.setPropInt64("@compressedSize", partProps.getPropInt64("@size", 0));
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
-        else if (tallycrc && crc.get())
-            partProps.setPropInt64("@fileCrc", crc.get());
 
         if (encrypted)
             fileProps.setPropBool("@encrypted", true);

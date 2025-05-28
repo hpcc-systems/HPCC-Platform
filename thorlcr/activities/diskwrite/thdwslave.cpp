@@ -91,8 +91,6 @@ protected:
                 unsigned outLength = csvOutput.length();
 
                 outraw->write(outLength,outText);
-                if (calcFileCrc)
-                    fileCRC.tally(outLength, outText);
             }
         }
         while(!abortSoon)
@@ -109,8 +107,6 @@ protected:
             unsigned outLength = csvOutput.length();
 
             outraw->write(outLength,outText);
-            if (calcFileCrc)
-                fileCRC.tally(outLength, outText);
 
             processed++;
         }
@@ -125,8 +121,6 @@ protected:
                 unsigned outLength = csvOutput.length();
 
                 outraw->write(outLength,outText);
-                if (calcFileCrc)
-                    fileCRC.tally(outLength, outText);
             }
         }
     }
