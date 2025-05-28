@@ -570,6 +570,7 @@ public:
     CIArrayOf<cMessage> errors;
     CIArrayOf<cMessage> warnings;
     StringAttr rootdir;
+    size32_t rootdirsz = 0;
     unsigned lastlog;
     unsigned sfnum;
     unsigned fnum;
@@ -938,7 +939,6 @@ public:
             if (!plane)
                 throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
             rootdir.set(plane->queryProp("@prefix"));
-            assert(!rootdir.isEmpty());
         }
         else if (basedir.length()==0) {
             const char *ddir = "thor";
@@ -958,6 +958,8 @@ public:
             rootdir.set(basedir);
             iswin = getPathSepChar(rootdir.get())=='\\';
         }
+        assert(!rootdir.isEmpty());
+        rootdirsz = rootdir.length();
         return true;
     }
 
@@ -1048,7 +1050,7 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                if (pdir==root && isPlaneStriped) {
+                if (pdir==root && dsz == rootdirsz && isPlaneStriped) {
                     // Check if subdirectory is a stripe directory
                     const char *dir = fname.str();
                     bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character

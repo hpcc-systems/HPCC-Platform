@@ -308,7 +308,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
         lname = expandMask(partName, pmask, partNo, max);
     }
 
-    unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, numDevices);
+    unsigned stripeNum = calcStripeNumber(partNo, lfnHash, numDevices);
 
     StringBuffer fullname;
     makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
