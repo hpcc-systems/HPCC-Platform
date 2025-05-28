@@ -6715,6 +6715,7 @@ public:
         attrs.removeProp(getDFUQResultFieldName(DFUQRFnumDiskWrites));
         attrs.removeProp(getDFUQResultFieldName(DFUQRFreadCost));
         attrs.removeProp(getDFUQResultFieldName(DFUQRFwriteCost));
+        attrs.removeProp("@lfnHash");
 
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)

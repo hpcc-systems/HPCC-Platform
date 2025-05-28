@@ -58,6 +58,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SSL_INI "eclSSL"
 #define ECLOPT_SSL_ENV "ECL_SSL"
 
+#define ECLOPT_KEEP_ALIVE "--keepAlive"
+
 //The following TLS options could be made more verbose, but these match CURL for convenience
 #define ECLOPT_CLIENT_CERT "--cert"
 #define ECLOPT_CA_CERT "--cacert"
@@ -329,6 +331,7 @@ public:
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
                 "   --wait-connect=<Ms>    Timeout while connecting to server (in milliseconds)\n"
                 "   --wait-read=<Sec>      Timeout while reading from socket (in seconds)\n"
+                "   --keepAlive            Keep the connection to the server open\n"
               );
     }
 public:
@@ -345,6 +348,7 @@ public:
     unsigned optWaitReadSec = 0;
     bool optVerbose;
     bool optSSL;
+    bool optKeepAlive = false;
     bool sslOptProvided = false;
     bool optAcceptSelfSigned = false;
     bool selfsignedOptProvided = false;
