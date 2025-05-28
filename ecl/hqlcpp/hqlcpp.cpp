@@ -2036,6 +2036,14 @@ void HqlCppTranslator::postProcessOptions()
     if (options.resourceSequential)
         options.resourceConditionalActions = true;
 
+    if (options.allowStaticRegex && wu()->getDebugValueBool("standAloneExe", false))
+    {
+        //Static regexes are not generated in stand-alone executables because they are initialised
+        //before the regex cache - causing a crash.
+        options.defaultStaticRegex = false;
+        options.allowStaticRegex = false;
+    }
+
     options.generateActivityThresholdCycles = nanosec_to_cycle(options.generateActivityThreshold * I64C(1000000));
 
     //Probably best to ignore this warning. - possibly configure it based on some other option
