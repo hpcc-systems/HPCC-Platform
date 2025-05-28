@@ -18,13 +18,14 @@
 //Create a pathologically compressible index - especially with the new inplace compression
 #onwarning (4523, ignore);
 
+import Std.File AS FileServices;
 import std.system.thorlib;
 
 r := { string10 key => unsigned value };
 numRows := 2000000;
 scale := 1;
 
-ds := DATASET(numRows, TRANSFORM(r, SELF.key := INTFORMAT(COUNTER, 10, 1); SELF.value := COUNTER * scale), DISTRIBUTED);
+ds := DATASET(numRows, TRANSFORM(r, SELF.key := INTFORMAT(COUNTER/2, 10, 1); SELF.value := COUNTER * scale), DISTRIBUTED);
 
 engine := thorlib.platform();
 filename := '~regress::index::numeric::' + engine;
@@ -41,6 +42,7 @@ s := PROJECT(ds, recordof(numberIndex));
 
 
 ordered(
-BUILD(numberIndex, ds, overwrite, LOCAL);
-compareFiles(s, numberIndex);
+    BUILD(numberIndex, ds, overwrite, LOCAL);
+    compareFiles(s, numberIndex);
+    FileServices.DeleteLogicalFile(filename);
 );

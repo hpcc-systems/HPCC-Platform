@@ -602,7 +602,6 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
-        mb.append(inactiveStats.getStatisticValue(StNumDuplicateKeys));
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;
