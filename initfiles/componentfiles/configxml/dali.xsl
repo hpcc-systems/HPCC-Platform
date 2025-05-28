@@ -312,6 +312,9 @@
             <xsl:attribute name="useLegacyDefaultFileScopePermissionCache">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@useLegacyDefaultFileScopePermissionCache"/>
             </xsl:attribute>
+            <xsl:attribute name="useLegacySuperUserStatusByNameMatchHPCCAdminUser">
+              <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@useLegacySuperUserStatusByNameMatchHPCCAdminUser"/>
+            </xsl:attribute>
             <xsl:attribute name="disableDefaultUser">
               <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@disableDefaultUser"/>
             </xsl:attribute>

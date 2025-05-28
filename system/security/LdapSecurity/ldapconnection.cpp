@@ -1614,6 +1614,7 @@ private:
     };
     ReadWriteLock             m_unknownSIDCacheLock;
     CIArrayOf<MemoryAttrItem> m_unknownSIDCache;//cache Security Identifier Structure (SID) of previously deleted/orphaned LDAP objects
+    bool m_useLegacySuperUserStatusByNameMatchHPCCAdminUser = false;
 
 
 public:
@@ -4664,9 +4665,14 @@ public:
         }
 
         const char* username = user->getName();
-        const char* sysuser = m_ldapconfig->getSysUser();
-        if(sysuser != NULL && stricmp(sysuser, username) == 0)
-            return true;
+
+        // Only check username against HPCCAdmin if legacy behavior is enabled
+        if (m_useLegacySuperUserStatusByNameMatchHPCCAdminUser)
+        {
+            const char* sysuser = m_ldapconfig->getSysUser();
+            if(sysuser != NULL && stricmp(sysuser, username) == 0)
+                return true;
+        }
         StringBuffer userdn;
         getUserDN(username, userdn);
         return userInGroup(userdn.str(), m_ldapconfig->getAdminGroupDN());
@@ -4755,6 +4761,12 @@ public:
         else
             return m_pwscheme.str();
     }
+
+    virtual void setUseLegacySuperUserStatusByNameMatchHPCCAdminUser(bool value)
+    {
+        m_useLegacySuperUserStatusByNameMatchHPCCAdminUser = value;
+    }
+
 
 private:
     class SDServerCtlWrapper
