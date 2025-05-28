@@ -1194,21 +1194,50 @@ static StringBuffer &getQueues(StringBuffer &queueNames)
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
     StringAttr queueNames;
-    unsigned poolSize;
-    Owned<IThreadPool> pool;
+    unsigned poolSize{0};
+    CriticalSection poolCS;
+    IThreadPool *pool{nullptr};
+    IArrayOf<IThreadPool> prevPools;
 
-    unsigned threadsActive;
+    unsigned threadsActive{0};
     CriticalSection threadActiveCrit;
-    std::atomic<bool> running;
+    std::atomic<bool> running{false};
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
     CriticalSection queueUpdateCS;
     StringAttr updatedQueueNames;
     CConfigUpdateHook reloadConfigHook;
 
-
     void configUpdate()
     {
+        {
+            CriticalBlock b(poolCS);
+            maintainPrevPools();
+            Owned<IPropertyTree> config = getComponentConfigSP();
+    #ifdef _CONTAINERIZED
+            unsigned newPoolSize = config->getPropInt("@maxActive", 4);
+    #else
+            // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
+            // still accept the old name if the new one is not present.
+            unsigned newPoolSize = config->getPropInt("@maxEclccProcesses", config->getPropInt("@maxCompileThreads", 4));
+    #endif
+            if (newPoolSize != poolSize)
+            {
+                poolSize = newPoolSize;
+
+                if (pool)
+                {
+                    if (pool->runningCount())
+                        prevPools.append(*pool);
+                    else
+                        pool->Release();
+                }
+
+                DBGLOG("New eclccServerPool created for poolSize: %d", poolSize);
+                pool = createThreadPool("eclccServerPool", this, false, nullptr, poolSize, INFINITE);
+            }
+        }
+
         StringBuffer newQueueNames;
         getQueues(newQueueNames);
         if (!newQueueNames.length())
@@ -1227,21 +1256,31 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     }
 public:
     IMPLEMENT_IINTERFACE;
-    EclccServer(const char *_queueName, unsigned _poolSize)
-        : poolSize(_poolSize), serverstatus("ECLCCserver"), updatedQueueNames(_queueName)
-    {
-        threadsActive = 0;
-        running = false;
-        pool.setown(createThreadPool("eclccServerPool", this, false, nullptr, poolSize, INFINITE));
-        serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
-        serverstatus.commitProperties();
-        reloadConfigHook.installOnce(std::bind(&EclccServer::configUpdate, this), false);
-    }
+    EclccServer() : serverstatus("ECLCCserver") {}
 
     ~EclccServer()
     {
         reloadConfigHook.clear();
-        pool->joinAll(false, INFINITE);
+        ForEachItemInRev(poolIdx, prevPools)
+        {
+            IThreadPool &prevPool = prevPools.item(poolIdx);
+            prevPool.joinAll(false, INFINITE);
+            prevPools.remove(poolIdx);
+            prevPool.Release();
+        }
+        if (pool)
+        {
+            pool->joinAll(false, INFINITE);
+            pool->Release();
+        }
+    }
+
+    void init()
+    {
+        serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
+        serverstatus.commitProperties();
+
+        reloadConfigHook.installOnce(std::bind(&EclccServer::configUpdate, this), true);
     }
 
     void run()
@@ -1250,6 +1289,10 @@ public:
         LocalIAbortHandler abortHandler(*this);
         while (running)
         {
+            CLeavableCriticalBlock b(poolCS);
+            maintainPrevPools();
+            b.leave();
+
             try
             {
                 bool newQueues = false;
@@ -1274,18 +1317,26 @@ public:
                     serverstatus.commitProperties();
                     DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
                 }
-                if (!pool->waitAvailable(10000))
+
+                b.enter();
+                if (pool && !pool->waitAvailable(10000))
                 {
+                    b.leave();
+
                     if (getComponentConfigSP()->getPropInt("@traceLevel", 0) > 2)
                         DBGLOG("Blocked for 10 seconds waiting for an available compiler thread");
                     continue;
                 }
+                b.leave();
+
                 Owned<IJobQueueItem> item = queue->dequeue();
                 if (item.get())
                 {
                     try
                     {
-                        pool->start((void *) item->queryWUID());
+                        CriticalBlock b(poolCS);
+                        if (pool)
+                            pool->start((void *) item->queryWUID());
                     }
                     catch(IException *e)
                     {
@@ -1323,7 +1374,7 @@ public:
         return new EclccCompileThread(threadsActive++);
     }
 
-    virtual bool onAbort() 
+    virtual bool onAbort()
     {
         running = false;
         Linked<IJobQueue> currentQueue;
@@ -1335,6 +1386,20 @@ public:
         if (currentQueue)
             currentQueue->cancelAcceptConversation();
         return false;
+    }
+
+private:
+    void maintainPrevPools()
+    {
+        ForEachItemInRev(poolIdx, prevPools)
+        {
+            IThreadPool &prevPool = prevPools.item(poolIdx);
+            if (prevPool.runningCount() == 0)
+            {
+                prevPools.remove(poolIdx);
+                prevPool.Release();
+            }
+        }
     }
 };
 
@@ -1482,29 +1547,19 @@ int main(int argc, const char *argv[])
         }
         else
         {
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+            queryCodeSigner().initForContainer();
+
+            useChildProcesses = globals->getPropBool("@useChildProcesses", false);
+            childProcessTimeLimit = useChildProcesses ? 0 : globals->getPropInt("@childProcessTimeLimit", 10);
+#else
             unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
             if (optMonitorInterval)
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
 #endif
 
-            StringBuffer queueNames;
-            getQueues(queueNames);
-            if (!queueNames.length())
-                throw MakeStringException(0, "No queues found to listen on");
-
-#ifdef _CONTAINERIZED
-            queryCodeSigner().initForContainer();
-
-            useChildProcesses = globals->getPropBool("@useChildProcesses", false);
-            unsigned maxThreads = globals->getPropInt("@maxActive", 4);
-            childProcessTimeLimit = useChildProcesses ? 0 : globals->getPropInt("@childProcessTimeLimit", 10);
-#else
-            // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
-            // still accept the old name if the new one is not present.
-            unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
-#endif
-            EclccServer server(queueNames.str(), maxThreads);
+            EclccServer server;
+            server.init();
             // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
             // put in its own "scope" to force the flush
             writeSentinelFile(sentinelFile);
