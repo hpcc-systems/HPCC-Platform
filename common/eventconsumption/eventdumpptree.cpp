@@ -22,7 +22,7 @@
 // after visitation.
 class CPTreeEventVisitor : public CDumpEventVisitor
 {
-public: // IEventVisitor
+public: // IEventAttributeVisitor
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         tree.setown(createPTree(DUMP_STRUCTURE_ROOT));
@@ -72,7 +72,7 @@ IEventPTreeCreator* createEventPTreeCreator()
     class Creator : public CInterfaceOf<IEventPTreeCreator>
     {
     public:
-        virtual IEventVisitor& queryVisitor() override
+        virtual IEventAttributeVisitor& queryVisitor() override
         {
             return *visitor;
         }
