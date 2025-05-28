@@ -308,6 +308,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
         lname = expandMask(partName, pmask, partNo, max);
     }
 
+    // NB: calcStripeNumber expects a 0-based part number. 'partNo' is already decremented earlier to make it 0-based.
     unsigned stripeNum = calcStripeNumber(partNo, lfnHash, numDevices);
 
     StringBuffer fullname;

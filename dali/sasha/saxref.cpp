@@ -1050,8 +1050,10 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                if (pdir==root && dsz == rootdirsz && isPlaneStriped) {
-                    // Check if subdirectory is a stripe directory
+                // NB: Check if a subdirectory is a stripe directory under certain conditions
+                // Stripe directories must be under root. The path length (dsz) should equal the prefix length (rootdirsz)
+                // Only look for stripe directories if the plane details say it is striped
+                if (dsz == rootdirsz && isPlaneStriped) {
                     const char *dir = fname.str();
                     bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
                     if (isDirStriped) {
