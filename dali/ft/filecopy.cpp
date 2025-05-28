@@ -3700,7 +3700,8 @@ cost_type FileSprayer::updateTargetProperties()
                      ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
                      ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
                      (stricmp(aname,"@local")==0)||
-                     (stricmp(aname,"@recordCount")==0)
+                     (stricmp(aname,"@recordCount")==0) ||
+                     (stricmp(aname,"@lfnHash")==0)
                      )
                     )
                     curProps.setProp(aname,aiter->queryValue());
