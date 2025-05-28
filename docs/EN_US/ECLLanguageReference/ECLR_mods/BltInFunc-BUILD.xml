@@ -864,9 +864,8 @@ BUILD(FilterDsLib1);
           <row>
             <entry><emphasis role="bold">LZW</emphasis></entry>
 
-            <entry>A variant of the Lempel-Ziv-Welch algorithm. This was the
-            the default compression prior to versions 9.6.90, 9.8.66,and
-            9.10.12.</entry>
+            <entry>The default compression. A variant of the Lempel-Ziv-Welch
+            algorithm. </entry>
           </row>
 
           <row>
@@ -912,8 +911,8 @@ BUILD(FilterDsLib1);
             compression on the payload. This uses the high compression (HC)
             version of the LZ4 stream API to avoid recompressing the data and
             reduce the index build times. The default compression for inplace
-            indexes in versions after versions 9.6.90, 9.8.66, and 9.10.12.
-            </entry>
+            indexes in versions after versions 9.6.90, 9.8.66, and
+            9.10.12.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -955,7 +954,7 @@ BUILD(FilterDsLib1);
           <row>
             <entry><emphasis role="bold">hclevel</emphasis></entry>
 
-            <entry>An integer between 2 and 12 to specify the level of
+            <entry>An integer between 3 and 12 to specify the level of
             compression. The default is 3. Higher levels increase the
             compression, but also increase the compression times. This may be
             cost effective depending on the length of time the data is stored,
