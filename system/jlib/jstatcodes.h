@@ -359,6 +359,7 @@ enum StatisticKind
     StNumRowsWritten,
     StTimeQueryConsume,
     StCycleQueryConsumeCycles,
+    StNumSuccesses,
     StMax,
 
     //For any quantity there is potentially the following variants.

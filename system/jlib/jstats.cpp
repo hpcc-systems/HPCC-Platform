@@ -1026,6 +1026,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(RowsWritten), "The number of rows written to an output" },
     { TIMESTAT(QueryConsume), "The total time spent consuming and processing a query input" },
     { CYCLESTAT(QueryConsume) },
+    { NUMSTAT(Successes), "The number of times something was successful" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
