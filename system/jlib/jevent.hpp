@@ -103,7 +103,6 @@ enum EventAttrType
 
 extern jlib_decl EventType queryEventType(const char* name);
 extern jlib_decl const char * queryEventName(EventType event);
-extern jlib_decl EventAttr* queryEventAttributes(EventType event);
 extern jlib_decl EventAttr queryEventAttribute(const char* name);
 extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
 extern jlib_decl EventAttrType queryEventAttributeType(EventAttr attr);
@@ -135,7 +134,7 @@ interface IEventAttributeIterator : extends IInterface
     virtual const IEventAttribute& query() const = 0;
 };
 
-interface IEvent : extends IInterface
+interface IEvent
 {
     virtual EventType queryType() const = 0;
     virtual bool isAttribute(EventAttr attr) const = 0; // can an event include the attribute
