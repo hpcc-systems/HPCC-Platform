@@ -4202,8 +4202,11 @@ public:
         }
         catch (IException *e)
         {
+            StringBuffer msg;
+            e->errorMessage(msg);
             EXCLOG(e, nullptr);
-            throw;
+            ::Release(e);
+            CPPUNIT_FAIL(msg.str());
         }
     }
 
@@ -4267,6 +4270,11 @@ public:
                     testCompressor(handler, "hclevel=8", rowSz, src.length(), src.bytes(), RowCompress);
                     testCompressor(handler, "hclevel=10", rowSz, src.length(), src.bytes(), RowCompress);
                 }
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
+                {
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                    continue;
+                }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
                 if (streq(type, "LZ4"))
@@ -4278,8 +4286,11 @@ public:
         }
         catch (IException *e)
         {
+            StringBuffer msg;
+            e->errorMessage(msg);
             EXCLOG(e, nullptr);
-            throw;
+            ::Release(e);
+            CPPUNIT_FAIL(msg.str());
         }
     }
 
