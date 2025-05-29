@@ -938,7 +938,6 @@ public:
             if (!plane)
                 throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
             rootdir.set(plane->queryProp("@prefix"));
-            assert(!rootdir.isEmpty());
         }
         else if (basedir.length()==0) {
             const char *ddir = "thor";
@@ -958,6 +957,7 @@ public:
             rootdir.set(basedir);
             iswin = getPathSepChar(rootdir.get())=='\\';
         }
+        assert(!rootdir.isEmpty());
         return true;
     }
 
@@ -1010,7 +1010,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile)
+    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level)
     {
         size32_t dsz = path.length();
         if (pdir==NULL) 
@@ -1048,8 +1048,10 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())  {
-                if (pdir==root && isPlaneStriped) {
-                    // Check if subdirectory is a stripe directory
+                // NB: Check if a subdirectory is a stripe directory under certain conditions
+                // Stripe directories must be under root. The level is 0 if root
+                // Only look for stripe directories if the plane details say it is striped
+                if ((level == 0) && isPlaneStriped) {
                     const char *dir = fname.str();
                     bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
                     if (isDirStriped) {
@@ -1066,7 +1068,7 @@ public:
                             // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
                             // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
                             // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                            if (!scanDirectory(node,ep,path,drv,pdir,NULL))
+                            if (!scanDirectory(node,ep,path,drv,pdir,NULL,level+1))
                                 return false;
 
                             path.setLength(dsz);
@@ -1094,7 +1096,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file,level+1))
                 return false;
             path.setLength(dsz);
         }
@@ -1134,7 +1136,7 @@ public:
                 SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                 StringBuffer tmp;
                 parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
-                if (!parent.scanDirectory(i,ep,path,0,NULL,NULL)) {
+                if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
                     ok = false;
                     return;
                 }
@@ -1143,7 +1145,7 @@ public:
                     setReplicateFilename(path,1);
                     ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
+                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
                         ok = false;
                     }
                 }
