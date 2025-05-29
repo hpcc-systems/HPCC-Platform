@@ -662,6 +662,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 IncludeDebugValues: args.onGetDebugValues ? true : false,
                 IncludeApplicationValues: args.onGetApplicationValues ? true : false,
                 IncludeWorkflows: args.onGetWorkflows ? true : false,
+                IncludeProcesses: args.onGetProcesses ? true : false,
                 IncludeXmlSchemas: false,
                 IncludeServiceNames: args.onGetServiceNames ? true : false,
                 SuppressResultSchemas: true
@@ -743,6 +744,9 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 }
                 if (args.onGetWorkflows && lang.exists("Workflows.ECLWorkflow", context)) {
                     args.onGetWorkflows(context.Workflows.ECLWorkflow);
+                }
+                if (args.onGetProcesses && lang.exists("ECLWUProcessList.ECLWUProcess", context)) {
+                    args.onGetProcesses(context.ECLWUProcessList.ECLWUProcess);
                 }
                 if (args.onGetServiceNames && lang.exists("ServiceNames.Item", context)) {
                     args.onGetServiceNames(context.ServiceNames.Item);
