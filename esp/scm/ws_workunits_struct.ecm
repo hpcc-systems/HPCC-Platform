@@ -909,7 +909,10 @@ ESPStruct LogAccessFilter
     ESPenum LogSelectColumnMode SelectColumnMode(1);
     ESParray<string> CustomColumns;
     ESParray<string> ComponentsFilter;
-    LogAccessLogFormat Format("CSV");
+    //LogAccessLogFormat Format("CSV);
+    //Above line replaced by below line to avoid downstream issues due to missing
+    //ESPenum qualifier. This field has been treated as string by legacy users
+    string Format("CSV");
     ESPenum SortDirection sortByTimeDirection(1);
     ESPenum LogEventClass LogEventType;
 };
