@@ -908,6 +908,9 @@ export function resolve(hpccWidget, callback) {
         case "WorkflowsWidget":
             require(["hpcc/WorkflowsWidget"], doLoad);
             break;
+        case "ProcessesWidget":
+            require(["hpcc/ProcessesWidget"], doLoad);
+            break;
         case "WUDetailsWidget":
             require(["hpcc/WUDetailsWidget"], doLoad);
             break;
