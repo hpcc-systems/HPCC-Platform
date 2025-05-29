@@ -127,7 +127,8 @@ int copyExpanded(const char *from, const char *to, bool stats)
         printf("ERROR: could not open '%s' for read\n",from);
         doexit(3);
     }
-    Owned<ICompressedFileIO> cmpio = createCompressedFileReader(srcio);
+    Owned<IFileIO> io = createCompressedFileReader(srcio);
+    ICompressedFileIO * cmpio = dynamic_cast<ICompressedFileIO *>(io.get());
     Owned<IFileIOStream> strmsrc;
     bool flzstrm = false;
     bool lz4strm = false;
@@ -192,7 +193,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
     try
     {
         for (;;) {
-            size32_t got = cmpio.get()?cmpio->read(offset,BUFFERSIZE, buffer):
+            size32_t got = cmpio?cmpio->read(offset,BUFFERSIZE, buffer):
                 (strmsrc?strmsrc->read(BUFFERSIZE, buffer):
                     srcio->read(offset, BUFFERSIZE, buffer));
             if (got == 0)
@@ -221,7 +222,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
     CDateTime createTime, modifiedTime;
     if (srcfile->getTime(&createTime, &modifiedTime, NULL))
         dstfile->setTime(&createTime, &modifiedTime, NULL);
-    printf("copied %s to %s%s\n",from,to,(cmpio.get()||strmsrc)?" expanding":"");
+    printf("copied %s to %s%s\n",from,to,(cmpio||strmsrc)?" expanding":"");
     return 0;
 }
 

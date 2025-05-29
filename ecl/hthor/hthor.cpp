@@ -8875,7 +8875,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
             agent.fail(1, s.str());
         }
 
-        unsigned readBufferSize = queryReadBufferSize();
+        unsigned readBufferSize = hthorReadBufferSize; // more should depend on the storage plane
         inputstream.setown(createFileSerialStream(inputfileio, 0, filesize, readBufferSize));
 
         StringBuffer report("Reading file ");
@@ -8964,11 +8964,6 @@ void CHThorBinaryDiskReadBase::closepart()
     prefetchBuffer.clearStream();
     deserializeSource.clearStream();
     CHThorDiskReadBaseActivity::closepart();
-}
-
-unsigned CHThorBinaryDiskReadBase::queryReadBufferSize()
-{
-    return hthorReadBufferSize;
 }
 
 void CHThorBinaryDiskReadBase::open()
@@ -9735,12 +9730,7 @@ bool CHThorXmlReadActivity::openNext()
     localOffset = 0;
     if (CHThorDiskReadBaseActivity::openNext())
     {
-        unsigned readBufferSize = queryReadBufferSize();
-        OwnedIFileIOStream inputfileiostream;
-        if(readBufferSize)
-            inputfileiostream.setown(createBufferedIOStream(inputfileio, readBufferSize));
-        else
-            inputfileiostream.setown(createIOStream(inputfileio));
+        OwnedIFileIOStream inputfileiostream = createIOStream(inputfileio);
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
         if (kind==TAKjsonread)
