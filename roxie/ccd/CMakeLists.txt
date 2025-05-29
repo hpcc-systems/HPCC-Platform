@@ -116,6 +116,9 @@ endif()
 
 
 HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )
+if (EMSCRIPTEN)
+    set_target_properties(ccd PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -Wno-error=nontrivial-memcall")
+endif ()
 install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 
 target_link_libraries ( ccd 

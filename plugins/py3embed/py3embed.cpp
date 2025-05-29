@@ -44,7 +44,7 @@
 #include "enginecontext.hpp"
 #include <regex>
 
-#if defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__)
+#if defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__) || defined(EMSCRIPTEN)
 #include <execinfo.h> // comment out if not present
 #define HAS_BACKTRACE
 #endif

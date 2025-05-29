@@ -32,7 +32,7 @@
 #ifdef _WIN32
 #include "psapi.h"
 #include <eh.h>
-#elif defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__)
+#elif defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__) || defined(EMSCRIPTEN)
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stddef.h>

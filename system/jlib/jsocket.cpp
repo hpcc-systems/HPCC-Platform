@@ -350,7 +350,7 @@ struct MCASTREQ
 #define CHECKSOCKRANGE(s)
 #define _USE_SELECT // Windows bug 309411 - WSAPoll does not report failed connections - wont fix
 // #define poll(a, b, c) WSAPoll((a), (b), (c))
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 #define XFD_SETSIZE FD_SETSIZE
 #define T_FD_SET fd_set
 #define XFD_ZERO(s) FD_ZERO(s)
@@ -560,6 +560,7 @@ static Owned<CAddrInfoFactory> addrInfoFactory;
 static Owned<IThreadPool> addrInfoPool;
 static std::atomic<bool> addrInfoPoolCreated { false };
 
+#if !defined(EMSCRIPTEN)
 static bool useDNSTimeout()
 {
     queryTCPSettings();
@@ -579,6 +580,7 @@ static bool useDNSTimeout()
     }
     return false;
 }
+#endif
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
