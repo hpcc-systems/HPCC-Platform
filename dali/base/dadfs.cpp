@@ -3451,6 +3451,10 @@ protected:
                     pt->setProp("@name",override);
                 else {
                     pt->removeProp("@name");
+
+                    // JCSMORE - this makes little sense. @name -> overridename
+                    // It is being set here specifically for a 1 part file, but without it (tested) it will construct
+                    // the name from the mask as normal.
                     const char *mask=queryPartMask();
                     if (mask&&*mask) {
                         StringBuffer tmp;
@@ -5957,7 +5961,7 @@ public:
         }
 
         // need common attributes
-        Owned<ISuperFileDescriptor> fdesc=createSuperFileDescriptor(at.getClear());
+        Owned<ISuperFileDescriptor> fdesc=createSuperFileDescriptor(at.getClear(), logicalName.isForeign() ? FileDescriptorFlags::foreign : FileDescriptorFlags::none);
         if (interleaved&&(interleaved!=2))
             IWARNLOG("getFileDescriptor: Unsupported interleave value (1)");
         fdesc->setSubMapping(subcounts,interleaved!=0);
@@ -5991,10 +5995,6 @@ public:
             fdesc->setPart(n,part.getFilename(rfn,copy),&part.queryAttributes());
             n++;
         }
-        // turn off dirperpart (if present) because the super descriptor has already encoded the common parent dir + tails above.
-        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(fdesc->queryProperties().getPropInt("@flags"));
-        flags &= ~FileDescriptorFlags::dirperpart;
-        fdesc->queryProperties().setPropInt("@flags", static_cast<int>(flags));
         fdesc->queryProperties().setPropInt("@accessMode", static_cast<int>(accessMode));
         ClusterPartDiskMapSpec mspec;
         if (subfiles.ordinality()) {
@@ -7287,45 +7287,45 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
     else
     {
         parent.adjustClusterDir(partIndex,copy,dir);
-
-// NB: could be compiled in bare-metal,
-// but bare-metal components without a config would complain as this calls getGlobalConfig()
         unsigned cn = copyClusterNum(copy, nullptr);
         IClusterInfo &cluster = parent.clusters.item(cn);
-        const char *planeName = cluster.queryGroupName();
-        if (!isEmptyString(planeName))
-        {
-            Owned<IStoragePlane> plane;
-#ifdef _CONTAINERIZED
-            plane.setown(getDataStoragePlane(planeName, false));
-#else
-            // this is for the remote useDafilesrv case,
-            // where the remote storage plane may be needed to remap/stripe, see below.
-            IPropertyTree *remoteStoragePlane = parent.queryAttributes().queryPropTree("_remoteStoragePlane");
-            if (remoteStoragePlane)
-                plane.setown(createStoragePlane(remoteStoragePlane));
-#endif
-            if (plane)
-            {
-                StringBuffer planePrefix(plane->queryPrefix());
-                Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(parent.accessMode);
-                if (alias)
-                {
-                    StringBuffer tmp;
-                    StringBuffer newPlanePrefix(alias->queryPrefix());
-                    if (setReplicateDir(dir, tmp, false, planePrefix, newPlanePrefix))
-                    {
-                        planePrefix.swapWith(newPlanePrefix);
-                        dir.swapWith(tmp);
-                    }
-                }
+        Owned<IStoragePlane> plane;
 
-                StringBuffer stripeDir;
-                unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
-                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, parent.lfnHash, numStripedDevices);
-                if (!stripeDir.isEmpty())
-                    dir.swapWith(stripeDir);
+        // this is for the remote useDafilesrv case,
+        // where the remote storage plane may be needed to remap/stripe, see below.
+        // NB: striping only supported in containerized environments.
+        IPropertyTree *remoteStoragePlane = parent.queryAttributes().queryPropTree("_remoteStoragePlane");
+        if (remoteStoragePlane) // implies from containerized environment
+            plane.setown(createStoragePlane(remoteStoragePlane));
+        else // local environment
+        {
+            if (isContainerized())
+            {
+                const char *planeName = cluster.queryGroupName();
+                if (!isEmptyString(planeName))
+                    plane.setown(getDataStoragePlane(planeName, false));
             }
+        }
+        if (plane)
+        {
+            StringBuffer planePrefix(plane->queryPrefix());
+            Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(parent.accessMode);
+            if (alias)
+            {
+                StringBuffer tmp;
+                StringBuffer newPlanePrefix(alias->queryPrefix());
+                if (setReplicateDir(dir, tmp, false, planePrefix, newPlanePrefix))
+                {
+                    planePrefix.swapWith(newPlanePrefix);
+                    dir.swapWith(tmp);
+                }
+            }
+
+            StringBuffer stripeDir;
+            unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
+            addStripeDirectory(stripeDir, dir, planePrefix, partIndex, parent.lfnHash, numStripedDevices);
+            if (!stripeDir.isEmpty())
+                dir.swapWith(stripeDir);
         }
         if (parent.hasDirPerPart())
             addPathSepChar(dir).append(partIndex+1); // part subdir 1 based
