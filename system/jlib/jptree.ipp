@@ -158,6 +158,7 @@ interface IPTArrayValue
     virtual IPropertyTree **getRawArray() const = 0;
     virtual CompressionMethod getCompressionType() const = 0;
 
+    virtual void serialize(IBufferedSerialOutputStream *out) = 0;
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
@@ -188,6 +189,8 @@ public:
     {
         return (IPropertyTree **)getArray();
     }
+
+    virtual void serialize(IBufferedSerialOutputStream *out) override { UNIMPLEMENTED; }
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
@@ -225,7 +228,7 @@ public:
     virtual unsigned find(const IPropertyTree *search) const override { throwUnexpected(); }
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
 
-
+    virtual void serialize(IBufferedSerialOutputStream *out);
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -731,7 +734,6 @@ public:
     virtual unsigned getAttributeCount() const override;
 
     virtual void serialize(IBufferedSerialOutputStream *out) override;
-
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;

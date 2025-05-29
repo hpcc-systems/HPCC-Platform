@@ -1092,6 +1092,18 @@ const void *CPTValue::queryValue() const
     return get();
 }
 
+void CPTValue::serialize(IBufferedSerialOutputStream *out)
+{
+    //Retain backward compatibility for the serialization format.
+    size32_t serialLen = (size32_t)length();
+    out->put(sizeof(size32_t), &serialLen);
+    if (serialLen)
+    {
+        out->put(sizeof(compressType), &compressType);
+        out->put(serialLen, get());
+    }
+}
+
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
     //Retain backward compatibility for the serialization format.
@@ -3005,7 +3017,9 @@ void PTree::serializeSelf(IBufferedSerialOutputStream &tgt)
     tgt.put(sizeof(flags), &flags);
     serializeAttributes(tgt);
     if (value)
-        value->serialize(tgt);
+    {
+        value->serialize(&tgt);
+    }
     else
     {
         size32_t zero{0};
