@@ -467,6 +467,12 @@ public:
             for (unsigned i=0; i < numRows; i++)
                 totalRead += dataProvider.check(in, i);
 
+            size32_t got;
+            CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", !in->peek(1, got));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", 0U, got);
+            CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", in->eos());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", in->tell(), totalRead);
+
             byte end;
             size32_t remaining = in->read(1, &end);
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", 0U, remaining);
