@@ -2173,7 +2173,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     Mutex runmutex;
     bool ignorelazylost, suspendCoalescer;
     Owned<IPropertyTree> props;
-    std::unordered_map<std::string, Owned<IPropertyTree>> storagePlanes;
+    std::unordered_map<std::string, Linked<IPropertyTree>> storagePlanes;
 
     class cRunThread: public Thread
     {
@@ -2274,16 +2274,16 @@ public:
             const char *planeName = list.item(i1);
             Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", planeName);
             ForEach(*planesIter) {
-                Owned<IPropertyTree> plane = LINK(&planesIter->get());
-                bool isNotCopy = !plane->getPropBool("@copy", false);
-                bool isNotHthorPlane = !plane->getPropBool("@hthorplane", false);
+                IPropertyTree &plane = planesIter->query();
+                bool isNotCopy = !plane.getPropBool("@copy", false);
+                bool isNotHthorPlane = !plane.getPropBool("@hthorplane", false);
                 if (isNotCopy && isNotHthorPlane) {
-                    planeName = plane->queryProp("@name");
+                    planeName = plane.queryProp("@name");
                     if (isContainerized()) {
                         groups.append(planeName);
                         cnames.append(planeName);
                     }
-                    storagePlanes[planeName].setown(plane.getClear());
+                    storagePlanes[planeName].set(&plane);
                 }
             }
         }
