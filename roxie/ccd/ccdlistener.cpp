@@ -1550,7 +1550,7 @@ public:
         return *cascade;
     }
 
-    virtual void startSpan(const char * id, const char * querySetName, const char * queryName, const IProperties * headers) override
+    virtual void startSpan(const char * id, const char * querySetName, const char * queryName, const IProperties * headers, const SpanTimeStamp * spanStartTimeStamp) override
     {
         Linked<const IProperties> allHeaders = headers;
         SpanFlags flags = (ensureGlobalIdExists) ? SpanFlags::EnsureGlobalId : SpanFlags::None;
@@ -1567,7 +1567,7 @@ public:
 
         ensureContextLogger();
 
-        requestSpan.setown(queryTraceManager().createServerSpan(!isEmptyString(queryName) ? queryName : "run_query", allHeaders, flags));
+        requestSpan.setown(queryTraceManager().createServerSpan(!isEmptyString(queryName) ? queryName : "run_query", allHeaders, spanStartTimeStamp, flags));
         requestSpan->setSpanAttribute("queryset.name", querySetName);
         logctx->setActiveSpan(requestSpan);
 
