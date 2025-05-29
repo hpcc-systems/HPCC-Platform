@@ -310,6 +310,19 @@ tracing:
 {{- end -}}
 {{- end -}}
 
+
+{{/*
+Generate analyzerOptions
+*/}}
+{{- define "hpcc.generateAnalyzerOptions" -}}
+{{- $analyzerOptions := deepCopy (.me.analyzerOptions | default dict) | mergeOverwrite dict (.root.Values.global.analyzerOptions | default dict) -}}
+{{- if not (empty $analyzerOptions) }}
+analyzerOptions:
+{{ toYaml $analyzerOptions | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+
 {{/*
 Generate local metrics configuration, merged with global
 Pass in dict with root and me
@@ -2623,7 +2636,7 @@ globalExcludeList below is a hard-coded list of global keys to exclude.
 
 */}}
 {{- define "hpcc.getConfigSHA" }}
-{{- $globalExcludeList := list "~.*::logging" "~.*::replicas" "~.*::vaults" "~.*::warnings" -}}
+{{- $globalExcludeList := list "~.*::logging" "~.*::replicas" "~.*::vaults" "~.*::warnings" "~.*::analyzerOptions" -}}
 {{- $globalExcludeSectionRegexList := list ".*-job.yaml$" -}}
 {{- $componentExcludeList := ternary (splitList "," (.excludeKeys | default "")) list (hasKey . "excludeKeys") -}}
 {{- $combinedExcludeKeyList := concat $globalExcludeList $componentExcludeList -}}

@@ -194,6 +194,26 @@ export function useWorkunitWorkflows(wuid: string): [WsWorkunits.ECLWorkflow[], 
     return [workflows, workunit, increment];
 }
 
+export function useWorkunitProcesses(wuid: string): [WsWorkunits.ECLWUProcess[], Workunit, () => void] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [processes, setProcesses] = React.useState<WsWorkunits.ECLWUProcess[]>([]);
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeProcesses: true
+            }).then(response => {
+                setProcesses(response?.Workunit?.ECLWUProcessList?.ECLWUProcess || []);
+            }).catch(err => logger.error(err));
+        }
+    }, [workunit, state, count]);
+
+    return [processes, workunit, increment];
+}
+
 export function useWorkunitXML(wuid: string): [string] {
 
     const service = useConst(() => new WorkunitsService({ baseUrl: "" }));

@@ -108,12 +108,13 @@ struct SpanError
     void setError(const char * _errorMessage, int _errorCode) { errorMessage = _errorMessage; errorCode = _errorCode; }
 };
 
-struct SpanTimeStamp
+class SpanTimeStamp
 {
-    std::chrono::nanoseconds steadyClockTime = std::chrono::nanoseconds::zero();
-    std::chrono::nanoseconds systemClockTime = std::chrono::nanoseconds::zero();
+public:
+    SpanTimeStamp() = default;
+    SpanTimeStamp(bool initNow) { if (initNow) setNow(); }
 
-    void now()
+    void setNow()
     {
         systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
         steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch());
@@ -135,6 +136,10 @@ struct SpanTimeStamp
     {
         return systemClockTime != std::chrono::nanoseconds::zero();
     }
+
+public:
+    std::chrono::nanoseconds steadyClockTime = std::chrono::nanoseconds::zero();
+    std::chrono::nanoseconds systemClockTime = std::chrono::nanoseconds::zero();
 };
 
 interface ISpan : extends IInterface
