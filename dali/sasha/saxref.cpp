@@ -1389,9 +1389,10 @@ public:
             }
         }
         else {
-            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1).
-            // This is common when XRef is run via the scheduler with '*' as the cluster name,
-            // causing non-scope directories to be searched and regular files to be identified.
+            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1)
+            // If getName returns false, nothing is appended. This could be an external found file, so we call getNameMask
+            // to ensure the full filename is appended to scopeBuf
+            // MORE: Investigate what happens in this case and ensure it is handled correctly
             f->getNameMask(scopeBuf);
         }
         // treat drive differently for orphans (bit silly but bward compatible
