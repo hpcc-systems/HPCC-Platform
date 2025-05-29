@@ -96,7 +96,7 @@ public:
         executor.setown(new WUExecutor(this));
         processor.setown(getScheduleEventProcessor(serverName, executor.getLink(), this));
     }
-    const char *getServerName() const { return serverName.str(); }
+    const char *getServerName() const { return serverName; }
     void start() { processor->start(); }
     void stop() { processor->stop(); }
     virtual bool fireException(IException *e) override
@@ -195,20 +195,17 @@ public:
 
     void init()
     {
-        running = true;
-        LocalIAbortHandler abortHandler(*this);
-
         auto updateFunc = [this](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
         {
-            if (running)
-                if (configQueueNamesHasChanged(getComponentConfigSP()))
-                    configChangeOrAbort.signal();
+            configQueueNamesHasChanged();
         };
         updateConfigCBId = installConfigUpdateHook(updateFunc, true);
     }
 
     void run()
     {
+        running = true;
+        LocalIAbortHandler abortHandler(*this);
         while (running)
         {
             // wait for either a config change or an abort
@@ -240,9 +237,10 @@ public:
     }
 
 private:
-    bool configQueueNamesHasChanged(const IPropertyTree *config)
+    std::set<std::string> getQueues()
     {
         std::set<std::string> newSchedulerQueues;
+        Owned<IPropertyTree> config = getComponentConfigSP();
 #ifdef _CONTAINERIZED
         Owned<IPTreeIterator> queues = config->getElements("queues");
         ForEach(*queues)
@@ -261,24 +259,21 @@ private:
             newSchedulerQueues.emplace(targetCluster.str());
         }
 #endif
+        return newSchedulerQueues;
+    }
+
+    void configQueueNamesHasChanged()
+    {
+        std::set<std::string> newSchedulerQueues = getQueues();
         if (newSchedulerQueues.empty())
-            ERRLOG("No queues found to listen on");
+            WARNLOG("No queues found to listen on");
 
         CriticalBlock b(updateSchedulersCS);
-        if (newSchedulerQueues == schedulerQueues)
+        if (newSchedulerQueues != schedulerQueues)
         {
-            DBGLOG("Queue names have not changed, not updating");
-            return false;
+            schedulerQueues = newSchedulerQueues;
+            configChangeOrAbort.signal();
         }
-
-        StringBuffer oldNames, newNames;
-        toString(schedulerQueues, oldNames);
-        toString(newSchedulerQueues, newNames);
-        PROGLOG("Updating queue due to queue names change from '%s' to '%s'", oldNames.str(), newNames.str());
-
-        schedulerQueues = newSchedulerQueues;
-
-        return true;
     }
 
     void updateSchedulerQueues()
@@ -313,7 +308,7 @@ private:
         }
 
         if (schedulers.empty())
-            ERRLOG("No clusters found to schedule for");
+            WARNLOG("No clusters found to schedule for");
     }
 
     void stop()
@@ -323,16 +318,6 @@ private:
         ForEachItemIn(schedIdx, schedulers)
         {
             schedulers.item(schedIdx).stop();
-        }
-    }
-
-    void toString(const std::set<std::string> &queueNames, StringBuffer &queueNameList)
-    {
-        for (auto &queueName : queueNames)
-        {
-            if (queueNameList.length())
-                queueNameList.append(",");
-            queueNameList.append(queueName);
         }
     }
 
