@@ -40,7 +40,6 @@
 #include "rtlds_imp.hpp"
 #include "rtlcommon.hpp"
 #include "rtldynfield.hpp"
-#include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"
 #include "jhtree.hpp"
@@ -1844,27 +1843,6 @@ void EclAgent::setRetcode(int code)
     retcode = code;
 }
 
-
-void EclAgent::runWorkunitAnalyser(IWorkUnit * w, const char * optGraph)
-{
-    if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
-    {
-        double costPerHour = calculateThorCost(3600000 /*milliseconds in an hour*/, getNodes());
-        IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-        analyseWorkunit(w, optGraph, analyzerOptions, costPerHour);
-    }
-}
-
-static constexpr bool defaultAnalyzeWhenComplete = true;
-void EclAgent::runWorkunitAnalyserAfterGraph(const char * graph)
-{
-    if (!wuRead->getDebugValueBool("analyzeWhenComplete", agentTopology->getPropBool("@analyzeWhenComplete", defaultAnalyzeWhenComplete)))
-    {
-        Owned<IWorkUnit> wu(updateWorkUnit());
-        runWorkunitAnalyser(wu, graph);
-    }
-}
-
 void EclAgent::doProcess()
 {
 #ifdef _DEBUG
@@ -2031,22 +2009,6 @@ void EclAgent::doProcess()
             break;
         }
 
-
-        if (getClusterType(clusterType)==ThorLCRCluster)
-        {
-            if (w->getDebugValueBool("analyzeWhenComplete", agentTopology->getPropBool("@analyzeWhenComplete", defaultAnalyzeWhenComplete)))
-            {
-                switch (w->getState())
-                {
-                case WUStateFailed:
-                case WUStateAborted:
-                case WUStateCompleted:
-                    runWorkunitAnalyser(w, nullptr);
-                    break;
-                }
-            }
-        }
-
         if(w->queryEventScheduledCount() > 0)
             switch(w->getState())
             {
@@ -2135,6 +2097,11 @@ void EclAgent::doProcess()
         e->Release();
     }
     DBGLOG("Workunit written complete");
+
+    if (getClusterType(clusterType)==ThorLCRCluster)
+    {
+        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCostPerHour(getNodes()));
+    }
 }
 
 void EclAgent::runProcess(IEclProcess *process)

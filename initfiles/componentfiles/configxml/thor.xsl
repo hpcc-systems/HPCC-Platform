@@ -228,6 +228,7 @@
           </xsl:if>
         </xsl:for-each>
       </SSH>
+      <xsl:copy-of select="analyzerOptions"/>
     </Thor>
   </xsl:template>
 

@@ -57,6 +57,8 @@
 #include "roxiehelper.hpp"
 #include "securesocket.hpp"
 #include "environment.hpp"
+#include "anawu.hpp"
+#include "workunit.hpp"
 
 static const StatisticsMapping podStatistics({StNumPods});
 
@@ -1173,6 +1175,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
     fatalHdlr->clear();
 
+    runWorkunitAnalyser(workunit, getComponentConfigSP(), graphName, false, calculateThorCostPerHour(queryNodeClusterWidth()));
     setWuid(NULL);
     return allDone;
 }

@@ -1788,6 +1788,10 @@ extern WORKUNIT_API double getThorManagerRate();
 extern WORKUNIT_API double getThorWorkerRate();
 extern WORKUNIT_API double getThorRate(unsigned numberOfWorkers);
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfWorkers);
+inline double calculateThorCostPerHour(unsigned numberOfWorkers)
+{
+    return calculateThorCost(1000*60*60, numberOfWorkers);
+}
 
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
 
@@ -1822,6 +1826,14 @@ extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 constexpr bool defaultThorMultiJobLinger = true;
 constexpr unsigned defaultThorLingerPeriod = 60;
+
+constexpr bool defaultAnalyzeWhenComplete = isContainerized() ? false : true;
+// Non-containerized: the analyzer is executed in the eclagent (legacy behavior)
+// Containerized: the analyzer is executed in Thor by default because the eclagent cannot
+//                calculate the cost of issues as it doesn't have access to thor cost values
+// (Note: it is not presently possible to analyze with defaultAnalyzeWhenComplete option and in thor)
+constexpr bool defaultAnalyzeInEclAgent = isContainerized() ? false : true;
+
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);

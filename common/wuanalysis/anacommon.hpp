@@ -91,6 +91,7 @@ enum WutOptionType
     watOptMinRowsPerNode,
     watPreFilteredKJThreshold,
     watClusterCostPerHour,
+    watOptMaxExecuteTime,
     watOptMax
 };
 
