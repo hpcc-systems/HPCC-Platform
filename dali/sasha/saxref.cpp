@@ -2272,33 +2272,20 @@ public:
         // NB: must be a list of planes only
         ForEachItemIn(i1, list) {
             const char *planeName = list.item(i1);
-            // When XRef is run via the scheduler, an '*' is passed in for all clusters to be scanned
-            if (planeName[0] == '*' && planeName[1] == '\0') {
-                Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
-                ForEach(*planesIter) {
-                    Owned<IPropertyTree> plane = LINK(&planesIter->get());
-                    bool isNotCopy = !plane->getPropBool("@copy", false);
-                    bool isNotHthorPlane = !plane->getPropBool("@hthorplane", false);
-                    if (isNotCopy && isNotHthorPlane) {
-                        planeName = plane->queryProp("@name");
-                        if (isContainerized()) {
-                            groups.append(planeName);
-                            cnames.append(planeName);
-                        }
-                        storagePlanes[planeName].setown(plane.getClear());
+            Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", planeName);
+            ForEach(*planesIter) {
+                Owned<IPropertyTree> plane = LINK(&planesIter->get());
+                bool isNotCopy = !plane->getPropBool("@copy", false);
+                bool isNotHthorPlane = !plane->getPropBool("@hthorplane", false);
+                if (isNotCopy && isNotHthorPlane) {
+                    planeName = plane->queryProp("@name");
+                    if (isContainerized()) {
+                        groups.append(planeName);
+                        cnames.append(planeName);
                     }
+                    storagePlanes[planeName].setown(plane.getClear());
                 }
-                continue;
             }
-
-            Owned<IPropertyTree> plane = getStoragePlane(planeName);
-            if (isContainerized()) {
-                if (!plane)
-                    throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
-                groups.append(planeName);
-                cnames.append(planeName);
-            }
-            storagePlanes[planeName].setown(plane.getClear());
         }
         if (!isContainerized()) {
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
