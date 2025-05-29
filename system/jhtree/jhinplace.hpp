@@ -177,6 +177,7 @@ public:
         double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
         unsigned maxCompressionFactor = 25;    // Don't compress payload to less than 4% of the original by default (beause when it is read it will use lots of memory)
         bool recompress = false;
+        bool reuseCompressor = true;
     } options;
 };
 
