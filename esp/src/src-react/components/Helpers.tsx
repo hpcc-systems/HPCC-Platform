@@ -133,7 +133,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             let parentValue;
             const fileName = helper.Name?.split("/").pop();
             if (helper.Path) {
-                const pathDirs = helper.Path.split("/");
+                // strip leading slashes from path to avoid having a folder with no label when
+                // creating an array of directory names by splitting on the directory separator
+                const helperPath = helper.Path.replace(/^\/+/, "");
+                const pathDirs = helperPath.split("/");
                 let parentFolder;
                 let folderName;
                 for (let i = 0; i < pathDirs.length; i++) {
@@ -153,7 +156,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                     }
                 }
                 flatTreeItems.push({
-                    value: helper.Path + "/" + fileName,
+                    value: `${helperPath}/${fileName}`,
                     content: fileName,
                     fileSize: helper.FileSize,
                     parentValue: parentFolder,

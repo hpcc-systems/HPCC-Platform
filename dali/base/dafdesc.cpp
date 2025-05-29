@@ -459,8 +459,11 @@ public:
         mspec =_mspec;
         if (flags & IFDSF_FOREIGN_GROUP)
             foreignGroup = true;
-        checkClusterName(resolver);
-        checkStriped();
+        else
+        {
+            checkClusterName(resolver);
+            checkStriped();
+        }
     }
     CClusterInfo(IPropertyTree *pt,INamedGroupStore *resolver,unsigned flags)
     {
@@ -475,22 +478,25 @@ public:
 
         if ((((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())&&pt->hasProp("Group"))
             group.setown(createIGroup(pt->queryProp("Group")));
-        if (!name.isEmpty()&&!group.get()&&resolver&&!foreignGroup)
+        if (!foreignGroup)
         {
-            StringBuffer defaultDir;
-            GroupType groupType;
-            group.setown(resolver->lookup(name.get(), defaultDir, groupType));
-            // MORE - common some of this with checkClusterName?
-            bool baseDirChanged = mspec.defaultBaseDir.isEmpty() || !strsame(mspec.defaultBaseDir, defaultDir);
-            if (baseDirChanged)
-                mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
+            if (!name.isEmpty()&&!group.get()&&resolver)
+            {
+                StringBuffer defaultDir;
+                GroupType groupType;
+                group.setown(resolver->lookup(name.get(), defaultDir, groupType));
+                // MORE - common some of this with checkClusterName?
+                bool baseDirChanged = mspec.defaultBaseDir.isEmpty() || !strsame(mspec.defaultBaseDir, defaultDir);
+                if (baseDirChanged)
+                    mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
 
-            if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
-                mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
+                    mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+            }
+            else
+                checkClusterName(resolver);
+            checkStriped();
         }
-        else
-            checkClusterName(resolver);
-        checkStriped();
     }
 
     const char *queryGroupName()
@@ -946,6 +952,10 @@ public:
             StringBuffer tmp;
             if (!ep.isNull())
                 pt->setProp("@node",ep.getEndpointHostText(tmp).str());
+
+            // JCSMORE - this makes little sense. @name -> overridename
+            // It is being set here specifically for a 1 part file, but without it (tested) it will construct
+            // the name from the mask as normal.
             if (overridename.isEmpty()&&!parent.partmask.isEmpty()) {
                 expandMask(tmp.clear(), parent.partmask, 0, 1);
                 pt->setProp("@name",tmp.str());
@@ -1130,14 +1140,21 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     {
         if (!pending) {
             pending = new SocketEndpointArray;
+
+            // NB: deliberately not using setFlags, which as a side-effect calls closePending()
+            fileFlags |= FileDescriptorFlags::absoluteparts;
+            // NB: attr guaranteed to be non-null here
+            attr->setPropInt("@flags", static_cast<int>(fileFlags));
+
             if (setupdone)
                 throw MakeStringException(-1,"IFileDescriptor - setup already done");
             setupdone = true;
             ClusterPartDiskMapSpec mspec;
-            clusters.append(*createClusterInfo(NULL,NULL,mspec));
+            unsigned clusterFlags = 0;
+            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::foreign))
+                clusterFlags = IFDSF_FOREIGN_GROUP;
+            clusters.append(*createClusterInfo(nullptr, nullptr, mspec, nullptr, clusterFlags));
         }
-
-
     }
 
     void doClosePending()
@@ -1309,14 +1326,17 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     StringBuffer &getPartDirectory(StringBuffer &buf,unsigned idx,unsigned copy)
     {
         unsigned n = numParts();
-        if (idx<n) {
+        if (idx<n)
+        {
             StringBuffer fullpath;
             StringBuffer tmp1;
             CPartDescriptor &pt = *part(idx);
-            if (!pt.overridename.isEmpty()) {
+            if (!pt.overridename.isEmpty())
+            {
                 if (isSpecialPath(pt.overridename))
                     return buf;
-                if (pt.isMulti()) {
+                if (pt.isMulti())
+                {
                     StringBuffer tmpon; // bit messy but need to ensure dir put back on before removing!
                     const char *on = pt.overridename.get();
                     if (on&&*on&&!isAbsolutePath(on)&&!directory.isEmpty())
@@ -1328,16 +1348,19 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                     splitDirTail(pt.overridename,tmp1);
                 if (directory.isEmpty()||(isAbsolutePath(tmp1.str())||(stdIoHandle(tmp1.str())>=0)))
                     fullpath.swapWith(tmp1);
-                else {
+                else
+                {
                     fullpath.append(directory);
                     if (fullpath.length())
                         addPathSepChar(fullpath);
                     fullpath.append(tmp1);
                 }
             }
-            else if (!partmask.isEmpty()) {
+            else if (!partmask.isEmpty())
+            {
                 fullpath.append(directory);
-                if (containsPathSepChar(partmask)) {
+                if (containsPathSepChar(partmask))
+                {
                     if (fullpath.length())
                         addPathSepChar(fullpath);
                     splitDirTail(partmask,fullpath);
@@ -1356,7 +1379,11 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 cluster->getBaseDir(baseDir, os);
                 cluster->getReplicateDir(repDir, os);
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
+            }
 
+            // Adding striping and/or aliasing to path unless this is a IFileDescriptor constructed with absolute paths
+            if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
+            {
                 // The following code manipulates the directory for striping and aliasing if necessary.
                 // To do so, it needs the plane details.
                 // Normally, the plane name is obtained from IClusterInfo, however, if this file is foreign,
@@ -1366,7 +1393,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 Owned<IStoragePlane> plane;
                 if (remoteStoragePlane)
                     plane.set(remoteStoragePlane);
-                else
+                else if (cluster)
                 {
                     const char *planeName = cluster->queryGroupName();
                     if (!isEmptyString(planeName))
@@ -1399,8 +1426,13 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 buf.append(fullpath);
             else
                 buf.swapWith(fullpath);
-            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
-                addPathSepChar(buf).append(idx+1); // part subdir 1 based
+
+            // Adding dir-per-part directory unless this is a IFileDescriptor constructed with absolute paths
+            if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
+            {
+                if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
+                    addPathSepChar(buf).append(idx+1); // part subdir 1 based
+            }
         }
         return buf;
     }
@@ -2320,10 +2352,11 @@ public:
     {
     }
 
-    CSuperFileDescriptor(IPropertyTree *attr)
+    CSuperFileDescriptor(IPropertyTree *attr, FileDescriptorFlags _fileFlags)
         : CFileDescriptor(attr,NULL,IFDSF_ATTR_ONLY)    // only support attr here
     {
         subfilecounts = NULL;
+        fileFlags = _fileFlags;
     }
 
     virtual ~CSuperFileDescriptor()
@@ -2460,9 +2493,9 @@ IFileDescriptor *createFileDescriptor(IPropertyTree *tree)
     return new CFileDescriptor(tree,NULL,IFDSF_ATTR_ONLY);
 }
 
-ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *tree)
+ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *tree, FileDescriptorFlags fileFlags)
 {
-    return new CSuperFileDescriptor(tree);
+    return new CSuperFileDescriptor(tree, fileFlags);
 }
 
 
