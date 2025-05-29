@@ -38,12 +38,16 @@ enum { NodeBranch, NodeLeaf };
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
-class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
+class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventAttributeVisitor>
 {
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         return visitor->visitFile(filename, version);
+    }
+    virtual bool visitEvent(IEvent& event) override
+    {
+        return eventDistributor(event, *this);
     }
     virtual Continuation visitEvent(EventType id) override
     {
@@ -70,9 +74,9 @@ public:
         return visitor->departFile(bytesRead);
     }
 protected:
-    Linked<IEventVisitor> visitor;
+    Linked<IEventAttributeVisitor> visitor;
 public:
-    CNoOpEventVisitorDecorator(IEventVisitor& _visitor) : visitor(&_visitor) {}
+    CNoOpEventVisitorDecorator(IEventAttributeVisitor& _visitor) : visitor(&_visitor) {}
 };
 
 class MockEventVisitor : public CNoOpEventVisitorDecorator
@@ -329,10 +333,6 @@ public:
         {
             static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 attribute: bytesRead = 21
 )!!!";
             EventRecorder& recorder = queryRecorder();
@@ -340,7 +340,7 @@ attribute: bytesRead = 21
             CPPUNIT_ASSERT(recorder.isRecording());
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -357,10 +357,6 @@ attribute: bytesRead = 21
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
@@ -378,7 +374,7 @@ attribute: bytesRead = 76
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -395,10 +391,6 @@ attribute: bytesRead = 76
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
@@ -426,7 +418,7 @@ attribute: bytesRead = 161
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -441,10 +433,10 @@ attribute: bytesRead = 161
         }
     }
 
-    IEventVisitor* createVisitor(StringBuffer& out)
+    IEventAttributeVisitor* createVisitor(StringBuffer& out)
     {
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
-        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
+        Owned<IEventAttributeVisitor> visitor = createDumpTextEventVisitor(*stream);
         return new MockEventVisitor(*visitor);
     }
 };

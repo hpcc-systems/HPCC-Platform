@@ -24,7 +24,7 @@ void CDumpEventsOp::setFormat(OutputFormat _format)
 
 bool CDumpEventsOp::doOp()
 {
-    Owned<IEventVisitor> visitor;
+    Owned<IEventAttributeVisitor> visitor;
     switch (format)
     {
     case OutputFormat::json:

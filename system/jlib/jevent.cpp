@@ -26,11 +26,11 @@
 #include "jlog.hpp"
 #include "jregexp.hpp"
 #include "jstring.hpp"
+#include <bitset>
 #include <functional>
 #include <memory>
 #include <list>
 #include <set>
-#include <unordered_set>
 #include "jlzw.hpp"
 
 // Should be increased if the file format changes
@@ -91,33 +91,64 @@ struct EventInformation
     bool isMeta;                // Is this meta data (see description below) rather than an event
     EventType pairedEvent;      // could be used to automaticaly link start and finish events?
     EventContext context;       // grouping related events
+    std::initializer_list<EventAttr> attributes;     // array of attributes
 };
 
 
-#define DEFINE_EVENT(event, ctx) { Event##event, #event, false, EventNone, ctx }
-#define DEFINE_META(meta, ctx) { Meta##meta, #meta, true, EventNone, ctx }
+#define DEFINE_EVENT(event, ctx, attrs) { Event##event, #event, false, EventNone, ctx, attrs }
+#define DEFINE_META(meta, ctx, attrs) { Meta##meta, #meta, true, EventNone, ctx, attrs }
+#define ATTR_HEADER           EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace
+#define INDEX_HEADER          ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
+#define INDEXLOOKUP_ATTRS     INDEX_HEADER, EvAttrInCache, EvAttrExpandedSize
+#define INDEXLOAD_ATTRS       INDEX_HEADER, EvAttrExpandedSize, EvAttrElapsedTime, EvAttrReadTime
+#define INDEXEVICTION_ATTRS   INDEX_HEADER, EvAttrExpandedSize
+#define DALI_ATTRS            ATTR_HEADER, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
+#define FILEINFORMATION_ATTRS ATTR_HEADER, EvAttrFileId, EvAttrPath
+#define RECORDINGACTIVE_ATTRS ATTR_HEADER, EvAttrEnabled
 
 static constexpr EventInformation eventInformation[] {
-    DEFINE_EVENT(None, EventCtxMax),
-    DEFINE_EVENT(IndexLookup, EventCtxIndex),
-    DEFINE_EVENT(IndexLoad, EventCtxIndex),
-    DEFINE_EVENT(IndexEviction, EventCtxIndex),
-    DEFINE_EVENT(DaliChangeMode, EventCtxDali),
-    DEFINE_EVENT(DaliCommit, EventCtxDali),
-    DEFINE_EVENT(DaliConnect, EventCtxDali),
-    DEFINE_EVENT(DaliEnsureLocal, EventCtxDali),
-    DEFINE_EVENT(DaliGet, EventCtxDali),
-    DEFINE_EVENT(DaliGetChildren, EventCtxDali),
-    DEFINE_EVENT(DaliGetChildrenFor, EventCtxDali),
-    DEFINE_EVENT(DaliGetElements, EventCtxDali),
-    DEFINE_EVENT(DaliSubscribe, EventCtxDali),
-    DEFINE_META(FileInformation, EventCtxIndex),
-    DEFINE_EVENT(RecordingActive, EventCtxOther),
+    DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
+    DEFINE_EVENT(IndexLookup, EventCtxIndex, { INDEXLOOKUP_ATTRS } ),
+    DEFINE_EVENT(IndexLoad, EventCtxIndex, { INDEXLOAD_ATTRS } ),
+    DEFINE_EVENT(IndexEviction, EventCtxIndex, { INDEXEVICTION_ATTRS } ),
+    DEFINE_EVENT(DaliChangeMode, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliCommit, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliConnect, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliEnsureLocal, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliGet, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliGetChildren, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliGetChildrenFor, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliGetElements, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_EVENT(DaliSubscribe, EventCtxDali, { DALI_ATTRS } ),
+    DEFINE_META(FileInformation, EventCtxIndex, { FILEINFORMATION_ATTRS } ),
+    DEFINE_EVENT(RecordingActive, EventCtxOther, { RECORDINGACTIVE_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
+enum EventAttrTypeClass : byte
+{
+    EATCnone,
+    EATCtext,
+    EATCnumeric,
+    EATCboolean,
+    EATCmax
+};
+
 static constexpr unsigned attrTypeSizes[] = { 0, 1, 1, 2, 4, 8, 8, 0, 32 };
 static_assert(_elements_in(attrTypeSizes) == EATmax);
+
+static constexpr EventAttrTypeClass attrTypeClasses[] = {
+    EATCnone,
+    EATCboolean,
+    EATCnumeric,
+    EATCnumeric,
+    EATCnumeric,
+    EATCnumeric,
+    EATCnumeric,
+    EATCtext,
+    EATCtext,
+};
+static_assert(_elements_in(attrTypeClasses) == EATmax);
 
 struct EventAttrInformation
 {
@@ -125,9 +156,10 @@ struct EventAttrInformation
     const char * name;
     EventAttrType type;
     unsigned size;
+    EventAttrTypeClass typeClass;
 };
 
-#define DEFINE_ATTR(tag, type) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type] }
+#define DEFINE_ATTR(tag, type) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type], attrTypeClasses[EAT##type] }
 
 static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(None, none),
@@ -838,17 +870,297 @@ EventRecorder eventRecorder;
 
 //---------------------------------------------------------------------------------------------------------------------
 
+class CEventAttribute : public IEventAttribute
+{
+public:
+    enum State : byte { Unused, Defined, Assigned };
+
+public: // IEventAttribute
+    virtual EventAttr queryId() const override
+    {
+        return id;
+    }
+
+    virtual bool isText() const override
+    {
+        return EATCtext == attrInformation[id].typeClass;
+    }
+
+    virtual bool isNumeric() const override
+    {
+        return EATCnumeric == attrInformation[id].typeClass;
+    }
+
+    virtual bool isBoolean() const override
+    {
+        return EATCboolean == attrInformation[id].typeClass;
+    }
+
+    virtual const char* queryTextValue() const override
+    {
+        assertex(isText());
+        return text;
+    }
+
+    virtual __uint64 queryNumericValue() const override
+    {
+        assertex(isNumeric());
+        return number;
+    }
+
+    virtual bool queryBooleanValue() const override
+    {
+        assertex(isBoolean());
+        return boolean;
+    }
+
+public:
+    void setup(EventAttr attr)
+    {
+        assertex(attr < EvAttrMax);
+        id = attr;
+    }
+
+    void reset(State _state)
+    {
+        state = _state;
+    }
+
+    inline bool isUnused() const
+    {
+        return Unused == state;
+    }
+
+    inline bool isDefined() const
+    {
+        return Defined == state;
+    }
+
+    inline bool isAssigned() const
+    {
+        return Assigned == state;
+    }
+
+    void setValue(const char* value)
+    {
+        assertex(isText() && !isUnused());
+        text.set(value);
+        state = Assigned;
+    }
+
+    void setValue(__uint64 value)
+    {
+        assertex(isNumeric() && !isUnused());
+        number = value;
+        state = Assigned;
+    }
+
+    void setValue(bool value)
+    {
+        assertex(isBoolean() && !isUnused());
+        boolean = value;
+        state = Assigned;
+    }
+
+protected:
+    EventAttr id{EvAttrNone};
+    StringBuffer text;
+    __uint64 number{0};
+    bool boolean{false};
+    State state{Unused};
+};
+
+class CEvent : public IEvent
+{
+protected:
+    class AttributeIterator : public CInterfaceOf<IEventAttributeIterator>
+    {
+    public: // IEventAttributeIterator
+        virtual bool first() override
+        {
+            cur = eventInformation[owner.type].attributes.begin();
+            return isValid();
+        }
+
+        virtual bool isValid() const override
+        {
+            return cur != eventInformation[owner.type].attributes.end();
+        }
+
+        virtual bool next() override
+        {
+            if (!isValid())
+                return false;
+            do
+            {
+                ++cur;
+            }
+            while (isValid() && !owner.attributes[*cur].isAssigned());
+            return isValid();
+        }
+
+        virtual const IEventAttribute & query() const override
+        {
+            return owner.attributes[*cur];
+        }
+
+    public:
+        AttributeIterator(const CEvent & _owner)
+            : owner(_owner)
+        {
+        }
+
+    protected:
+        const CEvent& owner;
+        std::initializer_list<EventAttr>::const_iterator cur;
+    };
+
+public: // IEvent
+    virtual EventType queryType() const override
+    {
+        return type;
+    }
+
+    virtual bool isAttribute(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return !attributes[attr].isUnused();
+    }
+
+    virtual bool hasAttribute(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].isAssigned();
+    }
+
+    virtual bool isComplete() const override
+    {
+        for (EventAttr attr : eventInformation[type].attributes)
+        {
+            switch (attr)
+            {
+            case EvAttrEventTraceId:
+            case EvAttrEventThreadId:
+            case EvAttrEventStackTrace:
+                continue;
+            default:
+                if (attributes[attr].isDefined())
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    virtual bool isTextAttribute(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].isText();
+    }
+
+    virtual bool isNumericAttribute(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].isNumeric();
+    }
+
+    virtual bool isBooleanAttribute(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].isBoolean();
+    }
+
+    virtual const char* queryTextValue(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].queryTextValue();
+    }
+
+    virtual __uint64 queryNumericValue(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].queryNumericValue();
+    }
+
+    virtual bool queryBooleanValue(EventAttr attr) const override
+    {
+        assertex(attr < EvAttrMax);
+        return attributes[attr].queryBooleanValue();
+    }
+
+    virtual bool setValue(EventAttr attr, const char* value) override
+    {
+        assertex(attr < EvAttrMax);
+        if (attributes[attr].isText())
+        {
+            attributes[attr].setValue(value);
+            return true;
+        }
+        return false;
+    }
+
+    virtual bool setValue(EventAttr attr, __uint64 value) override
+    {
+        assertex(attr < EvAttrMax);
+        if (attributes[attr].isNumeric())
+        {
+            attributes[attr].setValue(value);
+            return true;
+        }
+        return false;
+    }
+
+    virtual bool setValue(EventAttr attr, bool value) override
+    {
+        assertex(attr < EvAttrMax);
+        if (attributes[attr].isBoolean())
+        {
+            attributes[attr].setValue(value);
+            return true;
+        }
+        return false;
+    }
+
+    virtual IEventAttributeIterator* getAttributes() const override
+    {
+        assertex(EventNone < type && type < EventMax);
+        return new AttributeIterator(*this);
+    }
+
+public:
+    CEvent()
+    {
+        for (unsigned i=0; i < EvAttrMax; i++)
+            attributes[i].setup(EventAttr(i));
+    }
+
+    void reset(EventType _type)
+    {
+        assertex(_type < EventMax);
+        type = _type;
+        // Reset the attribute states in two steps to avoid searching the event attributes
+        // once for each attribute.
+        for (unsigned i=1; i < EvAttrMax; i++)
+            attributes[i].reset(CEventAttribute::Unused);
+        for (EventAttr attr : eventInformation[type].attributes)
+            attributes[attr].reset(CEventAttribute::Defined);
+    }
+
+protected:
+    EventType type{EventNone};
+    CEventAttribute attributes[EvAttrMax];
+};
+
 class CEventFileReader : public CInterface
 {
 private:
     Owned<IBufferedSerialInputStream> stream;
     Owned<IFile> file;
     Linked<IEventVisitor> visitor;
+    CEvent event;
     unsigned version{0};
     uint32_t options{0};
     __uint64 baseTimestamp{0};
     size32_t bytesRead{0};
-    bool mute{false};
 
 public:
     bool traverse(const char* filename, IEventVisitor& _visitor)
@@ -865,21 +1177,11 @@ public:
     }
 
 private:
-    inline bool continuing(IEventVisitor::Continuation continuation) const
-    {
-        return (IEventVisitor::visitContinue == continuation);
-    }
-
     bool traverseHeader()
     {
         readToken(options);
         readToken(baseTimestamp);
-        return (visitor->visitFile(file->queryFilename(), version) &&
-            continuing(visitor->visitAttribute(EvAttrRecordedTimestamp, baseTimestamp)) &&
-            // Pass through information about which of the extra options are provided on each of the event records
-            (!(options & ERFtraceid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "traceid"))) &&
-            (!(options & ERFthreadid) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "threadid"))) &&
-            (!(options & ERFstacktrace) || continuing(visitor->visitAttribute(EvAttrRecordedOption, "stack"))));
+        return visitor->visitFile(file->queryFilename(), version);
     }
 
     bool traverseEvents()
@@ -896,9 +1198,7 @@ private:
             readToken(eventType);
             if (eventType >= EventMax)
                 throw makeStringExceptionV(-1, "invalid event type %u", eventType);
-            if (!reactToVisit(visitor->visitEvent(eventInformation[eventType].type)))
-                return false;
-
+            event.reset(eventType);
             if ((EventNone != eventType) && !traverseAttributes())
                 return false;
         }
@@ -968,12 +1268,7 @@ private:
 
     bool finishEvent()
     {
-        bool result = true;
-        if (!mute)
-            result = visitor->departEvent();
-        else
-            mute = false; // reset for next event
-        return result;
+        return visitor->visitEvent(event);
     }
 
     template <typename T>
@@ -981,32 +1276,26 @@ private:
     {
         T value;
         readToken(value);
-        if (mute)
-            return true;
         if (std::is_same<T, bool>::value)
-            return reactToVisit(visitor->visitAttribute(attr, bool(value)));
+            return event.setValue(attr, bool(value));
         // normalize event timestamp as a combination of header timestamp and event offset
         if (EvAttrEventTimestamp == attr)
             value += baseTimestamp;
-        return reactToVisit(visitor->visitAttribute(attr, __uint64(value)));
+        return event.setValue(attr, __uint64(value));
     }
 
     bool finishAttribute(EventAttr attr)
     {
         StringBuffer value;
         readToken(value);
-        if (mute)
-            return true;
-        return reactToVisit(visitor->visitAttribute(attr, value.str()));
+        return event.setValue(attr, value.str());
     }
 
     bool finishAttribute(EventAttr attr, size32_t len)
     {
         StringBuffer value;
         readToken(value, len);
-        if (mute)
-            return true;
-        return reactToVisit(visitor->visitAttribute(attr, value.str()));
+        return event.setValue(attr, value.str());
     }
 
     //Read as data, but pass through as a hex encoded string
@@ -1017,29 +1306,11 @@ private:
             throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
         bytesRead += len;
 
-        if (mute)
-            return true;
-
         StringBuffer hexText;
         hexText.ensureCapacity(len*2);
         for (unsigned i=0; i < len; i++)
             hexText.appendhex(buffer.getByte(i), true);
-        return reactToVisit(visitor->visitAttribute(attr, hexText.str()));
-    }
-
-    bool reactToVisit(IEventVisitor::Continuation result)
-    {
-        switch (result)
-        {
-        case IEventVisitor::visitContinue:
-            break;
-        case IEventVisitor::visitSkipEvent:
-            mute = true;
-            break;
-        case IEventVisitor::visitSkipFile:
-            return false;
-        }
-        return true;
+        return event.setValue(attr, hexText.str());
     }
 
     //Read a strongly typed value from a buffered stream.

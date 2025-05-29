@@ -115,6 +115,43 @@ struct jlib_decl EventRecordingSummary
     StringBuffer filename;
 };
 
+interface IEventAttribute
+{
+    virtual EventAttr queryId() const = 0;
+    virtual bool isText() const = 0;
+    virtual bool isNumeric() const = 0;
+    virtual bool isBoolean() const = 0;
+    virtual const char* queryTextValue() const = 0;
+    virtual __uint64 queryNumericValue() const = 0;
+    virtual bool queryBooleanValue() const = 0;
+};
+
+interface IEventAttributeIterator : extends IInterface
+{
+    virtual bool first() = 0;
+    virtual bool next() = 0;
+    virtual bool isValid() const = 0;
+    virtual const IEventAttribute& query() const = 0;
+};
+
+interface IEvent
+{
+    virtual EventType queryType() const = 0;
+    virtual bool isAttribute(EventAttr attr) const = 0; // can an event include the attribute
+    virtual bool hasAttribute(EventAttr attr) const = 0; // does the event include the attribute
+    virtual bool isComplete() const = 0; // does the event include all non-optional attributes
+    virtual bool isTextAttribute(EventAttr attr) const = 0;
+    virtual bool isNumericAttribute(EventAttr attr) const = 0;
+    virtual bool isBooleanAttribute(EventAttr attr) const = 0;
+    virtual const char* queryTextValue(EventAttr attr) const = 0;
+    virtual __uint64 queryNumericValue(EventAttr attr) const = 0;
+    virtual bool queryBooleanValue(EventAttr attr) const = 0;
+    virtual bool setValue(EventAttr attr, const char* value) = 0;
+    virtual bool setValue(EventAttr attr, __uint64 value) = 0;
+    virtual bool setValue(EventAttr attr, bool value) = 0;
+    virtual IEventAttributeIterator* getAttributes() const = 0;
+};
+
 //---------------------------------------------------------------------------------------------------------------------
 enum EventType : byte;
 enum EventAttr : byte;
@@ -247,45 +284,18 @@ extern jlib_decl EventRecorder eventRecorder;
 inline EventRecorder & queryRecorder() { return EventRecorderInternal::eventRecorder; }
 inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRecording(); }
 
-// Abstraction of the visitor pattern for "reading" binary event data files. The `readEvents`
-// function will pass each byte of data contained within a file throwgh exactly one method of
-// this interface.
+// Abstract interface for visiting the events in a previously recorded event data file.
+// An implementation will receive a sequence of calls:
+// - visitFile: signals the start of a file
+// - visitEvent: signals the arrival of an event, including all attribute data
+// - departFile: signals the end of the file
 //
-// For each compatibile file the visitor can expect:
-// 1. One call to visitFile
-// 2. One call to visitAttribute for EvAttrRecordedTimestamp
-// 3. Zero or more calls to visitAttribute for EvAttrRecordedOption
-// 4. Zero or more sequences of:
-//    a. One call to visitEvent
-//    b. Zero or more calls to visitAttribute
-//    c. One call to departEvent
-// 5. One call to departFile
-//
-// Implementations may implement limited filtering during visitation. All methods, except
-// `departFile`, may abort visitation. Both `visitEvent` and `visitAttribute` (in the context of
-// an event) may suppress visitation of the remainder of the current event.
-//
-// Reasons for aborting a file include:
-// - unrecognized file version; or
-// - (remaining) events out of a target date range; or
-// - trace IDs are required but are not present.
-//
-// Reasons for suppressing an event include:
-// - event type not required by current use case; or
-// - attribute value not out of range for current use case.
+// Both visitFile and visitEvent return a Boolean value. True continues file parsing.
+// while false stops processing.
 interface IEventVisitor : extends IInterface
 {
-    enum Continuation {
-        visitContinue,
-        visitSkipEvent,
-        visitSkipFile
-    };
-    virtual bool visitFile(const char* filename, uint32_t version) = 0;
-    virtual Continuation visitEvent(EventType id) = 0;
-    virtual Continuation visitAttribute(EventAttr id, const char * value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, bool value) = 0;
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) = 0;
-    virtual bool departEvent() = 0;
+    virtual bool visitFile(const char *filename, uint32_t version) = 0;
+    virtual bool visitEvent(IEvent& event) = 0;
     virtual void departFile(uint32_t bytesRead) = 0;
 };
 
