@@ -389,6 +389,10 @@ define([
                 this.widget._Workflows.init({
                     Wuid: this.wu.Wuid
                 });
+            } else if (currSel.id === this.widget._Processes.id && !this.widget._Processes.__hpcc_initalized) {
+                this.widget._Processes.init({
+                    Wuid: this.wu.Wuid
+                });
             } else if (currSel.id === this.resultsWidget.id && !this.resultsWidgetLoaded) {
                 this.resultsWidgetLoaded = true;
                 this.resultsWidget.init({

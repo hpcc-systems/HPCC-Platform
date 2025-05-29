@@ -16,6 +16,7 @@ import { Helpers } from "./Helpers";
 import { IFrame } from "./IFrame";
 import { Logs } from "./Logs";
 import { useNextPrev } from "./Menu";
+import { Processes } from "./Processes";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
 import { Result } from "./Result";
@@ -155,6 +156,11 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             disabled: workunit?.Archived,
             count: workunit?.WorkflowCount
         }, {
+            id: "processes",
+            label: nlsHPCC.Processes,
+            disabled: workunit?.Archived,
+            count: workunit?.ECLWUProcessList?.ECLWUProcess?.length
+        }, {
             id: "queries",
             label: nlsHPCC.Queries,
             icon: <Icon iconName="Search"></Icon>,
@@ -182,7 +188,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "xml",
             label: nlsHPCC.XML
         }];
-    }, [logCount, logsEnabled, logsStatusMessage, workunit?.Archived, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, wuid]);
+    }, [logCount, logsEnabled, logsStatusMessage, workunit?.Archived, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, workunit?.ECLWUProcessList?.ECLWUProcess?.length, wuid]);
 
     return <FullscreenFrame fullscreen={fullscreen}>
         <SizeMe monitorHeight>{({ size }) =>
@@ -221,6 +227,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "workflows"} size={size}>
                     <Workflows wuid={wuid} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "processes"} size={size}>
+                    <Processes wuid={wuid} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "queries"} size={size}>
                     <Queries filter={{ WUID: wuid }} />
