@@ -1388,6 +1388,13 @@ public:
                 return;
             }
         }
+        else {
+            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1)
+            // If getName returns false, nothing is appended. This could be an external found file, so we call getNameMask
+            // to ensure the full filename is appended to scopeBuf
+            // MORE: Investigate what happens in this case and ensure it is handled correctly
+            f->getNameMask(scopeBuf);
+        }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
         bool *completed = (bool *)buf.allocate(f->N);
@@ -2168,7 +2175,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     Mutex runmutex;
     bool ignorelazylost, suspendCoalescer;
     Owned<IPropertyTree> props;
-    std::unordered_map<std::string, Owned<IPropertyTree>> storagePlanes;
+    std::unordered_map<std::string, Linked<IPropertyTree>> storagePlanes;
 
     class cRunThread: public Thread
     {
@@ -2267,14 +2274,20 @@ public:
         // NB: must be a list of planes only
         ForEachItemIn(i1, list) {
             const char *planeName = list.item(i1);
-            Owned<IPropertyTree> plane = getStoragePlane(planeName);
-            if (isContainerized()) {
-                if (!plane)
-                    throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
-                groups.append(planeName);
-                cnames.append(planeName);
+            Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", planeName);
+            ForEach(*planesIter) {
+                IPropertyTree &plane = planesIter->query();
+                bool isNotCopy = !plane.getPropBool("@copy", false);
+                bool isNotHthorPlane = !plane.getPropBool("@hthorplane", false);
+                if (isNotCopy && isNotHthorPlane) {
+                    planeName = plane.queryProp("@name");
+                    if (isContainerized()) {
+                        groups.append(planeName);
+                        cnames.append(planeName);
+                    }
+                    storagePlanes[planeName].set(&plane);
+                }
             }
-            storagePlanes[planeName].setown(plane.getClear());
         }
         if (!isContainerized()) {
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
