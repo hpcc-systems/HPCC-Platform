@@ -23,6 +23,30 @@
 // interface and the adapter to convert pulled events into visisted events.
 #include "jevent.hpp"
 
+// Abstract extension of IEventVisitor that supports decorating another visitor. Decorators may:
+// - prevent the decorated visitor from seeing data
+// - change the data seen by a decorated visitor
+// - simulate new data for the decorated visitor to process
+// - act on data without affecting the decorated visitor
+//
+// Implementations may use the IMPLEMENT_IEVENTVISITORDECORATOR macro to limit implementation
+// to only cisitEvent.
+interface IEventVisitorDecorator : extends IEventVisitor
+{
+    // Establshes the decorated-decorator relationship.
+    virtual void decorate(IEventVisitor& visitor) = 0;
+};
+
+// Shortcut to stantart implementations of visitFile and departFile in a decorator implementation.
+// All decorator implementations must still implement visitEvent.
+#define IMPLEMENT_IEVENTVISITORDECORATOR \
+protected: \
+    Linked<IEventVisitor> decorated; \
+public: \
+    void decorate(IEventVisitor& visitor) override { decorated.set(&visitor); } \
+    bool visitFile(const char* filename, uint32_t version) override { if (!decorated) return false; return decorated->visitFile(filename, version); } \
+    void departFile(uint32_t bytesRead) override { if (!decorated) return; decorated->departFile(bytesRead); }
+
 // Abstraction of the visitor pattern for "reading" binary event data files. The `readEvents`
 // function will pass each byte of data contained within a file throwgh exactly one method of
 // this interface.

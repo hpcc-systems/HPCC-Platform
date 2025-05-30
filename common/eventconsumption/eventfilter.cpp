@@ -27,8 +27,7 @@ protected:
     class StringMatchHelper
     {
     private:
-        using Patterns = std::set<std::string>;
-        Patterns patterns;
+        std::set<std::string> patterns;
 
     public:
         bool matches(const char* value) const
@@ -50,9 +49,8 @@ protected:
 
     struct FilterTerm : public CInterface
     {
-        virtual bool matches(EventType evt, const char* value) const { return true; }
-        virtual bool matches(EventType evt, bool value) const { return true; }
-        virtual bool matches(EventType evt, __uint64 value) const { return true; }
+        virtual void observe(const CEvent& event) const {}
+        virtual bool matches(const CEvent& event, const CEventAttribute& attribute) const { return true; }
         virtual bool accept(const char* values)
         {
             StringArray tokens;
@@ -70,9 +68,10 @@ protected:
     struct StringFilterTerm : public FilterTerm
     {
         StringMatchHelper helper;
-        bool matches(EventType evt, const char* value) const override
+
+        bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
-            return helper.matches(value);
+            return helper.matches(attribute.queryTextValue());
         }
 
         bool acceptToken(const char* token) override
@@ -85,9 +84,9 @@ protected:
     {
         bool accepted[2]{false, false};
 
-        bool matches(EventType evt, bool value) const override
+        bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
-            return accepted[value];
+            return accepted[attribute.queryBooleanValue()];
         }
 
         bool acceptToken(const char* token) override
@@ -100,11 +99,11 @@ protected:
 
     struct UnsignedFilterTerm : public FilterTerm
     {
-        using Accepted = std::set<std::pair<__uint64, __uint64>>;
-        Accepted accepted;
+        std::set<std::pair<__uint64, __uint64>> accepted;
 
-        bool matches(EventType evt, __uint64 value) const override
+        bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
+            __uint64 value = attribute.queryNumericValue();
             for (const std::pair<__uint64, __uint64>& range : accepted)
             {
                 if (range.first <= value && value <= range.second)
@@ -156,29 +155,20 @@ protected:
 
     struct FileIdFilterTerm : public UnsignedFilterTerm
     {
-        bool matches(EventType evt, const char* value) const override
+        virtual void observe(const CEvent& event) const override
         {
-            if (MetaFileInformation == evt)
+            if (MetaFileInformation == event.queryType())
             {
-                // Test the presumed EvAttrPath value for a pattern match. On a match, the current
-                // meta file id is added to the set of matched paths.
-                //
-                // Assumes that EvAttrFileId is recorded before EvAttrPath.
-                if (curMetaId && helper.matches(value))
-                    matchedPaths.insert(curMetaId);
+                if (helper.matches(event.queryTextValue(EvAttrPath)))
+                    matchedPaths.insert(event.queryNumericValue(EvAttrFileId));
             }
-            return true;
         }
-        bool matches(EventType evt, __uint64 value) const override
+
+        bool matches(const CEvent& event, const CEventAttribute& attribute) const override
         {
-            if (MetaFileInformation == evt)
-            {
-                // Cache the presumed EvAttrFileId value for use when matching EvAttrPath.
-                curMetaId = value;
-                return true;
-            }
-            return matchedPaths.count(value) ||  UnsignedFilterTerm::matches(evt, value);
+            return matchedPaths.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
         }
+
         bool acceptToken(const char* token) override
         {
             if (UnsignedFilterTerm::acceptToken(token))
@@ -189,7 +179,6 @@ protected:
 
         StringMatchHelper helper;
         mutable std::set<__uint64> matchedPaths;
-        mutable __uint64 curMetaId{0};
     };
 
     struct TimestampFilterTerm : public UnsignedFilterTerm
@@ -250,137 +239,39 @@ protected:
         }
     };
 
-    struct CachedAttrValue
-    {
-        StringBuffer s;
-        __uint64 u{0};
-        bool b{false};
-    };
-
-public: // IEventAttributeVisitor
-    virtual bool visitFile(const char* filename, uint32_t version) override
-    {
-        return target->visitFile(filename, version);
-    }
+public: // IEventVisitorDecorator
+    IMPLEMENT_IEVENTVISITORDECORATOR;
 
     virtual bool visitEvent(CEvent& event) override
     {
-        return eventDistributor(event, *this);
-    }
-
-    virtual Continuation visitEvent(EventType type) override
-    {
-        if (!acceptedEvents.empty() && !acceptedEvents.count(type))
+        // Allow all filter terms the opportunity to see the event before it may be filtered.
+        // Observation allows, for example, the relationship between file ID and path to be
+        // established for enhanced filtering of index events.
+        for (unsigned termIdx = EvAttrNone + 1; termIdx < EvAttrMax; termIdx++)
         {
-            // MetaFileInformation cannot be skipped yet if there is a file id filter term. It
-            // must be skipped from departEvent after the any path evaluations are completed.
-            if (type != MetaFileInformation || !terms[EvAttrFileId])
-                return visitSkipEvent;
+            if (terms[termIdx])
+                terms[termIdx]->observe(event);
         }
-        cacheSequence.clear();
-        currentEvent = type;
-        return visitContinue;
-    }
 
-    virtual Continuation visitAttribute(EventAttr id, const char* value) override
-    {
-        if (EventNone == currentEvent) // file header/footer attributes are never filtered
-            return visitContinue;
-        if (terms[id] && !terms[id]->matches(currentEvent, value))
-            return visitSkipEvent;
-        cachedAttrValues[id].s.set(value);
-        cacheSequence.push_back(id);
-        return visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, bool value) override
-    {
-        if (EventNone == currentEvent) // file header/footer attributes are never filtered
-            return visitContinue;
-        if (terms[id] && !terms[id]->matches(currentEvent, value))
-            return visitSkipEvent;
-        cachedAttrValues[id].b = value;
-        cacheSequence.push_back(id);
-        return visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
-    {
-        if (EventNone == currentEvent) // file header/footer attributes are never filtered
-            return visitContinue;
-        if (terms[id] && !terms[id]->matches(currentEvent, value))
-            return visitSkipEvent;
-        cachedAttrValues[id].u = value;
-        cacheSequence.push_back(id);
-        return visitContinue;
-    }
-
-    virtual bool departEvent() override
-    {
-        // Skip any event that could not be skipped during visitEvent
-        if (!acceptedEvents.empty() && !acceptedEvents.count(currentEvent))
-        {
-            currentEvent = EventNone;
-            cacheSequence.clear();
+        // Apply event type filters. Event filters cannot cause the remainder of the file to be
+        // skipped, so non-acceptance implies coninuation.
+        if (!acceptedEvents.empty() && !acceptedEvents.count(event.queryType()))
             return true;
-        }
 
-        // Tell the target about the current event, obeying its continuation directive.
-        switch (target->visitEvent(currentEvent))
+        // Apply attribute filters. Attribute filters do not cause the remainder of the file to be
+        // skipped, so non-acceptance implies coninuation.
+        for (const CEventAttribute& attr : event.assignedAttributes)
         {
-        case visitSkipEvent:
-            currentEvent = EventNone;
-            cacheSequence.clear();
-            return true;
-        case visitSkipFile:
-            return false;
-        case visitContinue:
-            break;
-        }
-
-        // Tell the target about the event's attributes, obeying its continuation directives.
-        Continuation continuation = visitContinue;
-        for (EventAttr id : cacheSequence)
-        {
-            switch (queryEventAttributeType(id))
-            {
-            case EATbool:
-                continuation = target->visitAttribute(id, cachedAttrValues[id].b);
-                break;
-            case EATtraceid:
-            case EATstring:
-                continuation = target->visitAttribute(id, cachedAttrValues[id].s);
-                break;
-            case EATnone:
-            case EATmax:
-                throw makeStringExceptionV(-1, "event attribute id %d has invalid type %d", int(id), int(queryEventAttributeType(id)));
-            default:
-                continuation = target->visitAttribute(id, cachedAttrValues[id].u);
-                break;
-            }
-            switch (continuation)
-            {
-            case visitSkipEvent:
-                currentEvent = EventNone;
-                cacheSequence.clear();
+            const FilterTerm* term = terms[attr.queryId()];
+            if (term && !term->matches(event, attr))
                 return true;
-            case visitSkipFile:
-                return false;
-            case visitContinue:
-                break;
-            }
         }
 
-        // Tell the target that the event is complete, obeying its continuation directive.
-        return target->departEvent();
+        // Forward the event to the decorated visitor.
+        return decorated->visitEvent(event);
     }
 
-    virtual void departFile(uint32_t bytesRead) override
-    {
-        target->departFile(bytesRead);
-    }
-
-public:
+public: // IEventFilter
     virtual bool acceptEvent(EventType type) override
     {
         return (acceptedEvents.insert(type).second);
@@ -466,11 +357,6 @@ public:
         }
     }
 
-    virtual void setTarget(IEventAttributeVisitor& visitor) override
-    {
-        target.set(&visitor);
-    }
-
 protected:
     template <typename term_type_t>
     FilterTerm* ensureTerm(EventAttr id)
@@ -486,20 +372,9 @@ protected:
         return terms[id].get();
     }
 
-    bool isEventAccepted(EventType type) const
-    {
-        return (acceptedEvents.empty() || acceptedEvents.count(type));
-    }
-
 protected:
-    using AcceptedEvents = std::unordered_set<EventType>;
-    Linked<IEventAttributeVisitor> target;
     Owned<FilterTerm> terms[EvAttrMax];
-    CachedAttrValue cachedAttrValues[EvAttrMax];
-    using CacheSequence = std::vector<EventAttr>;
-    CacheSequence cacheSequence;
-    AcceptedEvents acceptedEvents;
-    EventType currentEvent{EventNone};
+    std::unordered_set<EventType> acceptedEvents;
 };
 
 IEventFilter* createEventFilter()
