@@ -55,6 +55,7 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espapi.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espshell.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
+         jthreadtests.cpp
     )
 
 if (NOT CONTAINERIZED)
