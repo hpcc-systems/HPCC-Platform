@@ -40,6 +40,7 @@
   "dependencies": {
     "@fluentui/react": "8.122.9",
     "@fluentui/react-components": "9.58.2",
+    "@fluentui/react-nav-preview": "0.13.7",
     "@fluentui/react-datepicker-compat": "0.5.4",
     "@fluentui/react-experiments": "8.14.195",
     "@fluentui/react-hooks": "8.8.16",

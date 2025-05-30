@@ -13,7 +13,7 @@ import { CookieConsent } from "./forms/CookieConsent";
 import { userKeyValStore } from "src/KeyValStore";
 import { fireIdle, initSession, lock, unlock } from "src/Session";
 import { useGlobalStore } from "../hooks/store";
-import { useUserTheme } from "../hooks/theme";
+import { useNavWide, useUserTheme } from "../hooks/theme";
 import { useGlobalWorkunitNotes } from "../hooks/workunit";
 import { useUserSession } from "../hooks/user";
 
@@ -31,12 +31,12 @@ interface FrameProps {
 }
 
 export const Frame: React.FunctionComponent<FrameProps> = () => {
-
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
     const { userSession, setUserSession } = useUserSession();
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const { theme, themeV9, isDark } = useUserTheme();
+    const { navWide, setNavWide } = useNavWide();
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
 
@@ -110,8 +110,8 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     return <FluentProvider theme={themeV9} style={{ height: "100%" }}>
         <ThemeProvider theme={theme} style={{ height: "100%" }}>
             <HolyGrail
-                header={<DevTitle />}
-                left={<MainNavigation hashPath={locationPathname} />}
+                header={<DevTitle setNavWideMode={setNavWide} navWideMode={navWide} />}
+                left={<MainNavigation hashPath={locationPathname} navWideMode={navWide} />}
                 main={<HolyGrail
                     header={<SubNavigation hashPath={locationPathname} />}
                     main={body}
