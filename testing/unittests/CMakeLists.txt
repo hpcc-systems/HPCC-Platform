@@ -58,6 +58,7 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
          commonJsonWriterTests.cpp
          rtlxmltests.cpp
+         jthreadtests.cpp
     )
 
 if (NOT CONTAINERIZED)
