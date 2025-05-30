@@ -834,7 +834,7 @@ class jlib_decl CAtomPTree : public PTree
     PtrStrUnion<HashKeyElement> name;
 protected:
     virtual bool removeAttribute(const char *k) override;
-    virtual void serialize(IBufferedSerialOutputStream *out) override { UNIMPLEMENTED; }
+    virtual void serialize(IBufferedSerialOutputStream *out) override { PTree::serialize(out); }
     virtual void serialize(MemoryBuffer &tgt) override { PTree::serialize(tgt); }
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
@@ -863,7 +863,7 @@ class jlib_decl LocalPTree : public PTree
 {
 protected:
     virtual bool removeAttribute(const char *k) override;
-    virtual void serialize(IBufferedSerialOutputStream *out) override { UNIMPLEMENTED; }
+    virtual void serialize(IBufferedSerialOutputStream *out) override { PTree::serialize(out); }
     virtual void serialize(MemoryBuffer &tgt) override { PTree::serialize(tgt); }
     AttrStrUnion name;
 public:

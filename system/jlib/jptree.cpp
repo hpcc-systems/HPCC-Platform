@@ -2995,20 +2995,18 @@ IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath)
 
 void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt)
 {
-/*
     IAttributeIterator *aIter = getAttributes();
     if (aIter->first())
     {
         do
         {
-            tgt.append(aIter->queryName());
-            tgt.append(aIter->queryValue());
+            tgt.put(strlen(aIter->queryName()), aIter->queryName());
+            tgt.put(strlen(aIter->queryValue()), aIter->queryValue());
         }
         while (aIter->next());
     }
-    tgt.append(""); // attribute terminator. i.e. blank attr name.
+    tgt.put(strlen(""), "");
     aIter->Release();
-*/
 }
 
 void PTree::serializeSelf(IBufferedSerialOutputStream &tgt)
@@ -3029,7 +3027,6 @@ void PTree::serializeSelf(IBufferedSerialOutputStream &tgt)
 
 void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int depth)
 {
-/*
     serializeSelf(tgt);
 
     if (-1 == cutoff || depth<cutoff)
@@ -3046,19 +3043,13 @@ void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int de
             while (iter->next());
         }
     }
-    tgt.append(""); // element terminator. i.e. blank child name.
-*/
+    tgt.put(strlen(""), ""); // element terminator. i.e. blank child name.
 }
 
 void PTree::serialize(IBufferedSerialOutputStream *out)
 {
-/*
-    MemoryBuffer tgt;
-    serialize(tgt);
-    out->put(tgt.length(), tgt.toByteArray());
-*/
-    if (out)
-        serializeCutOff(*out, -1, 0);
+    assertex(out);
+    serializeCutOff(*out, -1, 0);
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
@@ -6137,12 +6128,15 @@ IPropertyTree *createPTree(IFile &ifile, byte flags, PTreeReaderOptions readFlag
         throw MakeStringException(0, "Could not locate filename: %s", ifile.queryFilename());
     return createPTree(*ifileio, flags, readFlags, iMaker);
 }
-
+/* TODO
 IPropertyTree *createPTree(IBufferedSerialInputStream *in)
 {
-    return nullptr;
+    Owned<IPTreeMaker> _iMaker.setown(createDefaultPTreeMaker(0, ptr_none));
+    Owned<IPTreeReader> reader = createXMLStringReader(xml, *iMaker, 0);
+    reader->load();
+    return LINK(iMaker->queryRoot());
 }
-
+*/
 IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFile ifile = createIFile(filename);
@@ -10601,14 +10595,18 @@ public:
             // Create a memory buffer with XML content
             MemoryBuffer buffer;
             buffer.append(strlen(TEST_XML), TEST_XML);
-
+/* TODO
             // Create a read stream from the buffer
-            Owned<ISerialInputStream> stream = createMemoryBufferSerialStream(buffer, nullptr);
+            outputFilename.set(filename);
+            outputFile.setown(createIFile(filename));
+            output.setown(outputFile->open(IFOcreate));
+
+            Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
+            Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);
 
             //ISimpleReadStream
-/*
             // Create property tree from stream
-            Owned<IPropertyTree> tree = createPTree(*stream, ipt_none, ptr_none, nullptr);
+            Owned<IPropertyTree> tree = createPTree(*bufferedDiskStream, ipt_none, ptr_none, nullptr);
 
             // Verify tree content
             CPPUNIT_ASSERT(tree);
@@ -10708,16 +10706,6 @@ public:
         }
     }
 };
-/*
-const char* PTreeCreatePTreeTest::TEST_XML =
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-    "<Root attr1=\"value1\" attr2=\"value2\">"
-    "  <Element>Element content</Element>"
-    "  <NumericElement>123</NumericElement>"
-    "  <EmptyElement/>"
-    "</Root>";
-*/
-//const char* PTreeCreatePTreeTest::TEST_XML_FILENAME = "property_tree_test.xml";
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCreatePTreeTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCreatePTreeTest, "PTreeCreatePTreeTest");
