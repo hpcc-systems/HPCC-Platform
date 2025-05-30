@@ -1,5 +1,5 @@
 import UniversalRouter, { ResolveContext } from "universal-router";
-import { parse, ParsedQuery, pick, stringify } from "query-string";
+import queryString, { type ParsedQuery } from "query-string";
 import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { QuerySortItem } from "src/store/Store";
@@ -40,7 +40,7 @@ export function parseHash(hash: string): HistoryLocation {
 
 export function parseQuery<T = ParsedQuery<string | boolean | number>>(_: string): T {
     if (_[0] !== "?") return {} as T;
-    return { ...parse(_.substring(1), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+    return { ...queryString.parse(_.substring(1), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
 }
 
 export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: string): T {
@@ -56,7 +56,7 @@ export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: strin
 
 export function parseSort(_?: string): QuerySortItem | undefined {
     if (!_) return undefined;
-    const filter = parse(pick(_.substring(1), ["sortBy"]));
+    const filter = queryString.parse(queryString.pick(_.substring(1), ["sortBy"]));
     let descending = false;
     let sortBy = filter?.sortBy?.toString();
     if (filter?.sortBy?.toString().charAt(0) === "-") {
@@ -71,7 +71,7 @@ export function updateSort(sorted: boolean, descending: boolean, sortBy: string)
 }
 
 export function parsePage(_: string): number {
-    const filter = parse(pick(_.substring(1), ["pageNum"]));
+    const filter = queryString.parse(queryString.pick(_.substring(1), ["pageNum"]));
     const pageNum = filter?.pageNum?.toString() ?? "1";
     return parseInt(pageNum, 10);
 }
@@ -217,7 +217,7 @@ class History<S extends object = object> {
 export const hashHistory = new History<any>();
 
 export function pushSearch(_: object) {
-    const search = stringify(_ as any);
+    const search = queryString.stringify(_ as any);
     hashHistory.push({
         search: search ? "?" + search : ""
     });
@@ -266,7 +266,7 @@ function calcParams(search: { [key: string]: string | string[] | number | boolea
 }
 
 export function calcSearch(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
-    return stringify(calcParams(search, keepEmpty));
+    return queryString.stringify(calcParams(search, keepEmpty));
 }
 
 export function pushParams(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {

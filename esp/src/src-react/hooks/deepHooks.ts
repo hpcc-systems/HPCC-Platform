@@ -28,10 +28,8 @@ export function useDeepEffect(callback: EffectCallback, dependencies: Dependency
 
 type UseCallbackParams = Parameters<typeof React.useCallback>
 type CallbackCallback = UseCallbackParams[0]
-type UseCallbackReturn = ReturnType<typeof React.useCallback>
 
-export function useDeepCallback(callback: CallbackCallback, dependencies: DependencyList, deepDependencies: DependencyList, verbose = false): UseCallbackReturn {
-
+export function useDeepCallback<T extends (...args: any[]) => any>(callback: T, dependencies: DependencyList, deepDependencies: DependencyList, verbose = false): T {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return React.useCallback(callback, [...dependencies, ...useDeepCompareMemoize(deepDependencies, verbose)]);
 }
@@ -39,5 +37,5 @@ export function useDeepCallback(callback: CallbackCallback, dependencies: Depend
 export function useDeepMemo(memo: CallbackCallback, dependencies: DependencyList, deepDependencies: DependencyList, verbose = false) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    return React.useMemo(memo, [...dependencies, ...useDeepCompareMemoize(deepDependencies, verbose)]);
+    return React.useMemo(() => memo(), [...dependencies, ...useDeepCompareMemoize(deepDependencies, verbose)]);
 }

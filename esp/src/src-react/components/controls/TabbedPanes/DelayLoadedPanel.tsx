@@ -5,6 +5,7 @@ export interface DelayLoadedPanelProps {
     visible: boolean;
     size: Size;
     padding?: number;
+    children?: React.ReactNode;
 }
 
 export const DelayLoadedPanel: React.FunctionComponent<DelayLoadedPanelProps> = ({

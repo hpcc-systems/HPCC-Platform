@@ -8,6 +8,7 @@ const RestoreIcon: IIconProps = { iconName: "ChromeRestore" };
 
 export interface FullscreenProps {
     fullscreen: boolean;
+    children?: React.ReactNode;
 }
 
 export const FullscreenFrame: React.FunctionComponent<FullscreenProps> = ({
