@@ -1380,6 +1380,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 cluster->getReplicateDir(repDir, os);
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
             }
+            // else // I am not sure cluster can ever be null.
 
             // Adding striping and/or aliasing to path unless this is a IFileDescriptor constructed with absolute paths
             if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
@@ -1414,7 +1415,9 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                         }
                     }
                     StringBuffer stripeDir;
-                    addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
+                    // JCS - this is a safeguard, I think 'cluster' should always be set, and it should always have same # devices as remote plane
+                    unsigned numDevices = cluster ? cluster->queryPartDiskMapping().numStripedDevices : plane->numDevices();
+                    addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, numDevices);
                     if (!stripeDir.isEmpty())
                         fullpath.swapWith(stripeDir);
                 }
