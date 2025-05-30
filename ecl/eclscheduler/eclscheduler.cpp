@@ -164,7 +164,7 @@ eclscheduler:
 
 //=========================================================================================
 
-class EclSchedulerServer : implements CSimpleInterfaceOf<IAbortHandler>
+class EclSchedulerServer : public CSimpleInterfaceOf<IAbortHandler>
 {
 public:
     EclSchedulerServer()
@@ -225,6 +225,7 @@ public:
                 catch (IException *E)
                 {
                     EXCLOG(E);
+                    E->Release();
                 }
                 catch (...)
                 {
@@ -265,9 +266,6 @@ private:
     void configQueueNamesHasChanged()
     {
         std::set<std::string> newSchedulerQueues = getQueues();
-        if (newSchedulerQueues.empty())
-            WARNLOG("No queues found to listen on");
-
         CriticalBlock b(updateSchedulersCS);
         if (newSchedulerQueues != schedulerQueues)
         {
