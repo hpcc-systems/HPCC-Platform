@@ -32,7 +32,7 @@ esp:
     servicePort: 8010
     ## wsdlAddress should be set to the host and port which clients can use to hit this service.
     #   This address is added to the service wsdl files which simplify setting up a SOAP client to hit this service.  There may be many external factors determining the address
-    #   that is accible to clients.
+    #   that is accessible to clients.
     # wsdlAddress: clientfacingaddress:8010
     ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
     visibility: local

@@ -10,13 +10,13 @@ Then we'll cover the configuration changes to deploy a minimal HPCC platform, bo
 
 ## Initial State
 
-When the platform launches it ensures the LDAP DS is initalized with "ous" (orgizational units) needed. OUs for groups, users and esp authorization resources are created (among others). An HPCC Admin user is created and added to the administrator's group.
+When the platform launches it ensures the LDAP DS is initialized with "OUs" (organizational units) needed. OUs for groups, users and esp authorization resources are created (among others). An HPCC Admin user is created and added to the administrator's group.
 
 If you need any other security settings beyond that, such as non-administrative users and groups, you'll need to create them using ECL Watch. The administrator account itself has the privileges to make these kinds of changes. You may see that the admin doesn't by default have _all_ permissions, but it can add any it needs to the admin group.
 
-This setup has been tested with ECL Watch authentication and authorization. It should also work for file scopes, but that hasn't been confirmed.
+This setup has been tested with ECL Watch authentication and authorization. It should also work for file and workunit scopes, but that hasn't been confirmed.
 
-Your customized setup will be saved to a persistent volume, and you can separately maintiain different versions as needed.
+Your customized setup will be saved to a persistent volume, and you can separately maintain different versions as needed.
 
 # Docker LDAP Directory Service and Admin Setup
 
@@ -37,7 +37,7 @@ These instructions create a persistent volume for the DS inside your directory, 
     ```bash
     docker exec -i -t 389ds /usr/sbin/dsconf localhost backend create --suffix dc=example,dc=com --be-name userRoot
     ```
-4. Verify your server is running by using phpLdapAdmin. Visit `hptt://localhost:8080` and login with username: "dn=Directory Manager" and password as you configured: <directory_manager_pw>.
+4. Verify your server is running by using phpLdapAdmin. Visit `hpttp://localhost:8080` and login with username: "cn=Directory Manager" and password as you configured: <directory_manager_pw>.
 
 # Bare-Metal Platform + Docker LDAP Setup
 
@@ -73,14 +73,14 @@ These directions assume you're starting with a vanilla configuration from a fres
 
 ## Add Secret for HPCC Admin User
 
-Next you must add the `myhpccadminsecretkey` to your HPCC platform deployment.
+Next you must add the `myhpccadminsecretkey` to your HPCC platform deployment. If there are concerns about storing these credentials on disk you should remove this secret directory when not in use, or manage it with an encryption/decryption utility such as `gocryptfs`
 
 First note the root of your platform install location, which we'll refer to as `<HPCC_ROOT>`. Package installs will be rooted in `/` but dev installs are typically located at `$HOME/runtime`.
 
 1. Create all directories in this path if they don't already exist:
 
     ```
-    <HPCC_ROOT>/opt/HPCCSytems/secrets/authn/myhpccadminsecretkey
+    <HPCC_ROOT>/opt/HPCCSystems/secrets/authn/myhpccadminsecretkey
     ```
 2. Inside `myhpccadminsecretkey` create two text files with no extra whitespace and no terminal newline:
     - A file named `username` containing `hpcc_admin`
@@ -105,29 +105,13 @@ This containerized deployment enables ldap auth for ECL Watch only, but it can b
 
 ## Create k8s Secrets for Platform
 
-You'll need two k8s secrets:
-- The credentials for the HPCC administrator
-- The username and password for the LDAP server administrator
+You'll need two k8s secrets, one for the HPCC administrator and another for the LDAP server administrator. Once created they'll persist in the Kubernetes backing store.
 
-These instructions assume you have the HPCC admin credentials already stored on disk as described above in the section [Add secret for HPCC Admin user](#add-secret-for-hpcc-admin-user). Follow similar steps to create the LDAP server administrator credentials. Use the secret names as written below to be able to use the sample helm values file.
-
-1. From the root of your platform install, create the folder:
-
-    ```
-    <HPCC_ROOT>/opt/HPCCSystems/secrets/authn/admincredssecretname
-    ```
-2. Inside `admincredssecretname`, create two text files with no extra whitespace and no terminal newline:
-    - A file named `username` containing `Directory Manager`
-    - A file named `password` containing the password for the 389ds server configured in `dockerfiles/examples/ldap/docker-compose.yaml` as `DS_DM_PASSWORD`. We'll refer to it as `<directory_manager_pw>`
-3. Create the corresponding k8s secret:
+1. Create secret for HPCC administrator:
     ```bash
-    kubectl create secret generic admincredssecretname --from-file=<HPCC_ROOT>/opt/HPCCSystems/secrets/authn/admincredssecretname
+    kubectl create secret generic myhpccadminsecretkey --from-literal=username=hpcc_admin --from-literal=password=<hpcc_admin_pw>
     ```
-4. Assuming the HPCC Admin credentials files already exist, create the corresponding k8s secret:
-    ```bash
-    kubectl create secret generic myhpccadminsecretkey --from-file=<HPCC_ROOT>/opt/HPCCSystems/secrets/authn/myhpccadminsecretkey
-    ```
-5. If you prefer not to create files to store credentials, the secrets can be created on the command-line with literal values, for example:
+1. Create secret for the LDAP server administrator:
     ```bash
     kubectl create secret generic admincredssecretname --from-literal="username=Directory Manager" --from-literal=password=<directory_manager_pw>
     ```
@@ -148,7 +132,7 @@ We'll be using the customized helm values file at `helm/examples/ldap/hpcc-value
 
 ## Run and Use Platform
 
-Run from the root of your platform source, or provide an absolute path to the helm values file used below.
+Run from the root of your platform source, or provide an absolute path to the Helm values file used below.
 
 1. Start up the platform:
 
