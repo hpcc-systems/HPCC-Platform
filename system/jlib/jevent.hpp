@@ -101,6 +101,15 @@ enum EventAttrType
     EATmax
 };
 
+enum EventAttrTypeClass : byte
+{
+    EATCnone,
+    EATCtext,
+    EATCnumeric,
+    EATCboolean,
+    EATCmax
+};
+
 extern jlib_decl EventType queryEventType(const char* name);
 extern jlib_decl const char * queryEventName(EventType event);
 extern jlib_decl EventAttr queryEventAttribute(const char* name);
@@ -115,41 +124,244 @@ struct jlib_decl EventRecordingSummary
     StringBuffer filename;
 };
 
-interface IEventAttribute
+// Encapsulation of a single attribute value for an event. Values may be stored as either text,
+// unsigned integral numbers, or Booleans. Assuming that an event will have an instance of this
+// for every attribute sescribed in EventAttr, the state of any instance of this is either:
+// - Unused: The attribute is not part of the event, and values cannot be set.
+// - Defined: The attribute is part of the event, but no value has been set.
+// - Assigned: The attribute is part of the event, and a value has been set.
+class jlib_decl CEventAttribute
 {
-    virtual EventAttr queryId() const = 0;
-    virtual bool isText() const = 0;
-    virtual bool isNumeric() const = 0;
-    virtual bool isBoolean() const = 0;
-    virtual const char* queryTextValue() const = 0;
-    virtual __uint64 queryNumericValue() const = 0;
-    virtual bool queryBooleanValue() const = 0;
+public:
+    enum State : byte { Unused, Defined, Assigned };
+
+public:
+    EventAttr queryId() const;
+    EventAttrTypeClass queryTypeClass() const;
+    inline bool isText() const { return EATCtext == queryTypeClass(); }
+    inline bool isNumeric() const { return EATCnumeric == queryTypeClass(); }
+    inline bool isBoolean() const { return EATCboolean == queryTypeClass(); }
+    inline State queryState() const { return state; }
+    inline bool isUnused() const { return Unused == queryState(); }
+    inline bool isDefined() const { return Defined == queryState(); }
+    inline bool isAssigned() const { return Assigned == queryState(); }
+    void setValue(const char* value);
+    void setValue(__uint64 value);
+    void setValue(bool value);
+    const char* queryTextValue() const;
+    __uint64 queryNumericValue() const;
+    virtual bool queryBooleanValue() const;
+    // Called once to identify the intended meaning of this instance
+    void setup(EventAttr attr);
+    // Called once per logical event to restore the original state of this instance
+    void reset(State _state);
+
+protected:
+    StringBuffer text;
+    __uint64 number{0};
+    bool boolean{false};
+    EventAttr id{EvAttrNone};
+    State state{Unused};
 };
 
-interface IEventAttributeIterator : extends IInterface
+// Encapsulation of a single event. An event is a type and an array of attributes. Each event may
+// have at most one instance of each attribute declared in EventAttr. Range-based iteraration of
+// CEventAttribute instances associated with an event is supported in three ways:
+// - for (auto& attr : event.allAttributes) { ... }
+//   Iteration of all attributes known to the event system, attribute states will include all states
+//   and are presented in numerical order of attribute IDs.
+// - for (auto& attr : event.defineAttributes) { ... }
+//   Iteration of all attributes defined for the event; Unused attributes are excluded. Attributes
+//   are presented in the order in which the event system records them.
+// - for (auto& attr : event.assignedAttributes) { ... }
+//   Iteration of all attributes for which values are set and the state is Assigned. Attributes are
+//   presented in the order in which the event system records them.
+class jlib_decl CEvent
 {
-    virtual bool first() = 0;
-    virtual bool next() = 0;
-    virtual bool isValid() const = 0;
-    virtual const IEventAttribute& query() const = 0;
-};
+public:
+    class jlib_decl AssignedAttributes
+    {
+    public:
+        class jlib_decl iterator
+        {
+        public:
+            iterator(CEvent& _owner, std::initializer_list<EventAttr>::const_iterator _cur)
+                : owner(_owner), cur(_cur) { nextAssigned();}
+            CEventAttribute& operator*() { return resolve(); }
+            CEventAttribute* operator->() { return &resolve(); }
+            iterator& operator++() { ++cur; nextAssigned(); return *this; }
+            bool operator != (const iterator& other) const { return cur != other.cur; }
+        protected:
+            CEventAttribute& resolve() const { return owner.attributes[*cur]; }
+            void nextAssigned();
+        protected:
+            CEvent& owner;
+            std::initializer_list<EventAttr>::const_iterator cur;
+        };
 
-interface IEvent
-{
-    virtual EventType queryType() const = 0;
-    virtual bool isAttribute(EventAttr attr) const = 0; // can an event include the attribute
-    virtual bool hasAttribute(EventAttr attr) const = 0; // does the event include the attribute
-    virtual bool isComplete() const = 0; // does the event include all non-optional attributes
-    virtual bool isTextAttribute(EventAttr attr) const = 0;
-    virtual bool isNumericAttribute(EventAttr attr) const = 0;
-    virtual bool isBooleanAttribute(EventAttr attr) const = 0;
-    virtual const char* queryTextValue(EventAttr attr) const = 0;
-    virtual __uint64 queryNumericValue(EventAttr attr) const = 0;
-    virtual bool queryBooleanValue(EventAttr attr) const = 0;
-    virtual bool setValue(EventAttr attr, const char* value) = 0;
-    virtual bool setValue(EventAttr attr, __uint64 value) = 0;
-    virtual bool setValue(EventAttr attr, bool value) = 0;
-    virtual IEventAttributeIterator* getAttributes() const = 0;
+        class jlib_decl const_iterator
+        {
+        public:
+            const_iterator(const CEvent& _owner, std::initializer_list<EventAttr>::const_iterator _cur)
+                : owner(_owner), cur(_cur) { nextAssigned();}
+            const CEventAttribute& operator*() { return resolve(); }
+            const CEventAttribute* operator->() { return &resolve(); }
+            const_iterator& operator++() { ++cur; nextAssigned(); return *this; }
+            bool operator != (const const_iterator& other) const { return cur != other.cur; }
+        protected:
+            const CEventAttribute& resolve() const { return owner.attributes[*cur]; }
+            void nextAssigned();
+        protected:
+            const CEvent& owner;
+            std::initializer_list<EventAttr>::const_iterator cur;
+        };
+
+        iterator begin() { return iterator(owner, owner.queryOrderedAttributeIds().begin()); }
+        const_iterator begin() const { return const_iterator(owner, owner.queryOrderedAttributeIds().begin()); }
+        iterator end() { return iterator(owner, owner.queryOrderedAttributeIds().end()); }
+        const_iterator end() const { return const_iterator(owner, owner.queryOrderedAttributeIds().end()); }
+
+        AssignedAttributes(CEvent& _owner) : owner(_owner) {}
+
+    protected:
+        CEvent& owner;
+    };
+
+    class DefinedAttributes
+    {
+    public:
+        class iterator
+        {
+        public:
+            iterator(CEvent& _owner, std::initializer_list<EventAttr>::const_iterator _cur)
+                : owner(_owner), cur(_cur) {}
+            CEventAttribute& operator*() { return resolve(); }
+            CEventAttribute* operator->() { return &resolve(); }
+            iterator& operator++() { ++cur; return *this; }
+            bool operator != (const iterator& other) const { return cur != other.cur; }
+        protected:
+            CEventAttribute& resolve() const { return owner.attributes[*cur]; }
+        protected:
+            CEvent& owner;
+            std::initializer_list<EventAttr>::const_iterator cur;
+        };
+
+        class const_iterator
+        {
+        public:
+            const_iterator(const CEvent& _owner, std::initializer_list<EventAttr>::const_iterator _cur)
+                : owner(_owner), cur(_cur) {}
+            const CEventAttribute& operator*() { return resolve(); }
+            const CEventAttribute* operator->() { return &resolve(); }
+            const_iterator& operator++() { ++cur; return *this; }
+            bool operator != (const const_iterator& other) const { return cur != other.cur; }
+        protected:
+            const CEventAttribute& resolve() const { return owner.attributes[*cur]; }
+        protected:
+            const CEvent& owner;
+            std::initializer_list<EventAttr>::const_iterator cur;
+        };
+
+        iterator begin() { return iterator(owner, owner.queryOrderedAttributeIds().begin()); }
+        const_iterator begin() const { return const_iterator(owner, owner.queryOrderedAttributeIds().begin()); }
+        iterator end() { return iterator(owner, owner.queryOrderedAttributeIds().end()); }
+        const_iterator end() const { return const_iterator(owner, owner.queryOrderedAttributeIds().end()); }
+
+        DefinedAttributes(CEvent& _owner) : owner(_owner) {}
+
+    protected:
+        CEvent& owner;
+    };
+
+    class AllAttributes
+    {
+    public:
+        class iterator
+        {
+        public:
+            iterator(CEvent& _owner, EventAttr _attr)
+                : owner(_owner)
+                , attr(_attr)
+            {
+                assertex(attr <= EvAttrMax);
+                if (EvAttrNone == attr)
+                    attr = EventAttr(1);
+            }
+            CEventAttribute& operator*() { return resolve(); }
+            CEventAttribute* operator->() { return &resolve(); }
+            iterator& operator++() { if (attr < EvAttrMax) ++attr; return *this; }
+            bool operator != (const iterator& other) const { return attr != other.attr; }
+        protected:
+            CEventAttribute& resolve() const { return owner.attributes[attr]; }
+        protected:
+            CEvent& owner;
+            unsigned attr;
+        };
+
+        class const_iterator
+        {
+        public:
+            const_iterator(const CEvent& _owner, EventAttr _attr)
+                : owner(_owner)
+                , attr(_attr)
+            {
+                assertex(attr <= EvAttrMax);
+                if (EvAttrNone == attr)
+                    attr = EventAttr(1);
+            }
+            const CEventAttribute& operator*() { return resolve(); }
+            const CEventAttribute* operator->() { return &resolve(); }
+            const_iterator& operator++() { if (attr < EvAttrMax) ++attr; return *this; }
+            bool operator != (const const_iterator& other) const { return attr != other.attr; }
+        protected:
+            const CEventAttribute& resolve() const { return owner.attributes[attr]; }
+        protected:
+            const CEvent& owner;
+            unsigned attr;
+        };
+
+        iterator begin() { return iterator(owner, EvAttrNone); }
+        const_iterator begin() const { return const_iterator(owner, EvAttrNone); }
+        iterator end() { return iterator(owner, EvAttrMax); }
+        const_iterator end() const { return const_iterator(owner, EvAttrMax); }
+
+        AllAttributes(CEvent& _owner) : owner(_owner) {}
+
+    protected:
+        CEvent& owner;
+    };
+
+public:
+    EventType queryType() const;
+    bool isAttribute(EventAttr attr) const;
+    bool hasAttribute(EventAttr attr) const;
+    bool isComplete() const;
+    CEventAttribute& queryAttribute(EventAttr attr);
+    const CEventAttribute& queryAttribute(EventAttr attr) const;
+    bool isTextAttribute(EventAttr attr) const;
+    bool isNumericAttribute(EventAttr attr) const;
+    bool isBooleanAttribute(EventAttr attr) const;
+    const char* queryTextValue(EventAttr attr) const;
+    __uint64 queryNumericValue(EventAttr attr) const;
+    bool queryBooleanValue(EventAttr attr) const;
+    bool setValue(EventAttr attr, const char* value);
+    bool setValue(EventAttr attr, __uint64 value);
+    bool setValue(EventAttr attr, bool value);
+
+public:
+    CEvent();
+    void reset(EventType _type);
+
+private:
+    const std::initializer_list<EventAttr>& queryOrderedAttributeIds() const;
+
+protected:
+    EventType type{EventNone};
+    CEventAttribute attributes[EvAttrMax];
+public:
+    AssignedAttributes assignedAttributes;
+    DefinedAttributes definedAttributes;
+    AllAttributes allAttributes;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -295,7 +507,7 @@ inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRe
 interface IEventVisitor : extends IInterface
 {
     virtual bool visitFile(const char *filename, uint32_t version) = 0;
-    virtual bool visitEvent(IEvent& event) = 0;
+    virtual bool visitEvent(CEvent& event) = 0;
     virtual void departFile(uint32_t bytesRead) = 0;
 };
 

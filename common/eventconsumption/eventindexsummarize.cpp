@@ -22,7 +22,7 @@ bool CIndexFileSummary::visitFile(const char *filename, uint32_t version)
     return true;
 }
 
-bool CIndexFileSummary::visitEvent(IEvent& event)
+bool CIndexFileSummary::visitEvent(CEvent& event)
 {
     return eventDistributor(event, *this);
 }

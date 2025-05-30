@@ -125,15 +125,6 @@ static constexpr EventInformation eventInformation[] {
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
-enum EventAttrTypeClass : byte
-{
-    EATCnone,
-    EATCtext,
-    EATCnumeric,
-    EATCboolean,
-    EATCmax
-};
-
 static constexpr unsigned attrTypeSizes[] = { 0, 1, 1, 2, 4, 8, 8, 0, 32 };
 static_assert(_elements_in(attrTypeSizes) == EATmax);
 
@@ -870,285 +861,224 @@ EventRecorder eventRecorder;
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CEventAttribute : public IEventAttribute
+#define ASSERT_ATTR(a) assertex(EvAttrNone < a && a < EvAttrMax)
+
+EventAttr CEventAttribute::queryId() const
 {
-public:
-    enum State : byte { Unused, Defined, Assigned };
+    return id;
+}
 
-public: // IEventAttribute
-    virtual EventAttr queryId() const override
-    {
-        return id;
-    }
-
-    virtual bool isText() const override
-    {
-        return EATCtext == attrInformation[id].typeClass;
-    }
-
-    virtual bool isNumeric() const override
-    {
-        return EATCnumeric == attrInformation[id].typeClass;
-    }
-
-    virtual bool isBoolean() const override
-    {
-        return EATCboolean == attrInformation[id].typeClass;
-    }
-
-    virtual const char* queryTextValue() const override
-    {
-        assertex(isText());
-        return text;
-    }
-
-    virtual __uint64 queryNumericValue() const override
-    {
-        assertex(isNumeric());
-        return number;
-    }
-
-    virtual bool queryBooleanValue() const override
-    {
-        assertex(isBoolean());
-        return boolean;
-    }
-
-public:
-    void setup(EventAttr attr)
-    {
-        assertex(attr < EvAttrMax);
-        id = attr;
-    }
-
-    void reset(State _state)
-    {
-        state = _state;
-    }
-
-    inline bool isUnused() const
-    {
-        return Unused == state;
-    }
-
-    inline bool isDefined() const
-    {
-        return Defined == state;
-    }
-
-    inline bool isAssigned() const
-    {
-        return Assigned == state;
-    }
-
-    void setValue(const char* value)
-    {
-        assertex(isText() && !isUnused());
-        text.set(value);
-        state = Assigned;
-    }
-
-    void setValue(__uint64 value)
-    {
-        assertex(isNumeric() && !isUnused());
-        number = value;
-        state = Assigned;
-    }
-
-    void setValue(bool value)
-    {
-        assertex(isBoolean() && !isUnused());
-        boolean = value;
-        state = Assigned;
-    }
-
-protected:
-    EventAttr id{EvAttrNone};
-    StringBuffer text;
-    __uint64 number{0};
-    bool boolean{false};
-    State state{Unused};
-};
-
-class CEvent : public IEvent
+EventAttrTypeClass CEventAttribute::queryTypeClass() const
 {
-protected:
-    class AttributeIterator : public CInterfaceOf<IEventAttributeIterator>
+    return attrInformation[id].typeClass;
+}
+
+const char* CEventAttribute::queryTextValue() const
+{
+    assertex(isText());
+    return text;
+}
+
+__uint64 CEventAttribute::queryNumericValue() const
+{
+    assertex(isNumeric());
+    return number;
+}
+
+bool CEventAttribute::queryBooleanValue() const
+{
+    assertex(isBoolean());
+    return boolean;
+}
+
+void CEventAttribute::setup(EventAttr attr)
+{
+    ASSERT_ATTR(attr);
+    id = attr;
+}
+
+void CEventAttribute::reset(State _state)
+{
+    state = _state;
+    text.clear();
+    number = 0;
+    boolean = false;
+}
+
+void CEventAttribute::setValue(const char* value)
+{
+    assertex(isText() && !isUnused());
+    text.set(value);
+    state = Assigned;
+}
+
+void CEventAttribute::setValue(__uint64 value)
+{
+    assertex(isNumeric() && !isUnused());
+    number = value;
+    state = Assigned;
+}
+
+void CEventAttribute::setValue(bool value)
+{
+    assertex(isBoolean() && !isUnused());
+    boolean = value;
+    state = Assigned;
+}
+
+void CEvent::AssignedAttributes::iterator::nextAssigned()
+{
+    while (cur != eventInformation[owner.type].attributes.end() && !resolve().isAssigned())
+        ++cur;
+}
+
+void CEvent::AssignedAttributes::const_iterator::nextAssigned()
+{
+    while (cur != eventInformation[owner.type].attributes.end() && !resolve().isAssigned())
+        ++cur;
+}
+
+EventType CEvent::queryType() const
+{
+    return type;
+}
+
+bool CEvent::isAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return !attributes[attr].isUnused();
+}
+
+bool CEvent::hasAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].isAssigned();
+}
+
+bool CEvent::isComplete() const
+{
+    for (EventAttr attr : eventInformation[type].attributes)
     {
-    public: // IEventAttributeIterator
-        virtual bool first() override
+        switch (attr)
         {
-            cur = eventInformation[owner.type].attributes.begin();
-            return isValid();
-        }
-
-        virtual bool isValid() const override
-        {
-            return cur != eventInformation[owner.type].attributes.end();
-        }
-
-        virtual bool next() override
-        {
-            if (!isValid())
+        case EvAttrEventTraceId:
+        case EvAttrEventThreadId:
+        case EvAttrEventStackTrace:
+            continue;
+        default:
+            if (attributes[attr].isDefined())
                 return false;
-            do
-            {
-                ++cur;
-            }
-            while (isValid() && !owner.attributes[*cur].isAssigned());
-            return isValid();
         }
-
-        virtual const IEventAttribute & query() const override
-        {
-            return owner.attributes[*cur];
-        }
-
-    public:
-        AttributeIterator(const CEvent & _owner)
-            : owner(_owner)
-        {
-        }
-
-    protected:
-        const CEvent& owner;
-        std::initializer_list<EventAttr>::const_iterator cur;
-    };
-
-public: // IEvent
-    virtual EventType queryType() const override
-    {
-        return type;
     }
+    return true;
+}
 
-    virtual bool isAttribute(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return !attributes[attr].isUnused();
-    }
+CEventAttribute& CEvent::queryAttribute(EventAttr attr)
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr];
+}
 
-    virtual bool hasAttribute(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].isAssigned();
-    }
+const CEventAttribute& CEvent::queryAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr];
+}
 
-    virtual bool isComplete() const override
+bool CEvent::isTextAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].isText();
+}
+
+bool CEvent::isNumericAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].isNumeric();
+}
+
+bool CEvent::isBooleanAttribute(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].isBoolean();
+}
+
+const char* CEvent::queryTextValue(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].queryTextValue();
+}
+
+__uint64 CEvent::queryNumericValue(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].queryNumericValue();
+}
+
+bool CEvent::queryBooleanValue(EventAttr attr) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].queryBooleanValue();
+}
+
+bool CEvent::setValue(EventAttr attr, const char* value)
+{
+    ASSERT_ATTR(attr);
+    if (attributes[attr].isText())
     {
-        for (EventAttr attr : eventInformation[type].attributes)
-        {
-            switch (attr)
-            {
-            case EvAttrEventTraceId:
-            case EvAttrEventThreadId:
-            case EvAttrEventStackTrace:
-                continue;
-            default:
-                if (attributes[attr].isDefined())
-                    return false;
-            }
-        }
+        attributes[attr].setValue(value);
         return true;
     }
+    return false;
+}
 
-    virtual bool isTextAttribute(EventAttr attr) const override
+bool CEvent::setValue(EventAttr attr, __uint64 value)
+{
+    ASSERT_ATTR(attr);
+    if (attributes[attr].isNumeric())
     {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].isText();
+        attributes[attr].setValue(value);
+        return true;
     }
+    return false;
+}
 
-    virtual bool isNumericAttribute(EventAttr attr) const override
+bool CEvent::setValue(EventAttr attr, bool value)
+{
+    ASSERT_ATTR(attr);
+    if (attributes[attr].isBoolean())
     {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].isNumeric();
+        attributes[attr].setValue(value);
+        return true;
     }
+    return false;
+}
 
-    virtual bool isBooleanAttribute(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].isBoolean();
-    }
+CEvent::CEvent()
+    : assignedAttributes(*this)
+    , definedAttributes(*this)
+    , allAttributes(*this)
+{
+    for (unsigned i = EvAttrNone + 1; i < EvAttrMax; i++)
+        attributes[i].setup(EventAttr(i));
+}
 
-    virtual const char* queryTextValue(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].queryTextValue();
-    }
+void CEvent::reset(EventType _type)
+{
+    assertex(_type < EventMax);
+    type = _type;
+    // Reset the attribute states in two steps to avoid searching the event attributes
+    // once for each attribute.
+    for (unsigned i=1; i < EvAttrMax; i++)
+        attributes[i].reset(CEventAttribute::Unused);
+    for (EventAttr attr : eventInformation[type].attributes)
+        attributes[attr].reset(CEventAttribute::Defined);
+}
 
-    virtual __uint64 queryNumericValue(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].queryNumericValue();
-    }
-
-    virtual bool queryBooleanValue(EventAttr attr) const override
-    {
-        assertex(attr < EvAttrMax);
-        return attributes[attr].queryBooleanValue();
-    }
-
-    virtual bool setValue(EventAttr attr, const char* value) override
-    {
-        assertex(attr < EvAttrMax);
-        if (attributes[attr].isText())
-        {
-            attributes[attr].setValue(value);
-            return true;
-        }
-        return false;
-    }
-
-    virtual bool setValue(EventAttr attr, __uint64 value) override
-    {
-        assertex(attr < EvAttrMax);
-        if (attributes[attr].isNumeric())
-        {
-            attributes[attr].setValue(value);
-            return true;
-        }
-        return false;
-    }
-
-    virtual bool setValue(EventAttr attr, bool value) override
-    {
-        assertex(attr < EvAttrMax);
-        if (attributes[attr].isBoolean())
-        {
-            attributes[attr].setValue(value);
-            return true;
-        }
-        return false;
-    }
-
-    virtual IEventAttributeIterator* getAttributes() const override
-    {
-        assertex(EventNone < type && type < EventMax);
-        return new AttributeIterator(*this);
-    }
-
-public:
-    CEvent()
-    {
-        for (unsigned i=0; i < EvAttrMax; i++)
-            attributes[i].setup(EventAttr(i));
-    }
-
-    void reset(EventType _type)
-    {
-        assertex(_type < EventMax);
-        type = _type;
-        // Reset the attribute states in two steps to avoid searching the event attributes
-        // once for each attribute.
-        for (unsigned i=1; i < EvAttrMax; i++)
-            attributes[i].reset(CEventAttribute::Unused);
-        for (EventAttr attr : eventInformation[type].attributes)
-            attributes[attr].reset(CEventAttribute::Defined);
-    }
-
-protected:
-    EventType type{EventNone};
-    CEventAttribute attributes[EvAttrMax];
-};
+const std::initializer_list<EventAttr>& CEvent::queryOrderedAttributeIds() const
+{
+    return eventInformation[type].attributes;
+}
 
 class CEventFileReader : public CInterface
 {

@@ -62,4 +62,4 @@ interface IEventAttributeVisitor : extends IEventVisitor
     virtual bool departEvent() = 0;
 };
 
-extern event_decl bool eventDistributor(IEvent& event, IEventAttributeVisitor& visitor);
+extern event_decl bool eventDistributor(CEvent& event, IEventAttributeVisitor& visitor);
