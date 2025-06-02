@@ -832,6 +832,8 @@ protected: friend class CPooledThreadWrapper;
     std::atomic<bool> stopall{false};
     const bool inheritThreadContext;
     unsigned defaultmax = 0;
+    unsigned newDefaultmax = 0;
+    unsigned slotsToRelease = 0;
     unsigned targetpoolsize = 0;
     unsigned delay = 0;
     Semaphore availsem;
@@ -1024,6 +1026,17 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         bool slotConsumed{true};
         if (defaultmax)
         {
+            if (newDefaultmax)
+            {
+                CriticalBlock block(crit);
+                if (newDefaultmax > defaultmax)
+                {
+                    unsigned num = newDefaultmax - defaultmax;
+                    availsem.signal(num);
+                    defaultmax = newDefaultmax;
+                }
+                newDefaultmax = 0;
+            }
             waited = !availsem.wait(0);
             if (noBlock)
                 timedout = waited;
@@ -1323,8 +1336,31 @@ public:
         }
         return false;
     }
-};
+    void setPoolSize(unsigned newPoolSize)
+    {
+        CriticalBlock block(crit);
+        if (newDefaultmax)
+        {
+            OWARNLOG("Pool size change already in progress. Request ignored!");
+            return;
+        }
 
+        if (newPoolSize > defaultmax)
+        {
+            availsem.signal(newPoolSize - defaultmax);
+            defaultmax = newPoolSize;
+            return;
+        }
+
+        if (newPoolSize < defaultmax)
+        {
+            if (!runningCount())
+                newDefaultmax = newPoolSize;
+            else
+                slotsToRelease = defaultmax - newPoolSize;
+        }
+    }
+};
 
 IThreadPool *createThreadPool(const char *poolname,IThreadFactory *factory,bool inheritThreadContext, IExceptionHandler *exceptionHandler,unsigned defaultmax, unsigned delay, unsigned stacksize, unsigned timeoutOnRelease, unsigned targetpoolsize)
 {
