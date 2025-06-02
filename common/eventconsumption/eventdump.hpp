@@ -28,13 +28,12 @@
 //       ├── Header
 //       │   ├── @filename
 //       │   ├── @version
-//       │   └── ... (other header attributes)
 //       ├── Event
 //       │   ├── @name
 //       │   └── ... (other event attributes)
 //       ├── ... (more Event elements)
 //       └── Footer
-//           ├── @bytesRead
+//           └── @bytesRead
 
 constexpr static const char* DUMP_STRUCTURE_ROOT = "EventFile";
 constexpr static const char* DUMP_STRUCTURE_FILE_NAME = "filename";
@@ -51,40 +50,54 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //
 // Subclasses must implement:
 //  `virtual bool visitFile(const char* filename, uint32_t version) = 0;`
-//  `virtual Continuation visitEvent(EventType id) = 0;`
-//  `virtual bool departEvent() = 0;`
 //  `virtual void departFile(uint32_t bytesRead) = 0;`
 //  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
-class CDumpEventVisitor : public CInterfaceOf<IEventAttributeVisitor>
+class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
-public:
-    using Continuation = IEventAttributeVisitor::Continuation;
-
+public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
-        return eventDistributor(event, *this);
+        visitEvent(event.queryType());
+        for (CEventAttribute& attr : event.assignedAttributes)
+        {
+            switch (attr.queryTypeClass())
+            {
+            case EATCtext:
+                visitAttribute(attr.queryId(), attr.queryTextValue());
+                break;
+            case EATCnumeric:
+                visitAttribute(attr.queryId(), attr.queryNumericValue());
+                break;
+            case EATCboolean:
+                visitAttribute(attr.queryId(), attr.queryBooleanValue());
+                break;
+            default:
+                throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());
+            }
+        }
+        departEvent();
+        return true;
     }
 
-    virtual Continuation visitAttribute(EventAttr id, const char* value) override
-    {
-        if (EvAttrRecordedOption == id)
-            recordAttribute(EvAttrNone, value, "true", false);
-        else
-            doVisitAttribute(id, value);
-        return Continuation::visitContinue;
-    }
+protected:
+    virtual void visitEvent(EventType id) {};
 
-    virtual Continuation visitAttribute(EventAttr id, bool value) override
+    inline void visitAttribute(EventAttr id, const char* value)
     {
         doVisitAttribute(id, value);
-        return Continuation::visitContinue;
     }
 
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
+    inline void visitAttribute(EventAttr id, bool value)
     {
         doVisitAttribute(id, value);
-        return Continuation::visitContinue;
     }
+
+    inline void visitAttribute(EventAttr id, __uint64 value)
+    {
+        doVisitAttribute(id, value);
+    }
+
+    virtual void departEvent() {};
 
 protected:
     void doVisitHeader(const char* filename, uint32_t version)
