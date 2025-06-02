@@ -173,7 +173,7 @@ void *Thread::_threadmain(void *v)
     Thread * t = (Thread *)v;
     restoreThreadContext(t->savedCtx);
 #ifdef _WIN32
-    if (SEHHandling) 
+    if (SEHHandling)
         EnableSEHtranslation();
 #else
     t->tidlog = threadLogID();
@@ -227,7 +227,7 @@ void Thread::adjustPriority(int delta)
         int policy;
         sched_param param;
         int rc;
-        if (( rc = pthread_getschedparam(threadid, &policy, &param)) != 0) 
+        if (( rc = pthread_getschedparam(threadid, &policy, &param)) != 0)
             DBGLOG("pthread_getschedparam error: %d", rc);
         switch (delta)
         {
@@ -238,7 +238,7 @@ void Thread::adjustPriority(int delta)
         case +1: param.sched_priority =  (sched_get_priority_max(SCHED_RR)-sched_get_priority_min(SCHED_RR))/2; policy =SCHED_RR;       break;
         case +2: param.sched_priority =  sched_get_priority_max(SCHED_RR); policy =SCHED_RR;    break;
         }
-        if(( rc = pthread_setschedparam(threadid, policy, &param)) != 0) 
+        if(( rc = pthread_setschedparam(threadid, policy, &param)) != 0)
             DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "u PID=%i", rc,policy,param.sched_priority,(unsigned __int64) threadid,getpid());
         else
             DBGLOG("priority set id=%" I64F "u policy=%i pri=%i PID=%i",(unsigned __int64) threadid,policy,param.sched_priority,getpid());
@@ -285,7 +285,7 @@ void Thread::setNice(int _nicelevel)
 
     if(alive)
         throw MakeStringException(0, "nice can only be set before the thread is started.");
-    
+
     nicelevel = _nicelevel;
 }
 
@@ -324,7 +324,7 @@ int Thread::begin()
     callThreadTerminationHooks(false);
 #ifdef _WIN32
 #ifndef _DEBUG
-    CloseHandle(hThread);   // leak handle when debugging, 
+    CloseHandle(hThread);   // leak handle when debugging,
                             // fixes some lockups/crashes in the debugger when lots of threads being created
 #endif
     hThread = NULL;
@@ -352,7 +352,7 @@ void Thread::handleException(IException *e)
             IExceptionHandler *handler = (IExceptionHandler *) exceptionHandlers->item(ie);
             handled = handler->fireException(e) || handled;
         }
-        if (!handled) 
+        if (!handled)
         {
             // if nothing choose to handle it.
             EXCLOG(e, NULL);
@@ -456,9 +456,9 @@ void Thread::startRelease()
             Sleep(delay);
             delay *= 2;
         }
-        else 
+        else
             break;
-    } 
+    }
     if (status) {
         threadid = 0;
         Release();
@@ -499,7 +499,7 @@ bool Thread::join(unsigned timeout)
 #endif
         return true;
     }
-    if (!stopped.wait(timeout)) 
+    if (!stopped.wait(timeout))
         return false;
     if (!alive)         // already joined
     {
@@ -664,7 +664,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             catch (IException * _e)
             {
                 e.setownIfNull(_e);
-                if (abortFollowingException) 
+                if (abortFollowingException)
                     break;
             }
         }
@@ -848,6 +848,8 @@ class CPooledThreadWrapper: public Thread
     Semaphore sem;
     CThreadPoolBase &parent;
     StringAttr runningName;
+    // Flag indicating whether the thread slot should be released back to the pool after execution.
+    bool slotConsumed{false};
 public:
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
@@ -856,7 +858,7 @@ public:
     {
         thread = _thread;
         handle = _handle;
-        runningName.set(_parent.poolname); 
+        runningName.set(_parent.poolname);
     }
 
     ~CPooledThreadWrapper()
@@ -881,6 +883,20 @@ public:
     void markStarted()
     {
         parent.numrunning++;
+    }
+    bool slotWasConsumed() const
+    {
+        return slotConsumed;
+    }
+    void setSlotConsumed()
+    {
+        slotConsumed = true;
+    }
+    bool resetSlot()
+    {
+        bool ret = slotConsumed;
+        slotConsumed = false;
+        return ret;
     }
 
     int run()
@@ -1003,8 +1019,9 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
     {
         CCycleTimer startTimer;
-        bool waited = false;
-        bool timedout = false;
+        bool waited{false};
+        bool timedout{false};
+        bool slotConsumed{true};
         if (defaultmax)
         {
             waited = !availsem.wait(0);
@@ -1013,6 +1030,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
             else if (waited)
                 timedout = !availsem.wait(timeout>0?timeout:delay);
         }
+        else
+            slotConsumed = false;
         PooledThreadHandle ret;
         {
             CriticalBlock block(crit);
@@ -1023,6 +1042,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                     if (noBlock || timeout > 0)
                         throw MakeStringException(0, "No threads available in pool %s", poolname.get());
                     IWARNLOG("Pool limit exceeded for %s", poolname.get());
+                    slotConsumed = false;
                 }
             }
             if (traceStartDelayPeriod)
@@ -1046,6 +1066,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                 t.setName(name);
             if (inheritThreadContext)
                 t.captureThreadLoggingInfo();
+            if (slotConsumed)
+                t.setSlotConsumed();
             t.go(param);
             ret = t.queryHandle();
         }
@@ -1092,7 +1114,7 @@ public:
                 StringBuffer threadInfo;
                 PROGLOG("Active thread: %s, info: %s", t.getName(), t.getInfo(threadInfo).str());
             }
-        }       
+        }
         factory->Release();
     }
 
@@ -1109,6 +1131,7 @@ public:
                     it.queryThread().Release();
                     it.setThread(factory->createNew());
                 }
+
                 return it;
             }
         }
@@ -1215,17 +1238,17 @@ public:
             it.Link();
             tojoin.append(it);
         }
-            
-        ForEachItemIn(i2,tojoin) 
-            if (!joinWait(tojoin.item(i2),timeout))  
+
+        ForEachItemIn(i2,tojoin)
+            if (!joinWait(tojoin.item(i2),timeout))
                 return false;
         if (del) {
             stopall = true;
-            ForEachItemIn(i3,tojoin) 
+            ForEachItemIn(i3,tojoin)
                 tojoin.item(i3).cycle();
             {
                 CriticalUnblock unblock(crit);
-                ForEachItemIn(i4,tojoin) 
+                ForEachItemIn(i4,tojoin)
                     tojoin.item(i4).join();
             }
             threadwrappers.kill();
@@ -1276,7 +1299,8 @@ public:
                     break;
                 }
             }
-            availsem.signal();
+            if (item->resetSlot())
+                availsem.signal();
         }
         return ret;
     }
@@ -1440,27 +1464,27 @@ public:
         }
         CheckAllowedProgram(prog,allowedprogs);
         SECURITY_ATTRIBUTES sa;
-        sa.nLength = sizeof(SECURITY_ATTRIBUTES); 
-        sa.bInheritHandle = TRUE; 
-        sa.lpSecurityDescriptor = NULL; 
+        sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+        sa.bInheritHandle = TRUE;
+        sa.lpSecurityDescriptor = NULL;
         HANDLE hProgOutput=(HANDLE)-1;
         HANDLE hProgInput=(HANDLE)-1;
         HANDLE hProgError=(HANDLE)-1;
-        
+
         HANDLE h;
-        //NB: Create a pipe handles that are not inherited our end 
+        //NB: Create a pipe handles that are not inherited our end
         if (hasinput) {
-            CreatePipe(&hProgInput,&h,&sa,0);       
+            CreatePipe(&hProgInput,&h,&sa,0);
             DuplicateHandle(GetCurrentProcess(),h, GetCurrentProcess(), &hInput, 0, FALSE, DUPLICATE_SAME_ACCESS);
             CloseHandle(h);
         }
         if (hasoutput) {
-            CreatePipe(&h,&hProgOutput,&sa,0);      
+            CreatePipe(&h,&hProgOutput,&sa,0);
             DuplicateHandle(GetCurrentProcess(),h, GetCurrentProcess(), &hOutput, 0, FALSE, DUPLICATE_SAME_ACCESS);
             CloseHandle(h);
         }
         if (haserror) {
-            CreatePipe(&h,&hProgError,&sa,0);       
+            CreatePipe(&h,&hProgError,&sa,0);
             DuplicateHandle(GetCurrentProcess(),h, GetCurrentProcess(), &hError, 0, FALSE, DUPLICATE_SAME_ACCESS);
             CloseHandle(h);
         }
@@ -1473,7 +1497,7 @@ public:
         StartupInfo.hStdOutput = hasoutput?hProgOutput:GetStdHandle(STD_OUTPUT_HANDLE);
         StartupInfo.hStdError  = haserror?hProgError:GetStdHandle(STD_ERROR_HANDLE);
         StartupInfo.hStdInput  = hasinput?hProgInput:GetStdHandle(STD_INPUT_HANDLE);
-        
+
         PROCESS_INFORMATION ProcessInformation;
 
         // MORE - should create a new environment block that is copy of parent's, then set all the values in env array, and pass it
@@ -1653,7 +1677,7 @@ public:
             pipeProcess = (HANDLE)-1;
         }
     }
-    
+
 
     void doCloseInput()
     {
@@ -1784,7 +1808,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
     while (pid != (HANDLE)-1) {
         int stat=-1;
         int ret = waitpid(pid, &stat, mode);
-        if (ret>0) 
+        if (ret>0)
         {
             if (WIFEXITED(stat))
                 return WEXITSTATUS(stat);
@@ -1803,12 +1827,12 @@ static unsigned dowaitpid(HANDLE pid, int mode)
         if (ret==0)
             break;
         int err = errno;
-        if (err == ECHILD) 
+        if (err == ECHILD)
             break;
         if (err!=EINTR) {
             OERRLOG("dowait failed with errcode %d",err);
             return (unsigned)-1;
-        }       
+        }
     }
     return 0;
 }
@@ -1856,12 +1880,12 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
         int run()
         {
             while (!stopsem.wait(1000)) {
-                CriticalBlock block(sect); 
+                CriticalBlock block(sect);
                 if (hError!=(HANDLE)-1) { // hmm who did that
                     fcntl(hError,F_SETFL,O_NONBLOCK); // make sure non-blocking
                     if (bufsize<buf.length()) {
-                        size32_t sizeRead = (size32_t)::read(hError, (byte *)buf.bufferBase()+bufsize, buf.length()-bufsize); 
-                        if ((int)sizeRead>0) { 
+                        size32_t sizeRead = (size32_t)::read(hError, (byte *)buf.bufferBase()+bufsize, buf.length()-bufsize);
+                        if ((int)sizeRead>0) {
                             bufsize += sizeRead;
                         }
                     }
@@ -1898,10 +1922,10 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
             Thread::join();
         }
 
-    size32_t read(size32_t sz,void *out) 
+    size32_t read(size32_t sz,void *out)
         {
-            CriticalBlock block(sect); 
-            if (bufsize<sz) 
+            CriticalBlock block(sect);
+            if (bufsize<sz)
                 sz = bufsize;
             if (sz>0) {
                 memcpy(out,buf.bufferBase(),sz);
@@ -1983,7 +2007,7 @@ public:
         kill();
     }
 
-    void kill() 
+    void kill()
     {
         closeInput();
         closeOutput();
@@ -2007,7 +2031,7 @@ public:
         argv[argc] = NULL;
         s = ((char *)argv)+al;
         memcpy(s,line,l);
-        for (unsigned i=0;i<argc;i++) 
+        for (unsigned i=0;i<argc;i++)
             argv[i] = readarg(s);
         return argv;
     }
@@ -2070,7 +2094,7 @@ public:
         for (;;)
         {
             pipeProcess = (HANDLE)fork();
-            if (pipeProcess!=(HANDLE)-1) 
+            if (pipeProcess!=(HANDLE)-1)
                 break;
             if (errno!=EAGAIN) {
                 if (hasinput) {
@@ -2157,9 +2181,9 @@ public:
             _exit(START_FAILURE);    // must be _exit!!
         }
         free(argv);
-        if (hasinput) 
+        if (hasinput)
             close(inpipe[0]);
-        if (hasoutput) 
+        if (hasoutput)
             close(outpipe[1]);
         if (haserror)
             close(errpipe[1]);
@@ -2168,7 +2192,7 @@ public:
         hError = haserror?errpipe[0]:((HANDLE)-1);
         started.signal();
         retcode = dowaitpid(pipeProcess, 0);
-        if (retcode==START_FAILURE) 
+        if (retcode==START_FAILURE)
             closeOutput();
     }
 
@@ -2176,7 +2200,7 @@ public:
     {
         CriticalBlock runblock(runsect);
         kill();
-        CriticalBlock block(sect); 
+        CriticalBlock block(sect);
         hasinput = _hasinput;
         hasoutput = _hasoutput;
         haserror = _haserror;
@@ -2201,7 +2225,7 @@ public:
         if (forkthread)
         {
             {
-                CriticalUnblock unblock(sect); 
+                CriticalUnblock unblock(sect);
                 forkthread->join();
             }
             forkthread.clear();
@@ -2210,7 +2234,7 @@ public:
         forkthread->start(true);
         bool joined = false;
         {
-            CriticalUnblock unblock(sect); 
+            CriticalUnblock unblock(sect);
             started.wait();
             joined = forkthread->join(50); // give a chance to fail
         }
@@ -2266,7 +2290,7 @@ public:
 
     size32_t read(size32_t sz, void *buf)
     {
-        CriticalBlock block(sect); 
+        CriticalBlock block(sect);
         if (aborted)
             return 0;
         if (hOutput==(HANDLE)-1)
@@ -2274,10 +2298,10 @@ public:
         size32_t sizeRead;
         for (;;) {
             {
-                CriticalUnblock unblock(sect); 
+                CriticalUnblock unblock(sect);
                 sizeRead = (size32_t)::read(hOutput, buf, sz);
             }
-            if (sizeRead!=(size32_t)-1) 
+            if (sizeRead!=(size32_t)-1)
                 break;
             if (aborted)
                 break;
@@ -2293,10 +2317,10 @@ public:
     {
         return new CSimplePipeStream(LINK(this), false);
     }
-    
+
     size32_t write(size32_t sz, const void *buf)
     {
-        CriticalBlock block(sect); 
+        CriticalBlock block(sect);
         CIgnoreSIGPIPE ignoresigpipe;
 
         if (aborted)
@@ -2306,12 +2330,12 @@ public:
         size32_t sizeWritten;
         for (;;) {
             {
-                CriticalUnblock unblock(sect); 
+                CriticalUnblock unblock(sect);
                 sizeWritten = (size32_t)::write(hInput, buf, sz);
             }
-            if (sizeWritten!=(size32_t)-1) 
+            if (sizeWritten!=(size32_t)-1)
                 break;
-            if (aborted) 
+            if (aborted)
                 break;
             if (errno!=EINTR) {
                 throw createPipeErrnoExceptionV(errno, "Pipe: write failed (size %d)", sz);
@@ -2322,8 +2346,8 @@ public:
 
     size32_t readError(size32_t sz, void *buf)
     {
-        CriticalBlock block(sect); 
-        if (stderrbufferthread) 
+        CriticalBlock block(sect);
+        if (stderrbufferthread)
             return stderrbufferthread->read(sz,buf);
         if (aborted)
             return 0;
@@ -2332,10 +2356,10 @@ public:
         size32_t sizeRead;
         for (;;) {
             {
-                CriticalUnblock unblock(sect); 
+                CriticalUnblock unblock(sect);
                 sizeRead = (size32_t)::read(hError, buf, sz);
             }
-            if (sizeRead!=(size32_t)-1) 
+            if (sizeRead!=(size32_t)-1)
                 break;
             if (aborted)
                 break;
@@ -2354,7 +2378,7 @@ public:
 
     void notifyTerminated(HANDLE pid,unsigned _retcode)
     {
-        CriticalBlock block(sect); 
+        CriticalBlock block(sect);
         if (((int)pid>0)&&(pid==pipeProcess)) {
             retcode = _retcode;
             pipeProcess = (HANDLE)-1;
@@ -2404,7 +2428,7 @@ public:
             hOutput = (HANDLE)-1;
         }
     }
-    
+
     void closeInput()
     {
         CriticalBlock block(sect);
@@ -2453,13 +2477,13 @@ public:
 
         }
     }
-    
+
     bool hasInput()
     {
         CriticalBlock block(sect);
         return hInput!=(HANDLE)-1;
     }
-    
+
     bool hasOutput()
     {
         CriticalBlock block(sect);
@@ -2477,7 +2501,7 @@ public:
         CriticalBlock block(sect);
         return pipeProcess;
     }
-    
+
     void setAllowTrace() override
     {
         allowTrace = true;
@@ -2518,7 +2542,7 @@ public:
             persisttime = _persisttime;
         }
         QueueOf<IWorkQueueItem,false> queue;
-        Semaphore sem;  
+        Semaphore sem;
 
         int run()
         {
@@ -2529,7 +2553,7 @@ public:
                     CriticalBlock block(crit);
                     if (!wr) {
                         wr = sem.wait(0);               // catch race
-                        if (!wr) 
+                        if (!wr)
                             break; // timed out
                     }
                     work = queue.dequeue();
@@ -2550,7 +2574,7 @@ public:
             }
             return 0;
         }
-        
+
     };
     Owned<cWorkerThread> worker;
 
@@ -2595,7 +2619,7 @@ public:
     {
         CriticalBlock block(crit);
         unsigned ret = 0;
-        if (worker) 
+        if (worker)
             ret = worker->queue.ordinality();
         return ret;
     }
