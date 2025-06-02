@@ -1635,16 +1635,12 @@ public:
 unsigned CRowStreamWriter::wrnum=0;
 #endif
 
-template<typename T>
-static IFileIO * createCompressedFileWriter(T file, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
+inline size32_t getFixedSizeWithGroupByte(IRowInterfaces *rowIf, unsigned flags)
 {
     size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
     if (fixedSize && TestRwFlag(flags, rw_grouped))
         ++fixedSize; // row writer will include a grouping byte
-    ICompressedFileIO *compressedFileIO = createCompressedFileWriter(file, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags));
-    if (compressorBlkSz)
-        compressedFileIO->setBlockSize(compressorBlkSz);
-    return compressedFileIO;
+    return fixedSize;
 }
 
 IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
@@ -1653,7 +1649,9 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
     if (TestRwFlag(flags, rw_compress))
     {
         flags &= ~rw_buffered; // if compressed, do not want buffered stream as well
-        iFileIO.setown(createCompressedFileWriter(iFile, rowIf, flags, compressor, compressorBlkSz));
+        size32_t fixedSize = getFixedSizeWithGroupByte(rowIf, flags);
+        size32_t bufferSize = (size32_t)-1; // MORE: Should be cleanly passed through
+        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize, IFEnone));
     }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
@@ -1668,7 +1666,9 @@ IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned
     Owned<IFileIO> compressedFileIO;
     if (TestRwFlag(flags, rw_compress))
     {
-        compressedFileIO.setown(createCompressedFileWriter(iFileIO, rowIf, flags, compressor, compressorBlkSz));
+        size32_t fixedSize = getFixedSizeWithGroupByte(rowIf, flags);
+        size32_t bufferSize = (size32_t)-1; // MORE: Should be cleanly passed through
+        compressedFileIO.setown(createCompressedFileWriter(iFileIO, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize));
         iFileIO = compressedFileIO.get();
     }
     Owned<IFileIOStream> stream;

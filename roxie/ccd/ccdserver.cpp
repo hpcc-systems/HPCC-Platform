@@ -12236,7 +12236,11 @@ public:
                 blockcompressed = outputPlaneCompressed;
         }
         if (blockcompressed)
-            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZ4));
+        {
+            size32_t compBlockSize = 0; // i.e. default
+            size32_t blockedIoSize = -1; // i.e. default
+            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+        }
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
         if (!io)

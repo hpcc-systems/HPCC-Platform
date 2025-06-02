@@ -257,7 +257,9 @@ protected:
         {
             if (compress)
             {
-                iFileIO.setown(createCompressedFileWriter(iFile, 0, append, false, nullptr, COMPRESS_METHOD_LZ4));
+                size32_t compBlockSize = 0; // i.e. default
+                size32_t blockedIoSize = -1; // i.e. default
+                iFileIO.setown(createCompressedFileWriter(iFile, 0, append, false, nullptr, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
                 iFileIOStream.setown(createIOStream(iFileIO));
             }
             else
