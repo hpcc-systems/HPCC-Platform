@@ -1313,6 +1313,10 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     if (nested++)
         return;
 
+    // If the program is aborting because of a corruption in the memory manager,
+    // ensure that it really exits, rather than deadlocking on a memory manager mutex
+    raiseSignalInFuture(SIGKILL, 20);
+
     //If the program is terminating then do not try and trace
     if (!queryLogMsgManager())
         return;
