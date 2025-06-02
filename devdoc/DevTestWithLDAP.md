@@ -118,7 +118,7 @@ You'll need two k8s secrets, one for the HPCC administrator and another for the 
 
 ## Customize Platform Helm Values
 
-We'll be using the customized helm values file at `helm/examples/ldap/hpcc-values.yaml`. It will run all standard ESP services, but it uses ldap authentication only for the eclwatch service. Customize this file further as needed.
+We'll be using the customized Helm values file at `helm/examples/ldap/hpcc-values.yaml`. It will run all standard ESP services, but it uses ldap authentication only for the eclwatch service. Customize this file further as needed.
 
 ### Notes
 
