@@ -135,7 +135,9 @@ struct cFileDesc // no virtuals
         size32_t ml = (n*4+7)/8;
         size32_t sz = sizeof(cFileDesc)+sl+ml;
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
-        ret->N = (unsigned short)n;
+        // If fnLen is 0, the file is missing a part mask, so we don't know the true number of parts
+        // In this case, default to 1 part rather than number of nodes in cluster
+        ret->N = fnLen != 0 ? (unsigned short)n : 1;
         ret->name[0] = (byte)sl;
         ret->isDirPerPart = d;
         ret->filenameLen = (byte)fnLen;
@@ -1388,6 +1390,12 @@ public:
                 return;
             }
         }
+        else {
+            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1)
+            // If getName returns false, nothing is appended. This could be an external found file, so we call getNameMask
+            // to ensure the full filename is appended to scopeBuf
+            f->getNameMask(scopeBuf);
+        }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
         bool *completed = (bool *)buf.allocate(f->N);
@@ -1402,6 +1410,7 @@ public:
         ndone[1] = 0;
         unsigned fnameHash = getFilenameHash(scopeBuf.str());
         const char * prefix = storagePlane->queryProp("@prefix");
+        bool isExternalFile = (size32_t)f->filenameLen == 0;
         for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
@@ -1414,7 +1423,7 @@ public:
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -1460,7 +1469,7 @@ public:
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
                     RemoteFilename rfn;
-                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {

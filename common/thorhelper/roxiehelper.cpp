@@ -2462,7 +2462,7 @@ void ClusterWriteHandler::getPhysicalName(StringBuffer & name, const char * clus
     unsigned stripeNum = 0;
     if (plane)
         stripeNum = calcStripeNumber(0, logicalName.get(), plane->numDevices());
-    makePhysicalPartName(logicalName.get(), 1, 1, name, 0, DFD_OSdefault, prefix, false, stripeNum);
+    makePhysicalPartName(logicalName.get(), 1, 1, name, 0, DFD_OSdefault, prefix, false, stripeNum, false);
 }
 
 void ClusterWriteHandler::addCluster(char const * cluster)
@@ -2534,7 +2534,7 @@ void ClusterWriteHandler::getDirAndFilename(StringBuffer & dir, StringBuffer & f
     makePhysicalDirectory(dir, logicalName.get(), 0, DFD_OSdefault, prefix);
 
     StringBuffer fullPath;
-    makePhysicalPartName(logicalName.get(), 1, 1, fullPath, 0, DFD_OSdefault, prefix, false, stripeNum);
+    makePhysicalPartName(logicalName.get(), 1, 1, fullPath, 0, DFD_OSdefault, prefix, false, stripeNum, false);
     splitFilename(fullPath, nullptr, nullptr, &filename, &filename);
 }
 
