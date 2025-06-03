@@ -2255,14 +2255,17 @@ private:
             {
                 while (read<payloadsize)
                 {
-                    checkTimeLimitExceeded(&remainingMS);
-                    checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    sockClosed = readtmsAllowClose(socket, response.reserve(payloadsize-read), 1, payloadsize-read, bytesRead, MIN(master->timeoutMS, remainingMS));
-                    checkTimeLimitExceeded(&remainingMS);
-                    checkRoxieAbortMonitor(master->roxieAbortMonitor);
-
-                    read += bytesRead;
-                    response.setLength(read);
+                    bytesRead = 0;
+                    if (!sockClosed)
+                    {
+                        checkTimeLimitExceeded(&remainingMS);
+                        checkRoxieAbortMonitor(master->roxieAbortMonitor);
+                        sockClosed = readtmsAllowClose(socket, response.reserve(payloadsize-read), 1, payloadsize-read, bytesRead, MIN(master->timeoutMS, remainingMS));
+                        checkTimeLimitExceeded(&remainingMS);
+                        checkRoxieAbortMonitor(master->roxieAbortMonitor);
+                        read += bytesRead;
+                        response.setLength(read);
+                    }
                     if ( (bytesRead==0) || (sockClosed && (read < payloadsize)) )
                     {
                         master->logctx.CTXLOG("%s: Warning %sHTTP response terminated prematurely", getWsCallTypeName(master->wscType),chunked?"CHUNKED ":"");
@@ -2270,7 +2273,7 @@ private:
                     }
                 }
             }
-            else
+            else if (!sockClosed)
             {
                 for (;;)
                 {
