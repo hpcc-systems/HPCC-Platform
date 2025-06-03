@@ -6,7 +6,7 @@ import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
-import { useLogAccessInfo } from "../hooks/platform";
+import { useLogAccessInfo, useLogicalClusters } from "../hooks/platform";
 import { Variable, useWorkunit, useWorkunitVariables } from "../hooks/workunit";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
@@ -56,6 +56,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
 
     const [workunit] = useWorkunit(wuid, true);
     const [variables, , , refreshVariables] = useWorkunitVariables(wuid);
+    const [targetClusters] = useLogicalClusters();
+    const [targetsRoxie, setTargetsRoxie] = React.useState(false);
     const [otTraceParent, setOtTraceParent] = React.useState("");
     const [logCount, setLogCount] = React.useState<number | string>("*");
     const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
@@ -73,6 +75,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         const traceInfo: Variable = variables.filter(v => v.Name === "ottraceparent")[0];
         setOtTraceParent(traceInfo?.Value ?? "");
     }, [variables]);
+
+    React.useEffect(() => {
+        setTargetsRoxie(targetClusters?.find(c => c.Name === workunit?.Cluster)?.Type === "roxie");
+    }, [targetClusters, workunit?.Cluster]);
 
     const nextWuid = React.useCallback((wuids: WsWorkunits.ECLWorkunit[]) => {
         let found = false;
@@ -222,7 +228,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <Shimmer />
                         </>
                     }>
-                        <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
+                        <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${wuid}/metrics`} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
                     </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "workflows"} size={size}>
