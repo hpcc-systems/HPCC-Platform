@@ -87,28 +87,11 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
 
             if (timeExpiry < tstamp)//entry was not stale during last cleanup but is stale now
                 *pFound++ = false;
-            else if(!m_pParentCache->isCacheEnabled() && m_pParentCache->isTransactionalEnabled())//m_pParentCache->getOriginalTimeout() == 0)
-            {
-                time_t tctime = getThreadCreateTime();
-                if(tctime <= 0 || timeExpiry < tctime)
-                {
-                    *pFound++ = false;
-                }
-                else
-                {
-                    secResource.copy(resParamCacheEntry.second);
-#ifdef _DEBUG
-                    DBGLOG("CACHE: CResPermissionsCache FoundA %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
-#endif
-                    *pFound++ = true;
-                    nFound++;
-                }
-            }
             else
             {
                 secResource.copy(resParamCacheEntry.second);
 #ifdef _DEBUG
-                DBGLOG("CACHE: CResPermissionsCache FoundB %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
+                DBGLOG("CACHE: CResPermissionsCache Found %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
 #endif
                 *pFound++ = true;
                 nFound++;
