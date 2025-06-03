@@ -813,8 +813,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
 
     bool rc;
 
-    time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
         int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
@@ -888,8 +887,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
 
     bool rc;
 
-    time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
         int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
@@ -965,8 +963,7 @@ SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser
 
     bool ok = false;
 
-    time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
         int nFound = m_permissionsCache->lookup(user, rlist, cached_found);
@@ -1460,8 +1457,7 @@ void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, c
 {
     m_ldap_client->deleteResource(rtype, name, basedn);
 
-    time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
         m_permissionsCache->remove(rtype, name);
 }
 
@@ -1469,8 +1465,7 @@ void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname
 {
     m_ldap_client->renameResource(rtype, oldname, newname, basedn);
 
-    time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
         m_permissionsCache->remove(rtype, oldname);
 }
 
