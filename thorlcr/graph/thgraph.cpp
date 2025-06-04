@@ -2673,7 +2673,7 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
         throwUnexpected();
 }
 
-void CJobBase::applyMemorySettings(const char *context)
+void CJobBase::getMemorySettings(const char *context, unsigned &queryMemSizeMB, unsigned &totalMemSizeMB, bool & gmemAllowHugePages, bool & gmemAllowTransparentHugePages, bool & gmemRetainMemory, bool & gmemLockMemory)
 {
     // NB: 'total' memory has been calculated in advance from either resource settings or from system memory.
     VStringBuffer memoryContext("%sMemory", context);
@@ -2697,15 +2697,38 @@ void CJobBase::applyMemorySettings(const char *context)
         VStringBuffer attrSetting("@%s", setting);
         return getWorkUnitValueBool(setting,
             globals->getPropBool(VStringBuffer("%s/%s", memoryContext.str(), attrSetting.str()),
-            globals->getPropBool(attrSetting,
-            defaultValue
-                                 )));
+            globals->getPropBool(attrSetting, defaultValue)));
     };
-    bool gmemAllowHugePages = getBoolSetting("heapUseHugePages", false);
+    gmemAllowHugePages = getBoolSetting("heapUseHugePages", false);
     gmemAllowHugePages = getBoolSetting("heapMasterUseHugePages", gmemAllowHugePages);
-    bool gmemAllowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
-    bool gmemRetainMemory = getBoolSetting("heapRetainMemory", false);
-    bool gmemLockMemory = getBoolSetting("heapLockMemory", false);
+    gmemAllowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
+    gmemRetainMemory = getBoolSetting("heapRetainMemory", false);
+    gmemLockMemory = getBoolSetting("heapLockMemory", false);
+}
+
+void CJobBase::getMemorySettings(const char *context, IPropertyTree &memSettingsProps)
+{
+    unsigned queryMemoryMB, totalMemoryMB;
+    bool gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory;
+    getMemorySettings(context, queryMemoryMB, totalMemoryMB, gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory);
+
+    Owned<IPropertyTree> jobProps = createPTree(context);
+    jobProps->setPropInt64("@queryMemoryMB", queryMemoryMB);
+    jobProps->setPropInt64("@totalMemoryMB", totalMemoryMB);
+    jobProps->setPropBool("@heapUseHugePages", gmemAllowHugePages);
+    jobProps->setPropBool("@heapUseTransparentHugePages", gmemAllowTransparentHugePages);
+    jobProps->setPropBool("@heapRetainMemory", gmemRetainMemory);
+    jobProps->setPropBool("@heapLockMemory", gmemLockMemory);
+    memSettingsProps.addPropTree("memory", jobProps.getClear());
+}
+
+void CJobBase::applyMemorySettings(const char *context)
+{
+    unsigned totalMemoryMB;
+    bool gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory;
+
+    getMemorySettings(context, queryMemoryMB, totalMemoryMB, gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory);
+    dbgassertex(totalMemoryMB);
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
     PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);

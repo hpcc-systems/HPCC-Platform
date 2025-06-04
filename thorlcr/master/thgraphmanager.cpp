@@ -1170,12 +1170,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         throw exception.getClear();
     }
     fatalHdlr.setown(job->clearFatalHandler());
+    Owned<IPropertyTree> memorySettings = createPTree();
+    job->getMemorySettings("worker", *memorySettings);
     job.clear();
     PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
-
-    fatalHdlr->clear();
-
-    runWorkunitAnalyser(workunit, getComponentConfigSP(), graphName, false, calculateThorCostPerHour(queryNodeClusterWidth()));
+    
+    runWorkunitAnalyser(workunit, getComponentConfigSP(), graphName, false, calculateThorCostPerHour(queryNodeClusterWidth()), memorySettings);
     setWuid(NULL);
     return allDone;
 }

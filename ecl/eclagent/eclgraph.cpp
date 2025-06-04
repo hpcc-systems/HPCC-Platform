@@ -1637,11 +1637,11 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
         try
         {
             executeThorGraph(graphName, *wuRead, *agentTopology);
-            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()), nullptr);
         }
         catch (...)
         {
-            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()), nullptr);
             throw;
         }
     }
