@@ -42,3 +42,16 @@ regexRes_2 := FindSetTest(text_2);
 finalRes_2 := IF(regexRes_2 = [u'gavin', u'halliday'], 'PASSED', 'FAILED');
 
 OUTPUT(finalRes_2, NAMED('result_2'));
+
+//------------------
+
+ReplaceVarTest(STRING s) := FUNCTION
+    RETURN REGEXREPLACE((VARSTRING)'\r\n', S, ' ');
+END;
+
+STRING text_3 := 'gavin\r\nhalliday' : STORED('x');
+
+regexRes_3 := ReplaceVarTest(text_3);
+finalRes_3 := IF(regexRes_3 = 'gavin halliday', 'PASSED', 'FAILED');
+
+OUTPUT(finalRes_3, NAMED('result_3'));
