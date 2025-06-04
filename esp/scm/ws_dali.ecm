@@ -143,6 +143,73 @@ ESPrequest [nil_remove] GetClientsRequest
 {
 };
 
+ESPStruct [nil_remove] DaliStatEntry
+{
+    string Name;
+    string Value;
+    string Type;
+    string Timestamp;
+};
+
+ESPStruct [nil_remove] DaliCategoryStats
+{
+    string Category;
+    int64 TotalCount;
+    int64 AverageValue;
+    int64 MinValue;
+    int64 MaxValue;
+    string StartTime;
+    string EndTime;
+    ESParray<ESPstruct DaliStatEntry> StatEntries;
+};
+
+ESPStruct [nil_remove] DaliNodeStats
+{
+    string NodeName;
+    string Status;
+    int64 ConnectionCount;
+    int64 MemoryUsage;
+    int64 CpuUsage;
+    int64 Uptime;
+    ESParray<ESPstruct DaliCategoryStats> Categories;
+};
+
+ESPStruct [nil_remove] DaliClusterStats
+{
+    string ClusterName;
+    int64 TotalNodes;
+    int64 ActiveNodes;
+    int64 TotalConnections;
+    int64 TotalMemoryUsage;
+    string LastUpdated;
+    ESParray<ESPstruct DaliNodeStats> Nodes;
+    ESParray<ESPstruct DaliCategoryStats> AggregateStats;
+};
+
+ESPStruct [nil_remove] DaliDimension
+{
+    string Name;
+    string Value;
+};
+
+ESPrequest [nil_remove] GetGlobalStatsRequest
+{
+    string Category;
+    ESParray<ESPstruct DaliDimension> Dimensions;
+    string StartTime;
+    string EndTime;
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetGlobalStatsResponse
+{
+    string Summary;
+    string CollectionTime;
+    int64 TotalDataPoints;
+    ESParray<ESPstruct DaliClusterStats> ClusterStats;
+    ESParray<ESPstruct DaliCategoryStats> GlobalCategories;
+    ESParray<ESPstruct DaliStatEntry> SystemMetrics;
+};
+
 ESPrequest [nil_remove] GetSDSStatsRequest
 {
 };
@@ -184,7 +251,7 @@ ESPrequest [nil_remove] ClearTraceTransactionsRequest
 };
 
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.07"), default_client_version("1.07"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+    version("1.08"), default_client_version("1.08"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
     ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
@@ -206,6 +273,7 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.04")] GetProtectedList(GetProtectedListRequest, ResultResponse);
     ESPmethod [min_ver("1.05")] GetConnections(GetConnectionsRequest, ResultResponse);
     ESPmethod [min_ver("1.05")] GetClients(GetClientsRequest, ResultResponse);
+    ESPmethod [min_ver("1.08")] GetGlobalStats(GetGlobalStatsRequest, GetGlobalStatsResponse);
     ESPmethod [min_ver("1.05")] GetSDSStats(GetSDSStatsRequest, ResultResponse);
     ESPmethod [min_ver("1.05")] GetSDSSubscribers(GetSDSSubscribersRequest, ResultResponse);
     ESPmethod [min_ver("1.06")] DisconnectClientConnection(DisconnectClientConnectionRequest, ResultResponse);

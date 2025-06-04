@@ -24,10 +24,89 @@
 #include "dautils.hpp"
 #include "daadmin.hpp"
 #include "dadiags.hpp"
+#include "dastats.hpp"
 
 using namespace daadmin;
 
 #define REQPATH_EXPORTSDSDATA "/WSDali/Export"
+
+class CDirectStatsRecorder : public CInterface, implements IGlobalMetricRecorder
+{
+private:
+    IArrayOf<IEspDaliCategoryStats>& categoryStats;
+    IArrayOf<IEspDaliStatEntry>& systemMetrics;
+    const char* collectionTime;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CDirectStatsRecorder(IArrayOf<IEspDaliCategoryStats>& _categoryStats, IArrayOf<IEspDaliStatEntry>& _systemMetrics, const char* _collectionTime)
+        : categoryStats(_categoryStats), systemMetrics(_systemMetrics), collectionTime(_collectionTime)
+    {
+    }
+
+    virtual void processGlobalStatistics(const char * category, const MetricsDimensionList & dimensions, const char * startTime, const char * endTime, const GlobalStatisticsList & stats) override
+    {
+        // Create category stats entry
+        Owned<IEspDaliCategoryStats> categoryEntry = createDaliCategoryStats();
+        categoryEntry->setCategory(category ? category : "");
+        categoryEntry->setStartTime(startTime ? startTime : "");
+        categoryEntry->setEndTime(endTime ? endTime : "");
+        
+        // Calculate aggregate values from stats
+        __int64 totalCount = 0;
+        __int64 minValue = LLONG_MAX;
+        __int64 maxValue = LLONG_MIN;
+        __int64 sum = 0;
+        
+        IArrayOf<IEspDaliStatEntry> statEntries;
+        for (const auto & stat : stats)
+        {
+            const char* statName = queryStatisticName(stat.first);
+            __int64 value = stat.second;
+            
+            // Create individual stat entry
+            Owned<IEspDaliStatEntry> statEntry = createDaliStatEntry();
+            statEntry->setName(statName ? statName : "unknown");
+            statEntry->setValue(VStringBuffer("%lld", value));
+            statEntry->setType("counter");
+            statEntry->setTimestamp(collectionTime);
+            
+            // Add dimensions as metadata if needed
+            if (!dimensions.empty())
+            {
+                StringBuffer dimensionStr;
+                bool first = true;
+                for (const auto & dim : dimensions)
+                {
+                    if (!first) dimensionStr.append(",");
+                    dimensionStr.appendf("%s=%s", dim.first, dim.second);
+                    first = false;
+                }
+                // Note: IEspDaliStatEntry doesn't have setMetadata method
+                // Dimensions info is already captured in the category level
+            }
+            
+            statEntries.append(*statEntry.getLink());
+            systemMetrics.append(*statEntry.getLink());
+            
+            // Update aggregates
+            totalCount++;
+            sum += value;
+            if (value < minValue) minValue = value;
+            if (value > maxValue) maxValue = value;
+        }
+        
+        // Set aggregate values
+        categoryEntry->setTotalCount(totalCount);
+        categoryEntry->setAverageValue(totalCount > 0 ? sum / totalCount : 0);
+        categoryEntry->setMinValue(minValue != LLONG_MAX ? minValue : 0);
+        categoryEntry->setMaxValue(maxValue != LLONG_MIN ? maxValue : 0);
+        categoryEntry->setStatEntries(statEntries);
+        
+        categoryStats.append(*categoryEntry.getLink());
+    }
+};
 
 void CWSDaliEx::init(IPropertyTree* cfg, const char* process, const char* service)
 {
@@ -553,6 +632,96 @@ bool CWSDaliEx::onGetClients(IEspContext& context, IEspGetClientsRequest& req, I
         StringBuffer result;
         getDaliDiagnosticValue("clients", result);
         resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetGlobalStats(IEspContext& context, IEspGetGlobalStatsRequest& req, IEspGetGlobalStatsResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* category = req.getCategory();
+        const IArrayOf<IConstDaliDimension>& dimensionsArray = req.getDimensions();
+        const char* startTimeStr = req.getStartTime();
+        const char* endTimeStr = req.getEndTime();
+
+        // Parse dimensions from the array
+        MetricsDimensionList dimensions;
+        ForEachItemIn(i, dimensionsArray)
+        {
+            IConstDaliDimension& dim = dimensionsArray.item(i);
+            const char* name = dim.getName();
+            const char* value = dim.getValue();
+            if (name && *name && value && *value)
+            {
+                dimensions.emplace_back(name, value);
+            }
+        }
+
+        // Parse time ranges
+        CDateTime fromTime, toTime;
+        if (startTimeStr && *startTimeStr)
+            fromTime.setString(startTimeStr);
+        else
+            fromTime.setNow(); // Default to current time
+            
+        if (endTimeStr && *endTimeStr)
+            toTime.setString(endTimeStr);
+        else
+        {
+            toTime.setNow(); // Default to current time
+            if (!startTimeStr || !*startTimeStr)
+            {
+                // If no start time either, go back 1 hour
+                fromTime.adjustTime(-60 * 60);
+            }
+        }
+
+        // Create collection time string
+        StringBuffer collectionTimeStr;
+        CDateTime currentTime;
+        currentTime.setNow();
+        currentTime.getString(collectionTimeStr);
+
+        // Create response arrays
+        IArrayOf<IEspDaliCategoryStats> globalCategories;
+        IArrayOf<IEspDaliStatEntry> systemMetrics;
+        
+        // Create direct recorder that populates response structures
+        CDirectStatsRecorder recorder(globalCategories, systemMetrics, collectionTimeStr.str());
+        gatherGlobalMetrics(category, dimensions, fromTime, toTime, recorder);
+
+        // Set basic response fields
+        resp.setSummary("Global statistics for Dali system");
+        resp.setCollectionTime(collectionTimeStr.str());
+        resp.setTotalDataPoints(systemMetrics.length());
+
+        // Create cluster stats (keeping existing logic)
+        IArrayOf<IEspDaliClusterStats> clusterStats;
+        Owned<IEspDaliClusterStats> cluster = createDaliClusterStats();
+        cluster->setClusterName("DefaultCluster");
+        cluster->setTotalNodes(1);
+        cluster->setActiveNodes(1);
+        cluster->setTotalConnections(0);
+        cluster->setTotalMemoryUsage(0);
+        cluster->setLastUpdated(collectionTimeStr.str());
+        
+        IArrayOf<IEspDaliNodeStats> nodes;
+        IArrayOf<IEspDaliCategoryStats> aggregateStats;
+        cluster->setNodes(nodes);
+        cluster->setAggregateStats(aggregateStats);
+        clusterStats.append(*cluster.getLink());
+
+        // Set the arrays in the response
+        resp.setClusterStats(clusterStats);
+        resp.setGlobalCategories(globalCategories);
+        resp.setSystemMetrics(systemMetrics);
     }
     catch(IException* e)
     {
