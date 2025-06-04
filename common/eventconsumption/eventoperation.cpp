@@ -50,7 +50,7 @@ IEventFilter* CEventConsumingOp::ensureFilter()
     return filter;
 }
 
-bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
+bool CEventConsumingOp::traverseEvents(const char* path, IEventAttributeVisitor& visitor)
 {
     if (filter)
     {

@@ -37,7 +37,7 @@ public:
     bool acceptAttribute(EventAttr attr, const char* values);
 protected:
     IEventFilter* ensureFilter();
-    bool traverseEvents(const char* path, IEventVisitor& visitor);
+    bool traverseEvents(const char* path, IEventAttributeVisitor& visitor);
 protected:
     StringAttr inputPath;
     Linked<IBufferedSerialOutputStream> out;

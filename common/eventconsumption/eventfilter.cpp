@@ -257,10 +257,15 @@ protected:
         bool b{false};
     };
 
-public: // IEventVisitor
+public: // IEventAttributeVisitor
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         return target->visitFile(filename, version);
+    }
+
+    virtual bool visitEvent(IEvent& event) override
+    {
+        return eventDistributor(event, *this);
     }
 
     virtual Continuation visitEvent(EventType type) override
@@ -461,7 +466,7 @@ public:
         }
     }
 
-    virtual void setTarget(IEventVisitor& visitor) override
+    virtual void setTarget(IEventAttributeVisitor& visitor) override
     {
         target.set(&visitor);
     }
@@ -488,7 +493,7 @@ protected:
 
 protected:
     using AcceptedEvents = std::unordered_set<EventType>;
-    Linked<IEventVisitor> target;
+    Linked<IEventAttributeVisitor> target;
     Owned<FilterTerm> terms[EvAttrMax];
     CachedAttrValue cachedAttrValues[EvAttrMax];
     using CacheSequence = std::vector<EventAttr>;
