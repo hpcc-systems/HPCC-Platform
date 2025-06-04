@@ -19,29 +19,29 @@
 #include "jiface.hpp"
 #include "jexcept.hpp"
 
-bool eventDistributor(IEvent& event, IEventAttributeVisitor& visitor)
+static IEventAttributeVisitor::Continuation attributeDistributor(const CEventAttribute& attribute, IEventAttributeVisitor& visitor)
 {
-    IEventAttributeVisitor::Continuation result = visitor.visitEvent(event.queryType());
-    switch (result)
+    if (attribute.isNumeric())
+        return visitor.visitAttribute(attribute.queryId(), attribute.queryNumericValue());
+    else if (attribute.isText())
+        return visitor.visitAttribute(attribute.queryId(), attribute.queryTextValue());
+    else if (attribute.isBoolean())
+        return visitor.visitAttribute(attribute.queryId(), attribute.queryBooleanValue());
+    throw makeStringException(-1, "unknown attribute type");
+}
+
+bool eventDistributor(CEvent& event, IEventAttributeVisitor& visitor)
+{
+    switch (visitor.visitEvent(event.queryType()))
     {
     case IEventAttributeVisitor::visitSkipEvent:
         return true;
     case IEventAttributeVisitor::visitSkipFile:
         return false;
     }
-    Owned<IEventAttributeIterator> attributes = event.getAttributes();
-    ForEach(*attributes)
+    for (CEventAttribute& attribute : event.assignedAttributes)
     {
-        const IEventAttribute& attribute = attributes->query();
-        if (attribute.isNumeric())
-            result = visitor.visitAttribute(attribute.queryId(), attribute.queryNumericValue());
-        else if (attribute.isText())
-            result = visitor.visitAttribute(attribute.queryId(), attribute.queryTextValue());
-        else if (attribute.isBoolean())
-            result = visitor.visitAttribute(attribute.queryId(), attribute.queryBooleanValue());
-        else
-            throw makeStringException(-1, "unknown attribute type");
-        switch (result)
+        switch (attributeDistributor(attribute, visitor))
         {
         case IEventAttributeVisitor::visitSkipEvent:
             return true;

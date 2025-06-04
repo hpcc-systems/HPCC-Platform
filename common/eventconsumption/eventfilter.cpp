@@ -263,7 +263,7 @@ public: // IEventAttributeVisitor
         return target->visitFile(filename, version);
     }
 
-    virtual bool visitEvent(IEvent& event) override
+    virtual bool visitEvent(CEvent& event) override
     {
         return eventDistributor(event, *this);
     }

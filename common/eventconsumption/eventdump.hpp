@@ -60,7 +60,7 @@ class CDumpEventVisitor : public CInterfaceOf<IEventAttributeVisitor>
 public:
     using Continuation = IEventAttributeVisitor::Continuation;
 
-    virtual bool visitEvent(IEvent& event) override
+    virtual bool visitEvent(CEvent& event) override
     {
         return eventDistributor(event, *this);
     }
