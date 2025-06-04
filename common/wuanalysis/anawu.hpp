@@ -131,7 +131,7 @@ class WorkunitRuleAnalyser;
 class WorkunitStatsAnalyser;
 
 using ScopeVector = std::vector<WuScope *>;
-class WuScope : public CInterface, implements IWuEdge, implements IWuActivity
+class WuScope : public CInterface, implements IWuEdge, implements IWuActivity, implements IWuSubGraph
 {
     friend class WorkunitStatsAnalyser;
     friend class WaActivityPath;

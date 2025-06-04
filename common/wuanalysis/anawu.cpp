@@ -194,14 +194,15 @@ public:
     void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
 
     void applyRules();
-    void check(const char * scope, IWuActivity & activity);
+    void check(IWuActivity & activity);
+    void check(IWuSubGraph & subgraph);
     void print();
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
     stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
-
 protected:
-    CIArrayOf<AActivityRule> rules;
+    CIArrayOf<CActivityRule> activityRules;
+    CIArrayOf<CSubgraphRule> subgraphRules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
     CCycleTimer timer;
@@ -388,8 +389,15 @@ void WuScope::applyRules(WorkunitRuleAnalyser & analyser)
 {
     for (auto & cur : scopes)
     {
-        if (cur.queryScopeType() == SSTactivity)
-            analyser.check(cur.queryName(), cur);
+        switch(cur.queryScopeType())
+        {
+        case SSTactivity:
+            analyser.check(static_cast<IWuActivity &>(cur));
+            break;
+        case SSTsubgraph:
+            analyser.check(static_cast<IWuSubGraph &>(cur)) ;
+            break;
+        }
         cur.applyRules(analyser);
     }
 }
@@ -1380,10 +1388,67 @@ WuScope * WorkunitAnalyserBase::resolveActivity(const char * name)
 
 
 //-----------------------------------------------------------------------------------------------------------
+/**
+ * Helper class that tracks and records the highest cost performance issue for a specific workunit scope.
+ * 
+ * This class:
+ * - During its lifetime, it collects multiple performance issues via noteIssue()
+ * - Only keeps track of the issue with the highest time penalty (cost)
+ * - Upon destruction, automatically adds the highest cost issue to the global issues collection
+ * 
+ * This ensures that only the most significant performance issue per scope is reported,
+ * avoiding noise from multiple minor issues in the same scope.
+ */
+class HighestCostIssueRecorder
+{
+private:
+    CIArrayOf<PerformanceIssue> & issues;      // Reference to the global collection of performance issues
+    IWuScope & scope;                          // The workunit scope this recorder is tracking
+    Linked<PerformanceIssue> highestCostIssue; // The highest cost issue found so far (may be null)
+    
+public:
+    /**
+     * Constructor - Initialize the recorder for a specific scope
+     * @param _issues Reference to the global performance issues collection
+     * @param _scope The workunit scope to track issues for
+     */
+    HighestCostIssueRecorder(CIArrayOf<PerformanceIssue> & _issues, IWuScope & _scope) : issues(_issues), scope(_scope){}
+
+    /**
+     * Destructor - Automatically commits the highest cost issue (if any) to the global collection
+     * This is called when the recorder goes out of scope, ensuring the issue is properly recorded
+     * with the full scope name for identification.
+     */
+    ~HighestCostIssueRecorder()
+    {
+        if (highestCostIssue)
+        {
+            StringBuffer fullScopeName;
+            scope.getFullScopeName(fullScopeName);
+            highestCostIssue->setScope(fullScopeName);
+            issues.append(*highestCostIssue.getClear());
+        }
+    }
+
+    /**
+     * Record a new performance issue, keeping only the one with the highest time penalty
+     * @param issue Pointer to the performance issue to consider
+     * 
+     * This method compares the time penalty of the new issue against the current highest cost issue.
+     * If the new issue has a higher cost, it replaces the current one.
+     */
+    void noteIssue(PerformanceIssue * issue)
+    {
+        if (!highestCostIssue || highestCostIssue->getTimePenalty() < issue->getTimePenalty())
+            highestCostIssue.set(issue);
+    }
+};
+
 
 WorkunitRuleAnalyser::WorkunitRuleAnalyser()
 {
-    gatherRules(rules);
+    gatherRules(activityRules);
+    gatherRules(subgraphRules);
 }
 
 void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
@@ -1396,31 +1461,30 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
 }
 
-
-void WorkunitRuleAnalyser::check(const char * scope, IWuActivity & activity)
+void WorkunitRuleAnalyser::check(IWuActivity & wuScope)
 {
     checkMaxExecuteTime();
-    if (activity.getStatRaw(StTimeLocalExecute, StMaxX) < options.queryOption(watOptMinInterestingTime))
-        return;
-    Owned<PerformanceIssue> highestCostIssue;
-    ForEachItemIn(i, rules)
+    HighestCostIssueRecorder issueRecorder(issues, wuScope);
+    ForEachItemIn(i, activityRules)
     {
-        if (rules.item(i).isCandidate(activity))
+        if (activityRules.item(i).isCandidate(wuScope))
         {
             Owned<PerformanceIssue> issue (new PerformanceIssue);
-            if (rules.item(i).check(*issue, activity, options))
-            {
-                if (!highestCostIssue || highestCostIssue->getTimePenalty() < issue->getTimePenalty())
-                    highestCostIssue.setown(issue.getClear());
-            }
+            if (activityRules.item(i).check(*issue, wuScope, options))
+                issueRecorder.noteIssue(issue);
         }
     }
-    if (highestCostIssue)
+}
+
+void WorkunitRuleAnalyser::check(IWuSubGraph & wuScope)
+{
+    checkMaxExecuteTime();
+    HighestCostIssueRecorder issueRecorder(issues, wuScope);
+    ForEachItemIn(i, subgraphRules)
     {
-        StringBuffer fullScopeName;
-        activity.getFullScopeName(fullScopeName);
-        highestCostIssue->setScope(fullScopeName);
-        issues.append(*highestCostIssue.getClear());
+        Owned<PerformanceIssue> issue (new PerformanceIssue);
+        if (subgraphRules.item(i).check(*issue, wuScope, options))
+            issueRecorder.noteIssue(issue);
     }
 }
 
