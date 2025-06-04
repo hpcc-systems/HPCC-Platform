@@ -23,19 +23,20 @@
 #include "jstatcodes.h"
 #include "wuattr.hpp"
 
-class AActivityRule : public CInterface
+class AnAnalyserRule : public CInterface
 {
 public:
-    virtual bool isCandidate(IWuActivity & activity) const = 0;
-    virtual bool check(PerformanceIssue & results, IWuActivity & activity, const IAnalyserOptions & options) = 0;
-    virtual void updateInformation(PerformanceIssue & result,  IWuActivity & activity)
+    virtual bool isCandidate(WuScope & wuScope) const = 0;
+    virtual bool check(PerformanceIssue & results, WuScope & wuScope, const IAnalyserOptions & options) = 0;
+    virtual void updateInformation(PerformanceIssue & result,  WuScope & wuScope)
     {
         StringBuffer def;
-        activity.getAttr(def,WaDefinition);
+        wuScope.getAttr(def,WaDefinition);
         result.setLocation(def);
     }
 };
 
-void gatherRules(CIArrayOf<AActivityRule> & rules);
+void gatherActivityRules(CIArrayOf<AnAnalyserRule> & rules);
+void gatherSubgraphRules(CIArrayOf<AnAnalyserRule> & rules);
 
 #endif
