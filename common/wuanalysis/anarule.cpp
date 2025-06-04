@@ -43,17 +43,26 @@ static constexpr bool isWorthReporting(const IAnalyserOptions & options, stat_ty
     return false;
 }
 
-class ActivityKindRule : public AActivityRule
+class ActivityKindRule : public AnAnalyserRule
 {
 public:
     ActivityKindRule(ThorActivityKind _kind) : kind(_kind) {}
 
-    virtual bool isCandidate(IWuActivity & activity) const override
+    virtual bool isCandidate(WuScope & wuScope) const override
     {
-        return (activity.getAttr(WaKind) == kind);
+        return (wuScope.getAttr(WaKind) == kind);
     }
 protected:
     ThorActivityKind kind;
+};
+
+class SubgraphAnalysisRule : public AnAnalyserRule
+{
+public:
+    virtual bool isCandidate(WuScope & wuScope) const override
+    {
+        return true;
+    }
 };
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -63,9 +72,9 @@ class DistributeSkewRule : public ActivityKindRule
 public:
     DistributeSkewRule() : ActivityKindRule(TAKhashdistribute) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, WuScope & wuScope, const IAnalyserOptions & options) override
     {
-        IWuEdge * outputEdge = activity.queryOutput(0);
+        IWuEdge * outputEdge = wuScope.queryOutput(0);
         if (!outputEdge)
             return false;
         stat_type rowsAvg = outputEdge->getStatRaw(StNumRowsProcessed, StAvgX);
@@ -84,12 +93,12 @@ public:
             cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
             if (isWorthReporting(options, timeWasted, moneyWasted))
             {
-                IWuEdge * inputEdge = activity.queryInput(0);
+                IWuEdge * inputEdge = wuScope.queryInput(0);
                 if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
                     result.set(ANA_DISTRIB_SKEW_INPUT_ID, timeWasted, moneyWasted, "DISTRIBUTE output skew is worse than input skew");
                 else
                     result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, timeWasted, moneyWasted, "Significant skew in DISTRIBUTE output");
-                updateInformation(result, activity);
+                updateInformation(result, wuScope);
                 return true;
             }
         }
@@ -97,7 +106,7 @@ public:
     }
 };
 
-class IoSkewRule : public AActivityRule
+class IoSkewRule : public AnAnalyserRule
 {
 public:
     IoSkewRule(StatisticKind _stat, const char * _category) : stat(_stat), category(_category)
@@ -105,11 +114,11 @@ public:
         assertex((stat==StTimeDiskReadIO)||(stat==StTimeDiskWriteIO)||(stat==StTimeSpillElapsed));
     }
 
-    virtual bool isCandidate(IWuActivity & activity) const override
+    virtual bool isCandidate(WuScope & wuScope) const override
     {
         if (stat == StTimeDiskReadIO)
         {
-            switch(activity.getAttr(WaKind))
+            switch(wuScope.getAttr(WaKind))
             {
                 case TAKdiskread:
                 case TAKspillread:
@@ -128,7 +137,7 @@ public:
         }
         else if (stat == StTimeDiskWriteIO)
         {
-            switch(activity.getAttr(WaKind))
+            switch(wuScope.getAttr(WaKind))
             {
                 case TAKdiskwrite:
                 case TAKspillwrite:
@@ -139,7 +148,7 @@ public:
         }
         else if (stat == StTimeSpillElapsed)
         {
-            switch(activity.getAttr(WaKind))
+            switch(wuScope.getAttr(WaKind))
             {
                 case TAKspillread:
                 case TAKspillwrite:
@@ -150,19 +159,19 @@ public:
         return false;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, WuScope & wuScope, const IAnalyserOptions & options) override
     {
-        stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
-        stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
-        unsigned actkind = activity.getAttr(WaKind);
+        stat_type ioAvg = wuScope.getStatRaw(stat, StAvgX);
+        stat_type ioMaxSkew = wuScope.getStatRaw(stat, StSkewMax);
+        unsigned actkind = wuScope.getAttr(WaKind);
         if (ioMaxSkew > options.queryOption(watOptSkewThreshold))
         {
-            stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
-            stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
+            stat_type timeMaxLocalExecute = wuScope.getStatRaw(StTimeLocalExecute, StMaxX);
+            stat_type timeAvgLocalExecute = wuScope.getStatRaw(StTimeLocalExecute, StAvgX);
 
             stat_type timeWasted;
             const char * msg = nullptr;
-            if ((actkind==TAKspillread||actkind==TAKspillwrite) && (activity.getStatRaw(stat, StMinX) == 0))
+            if ((actkind==TAKspillread||actkind==TAKspillwrite) && (wuScope.getStatRaw(stat, StMinX) == 0))
             {
                 //If one node didn't spill then it is possible the skew caused all the lost time
                 timeWasted = timeMaxLocalExecute;
@@ -175,15 +184,15 @@ public:
                 IWuEdge *wuEdge = nullptr;
                 if ((stat==StTimeDiskWriteIO) || (actkind==TAKspillwrite))
                 {
-                    if (activity.getStatRaw(StSizeDiskWrite, StSkewMax)>options.queryOption(watOptSkewThreshold))
+                    if (wuScope.getStatRaw(StSizeDiskWrite, StSkewMax)>options.queryOption(watOptSkewThreshold))
                         sizeSkew = true;
-                    wuEdge = activity.queryInput(0);
+                    wuEdge = wuScope.queryInput(0);
                 }
                 else if ((stat == StTimeDiskReadIO) || (actkind==TAKspillread))
                 {
-                    if (activity.getStatRaw(StSizeDiskRead, StSkewMax)>options.queryOption(watOptSkewThreshold))
+                    if (wuScope.getStatRaw(StSizeDiskRead, StSkewMax)>options.queryOption(watOptSkewThreshold))
                         sizeSkew = true;
-                    wuEdge = activity.queryOutput(0);
+                    wuEdge = wuScope.queryOutput(0);
                 }
                 if (wuEdge && wuEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
                     numRowsSkew = true;
@@ -203,7 +212,7 @@ public:
             if (isWorthReporting(options, timeWasted, moneyWasted))
             {
                 result.set(ANA_IOSKEW_RECORDS_ID, timeWasted, moneyWasted, "%s is causing uneven %s time", msg,  category);
-                updateInformation(result, activity);
+                updateInformation(result, wuScope);
                 return true;
             }
         }
@@ -215,12 +224,12 @@ protected:
     const char * category;
 };
 
-class LocalExecuteSkewRule : public AActivityRule
+class LocalExecuteSkewRule : public AnAnalyserRule
 {
 public:
-    virtual bool isCandidate(IWuActivity & activity) const override
+    virtual bool isCandidate(WuScope & wuScope) const override
     {
-        switch (activity.getAttr(WaKind))
+        switch (wuScope.getAttr(WaKind))
         {
             case TAKfirstn: // skew is expected, so ignore
             case TAKtopn:
@@ -230,21 +239,21 @@ public:
         return true;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, WuScope & wuScope, const IAnalyserOptions & options) override
     {
-        stat_type localExecuteMaxSkew = activity.getStatRaw(StTimeLocalExecute, StSkewMax);
+        stat_type localExecuteMaxSkew = wuScope.getStatRaw(StTimeLocalExecute, StSkewMax);
         if (localExecuteMaxSkew<options.queryOption(watOptSkewThreshold))
             return false;
 
-        stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
-        stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
+        stat_type timeMaxLocalExecute = wuScope.getStatRaw(StTimeLocalExecute, StMaxX);
+        stat_type timeAvgLocalExecute = wuScope.getStatRaw(StTimeLocalExecute, StAvgX);
         stat_type timeWasted = (timeMaxLocalExecute - timeAvgLocalExecute);
         cost_type moneyWasted = calcIssueCost(options.queryOption(watClusterCostPerHour), timeWasted);
         if (!isWorthReporting(options, timeWasted, moneyWasted))
             return false;
 
         bool inputSkewed = false;
-        for(unsigned edgeNo = 0; IWuEdge *wuInputEdge = activity.queryInput(edgeNo); edgeNo++)
+        for(unsigned edgeNo = 0; IWuEdge *wuInputEdge = wuScope.queryInput(edgeNo); edgeNo++)
         {
             if (wuInputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
             {
@@ -253,7 +262,7 @@ public:
             }
         }
         bool outputSkewed = false;
-        IWuEdge *wuOutputEdge = activity.queryOutput(0);
+        IWuEdge *wuOutputEdge = wuScope.queryOutput(0);
         if (wuOutputEdge && (wuOutputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold)))
             outputSkewed = true;
 
@@ -263,7 +272,7 @@ public:
             result.set(ANA_EXECUTE_SKEW_ID, timeWasted, moneyWasted, "Significant skew in local execute time caused by uneven output");
         else
             result.set(ANA_EXECUTE_SKEW_ID, timeWasted, moneyWasted, "Significant skew in local execute time");
-        updateInformation(result, activity);
+        updateInformation(result, wuScope);
         return true;
     }
 };
@@ -273,12 +282,12 @@ class KeyedJoinExcessRejectedRowsRule : public ActivityKindRule
 public:
     KeyedJoinExcessRejectedRowsRule() : ActivityKindRule(TAKkeyedjoin) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, WuScope & wuScope, const IAnalyserOptions & options) override
     {
-        stat_type preFiltered = activity.getStatRaw(StNumPreFiltered);
+        stat_type preFiltered = wuScope.getStatRaw(StNumPreFiltered);
         if (preFiltered)
         {
-            IWuEdge * inputEdge = activity.queryInput(0);
+            IWuEdge * inputEdge = wuScope.queryInput(0);
             stat_type rowscnt = inputEdge->getStatRaw(StNumRowsProcessed);
             if (rowscnt)
             {
@@ -293,7 +302,7 @@ public:
                     if (isWorthReporting(options, timeWasted, moneyWasted))
                     {
                         result.set(ANA_KJ_EXCESS_PREFILTER_ID, timeWasted, moneyWasted, "Large number of rows from left dataset rejected in keyed join");
-                        updateInformation(result, activity);
+                        updateInformation(result, wuScope);
                         return true;
                     }
                 }
@@ -303,7 +312,7 @@ public:
     }
 };
 
-void gatherRules(CIArrayOf<AActivityRule> & rules)
+void gatherActivityRules(CIArrayOf<AnAnalyserRule> & rules)
 {
     rules.append(*new DistributeSkewRule);
     rules.append(*new IoSkewRule(StTimeDiskReadIO, "disk read"));
@@ -311,4 +320,9 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
     rules.append(*new KeyedJoinExcessRejectedRowsRule);
     rules.append(*new LocalExecuteSkewRule);
+}
+
+void gatherSubgraphRules(CIArrayOf<AnAnalyserRule> & rules)
+{
+
 }
