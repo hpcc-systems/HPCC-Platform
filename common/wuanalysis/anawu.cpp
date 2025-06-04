@@ -191,7 +191,7 @@ class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 public:
     WorkunitRuleAnalyser();
 
-    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
+    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate, IPropertyTree *environmentInfo);
 
     void applyRules();
     void check(IWuActivity & activity);
@@ -205,6 +205,7 @@ protected:
     CIArrayOf<CSubgraphRule> subgraphRules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
+    Linked<IPropertyTree> environmentInfo;
     CCycleTimer timer;
     cycle_t maxExecuteCycles = 0;
 
@@ -1451,7 +1452,7 @@ WorkunitRuleAnalyser::WorkunitRuleAnalyser()
     gatherRules(subgraphRules);
 }
 
-void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
+void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate, IPropertyTree *_environmentInfo)
 {
     options.applyConfig(cfg);
     options.applyConfig(wu);
@@ -1459,6 +1460,7 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
+    environmentInfo.set(_environmentInfo);
 }
 
 void WorkunitRuleAnalyser::check(IWuActivity & wuScope)
@@ -2186,7 +2188,7 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour)
+void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour, IPropertyTree *environmentInfo)
 {
     if (!workunit.getDebugValueBool("analyzeWorkunit", true))
         return;
@@ -2195,8 +2197,7 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
 
     WorkunitRuleAnalyser analyser;
     Owned<IException> error;
-
-    analyser.applyConfig(options, &workunit, costPerHour);
+    analyser.applyConfig(options, &workunit, costPerHour, environmentInfo);
 
     // Examine workunit's cost or execute time to determine if it is worth analyzing
     // (If the workunit's statistic below the 'interesting' thresholds, then it is not worth analyzing
@@ -2251,7 +2252,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
     CCycleTimer totalTimer;
     {
         CCycleTimer collateTimer;
-        analyser.applyConfig(nullptr, wu, costPerHour);
+        analyser.applyConfig(nullptr, wu, costPerHour, nullptr);
         analyser.analyse(wu, optGraph);
         timingInfo.append(" collate ");
         formatStatistic(timingInfo, cycle_to_nanosec(collateTimer.elapsedCycles()), SMeasureTimeNs);
@@ -2285,7 +2286,7 @@ static bool getBoolWUOption(const IConstWorkUnit * workunit, IPropertyTree *cfg,
     return cfg ? cfg->getPropBool(cfgOption, defaultValue) : defaultValue;
 }
 
-void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour)
+void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour, IPropertyTree *environmentInfo)
 {
     Owned<IPropertyTree> analyzerCfg = cfg->getPropTree("analyzerOptions");
     bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
@@ -2300,7 +2301,7 @@ void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree 
         // - analyzeWhenComplete is true and graph is not specified OR
         // - analyzeWhenComplete is false and graph is specified
         if (optAnalyzeWhenComplete != graphSpecified)
-            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour);
+            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour, environmentInfo);
     }
 }
 
