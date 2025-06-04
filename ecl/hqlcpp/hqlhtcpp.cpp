@@ -18652,7 +18652,19 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
 
     IHqlExpression * patternExpr = expr->queryChild(0);
     ITypeInfo * patternStringType = patternExpr->queryType();
-    OwnedITypeInfo argType = getStretchedType(UNKNOWN_LENGTH, patternStringType); // our arguments' datatypes need to match
+    OwnedITypeInfo argType;
+    switch (patternStringType->getTypeCode())
+    {
+        case type_varstring:
+            argType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            break;
+        case type_varunicode:
+            argType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));
+            break;
+        default:
+            argType.setown(getStretchedType(UNKNOWN_LENGTH, patternStringType));
+            break;
+    }
     OwnedHqlExpr searchExpr = ensureExprType(expr->queryChild(1), argType);
     IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, patternExpr, patternStringType, !expr->hasAttribute(noCaseAtom));
 
@@ -18794,7 +18806,19 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
 
     IHqlExpression * patternExpr = expr->queryChild(0);
     ITypeInfo * patternStringType = patternExpr->queryType();
-    OwnedITypeInfo argType = getStretchedType(UNKNOWN_LENGTH, patternStringType); // our arguments' datatypes need to match
+    OwnedITypeInfo argType;
+    switch (patternStringType->getTypeCode())
+    {
+        case type_varstring:
+            argType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            break;
+        case type_varunicode:
+            argType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));
+            break;
+        default:
+            argType.setown(getStretchedType(UNKNOWN_LENGTH, patternStringType));
+            break;
+    }
     OwnedHqlExpr searchExpr = ensureExprType(expr->queryChild(1), argType);
     IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, patternExpr, patternStringType, !expr->hasAttribute(noCaseAtom));
 
