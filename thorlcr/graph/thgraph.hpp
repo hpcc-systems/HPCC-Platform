@@ -944,6 +944,7 @@ public:
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
+    IPropertyTree * getMemorySettings(const char *context) const;
     void applyMemorySettings(const char *context);
 
     void checkAndReportLeaks(roxiemem::IRowManager *rowManager);

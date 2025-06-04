@@ -32,7 +32,9 @@ extern THORHELPER_API bool getService(StringBuffer &serviceAddress, const char *
 
 interface IPropertyTree;
 typedef std::function<bool(const char *prop, StringBuffer &result)> GetJobValueFunction;
-extern THORHELPER_API void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction);
+typedef std::function<bool(const char *prop, bool defVal)> GetJobValueBoolFunction;
+
+extern THORHELPER_API IPropertyTree* getMemorySpecifications(const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction, GetJobValueBoolFunction getJobValueBoolFunction);
 
 extern THORHELPER_API void getAllowedPipePrograms(StringBuffer &allowedPrograms, bool addBuiltInPrograms);
 
