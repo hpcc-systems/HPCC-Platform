@@ -41,6 +41,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_filelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_fileview.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_getdatacolumns.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/dfu_metainquiry.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_progress.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_search.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dfu_searchdata.xslt

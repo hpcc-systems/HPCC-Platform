@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -77,14 +76,14 @@ class CDistributedFile;
 
 enum MDFSRequestKind
 {
-    MDFS_ITERATE_FILES,
+    MDFS_ITERATE_FILES,        // legacy, will continue to be used by clients <= HPCC v9.14
     MDFS_UNUSED1,
     MDFS_GET_FILE_TREE,
     MDFS_GET_GROUP_TREE,
     MDFS_SET_FILE_ACCESSED,
     MDFS_ITERATE_RELATIONSHIPS,
     MDFS_SET_FILE_PROTECT,
-    MDFS_ITERATE_FILTEREDFILES,
+    MDFS_ITERATE_FILTEREDFILES, // legacy, no longer supported, not needed since HPCC v6.0
     MDFS_ITERATE_FILTEREDFILES2,
     MDFS_GET_FILE_TREE2,
     MDFS_ITERATE_FILTEREDFILES3,
@@ -255,16 +254,16 @@ extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type
     const IPropertyTree & fileAttr = file->queryAttributes();
 
     cost_type legacyReadCost = 0;
-    if (!fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
+    if (!fileAttr.hasProp(getDFUQResultFieldName(DFUQResultField::readCost)))
     {
         if (!isFileKey(fileAttr))
         {
-            stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskReads), 0);
             legacyReadCost = calcFileAccessCost(file, 0, prevDiskReads);
         }
     }
-    file->addAttrValues({makeAttrValuePair(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost),
-                         makeAttrValuePair(getDFUQResultFieldName(DFUQRFnumDiskReads), (unsigned __int64)numDiskReads)});
+    file->addAttrValues({makeAttrValuePair(getDFUQResultFieldName(DFUQResultField::readCost), legacyReadCost + curReadCost),
+                         makeAttrValuePair(getDFUQResultFieldName(DFUQResultField::numDiskReads), (unsigned __int64)numDiskReads)});
     return curReadCost;
 }
 
@@ -1254,18 +1253,9 @@ public:
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user,bool isPrivilegedUser);
-    IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
-    IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters, const char *localFilterBuf,
+    IPropertyTreeIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
+    IPropertyTreeIterator *getDFAttributesFilteredIterator(const char *filters, const char *localFilters, const DFUQResultField *fields,
         IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali,unsigned foreigndalitimeout);
-    IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
-    {
-        Owned<INode> foreign;
-        if (foreigndali&&*foreigndali) {
-            SocketEndpoint ep(foreigndali);
-            foreign.setown(createINode(ep));
-        }
-        return getDFAttributesIterator(wildname, user, recursive, includesuper,foreign,foreigndalitimeout);
-    }
 
     IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope,bool recursive,bool includeempty);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
@@ -1327,10 +1317,10 @@ public:
 
     bool isProtectedFile(const CDfsLogicalFileName &logicalname, unsigned timeout) ;
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
-    IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived);
-    IDFAttributesIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted);
+    IPropertyTreeIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filter, const char *localFilters,
+            DFUQResultField *fields, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived);
+    IPropertyTreeIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filter, const char *localFilters,
+            DFUQResultField *fields, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted);
 
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
@@ -2185,93 +2175,241 @@ public:
     }
 };
 
+
 struct SerializeFileAttrOptions
 {
-    bool includeSuperOwner;
-    //Add more as needed
+    std::unordered_map<std::string, bool> fields;
+    bool includeAll = false;
+    bool customFields = false;
 
     SerializeFileAttrOptions()
     {
-        includeSuperOwner = false;
+        // this is default behavior for bwrd compat
+        // DFUQResultField::nodegroups is always required (client functionality depends on it)
+        includeAll = true;
+        const char *superOwnerFieldName = getDFUQResultFieldName(DFUQResultField::superowners);
+        const char *groupFieldname = getDFUQResultFieldName(DFUQResultField::nodegroups);
+        fields = {{superOwnerFieldName, false}, {groupFieldname, true}};
+    }
+    void readFields(const char *fieldList)
+    {
+        customFields = true;
+        includeAll = false; // default if custom fields specified.
+
+        // DFUQResultField::nodegroups is always required (client functionality depends on it)
+        const char *groupFieldname = getDFUQResultFieldName(DFUQResultField::nodegroups);
+        fields = {{groupFieldname, true}};
+
+        StringArray fieldsArray;
+        fieldsArray.appendList(fieldList, ",");
+        ForEachItemIn(i, fieldsArray)
+        {
+            const char *field = fieldsArray.item(i);
+            bool additive = true;
+            switch (field[0])
+            {
+                case '-':
+                    field++;
+                    additive = false;
+                    break;
+                case '+':
+                    field++;
+                    break;
+            }
+            if (streq(getDFUQResultFieldName(DFUQResultField::includeAll), field))
+                includeAll = additive;
+            else
+            {
+                fields[field] = additive;
+                if (additive)
+                {
+                    if (streq(getDFUQResultFieldName(DFUQResultField::cost), field))
+                    {
+                        // special handling if cost included, include other fields that are required for cost calculation
+                        // another reason it would be better to compute server side.
+                        // i.e. setCost could be moved to server during filtering/projecting, and then this could be removed.
+                        fields[getDFUQResultFieldName(DFUQResultField::timemodified)] = true;
+                        fields[getDFUQResultFieldName(DFUQResultField::compressedsize)] = true;
+                        fields[getDFUQResultFieldName(DFUQResultField::origsize)] = true;
+                        fields[getDFUQResultFieldName(DFUQResultField::readCost)] = true;
+                        fields[getDFUQResultFieldName(DFUQResultField::writeCost)] = true;
+                    }
+                    else if (streq(getDFUQResultFieldName(DFUQResultField::size), field))
+                    {
+                        // special handling if DFUSFsize is included (which is calculated client side), to also include dependent origsize
+                        fields[getDFUQResultFieldName(DFUQResultField::origsize)] = true;
+                    }
+                }
+            }
+        }
+    }
+    void setField(DFUQResultField field, bool additive)
+    {
+        // customFields deliberately not set, because setField is only called from code that is supporting legacy clients
+        const char *fieldName = getDFUQResultFieldName(field);
+        fields[fieldName] = additive;
+    }
+    bool filterFields() const
+    {
+        // if false, then client did not specify fields, and will continue to return all in old format
+        // if true, then by implication, it is a newer client
+        return customFields;
+    }
+    bool includeField(const char *field) const
+    {
+        auto it = fields.find(field);
+        if (it == fields.end())
+            return includeAll;
+        return it->second;
     }
 };
 
-class CDFAttributeIterator: implements IDFAttributesIterator, public CInterface
+class CDFAttributeIterator: implements IPropertyTreeIterator, public CInterface
 {
     unsigned index;
     IArrayOf<IPropertyTree> attrs;
 public:
     IMPLEMENT_IINTERFACE;
 
-    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, IPropertyTree &root, const char *name, bool issuper, SerializeFileAttrOptions& option)
+    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, IPropertyTree &root, const char *name, bool issuper, SerializeFileAttrOptions& options)
     {
         StringBuffer buf;
         mb.append(name);
-        if (issuper) {
-            mb.append("!SF");
-            mb.append(root.getPropInt("@numsubfiles",0));
-            mb.append("");
+        unsigned count{0};
+        size32_t countpos{0};
+        if (!options.filterFields())
+        {
+            // legacy format
+            if (issuper)
+            {
+                mb.append("!SF");
+                mb.append(root.getPropInt("@numsubfiles",0));
+                mb.append("");
+            }
+            else
+            {
+                mb.append(root.queryProp("@directory"));
+                mb.append(root.getPropInt("@numparts",0));
+                mb.append(root.queryProp("@partmask"));
+            }
+            mb.append(root.queryProp("@modified"));
+            countpos = mb.length();
+            mb.append(count);
         }
-        else {
-            mb.append(root.queryProp("@directory"));
-            mb.append(root.getPropInt("@numparts",0));
-            mb.append(root.queryProp("@partmask"));
+        else
+        {
+            countpos = mb.length();
+            mb.append(count);
+            if (issuper)
+            {
+                const char *propName = getDFUQResultFieldName(DFUQResultField::numsubfiles);
+                if (options.includeField(propName))
+                {
+                    mb.append(propName);
+                    const char *val = root.queryProp(propName);
+                    mb.append(val ? val : "0");
+                    ++count;
+                }
+            }
+            else
+            {
+                const char *propName = getDFUQResultFieldName(DFUQResultField::directory);
+                if (options.includeField(propName))
+                {
+                    mb.append(propName).append(root.queryProp(propName));
+                    ++count;
+                }
+                propName = getDFUQResultFieldName(DFUQResultField::numparts);
+                if (options.includeField(propName))
+                {
+                    const char *val = root.queryProp(propName);
+                    mb.append(propName).append(val ? val : "0");
+                    ++count;
+                }
+                propName = getDFUQResultFieldName(DFUQResultField::partmask);
+                if (options.includeField(propName))
+                {
+                    mb.append(propName).append(root.queryProp(propName));
+                    ++count;
+                }
+            }
         }
-        mb.append(root.queryProp("@modified"));
-        Owned<IPropertyTree> attrs = root.getPropTree("Attr");;
+        Owned<IPropertyTree> attrs = root.getPropTree("Attr");
         Owned<IAttributeIterator> attriter;
         if (attrs)
             attriter.setown(attrs->getAttributes());
-        unsigned count=0;
-        size32_t countpos = mb.length();
-        mb.append(count);
-        if (attriter.get()&&attriter->first()) {
-            do {
-                mb.append(attriter->queryName());
-                mb.append(attriter->queryValue());
-                count++;
-            } while (attriter->next());
-        }
-        const char *ps = root.queryProp("@group");
-        if (ps&&*ps) {
-            count++;
-            mb.append("@group");
-            mb.append(ps);
-        }
-        // add protected
-        if (attrs) {
-            Owned<IPropertyTreeIterator> piter = attrs->getElements("Protect");
-            StringBuffer plist;
-            ForEach(*piter) {
-                const char *name = piter->get().queryProp("@name");
-                if (name&&*name) {
-                    if (plist.length())
-                        plist.append(',');
-                    plist.append(name);
+        if (attriter.get()&&attriter->first())
+        {
+            do
+            {
+                const char *attrName = attriter->queryName();
+                if (options.includeField(attrName))
+                {
+                    mb.append(attriter->queryName());
+                    mb.append(attriter->queryValue());
+                    count++;
                 }
             }
-            if (plist.length()) {
+            while (attriter->next());
+        }
+        const char *propName = getDFUQResultFieldName(DFUQResultField::nodegroups);
+        if (options.includeField(propName))
+        {
+            const char *ps = root.queryProp(propName);
+            if (ps&&*ps)
+            {
                 count++;
-                mb.append("@protect");
-                mb.append(plist.str());
+                mb.append(propName);
+                mb.append(ps);
             }
         }
-        if (option.includeSuperOwner) {
+        propName = getDFUQResultFieldName(DFUQResultField::protect);
+        if (options.includeField(propName))
+        {
+            // add protected
+            if (attrs)
+            {
+                Owned<IPropertyTreeIterator> piter = attrs->getElements("Protect");
+                StringBuffer plist;
+                ForEach(*piter)
+                {
+                    const char *name = piter->get().queryProp("@name");
+                    if (name&&*name)
+                    {
+                        if (plist.length())
+                            plist.append(',');
+                        plist.append(name);
+                    }
+                }
+                if (plist.length())
+                {
+                    count++;
+                    mb.append(propName);
+                    mb.append(plist.str());
+                }
+            }
+        }
+        propName = getDFUQResultFieldName(DFUQResultField::superowners);
+        if (options.includeField(propName))
+        {
             //add superowners
             StringBuffer soList;
             Owned<IPropertyTreeIterator> superOwners = root.getElements("SuperOwner");
-            ForEach(*superOwners) {
+            ForEach(*superOwners)
+            {
                 IPropertyTree &superOwner = superOwners->query();
                 const char *name = superOwner.queryProp("@name");
-                if (name&&*name) {
+                if (name&&*name)
+                {
                     if (soList.length())
                         soList.append(",");
                     soList.append(name);
                 }
             }
-            if (soList.length()) {
+            if (soList.length())
+            {
                 count++;
-                mb.append("@superowners");
+                mb.append(propName);
                 mb.append(soList.str());
             }
         }
@@ -2279,42 +2417,57 @@ public:
         return mb;
     }
 
-    CDFAttributeIterator(MemoryBuffer &mb) // attrib not yet implemented
+    static void deserializeFileAttrCommon(IPropertyTree *attr, MemoryBuffer &mb)
     {
-        unsigned numfiles;
-        mb.read(numfiles);
-        while (numfiles--) {
-            IPropertyTree *attr = getEmptyAttr();
-            StringAttr val;
-            unsigned n;
+        unsigned count;
+        mb.read(count);
+        StringAttr at;
+        StringAttr val;
+        while (count--)
+        {
+            mb.read(at);
             mb.read(val);
-            attr->setProp("@name",val.get());
-            mb.read(val);
-            if (stricmp(val,"!SF")==0) {
-                mb.read(n);
-                attr->setPropInt("@numsubfiles",n);
-                mb.read(val);   // not used currently
-            }
-            else {
-                attr->setProp("@directory",val.get());
-                mb.read(n);
-                attr->setPropInt("@numparts",n);
-                mb.read(val);
-                attr->setProp("@partmask",val.get());
-            }
-            mb.read(val);
-            attr->setProp("@modified",val.get());
-            unsigned count;
-            mb.read(count);
-            StringAttr at;
-            while (count--) {
-                mb.read(at);
-                mb.read(val);
-                attr->setProp(at.get(),val.get());
-            }
-            attrs.append(*attr);
+            attr->setProp(at.get(),val.get());
         }
-        index = 0;
+    }
+
+    static IPropertyTree *deserializeFileAttrLegacy(MemoryBuffer &mb)
+    {
+        Owned<IPropertyTree> attr = getEmptyAttr();
+        StringAttr val;
+        unsigned n;
+        mb.read(val);
+        attr->setProp(getDFUQResultFieldName(DFUQResultField::name),val.get());
+        mb.read(val);
+        if (strieq(val,"!SF"))
+        {
+            mb.read(n);
+            attr->setPropInt(getDFUQResultFieldName(DFUQResultField::numsubfiles),n);
+            mb.read(val);   // not used currently
+        }
+        else
+        {
+            attr->setProp(getDFUQResultFieldName(DFUQResultField::directory),val.get());
+            mb.read(n);
+            attr->setPropInt(getDFUQResultFieldName(DFUQResultField::numparts),n);
+            mb.read(val);
+            attr->setProp(getDFUQResultFieldName(DFUQResultField::partmask),val.get());
+        }
+        mb.read(val);
+        attr->setProp(getDFUQResultFieldName(DFUQResultField::timemodified),val.get());
+        deserializeFileAttrCommon(attr, mb);
+        return attr.getClear();
+    }
+
+    static IPropertyTree *deserializeFileAttr(MemoryBuffer &mb)
+    {
+        Owned<IPropertyTree> attr = getEmptyAttr();
+        StringAttr val;
+        unsigned n;
+        mb.read(val);
+        attr->setProp(getDFUQResultFieldName(DFUQResultField::name),val.get());
+        deserializeFileAttrCommon(attr, mb);
+        return attr.getClear();
     }
 
     CDFAttributeIterator(IArrayOf<IPropertyTree>& trees)
@@ -2720,7 +2873,16 @@ public:
             wildname = "*";
         parent = _dir;
         bool recursive = (stricmp(wildname,"*")==0);
-        Owned<IDFAttributesIterator> attriter = parent->getDFAttributesIterator(wildname,user,recursive,includesuper,NULL);
+
+        StringBuffer filterBuf;
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildname).append(DFUQFilterSeparator);
+        if (!includesuper)
+            filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+
+        bool allMatchingFilesReceived;
+        Owned<IPropertyTreeIterator> attriter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf,
+            nullptr, nullptr, user, recursive, allMatchingFilesReceived);
+
         ForEach(*attriter) {
             IPropertyTree &pt = attriter->query();
             list.append(strdup(pt.queryProp("@name")));
@@ -5151,14 +5313,14 @@ public:
     virtual bool getNumReads(stat_type &numReads) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        numReads = attrs ? attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads)) : 0;
+        numReads = attrs ? attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskReads)) : 0;
         return numReads > 0;
     }
 
     virtual bool getNumWrites(stat_type &numWrites) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        numWrites = attrs ? attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites)) : 0;
+        numWrites = attrs ? attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites)) : 0;
         return numWrites > 0;
     }
 
@@ -5167,7 +5329,7 @@ public:
         IPropertyTree *attrs = root->queryPropTree("Attr");
         if (attrs)
         {
-            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), (unsigned __int64)-1);
+            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), (unsigned __int64)-1);
             if ((unsigned __int64)-1 != cost)
                 return true;
             if (calculateIfMissing)
@@ -5187,7 +5349,7 @@ public:
         const IPropertyTree *attrs = root->queryPropTree("Attr");
         if (attrs)
         {
-            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), (unsigned __int64)-1);
+            cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), (unsigned __int64)-1);
             if ((unsigned __int64)-1 != cost)
                 return true;
             if (calculateIfMissing)
@@ -6466,7 +6628,7 @@ public:
     virtual bool getNumReads(stat_type &numReads) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), (stat_type) -1);
+        numReads = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskReads), (stat_type) -1);
         if (numReads == (stat_type) -1)
         {
             numReads = 0;
@@ -6483,7 +6645,7 @@ public:
     virtual bool getNumWrites(stat_type &numWrites) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), (stat_type) -1);
+        numWrites = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), (stat_type) -1);
         if (numWrites == (stat_type) -1)
         {
             numWrites = 0;
@@ -6500,7 +6662,7 @@ public:
     virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), (cost_type) -1);
+        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), (cost_type) -1);
         if (cost == (stat_type) -1)
         {
             cost = 0;
@@ -6517,7 +6679,7 @@ public:
     virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const override
     {
         const IPropertyTree *attrs = root->queryPropTree("Attr");
-        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), (cost_type) -1);
+        cost = attrs->getPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), (cost_type) -1);
         if (cost == (stat_type) -1)
         {
             cost = 0;
@@ -6757,10 +6919,10 @@ public:
         attrs.removeProp("@minSkew");
         attrs.removeProp("@maxSkewPart");
         attrs.removeProp("@minSkewPart");
-        attrs.removeProp(getDFUQResultFieldName(DFUQRFnumDiskReads));
-        attrs.removeProp(getDFUQResultFieldName(DFUQRFnumDiskWrites));
-        attrs.removeProp(getDFUQResultFieldName(DFUQRFreadCost));
-        attrs.removeProp(getDFUQResultFieldName(DFUQRFwriteCost));
+        attrs.removeProp(getDFUQResultFieldName(DFUQResultField::numDiskReads));
+        attrs.removeProp(getDFUQResultFieldName(DFUQResultField::numDiskWrites));
+        attrs.removeProp(getDFUQResultFieldName(DFUQResultField::readCost));
+        attrs.removeProp(getDFUQResultFieldName(DFUQResultField::writeCost));
         attrs.removeProp("@lfnHash");
 
         __int64 fs = getFileSize(false,false);
@@ -6791,14 +6953,14 @@ public:
             attrs.setPropBin("_rtlType", mb.length(), mb.bufferBase());
         stat_type numReads, numWrites;
         getNumReads(numReads);
-        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), numReads);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskReads), numReads);
         getNumWrites(numWrites);
-        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numWrites);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), numWrites);
         cost_type readCost, writeCost;
         getReadCost(readCost, true);
-        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), readCost);
         getWriteCost(writeCost, true);
-        attrs.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+        attrs.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), writeCost);
         const char *kind = nullptr;
         Owned<IDistributedFileIterator> subIter = getSubFileIterator(true);
         ForEach(*subIter)
@@ -9790,15 +9952,17 @@ public:
         return true;
     }
 };
-typedef CIArrayOf<CDFUSFFilter> CDFUSFFilterArray;
 
+typedef CIArrayOf<CDFUSFFilter> CDFUSFFilterArray;
+typedef IIteratorOf<CDFUSFFilter> IDFUFilterIterator;
 class CIterateFileFilterContainer : public CInterface
 {
     StringAttr filterBuf; //Hold original filter string just in case
     StringAttr wildNameFilter;
+    StringAttr fields; // fields to return. If empty means return all
     unsigned maxFilesFilter;
     DFUQFileTypeFilter fileTypeFilter;
-    CIArrayOf<CDFUSFFilter> filters;
+    CDFUSFFilterArray filters;
     //The 'filters' contains the file scan filters other than wildNameFilter and fileTypeFilter. Those filters are used for
     //filtering the files using File Attributes tree and CDFUSFFilter::checkFilter(). The wildNameFilter and fileTypeFilter need
     //special code to filter the files.
@@ -9816,20 +9980,6 @@ class CIterateFileFilterContainer : public CInterface
             s++;
         }
         return true;
-    }
-    void addOption(const char* optionStr)
-    {
-        if (!optionStr || !*optionStr || !isdigit(*optionStr))
-            return;
-
-        DFUQSerializeFileAttrOption option = (DFUQSerializeFileAttrOption) atoi(optionStr);
-        switch(option)
-        {
-        case DFUQSFAOincludeSuperOwner:
-            options.includeSuperOwner =  true;
-            break;
-        //Add more when needed
-        }
     }
     void addFilter(DFUQFilterType filterType, const char* attr, const char* value, const char* valueHigh)
     {
@@ -9963,10 +10113,15 @@ public:
                 if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | from filter | to filter
                     addFilter(filterType, filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2), (const char*)filterStringArray.item(i+3));
                 break;
-            case DFUQFTincludeFileAttr:
+            case DFUQFTincludeFileAttr: // legacy. Kept to support old clients only
                 filterSize = 2;
                 if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter
-                    addOption(filterStringArray.item(i+1));
+                {
+                    const char *optionStr = filterStringArray.item(i+1);
+                    DFUQSerializeFileAttrOption option = (DFUQSerializeFileAttrOption) atoi(optionStr);
+                    if (option == DFUQSFAOincludeSuperOwner)
+                        options.setField(DFUQResultField::superowners, true);
+                }
                 break;
             case DFUQFTspecial:
                 filterSize = 3;
@@ -9977,6 +10132,10 @@ public:
             filterFieldsToRead -= filterSize;
             i += (filterSize - 1);
         }
+    }
+    void readFields(const char *fields)
+    {
+        options.readFields(fields);
     }
     bool matchFileScanFilter(const char* name, IPropertyTree &file)
     {
@@ -10020,6 +10179,10 @@ public:
         wildNameFilter.set(_wildName);
     }
     SerializeFileAttrOptions& getSerializeFileAttrOptions() { return options; }
+    IDFUFilterIterator *getFilterIterator()
+    {
+        return new ArrayIIteratorOf<const CDFUSFFilterArray, CDFUSFFilter, IDFUFilterIterator>(filters);
+    }
 };
 
 class CFileScanner
@@ -11218,6 +11381,7 @@ public:
         return 0;
     }
 
+    // NB: this is legacy, only old clients < HPCC v9.14 will use, new cilents use iterateFilteredFiles3
     void iterateFiles(CMessageBuffer &mb,StringBuffer &trc)
     {
         TransactionLog transactionLog(*this, MDFS_ITERATE_FILES, mb.getSender());
@@ -11298,7 +11462,8 @@ public:
 
     void iterateFilteredFilesCommon(TransactionLog &transactionLog, const IPropertyTree *request, CMessageBuffer &mb, StringBuffer &trc)
     {
-        StringAttr filters = request->queryProp("@filters");
+        const char *filters = request->queryProp("@filters");
+        const char *fields = request->queryProp("@fields"); // NB: if empty, all fields are returned
         bool recursive = request->getPropBool("@recursive");
         const char *userName = request->queryProp("@user");
         Owned<IUserDescriptor> udesc;
@@ -11309,7 +11474,7 @@ public:
         }
         bool suppressAllFilesFlag = request->getPropBool("@suppressAllFilesFlag");
 
-        trc.appendf("iterateFilteredFiles(%s,%s)",filters.str(),recursive?"recursive":"");
+        trc.appendf("iterateFilteredFiles(%s,%s)",filters,recursive?"recursive":"");
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
 
@@ -11317,8 +11482,10 @@ public:
         unsigned startPos = mb.length();
         mb.append(count);
 
-        Owned<CIterateFileFilterContainer> iterateFileFilterContainer =  new CIterateFileFilterContainer();
+        Owned<CIterateFileFilterContainer> iterateFileFilterContainer = new CIterateFileFilterContainer();
         iterateFileFilterContainer->readFilters(filters);
+        if (!isEmptyString(fields))
+            iterateFileFilterContainer->readFields(fields);
 
         CFileScanner scanner;
         CSDSServerLockBlock sdsLock; // lock sds while scanning
@@ -11376,15 +11543,6 @@ public:
             PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
 
         mb.writeDirect(startPos, sizeof(count), &count);
-    }
-
-    void iterateFilteredFiles(CMessageBuffer &mb, StringBuffer &trc)
-    {
-        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES, mb.getSender());
-        Owned<IPropertyTree> request = createLegacyIterFilesRequest(mb);
-        request->setPropBool("@suppressAllFilesFlag", true); // because client doesn't support
-        mb.clear();
-        iterateFilteredFilesCommon(transactionLog, request, mb, trc);
     }
 
     void iterateFilteredFiles2(CMessageBuffer &mb, StringBuffer &trc)
@@ -11731,10 +11889,9 @@ public:
                     iterateFiles(mb, trc);
                     break;
                 }
-                case MDFS_ITERATE_FILTEREDFILES: // legacy, newer clients will send MDFS_ITERATE_FILTEREDFILES2
+                case MDFS_ITERATE_FILTEREDFILES: // legacy, newer clients will send MDFS_ITERATE_FILTEREDFILES2/3
                 {
-                    iterateFilteredFiles(mb, trc);
-                    break;
+                    throw makeStringExceptionV(0, "MDFS_ITERATE_FILTEREDFILES is no longer supported. Please upgrade.");
                 }
                 case MDFS_ITERATE_FILTEREDFILES2:
                 {
@@ -11841,25 +11998,19 @@ public:
 } *daliDFSServer = NULL;
 
 
-IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout)
+IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout)
 {
-    if (!wildname||!*wildname||(strcmp(wildname,"*")==0)) {
+    if (!wildname||!*wildname||(strcmp(wildname,"*")==0))
         recursive = true;
-    }
-    CMessageBuffer mb;
-    mb.append((int)MDFS_ITERATE_FILES).append(wildname).append(recursive).append("").append(includesuper); // "" is legacy
-    logNullUser(user);//stack trace if NULL user
-    if (user)
-    {
-        user->serializeWithoutPassword(mb);
-    }
 
-    if (foreigndali)
-        foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
-    else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
-    checkDfsReplyException(mb);
-    return new CDFAttributeIterator(mb);
+    StringBuffer filterBuf;
+    // all non-superfiles
+    if (!includesuper)
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildname).append(DFUQFilterSeparator);
+
+    bool allMatchingFilesReceived;
+    return getDFAttributesFilteredIterator(filterBuf, nullptr, nullptr, user, recursive, allMatchingFilesReceived, foreigndali, foreigndalitimeout);
 }
 
 IDFScopeIterator *CDistributedFileDirectory::getScopeIterator(IUserDescriptor *user, const char *basescope, bool recursive,bool includeempty)
@@ -12676,15 +12827,15 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescrip
 }
 
 typedef MapStringTo<bool> SubfileSet;
-class CFilterAttrIterator: implements IDFAttributesIterator, public CInterface
+class CFilterAttrIterator: implements IPropertyTreeIterator, public CInterface
 {
-    Owned<IDFAttributesIterator> iter;
+    Owned<IPropertyTreeIterator> iter;
     Linked<IUserDescriptor> user;
     SubfileSet sfset;
     bool includesub;
 public:
     IMPLEMENT_IINTERFACE;
-    CFilterAttrIterator(IDFAttributesIterator *_iter,IUserDescriptor* _user,bool _includesub,unsigned timeoutms)
+    CFilterAttrIterator(IPropertyTreeIterator *_iter,IUserDescriptor* _user,bool _includesub,unsigned timeoutms)
         : iter(_iter), user(_user)
     {
         includesub = _includesub;
@@ -12732,7 +12883,7 @@ public:
     IPropertyTree  & query() { return iter->query(); }
 };
 
-IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timeoutms)
+IPropertyTreeIterator *createSubFileFilter(IPropertyTreeIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timeoutms)
 {
     return new CFilterAttrIterator(_iter,_user,includesub,timeoutms);
 }
@@ -13660,33 +13811,173 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
     return new CDFProtectedIterator(owner,notsuper,superonly,defaultTimeout);
 }
 
-const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
-    "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
-    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost", "@maxSkew", "@minSkew", "@maxSkewPart", "@minSkewPart",
-    "@readCost", "@writeCost" };
+// NB: the order must match the order of the enum DFUQResultField.
+// However, DFUQResultField's are always translated to these strings before being transmitted to Dali,
+// so there is they can be reordered without fear of breaking compatibility as long as DFUQResultField is in same order.
+// "includeAll" is a pecial field values that are used by field filtering on the server side,
+// but are only sent to a server version that supports them. NB: it can be negated, i.e. : -includeAll
+// These fields are used to specify sort order, and to specify which fields are to be returned.
 
-extern da_decl const char* getDFUQResultFieldName(DFUQResultField field)
+struct DFUQFieldInfo
 {
-    return DFUQResultFieldNames[field];
+    DFUQResultField field;
+    std::string_view name;
+    DFUQResultFieldType type;
+};
+
+// enum field, name, type
+static const DFUQFieldInfo dfuqFieldInfos[] =
+{
+    {DFUQResultField::name,            "@name",             DFUQResultFieldType::stringType},
+    {DFUQResultField::description,     "@description",      DFUQResultFieldType::stringType},
+    {DFUQResultField::nodegroups,      "@group",            DFUQResultFieldType::stringType},
+    {DFUQResultField::kind,            "@kind",             DFUQResultFieldType::stringType},
+    {DFUQResultField::timemodified,    "@modified",         DFUQResultFieldType::stringType},
+    {DFUQResultField::job,             "@job",              DFUQResultFieldType::stringType},
+    {DFUQResultField::owner,           "@owner",            DFUQResultFieldType::stringType},
+    {DFUQResultField::recordcount,     "@DFUSFrecordCount", DFUQResultFieldType::numericType},
+    {DFUQResultField::origrecordcount, "@recordCount",      DFUQResultFieldType::numericType},
+    {DFUQResultField::recordsize,      "@recordSize",       DFUQResultFieldType::numericType},
+    {DFUQResultField::size,            "@DFUSFsize",        DFUQResultFieldType::numericType},
+    {DFUQResultField::origsize,        "@size",             DFUQResultFieldType::numericType},
+    {DFUQResultField::workunit,        "@workunit",         DFUQResultFieldType::stringType},
+    {DFUQResultField::nodegroup,       "@DFUSFcluster",     DFUQResultFieldType::stringType},
+    {DFUQResultField::numsubfiles,     "@numsubfiles",      DFUQResultFieldType::numericType},
+    {DFUQResultField::accessed,        "@accessed",         DFUQResultFieldType::stringType},
+    {DFUQResultField::numparts,        "@numparts",         DFUQResultFieldType::numericType},
+    {DFUQResultField::compressedsize,  "@compressedSize",   DFUQResultFieldType::numericType},
+    {DFUQResultField::directory,       "@directory",        DFUQResultFieldType::stringType},
+    {DFUQResultField::partmask,        "@partmask",         DFUQResultFieldType::stringType},
+    {DFUQResultField::superowners,     "@superowners",      DFUQResultFieldType::stringType},
+    {DFUQResultField::persistent,      "@persistent",       DFUQResultFieldType::boolType},
+    {DFUQResultField::protect,         "@protect",          DFUQResultFieldType::stringType},
+    {DFUQResultField::iscompressed,    "@compressed",       DFUQResultFieldType::boolType},
+    {DFUQResultField::cost,            "@cost",             DFUQResultFieldType::floatType},
+    {DFUQResultField::numDiskReads,    "@numDiskReads",     DFUQResultFieldType::numericType},
+    {DFUQResultField::numDiskWrites,   "@numDiskWrites",    DFUQResultFieldType::numericType},
+    {DFUQResultField::atRestCost,      "@atRestCost",       DFUQResultFieldType::floatType},
+    {DFUQResultField::accessCost,      "@accessCost",       DFUQResultFieldType::floatType},
+    {DFUQResultField::maxSkew,         "@maxSkew",          DFUQResultFieldType::numericType},
+    {DFUQResultField::minSkew,         "@minSkew",          DFUQResultFieldType::numericType},
+    {DFUQResultField::maxSkewPart,     "@maxSkewPart",      DFUQResultFieldType::numericType},
+    {DFUQResultField::minSkewPart,     "@minSkewPart",      DFUQResultFieldType::numericType},
+    {DFUQResultField::readCost,        "@readCost",         DFUQResultFieldType::floatType},
+    {DFUQResultField::writeCost,       "@writeCost",        DFUQResultFieldType::floatType},
+    {DFUQResultField::expireDays,      "@expireDays",       DFUQResultFieldType::numericType},
+    {DFUQResultField::includeAll,      "includeAll",        DFUQResultFieldType::unknown}
+};
+const size_t dfuqFieldInfosCount = sizeof(dfuqFieldInfos)/sizeof(dfuqFieldInfos[0]);
+static_assert(dfuqFieldInfosCount == static_cast<size_t>(DFUQResultField::term),
+              "Field info array and enum out of sync!");
+
+typedef std::unordered_map<std::string_view, std::pair<DFUQResultField, DFUQResultFieldType>, CaseInsensitiveHash, CaseInsensitiveEqual> DFUQResultFieldMap;
+static const DFUQResultFieldMap dfuResultFieldStringMap = []
+{
+    DFUQResultFieldMap map;
+    for (size_t i = 0; i < dfuqFieldInfosCount; ++i)
+    {
+        DFUQResultField field = dfuqFieldInfos[i].field;
+        assertex(field == (DFUQResultField)i);
+
+        // Use the name as the map key, but skip '@' prefix if present
+        std::string_view mapKey = dfuqFieldInfos[i].name;
+        if (mapKey.length() > 0 && mapKey[0] == '@')
+            mapKey = mapKey.substr(1);
+
+        map.emplace(mapKey, std::make_pair(field, dfuqFieldInfos[i].type));
+    }
+    return map;
+}();
+
+
+const char* getDFUQResultFieldKey(DFUQResultField field)
+{
+    assertex(static_cast<size_t>(field) < static_cast<size_t>(DFUQResultField::term));
+    std::string_view mapKey = dfuqFieldInfos[static_cast<size_t>(field)].name;
+    if (mapKey.length() > 0 && mapKey[0] == '@')
+        mapKey = mapKey.substr(1);
+    return mapKey.data();
 }
 
-IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, DFUQResultField* localFilters, const char* localFilterBuf)
+const char* getDFUQResultFieldName(DFUQResultField field)
+{
+    assertex(static_cast<size_t>(field) < static_cast<size_t>(DFUQResultField::term));
+    return dfuqFieldInfos[static_cast<size_t>(field)].name.data();
+}
+
+DFUQResultFieldType getDFUQResultFieldType(DFUQResultField field)
+{
+    assertex(static_cast<size_t>(field) < static_cast<size_t>(DFUQResultField::term));
+    return dfuqFieldInfos[static_cast<size_t>(field)].type;
+}
+
+DFUQResultField getDFUQResultField(const char *fieldName)
+{
+    auto it = dfuResultFieldStringMap.find(fieldName);
+    if (it != dfuResultFieldStringMap.end())
+        return it->second.first;
+    return DFUQResultField::unknown;
+}
+
+DFUQResultField getDFUQResultFieldAndType(const char *fieldName)
+{
+    auto it = dfuResultFieldStringMap.find(fieldName);
+    if (it != dfuResultFieldStringMap.end())
+        return it->second.first | it->second.second;
+    return DFUQResultField::unknown;
+}
+
+const char* getDFUQResultFieldTypeName(DFUQResultFieldType type)
+{
+    switch (type)
+    {
+        case DFUQResultFieldType::stringType: return "string";
+        case DFUQResultFieldType::numericType: return "numeric";
+        case DFUQResultFieldType::boolType: return "bool";
+        case DFUQResultFieldType::floatType: return "float";
+        default:
+            return "unknown";
+    }
+}
+
+static std::vector<DFUQResultField> dfuQRsultFieldToVector(const DFUQResultField *fields, bool includeTerminator)
+{
+    std::vector<DFUQResultField> result;
+    if (fields)
+    {
+        while (true)
+        {
+            bool term = *fields == DFUQResultField::term;
+            if (term)
+            {
+                if (includeTerminator)
+                    result.push_back(*fields);
+                break;
+            }
+            result.push_back(*fields);
+            ++fields;
+        }
+    }
+    return result;
+}
+
+static IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, const char *localFilters, const char *fields)
 {
     class CFileAttrIterator: implements IPropertyTreeIterator, public CInterface
     {
         size32_t fileDataStart;
         Owned<IPropertyTree> cur;
         StringArray fileNodeGroups;
+        SerializeFileAttrOptions options;
 
-        void setFileNodeGroup(IPropertyTree *attr, const char* group, StringArray& nodeGroupFilter)
+        void setFileNodeGroup(IPropertyTree *attr, const char* group)
         {
             if (!group || !*group)
                 return;
 
             //The group may contain multiple clusters and some of them may match with the clusterFilter.
             if (nodeGroupFilter.length() == 1)
-                attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), nodeGroupFilter.item(0));//Filter has been handled on server side.
+                attr->setProp(getDFUQResultFieldName(DFUQResultField::nodegroup), nodeGroupFilter.item(0));//Filter has been handled on server side.
             else
             {
                 StringArray groups;
@@ -13703,7 +13994,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
                     //if this file exists on multiple groups, set one of the groups as the "@DFUSFnodegroup" prop for
                     //this attr, leaving the rest inside the fileNodeGroups array. Those groups will be used by the
                     //duplicateFileAttrOnOtherNodeGroup() to duplicate this file attr on other groups.
-                    attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), fileNodeGroups.item(fileNodeGroups.length() -1));
+                    attr->setProp(getDFUQResultFieldName(DFUQResultField::nodegroup), fileNodeGroups.item(fileNodeGroups.length() -1));
                     fileNodeGroups.pop();
                 }
             }
@@ -13712,25 +14003,25 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
         void setRecordCount(IPropertyTree* file)
         {
             __int64 recordCount = 0;
-            if (file->hasProp(getDFUQResultFieldName(DFUQRForigrecordcount)))
-                recordCount = file->getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount));
+            if (file->hasProp(getDFUQResultFieldName(DFUQResultField::origrecordcount)))
+                recordCount = file->getPropInt64(getDFUQResultFieldName(DFUQResultField::origrecordcount));
             else
             {
-                __int64 recordSize=file->getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize),0);
+                __int64 recordSize=file->getPropInt64(getDFUQResultFieldName(DFUQResultField::recordsize),0);
                 if(recordSize)
                 {
-                    __int64 size=file->getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1);
+                    __int64 size=file->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize),-1);
                     recordCount = size/recordSize;
                 }
             }
-            file->setPropInt64(getDFUQResultFieldName(DFUQRFrecordcount),recordCount);
+            file->setPropInt64(getDFUQResultFieldName(DFUQResultField::recordcount),recordCount);
             return;
         }
 
         void setIsCompressed(IPropertyTree* file)
         {
             if (isCompressed(*file) || isFileKey(*file))
-                file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
+                file->setPropBool(getDFUQResultFieldName(DFUQResultField::iscompressed), true);
         }
 
         void setCost(IPropertyTree* file, const char *nodeGroup)
@@ -13738,7 +14029,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             // Set the following dynamic fields: atRestCost, accessCost, cost and for legacy files: readCost, writeCost
             StringBuffer str;
             double fileAgeDays = 0.0;
-            if (file->getProp(getDFUQResultFieldName(DFUQRFtimemodified), str))
+            if (file->getProp(getDFUQResultFieldName(DFUQResultField::timemodified), str))
             {
                 CDateTime dt;
                 dt.setString(str.str());
@@ -13746,62 +14037,61 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             }
             __int64 sizeDiskSize = 0;
             if (isCompressed(*file))
-                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize), 0);
+                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQResultField::compressedsize), 0);
             else
-                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), 0);
+                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), 0);
             double sizeGB = sizeDiskSize / ((double)1024 * 1024 * 1024);
             cost_type atRestCost = calcFileAtRestCost(nodeGroup, sizeGB, fileAgeDays);
-            file->setPropInt64(getDFUQResultFieldName(DFUQRFatRestCost), atRestCost);
+            file->setPropInt64(getDFUQResultFieldName(DFUQResultField::atRestCost), atRestCost);
 
             cost_type readCost = getReadCost(*file, nodeGroup, true);
             cost_type writeCost = getWriteCost(*file, nodeGroup, true);
             cost_type accessCost = readCost + writeCost;
-            file->setPropInt64(getDFUQResultFieldName(DFUQRFaccessCost), accessCost);
-            file->setPropInt64(getDFUQResultFieldName(DFUQRFcost), atRestCost + accessCost);
+            file->setPropInt64(getDFUQResultFieldName(DFUQResultField::accessCost), accessCost);
+            file->setPropInt64(getDFUQResultFieldName(DFUQResultField::cost), atRestCost + accessCost);
         }
 
-        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& nodeGroupFilter)
+        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb)
         {
-            IPropertyTree *attr = getEmptyAttr();
-            StringAttr val;
-            unsigned n;
-            mb.read(val);
-            attr->setProp(getDFUQResultFieldName(DFUQRFname),val.get());
-            mb.read(val);
-            if (strieq(val,"!SF"))
-            {
-                mb.read(n);
-                attr->setPropInt(getDFUQResultFieldName(DFUQRFnumsubfiles),n);
-                mb.read(val);   // not used currently
-            }
+            Owned<IPropertyTree> attr;
+            if (options.filterFields())
+                attr.setown(CDFAttributeIterator::deserializeFileAttr(mb));
             else
+                attr.setown(CDFAttributeIterator::deserializeFileAttrLegacy(mb));
+            const char *group = attr->queryProp(getDFUQResultFieldName(DFUQResultField::nodegroups));
+            if (group)
+                setFileNodeGroup(attr, group);
+
+            const char *propName = getDFUQResultFieldName(DFUQResultField::size);
+            if (options.includeField(propName))
             {
-                attr->setProp(getDFUQResultFieldName(DFUQRFdirectory),val.get());
-                mb.read(n);
-                attr->setPropInt(getDFUQResultFieldName(DFUQRFnumparts),n);
-                mb.read(val);
-                attr->setProp(getDFUQResultFieldName(DFUQRFpartmask),val.get());
+                // JCSMORE - I am not sure what the point of this is, with or without it, a blank @size does not affefct sort order
+                // and EclWatch seems to use the @size (DFUQResultField::origsize) for size column anyway
+                // See special handling in SerializeFileAttrOptions::readFields() to include origsize if size is requested
+                attr->setPropInt64(propName, attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));//Sort the files with empty size to front
             }
-            mb.read(val);
-            attr->setProp(getDFUQResultFieldName(DFUQRFtimemodified),val.get());
-            unsigned count;
-            mb.read(count);
-            StringAttr at;
-            while (count--)
+
+            if (options.includeField(getDFUQResultFieldName(DFUQResultField::recordcount)))
             {
-                mb.read(at);
-                mb.read(val);
-                attr->setProp(at.get(),val.get());
-                if (strieq(at.get(), getDFUQResultFieldName(DFUQRFnodegroups)))
-                    setFileNodeGroup(attr, val.get(), nodeGroupFilter);
+                // JCSMORE - Is this really necessary/used? Sets @DFUSFrecordCount - if @recordSize missing, but @size and @recordCount present.. calculates..
+                setRecordCount(attr);
             }
-            attr->setPropInt64(getDFUQResultFieldName(DFUQRFsize), attr->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), -1));//Sort the files with empty size to front
-            setRecordCount(attr);
-            setIsCompressed(attr);
-            const char *firstNodeGroup = attr->queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
-            if (!isEmptyString(firstNodeGroup))
-                setCost(attr, firstNodeGroup);
-            return attr;
+
+            if (options.includeField(getDFUQResultFieldName(DFUQResultField::iscompressed)))
+            {
+                // JCSMORE sets compressed if no compressed attribute, but is an index. Don't indexes already have this flag?
+                setIsCompressed(attr);
+            }
+
+            if (options.includeField(getDFUQResultFieldName(DFUQResultField::cost)))
+            {
+                // JCSMORE - cost could be computed in Dali instead - would simplify filtering/projecting code
+                // see special handling in SerializeFileAttrOptions::readFields()
+                const char *firstNodeGroup = attr->queryProp(getDFUQResultFieldName(DFUQResultField::nodegroup));
+                if (!isEmptyString(firstNodeGroup))
+                    setCost(attr, firstNodeGroup);
+            }
+            return attr.getClear();
         }
 
         IPropertyTree *duplicateFileAttrOnOtherNodeGroup(IPropertyTree *previousAttr)
@@ -13810,9 +14100,13 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             Owned<IAttributeIterator> ai = previousAttr->getAttributes();
             ForEach(*ai)
                 attr->setProp(ai->queryName(),ai->queryValue());
-            const char * nodeGroup = fileNodeGroups.item(fileNodeGroups.length()-1);
-            attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), nodeGroup);
-            setCost(attr, nodeGroup);
+
+            if (options.includeField(getDFUQResultFieldName(DFUQResultField::cost)))
+            {
+                const char * nodeGroup = fileNodeGroups.item(fileNodeGroups.length()-1);
+                attr->setProp(getDFUQResultFieldName(DFUQResultField::nodegroup), nodeGroup);
+                setCost(attr, nodeGroup);
+            }
             fileNodeGroups.pop();
             return attr;
         }
@@ -13823,13 +14117,15 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
         unsigned numfiles;
         StringArray nodeGroupFilter;
 
-        CFileAttrIterator(MemoryBuffer &_mb, unsigned _numfiles) : numfiles(_numfiles)
+        CFileAttrIterator(MemoryBuffer &_mb, unsigned _numfiles, const char *fields) : numfiles(_numfiles)
         {
             /* not particuarly nice, but buffer contains extra meta info ahead of serialized file info
              * record position to rewind to, if iterator reused.
              */
             fileDataStart = _mb.getPos();
             mb.swapWith(_mb);
+            if (fields)
+                options.readFields(fields);
         }
         bool first()
         {
@@ -13849,7 +14145,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             cur.clear();
             if (mb.getPos()>=mb.length())
                 return false;
-            cur.setown(deserializeFileAttr(mb, nodeGroupFilter));
+            cur.setown(deserializeFileAttr(mb));
             return true;
         }
 
@@ -13863,53 +14159,105 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             return *cur;
         }
 
-        void setLocalFilters(DFUQResultField* localFilters, const char* localFilterBuf)
+        void setLocalFilters(const char *localFilters)
         {
-            if (!localFilters || !localFilterBuf || !*localFilterBuf)
+            nodeGroupFilter.kill();
+            if (isEmptyString(localFilters))
                 return;
-
-            const char *fv = localFilterBuf;
-            for (unsigned i=0;localFilters[i]!=DFUQRFterm;i++)
+            // At the moment, only 1 special filter is allowed on group name
+            // of the form: DFUQFTwildcardMatch|DFUQFFgroup|'cluster'
+            // CFileAttrIterator treats this group list by duplicating the IPropertyTree for each group that matches, so seen as separate files
+            CIterateFileFilterContainer filterContainer;
+            filterContainer.readFilters(localFilters);
+            Owned<IDFUFilterIterator> iter = filterContainer.getFilterIterator();
+            ForEach(*iter)
             {
-                int fmt = localFilters[i];
-                int subfmt = (fmt&0xff);
-                if ((subfmt==DFUQRFnodegroup) && fv && *fv)
-                    nodeGroupFilter.appendListUniq(fv, ",");
-                //Add more if needed
-                fv = fv + strlen(fv)+1;
+                CDFUSFFilter &filter = iter->query();
+                if (filter.getFilterType() != DFUQFTwildcardMatch)
+                    throwUnimplemented();
+
+                if (!streq(getDFUQFilterFieldName(DFUQFFgroup), filter.getAttrPath()))
+                    throwUnimplemented();
+
+                if (nodeGroupFilter.ordinality())
+                    throwUnimplemented();
+
+                nodeGroupFilter.appendUniq(filter.getFilterValue());
             }
         }
-
-    } *fai = new CFileAttrIterator(mb, numFiles);
-    fai->setLocalFilters(localFilters, localFilterBuf);
+    } *fai = new CFileAttrIterator(mb, numFiles, fields);
+    fai->setLocalFilters(localFilters);
     return fai;
 }
 
-IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(const char* filters, DFUQResultField* localFilters,
-    const char* localFilterBuf, IUserDescriptor* user, bool recursive, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
+static StringBuffer &convertDFUQResultFields(StringBuffer &res, const DFUQResultField *fields)
+{
+    for (unsigned i=0;fields[i]!=DFUQResultField::term;i++)
+    {
+        if (res.length())
+            res.append(',');
+        DFUQResultField fmt = fields[i];
+        if ((hasMask(fmt, DFUQResultField::reverse)) || (hasMask(fmt, DFUQResultField::exclude))) // NB: either a sort field reverse, or a exclude field flag
+            res.append('-');
+        if (hasMask(fmt, DFUQResultField::include))
+            res.append('+');
+        if (hasMask(fmt, DFUQResultField::nocase))
+            res.append('?');
+        DFUQResultField type = fmt&DFUQResultField::typeMask;
+        switch (type)
+        {
+            case DFUQResultField::numericType:
+            case DFUQResultField::boolType: // same for now at least to preserve current semantics
+                res.append('#');
+                break;
+            case DFUQResultField::floatType:
+                res.append('~');
+                break;
+            case DFUQResultField::stringType: // no modifier, string is default
+            case (DFUQResultField)0:
+                break;
+            default:
+                throw makeStringException(-1, "Unknown DFUQResultField type");
+        }
+        res.append(getDFUQResultFieldName(fmt&DFUQResultField::fieldMask));
+    }
+    return res;
+}
+
+IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesFilteredIterator(const char* filters, const char* localFilters, const DFUQResultField *fields,
+    IUserDescriptor* user, bool recursive, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
 {
     CMessageBuffer mb;
-    CDaliVersion serverVersionNeeded("3.13");
-    bool legacy = (queryDaliServerVersion().compare(serverVersionNeeded) < 0);
     bool iptRquestFmtSupport = false;
-    if (legacy)
-        mb.append((int)MDFS_ITERATE_FILTEREDFILES);
-    else
+    bool useFields = false;
+    if (!foreigndali)
     {
-        if (!foreigndali)
+        CDaliVersion serverVersionNeeded("3.18");
+        iptRquestFmtSupport = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
+        if (iptRquestFmtSupport && fields) // NB: if "fields" empty, easier to use old format (server dosn't need to check if client compat)
         {
-            CDaliVersion serverVersionNeeded("3.18");
-            iptRquestFmtSupport = (queryDaliServerVersion().compare(serverVersionNeeded) >= 0);
+            serverVersionNeeded.set("3.19"); // min version to support projected fields
+            useFields = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
         }
-        if (!iptRquestFmtSupport)
-            mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
-        else
-            mb.append((int)MDFS_ITERATE_FILTEREDFILES3);
     }
+    // else, currently there's no check on the foreign Dali version, so always use the old format
+
+    if (!iptRquestFmtSupport)
+        mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
+    else
+        mb.append((int)MDFS_ITERATE_FILTEREDFILES3);
+
+    // NB: field filter also happens on client-side in CFileAttrIterator, to suppress computed fields
+    StringBuffer fieldsStr;
     if (iptRquestFmtSupport)
     {
         Owned<IPropertyTree> request = createPTree();
         request->setProp("@filters", filters);
+        if (useFields)
+        {
+            convertDFUQResultFields(fieldsStr, fields);
+            request->setProp("@fields", fieldsStr);
+        }
         request->setPropBool("@recursive", recursive);
         if (user)
         {
@@ -13936,19 +14284,16 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
 
     unsigned numfiles;
     mb.read(numfiles);
-    if (legacy)
-        allMatchingFilesReceived = true; // don't know any better
-    else
-        mb.read(allMatchingFilesReceived);
-    return deserializeFileAttrIterator(mb, numfiles, localFilters, localFilterBuf);
+    mb.read(allMatchingFilesReceived);
+    return deserializeFileAttrIterator(mb, numfiles, localFilters, useFields ? fieldsStr.str() : nullptr);
 }
 
-IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
+IPropertyTreeIterator* CDistributedFileDirectory::getLogicalFiles(
     IUserDescriptor* udesc,
-    DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
+    DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm). NB: sort order fields are implicitly part of 'fields'
     const void *filters,  // (appended) string values for filters used by dali server
-    DFUQResultField *localFilters, //used for filtering query result received from dali server.
-    const void *localFilterBuf,
+    const char *localFilters, //used for filtering query result received from dali server.
+    DFUQResultField *fields, // list of fields to include in result (terminated by DFUSFterm)
     unsigned startOffset,
     unsigned maxNum,
     __int64 *cacheHint,
@@ -13962,8 +14307,8 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
         IUserDescriptor* udesc;
         //StringAttr clusterFilter;
         StringAttr filters;
-        DFUQResultField *localFilters;
-        StringAttr localFilterBuf;
+        StringAttr localFilters;
+        std::vector<DFUQResultField> fields;
         StringAttr sortOrder;
         bool recursive, sorted;
         bool allMatchingFilesReceived;
@@ -13971,16 +14316,17 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CDFUPager(IUserDescriptor* _udesc, const char*_filters, DFUQResultField*_localFilters, const char*_localFilterBuf,
-            const char*_sortOrder, bool _recursive, bool _sorted) : udesc(_udesc), filters(_filters), localFilters(_localFilters), localFilterBuf(_localFilterBuf),
+        CDFUPager(IUserDescriptor* _udesc, const char*_filters, const char *_localFilters, const DFUQResultField *_fields,
+            const char*_sortOrder, bool _recursive, bool _sorted) : udesc(_udesc), filters(_filters), localFilters(_localFilters),
             sortOrder(_sortOrder), recursive(_recursive), sorted(_sorted)
         {
             allMatchingFilesReceived = true;
+            fields = dfuQRsultFieldToVector(_fields, true);
         }
         virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
         {
-            Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
-                localFilters, localFilterBuf.get(), udesc, recursive, allMatchingFilesReceived);
+            Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filters.get(),
+                localFilters, fields.data(), udesc, recursive, allMatchingFilesReceived);
             StringArray unknownAttributes;
             sortElements(fi, sorted ? sortOrder.get() : NULL, NULL, NULL, unknownAttributes, elements);
             return NULL;
@@ -13989,44 +14335,48 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
     };
 
     StringBuffer so;
+    std::vector<DFUQResultField> fieldsWithSorted;
     if (sorted && sortOrder)
     {
-        for (unsigned i=0;sortOrder[i]!=DFUQRFterm;i++)
+        convertDFUQResultFields(so, sortOrder);
+        if (fields) // if pruning fields and sort order, then add sort order fields implicitly to included fields
         {
-            if (so.length())
-                so.append(',');
-            int fmt = sortOrder[i];
-            if (fmt&DFUQRFreverse)
-                so.append('-');
-            if (fmt&DFUQRFnocase)
-                so.append('?');
-            if (fmt&DFUQRFnumeric)
-                so.append('#');
-            if (fmt&DFUQRFfloat)
-                so.append('~');
-            so.append(getDFUQResultFieldName((DFUQResultField) (fmt&0xff)));
+            CDaliVersion serverVersionNeeded("3.19");
+            if (queryDaliServerVersion().compare(serverVersionNeeded) >= 0)
+            {
+                fieldsWithSorted = dfuQRsultFieldToVector(fields, false);
+
+                // NB: could add sort fields here, that are already in fields, that's okay, they will take precedence by being last 
+                for (unsigned s=0; sortOrder[s] != DFUQResultField::term; s++)
+                {
+                    DFUQResultField sortField = sortOrder[s] & DFUQResultField::fieldMask;
+                    fieldsWithSorted.push_back(sortField);
+                }
+                fieldsWithSorted.push_back(DFUQResultField::term);
+                fields = fieldsWithSorted.data();
+            }
         }
     }
     IArrayOf<IPropertyTree> results;
-    Owned<IElementsPager> elementsPager = new CDFUPager(udesc, (const char*) filters, localFilters, (const char*) localFilterBuf,
+    Owned<IElementsPager> elementsPager = new CDFUPager(udesc, (const char*) filters, localFilters, fields,
         so.length()?so.str():NULL, recursive, sorted);
     Owned<IRemoteConnection> conn = getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,allMatchingFiles,false);
     return new CDFAttributeIterator(results);
 }
 
-IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
+IPropertyTreeIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     IUserDescriptor* udesc,
     DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
     const void *filters,  // (appended) string values for filters used by dali server
-    DFUQResultField *localFilters, //used for filtering query result received from dali server.
-    const void *localFilterBuf,
+    const char *localFilters, //used for filtering query result received from dali server.
+    DFUQResultField *fields, // list of fields to sort by (terminated by DFUSFterm)
     unsigned startOffset,
     unsigned maxNum,
     __int64 *cacheHint,
     unsigned *total,
     bool *allMatchingFiles)
 {
-    return getLogicalFiles(udesc, sortOrder, filters, localFilters, localFilterBuf, startOffset, maxNum,
+    return getLogicalFiles(udesc, sortOrder, filters, localFilters, fields, startOffset, maxNum,
         cacheHint, total, allMatchingFiles, true, true);
 }
 

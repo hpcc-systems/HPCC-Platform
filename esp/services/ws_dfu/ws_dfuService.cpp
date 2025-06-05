@@ -334,6 +334,37 @@ void parseTwoStringArrays(const char *input, StringArray& strarray1, StringArray
     return;
 }
 
+bool CWsDfuEx::onDFUGetMetaInquiry(IEspContext &context, IEspDFUMetaInquiryRequest & req, IEspDFUMetaInquiryResponse & resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::onDFUGetMetaInquiry: Permission denied.");
+
+        DFUQResultField field = DFUQResultField::name; // 1st enum
+        IArrayOf<IEspDFUMetaFieldInfo> fields;
+        while (true)
+        {
+            Owned<IEspDFUMetaFieldInfo> result = createDFUMetaFieldInfo();
+            const char *fieldName = getDFUQResultFieldKey(field);
+            DFUQResultFieldType type = getDFUQResultFieldType(field);
+            const char *typeName = getDFUQResultFieldTypeName(type);
+            result->setName(fieldName);
+            result->setType(typeName);
+            fields.append(*result.getClear());
+            field = (DFUQResultField) ((unsigned)field + 1);
+            if (field == DFUQResultField::term)
+                break;
+        }
+        resp.setFields(fields);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
 bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
 {
     try
@@ -435,7 +466,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
         }
 
         PROGLOG("DFUSpace: filter %s ", filter.str());
-        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, false, NULL);
+        Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, false, NULL);
         if(!fi)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
 
@@ -2773,20 +2804,18 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
     {
         StringBuffer filterBuf;
         setFileNameFilter(NULL, dirname, filterBuf);
-        if (includeSuperOwner)
-            filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
+        std::vector<DFUQResultField> fields = {DFUQResultField::includeAll};
+        if (!includeSuperOwner)
+            fields.push_back(DFUQResultField::superowners|DFUQResultField::exclude);
+        fields.push_back(DFUQResultField::term);
 
-        //filters used to filter query result received from dali server.
-        DFUQResultField localFilters[8];
-        localFilters[0] = DFUQRFterm;
-
-        DFUQResultField sortOrder[] = {DFUQRFterm};
+        DFUQResultField sortOrder[] = {DFUQResultField::term};
 
         __int64 cacheHint = 0; //No page
         unsigned totalFiles = 0;
         bool allMatchingFilesReceived = true;
-        Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFiles(udesc, sortOrder, filterBuf.str(),
-            localFilters, NULL, 0, (unsigned)-1, &cacheHint, &totalFiles, &allMatchingFilesReceived, false, false);
+        Owned<IPropertyTreeIterator> it = queryDistributedFileDirectory().getLogicalFiles(udesc, sortOrder, filterBuf.str(),
+            nullptr, fields.data(), 0, (unsigned)-1, &cacheHint, &totalFiles, &allMatchingFilesReceived, false, false);
         if(!it)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get LogicalFile information from file system.");
 
@@ -3114,7 +3143,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         filter.append("*");
     }
 
-    Owned<IDFAttributesIterator> fi;
+    Owned<IPropertyTreeIterator> fi;
     bool bNotInSuperfile = false;
     const char* sFileType = req.getFileType();
     if (sFileType && !stricmp(sFileType, "Not in Superfiles"))
@@ -3662,8 +3691,6 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
         WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTinverseWildcardMatch, req.getContentType(), filterBuf);
     }
     WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
-    if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
-        filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
     setInt64RangeFilter(req.getFileSizeFrom(), req.getFileSizeTo(), DFUQFFattrsize, filterBuf);
     setInt64RangeFilter(req.getMaxSkewFrom(), req.getMaxSkewTo(), DFUQFFattrmaxskew, filterBuf);
@@ -3722,39 +3749,36 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
     if (req.getDescending())
         descending = req.getDescending();
 
-    const char* sortByPtr = sortBy.str();
-    if (strieq(sortByPtr, "FileSize"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFsize | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "IsCompressed"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFiscompressed | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "CompressedSize"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFcompressedsize | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "Parts"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFnumparts | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "Records"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFrecordcount | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "Owner"))
-        sortOrder[0] = DFUQRFowner;
-    else if (strieq(sortByPtr, "NodeGroup"))
-        sortOrder[0] = DFUQRFnodegroup;
-    else if (strieq(sortByPtr, "Modified"))
-        sortOrder[0] = DFUQRFtimemodified;
-    else if (strieq(sortByPtr, "Accessed"))
-        sortOrder[0] = DFUQRFaccessed;
-    else if (strieq(sortByPtr, "ContentType"))
-        sortOrder[0] = DFUQRFkind;
-    else if (strieq(sortByPtr, "Cost"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFcost | DFUQRFfloat);
-    else if (strieq(sortByPtr, "MaxSkew"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFmaxSkew | DFUQRFnumeric);
-    else if (strieq(sortByPtr, "MinSkew"))
-        sortOrder[0] = (DFUQResultField) (DFUQRFminSkew | DFUQRFnumeric);
-    else
-        sortOrder[0] = DFUQRFname;
+    // These mappings do not conform to DFS mapping (see dadfs getDFUQResultField())
+    static const std::unordered_map<std::string_view, std::string_view> legacyMappings =
+    {
+        {"FileSize", "DFUSFsize"},
+        {"ContentType", "kind"},
+        {"IsCompressed", "compressed"},
+        {"Records", "recordcount"},
+        {"Parts", "numparts"},
+        {"NodeGroup", "cluster"}
+    };
 
-    sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQRFnocase);
+    const char* sortByPtr = sortBy.str();
+    auto it = legacyMappings.find(sortByPtr);
+    if (it != legacyMappings.end())
+    {
+        const std::string_view &dfsFieldName = it->second;
+        sortOrder[0] = getDFUQResultFieldAndType(dfsFieldName.data());
+    }
+    else
+    {
+        DFUQResultField fieldAndType = getDFUQResultFieldAndType(sortByPtr);
+        if (DFUQResultField::unknown != fieldAndType) // odd, but previous semantics
+            sortOrder[0] = fieldAndType;
+        else
+            sortOrder[0] = DFUQResultField::name | DFUQResultField::stringType;
+    }
+
+    sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQResultField::nocase);
     if (descending)
-        sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQRFreverse);
+        sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQResultField::reverse);
     return;
 }
 
@@ -3873,17 +3897,38 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     StringBuffer filterBuf;
     setDFUQueryFilters(req, filterBuf);
+    std::vector<DFUQResultField> fields;
+    const char *fieldsReq = req.getFields();
+    if (isEmptyString(fieldsReq))
+    {
+        // legacy default = all except super owners. NB: the server defaults to this too if fields is empty
+        // but we're being explicit.
+        fields = {DFUQResultField::includeAll};
+        if (req.getIncludeSuperOwner_isNull() || !req.getIncludeSuperOwner())
+            fields.push_back(DFUQResultField::superowners|DFUQResultField::exclude);
+        fields.push_back(DFUQResultField::term);
+    }
+    else
+    {
+        StringArray fieldsArray;
+        fieldsArray.appendList(fieldsReq, ",");
+        ForEachItemIn(f, fieldsArray)
+        {
+            const char *fieldString = fieldsArray.item(f);
+            DFUQResultField field = getDFUQResultField(fieldString);
+            if (DFUQResultField::unknown != field) // if unknown, ignore it.
+                fields.push_back(field);
+        }
+        fields.push_back(DFUQResultField::term);
+    }
 
     //Now, set filters which are used to filter query result received from dali server.
-    unsigned short localFilterCount = 0;
-    DFUQResultField localFilters[8];
-    MemoryBuffer localFilterBuf;
-    WsDFUHelpers::addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getNodeGroup(), DFUQRFnodegroup);
-    localFilters[localFilterCount] = DFUQRFterm;
+    StringBuffer localFilterBuf;
+    localFilterBuf.append(DFUQFTwildcardMatch).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFgroup)).append(DFUQFilterSeparator).append(req.getNodeGroup());
 
     StringBuffer sortBy;
     bool descending = false;
-    DFUQResultField sortOrder[2] = {DFUQRFname, DFUQRFterm};
+    DFUQResultField sortOrder[2] = {DFUQResultField::name, DFUQResultField::term};
     setDFUQuerySortOrder(req, sortBy, descending, sortOrder);
 
     unsigned pageStart = 0;
@@ -3914,8 +3959,8 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     bool allMatchingFilesReceived = true;
     unsigned totalFiles = 0;
     PROGLOG("DFUQuery: getLogicalFilesSorted");
-    Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
-        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
+    Owned<IPropertyTreeIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
+        localFilterBuf, fields.data(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
     PROGLOG("DFUQuery: getLogicalFilesSorted done");

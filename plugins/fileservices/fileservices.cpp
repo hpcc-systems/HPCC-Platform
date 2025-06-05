@@ -2266,7 +2266,14 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileList(ICodeContext *ctx, siz
         mask ="*";
     StringBuffer masklower(mask);
     masklower.toLowerCase();
-    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getForeignDFAttributesIterator(masklower.str(),ctx->queryUserDescriptor(),true,includesuper,foreigndali);
+
+    Owned<INode> foreignNode;
+    if (!isEmptyString(foreigndali))
+    {
+        SocketEndpoint ep(foreigndali);
+        foreignNode.setown(createINode(ep));
+    }
+    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(masklower.str(),ctx->queryUserDescriptor(),true,includesuper,foreignNode);
     if (iter) {
         StringBuffer s;
         ForEach(*iter) {
