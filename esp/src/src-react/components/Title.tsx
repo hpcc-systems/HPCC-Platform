@@ -1,6 +1,5 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Stack, Text, useTheme } from "@fluentui/react";
-import { useBoolean } from "@fluentui/react-hooks";
 import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox, Toaster } from "@fluentui/react-components";
 import { WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
@@ -20,7 +19,6 @@ import { PasswordStatus, useMyAccount, useUserSession } from "../hooks/user";
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
-import { AppPanel } from "./AppPanel";
 import { MyAccount } from "./MyAccount";
 import { debounce } from "../util/throttle";
 
@@ -50,9 +48,13 @@ const personaStyles = {
 const DAY = 1000 * 60 * 60 * 24;
 
 interface DevTitleProps {
+    setNavWideMode: React.Dispatch<React.SetStateAction<boolean>>;
+    navWideMode: boolean;
 }
 
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
+    setNavWideMode,
+    navWideMode
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
@@ -65,7 +67,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [searchValue, setSearchValue] = React.useState("");
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const { currentUser, isAdmin } = useMyAccount();
-    const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
@@ -315,12 +316,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <Stack.Item align="center">
                 <Stack horizontal>
                     <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
+                        <IconButton iconProps={waffleIcon} onClick={() => setNavWideMode(!navWideMode)} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
-                                <b title="ECL Watch" style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                <b title="ECL Watch" style={{ paddingLeft: "8px", color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
                                     {(showEnvironmentTitle && environmentTitle) ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
@@ -350,7 +351,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 <Toaster toasterId={toasterId} position={"top-end"} pauseOnHover />
             </Stack.Item>
         </Stack>
-        <AppPanel show={showAppPanel} onDismiss={dismissAppPanel} />
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <TitlebarConfig toolbarThemeDefaults={toolbarThemeDefaults} showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />

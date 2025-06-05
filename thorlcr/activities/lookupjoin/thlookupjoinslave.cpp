@@ -176,7 +176,7 @@ class CBroadcaster : public CSimpleInterface
             nodes = broadcaster.activity.queryJob().queryNodes();
 
             // in theory each worker could be sending log(n) packets, with the broadcaster on each blocking waiting for acks
-            unsigned limit = nodes * std::ceil(std::log2(nodes));
+            unsigned limit = 0; // disabled for now (see HPCC-34240) [ limit = nodes * std::ceil(std::log2(nodes)); ]
             limit = broadcaster.activity.getOptInt("lookupJoinBroadcastQLimit", limit);
             if (0 != limit)
                 broadcastQueue.setLimit(limit);

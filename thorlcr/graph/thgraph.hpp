@@ -1083,7 +1083,8 @@ public:
     const rank_t &queryMyRank() const { return myrank; }
     unsigned queryMyBasePort() const { return myBasePort; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const;
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const;
     roxiemem::IRowManager *queryRowManager() const;
     unsigned short allocPort(unsigned num);
     void freePort(unsigned short p, unsigned num);

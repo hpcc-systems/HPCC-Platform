@@ -77,6 +77,7 @@
                 <storage>
                     <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
                     <xsl:copy-of select="/Environment/Software/Globals/storage/*"/>
+                    <xsl:copy-of select="/Environment/Software/Storage/*"/>
                 </storage>
                 <xsl:copy-of select="/Environment/Hardware/cost"/>
                 <xsl:copy-of select="/Environment/Software/tracing"/>

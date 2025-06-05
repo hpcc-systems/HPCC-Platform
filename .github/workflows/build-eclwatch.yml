@@ -1,0 +1,50 @@
+name: Build ECL Watch (build-eclwatch.yml)
+
+on:
+  workflow_call:
+    inputs:
+      asset-name:
+        type: string
+        description: 'Asset name'
+
+jobs:
+  build:
+    name: "Build eclwatch"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ["22", "20", "18"]
+      fail-fast: false
+
+    steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm ci
+
+      - name: Lint
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm run lint
+
+      - name: Build
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm run build
+        
+      - name: Upload Package
+        if: ${{ matrix.node == '22' && inputs.asset-name}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.asset-name }}
+          path: |
+            ${{ github.workspace }}/esp/src/build/**/*
+          if-no-files-found: error
