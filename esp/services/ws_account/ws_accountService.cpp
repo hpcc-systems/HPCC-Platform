@@ -225,6 +225,13 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
                 SecFeatureSet sfs = secmgr->queryImplementedFeatures();
                 resp.setCanUpdatePassword((sfs & SMF_UpdateUserPassword) ? true : false);
             }
+
+            if (version >= 1.07)
+            {
+                StringArray groups;
+                secmgr->getGroups(userName, groups);
+                resp.setGroups(groups);
+            }
         }
     }
     catch(IException* e)
