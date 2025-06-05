@@ -58,7 +58,7 @@ static unsigned nIter = 1;
 //#define TEST_COPYFILE
 //#define TEST_DEADLOCK
 //#define TEST_THREADS
-#define TEST_MEMTHREADS
+//#define TEST_MEMTHREADS
 #define MDELAY 100
 
 static void addTestFile(const char *name,unsigned n)
