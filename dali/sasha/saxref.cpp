@@ -194,6 +194,11 @@ struct cFileDesc // no virtuals
         return memcmp(key,name+1,sl)==0;
     }
 
+    bool isHPCCFile() const
+    {
+        return filenameLen > 0;
+    }
+
     bool getName(StringBuffer &buf) const
     {
         // Check mask exists
@@ -1362,8 +1367,9 @@ public:
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
+        bool isExternalFile = !f->isHPCCFile();
         unsigned drv;
-        unsigned drvs = isContainerized() ? 1 : 2;
+        unsigned drvs = isContainerized() || isExternalFile ? 1 : 2;
         for (drv=0;drv<drvs;drv++) {
             unsigned i0;
             for (i0=0;i0<f->N;i0++) 
@@ -1378,16 +1384,18 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-            try {
-                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
+        if (!isExternalFile) {
+            if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
+                try {
+                    if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                        warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
+                        return;
+                    }
+                }
+                catch (IException *e) {
+                    EXCLOG(e,"CNewXRefManager::listOrphans");
                     return;
                 }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CNewXRefManager::listOrphans");
-                return;
             }
         }
         else {
@@ -1410,7 +1418,6 @@ public:
         ndone[1] = 0;
         unsigned fnameHash = getFilenameHash(scopeBuf.str());
         const char * prefix = storagePlane->queryProp("@prefix");
-        bool isExternalFile = (size32_t)f->filenameLen == 0;
         for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
