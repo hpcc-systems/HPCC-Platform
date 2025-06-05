@@ -601,13 +601,13 @@ struct DeserializeContext
 {
     StringBuffer name;
     StringBuffer value;
-    
+
     // For bulk attribute allocation optimization
     struct AttributePair : public CInterface
     {
         StringBuffer name;
         StringBuffer value;
-        
+
         IMPLEMENT_IINTERFACE;
     };
     CIArray attrArray;
@@ -762,7 +762,7 @@ protected:
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
-    
+
     // Bulk attribute allocation methods for performance optimization
     virtual void setAttributes(const CIArray &attrArray, bool atomic = false) = 0;
 
