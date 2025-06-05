@@ -30,7 +30,7 @@
 //
 // An event blocked by an attribute constraint must not be forwarded to the decorated visitor.
 // Events that do not include a constrained attribute are not blocked.
-interface IEventFilter : extends IEventAttributeVisitor
+interface IEventFilter : extends IEventVisitorDecorator
 {
     // Filter on a single event type. All events are accepted by default.
     virtual bool acceptEvent(EventType type) = 0;
@@ -56,10 +56,6 @@ interface IEventFilter : extends IEventAttributeVisitor
     // - A filter for the integral EvAttrFileId may include string tokens that will be applied to
     //   a corresponding EvAttrPath attribute previously observed in a MetaFileInformation event.
     virtual bool acceptAttribute(EventAttr attr, const char* values) = 0;
-
-    // Install the recipient of unfiltered visits. `readEvents` will call this method before
-    // beginning visitation.
-    virtual void setTarget(IEventAttributeVisitor& visitor) = 0;
 };
 
 // Obtain a new instance of a standard event filter.
