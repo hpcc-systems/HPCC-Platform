@@ -74,6 +74,18 @@ void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHa
     fixedRowSize = _fixedRowSize;
 }
 
+void KeyCompressor::open(void *blk,int blksize, ICompressor * compressor, bool _isVariable, size32_t _fixedRowSize)
+{
+    isVariable = _isVariable;
+    isBlob = false;
+    curOffset = 0;
+    ::Release(comp);
+    comp = LINK(compressor);
+    comp->open(blk,blksize);
+    method = comp->getCompressionMethod();
+    fixedRowSize = _fixedRowSize;
+}
+
 void KeyCompressor::openBlob(void *blk,int blksize)
 {
     isVariable = false;
