@@ -1202,11 +1202,19 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         double version = context.getClientVersion();
 
-        bool isSuperUser = true;
+        bool isSuperUser = false; // deny by default
 #ifdef _USE_OPENLDAP
         ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
-        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
-            isSuperUser =  false;
+
+        // If an LDAP security manager is in use, superuser status can be queried;
+        // otherwise the user is a superuser by default
+        if(secmgr)
+            isSuperUser = secmgr->isSuperUser(context.queryUser());
+        else
+            isSuperUser = true;
+#else
+        // User is a superuser by default if not compiled with OPEN LDAP support
+        isSuperUser = true;
 #endif
         if(isSuperUser && req.getFromSubmitBtn())
             readBannerAndChatRequest(context, req, resp);
