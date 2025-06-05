@@ -1971,22 +1971,29 @@ void HqlCppWriter::generateStmtCase(IHqlStmt * stmt)
         //if case label contains nothing then it is commoned up with the next case
         break;
     case 1:
-        newline();
-        indent(1);
-        generateChildren(stmt, false);
-        if (stmt->queryChild(childCount-1)->getStmt() != return_stmt)
         {
-            indent().append("break;");
             newline();
+            indent(1);
+            generateChildren(stmt, false);
+
+            StmtKind lastStmt = stmt->queryChild(childCount-1)->getStmt();
+            if ((lastStmt != return_stmt) && (lastStmt != break_stmt))
+            {
+                indent().append("break;");
+                newline();
+            }
+            indent(-1);
+            break;
         }
-        indent(-1);
-        break;
     default:
-        generateChildren(stmt, true);
-        if (stmt->queryChild(childCount-1)->getStmt() != return_stmt)
         {
-            indent().append("break;");
-            newline();
+            generateChildren(stmt, true);
+            StmtKind lastStmt = stmt->queryChild(childCount-1)->getStmt();
+            if ((lastStmt != return_stmt) && (lastStmt != break_stmt))
+            {
+                indent().append("break;");
+                newline();
+            }
         }
     }
 }

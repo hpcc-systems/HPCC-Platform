@@ -871,13 +871,13 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
             CHqlBoundExpr cond;
             buildExpr(ctx, dataset->queryChild(0), cond);
 
-            IHqlExpression * last = queryLastNonAttribute(dataset);
+            unsigned last = numNonAttributes(dataset)-1;
             BuildCtx subctx(ctx);
             IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
             ForEachChildFrom(i, dataset, 1)
             {
                 IHqlExpression * cur = dataset->queryChild(i);
-                if (cur != last)
+                if (i != last)
                 {
                     OwnedHqlExpr label = getSizetConstant(i);
                     subctx.addCase(switchstmt, label);
@@ -3586,13 +3586,13 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBu
     CHqlBoundExpr cond;
     buildExpr(ctx, expr->queryChild(0), cond);
 
-    IHqlExpression * last = queryLastNonAttribute(expr);
+    unsigned last = numNonAttributes(expr)-1;
     BuildCtx subctx(ctx);
     IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
     ForEachChildFrom(i, expr, 1)
     {
         IHqlExpression * cur = expr->queryChild(i);
-        if (cur != last)
+        if (i != last)
         {
             OwnedHqlExpr label = getSizetConstant(i);
             subctx.addCase(switchstmt, label);
@@ -3601,6 +3601,7 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBu
             subctx.addDefault(switchstmt);
 
         buildDatasetAssign(subctx, target, cur);
+        subctx.addBreak(); // Ensure that any empty datasets do not fall through to the next case.
     }
 }
 
@@ -3610,13 +3611,13 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundT
     CHqlBoundExpr cond;
     buildExpr(ctx, expr->queryChild(0), cond);
 
-    IHqlExpression * last = queryLastNonAttribute(expr);
+    unsigned last = numNonAttributes(expr)-1;
     BuildCtx subctx(ctx);
     IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
     ForEachChildFrom(i, expr, 1)
     {
         IHqlExpression * cur = expr->queryChild(i);
-        if (cur != last)
+        if (i != last)
         {
             OwnedHqlExpr label = getSizetConstant(i);
             subctx.addCase(switchstmt, label);
@@ -3625,6 +3626,7 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundT
             subctx.addDefault(switchstmt);
 
         buildDatasetAssign(subctx, target, cur);
+        subctx.addBreak(); // Ensure that any empty datasets do not fall through to the next case.
     }
 }
 
