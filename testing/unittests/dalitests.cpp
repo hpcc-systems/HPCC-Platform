@@ -486,7 +486,7 @@ public:
         for (unsigned i=0;i<3;i++)
             for (unsigned ic=0;ic<mspec.defaultCopies;ic++)
             {
-                constructPartFilename(grp,i+1,ic,3,0,0,false,(i==1)?"test.txt":NULL,"/c$/thordata/test","test._$P$_of_$N$",0,rfn);
+                constructPartFilename(grp,i+1,ic,3,0,0,false,(i==1)?"test.txt":NULL,"/c$/thordata/test","test._$P$_of_$N$",0,false,rfn);
                 StringBuffer tmp;
                 printf("%d,%d: %s\n",i,ic,rfn.getRemotePath(tmp).str());
             }

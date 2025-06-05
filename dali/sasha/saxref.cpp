@@ -135,7 +135,9 @@ struct cFileDesc // no virtuals
         size32_t ml = (n*4+7)/8;
         size32_t sz = sizeof(cFileDesc)+sl+ml;
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
-        ret->N = (unsigned short)n;
+        // If fnLen is 0, the file is missing a part mask, so we don't know the true number of parts
+        // In this case, default to 1 part rather than number of nodes in cluster
+        ret->N = fnLen != 0 ? (unsigned short)n : 1;
         ret->name[0] = (byte)sl;
         ret->isDirPerPart = d;
         ret->filenameLen = (byte)fnLen;
@@ -190,6 +192,11 @@ struct cFileDesc // no virtuals
         if (sl!=(byte)name[0])
             return false;
         return memcmp(key,name+1,sl)==0;
+    }
+
+    bool isHPCCFile() const
+    {
+        return filenameLen > 0;
     }
 
     bool getName(StringBuffer &buf) const
@@ -1360,8 +1367,9 @@ public:
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
+        bool isExternalFile = !f->isHPCCFile();
         unsigned drv;
-        unsigned drvs = isContainerized() ? 1 : 2;
+        unsigned drvs = isContainerized() || isExternalFile ? 1 : 2;
         for (drv=0;drv<drvs;drv++) {
             unsigned i0;
             for (i0=0;i0<f->N;i0++) 
@@ -1376,17 +1384,25 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-            try {
-                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
+        if (!isExternalFile) {
+            if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
+                try {
+                    if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                        warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
+                        return;
+                    }
+                }
+                catch (IException *e) {
+                    EXCLOG(e,"CNewXRefManager::listOrphans");
                     return;
                 }
             }
-            catch (IException *e) {
-                EXCLOG(e,"CNewXRefManager::listOrphans");
-                return;
-            }
+        }
+        else {
+            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1)
+            // If getName returns false, nothing is appended. This could be an external found file, so we call getNameMask
+            // to ensure the full filename is appended to scopeBuf
+            f->getNameMask(scopeBuf);
         }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
@@ -1414,7 +1430,7 @@ public:
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -1460,7 +1476,7 @@ public:
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
                     RemoteFilename rfn;
-                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {

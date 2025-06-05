@@ -295,7 +295,7 @@ RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsi
     return rfn;
 }
 
-RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn)
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,bool isExternalFile,RemoteFilename &rfn)
 {
     partNo--;
     StringBuffer partName;
@@ -312,7 +312,7 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
     unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, numDevices);
 
     StringBuffer fullname;
-    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
+    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum, isExternalFile);
 
     // revisit: constructPartFilename should be refactored not to deal with replicate directories, by pre-determining the alternate prefix if copy>0
     // If copy>0 it could do calcPartLocation, find the replicate plane, get it's prefix, and pass to makePhysicalPartName
@@ -4638,7 +4638,7 @@ public:
                 unsigned numStripedDevices = queryPartDiskMapping(cn).numStripedDevices;
                 unsigned stripeNum = calcStripeNumber(i, lfnHash, numStripedDevices);
 
-                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum, false);
                 newPath.remove(0, myBase.length());
 
                 StringBuffer copyDir(baseDir);
