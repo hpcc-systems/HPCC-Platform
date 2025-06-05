@@ -21,10 +21,11 @@
 #include "eventoperation.h"
 #include "eventvisitor.h"
 
-class event_decl CIndexFileSummary : public IEventVisitor, public CEventConsumingOp
+class event_decl CIndexFileSummary : public IEventAttributeVisitor, public CEventConsumingOp
 {
-public: // IEventVisitor
+public: // IEventAttributeVisitor
     virtual bool visitFile(const char *filename, uint32_t version) override;
+    virtual bool visitEvent(CEvent& event) override;
     virtual Continuation visitEvent(EventType id) override;
     virtual Continuation visitAttribute(EventAttr id, const char *value) override;
     virtual Continuation visitAttribute(EventAttr id, bool value) override;

@@ -3046,6 +3046,11 @@ IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activi
     return thorAllocator->getRowAllocator(meta, activityId, flags);
 }
 
+IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activity_id activityId) const
+{
+    return thorAllocator->getRowAllocator(meta, activityId);
+}
+
 roxiemem::IRowManager *CJobChannel::queryRowManager() const
 {
     return thorAllocator->queryRowManager();

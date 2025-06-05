@@ -197,7 +197,7 @@ private:
     byte limit;
 };
 
-class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
+class CHotspotEventVisitor : public CInterfaceOf<IEventAttributeVisitor>
 {
     // Manages the event data for a single file.
     class CActivity
@@ -321,10 +321,15 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         Activity activity[BucketAmbiguous]; // incoming activity is never ambiguous, this storage is not ambiguous
     };
 
-public: // IEventVisitor
+public: // IEventAttributeVisitor
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         return true;
+    }
+
+    virtual bool visitEvent(CEvent& event) override
+    {
+        return eventDistributor(event, *this);
     }
 
     virtual Continuation visitEvent(EventType type) override

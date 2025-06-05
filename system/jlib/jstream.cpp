@@ -111,6 +111,7 @@ public:
         //does not have to expand the block.  (Avoid extra allocation for for pathological unittests where blockReadSize <= 1024)
         size32_t extraSize = (blockReadSize > 1024) ? 1024 : 0;
         buffer.allocate(blockReadSize + extraSize);
+        nextBlockOffset = input->tell();
     }
 
     virtual size32_t read(size32_t len, void * ptr) override
@@ -173,6 +174,8 @@ public:
             readNextBlock(); // will be appended onto the end of the existing buffer
         }
         got = available();
+        if (unlikely(got == 0))
+            return nullptr;
         return data(bufferOffset);
     }
 
@@ -185,7 +188,11 @@ public:
 
     virtual bool eos() override
     {
-        return endOfStream && (dataLength == bufferOffset);
+        if (available())
+            return false;
+
+        size32_t got;
+        return peek(1, got) == nullptr;
     }
 
     virtual void skip(size32_t sz) override

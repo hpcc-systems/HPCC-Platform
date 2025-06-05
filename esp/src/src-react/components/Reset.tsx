@@ -6,7 +6,7 @@ import { pushUrl, replaceUrl } from "../util/history";
 import { resetMetricsViews } from "../hooks/metrics";
 import { resetHistory } from "../util/history";
 import { MessageBox } from "../layouts/MessageBox";
-import { resetTheme, useUserTheme } from "../hooks/theme";
+import { resetNavWide, resetTheme, useUserTheme } from "../hooks/theme";
 import { resetFavorites } from "../hooks/favorite";
 import { resetCookieConsent } from "./Frame";
 import { resetWorkunitOptions } from "./Workunits";
@@ -25,6 +25,7 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
     const [checkEclWatchVersion, setCheckEclWatchVersion] = React.useState(true);
     const [checkTheme, setCheckTheme] = React.useState(true);
     const [checkCookies, setCheckCookies] = React.useState(false);
+    const [checkNavWide, setCheckNavWide] = React.useState(true);
     const { theme } = useUserTheme();
 
     const styles = React.useMemo(() => mergeStyleSets({
@@ -59,6 +60,9 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
                     if (checkTheme) {
                         await resetTheme();
                     }
+                    if (checkNavWide) {
+                        await resetNavWide();
+                    }
                     if (checkCookies) {
                         await resetCookies();
                         await resetCookieConsent();
@@ -74,13 +78,14 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
             </>
         }>
             <Stack tokens={{ childrenGap: 10 }}>
-                <Checkbox label={nlsHPCC.MetricOptions} checked={checkMetricOptions} onChange={(ev, checked) => setCheckMetricOptions(checked)} />
-                <Checkbox label={nlsHPCC.WorkunitOptions} checked={checkWorkunitOptions} onChange={(ev, checked) => setCheckWorkunitOptions(checked)} />
-                <Checkbox label={nlsHPCC.History} checked={checkHistory} onChange={(ev, checked) => setCheckHistoryCheckbox(checked)} />
-                <Checkbox label={nlsHPCC.Favorites} checked={checkFavorites} onChange={(ev, checked) => setCheckFavorites(checked)} />
-                <Checkbox label={nlsHPCC.ECLWatchVersion} checked={checkEclWatchVersion} onChange={(ev, checked) => setCheckEclWatchVersion(checked)} />
-                <Checkbox label={nlsHPCC.Theme} checked={checkTheme} onChange={(ev, checked) => setCheckTheme(checked)} />
-                <Checkbox label={nlsHPCC.Cookies} checked={checkCookies} onChange={(ev, checked) => setCheckCookies(checked)} />
+                <Checkbox label={nlsHPCC.MetricOptions} checked={checkMetricOptions} onChange={(ev, checked) => setCheckMetricOptions(!!checked)} />
+                <Checkbox label={nlsHPCC.WorkunitOptions} checked={checkWorkunitOptions} onChange={(ev, checked) => setCheckWorkunitOptions(!!checked)} />
+                <Checkbox label={nlsHPCC.History} checked={checkHistory} onChange={(ev, checked) => setCheckHistoryCheckbox(!!checked)} />
+                <Checkbox label={nlsHPCC.Favorites} checked={checkFavorites} onChange={(ev, checked) => setCheckFavorites(!!checked)} />
+                <Checkbox label={nlsHPCC.ECLWatchVersion} checked={checkEclWatchVersion} onChange={(ev, checked) => setCheckEclWatchVersion(!!checked)} />
+                <Checkbox label={nlsHPCC.Theme} checked={checkTheme} onChange={(ev, checked) => setCheckTheme(!!checked)} />
+                <Checkbox label={nlsHPCC.NavWide} checked={checkNavWide} onChange={(ev, checked) => setCheckNavWide(!!checked)} />
+                <Checkbox label={nlsHPCC.Cookies} checked={checkCookies} onChange={(ev, checked) => setCheckCookies(!!checked)} />
             </Stack>
         </MessageBox>
     </div>;

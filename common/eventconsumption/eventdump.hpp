@@ -55,10 +55,15 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //  `virtual bool departEvent() = 0;`
 //  `virtual void departFile(uint32_t bytesRead) = 0;`
 //  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
-class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
+class CDumpEventVisitor : public CInterfaceOf<IEventAttributeVisitor>
 {
 public:
-    using Continuation = IEventVisitor::Continuation;
+    using Continuation = IEventAttributeVisitor::Continuation;
+
+    virtual bool visitEvent(CEvent& event) override
+    {
+        return eventDistributor(event, *this);
+    }
 
     virtual Continuation visitAttribute(EventAttr id, const char* value) override
     {

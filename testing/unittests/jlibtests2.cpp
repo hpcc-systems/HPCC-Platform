@@ -23,8 +23,11 @@
 #ifdef _USE_CPPUNIT
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <memory>
+#include <iostream>
 #include <random>
+#include <set>
 #include <vector>
 
 #include "jsem.hpp"
@@ -38,12 +41,16 @@ enum { NodeBranch, NodeLeaf };
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
-class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
+class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventAttributeVisitor>
 {
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         return visitor->visitFile(filename, version);
+    }
+    virtual bool visitEvent(CEvent& event) override
+    {
+        return eventDistributor(event, *this);
     }
     virtual Continuation visitEvent(EventType id) override
     {
@@ -70,9 +77,9 @@ public:
         return visitor->departFile(bytesRead);
     }
 protected:
-    Linked<IEventVisitor> visitor;
+    Linked<IEventAttributeVisitor> visitor;
 public:
-    CNoOpEventVisitorDecorator(IEventVisitor& _visitor) : visitor(&_visitor) {}
+    CNoOpEventVisitorDecorator(IEventAttributeVisitor& _visitor) : visitor(&_visitor) {}
 };
 
 class MockEventVisitor : public CNoOpEventVisitorDecorator
@@ -117,6 +124,8 @@ public:
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
         CPPUNIT_TEST(testReadEvents);
+        CPPUNIT_TEST(testIterateAllAttributes);
+        CPPUNIT_TEST(testIterateEventAttributes);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -329,10 +338,6 @@ public:
         {
             static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 attribute: bytesRead = 21
 )!!!";
             EventRecorder& recorder = queryRecorder();
@@ -340,7 +345,7 @@ attribute: bytesRead = 21
             CPPUNIT_ASSERT(recorder.isRecording());
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -357,10 +362,6 @@ attribute: bytesRead = 21
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
@@ -378,7 +379,7 @@ attribute: bytesRead = 76
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -395,10 +396,6 @@ attribute: bytesRead = 76
         {
             static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
 attribute: version = 1
-attribute: RecordedTimestamp = '2025-05-08T00:00:00.000001000'
-attribute: traceid = true
-attribute: threadid = true
-attribute: stack = true
 event: IndexEviction
 attribute: name = 'IndexEviction'
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
@@ -426,7 +423,7 @@ attribute: bytesRead = 161
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventVisitor> visitor = createVisitor(out);
+            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -441,11 +438,131 @@ attribute: bytesRead = 161
         }
     }
 
-    IEventVisitor* createVisitor(StringBuffer& out)
+    void testIterateAllAttributes()
+    {
+        std::set<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled});
+        std::set<unsigned> expectedAssigned;
+        std::set<unsigned> actualDefined;
+        std::set<unsigned> actualAssigned;
+        size_t actualUnusedCount = 0;
+        CEvent evt;
+        evt.reset(EventRecordingActive);
+        for (auto& attr : evt.allAttributes)
+        {
+            switch (attr.queryState())
+            {
+            case CEventAttribute::State::Defined:
+                actualDefined.insert(attr.queryId());
+                break;
+            case CEventAttribute::State::Assigned:
+                actualAssigned.insert(attr.queryId());
+            case CEventAttribute::State::Unused:
+                actualUnusedCount++;
+                break;
+            }
+        }
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedDefined), containerToString(actualDefined));
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedAssigned), containerToString(actualAssigned));
+        CPPUNIT_ASSERT_GREATER(size_t(0), actualUnusedCount); // can't hard-code this without breaking with each added attribute
+    }
+
+    void testIterateEventAttributes()
+    {
+        std::vector<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled});
+        std::vector<unsigned> expectedAssigned;
+        std::vector<unsigned> actualDefined;
+        std::vector<unsigned> actualAssigned;
+        size_t actualUnusedCount = 0;
+        CEvent evt;
+        evt.reset(EventRecordingActive);
+        for (auto& attr : evt.definedAttributes)
+        {
+            switch (attr.queryState())
+            {
+            case CEventAttribute::State::Defined:
+                actualDefined.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Assigned:
+                actualAssigned.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Unused:
+                actualUnusedCount++;
+                break;
+            }
+        }
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedDefined), containerToString(actualDefined));
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedAssigned), containerToString(actualAssigned));
+        CPPUNIT_ASSERT_EQUAL(size_t(0), actualUnusedCount);
+        actualDefined.clear();
+        actualUnusedCount = 0;
+        evt.setValue(EvAttrEnabled, true);
+        expectedAssigned.push_back(EvAttrEnabled);
+        expectedDefined.erase(std::find(expectedDefined.begin(), expectedDefined.end(), EvAttrEnabled));
+        for (auto& attr : evt.definedAttributes)
+        {
+            switch (attr.queryState())
+            {
+            case CEventAttribute::State::Defined:
+                actualDefined.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Assigned:
+                actualAssigned.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Unused:
+                actualUnusedCount++;
+                break;
+            }
+        }
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedDefined), containerToString(actualDefined));
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedAssigned), containerToString(actualAssigned));
+        CPPUNIT_ASSERT_EQUAL(size_t(0), actualUnusedCount);
+        actualDefined.clear();
+        actualAssigned.clear();
+        actualUnusedCount = 0;
+        expectedDefined.clear();
+        for (auto& attr : evt.assignedAttributes)
+        {
+            switch (attr.queryState())
+            {
+            case CEventAttribute::State::Defined:
+                actualDefined.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Assigned:
+                actualAssigned.push_back(attr.queryId());
+                break;
+            case CEventAttribute::State::Unused:
+                actualUnusedCount++;
+                break;
+            }
+        }
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedDefined), containerToString(actualDefined));
+        CPPUNIT_ASSERT_EQUAL(containerToString(expectedAssigned), containerToString(actualAssigned));
+        CPPUNIT_ASSERT_EQUAL(size_t(0), actualUnusedCount);
+    }
+
+    IEventAttributeVisitor* createVisitor(StringBuffer& out)
     {
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
-        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
+        Owned<IEventAttributeVisitor> visitor = createDumpTextEventVisitor(*stream);
         return new MockEventVisitor(*visitor);
+    }
+
+    template <typename container_type_t>
+    std::string containerToString(const container_type_t& container)
+    {
+        bool first = true;
+        std::stringstream ss;
+        ss << '[';
+        for (const auto& item : container)
+        {
+            if (!first)
+                ss << ", ";
+            else
+                first = false;
+            ss << item;
+        }
+        ss << ']';
+        return ss.str();
     }
 };
 

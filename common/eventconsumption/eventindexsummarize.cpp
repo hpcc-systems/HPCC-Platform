@@ -22,7 +22,12 @@ bool CIndexFileSummary::visitFile(const char *filename, uint32_t version)
     return true;
 }
 
-IEventVisitor::Continuation CIndexFileSummary::visitEvent(EventType id)
+bool CIndexFileSummary::visitEvent(CEvent& event)
+{
+    return eventDistributor(event, *this);
+}
+
+IEventAttributeVisitor::Continuation CIndexFileSummary::visitEvent(EventType id)
 {
     switch (id)
     {
@@ -31,13 +36,13 @@ IEventVisitor::Continuation CIndexFileSummary::visitEvent(EventType id)
     case EventIndexEviction:
     case MetaFileInformation:
         currentEvent = id;
-        return IEventVisitor::visitContinue;
+        return IEventAttributeVisitor::visitContinue;
     default:
-        return IEventVisitor::visitSkipEvent;
+        return IEventAttributeVisitor::visitSkipEvent;
     }
 }
 
-IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, const char *value)
+IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, const char *value)
 {
     switch (id)
     {
@@ -48,10 +53,10 @@ IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, cons
     default:
         break;
     }
-    return IEventVisitor::visitContinue;
+    return IEventAttributeVisitor::visitContinue;
 }
 
-IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, bool value)
+IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, bool value)
 {
     switch (id)
     {
@@ -62,10 +67,10 @@ IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, bool
             nodeSummary().misses++;
         break;
     }
-    return IEventVisitor::visitContinue;
+    return IEventAttributeVisitor::visitContinue;
 }
 
-IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, __uint64 value)
+IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, __uint64 value)
 {
     switch (id)
     {
@@ -108,7 +113,7 @@ IEventVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, __ui
     default:
         break;
     }
-    return IEventVisitor::visitContinue;
+    return IEventAttributeVisitor::visitContinue;
 }
 
 bool CIndexFileSummary::departEvent()
