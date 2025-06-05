@@ -70,6 +70,7 @@ public:
     virtual bool onGetProtectedList(IEspContext& context, IEspGetProtectedListRequest& req, IEspResultResponse& resp) override;
     virtual bool onGetConnections(IEspContext& context, IEspGetConnectionsRequest& req, IEspResultResponse& resp) override;
     virtual bool onGetClients(IEspContext& context, IEspGetClientsRequest& req, IEspResultResponse& resp) override;
+    virtual bool onGetGlobalStats(IEspContext& context, IEspGetGlobalStatsRequest& req, IEspGetGlobalStatsResponse& resp) override;
     virtual bool onGetSDSStats(IEspContext& context, IEspGetSDSStatsRequest& req, IEspResultResponse& resp) override;
     virtual bool onGetSDSSubscribers(IEspContext& context, IEspGetSDSSubscribersRequest& req, IEspResultResponse& resp) override;
     virtual bool onDisconnectClientConnection(IEspContext& context, IEspDisconnectClientConnectionRequest& req, IEspResultResponse& resp) override;
