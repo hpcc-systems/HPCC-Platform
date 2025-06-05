@@ -1,0 +1,56 @@
+name: Test ECL Watch (test-eclwatch.yml)
+
+on:
+  workflow_call:
+    inputs:
+      asset-name:
+        type: string
+        description: 'eclwatch asset name'
+        required: true
+
+jobs:
+  build:
+    name: "Test eclwatch"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npx playwright install --with-deps
+
+      - name: Set Server IP
+        working-directory: ${{ github.workspace }}/esp/src
+        run: |
+          echo "https://play.hpccsystems.com:18010" > lws.target.txt
+          echo "" >> lws.target.txt
+
+      - name: Download Package
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.asset-name }}
+          merge-multiple: true
+          path: |
+            ${{ github.workspace }}/esp/src/build
+          
+      - name: Test
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm run test-ci
+
+      - name: Upload Playwright test results
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclwatch-test-results
+          path: ${{ github.workspace }}/esp/src/test-results/*

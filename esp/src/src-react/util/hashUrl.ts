@@ -1,4 +1,4 @@
-import { parse, stringify } from "query-string";
+import queryString from "query-string";
 
 class SortBy {
     readonly attribute: string = "";
@@ -46,14 +46,14 @@ export class SearchParams {
     constructor(params: Params);
     constructor(search?: string | Params) {
         if (typeof search === "string") {
-            this.params = parse(search, { parseBooleans: true, parseNumbers: true });
+            this.params = queryString.parse(search, { parseBooleans: true, parseNumbers: true });
         } else if (search) {
             this.params = search;
         }
     }
 
     serialize(): string {
-        return stringify(this.params, {
+        return queryString.stringify(this.params, {
             encode: false,
             skipEmptyString: true
         });
