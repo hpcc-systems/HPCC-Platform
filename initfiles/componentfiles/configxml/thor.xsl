@@ -207,6 +207,7 @@
         <storage>
           <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
           <xsl:copy-of select="/Environment/Software/Globals/storage/*"/>
+          <xsl:copy-of select="/Environment/Software/Storage/*"/>
         </storage>
         <expert>
           <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
