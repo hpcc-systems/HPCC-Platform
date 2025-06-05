@@ -814,7 +814,7 @@ void CHThorDiskWriteActivity::publish()
     if (helperFlags & TDWrestricted)
         properties.setPropBool("restricted", true);
 
-    properties.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
+    properties.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), numDiskWrites);
     StringBuffer lfn;
     expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     CDfsLogicalFileName logicalName;
@@ -830,7 +830,7 @@ void CHThorDiskWriteActivity::publish()
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
             diskAccessCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
-            properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
+            properties.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), diskAccessCost);
         }
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED", graph);
@@ -1410,7 +1410,7 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     properties.setPropInt64("@duplicateKeyCount",duplicateKeyCount);
-    properties.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
+    properties.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), numDiskWrites);
     properties.setPropInt64("@numLeafNodes", numLeafNodes);
     properties.setPropInt64("@numBranchNodes", numBranchNodes);
     properties.setPropInt64("@numBlobNodes", numBlobNodes);
@@ -1481,7 +1481,7 @@ void CHThorIndexWriteActivity::execute()
         StringBuffer clusterName;
         dfile->getClusterName(0, clusterName);
         diskAccessCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
-        properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
+        properties.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), diskAccessCost);
     }
     else
         lfn = filename;
