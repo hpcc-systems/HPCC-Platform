@@ -1307,6 +1307,8 @@ void jlib_decl setProcessAborted(bool _abortVal)
     processAborted = _abortVal;
 }
 
+constexpr unsigned SIGNAL_RAISE_DELAY_SECONDS = 20;
+
 NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *extra)
 {
     static byte nested=0;
@@ -1315,7 +1317,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
 
     // If the program is aborting because of a corruption in the memory manager,
     // ensure that it really exits, rather than deadlocking on a memory manager mutex
-    raiseSignalInFuture(SIGKILL, 20);
+    raiseSignalInFuture(SIGKILL, SIGNAL_RAISE_DELAY_SECONDS);
 
     //If the program is terminating then do not try and trace
     if (!queryLogMsgManager())
