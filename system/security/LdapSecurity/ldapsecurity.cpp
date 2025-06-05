@@ -963,7 +963,6 @@ SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser
 
     bool ok = false;
 
-    time_t tctime = getThreadCreateTime();
     if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
@@ -1458,7 +1457,6 @@ void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, c
 {
     m_ldap_client->deleteResource(rtype, name, basedn);
 
-    time_t tctime = getThreadCreateTime();
     if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
         m_permissionsCache->remove(rtype, name);
 }
@@ -1467,7 +1465,6 @@ void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname
 {
     m_ldap_client->renameResource(rtype, oldname, newname, basedn);
 
-    time_t tctime = getThreadCreateTime();
     if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
         m_permissionsCache->remove(rtype, oldname);
 }
