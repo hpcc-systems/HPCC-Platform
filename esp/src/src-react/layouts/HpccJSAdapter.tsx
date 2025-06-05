@@ -53,6 +53,7 @@ export interface AutosizeHpccJSComponentProps {
     debounce?: boolean;
     hidden?: boolean;
     onReady?: () => void;
+    children?: React.ReactNode;
 }
 
 export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComponentProps> = ({
@@ -88,6 +89,7 @@ export interface AutosizeComponentProps {
     fixedHeight?: string;
     padding?: number;
     hidden?: boolean;
+    children?: React.ReactNode;
 }
 
 export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> = ({
