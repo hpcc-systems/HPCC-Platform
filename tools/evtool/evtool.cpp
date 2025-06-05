@@ -149,11 +149,11 @@ void CEvToolCommand::usageSynopsis(IBufferedSerialOutputStream& out)
 
 void CEvToolCommand::usageOptions(IBufferedSerialOutputStream& out)
 {
-    static const char* usageStr = R"!!!(
+    constexpr const char* usageStr = R"!!!(
 Options:
     -?, -h, --help            Show this help message and exit.
 )!!!";
-    static size32_t usageStrLength = size32_t(strlen(usageStr));
+    size32_t usageStrLength = size32_t(strlen(usageStr));
     out.put(usageStrLength, usageStr);
 }
 
@@ -169,9 +169,9 @@ void CEvToolCommand::usageDetails(IBufferedSerialOutputStream& out)
 {
 }
 
-IPTree* CEvToolCommand::loadConfiguration(const char* path) const
+IPropertyTree* CEvToolCommand::loadConfiguration(const char* path) const
 {
-    Owned<IPTree> tree;
+    Owned<IPropertyTree> tree;
     StringBuffer markup;
     markup.loadFile(path);
     if (markup.isEmpty())

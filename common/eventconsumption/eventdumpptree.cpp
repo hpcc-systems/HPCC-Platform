@@ -54,14 +54,14 @@ protected:
     }
 
 public:
-    virtual IPTree* queryTree() const
+    virtual IPropertyTree* queryTree() const
     {
         return tree.get();
     }
 
 protected:
-    Owned<IPTree> tree;
-    IPTree* active = nullptr;
+    Owned<IPropertyTree> tree;
+    IPropertyTree* active = nullptr;
 };
 
 IEventPTreeCreator* createEventPTreeCreator()
@@ -74,7 +74,7 @@ IEventPTreeCreator* createEventPTreeCreator()
             return *visitor;
         }
 
-        virtual IPTree* queryTree() const override
+        virtual IPropertyTree* queryTree() const override
         {
             return visitor->queryTree();
         }

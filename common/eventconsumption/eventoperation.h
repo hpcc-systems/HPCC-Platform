@@ -19,6 +19,7 @@
 
 #include "eventconsumption.h"
 #include "eventfilter.h"
+#include "eventmodeling.h"
 
 // Extension of `CEventFileOp` that supports streaming output and event filtering by trace ID,
 // thread ID, and timestamp range. This satisfies the requirements for the `event_consuming_op_t`
@@ -35,6 +36,7 @@ public:
     void setOutput(IBufferedSerialOutputStream& _out);
     bool acceptEvents(const char* eventNames);
     bool acceptAttribute(EventAttr attr, const char* values);
+    bool acceptModel(const IPropertyTree& config);
 protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(const char* path, IEventVisitor& visitor);
@@ -42,4 +44,5 @@ protected:
     StringAttr inputPath;
     Linked<IBufferedSerialOutputStream> out;
     Owned<IEventFilter> filter;
+    Owned<IEventModel> model;
 };
