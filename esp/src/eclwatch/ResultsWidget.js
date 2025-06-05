@@ -247,12 +247,27 @@ define([
             var context = this;
             this.wu.getInfo({
                 onGetResults: function (results) {
-                    Promise.all(results.map(function (result) {
-                        return result.fetchLogicalFile();
-                    })).then(function (responses) {
-                        context.store.setData(results);
+                    if (context.wu.ResultsDesc) {
+                        context.store.setData([]);
                         context.grid.refresh();
-                    });
+
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: "WsWorkunits.WUInfo",
+                            Exceptions: [{
+                                Source: context.i18n.Error,
+                                Message: context.wu.ResultsDesc,
+                                duration: 1
+                            }]
+                        });
+                    } else {
+                        Promise.all(results.map(function (result) {
+                            return result.fetchLogicalFile();
+                        })).then(function (responses) {
+                            context.store.setData(results);
+                            context.grid.refresh();
+                        });
+                    }
                 }
             });
         },

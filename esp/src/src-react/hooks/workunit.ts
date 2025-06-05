@@ -53,7 +53,12 @@ export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID
         if (workunit) {
             const fetchResults = singletonDebounce(workunit, "fetchResults");
             fetchResults().then(results => {
-                setResults(results);
+                if (workunit?.ResultsDesc) {
+                    setResults([]);
+                    logger.error(workunit?.ResultsDesc);
+                } else {
+                    setResults(results);
+                }
             }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
