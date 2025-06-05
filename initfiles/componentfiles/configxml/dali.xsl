@@ -120,7 +120,10 @@
           <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
         </expert>
         <xsl:copy-of select="/Environment/Hardware/cost"/>
-        <xsl:copy-of select="/Environment/Software/Globals/storage"/>
+        <storage>
+          <xsl:copy-of select="/Environment/Software/Globals/storage/*"/>
+          <xsl:copy-of select="/Environment/Software/Storage/*"/>
+        </storage>
       </global>
       <xsl:if test="@authMethod='secmgrPlugin'">
       <SecurityManagers>
