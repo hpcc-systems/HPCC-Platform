@@ -47,6 +47,7 @@ set (    SRCS
          thortalgo.cpp 
          thortlex.cpp 
          thortparse.cpp 
+         thorwrite.cpp
          thorxmlread.cpp 
          thorxmlwrite.cpp
          roxierow.cpp
@@ -70,6 +71,7 @@ set (    SRCS
          roxierow.hpp
          thorralgo.ipp
          thorrparse.ipp
+         thorwrite.hpp
          thorsort.cpp
          thorsort.hpp
          persistent.cpp

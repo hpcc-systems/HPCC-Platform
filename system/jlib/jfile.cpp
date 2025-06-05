@@ -7946,12 +7946,13 @@ extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)
 
 // Module-level global that will contain a list of pluggable file type
 // names (e.g. "parquet", "csv") that are supported through the
-// generic disk reader
+// generic disk reader and writer interfaces
 static StringArray genericFileTypeNameList;
 
 void addAvailableGenericFileTypeName(const char * name)
 {
-    genericFileTypeNameList.append(name);
+    if (!genericFileTypeNameList.contains(name))
+        genericFileTypeNameList.append(name);
 }
 
 // Determine if file type is defined; used by the ECL parser

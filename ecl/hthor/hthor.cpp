@@ -412,10 +412,22 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
+    incomplete = false;
+    formatOptions.setown(createPTree()); // options governing the format of the bytes sent to the output stream
+    providerOptions.setown(createPTree()); // options governing the output stream itself (overwrite, append, etc)
     helperFlags = helper.getFlags();
+    useGenericReadWrites = ((helperFlags & TDXgeneric) != 0);
     grouped = (helperFlags & TDXgrouped) != 0;
-    extend = (helperFlags & TDWextend) != 0;
-    overwrite = (helperFlags & TDWoverwrite) != 0;
+    extend = ((helperFlags & TDWextend) != 0);
+    overwrite = ((helperFlags & TDWoverwrite) != 0);
+    if (useGenericReadWrites)
+    {
+        // Initial provider and format options from flags
+        providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+        providerOptions->setPropBool("@extend", extend);
+        providerOptions->setPropBool("@overwrite", overwrite);
+        formatOptions->setPropBool("@grouped", grouped);
+    }
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -457,22 +469,38 @@ void CHThorDiskWriteActivity::stop()
         uncompressedBytesWritten = outSeq->getPosition();
     close();
     updateWorkUnitResult(numRecords);
-    if((helper.getFlags() & (TDXtemporary | TDXjobtemp) ) == 0 && !agent.queryResolveFilesLocally())
+    if((helperFlags & (TDXtemporary | TDXjobtemp) ) == 0 && !agent.queryResolveFilesLocally())
         publish();
     incomplete = false;
     if(clusterHandler)
         clusterHandler->finish(file);
     CHThorActivityBase::stop();
-    if (helper.getFlags() & TDXvarfilename)
+    if (helperFlags & TDXvarfilename)
         filename.clear();
 }
 
 void CHThorDiskWriteActivity::resolve()
 {
     OwnedRoxieString rawname = helper.getFileName();
-    mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helper.getFlags());
+    mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helperFlags);
     assertex(mangledHelperFileName.str());
-    if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
+
+    if (useGenericReadWrites)
+    {
+        // Merge options from helper into providerOptions and formatOptions if required
+        if (helperFlags & TDXdynprovideroptions)
+        {
+            CPropertyTreeWriter providerOptsWriter(providerOptions);
+            helper.getProviderOptions(providerOptsWriter);
+        }
+        if (helperFlags & TDXdynformatoptions)
+        {
+            CPropertyTreeWriter formatOptsWriter(formatOptions);
+            helper.getFormatOptions(formatOptsWriter);
+        }
+    }
+
+    if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
     {
         Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,AccessMode::tbdWrite,&lfn,defaultPrivilegedUser);
         if (f)
@@ -582,9 +610,9 @@ void CHThorDiskWriteActivity::open()
     if (grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
     blockcompressed=false;
-    if (0 == (helper.getFlags() & TDWnocompress))
+    if (0 == (helperFlags & TDWnocompress))
     {
-        blockcompressed = checkWriteIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+        blockcompressed = checkWriteIsCompressed(helperFlags, serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
         if (!blockcompressed) // if ECL doesn't specify, default to plane definition
             blockcompressed = outputPlaneCompressed;
     }
@@ -616,7 +644,12 @@ void CHThorDiskWriteActivity::open()
     unsigned rwFlags = rw_autoflush;
     if (grouped)
         rwFlags |= rw_grouped;
-    ILogicalRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
+
+    ILogicalRowWriter * writer = nullptr;
+    if (useGenericReadWrites)
+        throwUnexpected(); // generic write not yet supported
+    else
+        writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
 }
 
@@ -748,24 +781,24 @@ void CHThorDiskWriteActivity::publish()
         properties.setPropBool("@encrypted", true);
     if (blockcompressed)
         properties.setPropBool("@blockCompressed", true);
-    if (helper.getFlags() & TDWpersist)
+    if (helperFlags & TDWpersist)
         properties.setPropBool("@persistent", true);
     if (grouped)
         properties.setPropBool("@grouped", true);
     properties.setPropInt64("@recordCount", numRecords);
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
-    if (helper.getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
+    if (helperFlags & (TDWowned|TDXjobtemp|TDXtemporary))
         properties.setPropBool("@owned", true);
-    if (helper.getFlags() & TDWresult)
+    if (helperFlags & TDWresult)
         properties.setPropBool("@result", true);
 
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     setFormat(desc);
 
-    if (helper.getFlags() & TDWexpires)
+    if (helperFlags & TDWexpires)
         setExpiryTime(properties, helper.getExpiryDays());
-    if (helper.getFlags() & TDWupdate)
+    if (helperFlags & TDWupdate)
     {
         unsigned eclCRC;
         unsigned __int64 totalCRC;
@@ -774,7 +807,7 @@ void CHThorDiskWriteActivity::publish()
         properties.setPropInt64("@totalCRC", totalCRC);
     }
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
-    if (helper.getFlags() & TDWrestricted)
+    if (helperFlags & TDWrestricted)
         properties.setPropBool("restricted", true);
 
     properties.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
@@ -788,7 +821,7 @@ void CHThorDiskWriteActivity::publish()
     if (!logicalName.isExternal()) // no need to publish externals
     {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
-        if ((helper.getFlags() & TDXtemporary) == 0)
+        if ((helperFlags & TDXtemporary) == 0)
         {
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
@@ -805,7 +838,7 @@ void CHThorDiskWriteActivity::updateProgress(IStatisticGatherer &progress) const
     CHThorActivityBase::updateProgress(progress);
     StatsActivityScope scope(progress, activityId);
     progress.addStatistic(StNumDiskWrites, numDiskWrites);
-    if ((helper.getFlags() & TDXtemporary) == 0)
+    if ((helperFlags & TDXtemporary) == 0)
         progress.addStatistic(StCostFileAccess, diskAccessCost);
 }
 
@@ -819,30 +852,29 @@ void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
             clusterHandler->getClusters(clusters);
         else
             clusters.append(wu->queryClusterName());
-        unsigned flags = helper.getFlags();
         if (!agent.queryResolveFilesLocally())
         {
             WUFileKind fileKind;
-            if (TDXtemporary & flags)
+            if (TDXtemporary & helperFlags)
                 fileKind = WUFileTemporary;
-            else if(TDXjobtemp & flags)
+            else if(TDXjobtemp & helperFlags)
                 fileKind = WUFileJobOwned;
-            else if(TDWowned & flags)
+            else if(TDWowned & helperFlags)
                 fileKind = WUFileOwned;
             else
                 fileKind = WUFileStandard;
             wu->addFile(lfn.str(), &clusters, helper.getTempUsageCount(), fileKind, NULL);
         }
-        else if ((TDXtemporary | TDXjobtemp) & flags)
+        else if ((TDXtemporary | TDXjobtemp) & helperFlags)
             agent.noteTemporaryFilespec(filename);//note for later deletion
-        if (!(flags & TDXtemporary) && helper.getSequence() >= 0)
+        if (!(helperFlags & TDXtemporary) && helper.getSequence() >= 0)
         {
             Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
             if (result)
             {
                 result->setResultTotalRowCount(reccount);
                 result->setResultStatus(ResultStatusCalculated);
-                if (helper.getFlags() & TDWresult)
+                if (helperFlags & TDWresult)
                     result->setResultFilename(lfn.str());
                 else
                     result->setResultLogicalName(lfn.str());
@@ -10734,6 +10766,7 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
 {
     helperFlags = helper.getFlags();
     grouped = ((helperFlags & TDXgrouped) != 0);
+    useGenericReadWrites = ((helperFlags & TDXgeneric) != 0);
 
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
@@ -10758,7 +10791,7 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     if ((helperFlags & TDRcloneappendvirtual) != 0)
         formatOptions->setPropBool("@cloneAppendVirtuals", true);
 
-    if (isGeneric())
+    if (useGenericReadWrites)
     {
         outputGrouped = helper.queryOutputMeta()->isGrouped();  // It is possible for input to be incorrectly marked as grouped, and input not or vice-versa
         bool isTemporary = (helperFlags & (TDXtemporary | TDXjobtemp)) != 0;
@@ -10831,7 +10864,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     subfiles.kill();
 
     Owned<const IPropertyTree> curFormatOptions;
-    if (isGeneric())
+    if (useGenericReadWrites)
     {
         Owned clonedFormatOptions(createPTreeFromIPT(formatOptions));
         CPropertyTreeWriter writer(clonedFormatOptions);
@@ -10843,7 +10876,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
 
     //Provider options may be modified below
     Owned<IPropertyTree> curProviderOptions(createPTreeFromIPT(providerOptions));
-    if (isGeneric())
+    if (useGenericReadWrites)
     {
         CPropertyTreeWriter writer(curProviderOptions);
         helper.getProviderOptions(writer);

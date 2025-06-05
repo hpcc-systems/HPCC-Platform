@@ -62,29 +62,6 @@ public:
 
 THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
 
-// IRowWriteFormatMapping interface represents the mapping when outputting a stream to a destination.
-//
-//  @expectedMeta - the format that rows have in memory (rename?)
-//  @projectedMeta - the format that should be written to disk.
-//  @formatOptions - which options are applied to the format
-//
-// if expectedMeta->querySerializedMeta() != projectedMeta then the transformation will lose
-// fields from the dataset as it is written.  Reordering may be supported later, but fields
-// will never be added.
-interface IRowWriteFormatMapping : public IInterface
-{
-public:
-    virtual unsigned getExpectedCrc() const = 0;
-    virtual unsigned getProjectedCrc() const = 0;
-    virtual IOutputMetaData * queryExpectedMeta() const = 0;
-    virtual IOutputMetaData * queryProjectedMeta() const = 0;
-    virtual RecordTranslationMode queryTranslationMode() const = 0;
-    virtual const IPropertyTree * queryFormatOptions() const = 0;
-    virtual bool matches(const IRowWriteFormatMapping * other) const = 0;
-};
-THORHELPER_API IRowWriteFormatMapping * createDiskWriteOutputMapping(RecordTranslationMode mode, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
-
-
 //--------------------------------------------------------------------------------------------------------------------
 
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;

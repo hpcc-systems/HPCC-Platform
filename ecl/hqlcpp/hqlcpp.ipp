@@ -1420,6 +1420,11 @@ public:
     void noteResultAccessed(BuildCtx & ctx, IHqlExpression * seq, IHqlExpression * name);
     void noteResultDefined(BuildCtx & ctx, ActivityInstance * activityInstance, IHqlExpression * seq, IHqlExpression * name, bool alwaysExecuted);
 
+// File type formatting option handling
+    void buildFormatOption(BuildCtx & ctx, IHqlExpression * name, IHqlExpression * value);
+    void buildFormatOptions(BuildCtx & ctx, IHqlExpression * expr);
+    void buildFormatOptionsFunction(BuildCtx & ctx, IHqlExpression * expr);
+
 //Expressions:
     void doBuildExprAbs(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprAdd(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
