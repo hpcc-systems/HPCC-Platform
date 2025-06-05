@@ -129,6 +129,7 @@ void  jlib_decl disableSEHtoExceptionMapping();
 
 void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler); // sets handler and return old value
 
+void jlib_decl raiseKillSigInFuture(unsigned timeoutSec);
 void jlib_decl raiseSignalInFuture(int signo, unsigned timeoutSec);
 
 void jlib_decl setTerminateOnSEHInSystemDLLs(bool set=true);
