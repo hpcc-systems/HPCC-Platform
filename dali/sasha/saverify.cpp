@@ -422,7 +422,7 @@ public:
             try {
                 PROGLOG("VERIFIER: Started");
                 CFileCrcList filelist(stopped);
-                Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
+                Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
                 if (iter) {
                     CDateTime mincutoff;
                     mincutoff.setNow();

@@ -729,7 +729,7 @@ private:
         head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
         restart:     // If things change beneath us as we are deleting, repeat the process
         IArrayOf<IPropertyTree> persists;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
+        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
         ForEach(*iter)
         {
             IPropertyTree &pt = iter->query();
