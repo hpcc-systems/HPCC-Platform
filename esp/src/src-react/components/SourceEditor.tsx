@@ -15,7 +15,7 @@ import "eclwatch/css/cmDarcula.css";
 
 const logger = scopedLogger("src-react/components/SourceEditor.tsx");
 
-type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml";
+export type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml" | "js" | "css" | "html";
 
 class SQLEditorEx extends SQLEditor {
 
@@ -282,7 +282,7 @@ interface FetchEditor {
     toolbar?: boolean;
     noDataMsg?: string;
     loadingMsg?: string;
-    mode?: "ecl" | "xml" | "text" | "yaml";
+    mode?: ModeT;
 }
 
 export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
