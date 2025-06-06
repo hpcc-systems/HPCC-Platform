@@ -50,6 +50,7 @@ class JlibFileTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JlibFileTest);
         CPPUNIT_TEST(testCompressed);
+        CPPUNIT_TEST(testAppendCompressed);
         CPPUNIT_TEST(cleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -57,7 +58,7 @@ public:
     void createCompressed()
     {
         Owned<IFile> file(createIFile(testFilename));
-        Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr));
+        Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
 
         constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
@@ -77,6 +78,34 @@ public:
             io->write(pos, size, temp);
             pos += size;
         }
+        DBGLOG("Compressed file size = %llu -> %llu", pos, file->size());
+    }
+    void createCompressedAppend()
+    {
+        Owned<IFile> file(createIFile(testFilename));
+
+        constexpr size_t cnt = 10000;
+        constexpr size_t size = 1000;
+        offset_t pos = 0;
+        for (unsigned i = 0; i < cnt; i++)
+        {
+            bool append = (i != 0);
+            Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+
+            byte temp[size];
+
+            for (unsigned j = 0; j < size; j += 4)
+            {
+                temp[j] = (byte)j;
+                temp[j+1] = (byte)j+1;
+                temp[j+2] = (byte)j+2;
+                temp[j+3] = (byte)random();
+            }
+
+            io->write(pos, size, temp);
+            pos += size;
+        }
+        DBGLOG("Compressed file size = %llu -> %llu", pos, file->size());
     }
     void readCompressed(bool errorExpected)
     {
@@ -172,6 +201,11 @@ public:
         read(4, sizeof(firstBlockSize), &firstBlockSize);
         write(8+firstBlockSize, sizeof(newSize), &newSize);
         readCompressed(true);
+    }
+    void testAppendCompressed()
+    {
+        createCompressedAppend();
+        readCompressed(false);
     }
     void cleanup()
     {

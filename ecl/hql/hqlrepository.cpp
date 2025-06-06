@@ -1057,9 +1057,12 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     if (ret > 0)
     {
+        const char * extra = "";
         if (options.gitUser.isEmpty())
-            DBGLOG("HPCC_GIT_USERNAME was not set");
-        DBGLOG("%s return code was %d\nError: %s\n", runcmd.str(), ret, error.str());
+            extra = " HPCC_GIT_USERNAME was not set";
+        //Ensure there are no newlines in the error message so it is reported as a single line
+        error.replace('\n', '/');
+        DBGLOG("%s return code was %d.%s Error: %s", runcmd.str(), ret, extra, error.str());
     }
     else if (options.optVerbose)
         printf("%s\n", output->str());

@@ -762,6 +762,13 @@ public:
     }
 };
 
+// This function creates an output stream for writing, and wraps it in a class that renames the file, and copies it
+// to any other copies when the stream is destroyed.
+// GH->JCS. If there are no copies, and the file is not being renamed this could be avoided.
+// GH->JCS. Now that we always call close, should this log an error if close is not called before beforeDispose()?
+// GH->JCS. It would be better if this wrapped the base IFileIO, rather than the compressed IFileIO - otherwise each write goes through
+//          an extra layer of virtual calls.
+
 IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName)
 {
     StringBuffer outLocationNameI;
@@ -800,6 +807,11 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         assertex(outLocationName.length());
     }
     ensureDirectoryForFile(outLocationName.str());
+
+    StringBuffer planeName;
+    partDesc.queryOwner().queryClusterNum(0)->getGroupName(planeName);
+    size32_t blockedIoSize = getBlockedFileIOSize(planeName, (size32_t)-1);
+
     OwnedIFile file = createIFile(outLocationName.str());
     Owned<IFileIO> fileio;
     if (compress)
@@ -829,7 +841,8 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
             else if (activity->getOptBool(THOROPT_COMP_FORCELZ4HC, false))
                 compMethod = COMPRESS_METHOD_LZ4HC;
         }
-        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod, fileIOExtaFlags));
+        size32_t compressBlockSize = 0; // i.e. default.
+        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod, compressBlockSize, blockedIoSize, fileIOExtaFlags));
         if (!fileio)
         {
             compress = false;

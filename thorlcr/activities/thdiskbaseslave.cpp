@@ -376,11 +376,18 @@ void CDiskWriteSlaveActivityBase::open()
     Owned<IFileIOStream> stream;
     if (wantRaw())
     {
-        outraw.setown(createBufferedIOStream(outputIO));
+        //GH->JCS: Why isn't this done inside createMultipleWrite?  Why is it not done for the row writer?
+        //I suspect that after switching to a write stream interface this code could be cleaned up further.
+        StringBuffer planeName;
+        partDesc->queryOwner().queryClusterNum(0)->getGroupName(planeName);
+        size32_t blockedIoSize = getBlockedFileIOSize(planeName, (size32_t)-1);
+
+        outraw.setown(createBufferedIOStream(outputIO, blockedIoSize));
         stream.set(outraw);
     }
     else
     {
+        //GH->JCS this will not take the blocked io size into consideration, but that can be fixed when reafactored
         stream.setown(createIOStream(outputIO));
         unsigned rwFlags = 0;
         if (grouped)

@@ -3065,7 +3065,7 @@ void populateLookAheadOptions(CActivityBase &activity, LookAheadOptions &options
         StringBuffer planeName;
         if (!getDefaultPlane(planeName, "@tempPlane", "temp"))
             getDefaultPlane(planeName, "@spillPlane", "spill");
-        size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
+        size32_t blockedSequentialIOSize = getBlockedFileIOSize(planeName, (size32_t)-1);
         if ((size32_t)-1 != blockedSequentialIOSize)
             options.storageBlockSize = blockedSequentialIOSize;
     }

@@ -358,7 +358,11 @@ void CWriteMasterBase::publish()
                             OwnedIFile iFile = createIFile(path.str());
                             Owned<IFileIO> iFileIO;
                             if (compressed) // NB: this would not be necessary if all builds have the changes in HPCC-32651
-                                iFileIO.setown(createCompressedFileWriter(iFile, recordSize, false, true, NULL, compMethod));
+                            {
+                                size32_t compBlockSize = 0; // i.e. default
+                                size32_t blockedIoSize = -1; // i.e. default
+                                iFileIO.setown(createCompressedFileWriter(iFile, recordSize, false, true, NULL, compMethod, compBlockSize, blockedIoSize, IFEnone));
+                            }
                             else
                                 iFileIO.setown(iFile->open(IFOcreate));
                             dbgassertex(iFileIO.get());
