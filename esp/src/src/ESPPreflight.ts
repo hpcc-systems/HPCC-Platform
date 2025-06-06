@@ -15,8 +15,8 @@ class SystemServersStore extends ESPRequest.Store {
     responseTotalQualifier = undefined;
     idProperty = "hpcc_id";
 
-    constructor(options) {
-        super(options);
+    constructor() {
+        super();
     }
 
     preProcessRow(row) {
@@ -98,8 +98,8 @@ class ClusterTargetStore extends ESPRequest.Store {
     responseTotalQualifier = undefined;
     idProperty = "hpcc_id";
 
-    constructor(options) {
-        super(options);
+    constructor() {
+        super();
     }
 
     preProcessRow(row) {
@@ -184,8 +184,8 @@ class ClusterProcessStore extends ESPRequest.Store {
     responseTotalQualifier = undefined;
     idProperty = "hpcc_id";
 
-    constructor(options?) {
-        super(options);
+    constructor() {
+        super();
     }
 
     preProcessRow(row) {
@@ -204,9 +204,7 @@ class ClusterProcessStore extends ESPRequest.Store {
     }
 
     getChildren(parent, options) {
-        const store = new Observable(new ClusterProcessesList({
-            parent
-        }));
+        const store = new Observable(new ClusterProcessesList(parent));
         return store.query({
             Type: this.getMachineType(parent.Type),
             Parent: parent,
@@ -247,7 +245,12 @@ class ClusterProcessesList extends ESPRequest.Store {
     responseTotalQualifier = undefined;
     idProperty = "hpcc_id";
 
-    parent: any;
+    parent: unknown;
+
+    constructor(parent: unknown) {
+        super();
+        this.parent = parent;
+    }
 
     preProcessRow(row) {
         lang.mixin(row, {
@@ -316,18 +319,18 @@ export function getState(int) {
     }
 }
 
-export function CreateTargetClusterStore(options) {
-    const store = new ClusterTargetStore(options);
+export function CreateTargetClusterStore() {
+    const store = new ClusterTargetStore();
     return new Observable(store);
 }
 
-export function CreateClusterProcessStore(options) {
-    const store = new ClusterProcessStore(options);
+export function CreateClusterProcessStore() {
+    const store = new ClusterProcessStore();
     return new Observable(store);
 }
 
-export function CreateSystemServersStore(options) {
-    const store = new SystemServersStore(options);
+export function CreateSystemServersStore() {
+    const store = new SystemServersStore();
     return new Observable(store);
 }
 
