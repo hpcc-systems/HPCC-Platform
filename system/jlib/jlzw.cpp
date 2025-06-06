@@ -2098,15 +2098,10 @@ class CCompressedFileReader : public CCompressedFileBase
 {
     unsigned curblocknum;
     offset_t curblockpos;           // logical pos (reading only)
-    MemoryBuffer iobuffer;          // buffer used for reading or writing
-    size32_t compblklen;
-    size32_t compblockoffset;       // What offset within the io buffer is the current compression block
-    MemoryAttr compbuf;
+    MemoryBuffer iobuffer;          // buffer used for reading
     MemoryBuffer indexbuf;          // non-empty once index read
     Owned<IExpander> expander;
     MemoryAttr compressedInputBlock;
-    unsigned compMethod;
-    offset_t lastFlushPos = 0;
     offset_t nextExpansionPos = (offset_t)-1;
     offset_t startBlockPos = (offset_t)-1;
     size32_t fullBlockSize = 0;
@@ -2260,16 +2255,15 @@ class CCompressedFileReader : public CCompressedFileBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned _compMethod, unsigned _bufferSize)
+    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned compMethod, unsigned _bufferSize)
         : CCompressedFileBase(_fileio, _mmfile, _trailer, _bufferSize)
     {
         expander.set(_expander);
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
-        compMethod = _compMethod;
 
-        //Allocate a single io buffer that can be used for reading or writing.
-        iobuffer.ensureCapacity(sizeIoBuffer+trailer.recordSize*2+16); // over estimate!
+        //Allocate an io buffer that can be used for reading
+        iobuffer.ensureCapacity(sizeIoBuffer);
 
         // Read the index of blocks from the end of the file
         unsigned nb = trailer.numBlocks();
@@ -2380,7 +2374,6 @@ class CCompressedFileWriter : public CCompressedFileBase
     MemoryBuffer iobuffer;          // buffer used for reading or writing
     size32_t compblklen;
     size32_t compblockoffset;       // What offset within the io buffer is the current compression block
-    MemoryAttr compbuf;
     MemoryBuffer indexbuf;          // non-empty once index read
     ICFmode mode;
     MemoryBuffer overflow;          // where partial row written
