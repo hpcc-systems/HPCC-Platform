@@ -312,7 +312,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
             compMethod = COMPRESS_METHOD_FASTLZ;
         else if (lz4)
             compMethod = COMPRESS_METHOD_LZ4;
-        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compMethod,extraFlags));
+        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compMethod,0,(size32_t)-1,extraFlags));
     }
 
     if (!dstio) {

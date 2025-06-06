@@ -2561,7 +2561,11 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
          * Would need mutex per physical filename active.
          */
         if (compressionFormat)
-            iFileIO.setown(createCompressedFileWriter(iFile, recordSize, append, true, nullptr, compressionFormat));
+        {
+            size32_t compBlockSize = 0; // i.e. default
+            size32_t blockedIoSize = -1; // i.e. default
+            iFileIO.setown(createCompressedFileWriter(iFile, recordSize, append, true, nullptr, compressionFormat, compBlockSize, blockedIoSize, IFEnone));
+        }
         else
         {
             iFileIO.setown(iFile->open(append ? IFOwrite : IFOcreate));

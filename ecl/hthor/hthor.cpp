@@ -602,7 +602,11 @@ void CHThorDiskWriteActivity::open()
         blockcompressed = true;
     }
     if(blockcompressed)
-        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZ4));
+    {
+        size32_t compBlockSize = 0; // i.e. default
+        size32_t blockedIoSize = -1; // i.e. default
+        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+    }
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
     if(!io)
