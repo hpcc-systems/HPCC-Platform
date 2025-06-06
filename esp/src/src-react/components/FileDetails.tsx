@@ -1,6 +1,6 @@
 import * as React from "react";
 import { WsDfu } from "@hpcc-js/comms";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useFile, useDefFile } from "../hooks/file";
@@ -104,7 +104,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     }, [file]);
 
     return <FullscreenFrame fullscreen={fullscreen}>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <div style={{ height: "100%" }}>
                 <FullscreenStack fullscreen={fullscreen}>
                     <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { pivotItemStyle } from "../layouts/pivot";
 import * as WsDFUXref from "src/WsDFUXref";
 import { XrefFoundFiles } from "./XrefFoundFiles";
@@ -46,7 +46,7 @@ export const XrefDetails: React.FunctionComponent<XrefDetailsProps> = ({
     }, [name]);
 
     return <>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
                 onLinkClick={evt => pushUrl(`/xref/${name}/${evt.props.itemKey}`)}

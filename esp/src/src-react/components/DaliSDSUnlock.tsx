@@ -1,6 +1,6 @@
 import * as React from "react";
 import { DefaultButton, DetailsList, DetailsListLayoutMode, IColumn } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { csvParse } from "d3-dsv";
 import { DaliService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -42,7 +42,7 @@ export const DaliSDSUnlock: React.FunctionComponent<DaliSDSUnlockProps> = ({
                 setItems(data);
             }).catch(err => logger.error(err));
         }, [connectionId, close])
-    }); 
+    });
 
     const onSubmit = React.useCallback(() => {
         setDaliPromptConfirm(true);
@@ -50,7 +50,7 @@ export const DaliSDSUnlock: React.FunctionComponent<DaliSDSUnlockProps> = ({
 
     return <HolyGrail
         header={<span><TableGroup fields={{
-            "ConnectionID": {label: nlsHPCC.ConnectionID, type: "string", value: connectionId},
+            "ConnectionID": { label: nlsHPCC.ConnectionID, type: "string", value: connectionId },
             "Close": { label: nlsHPCC.Close, type: "checkbox", value: close },
         }} onChange={(id, value) => {
             switch (id) {
@@ -64,7 +64,7 @@ export const DaliSDSUnlock: React.FunctionComponent<DaliSDSUnlockProps> = ({
                     logger.debug(`${id}: ${value}`);
             }
         }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
-        main={<SizeMe monitorHeight>{({ size }) => {
+        main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
                 <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
@@ -76,7 +76,7 @@ export const DaliSDSUnlock: React.FunctionComponent<DaliSDSUnlockProps> = ({
                         selectionPreservedOnEmptyClick={true}
                         styles={{ root: { height, minHeight: height, maxHeight: height } }}
                     />
-                    <DaliPromptConfirm />                    
+                    <DaliPromptConfirm />
                 </div>
             </div>;
         }}</SizeMe>}

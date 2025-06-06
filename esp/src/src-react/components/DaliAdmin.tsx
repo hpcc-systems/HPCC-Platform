@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Pivot, PivotItem, TextField, Checkbox, DefaultButton, Stack } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { pushUrl } from "../util/history";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DFSCheck } from "./DFSCheck";
@@ -48,7 +48,7 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
     });
 
     return <>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/topology/daliadmin/${evt.props.itemKey}`)}>
                 <PivotItem headerText={nlsHPCC.GetDFSCSV} itemKey="getdfscsv" style={pivotItemStyle(size)} >
                     <GetDFSCSV />

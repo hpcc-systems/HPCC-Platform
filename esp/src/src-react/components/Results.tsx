@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useWorkunitResults } from "../hooks/workunit";
@@ -172,7 +172,7 @@ export const TabbedResults: React.FunctionComponent<TabbedResultsProps> = ({
 
     const [results] = useWorkunitResults(wuid);
 
-    return <SizeMe monitorHeight>{({ size }) =>
+    return <SizeMe>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }}>
             {results.map(result => {
                 return <PivotItem key={`${result?.ResultName}_${result?.Sequence}`} headerText={result?.ResultName} style={pivotItemStyle(size)}>

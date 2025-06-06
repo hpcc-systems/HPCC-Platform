@@ -1,6 +1,6 @@
 import * as React from "react";
 import { DefaultButton, DetailsList, DetailsListLayoutMode, IColumn } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { csvParse } from "d3-dsv";
 import { DaliService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -31,7 +31,7 @@ export const SetLogicalFilePartAttr: React.FunctionComponent<SetLogicalFilePartA
         title: nlsHPCC.DaliAdmin,
         message: nlsHPCC.DaliPromptConfirm,
         onSubmit: React.useCallback(() => {
-            myDaliService.SetLogicalFilePartAttr({ FileName: fileName, PartNumber: partNumber, Attr: attribute, Value: value}).then(response => {
+            myDaliService.SetLogicalFilePartAttr({ FileName: fileName, PartNumber: partNumber, Attr: attribute, Value: value }).then(response => {
                 const data = csvParse(response.Result);
                 setColumns(data.columns.map((col, idx) => {
                     return {
@@ -69,12 +69,12 @@ export const SetLogicalFilePartAttr: React.FunctionComponent<SetLogicalFilePartA
                     break;
                 case "Value":
                     setValue(value);
-                    break; 
+                    break;
                 default:
                     logger.debug(`${id}: ${value}`);
             }
         }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
-        main={<SizeMe monitorHeight>{({ size }) => {
+        main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
                 <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
