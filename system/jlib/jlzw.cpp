@@ -2381,112 +2381,8 @@ class CCompressedFileWriter : public CCompressedFileBase
     bool setcrc;
     bool writeException;
     Owned<ICompressor> compressor;
-    Owned<IExpander> expander;
-    MemoryAttr compressedInputBlock;
-    unsigned compMethod;
     offset_t lastFlushPos = 0;
-    offset_t nextExpansionPos = (offset_t)-1;
-    offset_t startBlockPos = (offset_t)-1;
-    size32_t fullBlockSize = 0;
 
-    unsigned indexNum() { return indexbuf.length()/sizeof(offset_t); }
-
-    unsigned lookupIndex(offset_t pos,offset_t &curpos,size32_t &expsize)
-    {
-        // NB index starts at block 1 (and has size as last entry)
-        const offset_t *index;
-        unsigned a = 0;
-        unsigned b = indexNum();
-        index = (const offset_t *)indexbuf.toByteArray();
-        while (b>a) {
-            unsigned m = a+(b-a)/2;
-            __int64 dif = (__int64)pos-index[m];
-            //Do not optimize exact matches - because if there are zero length blocks this needs
-            //to return the block that follows
-            if (dif >= 0)
-                a = m+1;
-            else
-                b = m;
-        }
-        curpos=b?index[b-1]:0;
-        expsize = (size32_t)(index[b]-curpos);
-        return b;
-    }
-
-    void getblock(offset_t pos)
-    {
-        iobuffer.clear();
-
-        //If the blocks are being expanded incrementally check if the position is within the current block
-        //This test will never be true for row compressed data, or non-incremental decompression
-        try
-        {
-            if ((pos >= startBlockPos) && (pos < startBlockPos + fullBlockSize))
-            {
-                if (pos < nextExpansionPos)
-                {
-                    //Start decompressing again and avoid re-reading the data from disk
-                    const void * rawData;
-                    if (fileio)
-                        rawData = compressedInputBlock.get();
-                    else
-                        rawData = mmfile->base()+startBlockPos;
-
-                    assertex(rawData);
-                    nextExpansionPos = startBlockPos; // update in case an exception is thrown
-                    size32_t exp = expander->expandFirst(iobuffer, rawData);
-                    curblockpos = startBlockPos;
-                    nextExpansionPos = startBlockPos + exp;
-                    if (pos < nextExpansionPos)
-                        return;
-
-                    iobuffer.clear();
-                }
-
-                for (;;)
-                {
-                    size32_t nextSize = expander->expandNext(iobuffer);
-                    if (nextSize == 0)
-                        throw makeStringException(-1, "Unexpected zero length compression block");
-
-                    curblockpos = nextExpansionPos;
-                    nextExpansionPos = nextExpansionPos+nextSize;
-                    if (pos < nextExpansionPos)
-                        return;
-                }
-            }
-        }
-        catch (IException * e)
-        {
-            unsigned code = e->errorCode();
-            StringBuffer msg;
-            e->errorMessage(msg).appendf(" at uncompressed position %llu block %u of %llu", nextExpansionPos, curblocknum, trailer.indexPos);
-            e->Release();
-            throw makeStringException(code, msg.str());
-        }
-
-        size32_t expsize;
-        curblocknum = lookupIndex(pos,curblockpos,expsize);
-        size32_t toread = trailer.blockSize;
-        offset_t p = (offset_t)curblocknum*toread;
-        assertex(p<=trailer.indexPos);
-        if (trailer.indexPos-p<(offset_t)toread)
-            toread = (size32_t)(trailer.indexPos-p);
-        if (!toread)
-            return;
-        if (fileio) {
-            //Allocate on the first call, reuse on subsequent calls.
-            void * b = compressedInputBlock.allocate(trailer.blockSize);
-
-            size32_t r = fileio->read(p,toread,b);
-            assertex(r==toread);
-            expand(b,iobuffer,expsize,p);
-        }
-        else { // memory mapped
-            assertex((memsize_t)p==p);
-            expand(mmfile->base()+(memsize_t)p,iobuffer,expsize,p);
-        }
-    }
     void checkedwrite(offset_t pos, size32_t len, const void * data)
     {
         size32_t ret = fileio->write(pos,len,data);
@@ -2494,53 +2390,6 @@ class CCompressedFileWriter : public CCompressedFileBase
             throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CCompressedFile::checkedwrite");
         if (setcrc)
             trailer.crc = crc32((const char *)data,len,trailer.crc);
-    }
-
-    void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize, offset_t compressedPos)
-    {
-        try
-        {
-            size32_t rs = trailer.recordSize;
-            if (rs) { // diff expand
-                const byte *src = (const byte *)compbuf;
-                byte *dst = (byte *)expbuf.reserve(expsize);
-                if (expsize) {
-                    assertex(expsize>=rs);
-                    memcpy(dst,src,rs);
-                    dst += rs;
-                    src += rs;
-                    expsize -= rs;
-                    while (expsize) {
-                        assertex(expsize>=rs);
-                        src += DiffExpand(src, dst, dst-rs, rs);
-                        expsize -= rs;
-                        dst += rs;
-                    }
-                }
-            }
-            else { // lzw or fastlz or lz4
-                assertex(expander.get());
-                size32_t exp = expander->expandFirst(expbuf, compbuf);
-                if (exp == 0)
-                {
-                    unsigned numZeros = countZeros(trailer.blockSize, (const byte *)compbuf);
-                    if (numZeros >= 16)
-                        throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
-                }
-
-                startBlockPos = curblockpos;
-                nextExpansionPos = startBlockPos + exp;
-                fullBlockSize = expsize;
-            }
-        }
-        catch (IException * e)
-        {
-            unsigned code = e->errorCode();
-            StringBuffer msg;
-            e->errorMessage(msg).appendf(" at compressed position %llu of %llu", compressedPos, trailer.indexPos);
-            e->Release();
-            throw makeStringException(code, msg.str());
-        }
     }
 
     bool compressrow(const void *src,size32_t rs)
@@ -2606,72 +2455,55 @@ class CCompressedFileWriter : public CCompressedFileBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompressedFileWriter(IFileIO *_fileio,IMemoryMappedFile *_mmfile,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor,IExpander *_expander, unsigned _compMethod, unsigned _bufferSize)
-        : CCompressedFileBase(_fileio, _mmfile, _trailer, _bufferSize)
+    CCompressedFileWriter(IFileIO *_fileio,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor, unsigned compMethod, unsigned _bufferSize)
+        : CCompressedFileBase(_fileio, nullptr, _trailer, _bufferSize)
     {
-        //Allow the disk read and write to send multiple blocks in a single operation - to reduce cloud io costs.
-        assertex(trailer.blockSize);
-        numBlocksToBuffer = 1;
-        if (_bufferSize && (_bufferSize != (size32_t)-1))
-            numBlocksToBuffer = _bufferSize / trailer.blockSize;
-        if (numBlocksToBuffer < 1)
-            numBlocksToBuffer = 1;
-        sizeIoBuffer = trailer.blockSize*numBlocksToBuffer;
-
         compressor.set(_compressor);
-        expander.set(_expander);
         setcrc = _setcrc;
         writeException = false;
         mode = _mode;
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
-        compMethod = _compMethod;
-        if (mode!=ICFread)
+
+        if (trailer.recordSize)
         {
-            if (!_fileio&&_mmfile)
-                throw MakeStringException(-1,"Compressed Write not supported on memory mapped files");
-            if (trailer.recordSize)
-            {
-                if ((trailer.recordSize>trailer.blockSize/4) || // just too big
-                    (trailer.recordSize<10))                    // or too small
-                    trailer.recordSize = 0;
-                else
-                    prevrowbuf.allocate(trailer.recordSize);
-            }
+            if ((trailer.recordSize>trailer.blockSize/4) || // just too big
+                (trailer.recordSize<10))                    // or too small
+                trailer.recordSize = 0;
+            else
+                prevrowbuf.allocate(trailer.recordSize);
         }
 
         //Allocate a single io buffer that can be used for reading or writing.
         iobuffer.ensureCapacity(sizeIoBuffer+trailer.recordSize*2+16); // over estimate!
 
-        if (mode != ICFread)
+        compblklen = 0;
+        compblockoffset = 0;
+        if (trailer.recordSize==0)
         {
-            compblklen = 0;
-            compblockoffset = 0;
-            if (trailer.recordSize==0)
+            if (!compressor)
             {
-                if (!compressor)
+                switch (compMethod)
                 {
-                    switch (compMethod)
-                    {
-                        case COMPRESS_METHOD_FASTLZ:
-                            compressor.setown(createFastLZCompressor());
-                            break;
-                        case COMPRESS_METHOD_LZ4:
-                            compressor.setown(createLZ4Compressor(nullptr, false));
-                            break;
-                        case COMPRESS_METHOD_LZ4HC:
-                            compressor.setown(createLZ4Compressor(nullptr, true));
-                            break;
-                        default:
-                            compMethod = COMPRESS_METHOD_LZW;
-                            trailer.compressedType = COMPRESSEDFILEFLAG;
-                            compressor.setown(createLZWCompressor(true));
-                            break;
-                    }
+                    case COMPRESS_METHOD_FASTLZ:
+                        compressor.setown(createFastLZCompressor());
+                        break;
+                    case COMPRESS_METHOD_LZ4:
+                        compressor.setown(createLZ4Compressor(nullptr, false));
+                        break;
+                    case COMPRESS_METHOD_LZ4HC:
+                        compressor.setown(createLZ4Compressor(nullptr, true));
+                        break;
+                    default:
+                        compMethod = COMPRESS_METHOD_LZW;
+                        trailer.compressedType = COMPRESSEDFILEFLAG;
+                        compressor.setown(createLZWCompressor(true));
+                        break;
                 }
-                compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
             }
+            compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
         }
+
         if (mode!=ICFcreate)
         {
             unsigned nb = trailer.numBlocks();
@@ -2695,21 +2527,6 @@ public:
                     trailer.datacrc = ~0U;
                 }
             }
-            if (trailer.recordSize==0)
-            {
-                if ((mode == ICFread) && !expander)
-                {
-                    if (compMethod == COMPRESS_METHOD_FASTLZ)
-                        expander.setown(createFastLZExpander());
-                    else if (compMethod == COMPRESS_METHOD_LZ4)
-                        expander.setown(createLZ4Expander());
-                    else // fallback
-                    {
-                        compMethod = COMPRESS_METHOD_LZW;
-                        expander.setown(createLZWExpander(true));
-                    }
-                }
-            }
         }
     }
     virtual ~CCompressedFileWriter()
@@ -2726,27 +2543,7 @@ public:
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
-        CriticalBlock block(crit);
-        assertex(mode==ICFread);
-        size32_t ret=0;
-        while (pos<trailer.expandedSize) {
-            if ((offset_t)len>trailer.expandedSize-pos)
-                len = (size32_t)(trailer.expandedSize-pos);
-            if ((pos>=curblockpos)&&(pos<curblockpos+iobuffer.length())) { // see if in current buffer
-                size32_t tocopy = (size32_t)(curblockpos+iobuffer.length()-pos);
-                if (tocopy>len)
-                    tocopy = len;
-                memcpy(data,iobuffer.toByteArray()+(pos-curblockpos),tocopy);
-                ret += tocopy;
-                len -= tocopy;
-                data = (byte *)data+tocopy;
-                pos += tocopy;
-            }
-            if (len==0)
-                break;
-            getblock(pos);
-        }
-        return ret;
+        throwUnexpected();
     }
     virtual offset_t size() override
     {
@@ -2773,8 +2570,6 @@ public:
         }
         return ret;
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override { UNIMPLEMENTED; }
-    virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
     virtual void flush() override
     {
         doFlush(false, true);
@@ -2889,33 +2684,15 @@ public:
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
     }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) override
-    {
-        return fileio->getStatistic(kind);
-    }
 
 // CCompressedFile impl.
     virtual unsigned dataCRC() override
     {
-        if (mode==ICFread)
-            return trailer.datacrc;
         return trailer.crc;
-    }
-    virtual size32_t recordSize() override
-    {
-        return trailer.recordSize;
-    }
-    virtual size32_t blockSize() override
-    {
-        return trailer.blockSize;
     }
     virtual bool readMode() override
     {
-        return (mode==ICFread);
-    }
-    virtual unsigned method() override
-    {
-        return trailer.method();
+        return false;
     }
 };
 
@@ -3094,7 +2871,7 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size
     // MCK - may present compatibility issue if passing in compressor and wanting row comp
     if (compressor)
         trailer.recordSize = 0; // force not row compressed if compressor specified
-    return new CCompressedFileWriter(fileio,NULL,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,NULL,_compMethod,bufferSize);
+    return new CCompressedFileWriter(fileio,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,_compMethod,bufferSize);
 }
 
 ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor, unsigned _compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags)
