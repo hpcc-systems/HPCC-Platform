@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import * as ReactDOM from "react-dom/client";
 import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
@@ -160,11 +160,16 @@ class ResultWidget extends WUResult {
         if (!column && this._result.Total <= 1000) return Promise.resolve({ downloadTotal: this._result.Total, dedup: false });
         return new Promise(resolve => {
             const element = document.createElement("div");
-            ReactDOM.render(<DownloadDialog
+            const root = ReactDOM.createRoot(element);
+            root.render(<DownloadDialog
                 totalRows={this._result.Total}
                 column={column}
-                onClose={(downloadTotal, dedup) => resolve({ downloadTotal, dedup })}
-            />, element);
+                onClose={(downloadTotal, dedup) => {
+                    resolve({ downloadTotal, dedup });
+                    root.unmount();
+                    document.body.removeChild(element);
+                }}
+            />);
         });
     }
 
