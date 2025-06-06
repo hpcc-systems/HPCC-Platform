@@ -1309,6 +1309,29 @@ void jlib_decl setProcessAborted(bool _abortVal)
 
 static constexpr unsigned SIGNAL_RAISE_DELAY_SECONDS = 20;
 
+#if defined(__linux__)
+  static timer_t killTimerId;
+  static std::atomic<bool> killTimerCreated { false };
+  static CriticalSection killTimerCS;
+#endif
+
+static void raiseKillSigInFuture(unsigned timeoutSec)
+{
+#if defined(__linux__)
+    if (killTimerCreated.load())
+    {
+        struct itimerspec itSpec;
+
+        itSpec.it_value.tv_sec = timeoutSec;
+        itSpec.it_value.tv_nsec = 0;
+        itSpec.it_interval.tv_sec = 0;
+        itSpec.it_interval.tv_nsec = 0;
+
+        timer_settime(killTimerId, 0, &itSpec, 0);
+    }
+#endif
+}
+
 NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *extra)
 {
     static byte nested=0;
@@ -1613,13 +1636,6 @@ void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler)
     return ret;
 }
 
-#if defined(__linux__)
-  static timer_t killTimerId;
-  enum KillTC { UNINIT, CREATED };
-  static std::atomic<KillTC> killTimerCreated { UNINIT };
-  static CriticalSection killTimerCS;
-#endif
-
 void jlib_decl enableSEHtoExceptionMapping()
 {
 #ifdef NOSEH
@@ -1629,12 +1645,9 @@ void jlib_decl enableSEHtoExceptionMapping()
         return; // already done
 
 #if defined(__linux__)
-    KillTC state = killTimerCreated.load();
-    if (state == UNINIT)
     {
         CriticalBlock block(killTimerCS);
-        state = killTimerCreated.load();
-        if (state == UNINIT)
+        if (!killTimerCreated.load())
         {
             struct sigevent sigev;
             sigev.sigev_notify = SIGEV_SIGNAL;
@@ -1644,7 +1657,7 @@ void jlib_decl enableSEHtoExceptionMapping()
             sigev.sigev_notify_attributes = NULL;
             int srtn = timer_create(CLOCK_MONOTONIC, &sigev, &killTimerId);
             if (srtn == 0)
-                killTimerCreated = CREATED;
+                killTimerCreated = true;
         }
     }
 #endif
@@ -1702,23 +1715,6 @@ void  jlib_decl disableSEHtoExceptionMapping()
     sigaction(SIGBUS, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
     sigaction(SIGABRT, &act, NULL);
-#endif
-}
-
-void jlib_decl raiseKillSigInFuture(unsigned timeoutSec)
-{
-#if defined(__linux__)
-    if (killTimerCreated.load() == CREATED)
-    {
-        struct itimerspec itSpec;
-
-        itSpec.it_value.tv_sec = timeoutSec;
-        itSpec.it_value.tv_nsec = 0;
-        itSpec.it_interval.tv_sec = 0;
-        itSpec.it_interval.tv_nsec = 0;
-
-        timer_settime(killTimerId, 0, &itSpec, 0);
-    }
 #endif
 }
 
