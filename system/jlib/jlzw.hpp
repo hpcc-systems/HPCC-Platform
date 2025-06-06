@@ -140,7 +140,6 @@ interface ICompressedFileIO: extends IFileIO
     virtual unsigned dataCRC()=0;                   // CRC for data area (note total file CRC equals COMPRESSEDFILECRC)
     virtual size32_t recordSize()=0;                // 0 for lzw/fastlz, otherwise record length for row difference compression
     virtual size32_t blockSize()=0;                 // block size used
-    virtual bool readMode()=0;                      // true if created using createCompressedFileReader
     virtual unsigned method()=0;
 };
 

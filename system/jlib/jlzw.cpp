@@ -2050,8 +2050,8 @@ static size32_t countZeros(size32_t size, const byte * data)
 class CCompressedFileBase : implements ICompressedFileIO, public CInterface
 {
 public:
-    CCompressedFileBase(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, unsigned _bufferSize)
-    : fileio(_fileio), mmfile(_mmfile), trailer(_trailer)
+    CCompressedFileBase(IFileIO *_fileio, CompressedFileTrailer &_trailer, unsigned _bufferSize)
+    : fileio(_fileio), trailer(_trailer)
     {
         //Allow the disk read and write to send multiple blocks in a single operation - to reduce cloud io costs.
         assertex(trailer.blockSize);
@@ -2087,7 +2087,6 @@ public:
 
 protected:
     Linked<IFileIO> fileio;
-    Linked<IMemoryMappedFile> mmfile;
     CompressedFileTrailer trailer;
     CriticalSection crit;
     size32_t sizeIoBuffer = 0;
@@ -2096,6 +2095,7 @@ protected:
 
 class CCompressedFileReader : public CCompressedFileBase
 {
+    Linked<IMemoryMappedFile> mmfile;
     unsigned curblocknum;
     offset_t curblockpos;           // logical pos (reading only)
     MemoryBuffer iobuffer;          // buffer used for reading
@@ -2256,7 +2256,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned compMethod, unsigned _bufferSize)
-        : CCompressedFileBase(_fileio, _mmfile, _trailer, _bufferSize)
+        : CCompressedFileBase(_fileio, _trailer, _bufferSize), mmfile(_mmfile)
     {
         expander.set(_expander);
         curblockpos = 0;
@@ -2359,10 +2359,6 @@ public:
     {
         return trailer.datacrc;
     }
-    virtual bool readMode() override
-    {
-        return true;
-    }
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -2379,8 +2375,8 @@ class CCompressedFileWriter : public CCompressedFileBase
     MemoryBuffer overflow;          // where partial row written
     MemoryAttr prevrowbuf;
     bool setcrc;
-    bool writeException;
-    Owned<ICompressor> compressor;
+    bool writeException = false;
+    Linked<ICompressor> compressor;
     offset_t lastFlushPos = 0;
 
     void checkedwrite(offset_t pos, size32_t len, const void * data)
@@ -2456,12 +2452,8 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CCompressedFileWriter(IFileIO *_fileio,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor, unsigned compMethod, unsigned _bufferSize)
-        : CCompressedFileBase(_fileio, nullptr, _trailer, _bufferSize)
+        : CCompressedFileBase(_fileio, _trailer, _bufferSize), mode(_mode), setcrc(_setcrc), compressor(_compressor)
     {
-        compressor.set(_compressor);
-        setcrc = _setcrc;
-        writeException = false;
-        mode = _mode;
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
 
@@ -2504,31 +2496,23 @@ public:
             compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
         }
 
-        if (mode!=ICFcreate)
+        if (mode == ICFappend)
         {
+            //Read the existing index from the file
             unsigned nb = trailer.numBlocks();
             size32_t toread = sizeof(offset_t)*nb;
-            if (fileio)
+            size32_t r = fileio->read(trailer.indexPos,toread,indexbuf.reserveTruncate(toread));
+            assertex(r==toread);
+
+            curblocknum = nb-1;
+            if (setcrc)
             {
-                size32_t r = fileio->read(trailer.indexPos,toread,indexbuf.reserveTruncate(toread));
-                assertex(r==toread);
-            }
-            else
-            {
-                assertex((memsize_t)trailer.indexPos==trailer.indexPos);
-                memcpy(indexbuf.reserveTruncate(toread),mmfile->base()+(memsize_t)trailer.indexPos,toread);
-            }
-            if (mode==ICFappend)
-            {
-                curblocknum = nb-1;
-                if (setcrc)
-                {
-                    trailer.crc = trailer.datacrc;
-                    trailer.datacrc = ~0U;
-                }
+                trailer.crc = trailer.datacrc;
+                trailer.datacrc = ~0U;
             }
         }
     }
+
     virtual ~CCompressedFileWriter()
     {
         if (!writeException)
@@ -2689,10 +2673,6 @@ public:
     virtual unsigned dataCRC() override
     {
         return trailer.crc;
-    }
-    virtual bool readMode() override
-    {
-        return false;
     }
 };
 
