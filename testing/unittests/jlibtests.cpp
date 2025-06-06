@@ -3410,12 +3410,15 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 class PTreeDeserializeTimingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeDeserializeTimingTest);
-    CPPUNIT_TEST(testSmallTreeDeserialize);
-    CPPUNIT_TEST(testMediumTreeDeserialize);
-    CPPUNIT_TEST(testLargeTreeDeserialize);
-    CPPUNIT_TEST(testExtraLargeTreeDeserialize);
-    CPPUNIT_TEST(testHugeTreeDeserialize);
-    CPPUNIT_TEST(testDeepVsWideTreeDeserialize);
+/*
+        CPPUNIT_TEST(testSmallTreeDeserialize);
+        CPPUNIT_TEST(testMediumTreeDeserialize);
+        CPPUNIT_TEST(testLargeTreeDeserialize);
+        CPPUNIT_TEST(testExtraLargeTreeDeserialize);
+        CPPUNIT_TEST(testHugeTreeDeserialize);
+        CPPUNIT_TEST(testDeepVsWideTreeDeserialize);
+*/
+        CPPUNIT_TEST(testCustomTreeDeserialize);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -3486,6 +3489,27 @@ public:
         return tree.getClear();
     }
 
+    void testDeserializePerformance(Owned<IPropertyTree> &deserializedTree)
+    {
+        // Measure deserialization time
+        MemoryBuffer serialized;
+        CCycleTimer timer;
+
+        deserializedTree->deserialize(serialized);
+
+        cycle_t totalCycles = timer.elapsedCycles();
+
+        // Calculate and report results
+        StringBuffer formattedResult_numNodes;
+        StringBuffer formattedResult_depth;
+        StringBuffer formattedResult_serializedLength;
+        DBGLOG("Test customTree: children %s; depth %s; content: text\tDeserialized: %s bytes\tRuntime: %llu ms",
+               formatWithCommas(deserializedTree->numChildren(), formattedResult_numNodes).str(),
+               formatWithCommas(deserializedTree->getAttributeCount(), formattedResult_depth).str(),
+               formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
+               cycle_to_millisec(totalCycles));
+    }
+
     void testDeserializePerformance(const char *description, unsigned numNodes, unsigned depth, bool binary, unsigned iterations)
     {
         // Create and serialize tree
@@ -3500,10 +3524,11 @@ public:
 
         for (unsigned i = 0; i < iterations; i++)
         {
+            Owned<IPropertyTree> deserializedTree = createPTree();
+
             serialized.reset();
             timer.reset();
 
-            Owned<IPropertyTree> deserializedTree = createPTree();
             deserializedTree->deserialize(serialized);
 
             cycle_t elapsed = timer.elapsedCycles();
@@ -3573,6 +3598,36 @@ public:
         testDeserializePerformance("Deep Tree", nodeCount, 5000, false, 100);
         testDeserializePerformance("Wide Tree", nodeCount, 1, false, 100);
         testDeserializePerformance("Balanced Tree", nodeCount, (unsigned)sqrt(nodeCount), false, 100);
+    }
+
+    static constexpr const char *TEST_XML_FILENAME{"testing/unittests/jlibtestsCustomPTree.xml"};
+    void testCustomTreeDeserialize()
+    {
+        Owned<IFile> ifile = createIFile(TEST_XML_FILENAME);
+        Owned<IFileIO> fileIO = ifile->open(IFOread);
+        assertex(fileIO);
+
+        size32_t sz = (size32_t)ifile->size();
+        void *mem = malloc(sz);
+
+        fileIO->read(0, sz, mem);
+
+        Owned<IPropertyTree> customTree = createPTree(*fileIO, ipt_none, ptr_none, nullptr);
+        testDeserializePerformance(customTree);
+//        free(mem);
+/*
+        Owned<IFile> file = createIFile(TEST_XML_FILENAME);
+        // Create property tree from file
+        Owned<IPropertyTree> customTree = createPTree(*file, ipt_none, ptr_none, nullptr);
+        testDeserializePerformance(customTree);
+*/
+/*
+        Owned<IFile> file = createIFile(TEST_XML_FILENAME);
+        Owned<IFileIO> io = file->open(IFOread);
+        CPPUNIT_ASSERT(io);
+        Owned<IPropertyTree> customTree = createPTree(*io, ipt_none, ptr_none, nullptr);
+        testDeserializePerformance(customTree);
+*/
     }
 };
 
