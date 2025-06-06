@@ -9769,7 +9769,7 @@ bool CHThorXmlReadActivity::openNext()
         //MORE: The following code should really use inputstream instead of creating the inputfilestream here
         //but the xml reading currently uses an IFileIOStream rather than an IBufferedSerialInputStream
         //(Xml reading could be optimized if it did use the buffered serial input stream)
-        OwnedIFileIOStream inputfileiostream = createIOStream(inputfileio);
+        OwnedIFileIOStream inputfileiostream = createBufferedIOStream(inputfileio, (size32_t)-1);
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
         if (kind==TAKjsonread)
