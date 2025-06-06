@@ -1369,7 +1369,7 @@ public:
 };
 
 
-class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity, implements IFileSerialStreamCallback
+class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity
 {
     typedef CRemoteDiskBaseActivity PARENT;
 
@@ -1382,6 +1382,7 @@ protected:
     bool cursorDirty = false;
     bool fetching = false;
     unsigned __int64 bytesRead = 0;
+    unsigned __int64 lastBytesRead = 0;
     // virtual field values
     unsigned partNum = 0;
     offset_t baseFpos = 0;
@@ -1435,7 +1436,7 @@ protected:
                 compressed = false;
             }
         }
-        inputStream.setown(createFileSerialStream(iFileIO, startPos, (offset_t)-1, (size32_t)-1, this));
+        inputStream.setown(createFileSerialStream(iFileIO, startPos, (offset_t)-1, (size32_t)-1));
 
         opened = true;
         eofSeen = false;
@@ -1443,14 +1444,11 @@ protected:
     }
     void close()
     {
+        if (iFileIO)
+            bytesRead += iFileIO->getStatistic(StSizeDiskRead);
         iFileIO.clear();
         opened = false;
         eofSeen = true;
-    }
-// IFileSerialStreamCallback impl.
-    virtual void process(offset_t ofs, size32_t sz, const void *buf) override
-    {
-        bytesRead += sz;
     }
 public:
     CRemoteStreamReadBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
@@ -1464,8 +1462,11 @@ public:
     virtual void flushStatistics(CClientStats &stats) override
     {
         // NB: will be called by same thread that is reading.
-        stats.addRead(bytesRead);
-        bytesRead = 0;
+        offset_t totalBytesRead = bytesRead;
+        if (iFileIO)
+            totalBytesRead += iFileIO->getStatistic(StSizeDiskRead);
+        stats.addRead(totalBytesRead - lastBytesRead);
+        lastBytesRead = totalBytesRead;
     }
 // IRemoteReadActivity impl.
     virtual void seek(offset_t pos) override
