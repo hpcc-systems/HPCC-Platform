@@ -48,9 +48,9 @@ static IBufferedSerialInputStream * createInputStream(IFileIO * inputfileio, con
     assertex(providerOptions);
     size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
 
-    //MORE:
+    //MORE: Add support for passing these values to the function
     offset_t startOffset = 0;
-    offset_t length = (offset_t)-1;
+    offset_t length = unknownFileSize;
 
     //MORE: Is this a good idea?
     if (length == unknownFileSize)
@@ -83,8 +83,8 @@ static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, 
         {
             Owned<IExpander> eexp;
             if (encryptionKey.length()!=0)
-                eexp.setown(createAESExpander256((size32_t)encryptionKey.length(),encryptionKey.bufferBase()));
-            inputfileio.setown(createCompressedFileReader(inputFile,eexp));
+                eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+            inputfileio.setown(createCompressedFileReader(inputFile, eexp));
             if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
             {
                 inputfileio.setown(inputFile->open(IFOread));
@@ -538,7 +538,6 @@ BinaryDiskRowReader::BinaryDiskRowReader(IRowReadFormatMapping * _mapping, const
     actualRecord = &actualDiskMeta->queryRecordAccessor(true);
     needToTranslate = (translator && translator->needsTranslate());
 
-    //Perform a sanity check on the for fixed size records
     bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
 
     const IPropertyTree * formatOptions = mapping->queryFormatOptions();
@@ -548,6 +547,7 @@ BinaryDiskRowReader::BinaryDiskRowReader(IRowReadFormatMapping * _mapping, const
     {
         if (fixedDiskRecordSize)
         {
+            //Perform a sanity check on the size of a file containing fixed size records
             if (grouped)
                 fixedDiskRecordSize++;
             if (!((dfsRecordSize == fixedDiskRecordSize) || (grouped && (dfsRecordSize+1 == fixedDiskRecordSize)))) //last for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte

@@ -1465,7 +1465,7 @@ public:
         offset_t totalBytesRead = bytesRead;
         if (iFileIO)
             totalBytesRead += iFileIO->getStatistic(StSizeDiskRead);
-        stats.addRead(bytesRead - lastBytesRead);
+        stats.addRead(totalBytesRead - lastBytesRead);
         lastBytesRead = totalBytesRead;
     }
 // IRemoteReadActivity impl.

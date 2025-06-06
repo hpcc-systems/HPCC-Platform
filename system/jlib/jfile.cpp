@@ -6266,7 +6266,7 @@ public:
                 return;
         }
 
-        Owned<IException> e = makeStringExceptionV(-1,"InputStream::get read past end of stream (%u,%u) @offset %llu",(unsigned)len,(unsigned)totalRead, tell()-totalRead);
+        Owned<IException> e = makeStringExceptionV(-1, "InputStream::get read past end of stream (%u,%u) @offset %llu", (unsigned)len, (unsigned)totalRead, tell()-totalRead);
         ERRLOG(e);
         throw e.getClear();
     }
