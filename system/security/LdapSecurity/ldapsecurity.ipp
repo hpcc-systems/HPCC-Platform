@@ -384,6 +384,7 @@ private:
     static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SMF_RetrieveUserData | SMF_RemoveResources);
     StringBuffer m_hpccInternalScope;
     bool m_useLegacyDefaultFileScopePermissionCaching = false;
+    bool m_useLegacySuperUserStatusByNameMatchHPCCAdminUser = true;
 
 public:
     IMPLEMENT_IINTERFACE
