@@ -2,7 +2,7 @@ import * as React from "react";
 import { Icon, Shimmer } from "@fluentui/react";
 import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
@@ -191,7 +191,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     }, [logCount, logsEnabled, logsStatusMessage, workunit?.Archived, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, workunit?.ECLWUProcessList?.ECLWUProcess?.length, wuid]);
 
     return <FullscreenFrame fullscreen={fullscreen}>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <div style={{ height: "100%" }}>
                 <FullscreenStack fullscreen={fullscreen}>
                     <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />

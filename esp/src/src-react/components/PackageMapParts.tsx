@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import * as parser from "dojox/xml/parser";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
@@ -145,7 +145,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
     }, [selection]);
 
     return <>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <HolyGrail
                 header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={

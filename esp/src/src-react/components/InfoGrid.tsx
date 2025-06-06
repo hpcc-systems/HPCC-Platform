@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps, Link, SelectionMode } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
@@ -246,7 +246,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
 
     return <div style={{ height: "100%", overflow: "hidden" }}>
         <CommandBar items={buttons} farItems={copyButtons} />
-        <SizeMe monitorHeight >{({ size }) =>
+        <SizeMe >{({ size }) =>
             <FluentGrid
                 data={data}
                 primaryID={"id"}

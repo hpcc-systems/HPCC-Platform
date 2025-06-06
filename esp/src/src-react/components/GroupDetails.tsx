@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps, MessageBar, MessageBarType, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
@@ -57,7 +57,7 @@ export const GroupDetails: React.FunctionComponent<GroupDetailsProps> = ({
         }
     ], [canSave, groupName]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
+    return <SizeMe>{({ size }) =>
         <Pivot
             overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
             onLinkClick={evt => {

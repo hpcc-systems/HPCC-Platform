@@ -21,7 +21,7 @@ import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 
 const logger = scopedLogger("src-react/components/Files.tsx");
 
@@ -351,8 +351,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <SizeMe monitorHeight>{({ size }) =>
-                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <SizeMe>{({ size }) =>
+                    <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
                             <FluentPagedGrid
                                 store={gridStore}

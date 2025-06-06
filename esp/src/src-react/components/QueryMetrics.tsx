@@ -1,5 +1,5 @@
 import * as React from "react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { useQuerySnapshots } from "../hooks/query";
 import { pushUrl } from "../util/history";
@@ -42,7 +42,7 @@ export const QueryMetrics: React.FunctionComponent<QueryMetricsProps> = ({
         return retVal;
     }, [snapshots, wuid]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
+    return <SizeMe>{({ size }) =>
         <div style={{ height: "100%" }}>
             <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
             <DelayLoadedPanel visible={tab === "statistics"} size={size}>

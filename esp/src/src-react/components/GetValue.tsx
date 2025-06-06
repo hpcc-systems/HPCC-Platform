@@ -1,6 +1,6 @@
 import * as React from "react";
 import { DefaultButton, DetailsList, DetailsListLayoutMode, IColumn } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { csvParse } from "d3-dsv";
 import { DaliService, WsDali } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -50,7 +50,7 @@ export const GetValue: React.FunctionComponent<GetValueProps> = ({
         }} onChange={(id, value) => {
             setPath(value);
         }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
-        main={<SizeMe monitorHeight>{({ size }) => {
+        main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
                 <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>

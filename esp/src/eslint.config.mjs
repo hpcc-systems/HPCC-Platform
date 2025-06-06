@@ -25,7 +25,8 @@ export default tseslint.config(
             "no-empty-pattern": "off",
             "no-useless-escape": "off",
             "prefer-rest-params": "off",
-
+            "quotes": ["error", "double", { "avoidEscape": true }],
+            "semi": ["error", "always"],
             "@typescript-eslint/ban-ts-comment": [
                 "error",
                 {
