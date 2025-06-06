@@ -24,10 +24,10 @@ We'll run our 389ds and PLA in a Docker container launched from platform source:
 
 These instructions create a persistent volume for the DS inside your directory, but you can customize the docker-compose file to use another location. All of the server state is stored in the mounted volume, so if you want to be able to easily switch between different configurations you can easily do so by switching the mounted directory at launch.
 
-1. Edit the `dockerfiles/examples/ldap/docker-compose.yaml` file, customizing the admin password and PVC mount point:
+1. Copy the `dockerfiles/examples/ldap` folder to a location outside of your repo, say `${HOME}/ldap`. Edit the file `${HOME}/ldap/docker-compose.yaml`, customizing the admin password and PVC mount point:
     - Change `DS_DM_PASSWORD: "<directory_manager_pw>"` placeholder with the real password you want to use. This is the password that you will use in PLA to administer the DS, and that the HPCC platform will use to interact with it using LDAP.
     - Under volumes, replace `${HOME}/389ds-data` with the location of your choice.
-2. From `dockerfiles/examples/ldap`, run:
+2. From `${HOME}/ldap`, run:
 
     ```bash
     docker compose up -d
@@ -37,7 +37,12 @@ These instructions create a persistent volume for the DS inside your directory, 
     ```bash
     docker exec -i -t 389ds /usr/sbin/dsconf localhost backend create --suffix dc=example,dc=com --be-name userRoot
     ```
-4. Verify your server is running by using phpLdapAdmin. Visit `hpttp://localhost:8080` and login with username: "cn=Directory Manager" and password as you configured: <directory_manager_pw>.
+4. You should see the response "The database was successfully created". You can verify by seeing files created in `${HOME}/ldap` or by running this command and confirming that `cd=example,dc=com` is listed:
+
+    ```bash
+    docker exec -i -t 389ds /usr/sbin/dsconf localhost backend suffix list
+    ```
+5. Verify your server is running by using phpLdapAdmin. Visit `hpttp://localhost:8080` and login with username: "cn=Directory Manager" and password as you configured: <directory_manager_pw>.
 
 # Bare-Metal Platform + Docker LDAP Setup
 
