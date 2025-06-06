@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { pivotItemStyle } from "../layouts/pivot";
 import { useBuildInfo } from "../hooks/platform";
 import { pushUrl } from "../util/history";
@@ -36,7 +36,7 @@ export const DESDLBindingDetails: React.FunctionComponent<DESDLBindingDetailsPro
             ;
     }, [name]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
+    return <SizeMe>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/${opsCategory}/desdl/bindings/${name}/${evt.props.itemKey}`)}>
             <PivotItem headerText={nlsHPCC.Summary} itemKey="summary" style={pivotItemStyle(size)}>
                 <DESDLBindingSummary processName={binding?.EspProcName} serviceName={binding?.ServiceName} port={binding?.EspPort} bindingName={name} />

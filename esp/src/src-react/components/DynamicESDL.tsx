@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo } from "../hooks/platform";
 import { DESDLBindings } from "./DESDLBindings";
@@ -19,7 +19,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
     const [, { opsCategory }] = useBuildInfo();
 
     return <>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
                 onLinkClick={evt => pushUrl(`/${opsCategory}/desdl/${evt.props.itemKey}`)}
