@@ -75,7 +75,6 @@ public:
 
 IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator); } // initialized in init mod below.
 
-
 //===================================================================
 
 #ifdef USE_READONLY_ATOMTABLE
@@ -844,7 +843,7 @@ class CMapQualifierIterator : public CInterfaceOf<IPropertyTreeIterator>
 public:
     CMapQualifierIterator(CQualifierMap &_map, CValueMap::iterator _startRange, CValueMap::iterator _endRange)
         : startRange(_startRange), endRange(_endRange)
-    {        
+    {
     }
 
 // IPropertyTreeIterator
@@ -870,18 +869,18 @@ IPropertyTreeIterator *checkMapIterator(const char *&xxpath, IPropertyTree &chil
     /*
     * NB: IPT's are not thread safe. It is up to the caller to ensure multiple writers do not contend.
     * ( Dali for example ensures writer threads are exclusive )
-    * 
+    *
     * That means multiple reader threads could be here concurrently.
     * >1 could be constructing the qualifier map for the 1st time.
     * For new attr updates (where map already exists), it will block on map::crit,
     * so that there is at most 1 thread updating the map. The underlying unordered_multiset
     * is thread safe if 1 writer, and multiple readers.
-    * 
+    *
     * On initial map creation, allow concurrency, but only 1 will succeed to swap in the new active map.
     * That could mean a new attr/prop. mapping is lost, until next used.
-    * NB: once the map is live, updates are write ops. and so, just as with the IPT 
+    * NB: once the map is live, updates are write ops. and so, just as with the IPT
     * itself, it is expected that something will keep it thread safe (as Dali does)
-    * 
+    *
     */
 
     // NB: only support simple @<attrname>=<value> qualifiers
@@ -1035,7 +1034,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, CompressionMeth
             }
             free(newData);
             newData = NULL;
-            compressor->Release();  
+            compressor->Release();
         }
         catch (...)
         {
@@ -1339,7 +1338,7 @@ void PTree::appendLocal(size32_t l, const void *data, bool binary)
         value->getValue(mb, binary);
         mb.append(l, data);
         delete value;
-        
+
         l = mb.length();
         data = mb.toByteArray();
     }
@@ -1925,7 +1924,7 @@ bool PTree::renameTree(IPropertyTree *child, const char *newName) // really here
 
 bool PTree::renameProp(const char *xpath, const char *newName)
 {
-    if (!xpath || '\0' == *xpath) 
+    if (!xpath || '\0' == *xpath)
         throw MakeIPTException(-1, "renameProp: cannot rename self, renameProp has to rename in context of a parent");
     if (strcmp(xpath,"/")==0)   // rename of self allowed assuming no parent
         setName(newName);
@@ -2130,7 +2129,7 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
         IPropertyTree *branch, *child;
         resolveParentChild(xpath, branch, child, prop, qualifier);
         if (branch == this)
-        {   
+        {
             IPropertyTree *_val = ownPTree(val);
             dbgassertex(QUERYINTERFACE(_val, PTree));
             PTree *__val = static_cast<PTree *>(_val);
@@ -2363,7 +2362,7 @@ bool PTree::removeProp(const char *xpath)
 
         if (!iter)
             return false;
-        
+
         bool res = false;
         if (iter->first())
         {
@@ -2677,7 +2676,7 @@ restart:
                         iter.setown(new SingleIdIterator(*this));
                 }
             }
-            else 
+            else
             {
                 if (checkPattern(xpath))
                     iter.setown(new SingleIdIterator(*this));
@@ -2728,7 +2727,7 @@ restart:
                                     while (_iter->next());
                                 }
                             }
-                            xpath = xxpath; 
+                            xpath = xxpath;
                         }
                         else
                         {
@@ -2870,7 +2869,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
         case '[':
             if (inQualifier)
             {
-                if (!quote) 
+                if (!quote)
                     throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, str-xpath, "Unclosed qualifier detected");
             }
             else
@@ -3038,51 +3037,69 @@ void PTree::serialize(MemoryBuffer &tgt)
 
 void PTree::deserialize(MemoryBuffer &src)
 {
-    deserializeSelf(src);
+    DeserializeContext deserializeContext;
+    deserializeSelf(src, deserializeContext);
 
-    StringAttr eName;
     for (;;)
     {
         size32_t pos = src.getPos();
-        src.read(eName);
-        if (eName.isEmpty())
+        deserializeContext.name.clear();
+        src.read(deserializeContext.name);
+        if (deserializeContext.name.isEmpty())
             break;
         src.reset(pos); // reset to re-read tree name
         IPropertyTree *child = create(src);
-        addPropTree(eName, child);
+        addPropTree(deserializeContext.name, child);
     }
 }
 
-void PTree::deserializeSelf(MemoryBuffer &src)
+void PTree::deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeContext)
 {
-    setName(NULL);  // needs to be cleared before flags changed
-    StringAttr _name;
-    src.read(_name);
+    setName(nullptr); // needs to be cleared before flags changed
+
+    src.read(deserializeContext.name);
     src.read(flags);
-    if (_name[0]==0) 
-        setName(NULL);
+    if (deserializeContext.name.isEmpty())
+        setName(nullptr);
     else
-        setName(_name);
-    StringAttr attrName, attrValue;
+        setName(deserializeContext.name);
+
+    // Clear attribute array for reuse
+    deserializeContext.attrArray.kill();
+
+    // Collect all attributes first
     for (;;)
     {
-        src.read(attrName);
-        if (attrName.isEmpty())
+        deserializeContext.name.clear();
+        src.read(deserializeContext.name);
+        if (deserializeContext.name.isEmpty())
             break;
-        src.read(attrValue);
-        setProp(attrName, attrValue);
+        deserializeContext.value.clear();
+        src.read(deserializeContext.value);
+
+        // Create new attribute pair and add to array
+        Owned<DeserializeContext::AttributePair> pair = new DeserializeContext::AttributePair();
+        pair->name.set(deserializeContext.name);
+        pair->value.set(deserializeContext.value);
+        deserializeContext.attrArray.append(*pair.getClear());
     }
+
+    // Set all attributes in bulk (atomic operation for better performance)
+    if (deserializeContext.attrArray.ordinality() > 0)
+        setAttributes(deserializeContext.attrArray, true);
 
     size32_t size;
     unsigned pos = src.getPos();
     src.read(size);
-    if (value) delete value;
+    if (value)
+        delete value;
     if (size)
     {
-        src.reset(pos); 
+        src.reset(pos);
         value = new CPTValue(src);
     }
-    else value = NULL;
+    else
+        value = nullptr;
 }
 
 IPropertyTree *PTree::clone(const IPropertyTree &srcTree, bool sub)
@@ -3181,7 +3198,7 @@ IPropertyTree *_createPropBranch(IPropertyTree *tree, const char *xpath, bool cr
             throw MakeIPTException(-1, "createPropBranch: cannot create path : %s", xpath);
         if (!createIntermediates)
             throw MakeIPTException(-1, "createPropBranch: no path found for : %s", path.str());
-    
+
         if ('/' == path.charAt(path.length()-1))
             path.remove(path.length()-1, 1);
         branch = _createPropBranch(tree, path.str(), createIntermediates, created, createdParent);
@@ -3304,7 +3321,7 @@ bool PTree::checkPattern(const char *&xxpath) const
 {
     // Pattern is an additional filter at the current node level
     // It can be [condition], or it can be empty (we don't support anything else)
-    // supported conditions are: 
+    // supported conditions are:
     //    tag - must have child called tag
     //    @attr - must have attribute called attr
     //    tag="value" - must have child called tag with given value
@@ -3739,6 +3756,46 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
         AttrStr::destroy(goer);
 }
 
+void LocalPTree::setAttributes(const CIArray &attrArray, bool atomic)
+{
+    unsigned count = attrArray.ordinality();
+    if (count == 0)
+        return;
+
+    if (atomic)
+    {
+        // Atomic mode: allocate all attributes in one block for optimal performance
+        unsigned currentAttrs = numAttrs;
+        attrs = (AttrValue *)realloc(attrs, (currentAttrs + count) * sizeof(AttrValue));
+
+        // Initialize and set all new attributes
+        for (unsigned i = 0; i < count; i++)
+        {
+            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+            AttrValue *v = &attrs[currentAttrs + i];
+            new(v) AttrValue;  // Initialize new AttrValue
+
+            const char *key = pair.name.str();
+            const char *val = pair.value.str();
+
+            if (!v->key.set(key))
+                v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
+            if (!v->value.set(val))
+                v->value.setPtr(AttrStr::create(val));
+        }
+        numAttrs += count;
+    }
+    else
+    {
+        // Non-atomic mode: set attributes one by one (allows for duplicate handling)
+        for (unsigned i = 0; i < count; i++)
+        {
+            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+            setAttribute(pair.name.str(), pair.value.str(), false);
+        }
+    }
+}
+
 #ifdef TRACE_STRING_SIZE
 std::atomic<__int64> AttrStr::totsize { 0 };
 std::atomic<__int64> AttrStr::maxsize { 0 };
@@ -3982,6 +4039,57 @@ bool CAtomPTree::removeAttribute(const char *key)
     return true;
 }
 
+void CAtomPTree::setAttributes(const CIArray &attrArray, bool atomic)
+{
+    unsigned count = attrArray.ordinality();
+    if (count == 0)
+        return;
+
+    CLeavableCriticalBlock block(hashcrit);  // Thread-safe for CAtomPTree
+
+    if (atomic)
+    {
+        // Atomic mode: allocate all attributes in one block for optimal performance
+        unsigned currentAttrs = numAttrs;
+        AttrValue *newattrs = newAttrArray(currentAttrs + count);
+
+        // Copy existing attributes
+        if (attrs && currentAttrs > 0)
+        {
+            memcpy(newattrs, attrs, currentAttrs * sizeof(AttrValue));
+            freeAttrArray(attrs, currentAttrs);
+        }
+
+        // Initialize and set all new attributes
+        for (unsigned i = 0; i < count; i++)
+        {
+            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+            AttrValue *v = &newattrs[currentAttrs + i];
+
+            // Set key (using atom table for memory efficiency)
+            if (!v->key.set(pair.name.str()))
+                v->key.setPtr(attrHT->addkey(pair.name.str(), isnocase()));
+
+            // Set value (using atom table for memory efficiency)
+            if (!v->value.set(pair.value.str()))
+                v->value.setPtr(attrHT->addval(pair.value.str()));
+        }
+
+        attrs = newattrs;
+        numAttrs = currentAttrs + count;
+    }
+    else
+    {
+        // Non-atomic mode: use individual setAttribute calls (releases lock temporarily)
+        block.leave();  // Release lock during individual calls
+        for (unsigned i = 0; i < count; i++)
+        {
+            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+            setAttribute(pair.name.str(), pair.value.str(), false);
+        }
+    }
+}
+
 
 ///////////////////
 
@@ -4125,7 +4233,7 @@ bool SingleIdIterator::first()
         else
             return false;
     }
-    ++whichNext;            
+    ++whichNext;
     return true;
 }
 
@@ -4150,10 +4258,10 @@ bool SingleIdIterator::isValid()
 class StackElement
 {
 public:
-    void init(IPropertyTreeIterator *_iter, const char *_xpath) 
+    void init(IPropertyTreeIterator *_iter, const char *_xpath)
     {
         xpath = (char *)strdup(_xpath);
-        iter=LINK(_iter); 
+        iter=LINK(_iter);
     }
     void clear()
     {
@@ -4161,10 +4269,10 @@ public:
         if (xpath)
             free(xpath);
     }
-    IPropertyTreeIterator *get(StringAttr &str) 
-    { 
+    IPropertyTreeIterator *get(StringAttr &str)
+    {
         str.setown(xpath); return iter; // NB used in place of pop, as element invalid after call
-    } 
+    }
     IPropertyTreeIterator *iter;
     char * xpath;
 };
@@ -4200,7 +4308,7 @@ void PTStackIterator::setIterator(IPropertyTreeIterator *_iter)
 }
 
 // IIterator impl.
-bool PTStackIterator::first() 
+bool PTStackIterator::first()
 {
     while (stacklen)
         stack[--stacklen].clear();
@@ -4268,7 +4376,7 @@ bool PTStackIterator::next()
                     if ('/' == *xxpath)
                     {
                         --xxpath;
-                        if (iter->isValid()) 
+                        if (iter->isValid())
                             pushToStack(iter, xxpath);
                         setIterator(element->getElements(xxpath));
                         xxpath = "";
@@ -4278,7 +4386,7 @@ bool PTStackIterator::next()
                     break;
                 default:
                     separator=false;
-                    if (iter->isValid()) 
+                    if (iter->isValid())
                         pushToStack(iter, xxpath);
 
                     bool wild, numeric;
@@ -4367,7 +4475,7 @@ void PTStackIterator::pushToStack(IPropertyTreeIterator *iter, const char *xpath
 
 IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 {
-    if (!stacklen) 
+    if (!stacklen)
         return NULL;
     return stack[--stacklen].get(path);
 }
@@ -4441,7 +4549,7 @@ void _synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool 
         ForEachItemIn (a, targetAttrs)
             target->removeProp(targetAttrs.item(a));
     }
-    
+
     bool equal = true;
     MemoryBuffer srcMb;
     const char *src = NULL;
@@ -4473,7 +4581,7 @@ void _synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool 
         else
             target->setProp(NULL, src);
     }
-    
+
     ICopyArrayOf<IPropertyTree> toProcess;
     Owned<IPropertyTreeIterator> iter = source->getElements("*");
     ForEach (*iter)
@@ -4602,7 +4710,7 @@ IPTreeReadException *createPTreeReadException(int code, const char *msg, const c
             return str;
         }
         MessageAudience errorAudience() const { return MSGAUD_user; }
-    
+
         const char *queryDescription() { return msg; }
         unsigned queryLine() { return line; }
         offset_t queryOffset() { return offset; }
@@ -4966,7 +5074,7 @@ protected:
         readNext();
         skipWS();
         StringBuffer entityName;
-        if ('%' != nextChar) 
+        if ('%' != nextChar)
         {
             readID(entityName);
             skipWS();
@@ -5140,7 +5248,7 @@ protected:
                 text.append(']');
             }
             text.append(nextChar);
-        }           
+        }
     }
     void parsePI(StringBuffer &target)
     {
@@ -5205,7 +5313,7 @@ protected:
                 if (nextChar=='>')
                     return;
                 else if (nextChar != '-') // should be syntax error really.
-                    seen = 0; 
+                    seen = 0;
             }
             else if (nextChar=='-')
                 seen++;
@@ -5428,7 +5536,7 @@ restart:
                     readNext();
                 }
             }
-            else 
+            else
                 error();
 
             _decodeXML(0, attrval.str(), tmpStr.clear());
@@ -5497,7 +5605,7 @@ restart:
                             if (strlen(tagText.str()) != tagText.length())
                                 binary = true;
                         }
-                        break; // exit 
+                        break; // exit
                     }
                     else
                         _loadXML();
@@ -5552,7 +5660,7 @@ class CPullXMLReader : public CXMLReaderBase<X>, implements IPullPTreeReader
     class CStateInfo : public CInterface
     {
     public:
-        CStateInfo() 
+        CStateInfo()
         {
             tag.ensureCapacity(15);
             binary = base64 = false;
@@ -5761,7 +5869,7 @@ public:
                             readNext();
                         }
                     }
-                    else 
+                    else
                         error();
 
                     _decodeXML(0, attrval.str(), tmpStr.clear());
@@ -5859,7 +5967,7 @@ public:
                         const char *m = mark.str();
                         const char *es = m+mark.length();
                         do
-                        { 
+                        {
                             if (!isspace(*m++))
                             {
                                 e->Release();
@@ -5888,7 +5996,7 @@ public:
                             stateInfo->binary = true;
                     }
                     state = tagClose;
-                    break; // exit 
+                    break; // exit
                 }
                 else
                 {
@@ -6264,7 +6372,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
             {
                 const char *m = thislevel;
                 const char *p = m;
-                while (isspace(*p)) 
+                while (isspace(*p))
                     p++;
                 encodeXML(m, out, ENCODE_WHITESPACE, p-m, true);
                 if (*p) {   // check not all spaces
@@ -6738,7 +6846,7 @@ restart:
                     if (']' != *xpath)
                         throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
                 }
-                else 
+                else
                     validateQualifier(xpath);
                 ++xpath;
                 break;
@@ -6766,7 +6874,7 @@ restart:
                             if (index)
                             {
                             }
-                            xpath = xxpath; 
+                            xpath = xxpath;
                         }
                     }
                 }
@@ -9222,10 +9330,10 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
      * ConfigMap settings/areas deliberately not monitored will rely on this config updater mechanism,
      * and if necessary, installed hooks that are called on an update, to perform updates of cached state.
      * See installConfigUpdateHook()
-     * 
+     *
      * NB: most uses of config do not rely on being notified to update state, i.e. most query the config
      * on-demand, which means this mechanism is sufficient to cover most cases.
-     * 
+     *
      * In bare-metal the monitoring mechanism will similarly spot any legacy config file changes, e.g.
      * that would be refreshed during a 'service hpcc-init setup'.
      * Some bare-metal code relies on directly interrogating the environment, for those situations, there is
