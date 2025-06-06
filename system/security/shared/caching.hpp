@@ -142,7 +142,6 @@ public:
     CPermissionsCache(const char * _secMgrClass, ISecManager *secMgr, unsigned cacheTimeoutMinutes = 0)
     {
         m_cacheTimeoutInSeconds = cacheTimeoutMinutes * 60;
-        m_transactionalEnabled = true;   // LDAP MANAGER sets this to true by default (don't want to change existing behavior)
         m_secMgr = secMgr;
         m_defaultPermission = SecAccess_Unknown;    // TO BE DEPRECATED
         m_secMgrClass.set(_secMgrClass);
@@ -176,7 +175,6 @@ public:
     int getCacheTimeout() { return m_cacheTimeoutInSeconds; }
     bool  isCacheEnabled() { return m_cacheTimeoutInSeconds > 0; }
     void managedFileScopesCacheFillThread();
-    bool isTransactionalEnabled() { return m_transactionalEnabled;}
     void flush();
     bool addManagedFileScopes(const IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();
@@ -204,7 +202,6 @@ private:
     mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
     time_t m_cacheTimeoutInSeconds;
-    bool m_transactionalEnabled;
 
     MapUserCache m_userCache;
     mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
