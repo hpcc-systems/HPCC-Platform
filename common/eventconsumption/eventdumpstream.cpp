@@ -69,7 +69,7 @@ public:
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual void visitEvent(EventType id) override
     {
         if (inHeader())
         {
@@ -78,13 +78,11 @@ public:
         }
         openElement(queryEventName(id));
         doVisitEvent(id);
-        return visitContinue;
     }
 
-    virtual bool departEvent() override
+    virtual void departEvent() override
     {
         closeElement();
-        return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
@@ -99,6 +97,8 @@ public:
 protected:
     virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
     {
+        if (EvAttrNone == id)
+            return;
         markup.append("attribute: ").append(name).append(" = ");
         if (quoted)
             markup.append('\'');
@@ -123,7 +123,7 @@ protected:
     }
 };
 
-IEventAttributeVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpTextEventVisitor(out);
 }
@@ -142,7 +142,7 @@ public:
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual void visitEvent(EventType id) override
     {
         if (inHeader())
         {
@@ -151,13 +151,11 @@ public:
         }
         openElement(DUMP_STRUCTURE_EVENT);
         doVisitEvent(id);
-        return visitContinue;
     }
 
-    virtual bool departEvent() override
+    virtual void departEvent() override
     {
         closeElement();
-        return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
@@ -207,7 +205,7 @@ private:
     unsigned indentLevel{0};
 };
 
-IEventAttributeVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpXMLEventVisitor(out);
 }
@@ -226,7 +224,7 @@ public:
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual void visitEvent(EventType id) override
     {
         if (inHeader())
         {
@@ -242,13 +240,11 @@ public:
         else
             openElement();
         doVisitEvent(id);
-        return visitContinue;
     }
 
-    virtual bool departEvent() override
+    virtual void departEvent() override
     {
         closeElement();
-        return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
@@ -341,7 +337,7 @@ private:
     bool firstEvent{true};
 };
 
-IEventAttributeVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpJSONEventVisitor(out);
 }
@@ -359,7 +355,7 @@ public:
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual void visitEvent(EventType id) override
     {
         if (inHeader())
         {
@@ -370,13 +366,11 @@ public:
         else
             openElement(nullptr);
         doVisitEvent(id);
-        return visitContinue;
     }
 
-    virtual bool departEvent() override
+    virtual void departEvent() override
     {
         closeElement();
-        return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
@@ -437,7 +431,7 @@ protected:
     uint8_t indentLevel{0};
 };
 
-IEventAttributeVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpYAMLEventVisitor(out);
 }
@@ -452,6 +446,8 @@ public:
         encodeCSVColumn(markup, "EventName");
         for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
         {
+            if (skipAttribute(a))
+                continue;
             markup.append(",");
             encodeCSVColumn(markup, queryEventAttributeName(EventAttr(a)));
         }
@@ -459,30 +455,35 @@ public:
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual bool visitEvent(CEvent& event) override
     {
         if (inHeader())
             state = State::Events;
-        encodeCSVColumn(markup, queryEventName(id));
-        return visitContinue;
-    }
-
-    virtual bool departEvent() override
-    {
-        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
+        encodeCSVColumn(markup, queryEventName(event.queryType()));
+        for (const CEventAttribute& attr : event.allAttributes)
         {
+            if (skipAttribute(attr.queryId()))
+                continue;
             markup.append(",");
-            if (row[a].get())
-                encodeCSVColumn(markup, row[a].get());
+            if (attr.isAssigned())
+            {
+                switch (attr.queryTypeClass())
+                {
+                case EATCtext:
+                    visitAttribute(attr.queryId(), attr.queryTextValue());
+                    break;
+                case EATCnumeric:
+                    visitAttribute(attr.queryId(), attr.queryNumericValue());
+                    break;
+                case EATCboolean:
+                    visitAttribute(attr.queryId(), attr.queryBooleanValue());
+                    break;
+                default:
+                    throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());
+                }
+            }
         }
         dump(true);
-        // Prepare for the next event by clearing only those row values set by the departed event.
-        // Header attributes are not cleared so that they can be output for each event.
-        for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
-        {
-            if (row[a].get() && !headerAttrs.count(EventAttr(a)))
-                row[a].clear();
-        }
         return true;
     }
 
@@ -491,25 +492,29 @@ public:
     }
 
 protected:
-    virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) override
+    bool skipAttribute(unsigned id) const
+    {
+        switch (id)
+        {
+        case EvAttrRecordedTimestamp:
+        case EvAttrRecordedOption:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    virtual void recordAttribute(EventAttr id, const char*, const char* value, bool) override
     {
         if (id != EvAttrNone)
-        {
-            row[id].set(value);
-            if (inHeader())
-                headerAttrs.insert(id);
-        }
+            encodeCSVColumn(markup, value);
     }
 
 public:
     using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
-
-private:
-    StringAttr row[EvAttrMax];
-    std::set<EventAttr> headerAttrs;
 };
 
-IEventAttributeVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
 {
     return new CDumpCSVEventVisitor(out);
 }

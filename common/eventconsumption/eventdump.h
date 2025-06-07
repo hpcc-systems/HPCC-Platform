@@ -22,25 +22,25 @@
 #include "eventoperation.h"
 
 // Get a visitor that streams visited event data in JSON format.
-extern event_decl IEventAttributeVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in a flat text format.
-extern event_decl IEventAttributeVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in XML format.
-extern event_decl IEventAttributeVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in YAML format.
-extern event_decl IEventAttributeVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in CSV format.
-extern event_decl IEventAttributeVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out);
 
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.
 interface IEventPTreeCreator : extends IInterface
 {
-    virtual IEventAttributeVisitor& queryVisitor() = 0;
+    virtual IEventVisitor& queryVisitor() = 0;
     virtual IPTree* queryTree() const = 0;
 };
 

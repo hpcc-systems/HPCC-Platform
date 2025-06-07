@@ -31,17 +31,15 @@ public: // IEventAttributeVisitor
         return true;
     }
 
-    virtual Continuation visitEvent(EventType id) override
+    virtual void visitEvent(EventType id) override
     {
         active = tree->addPropTree(DUMP_STRUCTURE_EVENT, createPTree());
         doVisitEvent(id);
-        return visitContinue;
     }
 
-    virtual bool departEvent() override
+    virtual void departEvent() override
     {
         active = tree.get();
-        return true;
     }
 
     virtual void departFile(uint32_t bytesRead) override
@@ -72,7 +70,7 @@ IEventPTreeCreator* createEventPTreeCreator()
     class Creator : public CInterfaceOf<IEventPTreeCreator>
     {
     public:
-        virtual IEventAttributeVisitor& queryVisitor() override
+        virtual IEventVisitor& queryVisitor() override
         {
             return *visitor;
         }
