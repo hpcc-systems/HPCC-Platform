@@ -21,16 +21,11 @@
 #include "eventoperation.h"
 #include "eventvisitor.h"
 
-class event_decl CIndexFileSummary : public IEventAttributeVisitor, public CEventConsumingOp
+class event_decl CIndexFileSummary : public IEventVisitor, public CEventConsumingOp
 {
 public: // IEventAttributeVisitor
     virtual bool visitFile(const char *filename, uint32_t version) override;
     virtual bool visitEvent(CEvent& event) override;
-    virtual Continuation visitEvent(EventType id) override;
-    virtual Continuation visitAttribute(EventAttr id, const char *value) override;
-    virtual Continuation visitAttribute(EventAttr id, bool value) override;
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override;
-    virtual bool departEvent() override;
     virtual void departFile(uint32_t bytesRead) override;
 public: // CEventConsumingOp
     virtual bool doOp() override;
@@ -38,7 +33,7 @@ public:
     IMPLEMENT_IINTERFACE;
 protected:
     struct NodeKindSummary;
-    NodeKindSummary& nodeSummary();
+    NodeKindSummary& nodeSummary(__uint64 fileId, __uint64 nodeKind);
     void appendCSVColumn(StringBuffer& line, const char* value);
     void appendCSVColumn(StringBuffer& line, __uint64 value);
 protected:
