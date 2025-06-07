@@ -197,7 +197,7 @@ private:
     byte limit;
 };
 
-class CHotspotEventVisitor : public CInterfaceOf<IEventAttributeVisitor>
+class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
 {
     // Manages the event data for a single file.
     class CActivity
@@ -329,71 +329,18 @@ public: // IEventAttributeVisitor
 
     virtual bool visitEvent(CEvent& event) override
     {
-        return eventDistributor(event, *this);
-    }
-
-    virtual Continuation visitEvent(EventType type) override
-    {
-        auto prepCache = [&](EventType type) {
-            currentEvent = type;
-            currentFileId = 0;
-            currentPath = 0;
-            currentOffset = std::numeric_limits<offset_t>::max();
-            currentBucketKind = BucketAmbiguous;
-        };
-
-        if (!(MetaFileInformation == type || observedEvent == type))
-            return Continuation::visitSkipEvent;
-        prepCache(type);
-        return Continuation::visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, const char * value) override
-    {
-        switch (id)
+        if (event.hasAttribute(EvAttrFileId))
         {
-        case EvAttrPath:
-            currentPath.set(value);
-            break;
-        default:
-            break;
+            EventType type = event.queryType();
+            if (type != MetaFileInformation && type != observedEvent)
+                return true;
+            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+            auto [it, inserted] = activity.try_emplace(fileId, *this, fileId);
+            if (type == observedEvent)
+                it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind)? BucketLeaf : BucketBranch);
+            else
+                it->second.setPath(event.queryTextValue(EvAttrPath));
         }
-        return visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, bool value) override
-    {
-        return visitContinue;
-    }
-
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
-    {
-        switch (id)
-        {
-        case EvAttrFileId:
-            currentFileId = value;
-            break;
-        case EvAttrFileOffset:
-            currentOffset = value;
-            break;
-        case EvAttrNodeKind:
-            currentBucketKind = (value ? BucketLeaf : BucketBranch);
-            break;
-        default:
-            break;
-        }
-        return visitContinue;
-    }
-
-    virtual bool departEvent() override
-    {
-        if (!currentFileId)
-            return true;
-        auto [it, inserted] = activity.try_emplace(currentFileId, *this, currentFileId);
-        if (MetaFileInformation == currentEvent)
-            it->second.setPath(currentPath);
-        else if (observedEvent == currentEvent)
-            it->second.recordEvent(currentOffset, currentBucketKind);
         return true;
     }
 
@@ -420,11 +367,6 @@ private:
     EventType observedEvent{EventNone};
     byte granularityBits{0};
     Activity activity;
-    EventType currentEvent{EventNone}; // last accepted event type
-    __uint64 currentFileId{0}; // last observed index file id
-    StringAttr currentPath; // last observed index file path
-    __uint64 currentOffset{0}; // last observed index file offset
-    BucketKind currentBucketKind{BucketAmbiguous}; // last observed index node kind
 };
 
 bool CIndexHotspotOp::ready() const
