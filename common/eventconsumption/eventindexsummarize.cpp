@@ -24,103 +24,38 @@ bool CIndexFileSummary::visitFile(const char *filename, uint32_t version)
 
 bool CIndexFileSummary::visitEvent(CEvent& event)
 {
-    return eventDistributor(event, *this);
-}
-
-IEventAttributeVisitor::Continuation CIndexFileSummary::visitEvent(EventType id)
-{
-    switch (id)
+    // Implicit event filter applied unconditionally
+    if (queryEventContext(event.queryType()) != EventCtxIndex)
+        return true;
+    __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+    if (event.queryType() == MetaFileInformation)
+        fileInfo[fileId].set(event.queryTextValue(EvAttrPath));
+    else
     {
-    case EventIndexLookup:
-    case EventIndexLoad:
-    case EventIndexEviction:
-    case MetaFileInformation:
-        currentEvent = id;
-        return IEventAttributeVisitor::visitContinue;
-    default:
-        return IEventAttributeVisitor::visitSkipEvent;
-    }
-}
-
-IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, const char *value)
-{
-    switch (id)
-    {
-    case EvAttrPath:
-        // assumes file ID is seen before path
-        fileInfo[currentFileId].set(value);
-        break;
-    default:
-        break;
-    }
-    return IEventAttributeVisitor::visitContinue;
-}
-
-IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, bool value)
-{
-    switch (id)
-    {
-    case EvAttrInCache:
-        if (value)
-            nodeSummary().hits++;
-        else
-            nodeSummary().misses++;
-        break;
-    }
-    return IEventAttributeVisitor::visitContinue;
-}
-
-IEventAttributeVisitor::Continuation CIndexFileSummary::visitAttribute(EventAttr id, __uint64 value)
-{
-    switch (id)
-    {
-    case EvAttrFileId:
-        currentFileId = value;
-        break;
-    case EvAttrNodeKind:
-        currentNodeKind = value;
-        switch (currentEvent)
+        __uint64 nodeKind = event.queryNumericValue(EvAttrNodeKind);
+        NodeKindSummary& summary = nodeSummary(fileId, nodeKind);
+        switch (event.queryType())
         {
+        case EventIndexLookup:
+            if (event.queryBooleanValue(EvAttrInCache))
+                summary.hits++;
+            else
+                summary.misses++;
+            break;
         case EventIndexLoad:
-            nodeSummary().loads++;
+            summary.loads++;
+            summary.loadedSize += event.queryNumericValue(EvAttrExpandedSize);
+            summary.read += event.queryNumericValue(EvAttrReadTime);
+            summary.elapsed += event.queryNumericValue(EvAttrElapsedTime);
             break;
         case EventIndexEviction:
-            nodeSummary().evictions++;
+            summary.evictions++;
+            summary.evictedSize += event.queryNumericValue(EvAttrExpandedSize);
             break;
         default:
             break;
         }
-        break;
-    case EvAttrExpandedSize:
-        switch (currentEvent)
-        {
-        case EventIndexLoad:
-            nodeSummary().loadedSize += value;
-            break;
-        case EventIndexEviction:
-            nodeSummary().evictedSize += value;
-            break;
-        default:
-            break;
-        }
-        break;
-    case EvAttrReadTime:
-        nodeSummary().read += value;
-        break;
-    case EvAttrElapsedTime:
-        nodeSummary().elapsed += value;
-        break;
-    default:
-        break;
     }
-    return IEventAttributeVisitor::visitContinue;
-}
-
-bool CIndexFileSummary::departEvent()
-{
-    currentEvent = EventNone;
-    currentFileId = 0;
-    currentNodeKind = 0;
     return true;
 }
 
@@ -161,16 +96,16 @@ bool CIndexFileSummary::doOp()
     return traverseEvents(inputPath, *this);
 }
 
-CIndexFileSummary::NodeKindSummary& CIndexFileSummary::nodeSummary()
+CIndexFileSummary::NodeKindSummary& CIndexFileSummary::nodeSummary(__uint64 fileId, __uint64 nodeKind)
 {
-    switch (currentNodeKind)
+    switch (nodeKind)
     {
     case 0: // branch
-        return summary[currentFileId].branch;
+        return summary[fileId].branch;
     case 1: // leaf
-        return summary[currentFileId].leaf;
+        return summary[fileId].leaf;
     default:
-        throw makeStringExceptionV(-1, "unknown node kind: %llu", currentNodeKind);
+        throw makeStringExceptionV(-1, "unknown node kind: %llu", nodeKind);
     }
 }
 
