@@ -267,43 +267,9 @@ static unsigned readPacked32(const byte * & cur)
  * When recompressing the other buffer is used as the target, so that the previous
  * compression is preserved in the unusual situation where recompressing makes it larger.
 */
-class CLZ4StreamCompressor final : public CSimpleInterfaceOf<ICompressor>
+class CStreamCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 public:
-    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
-    {
-        auto processOption = [this](const char * option, const char * textValue)
-        {
-            int intValue = atoi(textValue);
-            if (strieq(option, "hclevel"))
-            {
-                if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
-                    hcLevel = intValue;
-            }
-            else if (strieq(option, "maxcompression"))
-            {
-                if ((intValue > 1) && (intValue < 100))
-                    maxCompression = intValue;
-            }
-            else if (strieq(option, "maxRecompress"))
-            {
-                if ((intValue >= 0) && (intValue < 100))
-                    maxRecompress = intValue;
-            }
-        };
-        processOptionString(options, processOption);
-        if (hc)
-            lz4HCStream = LZ4_createStreamHC();
-        else
-            lz4Stream = LZ4_createStream();
-    }
-
-    virtual ~CLZ4StreamCompressor()
-    {
-        LZ4_freeStream(lz4Stream);
-        LZ4_freeStreamHC(lz4HCStream);
-    }
-
     virtual void open(void *buf,size32_t max) override
     {
         result = (byte *)buf;
@@ -323,10 +289,6 @@ public:
         active = 0;
         recompressed = 0;
         compressedSizes.clear();
-        if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
-        else
-            LZ4_resetStream_fast(lz4Stream);
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override
@@ -488,9 +450,25 @@ public:
         throwUnimplemented();
     }
 
-    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
-
 protected:
+    virtual bool processOption(const char * option, const char * textValue)
+    {
+        int intValue = atoi(textValue);
+        if (strieq(option, "maxcompression"))
+        {
+            if ((intValue > 1) && (intValue < 100))
+                maxCompression = intValue;
+        }
+        else if (strieq(option, "maxRecompress"))
+        {
+            if ((intValue >= 0) && (intValue < 100))
+                maxRecompress = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
     byte * queryOutputBuffer() { return (byte *)outputs[active].bufferBase(); }
 
     //Try and compress the uncompressed data using the stream functions.  If that does not succeed try
@@ -511,10 +489,7 @@ protected:
 #endif
             //Try and recompress the entire data stream
             recompressed++;
-            if (hc)
-                LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
-            else
-                LZ4_resetStream_fast(lz4Stream);
+            resetStreamContext();
 
             size32_t savedOutlen = outlen;
             size32_t savedOutputExtra = outputExtra;
@@ -547,7 +522,94 @@ protected:
         return false;
     }
 
-    bool tryCompress()
+    virtual bool tryCompress() = 0;
+    virtual void resetStreamContext() = 0;
+
+protected:
+    size32_t originalMax = 0;
+    size32_t outMax = 0;    // maximum output size
+    size32_t inMax = 0;     // maximum size of the input buffer - to limit the compression ratio
+                            // and because the input buffer cannot be reallocated with the streaming api
+    size32_t inlen = 0;     // total length of input data
+    size32_t lastCompress = 0;  // the offset in the input data that has not been compressed yet.
+    size32_t outlen = 0;    // How much compressed data has been generated, or final size once closed
+    MemoryBuffer outputs[2];
+    MemoryBuffer inma;      // Buffer allocated to store a copy of all the input data - must not be reallocated
+    byte *inbuf = nullptr;  // pointer to the input buffer, cleared when the compression is complete
+    byte *result = nullptr;
+    byte recompressed = 0;  // Number of times we have recompressed the entire buffer
+    byte active = 0;        // Which output buffer is active?
+
+    UnsignedArray compressedSizes;
+    size32_t outputExtra = 0;
+
+    //Options for configuring the compressor:
+    byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
+    byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// See notes on CStreamCompressor above for the serialized stream format
+class CLZ4StreamCompressor final : public CStreamCompressor
+{
+public:
+    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
+    {
+        auto processOption = [this](const char * option, const char * textValue)
+        {
+            this->processOption(option, textValue);
+        };
+        processOptionString(options, processOption);
+        if (hc)
+            lz4HCStream = LZ4_createStreamHC();
+        else
+            lz4Stream = LZ4_createStream();
+    }
+
+    virtual ~CLZ4StreamCompressor()
+    {
+        LZ4_freeStream(lz4Stream);
+        LZ4_freeStreamHC(lz4HCStream);
+    }
+
+    virtual void open(void *buf,size32_t max) override
+    {
+        CStreamCompressor::open(buf, max);
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
+
+protected:
+    virtual bool processOption(const char * option, const char * textValue)
+    {
+        if (CStreamCompressor::processOption(option, textValue))
+            return true;
+        int intValue = atoi(textValue);
+        if (strieq(option, "hclevel"))
+        {
+            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
+                hcLevel = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    virtual void resetStreamContext() override
+    {
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual bool tryCompress() override
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
@@ -584,31 +646,12 @@ protected:
     }
 
 protected:
-    size32_t originalMax = 0;
-    size32_t outMax = 0;    // maximum output size
-    size32_t inMax = 0;     // maximum size of the input buffer - to limit the compression ratio
-                            // and because the input buffer cannot be reallocated with the streaming api
-    size32_t inlen = 0;     // total length of input data
-    size32_t lastCompress = 0;  // the offset in the input data that has not been compressed yet.
-    size32_t outlen = 0;    // How much compressed data has been generated, or final size once closed
-    MemoryBuffer outputs[2];
-    MemoryBuffer inma;      // Buffer allocated to store a copy of all the input data - must not be reallocated
-    byte *inbuf = nullptr;  // pointer to the input buffer, cleared when the compression is complete
-    byte *result = nullptr;
-    byte recompressed = 0;  // Number of times we have recompressed the entire buffer
-    byte active = 0;        // Which output buffer is active?
-
-    UnsignedArray compressedSizes;
-    size32_t outputExtra = 0;
-
     LZ4_stream_t * lz4Stream = nullptr;
     LZ4_streamHC_t * lz4HCStream = nullptr;
 
     //Options for configuring the compressor:
     bool hc = false;
     byte hcLevel = LZ4HC_CLEVEL_DEFAULT;
-    byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
-    byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
 };
 
 
