@@ -196,11 +196,11 @@ jobs:
       cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DINCLUDE_PLUGINS=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh_runner-windows-2019:
+  build-gh_runner-windows-2025:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
-      os: windows-2019
+      os: windows-2025
       cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
