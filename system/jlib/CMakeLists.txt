@@ -47,6 +47,7 @@ find_package(CURL CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
+find_package(zstd CONFIG REQUIRED)
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
@@ -290,6 +291,8 @@ elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
  target_link_libraries ( jlib rt )
 endif ()
+
+target_link_libraries(jlib zstd::libzstd)
 
 if (NOT PLUGIN)
     if (WIN32)
