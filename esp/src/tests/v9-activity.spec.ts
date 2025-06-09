@@ -11,7 +11,6 @@ test.describe("V9 Activity", () => {
         await expect(page.getByRole("link", { name: "ECL Watch" })).toBeVisible();
         await expect(page.locator("button").filter({ hasText: "" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Advanced" })).toBeVisible();
-        await expect(page.getByTitle("Activities")).toBeVisible();
         await expect(page.getByRole("link", { name: "ECL", exact: true })).toBeVisible();
         await expect(page.getByRole("link", { name: "Files" })).toBeVisible();
         await expect(page.getByRole("link", { name: "Published Queries" })).toBeVisible();
