@@ -456,6 +456,7 @@ attribute: bytesRead = 161
                 break;
             case CEventAttribute::State::Assigned:
                 actualAssigned.insert(attr.queryId());
+                break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
                 break;
