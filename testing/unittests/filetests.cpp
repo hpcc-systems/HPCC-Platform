@@ -41,8 +41,6 @@
 
 #include "unittests.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
-
 static constexpr byte zeros[0x100000] = { 0 };
 
 class JlibFileTest : public CppUnit::TestFixture

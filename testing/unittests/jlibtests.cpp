@@ -44,8 +44,6 @@
 
 #include "unittests.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
-
 static const unsigned oneMinute = 60000; // msec
 
 class JlibTraceTest : public CppUnit::TestFixture
