@@ -1041,3 +1041,95 @@ IFileIOStream *createLZ4StreamWrite(IFileIO *base)
     strm->create(base);
     return strm.getClear();
 }
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+#include <zstd.h>
+
+// See notes on CStreamCompressor above for the serialized stream format
+class CZStdStreamCompressor final : public CStreamCompressor
+{
+public:
+    CZStdStreamCompressor(const char * options)
+    {
+        auto processOption = [this](const char * option, const char * textValue)
+        {
+            this->processOption(option, textValue);
+        };
+        processOptionString(options, processOption);
+        lz4Stream = LZ4_createStream();
+    }
+
+    virtual ~CZStdStreamCompressor()
+    {
+        LZ4_freeStream(lz4Stream);
+    }
+
+    virtual void open(void *buf,size32_t max) override
+    {
+        CStreamCompressor::open(buf, max);
+        LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTD; }
+
+protected:
+    virtual bool processOption(const char * option, const char * textValue)
+    {
+        if (CStreamCompressor::processOption(option, textValue))
+            return true;
+        int intValue = atoi(textValue);
+        if (strieq(option, "hclevel"))
+        {
+            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
+                hcLevel = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    virtual void resetStreamContext() override
+    {
+        LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual bool tryCompress() override
+    {
+        size32_t uncompressed = inlen - lastCompress;
+        //Sanity check - this could be the case when a limit has been reduced
+        if (uncompressed == 0)
+            return false;
+
+        size32_t compressedSize = outlen;
+        size32_t remaining = outMax - compressedSize - outputExtra;
+
+        const char * from = (const char *)inbuf + lastCompress;
+        char * to = (char *)queryOutputBuffer() + outlen;
+        int newCompressedSize = LZ4_compress_fast_continue(lz4Stream, from, to, uncompressed, remaining, 1);
+
+#ifdef LZ4LOGGING
+        DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+#endif
+
+        if (newCompressedSize == 0)
+            return false;
+
+        size32_t lenLen = sizePacked(newCompressedSize);
+        if (newCompressedSize + lenLen > remaining)
+            return false;
+
+        compressedSizes.append(newCompressedSize);
+        outputExtra += lenLen;
+        outlen += newCompressedSize;
+        lastCompress = inlen;
+        return true;
+    }
+
+protected:
+    LZ4_stream_t * lz4Stream = nullptr;
+
+    //Options for configuring the compressor:
+    byte hcLevel = LZ4HC_CLEVEL_DEFAULT;
+};

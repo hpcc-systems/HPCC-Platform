@@ -3189,6 +3189,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
     };
+    class CZStdCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "ZSTD"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ZSTD; }
+        virtual ICompressor *getCompressor(const char *options) {
+            return createLZ4Compressor(options);
+        }
+        virtual IExpander *getExpander(const char *options) { return nullptr; }
+    };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -3328,6 +3338,8 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZ4SHC;
         else if (strieq("LZ4S", compStr))
             compMethod = COMPRESS_METHOD_LZ4S;
+        else if (strieq("ZSTD", compStr))
+            compMethod = COMPRESS_METHOD_ZSTD;
         //else // default is LZ4
     }
     return compMethod;
@@ -3357,6 +3369,8 @@ const char *translateFromCompMethod(unsigned compMethod)
             return "LZ4SHC";
         case COMPRESS_METHOD_LZMA:
             return "LZMA";
+        case COMPRESS_METHOD_ZSTD:
+            return "ZSTD";
         default:
             return ""; // none
     }
