@@ -17,12 +17,11 @@
 
 #include "eventdump.hpp"
 
-// Concrete extension of CDumpEventVisitor<IPTreeEventVisitor> that uses an IPropertyTree to store
-// visited data. The tree is constructed in memory and is available via the `queryTree` method
-// after visitation.
+// Concrete extension of CDumpEventVisitor that uses an IPropertyTree to store visited data. The
+// tree is constructed in memory and is available via the `queryTree` method after visitation.
 class CPTreeEventVisitor : public CDumpEventVisitor
 {
-public: // IEventAttributeVisitor
+public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         tree.setown(createPTree(DUMP_STRUCTURE_ROOT));

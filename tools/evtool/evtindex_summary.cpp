@@ -21,7 +21,6 @@
 #include "jevent.hpp"
 #include "jstream.hpp"
 #include "jstring.hpp"
-#include <map>
 
 // Connector between the CLI and the index file summary operation.
 class CEvtIndexSummaryCommand : public TEventConsumingCommand<CIndexFileSummary>

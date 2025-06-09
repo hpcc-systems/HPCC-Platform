@@ -239,8 +239,8 @@ protected:
         }
     };
 
-public: // IEventVisitorDecorator
-    IMPLEMENT_IEVENTVISITORDECORATOR;
+public: // IEventVisitationLink
+    IMPLEMENT_IEVENTVISITATIONLINK;
 
     virtual bool visitEvent(CEvent& event) override
     {
@@ -267,8 +267,8 @@ public: // IEventVisitorDecorator
                 return true;
         }
 
-        // Forward the event to the decorated visitor.
-        return decorated->visitEvent(event);
+        // Forward the event to the next linked visitor.
+        return nextLink->visitEvent(event);
     }
 
 public: // IEventFilter

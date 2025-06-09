@@ -470,13 +470,13 @@ public:
                 switch (attr.queryTypeClass())
                 {
                 case EATCtext:
-                    visitAttribute(attr.queryId(), attr.queryTextValue());
+                    doVisitAttribute(attr.queryId(), attr.queryTextValue());
                     break;
                 case EATCnumeric:
-                    visitAttribute(attr.queryId(), attr.queryNumericValue());
+                    doVisitAttribute(attr.queryId(), attr.queryNumericValue());
                     break;
                 case EATCboolean:
-                    visitAttribute(attr.queryId(), attr.queryBooleanValue());
+                    doVisitAttribute(attr.queryId(), attr.queryBooleanValue());
                     break;
                 default:
                     throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());

@@ -44,6 +44,7 @@ protected:
     virtual void usageFilters(IBufferedSerialOutputStream& out);
     virtual void usageParameters(IBufferedSerialOutputStream& out);
     virtual void usageDetails(IBufferedSerialOutputStream& out);
+    virtual IPTree* loadConfiguration(const char* path) const;
 protected:
     bool isHelp = false;
 };
@@ -56,8 +57,6 @@ protected:
 // `event_op_t` must implement the following public interface:
 // - `bool ready() const`: returns true if the operation has sufficient information to proceed
 // - `bool doOp()`: performs the operation and returns true if successful
-// - `void setInputPath(const char* path)`: sets the operation's input file path, which may be
-//   an existing event data file or another file needed by the operation
 template <typename event_op_t>
 class TEvtCLIConnector : public CEvToolCommand
 {
@@ -85,23 +84,6 @@ public: // CEvToolCommand
         }
     }
 protected:
-    virtual bool acceptParameter(const char* arg) override
-    {
-        op.setInputPath(arg);
-        return true;
-    }
-
-    virtual void usageParameters(IBufferedSerialOutputStream& out) override
-    {
-        static const char* usageStr = R"!!!(
-Parameters:
-    <filename>                Full path to an event data file.
-)!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
-    }
-
-protected:
     EventOp op;
 };
 
@@ -111,6 +93,8 @@ protected:
 // command line arguments into operation parameters.
 //
 // `event_consuming_op_t` must also implement the following public interface:
+// - `void setInputPath(const char* path)`: sets the operation's input file path, which may be
+//   an existing event data file or another file needed by the operation
 // - `void setOutput(IBufferedSerialOutputStream& out)`: sets the operation's output stream
 // - `bool acceptEvents(const char* events)`: adds an event type filter to the operation
 // - `bool acceptAttributes(EventAttr attr, const char* values)`: adds an attribute filter to the
@@ -151,6 +135,22 @@ protected:
             return op.acceptAttribute(attr, value);
         }
         return CEvToolCommand::acceptKVOption(key, value);
+    }
+
+    virtual bool acceptParameter(const char* arg) override
+    {
+        op.setInputPath(arg);
+        return true;
+    }
+
+    virtual void usageParameters(IBufferedSerialOutputStream& out) override
+    {
+        static const char* usageStr = R"!!!(
+Parameters:
+    <filename>                Full path to an event data file.
+)!!!";
+        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
     }
 
     virtual void usageFilters(IBufferedSerialOutputStream& out) override
@@ -245,16 +245,4 @@ Filters:
         static size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
-};
-
-// Concrete implementation of the command interface that manages a choice of multiple subcommands.
-class CEvtCommandGroup : public CInterfaceOf<IEvToolCommand>
-{
-public: // IEvToolCommand
-    virtual int dispatch(int argc, const char* argv[], int pos) override;
-    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override;
-public:
-    CEvtCommandGroup(CmdMap&& _commands);
-protected:
-    CmdMap commands;
 };

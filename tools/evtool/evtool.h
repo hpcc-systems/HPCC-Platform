@@ -34,6 +34,19 @@ interface IEvToolCommand : extends IInterface
 using CmdCreator = std::function<IEvToolCommand*()>;
 using CmdMap = std::map<std::string, CmdCreator>;
 
+// Concrete implementation of the command interface that manages a choice of multiple subcommands.
+class CEvtCommandGroup : public CInterfaceOf<IEvToolCommand>
+{
+public: // IEvToolCommand
+    virtual int dispatch(int argc, const char* argv[], int pos) override;
+    virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override;
+public:
+    CEvtCommandGroup(CmdMap& _commands);
+    CEvtCommandGroup(CmdMap&& _commands);
+protected:
+    CmdMap commands;
+};
+
 extern IBufferedSerialOutputStream& consoleOut();
 extern IBufferedSerialOutputStream& consoleErr();
 extern void cleanupConsole();
