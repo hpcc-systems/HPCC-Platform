@@ -21,4 +21,15 @@ In order to to even intiate all the code written in this file only certain tags 
 - "!community_8.0.*"
 
 - "!community_7.*"
+
+# Jobs:
+
+# Preamble
+Purpose of this jobs is to defiue reusable variables for the rest of the workflow
+
+- Generates Dynamic
+
+- Additionally uses these variables to be reused by all other jobs
+  
+
   
