@@ -22,7 +22,7 @@ In order to use the buildvcpkg workflow the following tools/enviroments must be 
 
 - vcpkg(manage C++ tools such as system libraries)
 
-# Build Steps
+# Steps
 How the workflow proceeds depending on the trigger type:
 1.Trigger Event
 
@@ -38,7 +38,7 @@ runs when:
    - Lastly once everything has been run, the output is packaged in form of docker image, packages, etc
    - One specifc build is the build-workflow-dispatch, here the workflow is manually triggered based on user input and the HPCC platform is compiled based on this input
    
-3. Tests: once the build has been setup and the HPCC Platform is compiled these tests check for if this platform is benhaving correctly now
+3. Tests Jobs: once the build has been setup and the HPCC Platform is compiled these tests check for if this platform is benhaving correctly now
 
 - test-smoke: Lightweight smoketests - Which check the basic requirements of the build ensuring, anything does't crash. Essentially makes sure the platform can be installed and run successfully
 
