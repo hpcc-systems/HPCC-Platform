@@ -475,7 +475,7 @@ protected:
     //recompressing all the data that has been written so far to see if that shrinks.
     bool tryFullCompress()
     {
-        if (tryCompress())
+        if (tryCompress(false))
             return true;
 
         //No benefit in trying to recompress if there is no more data to compress, and we already have a single block
@@ -502,7 +502,7 @@ protected:
             outputExtra = sizeof(size32_t) + 1;
             lastCompress = 0;
 
-            if (tryCompress())
+            if (tryCompress(recompressed == maxRecompress))
             {
                 //Now only a single compressed block
                 compressedSizes.clear();
@@ -522,7 +522,7 @@ protected:
         return false;
     }
 
-    virtual bool tryCompress() = 0;
+    virtual bool tryCompress(bool isFinalCompression) = 0;
     virtual void resetStreamContext() = 0;
 
 protected:
@@ -609,7 +609,7 @@ protected:
             LZ4_resetStream_fast(lz4Stream);
     }
 
-    virtual bool tryCompress() override
+    virtual bool tryCompress(bool isFinalCompression [[Maybe_unused]]) override
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
@@ -1104,7 +1104,7 @@ protected:
         }
     }
 
-    virtual bool tryCompress() override
+    virtual bool tryCompress(bool isFinalCompression) override
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
@@ -1121,16 +1121,17 @@ protected:
         ZSTD_inBuffer input = { from, uncompressed, 0 };
         ZSTD_outBuffer output = { to, remaining, 0 };
 
-        // Compress the data
-        size_t result = ZSTD_compressStream(zstdStream, &output, &input);
+        // Compress the data using ZSTD_compressStream2 with continue mode
+
+        ZSTD_EndDirective mode = isFinalCompression ? ZSTD_e_end : ZSTD_e_flush;
+        size_t result = ZSTD_compressStream2(zstdStream, &output, &input, mode);
+        size32_t newCompressedSize = (size32_t)output.pos;
 
         if (ZSTD_isError(result))
         {
-            DBGLOG("ZStd compression error: %s", ZSTD_getErrorName(result));
+            DBGLOG("ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
             return false;
         }
-
-        size32_t newCompressedSize = (size32_t)output.pos;
 
 #ifdef LZ4LOGGING
         DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);

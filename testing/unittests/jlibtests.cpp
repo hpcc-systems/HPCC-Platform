@@ -4190,7 +4190,7 @@ public:
                     continue;
                 if (strieq(type, "randrow"))
                     continue;
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstd"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
@@ -4217,7 +4217,7 @@ public:
         initCompressionBuffer(src, rowSz);
 
 
-        const char * compression = "lz4s";
+        const char * compression = "zstd";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
