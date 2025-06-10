@@ -788,19 +788,9 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-class jlib_decl CLZ4StreamExpander : public CExpanderBase
+class jlib_decl CStreamExpander : public CExpanderBase
 {
 public:
-    CLZ4StreamExpander()
-    {
-        lz4Stream = LZ4_createStreamDecode();
-    }
-
-    ~CLZ4StreamExpander()
-    {
-        LZ4_freeStreamDecode(lz4Stream);
-    }
-
     virtual void expand(void *buf) override
     {
         assertex(buf);
@@ -842,12 +832,6 @@ public:
         memcpy(out+expandedOffset, src, outlen - expandedOffset);
     }
 
-    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
-    {
-        assertex(destSize != 0);
-        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
-    }
-
     virtual size32_t init(const void *blk)
     {
         const size32_t *expsz = (const size32_t *)blk;
@@ -862,12 +846,44 @@ public:
     }
 
 protected:
-    void resetStreamContext()
+    virtual void resetStreamContext() = 0;
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) = 0;
+
+    virtual void *bufptr() { return nullptr;}
+    virtual size32_t buflen() { return outlen;}
+
+protected:
+    const byte *in = nullptr;
+    size32_t outlen = 0;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+class jlib_decl CLZ4StreamExpander : public CStreamExpander
+{
+public:
+    CLZ4StreamExpander()
+    {
+        lz4Stream = LZ4_createStreamDecode();
+    }
+
+    ~CLZ4StreamExpander()
+    {
+        LZ4_freeStreamDecode(lz4Stream);
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+    }
+
+protected:
+    virtual void resetStreamContext() override
     {
         LZ4_setStreamDecode(lz4Stream, nullptr, 0);
     }
 
-    int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize)
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
     {
         return LZ4_decompress_safe_continue(lz4Stream, (const char *)src, (char *)dest, srcSize, destSize);
 
@@ -878,8 +894,6 @@ protected:
 
 protected:
     LZ4_streamDecode_t * lz4Stream = nullptr;
-    const byte *in = nullptr;
-    size32_t outlen = 0;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
