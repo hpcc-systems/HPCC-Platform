@@ -43,6 +43,7 @@
 #include "dadfs.hpp"
 
 #include "remoteerr.hpp"
+#include <math.h>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -1261,6 +1262,7 @@ protected:
     StringAttr fileName; // physical filename
     Linked<IOutputMetaData> inMeta, outMeta;
     unsigned __int64 processed = 0;
+    unsigned __int64 numRecordsRead = 0;
     bool outputGrouped = false;
     bool opened = false;
     bool eofSeen = false;
@@ -1271,15 +1273,35 @@ protected:
     StringAttr logicalFilename;
     unsigned numInputFields = 0;
 
+    bool applySampling = false;
+    unsigned samplingInterval = 0;
+    unsigned __int64 nextSampling = 0;
+
     inline bool fieldFilterMatch(const void * buffer)
     {
+        bool shouldRead = true;
         if (filterRow)
         {
             filterRow->setRow(buffer, filter.getNumFieldsRequired());
-            return filter.matches(*filterRow);
+            shouldRead = filter.matches(*filterRow);
         }
-        else
-            return true;
+
+        if (applySampling)
+        {
+            if (numRecordsRead >= nextSampling)
+            {
+                // We want to sample a random row every samplingInterval rows
+                // this is preferable to sampling every Nth row, because it avoids bias
+                unsigned __int64 startOfCurrentInterval = numRecordsRead - numRecordsRead % samplingInterval;
+                nextSampling = startOfCurrentInterval + samplingInterval + (rand() % samplingInterval);
+            }
+            else
+            {
+                shouldRead = false;
+            }
+        }
+
+        return shouldRead;
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -1307,6 +1329,18 @@ public:
             Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
             ForEach(*filterIter)
                 filter.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+
+        if (config.hasProp("samplingRate"))
+        {
+            double samplingRate = config.getPropReal("samplingRate", 1.0);
+            const double minSamplingInterval = 1e-9;
+            if (samplingRate <= minSamplingInterval || samplingRate >= 1.0)
+                throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: samplingRate must be between (1e-9, 1.0)");
+
+            applySampling = true;
+            samplingInterval = (unsigned) round(1.0 / samplingRate);
+            nextSampling = (rand() % samplingInterval);
         }
     }
 // IRemoteReadActivity impl.
@@ -1565,6 +1599,7 @@ public:
                 prefetchBuffer.finishedRow();
                 const void *ret = outBuilder.getSelf();
                 outBuilder.finishRow(rowSz);
+                ++numRecordsRead;
 
                 if (rowSz)
                 {
@@ -1785,10 +1820,15 @@ public:
                 ++processed;
                 if (!fetching) // harmless, but pointless to skip if fetching
                     inputStream->skip(lineLength);
+                ++numRecordsRead;
                 return ret;
             }
             else
+            {
+                ++numRecordsRead;
                 outBuilder.removeBytes(retSz);
+            }
+
             if (!fetching) // harmless, but pointless to skip if fetching
                 inputStream->skip(lineLength);
         }
@@ -2061,10 +2101,14 @@ public:
                 {
                     outBuilder.finishRow(retSz);
                     ++processed;
+                    ++numRecordsRead;
                     return ret;
                 }
                 else
+                {
                     outBuilder.removeBytes(retSz);
+                    ++numRecordsRead;
+                }
             }
         }
         if (!fetching) // when in fetch mode, don't assume file won't be used again (likely will be another batch)
@@ -2415,8 +2459,11 @@ public:
                         const void *ret = outBuilder.getSelf();
                         outBuilder.finishRow(retSz);
                         ++processed;
+                        ++numRecordsRead;
                         return ret;
                     }
+
+                    ++numRecordsRead;
                 }
                 retSz = 0;
             }
@@ -4711,6 +4758,8 @@ public:
      * "action" - supported actions = "count" (used if "kind" is auto-detected to specify count should be performed instead of read)
      *
      * "keyFilter" - filter the results by this expression (See: HPCC-18474 for more details).
+     * 
+     * "samplingRate" - sampling the dataset at this rate (e.g. 0.1 for 10% sampling)
      *
      * "chooseN" - maximum # of results to return
      *
@@ -4739,6 +4788,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
@@ -4761,6 +4811,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
@@ -4782,6 +4833,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
