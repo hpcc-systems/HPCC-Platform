@@ -194,14 +194,15 @@ public:
     void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
 
     void applyRules();
-    void check(const char * scope, IWuActivity & activity);
+    void check(IWuActivity & activity);
+    void check(IWuSubGraph & subgraph);
     void print();
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
     stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
-
 protected:
-    CIArrayOf<AActivityRule> rules;
+    CIArrayOf<CActivityRule> activityRules;
+    CIArrayOf<CSubgraphRule> subgraphRules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
     CCycleTimer timer;
@@ -388,8 +389,15 @@ void WuScope::applyRules(WorkunitRuleAnalyser & analyser)
 {
     for (auto & cur : scopes)
     {
-        if (cur.queryScopeType() == SSTactivity)
-            analyser.check(cur.queryName(), cur);
+        switch(cur.queryScopeType())
+        {
+        case SSTactivity:
+            analyser.check(static_cast<IWuActivity &>(cur));
+            break;
+        case SSTsubgraph:
+            analyser.check(static_cast<IWuSubGraph &>(cur)) ;
+            break;
+        }
         cur.applyRules(analyser);
     }
 }
@@ -1380,10 +1388,37 @@ WuScope * WorkunitAnalyserBase::resolveActivity(const char * name)
 
 
 //-----------------------------------------------------------------------------------------------------------
+class HighestCostIssueRecorder
+{
+    CIArrayOf<PerformanceIssue> & issues;
+    IWuScope & scope;
+    Linked<PerformanceIssue> highestCostIssue;
+public:
+    HighestCostIssueRecorder(CIArrayOf<PerformanceIssue> & _issues, IWuScope & _scope) : issues(_issues), scope(_scope){};
+
+    ~HighestCostIssueRecorder()
+    {
+        if (highestCostIssue)
+        {
+            StringBuffer fullScopeName;
+            scope.getFullScopeName(fullScopeName);
+            highestCostIssue->setScope(fullScopeName);
+            issues.append(*highestCostIssue.getClear());
+        }
+    }
+
+    void noteIssue(PerformanceIssue * issue)
+    {
+        if (!highestCostIssue || highestCostIssue->getTimePenalty() < issue->getTimePenalty())
+            highestCostIssue.set(issue);
+    }
+};
+
 
 WorkunitRuleAnalyser::WorkunitRuleAnalyser()
 {
-    gatherRules(rules);
+    gatherRules(activityRules);
+    gatherRules(subgraphRules);
 }
 
 void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
@@ -1396,31 +1431,30 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
 }
 
-
-void WorkunitRuleAnalyser::check(const char * scope, IWuActivity & activity)
+void WorkunitRuleAnalyser::check(IWuActivity & wuScope)
 {
     checkMaxExecuteTime();
-    if (activity.getStatRaw(StTimeLocalExecute, StMaxX) < options.queryOption(watOptMinInterestingTime))
-        return;
-    Owned<PerformanceIssue> highestCostIssue;
-    ForEachItemIn(i, rules)
+    HighestCostIssueRecorder issueRecorder(issues, wuScope);
+    ForEachItemIn(i, activityRules)
     {
-        if (rules.item(i).isCandidate(activity))
+        if (activityRules.item(i).isCandidate(wuScope))
         {
             Owned<PerformanceIssue> issue (new PerformanceIssue);
-            if (rules.item(i).check(*issue, activity, options))
-            {
-                if (!highestCostIssue || highestCostIssue->getTimePenalty() < issue->getTimePenalty())
-                    highestCostIssue.setown(issue.getClear());
-            }
+            if (activityRules.item(i).check(*issue, wuScope, options))
+                issueRecorder.noteIssue(issue);
         }
     }
-    if (highestCostIssue)
+}
+
+void WorkunitRuleAnalyser::check(IWuSubGraph & wuScope)
+{
+    checkMaxExecuteTime();
+    HighestCostIssueRecorder issueRecorder(issues, wuScope);
+    ForEachItemIn(i, subgraphRules)
     {
-        StringBuffer fullScopeName;
-        activity.getFullScopeName(fullScopeName);
-        highestCostIssue->setScope(fullScopeName);
-        issues.append(*highestCostIssue.getClear());
+        Owned<PerformanceIssue> issue (new PerformanceIssue);
+        if (subgraphRules.item(i).check(*issue, wuScope, options))
+            issueRecorder.noteIssue(issue);
     }
 }
 

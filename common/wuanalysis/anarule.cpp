@@ -43,7 +43,7 @@ static constexpr bool isWorthReporting(const IAnalyserOptions & options, stat_ty
     return false;
 }
 
-class ActivityKindRule : public AActivityRule
+class ActivityKindRule : public CActivityRule
 {
 public:
     ActivityKindRule(ThorActivityKind _kind) : kind(_kind) {}
@@ -97,7 +97,7 @@ public:
     }
 };
 
-class IoSkewRule : public AActivityRule
+class IoSkewRule : public CActivityRule
 {
 public:
     IoSkewRule(StatisticKind _stat, const char * _category) : stat(_stat), category(_category)
@@ -215,7 +215,7 @@ protected:
     const char * category;
 };
 
-class LocalExecuteSkewRule : public AActivityRule
+class LocalExecuteSkewRule : public CActivityRule
 {
 public:
     virtual bool isCandidate(IWuActivity & activity) const override
@@ -303,7 +303,7 @@ public:
     }
 };
 
-void gatherRules(CIArrayOf<AActivityRule> & rules)
+void gatherRules(CIArrayOf<CActivityRule> & rules)
 {
     rules.append(*new DistributeSkewRule);
     rules.append(*new IoSkewRule(StTimeDiskReadIO, "disk read"));
@@ -311,4 +311,9 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
     rules.append(*new KeyedJoinExcessRejectedRowsRule);
     rules.append(*new LocalExecuteSkewRule);
+}
+
+void gatherRules(CIArrayOf<CSubgraphRule> & rules)
+{
+
 }
