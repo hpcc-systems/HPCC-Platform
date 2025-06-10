@@ -3189,10 +3189,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
     };
-    class CZStdCompressHandler : public CCompressHandlerBase
+    class CZStdSCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "ZSTD"; }
+        virtual const char *queryType() const { return "ZSTDS"; }
         virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ZSTDS; }
         virtual ICompressor *getCompressor(const char *options) { return createZStdStreamCompressor(options); }
         virtual IExpander *getExpander(const char *options)     { return createZStdStreamExpander(); }
@@ -3267,6 +3267,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(lz4Compressor);
     addCompressorHandler(new CLZ4SCompressHandler());
     addCompressorHandler(new CLZ4SHCCompressHandler());
+    addCompressorHandler(new CZStdSCompressHandler());
     return true;
 }
 

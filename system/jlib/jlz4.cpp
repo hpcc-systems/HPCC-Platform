@@ -278,17 +278,15 @@ public:
         outputs[0].ensureCapacity(max);
         outputs[1].ensureCapacity(max);
 
-        outputExtra = sizeof(size32_t) + 1;
-        lastCompress = 0;
         inMax = max*maxCompression;
         inbuf = (byte *)inma.ensureCapacity(inMax);
 
-        outlen = 0;
-        inlen = 0;
-        lastCompress = 0;
+        reinitBufferIndexes(0);
+
         active = 0;
         recompressed = 0;
         compressedSizes.clear();
+        uncompressedSizes.clear();
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override
@@ -373,6 +371,7 @@ public:
             return len;
 
         inlen -= len;
+        ensureValidCompress();
         return 0;
     }
 
@@ -469,6 +468,14 @@ protected:
         return true;
     };
 
+    void reinitBufferIndexes(size32_t newInLen)
+    {
+        outlen = 0;
+        outputExtra = sizeof(size32_t) + 1;
+        inlen = newInLen;
+        lastCompress = 0;
+    }
+
     byte * queryOutputBuffer() { return (byte *)outputs[active].bufferBase(); }
 
     //Try and compress the uncompressed data using the stream functions.  If that does not succeed try
@@ -489,41 +496,50 @@ protected:
 #endif
             //Try and recompress the entire data stream
             recompressed++;
-            resetStreamContext();
-
-            size32_t savedOutlen = outlen;
-            size32_t savedOutputExtra = outputExtra;
-            size32_t savedLastCompress = lastCompress;
-
-            //Compress to the other output buffer - so that the streamed compression is still available if
-            //compressing everything takes up more room.
-            active = 1-active;
-            outlen = 0;
-            outputExtra = sizeof(size32_t) + 1;
-            lastCompress = 0;
-
-            if (tryCompress(recompressed == maxRecompress))
-            {
-                //Now only a single compressed block
-                compressedSizes.clear();
-                compressedSizes.append(outlen);
+            if (recompressInput(recompressed == maxRecompress))
                 return true;
-            }
-
-            //Unusual situation - the size when compressed in a single call is larger then
-            //when compressed as streams, possibly because there is extra uncompressed data.
-            //Restore the previous state - use the previous stream compressed blocks
-            active = 1-active;
-            outlen = savedOutlen;
-            outputExtra = savedOutputExtra;
-            lastCompress = savedLastCompress;
         }
 
         return false;
     }
 
+    bool recompressInput(bool isFinalCompression)
+    {
+        resetStreamContext();
+
+        size32_t savedOutlen = outlen;
+        size32_t savedOutputExtra = outputExtra;
+        size32_t savedLastCompress = lastCompress;
+
+        //Compress to the other output buffer - so that the streamed compression is still available if
+        //compressing everything takes up more room.
+        active = 1-active;
+
+        reinitBufferIndexes(inlen);
+
+        if (tryCompress(isFinalCompression))
+        {
+            //Now only a single compressed block
+            compressedSizes.clear();
+            uncompressedSizes.clear();
+            compressedSizes.append(outlen);
+            uncompressedSizes.append(inlen);
+            return true;
+        }
+
+        //Unusual situation - the size when compressed in a single call is larger then
+        //when compressed as streams, possibly because there is extra uncompressed data.
+        //Restore the previous state - use the previous stream compressed blocks
+        active = 1-active;
+        outlen = savedOutlen;
+        outputExtra = savedOutputExtra;
+        lastCompress = savedLastCompress;
+        return false;
+    }
+
     virtual bool tryCompress(bool isFinalCompression) = 0;
     virtual void resetStreamContext() = 0;
+    virtual void ensureValidCompress() = 0;
 
 protected:
     size32_t originalMax = 0;
@@ -541,6 +557,7 @@ protected:
     byte active = 0;        // Which output buffer is active?
 
     UnsignedArray compressedSizes;
+    UnsignedArray uncompressedSizes;
     size32_t outputExtra = 0;
 
     //Options for configuring the compressor:
@@ -639,10 +656,16 @@ protected:
             return false;
 
         compressedSizes.append(newCompressedSize);
+        uncompressedSizes.append(uncompressed);
         outputExtra += lenLen;
         outlen += newCompressedSize;
         lastCompress = inlen;
         return true;
+    }
+
+    virtual void ensureValidCompress() override
+    {
+        //The compressed buffer is always left in a valid state - so no need to do anything here
     }
 
 protected:
@@ -1166,6 +1189,11 @@ protected:
             DBGLOG("ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
             return false;
         }
+        if (result != 0)
+        {
+            //Not all the data could be flushed
+            return false;
+        }
 
 #ifdef LZ4LOGGING
         DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
@@ -1179,10 +1207,58 @@ protected:
             return false;
 
         compressedSizes.append(newCompressedSize);
+        uncompressedSizes.append(uncompressed);
         outputExtra += lenLen;
         outlen += newCompressedSize;
         lastCompress = inlen;
         return true;
+    }
+
+    virtual void ensureValidCompress() override
+    {
+        // There is no guarantee that the compressed buffer is left in a valid state.
+        // Two stage fall back:
+
+        // 1. Compress everything that was previously compressed as a single block and then check there is
+        //    enough space for the uncompressed data to fit.
+        //    We need to only compress the previous compressed data - not uncompressed, othewise
+        //    it may not fit.
+        size32_t savedInlen = inlen;
+        inlen = lastCompress;
+        if (recompressInput(true))
+        {
+            inlen = savedInlen;
+            size32_t compressedSize = outlen;
+            size32_t remaining = outMax - compressedSize - outputExtra;
+            size32_t uncompressed = inlen - lastCompress;
+            if (uncompressed <= remaining)
+                return;
+        }
+
+        // 2. Boundary case - the compressed data is larger when compressed as a single block than when compressed as multiple blocks
+        //    Recreate the compressed data using the saved sizes
+        resetStreamContext();
+        reinitBufferIndexes(0);
+
+        UnsignedArray savedUncompressedSizes;
+        ForEachItemIn(i1, uncompressedSizes)
+            savedUncompressedSizes.append(uncompressedSizes.item(i1));
+
+        compressedSizes.clear();
+        uncompressedSizes.clear();
+
+        ForEachItemIn(i2, savedUncompressedSizes)
+        {
+            inlen += savedUncompressedSizes.item(i2);
+            if (!tryCompress(i2+1 == savedUncompressedSizes.ordinality()))
+                throwUnexpected();
+        }
+
+        inlen = savedInlen;
+        size32_t compressedSize = outlen;
+        size32_t remaining = outMax - compressedSize - outputExtra;
+        size32_t uncompressed = inlen - lastCompress;
+        assertex(uncompressed <= remaining);
     }
 
 protected:
