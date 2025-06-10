@@ -3084,7 +3084,7 @@ void PTree::deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeCo
         deserializeContext.attrArray.append(*pair.getClear());
     }
 
-    // Set all attributes in bulk (atomic operation for better performance)
+    // Set all attributes in bulk
     setAttributes(deserializeContext.attrArray);
 
     size32_t size;
@@ -3766,6 +3766,10 @@ void LocalPTree::setAttributes(const CIArray &attrArray)
     if (count == 0)
         return;
 
+    // Pre-cache frequently accessed values
+    bool nocase = isnocase();
+    CQualifierMap *map = arrayOwner ? arrayOwner->queryMap() : nullptr;
+
     // Pre-calculate memory requirements and allocate in one block
     unsigned currentAttrs = numAttrs;
     unsigned newTotal = currentAttrs + count;
@@ -3777,23 +3781,25 @@ void LocalPTree::setAttributes(const CIArray &attrArray)
     if (attrs && currentAttrs > 0)
         memcpy(newAttrs, attrs, currentAttrs * sizeof(AttrValue));
 
-    // Get case sensitivity setting once for performance
-    bool nocase = isnocase();
+    // Pre-collect string pointers to reduce repeated method calls
+    const char **keys = (const char **)alloca(count * sizeof(const char *));
+    const char **values = (const char **)alloca(count * sizeof(const char *));
 
-    // Get arrayOwner map once if needed
-    CQualifierMap *map = nullptr;
-    if (arrayOwner)
-        map = arrayOwner->queryMap();
+    for (unsigned i = 0; i < count; i++)
+    {
+        const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+        keys[i] = pair.name.str();
+        values[i] = pair.value.str();
+    }
 
     // Initialize and set all new attributes
     for (unsigned i = 0; i < count; i++)
     {
-        const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
         AttrValue *v = &newAttrs[currentAttrs + i];
         new(v) AttrValue;  // Initialize new AttrValue
 
-        const char *key = pair.name.str();
-        const char *val = pair.value.str();
+        const char *key = keys[i];
+        const char *val = values[i];
 
         // Optimize string allocation by checking short string optimization first
         if (!v->key.set(key))
@@ -3801,12 +3807,12 @@ void LocalPTree::setAttributes(const CIArray &attrArray)
         if (!v->value.set(val))
             v->value.setPtr(AttrStr::create(val));
 
-        // Handle arrayOwner map updates efficiently
+        // Handle arrayOwner map updates
         if (map)
             map->insertEntryIfMapped(key, val, this);
     }
 
-    // Atomically replace the attribute array
+    // Replace the attribute array
     AttrValue *oldAttrs = attrs;
     attrs = newAttrs;
     numAttrs = newTotal;
@@ -4065,7 +4071,11 @@ void CAtomPTree::setAttributes(const CIArray &attrArray)
     if (count == 0)
         return;
 
-    CriticalBlock block(hashcrit);  // Thread-safe for CAtomPTree
+    CriticalBlock block(hashcrit);
+
+    // Pre-cache frequently accessed values
+    bool nocase = isnocase();
+    CQualifierMap *map = arrayOwner ? arrayOwner->queryMap() : nullptr;
 
     // Allocate all attributes in one block for optimal performance
     unsigned currentAttrs = numAttrs;
@@ -4078,19 +4088,35 @@ void CAtomPTree::setAttributes(const CIArray &attrArray)
         freeAttrArray(attrs, currentAttrs);
     }
 
-    // Initialize and set all new attributes
+    // Pre-collect string pointers to reduce repeated method calls
+    const char **keys = (const char **)alloca(count * sizeof(const char *));
+    const char **values = (const char **)alloca(count * sizeof(const char *));
+
     for (unsigned i = 0; i < count; i++)
     {
         const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+        keys[i] = pair.name.str();
+        values[i] = pair.value.str();
+    }
+
+    // Initialize and set all new attributes
+    for (unsigned i = 0; i < count; i++)
+    {
         AttrValue *v = &newattrs[currentAttrs + i];
+        const char *key = keys[i];
+        const char *val = values[i];
 
         // Set key (using atom table for memory efficiency)
-        if (!v->key.set(pair.name.str()))
-            v->key.setPtr(attrHT->addkey(pair.name.str(), isnocase()));
+        if (!v->key.set(key))
+            v->key.setPtr(attrHT->addkey(key, nocase));
 
         // Set value (using atom table for memory efficiency)
-        if (!v->value.set(pair.value.str()))
-            v->value.setPtr(attrHT->addval(pair.value.str()));
+        if (!v->value.set(val))
+            v->value.setPtr(attrHT->addval(val));
+
+        // Handle arrayOwner map updates
+        if (map)
+            map->insertEntryIfMapped(key, val, this);
     }
 
     attrs = newattrs;
