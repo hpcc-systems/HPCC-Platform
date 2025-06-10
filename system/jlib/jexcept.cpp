@@ -1307,11 +1307,40 @@ void jlib_decl setProcessAborted(bool _abortVal)
     processAborted = _abortVal;
 }
 
+static constexpr unsigned SIGNAL_RAISE_DELAY_SECONDS = 20;
+
+#if defined(__linux__)
+  static timer_t killTimerId;
+  static std::atomic<bool> killTimerCreated { false };
+  static CriticalSection killTimerCS;
+#endif
+
+static void raiseKillSigInFuture(unsigned timeoutSec)
+{
+#if defined(__linux__)
+    if (killTimerCreated.load())
+    {
+        struct itimerspec itSpec;
+
+        itSpec.it_value.tv_sec = timeoutSec;
+        itSpec.it_value.tv_nsec = 0;
+        itSpec.it_interval.tv_sec = 0;
+        itSpec.it_interval.tv_nsec = 0;
+
+        timer_settime(killTimerId, 0, &itSpec, 0);
+    }
+#endif
+}
+
 NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *extra)
 {
     static byte nested=0;
     if (nested++)
         return;
+
+    // If the program is aborting because of a corruption in the memory manager,
+    // ensure that it really exits, rather than deadlocking on a memory manager mutex
+    raiseKillSigInFuture(SIGNAL_RAISE_DELAY_SECONDS);
 
     //If the program is terminating then do not try and trace
     if (!queryLogMsgManager())
@@ -1614,6 +1643,25 @@ void jlib_decl enableSEHtoExceptionMapping()
 #endif
     if (SEHnested++)
         return; // already done
+
+#if defined(__linux__)
+    {
+        CriticalBlock block(killTimerCS);
+        if (!killTimerCreated.load())
+        {
+            struct sigevent sigev;
+            sigev.sigev_notify = SIGEV_SIGNAL;
+            sigev.sigev_signo = SIGKILL;
+            sigev.sigev_value.sival_ptr = &killTimerId;
+            sigev.sigev_notify_function = nullptr;
+            sigev.sigev_notify_attributes = NULL;
+            int srtn = timer_create(CLOCK_MONOTONIC, &sigev, &killTimerId);
+            if (srtn == 0)
+                killTimerCreated = true;
+        }
+    }
+#endif
+
 #ifdef _WIN32
     enableThreadSEH();
     SEHrestore = EnableSEHtranslation();
