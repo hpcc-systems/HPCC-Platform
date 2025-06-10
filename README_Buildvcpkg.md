@@ -12,57 +12,46 @@
 # Prerequisites 
 In order to use the buildvcpkg workflow the following tools/enviroments must be installed 
 
-- CMake: ≥ 3.3.2 (implied in usage)
+- CMake: ≥ 3.3.2 (required to generate builds)
 
-- VCPKG: Used for dependency management
+- Docker: Required for containerized builds
 
-- Docke: Required for containerized builds
-
-- NodeJS: 20.x.x (used in ECL Watch build)
+- NodeJS: 20.x.x (used in UI component ECL Watch build)
 
 - GitHub Runners: Supports Ubuntu, macOS, Windows
 
-- Secrets Config: For DockerHub, GH tokens, internal builds
+- vcpkg(manage C++ tools such as system libraries)
 
 # Build Steps
 How the workflow proceeds depending on the trigger type:
 1.Trigger Event
 
-supports:
+runs when:
 - workflow_dispatch(manual run with inputs)
 - pull_request(on main and candidate branches)
 - push (on valid tags)
 - schedule(cron job)
 
-2. Workflow Dispatch Flow(manual inputs)
+2. Build Jobs: compiling/ running HPCC platform across different OS
+   - sets up the build enviroment from the repository depending on the OS
+   - Runs the new build process which is where the compilation/running of the HPCC platform happens
+   - Lastly once everything has been run, the output is packaged in form of docker image, packages, etc
+   - One specifc build is the build-workflow-dispatch, here the workflow is manually triggered based on user input and the HPCC platform is compiled based on this input
    
-build-workflow-dispatch: Builds using input OS and options
+3. Tests: once the build has been setup and the HPCC Platform is compiled these tests check for if this platform is benhaving correctly now
 
-test-workflow-dispatch: Optional smoke test if smoketest is true
+- test-smoke: Lightweight smoketests - Which check the basic requirements of the build ensuring, anything does't crash. Essentially makes sure the platform can be installed and run successfully
 
-3. Pull Request and Push Flow
-build:
+- test-unit: Unit tests - validate the indivual components and functions of the platforms, veryifying eveything works correctly
 
-build docker is able to compile the HPCC platform across many different platforms 
+- test-ui: Web UI tests - Checks the web UI(web-based user interface in managing HPCC System platform) to makesure it loads and behaves as expected
 
-- Ubuntu (20.04, 22.04, 24.04)
--	RockyLinux 8
--	CentOS 7
--	WebAssembly (Emscripten)
--	Windows (2019, 2022)
-- macOS (13, 14)
+- test-bundles-on-thor: Test bundles(pre-packaged reusable componets(ECL libraries, function,etc) to see if they run properly on thor engine in data processing
 
-Tests:
+- test-regression-suite: Full regression suite(automated tests) to ensure any new code doesn't break any if the exisiting features
 
-- test-smoke: Lightweight smoketests
+- test-workflow-dispatch: runs when the manual workflow is intiatedfrom user input, but this is the case only if the input smoketest is equal to true by the user. Essentially this validates the HPCC platform, making sure everything installs correctly doesn't crash due to basic functionality
 
-- test-unit: Unit tests
-
-- test-ui: Web UI tests
-
-- test-bundles-on-thor: Test bundles on Thor cluster
-
-- test-regression-suite: Full regressions tests
 
 Component-Specific Builds
 build-eclwatch: Compiles the ECL Watch front end
