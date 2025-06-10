@@ -1111,7 +1111,7 @@ public:
             throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
     }
 
-    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTD; }
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTDS; }
 
 protected:
     virtual bool processOption(const char * option, const char * textValue)
@@ -1191,3 +1191,78 @@ protected:
     //Options for configuring the compressor:
     int compressionLevel = ZSTD_CLEVEL_DEFAULT;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+class jlib_decl CZStdStreamExpander : public CStreamExpander
+{
+public:
+    CZStdStreamExpander()
+    {
+        zstdDStream = ZSTD_createDStream();
+        if (!zstdDStream)
+            throw MakeStringException(0, "Failed to create ZStd decompression stream");
+    }
+
+    ~CZStdStreamExpander()
+    {
+        if (zstdDStream)
+            ZSTD_freeDStream(zstdDStream);
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("ZStd decompression error: %s", ZSTD_getErrorName(result));
+            return 0;
+        }
+        return (size32_t)result;
+    }
+
+protected:
+    virtual void resetStreamContext() override
+    {
+        size_t result = ZSTD_initDStream(zstdDStream);
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("Failed to reset ZStd decompression stream: %s", ZSTD_getErrorName(result));
+        }
+    }
+
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
+    {
+        ZSTD_inBuffer input = { src, srcSize, 0 };
+        ZSTD_outBuffer output = { dest, destSize, 0 };
+
+        size_t result = ZSTD_decompressStream(zstdDStream, &output, &input);
+
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("ZStd stream decompression error: %s", ZSTD_getErrorName(result));
+            return -1; // Error condition
+        }
+
+        // Return the number of bytes written to the output buffer
+        return (int)output.pos;
+    }
+
+    virtual void *bufptr() { return nullptr;}
+    virtual size32_t buflen() { return outlen;}
+
+protected:
+    ZSTD_DStream * zstdDStream = nullptr;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+ICompressor *createZStdStreamCompressor(const char * options)
+{
+    return new CZStdStreamCompressor(options);
+}
+
+IExpander *createZStdStreamExpander()
+{
+    return new CZStdStreamExpander();
+}

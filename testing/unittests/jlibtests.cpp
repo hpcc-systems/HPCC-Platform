@@ -4217,7 +4217,7 @@ public:
         initCompressionBuffer(src, rowSz);
 
 
-        const char * compression = "lz4s";
+        const char * compression = "zstd";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
