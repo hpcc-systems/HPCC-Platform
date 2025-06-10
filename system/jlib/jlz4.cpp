@@ -408,6 +408,7 @@ public:
 #ifdef LZ4LOGGING
                 DBGLOG("Failed to recompress limit(%u->%u) compressed(%u:0..%u), uncompressed(%u:%u..%u) total(%u)", outMax, newLimit, outlen, lastCompress, inlen - lastCompress, lastCompress, inlen, outlen + 8 + inlen - lastCompress);
 #endif
+                ensureValidCompress();
                 return false;
             }
 
