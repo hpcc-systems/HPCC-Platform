@@ -191,7 +191,7 @@ public:
     {
         auto processOption = [this](const char * option, const char * value)
         {
-            if (strieq(option, "hclevel"))
+            if (strieq(option, "hclevel") || strieq(option, "level"))
                 hcLevel = atoi(value);
         };
         processOptionString(options, processOption);
@@ -578,7 +578,7 @@ public:
     {
         CStreamCompressor::open(buf, max);
         if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
         else
             LZ4_resetStream_fast(lz4Stream);
     }
@@ -591,10 +591,10 @@ protected:
         if (CStreamCompressor::processOption(option, textValue))
             return true;
         int intValue = atoi(textValue);
-        if (strieq(option, "hclevel"))
+        if (strieq(option, "hclevel") || strieq(option, "level"))
         {
             if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
-                hcLevel = intValue;
+                compressionLevel = intValue;
         }
         else
             return false;
@@ -604,7 +604,7 @@ protected:
     virtual void resetStreamContext() override
     {
         if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
         else
             LZ4_resetStream_fast(lz4Stream);
     }
@@ -651,7 +651,7 @@ protected:
 
     //Options for configuring the compressor:
     bool hc = false;
-    byte hcLevel = LZ4HC_CLEVEL_DEFAULT;
+    byte compressionLevel = LZ4HC_CLEVEL_DEFAULT;
 };
 
 
@@ -1058,18 +1058,23 @@ public:
             this->processOption(option, textValue);
         };
         processOptionString(options, processOption);
-        lz4Stream = LZ4_createStream();
+        zstdStream = ZSTD_createCStream();
+        if (!zstdStream)
+            throw makeStringException(0, "Failed to create ZStd compression stream");
     }
 
     virtual ~CZStdStreamCompressor()
     {
-        LZ4_freeStream(lz4Stream);
+        if (zstdStream)
+            ZSTD_freeCStream(zstdStream);
     }
 
     virtual void open(void *buf,size32_t max) override
     {
         CStreamCompressor::open(buf, max);
-        LZ4_resetStream_fast(lz4Stream);
+        size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
+        if (ZSTD_isError(result))
+            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
     }
 
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTD; }
@@ -1080,10 +1085,10 @@ protected:
         if (CStreamCompressor::processOption(option, textValue))
             return true;
         int intValue = atoi(textValue);
-        if (strieq(option, "hclevel"))
+        if (strieq(option, "level"))
         {
-            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
-                hcLevel = intValue;
+            if ((intValue >= ZSTD_minCLevel()) && (intValue <= ZSTD_maxCLevel()))
+                compressionLevel = intValue;
         }
         else
             return false;
@@ -1092,7 +1097,11 @@ protected:
 
     virtual void resetStreamContext() override
     {
-        LZ4_resetStream_fast(lz4Stream);
+        size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("Failed to reset ZStd compression stream: %s", ZSTD_getErrorName(result));
+        }
     }
 
     virtual bool tryCompress() override
@@ -1107,7 +1116,21 @@ protected:
 
         const char * from = (const char *)inbuf + lastCompress;
         char * to = (char *)queryOutputBuffer() + outlen;
-        int newCompressedSize = LZ4_compress_fast_continue(lz4Stream, from, to, uncompressed, remaining, 1);
+
+        // Set up ZStd input and output buffers
+        ZSTD_inBuffer input = { from, uncompressed, 0 };
+        ZSTD_outBuffer output = { to, remaining, 0 };
+
+        // Compress the data
+        size_t result = ZSTD_compressStream(zstdStream, &output, &input);
+
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("ZStd compression error: %s", ZSTD_getErrorName(result));
+            return false;
+        }
+
+        size32_t newCompressedSize = (size32_t)output.pos;
 
 #ifdef LZ4LOGGING
         DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
@@ -1128,8 +1151,8 @@ protected:
     }
 
 protected:
-    LZ4_stream_t * lz4Stream = nullptr;
+    ZSTD_CStream * zstdStream = nullptr;
 
     //Options for configuring the compressor:
-    byte hcLevel = LZ4HC_CLEVEL_DEFAULT;
+    int compressionLevel = ZSTD_CLEVEL_DEFAULT;
 };
