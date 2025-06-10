@@ -739,7 +739,8 @@ public:
         if (overridename.isEmpty()) // shouldn't really need this
             overridename.clear();
         ismulti = ::isMulti(overridename);
-        props.setown(createPTree(mb));
+        DeserializeContext deserializeContext;
+        props.setown(createPTree(mb, deserializeContext));
     }
 
     unsigned queryPartIndex()
@@ -1625,7 +1626,8 @@ public:
                 parts.append(part);
             }
         }
-        attr.setown(createPTree(mb));
+        DeserializeContext deserializeContext;
+        attr.setown(createPTree(mb, deserializeContext));
         if (attr)
         {
             lfnHash = attr->getPropInt("@lfnHash");

@@ -92,7 +92,7 @@ public:
                 throw e.getClear();
             else
                 throw createBarrierAbortException();
-        }   
+        }
         return true;
     }
     virtual void cancel(IException *e) override
@@ -131,7 +131,7 @@ bool CThorInput::suppressLookAhead() const
     return itdl->queryFromActivity()->suppressLookAhead();
 }
 
-// 
+//
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
     : CActivityBase(_container, statsMapping), CEdgeProgress(this), inactiveStats(statsMapping)
@@ -948,7 +948,8 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     waitBarrier = queryJobChannel().createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = queryJobChannel().createBarrier(doneBarrierTag);
-    sourceActDependents.setown(createPTree(mb));
+    DeserializeContext deserializeContext;
+    sourceActDependents.setown(createPTree(mb, deserializeContext));
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)
@@ -1868,7 +1869,7 @@ void CJobSlave::reportGraphEnd(graph_id gid)
         logNodeCacheStats(prefix);
     }
     if (!REJECTLOG(MCthorDetailedDebugInfo))
-    {        
+    {
         JSocketStatistics stats;
         getSocketStatistics(stats);
         StringBuffer s;
@@ -2128,11 +2129,11 @@ public:
         }
     }
     virtual IFile *open() override { throwUnexpected(); }
-    RemoteFilenameArray &queryCopies() 
-    { 
-        if(!part.get()) 
+    RemoteFilenameArray &queryCopies()
+    {
+        if(!part.get())
             part.setown(partDesc->getReplicatedFile());
-        return part->queryCopies(); 
+        return part->queryCopies();
     }
 };
 

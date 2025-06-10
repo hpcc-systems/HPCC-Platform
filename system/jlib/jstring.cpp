@@ -3118,14 +3118,7 @@ StringBuffer& formatWithCommas(unsigned __int64 value, StringBuffer& formatted)
 {
     std::string s = std::to_string(value);
     int n = s.length();
-    int firstGroupLen = n % GROUP_SIZE;
-    if (firstGroupLen == 0)
-    {
-        if (n < GROUP_SIZE + 1)
-            firstGroupLen = n;
-        else
-            firstGroupLen = GROUP_SIZE;
-    }
+    int firstGroupLen = ((n -1) % GROUP_SIZE) + 1;
     int i = 0;
     for (; i < firstGroupLen; i++)
     {
@@ -3134,7 +3127,7 @@ StringBuffer& formatWithCommas(unsigned __int64 value, StringBuffer& formatted)
     for (i = firstGroupLen; i < n; i += GROUP_SIZE)
     {
         formatted.append(',');
-        for (int j = 0; j < GROUP_SIZE && (i + j) < n; j++) {
+        for (int j = 0; j < GROUP_SIZE; j++) {
             formatted.append(s[i + j]);
         }
     }

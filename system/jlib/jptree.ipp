@@ -596,13 +596,6 @@ struct AttrValue
     AttrStrUnionWithValueTable value;
 };
 
-
-struct DeserializeContext
-{
-    StringBuffer name;
-    StringBuffer value;
-};
-
 class jlib_decl PTree : public CInterfaceOf<IPropertyTree>
 {
 friend class SingleIdIterator;
@@ -631,6 +624,7 @@ public:
     ipt_flags queryFlags() const { return (ipt_flags) flags; }
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeContext);
+    void deserialize(MemoryBuffer &src, DeserializeContext &deserializeContext);
     void serializeAttributes(MemoryBuffer &tgt);
 
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
@@ -748,7 +742,7 @@ protected:
     virtual void addingNewElement(IPropertyTree &child, int pos) { }
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) = 0;
-    virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
+    virtual IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
@@ -846,10 +840,11 @@ public:
     {
         return new CAtomPTree(name, flags, value, children);
     }
-    virtual IPropertyTree *create(MemoryBuffer &mb) override
+    virtual IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) override
     {
         IPropertyTree *tree = new CAtomPTree();
-        tree->deserialize(mb);
+        deserializeContext.clear();
+        tree->deserialize(mb, deserializeContext);
         return tree;
     }
 };
@@ -881,10 +876,11 @@ public:
     {
         return new LocalPTree(name, flags, value, children);
     }
-    virtual IPropertyTree *create(MemoryBuffer &mb) override
+    virtual IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) override
     {
         IPropertyTree *tree = new LocalPTree();
-        tree->deserialize(mb);
+        deserializeContext.clear();
+        tree->deserialize(mb, deserializeContext);
         return tree;
     }
 };

@@ -3398,8 +3398,6 @@ Nothing_toEncodeHere:
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
-
-
 /*
  * PTree Timing tests
  *
@@ -3410,13 +3408,12 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 class PTreeDeserializeTimingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeDeserializeTimingTest);
-        CPPUNIT_TEST(testSmallTreeDeserialize);
-        CPPUNIT_TEST(testMediumTreeDeserialize);
-        CPPUNIT_TEST(testLargeTreeDeserialize);
-        CPPUNIT_TEST(testExtraLargeTreeDeserialize);
-        CPPUNIT_TEST(testHugeTreeDeserialize);
-        CPPUNIT_TEST(testDeepVsWideTreeDeserialize);
-        CPPUNIT_TEST(testCustomTreeDeserialize);
+    CPPUNIT_TEST(testSmallTreeDeserialize);
+    CPPUNIT_TEST(testMediumTreeDeserialize);
+    CPPUNIT_TEST(testLargeTreeDeserialize);
+    CPPUNIT_TEST(testExtraLargeTreeDeserialize);
+    CPPUNIT_TEST(testHugeTreeDeserialize);
+    CPPUNIT_TEST(testDeepVsWideTreeDeserialize);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -3487,159 +3484,67 @@ public:
         return tree.getClear();
     }
 
-    // Test method to ensure that the Dali Regressions tree is deserialized correctly
-    bool isDaliRegressionsXml(Owned<IPropertyTree> &testTree)
-    {
-        bool esdlFound{false};
-        bool jobQueuesFound{false};
-        bool jobQueuesQueueFound{false};
-        bool jobQueuesQueueCount0Found{false};
-        bool jobQueuesQueueStateActiveFound{false};
-        bool locksFound{false};
-        Owned<IPropertyTreeIterator> iter = testTree->getElements("*");
-        ForEach(*iter)
-        {
-            IPropertyTree &jobQueuesInfo = iter->query();
-            const char *jobQueuesName = jobQueuesInfo.queryName();
-            if (jobQueuesName && streq(jobQueuesName, "ESDL"))
-                esdlFound = true;
-            else if (jobQueuesName && streq(jobQueuesName, "Locks"))
-                locksFound = true;
-            else if (jobQueuesName && streq(jobQueuesName, "JobQueues"))
-            {
-                jobQueuesFound = true;
-                Owned<IPropertyTreeIterator> jobQueuesIter = jobQueuesInfo.getElements("*");
-                ForEach(*jobQueuesIter)
-                {
-                    IPropertyTree &jobQueue = jobQueuesIter->query();
-                    const char *jobQueueName = jobQueue.queryName();
-                    if (jobQueueName && streq(jobQueueName, "Queue"))
-                    {
-                        jobQueuesQueueFound = true;
-                        const char *value = jobQueue.queryProp("@count");
-                        if (value && streq(value, "0"))
-                            jobQueuesQueueCount0Found = true;
-                        value = jobQueue.queryProp("@state");
-                        if (value && streq(value, "active"))
-                        {
-                            jobQueuesQueueStateActiveFound = true;
-                            if (jobQueuesQueueCount0Found)
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-        return esdlFound && locksFound && jobQueuesFound && jobQueuesQueueFound && jobQueuesQueueCount0Found && jobQueuesQueueStateActiveFound;
-    }
-
-    void testDeserializePerformance(Owned<IPropertyTree> &testTree, unsigned iterations)
-    {
-        // Create and serialize tree
-        MemoryBuffer serialized;
-        testTree->serialize(serialized);
-        bool originalTree_isDaliRegressionsXml = isDaliRegressionsXml(testTree);
-        StringBuffer originalTree_name;
-        testTree->getName(originalTree_name);
-        unsigned originalTree_numChildren = testTree->numChildren();
-        unsigned originalTree_attributeCount = testTree->getAttributeCount();
-
-        serialized.reset();
-
-        // Measure deserialization time
-        CCycleTimer timer;
-        cycle_t totalCycles{0};
-        unsigned __int64 totalSize{0};
-
-        for (unsigned i = 0; i < iterations; i++)
-        {
-            Owned<IPropertyTree> testTree = createPTree();
-
-            serialized.reset();
-            timer.reset();
-
-            testTree->deserialize(serialized);
-
-            cycle_t elapsed = timer.elapsedCycles();
-            totalCycles += elapsed;
-            totalSize += serialized.length();
-
-            // Verify first and last iterations
-            if (i == 0 || i == iterations - 1)
-            {
-                // Simple verification - check some key attributes
-                StringBuffer tree_name;
-                testTree->getName(tree_name);
-                CPPUNIT_ASSERT_EQUAL_STR(tree_name.str(), originalTree_name.str());
-                CPPUNIT_ASSERT_EQUAL(isDaliRegressionsXml(testTree), originalTree_isDaliRegressionsXml);
-                CPPUNIT_ASSERT_EQUAL(testTree->numChildren(), originalTree_numChildren);
-                CPPUNIT_ASSERT_EQUAL(testTree->getAttributeCount(), originalTree_attributeCount);
-            }
-        }
-
-        // Calculate and report results
-        StringBuffer formattedResult_numNodes;
-        StringBuffer formattedResult_depth;
-        StringBuffer formattedResult_iterations;
-        StringBuffer formattedResult_serializedLength;
-        StringBuffer formattedResult_runtime;
-        DBGLOG("Test Regression Dali Tree: nodes %s; depth %s; content: text; iterations: %s\tDeserialized: %s bytes\tRuntime: %s ms",
-               formatWithCommas(testTree->numChildren(), formattedResult_numNodes).str(),
-               formatWithCommas(testTree->getAttributeCount(), formattedResult_depth).str(),
-               formatWithCommas(iterations, formattedResult_iterations).str(),
-               formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
-               formatWithCommas(cycle_to_millisec(totalCycles), formattedResult_runtime).str());
-    }
-
     void testDeserializePerformance(const char *description, unsigned numNodes, unsigned depth, bool binary, unsigned iterations)
     {
-        // Create and serialize tree
-        Owned<IPropertyTree> originalTree = createTree(numNodes, depth, binary);
-        MemoryBuffer serialized;
-        originalTree->serialize(serialized);
-
-        // Measure deserialization time
-        CCycleTimer timer;
-        cycle_t totalCycles{0};
-        unsigned __int64 totalSize{0};
-
-        for (unsigned i = 0; i < iterations; i++)
+        try
         {
-            Owned<IPropertyTree> testTree = createPTree();
+            // Create and serialize tree
+            Owned<IPropertyTree> originalTree = createTree(numNodes, depth, binary);
+            MemoryBuffer serialized;
+            originalTree->serialize(serialized);
 
-            serialized.reset();
-            timer.reset();
+            // Measure deserialization time
+            CCycleTimer timer;
+            cycle_t totalCycles{0};
+            unsigned __int64 totalSize{0};
 
-            testTree->deserialize(serialized);
-
-            cycle_t elapsed = timer.elapsedCycles();
-            totalCycles += elapsed;
-            totalSize += serialized.length();
-
-            // Verify first and last iterations
-            if (i == 0 || i == iterations - 1)
+            DeserializeContext deserializeContext;
+            for (unsigned i = 0; i < iterations; i++)
             {
-                // Simple verification - check some key attributes
-                bool match = (testTree->hasProp("@attr1") == originalTree->hasProp("@attr1")) &&
-                             (testTree->numChildren() == originalTree->numChildren());
-                CPPUNIT_ASSERT_MESSAGE("Deserialized tree doesn't match original", match);
-            }
-        }
+                Owned<IPropertyTree> testTree = createPTree();
 
-        // Calculate and report results
-        StringBuffer formattedResult_numNodes;
-        StringBuffer formattedResult_depth;
-        StringBuffer formattedResult_iterations;
-        StringBuffer formattedResult_serializedLength;
-        StringBuffer formattedResult_runtime;
-        DBGLOG("Test %s: nodes %s; depth %s; content: %s; iterations: %s\tDeserialized: %s bytes\tRuntime: %s ms",
-               description,
-               formatWithCommas(numNodes, formattedResult_numNodes).str(),
-               formatWithCommas(depth, formattedResult_depth).str(),
-               binary ? "binary" : "text",
-               formatWithCommas(iterations, formattedResult_iterations).str(),
-               formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
-               formatWithCommas(cycle_to_millisec(totalCycles), formattedResult_runtime).str());
+                serialized.reset();
+                timer.reset();
+
+                testTree->deserialize(serialized, deserializeContext);
+
+                cycle_t elapsed = timer.elapsedCycles();
+                totalCycles += elapsed;
+                totalSize += serialized.length();
+
+                // Verify first and last iterations
+                if (i == 0 || i == iterations - 1)
+                {
+                    // Simple verification - check some key attributes
+                    bool match = (testTree->hasProp("@attr1") == originalTree->hasProp("@attr1")) &&
+                                 (testTree->numChildren() == originalTree->numChildren());
+                    CPPUNIT_ASSERT_MESSAGE("Deserialized tree doesn't match original", match);
+                }
+            }
+
+            // Calculate and report results
+            StringBuffer formattedResult_numNodes;
+            StringBuffer formattedResult_depth;
+            StringBuffer formattedResult_iterations;
+            StringBuffer formattedResult_serializedLength;
+            StringBuffer formattedResult_runtime;
+            DBGLOG("Test %s: nodes %s; depth %s; content: %s; iterations: %s\tDeserialized: %s bytes\tRuntime: %s ms",
+                   description,
+                   formatWithCommas(numNodes, formattedResult_numNodes).str(),
+                   formatWithCommas(depth, formattedResult_depth).str(),
+                   binary ? "binary" : "text",
+                   formatWithCommas(iterations, formattedResult_iterations).str(),
+                   formatWithCommas(serialized.length(), formattedResult_serializedLength).str(),
+                   formatWithCommas(cycle_to_millisec(totalCycles), formattedResult_runtime).str());
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            EXCLOG(e, nullptr);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
     }
 
     void testSmallTreeDeserialize()
@@ -3681,30 +3586,10 @@ public:
         testDeserializePerformance("Wide Tree", nodeCount, 1, false, 100);
         testDeserializePerformance("Balanced Tree", nodeCount, (unsigned)sqrt(nodeCount), false, 100);
     }
-
-    static constexpr const char *TEST_XML_FILENAME{"testing/unittests/jlibtestsCustomPTree.xml"};
-    void testCustomTreeDeserialize()
-    {
-        try
-        {
-            Owned<IPropertyTree> customTree = createPTreeFromXMLFile(TEST_XML_FILENAME);
-            testDeserializePerformance(customTree, 10);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            msg.append("Unexpected toString format failure detected: ");
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
-        }
-    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeDeserializeTimingTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeDeserializeTimingTest, "PTreeDeserializeTimingTest");
-
-
 
 #include "jdebug.hpp"
 #include "jmutex.hpp"

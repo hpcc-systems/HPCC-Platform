@@ -190,7 +190,8 @@ public:
             MemoryBuffer compressed, decompressed;
             compressed.setBuffer(chars, str.getbytes(), false);
             decompressToBuffer(decompressed, compressed);
-            Owned<IPTree> p = createPTree(decompressed);
+            DeserializeContext deserializeContext;
+            Owned<IPTree> p = createPTree(decompressed, deserializeContext);
             row->setPropTree(name, p.getClear());
         }
         return row;

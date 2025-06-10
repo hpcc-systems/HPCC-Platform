@@ -805,7 +805,8 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
             JBASE64_Decode(base64Resp, compressedRespMb);
             MemoryBuffer decompressedRespMb;
             fastLZDecompressToBuffer(decompressedRespMb, compressedRespMb);
-            Owned<IPropertyTree> meta = createPTree(decompressedRespMb);
+            DeserializeContext deserializeContext;
+            Owned<IPropertyTree> meta = createPTree(decompressedRespMb, deserializeContext);
             IPropertyTree *fileMeta = meta->queryPropTree("FileMeta");
             if (!fileMeta) // file not found
                 return nullptr;
@@ -856,12 +857,12 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, Access
     if (isForeign && !allowForeign())
         throw makeStringExceptionV(0, "foreign access is not permitted from this system (file='%s')", lfn.get());
 
-    // DFS service currently only supports remote files 
+    // DFS service currently only supports remote files
     if (isWrite(accessMode))
         viaDali = true;
     else
     {
-        // switch to Dali if non-remote file, unless "dfsesp-localfiles" enabled (and non-external) 
+        // switch to Dali if non-remote file, unless "dfsesp-localfiles" enabled (and non-external)
         if (!lfn.isRemote())
         {
             if (lfn.isExternal() || (!getComponentConfigSP()->getPropBool("dfsesp-localfiles")))
@@ -934,8 +935,8 @@ public:
     }
 
     virtual IDistributedFile * queryDistributedFile() override
-    { 
-        return dfile.get(); 
+    {
+        return dfile.get();
     }
 
     bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters)
@@ -949,7 +950,7 @@ public:
         if (!onlydfs)
         {
             bool gotlocal = true;
-            if (isAbsolutePath(fname)||(stdIoHandle(fname)>=0)) 
+            if (isAbsolutePath(fname)||(stdIoHandle(fname)>=0))
                 localpath.set(fname);
             else if (!strstr(fname,"::"))
             {
@@ -1044,7 +1045,7 @@ public:
                 return NULL;
             }
         }
-        else 
+        else
             splitDirTail(fileDescPath,dir);
         fileDesc->setDefaultDir(dir.str());
         RemoteFilename rfn;
@@ -1066,20 +1067,20 @@ public:
         return false;
     }
 
-    virtual unsigned numParts() override 
+    virtual unsigned numParts() override
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->numParts();
         return 1;
     }
 
     virtual unsigned numPartCopies(unsigned partnum) override
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->queryPart(partnum).numCopies();
         return 1;
     }
-    
+
     virtual IFile *getPartFile(unsigned partnum,unsigned copy) override
     {
         RemoteFilename rfn;
@@ -1087,7 +1088,7 @@ public:
             return createIFile(getPartFilename(rfn,partnum,copy));
         return NULL;
     }
-    
+
     virtual void getDirAndFilename(StringBuffer &dir, StringBuffer &filename) override
     {
         if (dfile.get())
@@ -1112,7 +1113,7 @@ public:
 
     virtual RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy) override
     {
-        if (dfile.get()) 
+        if (dfile.get())
             dfile->queryPart(partnum).getFilename(rfn,copy);
         else if (localpath.isEmpty())
             lfn.getExternalFilename(rfn);
@@ -1124,11 +1125,11 @@ public:
     StringBuffer &getPartFilename(StringBuffer &path, unsigned partnum,unsigned copy)
     {
         RemoteFilename rfn;
-        if (dfile.get()) 
+        if (dfile.get())
             dfile->queryPart(partnum).getFilename(rfn,copy);
         else if (localpath.isEmpty())
             lfn.getExternalFilename(rfn);
-        else 
+        else
             path.append(localpath);
         if (rfn.isLocal())
             rfn.getLocalPath(path);
@@ -1139,7 +1140,7 @@ public:
 
     virtual bool getPartCrc(unsigned partnum, unsigned &crc) override
     {
-        if (dfile.get())  
+        if (dfile.get())
             return dfile->queryPart(partnum).getCrc(crc);
         Owned<IFile> file = getPartFile(0,0);
         if (file.get()) {
@@ -1151,7 +1152,7 @@ public:
 
     virtual offset_t getPartFileSize(unsigned partnum) override
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->queryPart(partnum).getFileSize(true,false);
         Owned<IFile> file = getPartFile(0,0);
         if (file.get())

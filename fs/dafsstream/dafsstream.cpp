@@ -149,14 +149,16 @@ public:
         JBASE64_Decode(metaInfoBlobB64, compressedMetaInfoMb);
         MemoryBuffer decompressedMetaInfoMb;
         fastLZDecompressToBuffer(decompressedMetaInfoMb, compressedMetaInfoMb);
-        Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb);
+        DeserializeContext deserializeContext;
+        Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb, deserializeContext);
         StringBuffer metaInfoSignature;
         if (metaInfoEnvelope->getProp("signature", metaInfoSignature))
         {
             MemoryBuffer metaInfoBlob;
             metaInfoEnvelope->getPropBin("metaInfoBlob", metaInfoBlob);
 
-            metaInfo.setown(createPTree(metaInfoBlob));
+            deserializeContext.clear();
+            metaInfo.setown(createPTree(metaInfoBlob, deserializeContext));
         }
         else
             metaInfo.set(metaInfoEnvelope);

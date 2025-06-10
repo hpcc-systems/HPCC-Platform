@@ -59,12 +59,12 @@ void usage(const char *exe)
     printf("-nodeinfo <ip>      -- information about the given node (i.e cluster and part)\n");
     printf("-slavenode <cluster> <partno>   -- lists IP of given part (0 for master)\n");
     printf("-backuplist <cluster>           -- list of nodes and backup nodes in cluster\n");
-    printf("-partlist <filename> [0|1]      -- lists the part info for a file\n"); 
+    printf("-partlist <filename> [0|1]      -- lists the part info for a file\n");
     printf("                                   the optional 0 or 1 is the copy\n");
     printf("-perf               -- performance info\n");
     printf("-disconnect <ip>:<port> -- forcably disconnect a clients connection\n");
     printf("-permissions <logicalname> <user> <password> -- get file permissions\n");
-    printf("-unlock <connection_id> [close] -- forcibly disconnect an sds lock\n"); 
+    printf("-unlock <connection_id> [close] -- forcibly disconnect an sds lock\n");
     printf("                                   (use the ConnectionId in hex given by '-locks'\n");
     printf("-settracetransactions    -- trace dali transactions\n");
     printf("-settraceslowtransactions <millisecond-threshold> -- trace slow dali transactions\n");
@@ -161,7 +161,7 @@ void timeQorSDS(bool timeq)
         if (sz<MAXHISTORY)
             sz++;
         in++;
-        if (in>=MAXHISTORY) 
+        if (in>=MAXHISTORY)
             in = 0;
         Sleep(500);                 // stop getting too busy
         if (msTick()-last>5000) {
@@ -177,7 +177,7 @@ void timeQorSDS(bool timeq)
                 a+=res[p];
                 if (res[p]>m)
                     m = res[p];
-            }   
+            }
             a /= sz;
             if (av>0.0) {
                 if (a>av+MININC) inc='+'; else if (a<av-MININC) inc='-'; else inc=' ';
@@ -197,7 +197,7 @@ void timeQorSDS(bool timeq)
                 a+=res[p];
                 if (res[p]>m)
                     m = res[p];
-            }   
+            }
             a /= s;
             if (last10av>0.0) {
                 if (a>last10av+MININC) last10inc='+'; else if (a<last10av-MININC) last10inc='-'; else last10inc=' ';
@@ -216,7 +216,7 @@ void timeQorSDS(bool timeq)
                 a+=res[p];
                 if (res[p]>m)
                     m = res[p];
-            }   
+            }
             a /= s;
             if (last100av>0.0) {
                 if (a>last100av+MININC) last100inc='+'; else if (a<last100av-MININC) last100inc='-'; else last100inc=' ';
@@ -233,7 +233,7 @@ void timeQorSDS(bool timeq)
        querySDS().unsubscribe(sdssubid);
 
 }
-    
+
 void cleanq()
 {
     StringBuffer path("/Queues");
@@ -385,7 +385,7 @@ void backupList(const char *cluster)
             printf("%s\n",str.str());
         }
     }
-    else 
+    else
         UERRLOG("Cluster %s not found", cluster);
 }
 
@@ -397,7 +397,7 @@ void filePermissions(const char *lname,const char *username,const char *password
     printf("Permissions for %s = %d\n",lname,perm);
 }
 
-void nqPingPong(const char *q,const char *q2)   
+void nqPingPong(const char *q,const char *q2)
 {
     if (q2) {
         Owned<INamedQueueConnection> qconn = createNamedQueueConnection(0);
@@ -526,8 +526,9 @@ int main(int _argc, char* argv[])
                     MemoryBuffer mb;
                     mb.append("sdsfetch").append(argv[++i]);
                     getDaliDiagnosticValue(mb);
-                    Owned<IPropertyTree> pt = createPTree(mb);
-                    if (pt) 
+                    DeserializeContext deserializeContext;
+                    Owned<IPropertyTree> pt = createPTree(mb, deserializeContext);
+                    if (pt)
                         toXML(pt,buf,2);
                     printf("%s",buf.str());
                     break;
@@ -685,7 +686,7 @@ int main(int _argc, char* argv[])
                                 buf.clear().append("<=190a");
                         }
                         printf("\n%s:\n%s",arg,buf.str());
-                        if ((i+1<argc)&&(stricmp(arg,"perf")==0)) 
+                        if ((i+1<argc)&&(stricmp(arg,"perf")==0))
                             Sleep(1000*atoi(argv[i+1]));
                         else
                             break;

@@ -8865,7 +8865,7 @@ void CLocalWorkUnit::setSummary(SummaryType type, const SummaryMap &map)
     {
         if (list.length())
             list.append('\n');
-        list.appendf("%01x:%s", (unsigned) flags, name.c_str());    
+        list.appendf("%01x:%s", (unsigned) flags, name.c_str());
     }
     CriticalBlock block(crit);
     IPropertyTree *summaries = ensurePTree(p, "Summaries");
@@ -10621,8 +10621,9 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatS
             // NB: although graphBin introduced in wuidVersion==2,
             // daliadmin can retrospectively compress existing graphs, so need to check for all versions
             MemoryBuffer mb;
+            DeserializeContext deserializeContext;
             if (p->getPropBin("xgmml/graphBin", mb))
-                localGraph.setown(createPTree(mb, ipt_lowmem));
+                localGraph.setown(createPTree(mb, deserializeContext, ipt_lowmem));
             else
                 localGraph.setown(p->getBranch("xgmml/graph"));
             if (!localGraph)
@@ -12378,8 +12379,11 @@ static ILocalWorkUnit * createLocalWorkUnitFromBinary(MemoryBuffer & serialized)
     switch (version)
     {
     case 1:
-        cw->loadPTree(createPTree(serialized, ipt_lowmem));
+    {
+        DeserializeContext deserializeContext;
+        cw->loadPTree(createPTree(serialized, deserializeContext, ipt_lowmem));
         break;
+    }
     default:
         throwUnexpectedX("Unsupported binary workunit format");
     }

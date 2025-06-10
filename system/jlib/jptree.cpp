@@ -3035,28 +3035,50 @@ void PTree::serialize(MemoryBuffer &tgt)
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserialize(MemoryBuffer &src, DeserializeContext &deserializeContext)
+{
+    deserializeSelf(src, deserializeContext);
+    StringBuffer childName;
+
+    for (;;)
+    {
+        size32_t pos = src.getPos();
+        childName.clear();
+        src.read(childName);
+        if (childName.isEmpty())
+            break;
+        src.reset(pos); // reset to re-read tree name
+        IPropertyTree *child = create(src, deserializeContext);
+        addPropTree(childName, child);
+    }
+}
+
 void PTree::deserialize(MemoryBuffer &src)
 {
     DeserializeContext deserializeContext;
+    StringBuffer childName;
+
     deserializeSelf(src, deserializeContext);
 
     for (;;)
     {
         size32_t pos = src.getPos();
-        deserializeContext.name.clear();
-        src.read(deserializeContext.name);
-        if (deserializeContext.name.isEmpty())
+        childName.clear();
+        src.read(childName);
+        if (childName.isEmpty())
             break;
         src.reset(pos); // reset to re-read tree name
-        IPropertyTree *child = create(src);
-        addPropTree(deserializeContext.name, child);
+        IPropertyTree *child = create(src, deserializeContext);
+        addPropTree(childName, child);
     }
 }
 
 void PTree::deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeContext)
 {
-    setName(nullptr); // needs to be cleared before flags changed
+    // TODO DJPS setName(nullptr); // needs to be cleared before flags changed
+    dbgassertex(queryName()==nullptr);
 
+    deserializeContext.clear();
     src.read(deserializeContext.name);
     src.read(flags);
     if (deserializeContext.name.isEmpty())
@@ -3078,8 +3100,7 @@ void PTree::deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeCo
     size32_t size;
     unsigned pos = src.getPos();
     src.read(size);
-    if (value)
-        delete value;
+    delete value;
     if (size)
     {
         src.reset(pos);
@@ -4385,10 +4406,10 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 // factory methods
 
-IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
+IPropertyTree *createPTree(MemoryBuffer &src, DeserializeContext &deserializeContext, byte flags)
 {
     IPropertyTree *tree = createPTree(nullptr, flags);
-    tree->deserialize(src);
+    tree->deserialize(src, deserializeContext);
     return tree;
 }
 
@@ -7183,10 +7204,10 @@ public:
     {
         return new COrderedPTree<BASE_PTREE>(name, SELF::flags, value, children);
     }
-    virtual IPropertyTree *create(MemoryBuffer &mb) override
+    virtual IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) override
     {
         IPropertyTree *tree = new COrderedPTree<BASE_PTREE>();
-        tree->deserialize(mb);
+        tree->deserialize(mb, deserializeContext);
         return tree;
     }
     virtual void createChildMap() override

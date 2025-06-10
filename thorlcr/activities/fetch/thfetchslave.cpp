@@ -104,7 +104,7 @@ protected:
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        CFPosHandler(IFetchHandler &_iFetchHandler, unsigned _count, FPosTableEntry *_offsetTable) 
+        CFPosHandler(IFetchHandler &_iFetchHandler, unsigned _count, FPosTableEntry *_offsetTable)
             : iFetchHandler(_iFetchHandler), count(_count), offsetTable(_offsetTable)
         {
         }
@@ -504,7 +504,7 @@ public:
                     : CKeyFieldExtractBase(activity, in, fetchBaseHelper), rowif(_rowif)
                 {
                 }
-            
+
                 virtual ~CKeyFPosExtract() {}
 
                 const void *nextRow()
@@ -658,11 +658,12 @@ public:
         ICsvParameters *csvInfo = helper->queryCsvParameters();
         assertex(!csvInfo->queryEBCDIC());
 
-        Owned<IPropertyTree> lFProps = createPTree(data);
+        DeserializeContext deserializeContext;
+        Owned<IPropertyTree> lFProps = createPTree(data, deserializeContext);
 
         const char * quotes = lFProps->hasProp("@csvQuote")?lFProps->queryProp("@csvQuote"):NULL;
         const char * separators = lFProps->hasProp("@csvSeparate")?lFProps->queryProp("@csvSeparate"):NULL;
-        const char * terminators = lFProps->hasProp("@csvTerminate")?lFProps->queryProp("@csvTerminate"):NULL;      
+        const char * terminators = lFProps->hasProp("@csvTerminate")?lFProps->queryProp("@csvTerminate"):NULL;
         const char * escapes = lFProps->hasProp("@csvEscape")?lFProps->queryProp("@csvEscape"):NULL;
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
     }
