@@ -3487,11 +3487,62 @@ public:
         return tree.getClear();
     }
 
+    bool isDaliRegressionsXml(Owned<IPropertyTree> &testTree)
+    {
+        bool esdlFound{false};
+        bool jobQueuesFound{false};
+        bool jobQueuesQueueFound{false};
+        bool jobQueuesQueueCount0Found{false};
+        bool jobQueuesQueueStateActiveFound{false};
+        bool locksFound{false};
+        Owned<IPropertyTreeIterator> iter = testTree->getElements("*");
+        ForEach(*iter)
+        {
+            IPropertyTree &jobQueuesInfo = iter->query();
+            const char *jobQueuesName = jobQueuesInfo.queryName();
+            if (jobQueuesName && streq(jobQueuesName, "ESDL"))
+                esdlFound = true;
+            else if (jobQueuesName && streq(jobQueuesName, "Locks"))
+                locksFound = true;
+            else if (jobQueuesName && streq(jobQueuesName, "JobQueues"))
+            {
+                jobQueuesFound = true;
+                Owned<IPropertyTreeIterator> jobQueuesIter = jobQueuesInfo.getElements("*");
+                ForEach(*jobQueuesIter)
+                {
+                    IPropertyTree &jobQueue = jobQueuesIter->query();
+                    const char *jobQueueName = jobQueue.queryName();
+                    if (jobQueueName && streq(jobQueueName, "Queue"))
+                    {
+                        jobQueuesQueueFound = true;
+                        const char *value = jobQueue.queryProp("@count");
+                        if (value && streq(value, "0"))
+                            jobQueuesQueueCount0Found = true;
+                        value = jobQueue.queryProp("@state");
+                        if (value && streq(value, "active"))
+                        {
+                            jobQueuesQueueStateActiveFound = true;
+                            if (jobQueuesQueueCount0Found)
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        return esdlFound && locksFound && jobQueuesFound && jobQueuesQueueFound && jobQueuesQueueCount0Found && jobQueuesQueueStateActiveFound;
+    }
+
     void testDeserializePerformance(Owned<IPropertyTree> &testTree, unsigned iterations)
     {
         // Create and serialize tree
         MemoryBuffer serialized;
         testTree->serialize(serialized);
+        bool originalTree_isDaliRegressionsXml = isDaliRegressionsXml(testTree);
+        StringBuffer originalTree_name;
+        testTree->getName(originalTree_name);
+        unsigned originalTree_numChildren = testTree->numChildren();
+        unsigned originalTree_attributeCount = testTree->getAttributeCount();
+
         serialized.reset();
 
         // Measure deserialization time
@@ -3511,6 +3562,18 @@ public:
             cycle_t elapsed = timer.elapsedCycles();
             totalCycles += elapsed;
             totalSize += serialized.length();
+
+            // Verify first and last iterations
+            if (i == 0 || i == iterations - 1)
+            {
+                // Simple verification - check some key attributes
+                StringBuffer tree_name;
+                testTree->getName(tree_name);
+                CPPUNIT_ASSERT_EQUAL_STR(tree_name.str(), originalTree_name.str());
+                CPPUNIT_ASSERT_EQUAL(isDaliRegressionsXml(testTree), originalTree_isDaliRegressionsXml);
+                CPPUNIT_ASSERT_EQUAL(testTree->numChildren(), originalTree_numChildren);
+                CPPUNIT_ASSERT_EQUAL(testTree->getAttributeCount(), originalTree_attributeCount);
+            }
         }
 
         // Calculate and report results

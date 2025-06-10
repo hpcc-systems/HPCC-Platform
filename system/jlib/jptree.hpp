@@ -92,7 +92,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void setProp(const char *xpath, const char *val) = 0;
     virtual void addProp(const char *xpath, const char *val) = 0;
     virtual void appendProp(const char *xpath, const char *val) = 0;
-    
+
     virtual bool getPropBool(const char *xpath, bool dft=false) const = 0;
     virtual void setPropBool(const char *xpath, bool val) = 0;
     virtual void addPropBool(const char *xpath, bool val) = 0;

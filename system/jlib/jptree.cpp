@@ -3085,8 +3085,7 @@ void PTree::deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeCo
     }
 
     // Set all attributes in bulk (atomic operation for better performance)
-    if (deserializeContext.attrArray.ordinality() > 0)
-        setAttributes(deserializeContext.attrArray, true);
+    setAttributes(deserializeContext.attrArray);
 
     size32_t size;
     unsigned pos = src.getPos();
@@ -3761,44 +3760,60 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
         AttrStr::destroy(goer);
 }
 
-void LocalPTree::setAttributes(const CIArray &attrArray, bool atomic)
+void LocalPTree::setAttributes(const CIArray &attrArray)
 {
     unsigned count = attrArray.ordinality();
     if (count == 0)
         return;
 
-    if (atomic)
+    // Pre-calculate memory requirements and allocate in one block
+    unsigned currentAttrs = numAttrs;
+    unsigned newTotal = currentAttrs + count;
+
+    // Use malloc + memcpy instead of realloc for better performance with large arrays
+    AttrValue *newAttrs = (AttrValue *)malloc(newTotal * sizeof(AttrValue));
+
+    // Copy existing attributes if any
+    if (attrs && currentAttrs > 0)
+        memcpy(newAttrs, attrs, currentAttrs * sizeof(AttrValue));
+
+    // Get case sensitivity setting once for performance
+    bool nocase = isnocase();
+
+    // Get arrayOwner map once if needed
+    CQualifierMap *map = nullptr;
+    if (arrayOwner)
+        map = arrayOwner->queryMap();
+
+    // Initialize and set all new attributes
+    for (unsigned i = 0; i < count; i++)
     {
-        // Atomic mode: allocate all attributes in one block for optimal performance
-        unsigned currentAttrs = numAttrs;
-        attrs = (AttrValue *)realloc(attrs, (currentAttrs + count) * sizeof(AttrValue));
+        const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+        AttrValue *v = &newAttrs[currentAttrs + i];
+        new(v) AttrValue;  // Initialize new AttrValue
 
-        // Initialize and set all new attributes
-        for (unsigned i = 0; i < count; i++)
-        {
-            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
-            AttrValue *v = &attrs[currentAttrs + i];
-            new(v) AttrValue;  // Initialize new AttrValue
+        const char *key = pair.name.str();
+        const char *val = pair.value.str();
 
-            const char *key = pair.name.str();
-            const char *val = pair.value.str();
+        // Optimize string allocation by checking short string optimization first
+        if (!v->key.set(key))
+            v->key.setPtr(nocase ? AttrStr::createNC(key) : AttrStr::create(key));
+        if (!v->value.set(val))
+            v->value.setPtr(AttrStr::create(val));
 
-            if (!v->key.set(key))
-                v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
-            if (!v->value.set(val))
-                v->value.setPtr(AttrStr::create(val));
-        }
-        numAttrs += count;
+        // Handle arrayOwner map updates efficiently
+        if (map)
+            map->insertEntryIfMapped(key, val, this);
     }
-    else
-    {
-        // Non-atomic mode: set attributes one by one (allows for duplicate handling)
-        for (unsigned i = 0; i < count; i++)
-        {
-            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
-            setAttribute(pair.name.str(), pair.value.str(), false);
-        }
-    }
+
+    // Atomically replace the attribute array
+    AttrValue *oldAttrs = attrs;
+    attrs = newAttrs;
+    numAttrs = newTotal;
+
+    // Free old array after replacement
+    if (oldAttrs)
+        free(oldAttrs);
 }
 
 #ifdef TRACE_STRING_SIZE
@@ -4044,57 +4059,43 @@ bool CAtomPTree::removeAttribute(const char *key)
     return true;
 }
 
-void CAtomPTree::setAttributes(const CIArray &attrArray, bool atomic)
+void CAtomPTree::setAttributes(const CIArray &attrArray)
 {
     unsigned count = attrArray.ordinality();
     if (count == 0)
         return;
 
-    CLeavableCriticalBlock block(hashcrit);  // Thread-safe for CAtomPTree
+    CriticalBlock block(hashcrit);  // Thread-safe for CAtomPTree
 
-    if (atomic)
+    // Allocate all attributes in one block for optimal performance
+    unsigned currentAttrs = numAttrs;
+    AttrValue *newattrs = newAttrArray(currentAttrs + count);
+
+    // Copy existing attributes
+    if (attrs && currentAttrs > 0)
     {
-        // Atomic mode: allocate all attributes in one block for optimal performance
-        unsigned currentAttrs = numAttrs;
-        AttrValue *newattrs = newAttrArray(currentAttrs + count);
-
-        // Copy existing attributes
-        if (attrs && currentAttrs > 0)
-        {
-            memcpy(newattrs, attrs, currentAttrs * sizeof(AttrValue));
-            freeAttrArray(attrs, currentAttrs);
-        }
-
-        // Initialize and set all new attributes
-        for (unsigned i = 0; i < count; i++)
-        {
-            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
-            AttrValue *v = &newattrs[currentAttrs + i];
-
-            // Set key (using atom table for memory efficiency)
-            if (!v->key.set(pair.name.str()))
-                v->key.setPtr(attrHT->addkey(pair.name.str(), isnocase()));
-
-            // Set value (using atom table for memory efficiency)
-            if (!v->value.set(pair.value.str()))
-                v->value.setPtr(attrHT->addval(pair.value.str()));
-        }
-
-        attrs = newattrs;
-        numAttrs = currentAttrs + count;
+        memcpy(newattrs, attrs, currentAttrs * sizeof(AttrValue));
+        freeAttrArray(attrs, currentAttrs);
     }
-    else
+
+    // Initialize and set all new attributes
+    for (unsigned i = 0; i < count; i++)
     {
-        // Non-atomic mode: use individual setAttribute calls (releases lock temporarily)
-        block.leave();  // Release lock during individual calls
-        for (unsigned i = 0; i < count; i++)
-        {
-            const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
-            setAttribute(pair.name.str(), pair.value.str(), false);
-        }
+        const DeserializeContext::AttributePair &pair = static_cast<const DeserializeContext::AttributePair &>(attrArray.item(i));
+        AttrValue *v = &newattrs[currentAttrs + i];
+
+        // Set key (using atom table for memory efficiency)
+        if (!v->key.set(pair.name.str()))
+            v->key.setPtr(attrHT->addkey(pair.name.str(), isnocase()));
+
+        // Set value (using atom table for memory efficiency)
+        if (!v->value.set(pair.value.str()))
+            v->value.setPtr(attrHT->addval(pair.value.str()));
     }
+
+    attrs = newattrs;
+    numAttrs = currentAttrs + count;
 }
-
 
 ///////////////////
 

@@ -605,6 +605,8 @@ struct DeserializeContext
     // For bulk attribute allocation optimization
     struct AttributePair : public CInterface
     {
+        AttributePair() = default;
+        AttributePair(const char *_name, const char *_value) {name.set(_name); value.set(_value);}
         StringBuffer name;
         StringBuffer value;
 
@@ -764,7 +766,7 @@ protected:
     virtual bool removeAttribute(const char *k) = 0;
 
     // Bulk attribute allocation methods for performance optimization
-    virtual void setAttributes(const CIArray &attrArray, bool atomic = false) = 0;
+    virtual void setAttributes(const CIArray &attrArray) = 0;
 
     AttrValue *findAttribute(const char *k) const;
     const char *getAttributeValue(const char *k) const;
@@ -854,7 +856,7 @@ public:
     virtual unsigned queryHash() const override;
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
-    virtual void setAttributes(const CIArray &attrArray, bool atomic = false) override;
+    virtual void setAttributes(const CIArray &attrArray) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, CAtomPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
     {
@@ -890,7 +892,7 @@ public:
     }
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
-    virtual void setAttributes(const CIArray &attrArray, bool atomic = false) override;
+    virtual void setAttributes(const CIArray &attrArray) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, LocalPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
     {
