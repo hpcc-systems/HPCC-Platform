@@ -32,17 +32,6 @@ static MapCache g_mapCache;
  *     (used by CPermissionsCache defined below)          *
  **********************************************************/
 
-time_t getThreadCreateTime()
-{
-    time_t t;
-    void* tslval = getThreadLocalVal();
-    if(tslval == NULL)
-        return 0;
-
-    memcpy(&t, tslval, sizeof(t));
-    return t;
-}
-
 CResPermissionsCache::~CResPermissionsCache()
 {
     MapResAccess::const_iterator i;
