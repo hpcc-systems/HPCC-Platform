@@ -1119,6 +1119,67 @@ IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & ta
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class CBufferSerialInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
+{
+public:
+    CBufferSerialInputStream(MemoryBuffer & _source)
+    : source(_source)
+    {
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t available = source.remaining();
+        size32_t toCopy = std::min(len, available);
+        source.read(toCopy, ptr);
+        return toCopy;
+    }
+
+    virtual void skip(size32_t len) override
+    {
+        assertex(len <= source.remaining());
+        source.skip(len);
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        assertex(len <= source.remaining());
+        source.read(len, ptr);
+    }
+    virtual bool eos() override
+    {
+        return source.remaining() == 0;
+    }
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual offset_t tell() const override
+    {
+        return source.getPos();
+    }
+
+    virtual const void * peek(size32_t wanted, size32_t &got) override
+    {
+        size32_t available = source.remaining();
+        got = available;
+        if (available == 0)
+            return nullptr;
+        return source.readDirect(0);
+    }
+
+protected:
+    MemoryBuffer & source;
+};
+
+IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source)
+{
+    return new CBufferSerialInputStream(source);
+}
+
+
 /*
  * Future work:
  *

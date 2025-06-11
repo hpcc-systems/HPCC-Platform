@@ -93,6 +93,7 @@ interface IBufferedSerialOutputStream : extends ISerialOutputStream
 interface ICompressor;
 interface IExpander;
 interface IFileIO;
+class MemoryBuffer;
 
 extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize);
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
@@ -101,6 +102,8 @@ extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISeria
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);
 extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output);
+
+extern jlib_decl IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target);
 
