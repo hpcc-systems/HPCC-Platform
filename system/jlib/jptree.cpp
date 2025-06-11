@@ -59,6 +59,7 @@
 #define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
 
 constexpr CompressionMethod defaultBinaryCompressionMethod = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+constexpr const char * elementTerminator = "";
 
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
@@ -1092,15 +1093,15 @@ const void *CPTValue::queryValue() const
     return get();
 }
 
-void CPTValue::serialize(IBufferedSerialOutputStream *out)
+void CPTValue::serializeToStream(IBufferedSerialOutputStream &out) const
 {
     //Retain backward compatibility for the serialization format.
     size32_t serialLen = (size32_t)length();
-    out->put(sizeof(size32_t), &serialLen);
+    out.put(sizeof(size32_t), &serialLen);
     if (serialLen)
     {
-        out->put(sizeof(compressType), &compressType);
-        out->put(serialLen, get());
+        out.put(sizeof(compressType), &compressType);
+        out.put(serialLen, get());
     }
 }
 
@@ -1126,6 +1127,26 @@ void CPTValue::deserialize(MemoryBuffer &src)
         if (compressType == COMPRESS_METHOD_LZWLEGACY)
             compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
         set(sz, src.readDirect(sz));
+    }
+    else
+    {
+        compressType = COMPRESS_METHOD_NONE;
+        clear();
+    }
+}
+
+void CPTValue::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    size32_t sz;
+    src.get(sizeof(sz), &sz);
+    if (sz)
+    {
+        src.get(sizeof(compressType), &compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+        void *data = checked_malloc(sz, -5);
+        src.get(sz, data);
+        setOwn(sz, data);
     }
     else
     {
@@ -2993,39 +3014,49 @@ IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath)
     return matchTree;
 }
 
-void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt)
+void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt) const
 {
-    IAttributeIterator *aIter = getAttributes();
+    Owned<IAttributeIterator> aIter = getAttributes();
     if (aIter->first())
     {
         do
         {
-            tgt.put(strlen(aIter->queryName()), aIter->queryName());
-            tgt.put(strlen(aIter->queryValue()), aIter->queryValue());
+            const char *name = aIter->queryName();
+            const char *value = aIter->queryValue();
+            size32_t nameLen = strlen(name);
+            size32_t valueLen = strlen(value);
+
+            tgt.put(sizeof(nameLen), &nameLen);
+            tgt.put(nameLen, name);
+            tgt.put(sizeof(valueLen), &valueLen);
+            tgt.put(valueLen, value);
         }
         while (aIter->next());
     }
-    tgt.put(strlen(""), "");
-    aIter->Release();
+    size32_t zero = 0;
+    tgt.put(sizeof(zero), &zero); // attribute terminator. i.e. blank attr name length.
 }
 
-void PTree::serializeSelf(IBufferedSerialOutputStream &tgt)
+void PTree::serializeSelf(IBufferedSerialOutputStream &tgt) const
 {
-    tgt.put(strlen(queryName()), queryName());
+    const char *_name = queryName();
+    const char *name = _name ? _name : "";
+    size32_t nameLen = strlen(name);
+
+    tgt.put(sizeof(nameLen), &nameLen);
+    tgt.put(nameLen, name);
     tgt.put(sizeof(flags), &flags);
     serializeAttributes(tgt);
     if (value)
-    {
-        value->serialize(&tgt);
-    }
+        value->serializeToStream(tgt);
     else
     {
-        size32_t zero{0};
-        tgt.put(sizeof(size32_t), &zero);
+        size32_t zero = 0;
+        tgt.put(sizeof(zero), &zero);
     }
 }
 
-void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int depth)
+void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int depth) const
 {
     serializeSelf(tgt);
 
@@ -3043,13 +3074,94 @@ void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int de
             while (iter->next());
         }
     }
-    tgt.put(strlen(""), ""); // element terminator. i.e. blank child name.
+    size32_t zero = 0;
+    tgt.put(sizeof(zero), &zero); // element terminator. i.e. blank child name length.
 }
 
-void PTree::serialize(IBufferedSerialOutputStream *out)
+void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
 {
-    assertex(out);
-    serializeCutOff(*out, -1, 0);
+    serializeCutOff(tgt, -1, 0);
+}
+
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelfFromStream(src);
+
+    for (;;)
+    {
+        offset_t pos = src.tell();
+        size32_t nameLength;
+        src.get(sizeof(nameLength), &nameLength);
+        if (nameLength == 0)
+            break;
+
+        char *nameBuffer = (char *)checked_malloc(nameLength + 1, -4);
+        src.get(nameLength, nameBuffer);
+        nameBuffer[nameLength] = 0;
+
+        src.reset(pos, (offset_t)-1);
+        IPropertyTree *child = create(src);
+        addPropTree(nameBuffer, child);
+        free(nameBuffer);
+    }
+}
+
+void PTree::deserializeSelfFromStream(IBufferedSerialInputStream &src)
+{
+    size32_t nameLength;
+    src.get(sizeof(nameLength), &nameLength);
+    if (nameLength > 0)
+    {
+        char *nameBuffer = (char *)checked_malloc(nameLength + 1, -4);
+        src.get(nameLength, nameBuffer);
+        nameBuffer[nameLength] = 0;
+
+        setName(nameBuffer);
+
+        free(nameBuffer);
+    }
+    else
+        setName(NULL);
+
+    src.get(sizeof(flags), &flags);
+
+    for (;;)
+    {
+        size32_t attrNameLength;
+        src.get(sizeof(attrNameLength), &attrNameLength);
+        if (attrNameLength == 0)
+            break;
+
+        char * attrNameBuffer = (char *)checked_malloc(attrNameLength + 1, -4);
+        src.get(attrNameLength, attrNameBuffer);
+        attrNameBuffer[attrNameLength] = 0;
+
+        size32_t attrValueLength;
+        src.get(sizeof(attrValueLength), &attrValueLength);
+        char * attrValueBuffer = (char *)checked_malloc(attrValueLength + 1, -4);
+        src.get(attrValueLength, attrValueBuffer);
+        attrValueBuffer[attrValueLength] = 0;
+
+        setProp(attrNameBuffer, attrValueBuffer);
+
+        free(attrNameBuffer);
+        free(attrValueBuffer);
+    }
+
+    size32_t size;
+    offset_t pos = src.tell();
+    src.get(sizeof(size), &size);
+    if (value)
+        delete value;
+    if (size)
+    {
+        src.reset(pos, (offset_t)-1);
+        CPTValue *ptValue = new CPTValue();
+        ptValue->deserializeFromStream(src);
+        value = ptValue;
+    }
+    else
+        value = NULL;
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
@@ -6129,35 +6241,11 @@ IPropertyTree *createPTree(IFile &ifile, byte flags, PTreeReaderOptions readFlag
     return createPTree(*ifileio, flags, readFlags, iMaker);
 }
 
-IPropertyTree *createPTree(IBufferedSerialInputStream *in)
+IPropertyTree *createPTree(IBufferedSerialInputStream &stream)
 {
-    if (!in)
-        return nullptr;
-
-    // Create an adapter to convert IBufferedSerialInputStream to ISimpleReadStream
-    class CBufferedSerialToSimpleAdapter : public CSimpleInterfaceOf<ISimpleReadStream>
-    {
-        Linked<IBufferedSerialInputStream> stream;
-    public:
-        CBufferedSerialToSimpleAdapter(IBufferedSerialInputStream *_stream) : stream(_stream) {}
-        // ISimpleReadStream impl.
-        virtual size32_t read(size32_t max_len, void *data) override
-        {
-            size32_t got{0};
-            const void *res = stream->peek(max_len, got);
-            if (got)
-            {
-                if (got > max_len)
-                    got = max_len;
-                memcpy(data, res, got);
-                stream->skip(got);
-            }
-            return got;
-        }
-    };
-
-    Owned<ISimpleReadStream> simpleStream = new CBufferedSerialToSimpleAdapter(in);
-    return createPTree(*simpleStream);
+    IPropertyTree *tree = createPTree();
+    tree->deserializeFromStream(stream);
+    return tree;
 }
 
 IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
@@ -7280,6 +7368,12 @@ public:
     {
         IPropertyTree *tree = new COrderedPTree<BASE_PTREE>();
         tree->deserialize(mb);
+        return tree;
+    }
+    virtual IPropertyTree *create(IBufferedSerialInputStream &stream) override
+    {
+        IPropertyTree *tree = new COrderedPTree<BASE_PTREE>();
+        tree->deserializeFromStream(stream);
         return tree;
     }
     virtual void createChildMap() override

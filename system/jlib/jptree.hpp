@@ -145,9 +145,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual bool isArray(const char *xpath=NULL) const = 0;
     virtual unsigned getAttributeCount() const = 0;
 
-    virtual void serialize(IBufferedSerialOutputStream *out) = 0;
-    virtual void serialize(MemoryBuffer &tgt) override = 0;
-    virtual void deserialize(MemoryBuffer &src) override = 0;
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &in) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
@@ -245,7 +244,7 @@ jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(IFile &ifile, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTree(IFileIO &ifileio, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTree(IBufferedSerialInputStream *in);
+jlib_decl IPropertyTree *createPTree(IBufferedSerialInputStream &stream);
 jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);

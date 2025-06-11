@@ -3405,293 +3405,23 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "platform.h"
 #include "jfile.ipp"
 #include "jptree.hpp"
+#include "jptree.ipp"
 #include "jiface.hpp"
 #include "jio.hpp"
 #include "jstring.hpp"
+#include <string>
 
 class PTreeCreatePTreeTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeCreatePTreeTest);
-    CPPUNIT_TEST(testCreateFromFileIO);
-    CPPUNIT_TEST(testCreateFromFile);
-    CPPUNIT_TEST(testCreateFromInputStream);
-    CPPUNIT_TEST(testCreateFromBufferedSerialInputStream);
-    CPPUNIT_TEST(testCleanup);
+      CPPUNIT_TEST(testCreateFromFileIO);
+      CPPUNIT_TEST(testCreateFromFile);
+      CPPUNIT_TEST(testCreateFromBufferedSerialInputStream);
+      CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
-    static constexpr const char *TEST_XML{"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                                          "<Root attr1=\"value1\" attr2=\"value2\">"
-                                          "  <Element>Element content</Element>"
-                                          "  <NumericElement>123</NumericElement>"
-                                          "  <EmptyElement/>"
-                                          "</Root>"};
-    static constexpr const char *TEST_XML_FILENAME{"property_tree_test.xml"};
-
-public:
-    void setUp()
-    {
-        // Create test file
-        Owned<IFile> file = createIFile(TEST_XML_FILENAME);
-        Owned<IFileIO> io = file->open(IFOcreate);
-        CPPUNIT_ASSERT(io);
-        io->write(0, strlen(TEST_XML), TEST_XML);
-    }
-
-    void tearDown()
-    {
-        // Cleanup happens in testCleanup()
-    }
-
-    void testCreateFromFileIO()
-    {
-        try
-        {
-            // Open the test file
-            Owned<IFile> file = createIFile(TEST_XML_FILENAME);
-            Owned<IFileIO> io = file->open(IFOread);
-            CPPUNIT_ASSERT(io);
-
-            // Create property tree from file IO
-            Owned<IPropertyTree> tree = createPTree(*io, ipt_none, ptr_none, nullptr);
-
-            // Verify tree content
-            CPPUNIT_ASSERT(tree);
-            CPPUNIT_ASSERT_EQUAL_STR("Root", tree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("value1", tree->queryProp("@attr1"));
-            CPPUNIT_ASSERT_EQUAL_STR("Element content", tree->queryProp("Element"));
-            CPPUNIT_ASSERT_EQUAL(123, tree->getPropInt("NumericElement"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testCreateFromFile()
-    {
-        try
-        {
-            // Open the test file
-            Owned<IFile> file = createIFile(TEST_XML_FILENAME);
-
-            // Create property tree from file
-            Owned<IPropertyTree> tree = createPTree(*file, ipt_none, ptr_none, nullptr);
-
-            // Verify tree content
-            CPPUNIT_ASSERT(tree);
-            CPPUNIT_ASSERT_EQUAL_STR("Root", tree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("value1", tree->queryProp("@attr1"));
-            CPPUNIT_ASSERT_EQUAL_STR("Element content", tree->queryProp("Element"));
-            CPPUNIT_ASSERT_EQUAL(123, tree->getPropInt("NumericElement"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testCreateFromInputStream()
-    {
-        try
-        {
-            // Use memory buffer stream instead of custom string stream
-            MemoryBuffer buffer;
-            buffer.append(strlen(TEST_XML), TEST_XML);
-
-            Owned<IBufferedSerialInputStream> bufferedStream = createMemoryBufferSerialStream(buffer);
-
-            // Create property tree from buffered serial input stream
-            Owned<IPropertyTree> tree = createPTree(bufferedStream);
-
-            // Verify tree content
-            CPPUNIT_ASSERT(tree);
-            CPPUNIT_ASSERT_EQUAL_STR("Root", tree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("value1", tree->queryProp("@attr1"));
-            CPPUNIT_ASSERT_EQUAL_STR("Element content", tree->queryProp("Element"));
-            CPPUNIT_ASSERT_EQUAL(123, tree->getPropInt("NumericElement"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testCreateFromBufferedSerialInputStream()
-    {
-        try
-        {
-            // Test 1: Basic functionality using memory buffer stream
-            {
-                MemoryBuffer buffer;
-                buffer.append(strlen(TEST_XML), TEST_XML);
-
-                Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(buffer);
-                CPPUNIT_ASSERT(stream);
-
-                // Create property tree from buffered serial input stream
-                Owned<IPropertyTree> tree = createPTree(stream);
-
-                // Verify tree content
-                CPPUNIT_ASSERT(tree);
-                CPPUNIT_ASSERT_EQUAL_STR("Root", tree->queryName());
-                CPPUNIT_ASSERT_EQUAL_STR("value1", tree->queryProp("@attr1"));
-                CPPUNIT_ASSERT_EQUAL_STR("value2", tree->queryProp("@attr2"));
-                CPPUNIT_ASSERT_EQUAL_STR("Element content", tree->queryProp("Element"));
-                CPPUNIT_ASSERT_EQUAL(123, tree->getPropInt("NumericElement"));
-                CPPUNIT_ASSERT(tree->hasProp("EmptyElement"));
-            }
-
-            // Test 2: Test with memory buffer stream (different approach)
-            {
-                MemoryBuffer buffer2;
-                buffer2.append(strlen(TEST_XML), TEST_XML);
-
-                Owned<IBufferedSerialInputStream> memStream = createMemoryBufferSerialStream(buffer2);
-                CPPUNIT_ASSERT(memStream);
-
-                // Create property tree from memory buffer stream
-                Owned<IPropertyTree> tree = createPTree(memStream);
-
-                // Verify tree content
-                CPPUNIT_ASSERT(tree);
-                CPPUNIT_ASSERT_EQUAL_STR("Root", tree->queryName());
-                CPPUNIT_ASSERT_EQUAL_STR("value1", tree->queryProp("@attr1"));
-                CPPUNIT_ASSERT_EQUAL_STR("Element content", tree->queryProp("Element"));
-                CPPUNIT_ASSERT_EQUAL(123, tree->getPropInt("NumericElement"));
-            }
-
-            // Test 3: Test with table XML structure
-            {
-                static constexpr const char *CONFIG_XML =
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    "<Configuration>"
-                    "  <Database host=\"localhost\" port=\"3306\">"
-                    "    <Connection timeout=\"30\" pool=\"10\"/>"
-                    "    <Tables>"
-                    "      <Table name=\"users\" schema=\"public\"/>"
-                    "      <Table name=\"orders\" schema=\"sales\"/>"
-                    "    </Tables>"
-                    "  </Database>"
-                    "  <Cache enabled=\"true\" size=\"1024\"/>"
-                    "</Configuration>";
-
-                MemoryBuffer configBuffer;
-                configBuffer.append(strlen(CONFIG_XML), CONFIG_XML);
-
-                Owned<IBufferedSerialInputStream> configStream = createMemoryBufferSerialStream(configBuffer);
-                Owned<IPropertyTree> configTree = createPTree(configStream);
-
-                // Verify config structure
-                CPPUNIT_ASSERT(configTree);
-                CPPUNIT_ASSERT_EQUAL_STR("Configuration", configTree->queryName());
-                CPPUNIT_ASSERT_EQUAL_STR("localhost", configTree->queryProp("Database/@host"));
-                CPPUNIT_ASSERT_EQUAL(3306, configTree->getPropInt("Database/@port"));
-                CPPUNIT_ASSERT_EQUAL(30, configTree->getPropInt("Database/Connection/@timeout"));
-                CPPUNIT_ASSERT_EQUAL_STR("users", configTree->queryProp("Database/Tables/Table[1]/@name"));
-                CPPUNIT_ASSERT_EQUAL_STR("orders", configTree->queryProp("Database/Tables/Table[2]/@name"));
-                CPPUNIT_ASSERT(configTree->getPropBool("Cache/@enabled"));
-                CPPUNIT_ASSERT_EQUAL(1024, configTree->getPropInt("Cache/@size"));
-            }
-
-            // Test 4: Test with empty/null stream
-            {
-                Owned<IPropertyTree> nullTree = createPTree((IBufferedSerialInputStream *)nullptr);
-                CPPUNIT_ASSERT(!nullTree);
-            }
-
-            // Test 5: Test with minimal XML
-            {
-                static constexpr const char *MINIMAL_XML = "<root/>";
-                MemoryBuffer minimalBuffer;
-                minimalBuffer.append(strlen(MINIMAL_XML), MINIMAL_XML);
-
-                Owned<IBufferedSerialInputStream> minimalStream = createMemoryBufferSerialStream(minimalBuffer);
-                Owned<IPropertyTree> minimalTree = createPTree(minimalStream);
-
-                CPPUNIT_ASSERT(minimalTree);
-                CPPUNIT_ASSERT_EQUAL_STR("root", minimalTree->queryName());
-            }
-
-            // Test 6: Test with different buffer sizes using memory buffer stream
-            {
-                static constexpr const char *DOC_XML =
-                    "<?xml version=\"1.0\"?>"
-                    "<Document>"
-                    "  <Section1><Data>Some content here</Data></Section1>"
-                    "  <Section2><Data>More content here</Data></Section2>"
-                    "  <Section3><Data>Even more content</Data></Section3>"
-                    "  <Section4><Data>Additional content</Data></Section4>"
-                    "</Document>";
-
-                MemoryBuffer docBuffer;
-                docBuffer.append(strlen(DOC_XML), DOC_XML);
-
-                Owned<IBufferedSerialInputStream> docStream = createMemoryBufferSerialStream(docBuffer);
-                Owned<IPropertyTree> docTree = createPTree(docStream);
-
-                CPPUNIT_ASSERT(docTree);
-                CPPUNIT_ASSERT_EQUAL_STR("Document", docTree->queryName());
-                CPPUNIT_ASSERT_EQUAL_STR("Some content here", docTree->queryProp("Section1/Data"));
-                CPPUNIT_ASSERT_EQUAL_STR("Additional content", docTree->queryProp("Section4/Data"));
-            }
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testCleanup()
-    {
-        Owned<IFile> file = createIFile(TEST_XML_FILENAME);
-        file->remove();
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCreatePTreeTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCreatePTreeTest, "PTreeCreatePTreeTest");
-
-
-
-class PTreeSerializationTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(PTreeSerializationTest);
-    CPPUNIT_TEST(testPTreeSerializeToMemoryBuffer);
-    CPPUNIT_TEST(testPTreeSerializeToStream);
-    CPPUNIT_TEST(testPTreeRoundTripSerialization);
-    CPPUNIT_TEST(testPTreeMultiLevelHierarchy);
-    CPPUNIT_TEST(testPTreeSerializationEdgeCases);
-    CPPUNIT_TEST(testSerializedCallsForDeserialization);
-    CPPUNIT_TEST(testSerializedStreamDeserialization);
-    CPPUNIT_TEST(testSerializedToBufferDeserialization);
-    CPPUNIT_TEST(testSerializedMultiLevelDeserialization);
-    CPPUNIT_TEST(testSerializedBinaryDataDeserialization);
-    CPPUNIT_TEST_SUITE_END();
-
-protected:
-    static constexpr const char *SIMPLE_XML{
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<Root attr1=\"value1\" attr2=\"value2\">"
-        "  <Element>Element content</Element>"
-        "  <NumericElement>123</NumericElement>"
-        "  <EmptyElement/>"
-        "</Root>"
-    };
-
-    static constexpr const char *TABLE_XML{
+    static constexpr const char *testXml{
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<Configuration version=\"1.0\" environment=\"test\">"
         "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
@@ -3706,38 +3436,33 @@ protected:
         "      <Policy name=\"default\" expiry=\"300\"/>"
         "    </Policies>"
         "  </Cache>"
-        "</Configuration>"
-    };
-
-    // Helper function to create a test PTree from XML
-    Owned<IPropertyTree> createTestTree(const char* xml)
-    {
-        MemoryBuffer buffer;
-        buffer.append(strlen(xml), xml);
-        Owned<IBufferedSerialInputStream> stream = createMemoryBufferSerialStream(buffer);
-        return createPTree(stream);
-    }
+        "</Configuration>"};
+    static constexpr unsigned testXmlLen = strlen(testXml);
+    static constexpr const char *testXmlFileName{"property_tree_test.xml"};
 
 public:
-    void testPTreeSerializeToMemoryBuffer()
+    void setUp()
+    {
+        // Create test file
+        Owned<IFile> file = createIFile(testXmlFileName);
+        Owned<IFileIO> io = file->open(IFOcreate);
+        CPPUNIT_ASSERT(io);
+        io->write(0, testXmlLen, testXml);
+    }
+
+    void testCreateFromFileIO()
     {
         try
         {
-            // Test simple tree serialization
-            Owned<IPropertyTree> tree = createTestTree(SIMPLE_XML);
-            CPPUNIT_ASSERT(tree);
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
-            MemoryBuffer buffer;
-            tree->serialize(buffer);
-            CPPUNIT_ASSERT_EQUAL(119U, buffer.length());
+            Owned<IFile> file = createIFile(testXmlFileName);
+            CPPUNIT_ASSERT(file);
+            Owned<IFileIO> io = file->open(IFOread);
+            CPPUNIT_ASSERT(io);
 
-            // Test table tree serialization
-            Owned<IPropertyTree> tableTree = createTestTree(TABLE_XML);
-            CPPUNIT_ASSERT(tableTree);
-
-            MemoryBuffer buffer2;
-            tableTree->serialize(buffer2);
-            CPPUNIT_ASSERT_EQUAL(373U, buffer2.length());
+            Owned<IPropertyTree> fileIoTree = createPTree(*io, ipt_none, ptr_none, nullptr);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, fileIoTree));
         }
         catch (IException *e)
         {
@@ -3748,29 +3473,17 @@ public:
         }
     }
 
-    void testPTreeSerializeToStream()
+    void testCreateFromFile()
     {
         try
         {
-            // Test simple tree serialization to stream
-            Owned<IPropertyTree> tree = createTestTree(SIMPLE_XML);
-            CPPUNIT_ASSERT(tree);
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
-            StringBuffer target;
-            Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(target);
+            Owned<IFile> file = createIFile(testXmlFileName);
+            CPPUNIT_ASSERT(file);
 
-            tree->serialize(stream);
-            CPPUNIT_ASSERT_EQUAL(103U, target.length());
-
-            // Test table tree serialization to stream
-            Owned<IPropertyTree> tableTree = createTestTree(TABLE_XML);
-            CPPUNIT_ASSERT(tableTree);
-
-            StringBuffer target2;
-            Owned<IBufferedSerialOutputStream> stream2 = createBufferedSerialOutputStream(target2);
-
-            tableTree->serialize(stream2);
-            CPPUNIT_ASSERT_EQUAL(308U, target2.length());
+            Owned<IPropertyTree> fileTree = createPTree(*file, ipt_none, ptr_none, nullptr);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, fileTree));
         }
         catch (IException *e)
         {
@@ -3781,155 +3494,86 @@ public:
         }
     }
 
-    void testPTreeRoundTripSerialization()
+    void testCreateFromBufferedSerialInputStream()
     {
         try
         {
-            // Test round-trip with simple tree
-            Owned<IPropertyTree> originalTree = createTestTree(SIMPLE_XML);
-            CPPUNIT_ASSERT(originalTree);
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
             MemoryBuffer buffer;
-            originalTree->serialize(buffer);
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            CPPUNIT_ASSERT(out);
+            xmlTree->serializeToStream(*out);
+            out->flush();
 
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
+            Owned<IBufferedSerialInputStream> bufferedStream = createMemoryBufferSerialStream(buffer);
+            CPPUNIT_ASSERT(bufferedStream);
 
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR(originalTree->queryName(), deserializedTree->queryName());
+            Owned<IPropertyTree> bufferedSerialInputStreamTree = createPTree(*bufferedStream);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, bufferedSerialInputStreamTree));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
 
-            // Test some key properties are preserved
-            if (originalTree->hasProp("@attr1")) {
-                CPPUNIT_ASSERT(deserializedTree->hasProp("@attr1"));
-                CPPUNIT_ASSERT_EQUAL_STR(originalTree->queryProp("@attr1"), deserializedTree->queryProp("@attr1"));
-            }
+    void testCleanup()
+    {
+        Owned<IFile> file = createIFile(testXmlFileName);
+        file->remove();
+    }
+};
 
-            // Test round-trip with table tree
-            Owned<IPropertyTree> originalTableTree = createTestTree(TABLE_XML);
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCreatePTreeTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCreatePTreeTest, "PTreeCreatePTreeTest");
+
+class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
+      CPPUNIT_TEST(testPTreeSerializeToMemoryBufferAndCreatePTree);
+      CPPUNIT_TEST(testPTreeSerializeToStreamAndCreatePTree);
+      CPPUNIT_TEST(testCPTValueSerializeAndDeserialize);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+
+public:
+    void testPTreeSerializeToMemoryBufferAndCreatePTree()
+    {
+        try
+        {
+            Owned<IPropertyTree> originalTableTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
             CPPUNIT_ASSERT(originalTableTree);
 
-            MemoryBuffer buffer2;
-            originalTableTree->serialize(buffer2);
-
-            Owned<IPropertyTree> deserializedTableTree = createPTree();
-            deserializedTableTree->deserialize(buffer2);
-
-            CPPUNIT_ASSERT(deserializedTableTree);
-            CPPUNIT_ASSERT_EQUAL_STR(originalTableTree->queryName(), deserializedTableTree->queryName());
-
-            // Test nested structure is preserved
-            if (originalTableTree->hasProp("Database/@host")) {
-                CPPUNIT_ASSERT(deserializedTableTree->hasProp("Database/@host"));
-                CPPUNIT_ASSERT_EQUAL_STR(originalTableTree->queryProp("Database/@host"),
-                                        deserializedTableTree->queryProp("Database/@host"));
-            }
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testPTreeMultiLevelHierarchy()
-    {
-        try
-        {
-            // Create a tree programmatically with deep nesting
-            Owned<IPropertyTree> root = createPTree("Root");
-            root->setProp("@version", "1.0");
-            root->setProp("@type", "test");
-
-            // Add multiple levels
-            IPropertyTree* level1 = root->addPropTree("Level1");
-            level1->setProp("@id", "l1");
-            level1->setProp(nullptr, "Level 1 content");
-
-            IPropertyTree* level2a = level1->addPropTree("Level2");
-            level2a->setProp("@name", "first");
-            level2a->setProp(nullptr, "Level 2A content");
-
-            IPropertyTree* level2b = level1->addPropTree("Level2");
-            level2b->setProp("@name", "second");
-            level2b->setProp(nullptr, "Level 2B content");
-
-            IPropertyTree* level3 = level2a->addPropTree("Level3");
-            level3->setProp("@deep", "true");
-            level3->setProp(nullptr, "Deep content");
-
-            // Serialize and deserialize
             MemoryBuffer buffer;
-            root->serialize(buffer);
-
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("Root", deserializedTree->queryName());
-
-            // Verify attributes are preserved
-            CPPUNIT_ASSERT_EQUAL_STR("1.0", deserializedTree->queryProp("@version"));
-            CPPUNIT_ASSERT_EQUAL_STR("test", deserializedTree->queryProp("@type"));
-
-            // Verify nested structure
-            CPPUNIT_ASSERT(deserializedTree->hasProp("Level1/@id"));
-            CPPUNIT_ASSERT_EQUAL_STR("l1", deserializedTree->queryProp("Level1/@id"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testPTreeSerializationEdgeCases()
-    {
-        try
-        {
-            // Test empty tree
-            Owned<IPropertyTree> emptyTree = createPTree("Empty");
-            MemoryBuffer buffer;
-            emptyTree->serialize(buffer);
-
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-            CPPUNIT_ASSERT(deserializedTree);
-
-            // Test tree with only attributes
-            Owned<IPropertyTree> attrOnlyTree = createPTree("AttrOnly");
-            attrOnlyTree->setProp("@attr1", "value1");
-            attrOnlyTree->setProp("@attr2", "value2");
-            attrOnlyTree->setProp("@empty", "");
+            originalTableTree->serialize(buffer);
+            Owned<IPropertyTree> tree = createPTree(buffer);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree));
 
             MemoryBuffer buffer2;
-            attrOnlyTree->serialize(buffer2);
-
-            Owned<IPropertyTree> deserializedTree2 = createPTree();
-            deserializedTree2->deserialize(buffer2);
-
-            CPPUNIT_ASSERT(deserializedTree2);
-            CPPUNIT_ASSERT_EQUAL_STR("value1", deserializedTree2->queryProp("@attr1"));
-            CPPUNIT_ASSERT_EQUAL_STR("value2", deserializedTree2->queryProp("@attr2"));
-            CPPUNIT_ASSERT_EQUAL_STR("", deserializedTree2->queryProp("@empty"));
-
-            // Test large data (> PTREE_COMPRESS_THRESHOLD)
-            Owned<IPropertyTree> largeTree = createPTree("Large");
-            StringBuffer largeContent;
-            for (int i = 0; i < 5000; i++) {
-                largeContent.appendf("This is line %d with some content to make it longer.\n", i);
-            }
-            largeTree->setProp(nullptr, largeContent.str());
-
-            MemoryBuffer buffer3;
-            largeTree->serialize(buffer3);
-
-            Owned<IPropertyTree> deserializedTree3 = createPTree();
-            deserializedTree3->deserialize(buffer3);
-            CPPUNIT_ASSERT(deserializedTree3);
+            tree->serialize(buffer2);
+            Owned<IPropertyTree> tree2 = createPTree(buffer2);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree2));
         }
         catch (IException *e)
         {
@@ -3940,46 +3584,23 @@ public:
         }
     }
 
-    void testSerializedCallsForDeserialization()
+    void testPTreeSerializeToStreamAndCreatePTree()
     {
         try
         {
-            // Create original tree with complex structure
-            Owned<IPropertyTree> originalTree = createTestTree(TABLE_XML);
-            CPPUNIT_ASSERT(originalTree);
+            Owned<IPropertyTree> originalTableTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            CPPUNIT_ASSERT(originalTableTree);
 
-            // Serialize to memory buffer
             MemoryBuffer buffer;
-            originalTree->serialize(buffer);
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            CPPUNIT_ASSERT(out);
+            originalTableTree->serializeToStream(*out);
+            out->flush();
 
-            // Create new tree and deserialize from buffer
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-
-            // Test that all serialized calls work on deserialized tree
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR(originalTree->queryName(), deserializedTree->queryName());
-
-            // Test property access on deserialized tree
-            CPPUNIT_ASSERT_EQUAL_STR("test", deserializedTree->queryProp("@environment"));
-            CPPUNIT_ASSERT_EQUAL_STR("localhost", deserializedTree->queryProp("Database/@host"));
-            CPPUNIT_ASSERT_EQUAL_STR("3306", deserializedTree->queryProp("Database/@port"));
-
-            // Test nested property queries work after deserialization
-            CPPUNIT_ASSERT_EQUAL_STR("30", deserializedTree->queryProp("Database/Connection/@timeout"));
-            CPPUNIT_ASSERT_EQUAL_STR("users", deserializedTree->queryProp("Database/Tables/Table[1]/@name"));
-            CPPUNIT_ASSERT_EQUAL_STR("orders", deserializedTree->queryProp("Database/Tables/Table[2]/@name"));
-
-            // Test that we can serialize the deserialized tree again
-            MemoryBuffer secondBuffer;
-            deserializedTree->serialize(secondBuffer);
-            CPPUNIT_ASSERT_EQUAL(373U, secondBuffer.length());
-
-            // And deserialize again to verify data integrity
-            Owned<IPropertyTree> secondDeserializedTree = createPTree();
-            secondDeserializedTree->deserialize(secondBuffer);
-            CPPUNIT_ASSERT(secondDeserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("test", secondDeserializedTree->queryProp("@environment"));
+            Owned<IBufferedSerialInputStream> stream2 = createBufferedSerialInputStream(buffer);
+            CPPUNIT_ASSERT(stream2);
+            Owned<IPropertyTree> tree2 = createPTree(*stream2);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree2));
         }
         catch (IException *e)
         {
@@ -3990,252 +3611,67 @@ public:
         }
     }
 
-    void testSerializedStreamDeserialization()
+    void testCPTValueSerializeAndDeserialize()
     {
         try
         {
-            // Create original tree
-            Owned<IPropertyTree> originalTree = createTestTree(SIMPLE_XML);
-            CPPUNIT_ASSERT(originalTree);
+            const char* xmlTestData =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<Root xmlns:ns1=\"http://example.com/ns1\">\n"
+                "  <!-- This is a comment -->\n"
+                "  <Text>Hello &amp; welcome to &lt;XML&gt; testing!</Text>\n"
+                "  <Numbers>123.456</Numbers>\n"
+                "  <Boolean>true</Boolean>\n"
+                "  <Special attr=\"value with spaces\" encoded=\"&quot;quoted&quot;\">\n"
+                "    <![CDATA[Some <unescaped> data & symbols]]>\n"
+                "  </Special>\n"
+                "  <ns1:NamespacedElement>Content</ns1:NamespacedElement>\n"
+                "  <Empty/>\n"
+                "  <Unicode>测试中文字符 ñáéíóú àèìòù ñç</Unicode>\n"
+                "</Root>";
 
-            // First serialize to a MemoryBuffer (which works correctly)
-            MemoryBuffer buffer;
-            originalTree->serialize(buffer);
+            size32_t xmlTestDataLen = strlen(xmlTestData) + 1;
+            CPTValue testXmlValue(xmlTestDataLen, xmlTestData);
+            CPPUNIT_ASSERT_EQUAL(false, testXmlValue.isArray());
+            CPPUNIT_ASSERT_EQUAL(false, testXmlValue.isCompressed());
+            CPPUNIT_ASSERT_EQUAL(xmlTestDataLen, testXmlValue.queryValueSize());
 
-            // Then test that we can serialize to stream and verify stream output
-            StringBuffer streamBuffer;
-            Owned<IBufferedSerialOutputStream> outStream = createBufferedSerialOutputStream(streamBuffer);
-            originalTree->serialize(outStream);
-            outStream->flush();
+            MemoryBuffer testXmlSerializeBuf;
+            testXmlValue.serialize(testXmlSerializeBuf);
 
-            // Verify stream serialization produced output
-            CPPUNIT_ASSERT_EQUAL(103U, streamBuffer.length());
+            CPTValue testXmlDeserializedValue;
+            testXmlDeserializedValue.deserialize(testXmlSerializeBuf);
 
-            // Deserialize from the MemoryBuffer (which has the correct format)
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
+            StringBuffer originalTestXml, deserializedTestXml;
+            testXmlValue.getValue(originalTestXml, false);
+            testXmlDeserializedValue.getValue(deserializedTestXml, false);
+            CPPUNIT_ASSERT_EQUAL(std::string(originalTestXml.str()), std::string(deserializedTestXml.str()));
 
-            // Verify deserialized tree functionality
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("Root", deserializedTree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("value1", deserializedTree->queryProp("@attr1"));
-            CPPUNIT_ASSERT_EQUAL_STR("value2", deserializedTree->queryProp("@attr2"));
-            CPPUNIT_ASSERT_EQUAL_STR("Element content", deserializedTree->queryProp("Element"));
-            CPPUNIT_ASSERT_EQUAL_STR("123", deserializedTree->queryProp("NumericElement"));
+            // Test: Binary XML-like data (with null bytes)
+            unsigned char binaryXmlData[] = {
+                '<', 'x', 'm', 'l', '>', 0x00, 0xFF,  // XML start with binary data
+                '<', 'd', 'a', 't', 'a', '>',
+                0x01, 0x02, 0x03, 0x04,              // Binary content
+                '<', '/', 'd', 'a', 't', 'a', '>',
+                '<', '/', 'x', 'm', 'l', '>', 0x00
+            };
+            size32_t binaryXmlLen = sizeof(binaryXmlData);
+            CPTValue binaryXmlValue(binaryXmlLen, binaryXmlData, true, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT);
+            CPPUNIT_ASSERT_EQUAL(false, binaryXmlValue.isArray());
+            CPPUNIT_ASSERT_EQUAL(false, binaryXmlValue.isCompressed());
+            CPPUNIT_ASSERT_EQUAL(binaryXmlLen, binaryXmlValue.queryValueSize());
 
-            // Test that hasProp works correctly on deserialized tree
-            CPPUNIT_ASSERT(deserializedTree->hasProp("@attr1"));
-            CPPUNIT_ASSERT(deserializedTree->hasProp("Element"));
-            CPPUNIT_ASSERT(deserializedTree->hasProp("EmptyElement"));
-            CPPUNIT_ASSERT(!deserializedTree->hasProp("NonExistentElement"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
+            MemoryBuffer binaryXmlSerializeBuf;
+            binaryXmlValue.serialize(binaryXmlSerializeBuf);
 
-    void testSerializedToBufferDeserialization()
-    {
-        try
-        {
-            // Create a tree with various data types
-            Owned<IPropertyTree> originalTree = createPTree("TestRoot");
-            originalTree->setProp("@stringAttr", "test_string");
-            originalTree->setPropInt("@intAttr", 42);
-            originalTree->setPropInt64("@int64Attr", 1234567890123LL);
-            originalTree->setPropBool("@boolAttr", true);
-            originalTree->setProp("textElement", "Some text content");
-            originalTree->setPropInt("numericElement", 999);
+            CPTValue binaryXmlDeserializedValue;
+            binaryXmlDeserializedValue.deserialize(binaryXmlSerializeBuf);
 
-            // Add some nested elements
-            IPropertyTree *child = originalTree->addPropTree("childElement");
-            child->setProp("@childAttr", "child_value");
-            child->setProp(nullptr, "Child content");
-
-            // Serialize to buffer
-            MemoryBuffer buffer;
-            originalTree->serialize(buffer);
-
-            // Create new tree and deserialize
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-
-            // Test all property types work after deserialization
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("TestRoot", deserializedTree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("test_string", deserializedTree->queryProp("@stringAttr"));
-            CPPUNIT_ASSERT_EQUAL(42, deserializedTree->getPropInt("@intAttr"));
-            CPPUNIT_ASSERT_EQUAL((long long)1234567890123LL, deserializedTree->getPropInt64("@int64Attr"));
-            CPPUNIT_ASSERT(deserializedTree->getPropBool("@boolAttr"));
-            CPPUNIT_ASSERT_EQUAL_STR("Some text content", deserializedTree->queryProp("textElement"));
-            CPPUNIT_ASSERT_EQUAL(999, deserializedTree->getPropInt("numericElement"));
-
-            // Test nested element access
-            CPPUNIT_ASSERT_EQUAL_STR("child_value", deserializedTree->queryProp("childElement/@childAttr"));
-            CPPUNIT_ASSERT_EQUAL_STR("Child content", deserializedTree->queryProp("childElement"));
-
-            // Test that we can modify the deserialized tree
-            deserializedTree->setProp("@newAttr", "added_after_deserialization");
-            CPPUNIT_ASSERT_EQUAL_STR("added_after_deserialization", deserializedTree->queryProp("@newAttr"));
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testSerializedMultiLevelDeserialization()
-    {
-        try
-        {
-            // Create a complex multi-level tree
-            Owned<IPropertyTree> originalTree = createPTree("MultiLevel");
-            originalTree->setProp("@version", "2.0");
-
-            // Level 1
-            IPropertyTree *level1a = originalTree->addPropTree("Level1");
-            level1a->setProp("@name", "first");
-            level1a->setProp("content", "Level 1A data");
-
-            IPropertyTree *level1b = originalTree->addPropTree("Level1");
-            level1b->setProp("@name", "second");
-            level1b->setProp("content", "Level 1B data");
-
-            // Level 2 under first Level1
-            IPropertyTree *level2a = level1a->addPropTree("Level2");
-            level2a->setProp("@id", "2a");
-            level2a->setProp("value", "Deep value A");
-
-            IPropertyTree *level2b = level1a->addPropTree("Level2");
-            level2b->setProp("@id", "2b");
-            level2b->setProp("value", "Deep value B");
-
-            // Level 3 under level2a
-            IPropertyTree *level3 = level2a->addPropTree("Level3");
-            level3->setProp("@deepest", "true");
-            level3->setProp("data", "Deepest level data");
-
-            // Serialize the complex tree
-            MemoryBuffer buffer;
-            originalTree->serialize(buffer);
-
-            // Deserialize into new tree
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-
-            // Test that all levels are accessible after deserialization
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("MultiLevel", deserializedTree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("2.0", deserializedTree->queryProp("@version"));
-
-            // Test Level 1 access
-            CPPUNIT_ASSERT_EQUAL_STR("first", deserializedTree->queryProp("Level1[1]/@name"));
-            CPPUNIT_ASSERT_EQUAL_STR("second", deserializedTree->queryProp("Level1[2]/@name"));
-            CPPUNIT_ASSERT_EQUAL_STR("Level 1A data", deserializedTree->queryProp("Level1[1]/content"));
-            CPPUNIT_ASSERT_EQUAL_STR("Level 1B data", deserializedTree->queryProp("Level1[2]/content"));
-
-            // Test Level 2 access
-            CPPUNIT_ASSERT_EQUAL_STR("2a", deserializedTree->queryProp("Level1[1]/Level2[1]/@id"));
-            CPPUNIT_ASSERT_EQUAL_STR("2b", deserializedTree->queryProp("Level1[1]/Level2[2]/@id"));
-            CPPUNIT_ASSERT_EQUAL_STR("Deep value A", deserializedTree->queryProp("Level1[1]/Level2[1]/value"));
-            CPPUNIT_ASSERT_EQUAL_STR("Deep value B", deserializedTree->queryProp("Level1[1]/Level2[2]/value"));
-
-            // Test Level 3 access
-            CPPUNIT_ASSERT_EQUAL_STR("true", deserializedTree->queryProp("Level1[1]/Level2[1]/Level3/@deepest"));
-            CPPUNIT_ASSERT_EQUAL_STR("Deepest level data", deserializedTree->queryProp("Level1[1]/Level2[1]/Level3/data"));
-
-            // Test iterators work on deserialized tree
-            Owned<IPropertyTreeIterator> iter = deserializedTree->getElements("Level1");
-            unsigned count = 0;
-            ForEach(*iter)
-            {
-                count++;
-                IPropertyTree &level1 = iter->query();
-                CPPUNIT_ASSERT(level1.hasProp("@name"));
-                CPPUNIT_ASSERT(level1.hasProp("content"));
-            }
-            CPPUNIT_ASSERT_EQUAL(2U, count);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
-    void testSerializedBinaryDataDeserialization()
-    {
-        try
-        {
-            // Create tree with binary data
-            Owned<IPropertyTree> originalTree = createPTree("BinaryTest");
-            originalTree->setProp("@type", "binary");
-
-            // Add some binary data
-            const char *binaryData1 = "Binary\0Data\0With\0Nulls";
-            size32_t binarySize1 = 20; // includes null bytes
-            originalTree->setPropBin("binaryProp1", binarySize1, binaryData1);
-
-            const char *binaryData2 = "\x00\x01\x02\x03\xFF\xFE\xFD";
-            size32_t binarySize2 = 7;
-            originalTree->setPropBin("binaryProp2", binarySize2, binaryData2);
-
-            // Add regular text data too
-            originalTree->setProp("textProp", "Regular text data");
-
-            // Serialize the tree
-            MemoryBuffer buffer;
-            originalTree->serialize(buffer);
-
-            // Deserialize into new tree
-            Owned<IPropertyTree> deserializedTree = createPTree();
-            deserializedTree->deserialize(buffer);
-
-            // Test that binary data is preserved
-            CPPUNIT_ASSERT(deserializedTree);
-            CPPUNIT_ASSERT_EQUAL_STR("BinaryTest", deserializedTree->queryName());
-            CPPUNIT_ASSERT_EQUAL_STR("binary", deserializedTree->queryProp("@type"));
-
-            // Test text property still works
-            CPPUNIT_ASSERT_EQUAL_STR("Regular text data", deserializedTree->queryProp("textProp"));
-
-            // Test binary properties
-            CPPUNIT_ASSERT(deserializedTree->hasProp("binaryProp1"));
-            CPPUNIT_ASSERT(deserializedTree->hasProp("binaryProp2"));
-
-            // Retrieve and verify binary data
-            MemoryBuffer retrievedBin1;
-            deserializedTree->getPropBin("binaryProp1", retrievedBin1);
-            CPPUNIT_ASSERT_EQUAL(binarySize1, (size32_t)retrievedBin1.length());
-            CPPUNIT_ASSERT(memcmp(binaryData1, retrievedBin1.toByteArray(), binarySize1) == 0);
-
-            MemoryBuffer retrievedBin2;
-            deserializedTree->getPropBin("binaryProp2", retrievedBin2);
-            CPPUNIT_ASSERT_EQUAL(binarySize2, (size32_t)retrievedBin2.length());
-            CPPUNIT_ASSERT(memcmp(binaryData2, retrievedBin2.toByteArray(), binarySize2) == 0);
-
-            // Test that we can serialize again with binary data intact
-            MemoryBuffer secondBuffer;
-            deserializedTree->serialize(secondBuffer);
-            CPPUNIT_ASSERT_EQUAL(133U, secondBuffer.length());
-
-            // And deserialize once more to ensure binary data persistence
-            Owned<IPropertyTree> thirdTree = createPTree();
-            thirdTree->deserialize(secondBuffer);
-
-            MemoryBuffer finalBin1;
-            thirdTree->getPropBin("binaryProp1", finalBin1);
-            CPPUNIT_ASSERT_EQUAL(binarySize1, (size32_t)finalBin1.length());
-            CPPUNIT_ASSERT(memcmp(binaryData1, finalBin1.toByteArray(), binarySize1) == 0);
+            MemoryBuffer originalBinaryXml, deserializedBinaryXml;
+            binaryXmlValue.getValue(originalBinaryXml, true);
+            binaryXmlDeserializedValue.getValue(deserializedBinaryXml, true);
+            CPPUNIT_ASSERT_EQUAL(originalBinaryXml.length(), deserializedBinaryXml.length());
+            CPPUNIT_ASSERT_EQUAL(0, memcmp(originalBinaryXml.bytes(), deserializedBinaryXml.bytes(), originalBinaryXml.length()));
         }
         catch (IException *e)
         {
@@ -4247,8 +3683,8 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializationTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
 
 
 
