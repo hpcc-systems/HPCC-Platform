@@ -765,6 +765,7 @@ export = {
         Property: "Property",
         Protect: "Protect",
         ProtectBy: "Protected by",
+        ProtectedByMultipleUsers: "Protected by multiple users",
         Protected: "Protected",
         Protocol: "Protocol",
         Publish: "Publish",
