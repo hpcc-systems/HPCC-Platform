@@ -464,6 +464,11 @@ protected:
             if ((intValue >= 0) && (intValue < 100))
                 maxRecompress = intValue;
         }
+        else if (strieq(option, "minSizeToCompress"))
+        {
+            if (intValue > 0)
+                minSizeToCompress = intValue;
+        }
         else
             return false;
         return true;
@@ -487,7 +492,7 @@ protected:
             return true;
 
         //No benefit in trying to recompress if there is no more data to compress, and we already have a single block
-        if ((inlen == lastCompress) && (compressedSizes.ordinality() == 1))
+        if ((inlen < lastCompress + minSizeToCompress) && (compressedSizes.ordinality() == 1))
             return false;
 
         if (recompressed < maxRecompress)
@@ -564,6 +569,7 @@ protected:
     //Options for configuring the compressor:
     byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
     byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
+    unsigned minSizeToCompress = 1; // If the uncompressed data is less than this size, don't bother compressing it
 };
 
 
@@ -631,7 +637,7 @@ protected:
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
-        if (uncompressed == 0)
+        if (uncompressed < minSizeToCompress)
             return false;
 
         size32_t compressedSize = outlen;
@@ -1166,7 +1172,7 @@ protected:
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
-        if (uncompressed == 0)
+        if (uncompressed < minSizeToCompress)
             return false;
 
         size32_t compressedSize = outlen;
