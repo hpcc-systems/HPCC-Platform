@@ -2011,14 +2011,16 @@ void IErrorReceiver::throwStringExceptionV(int code,const char *format, ...) con
 void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
     Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
-    report(err);
+    Owned<IError> mapped = mapError(err);
+    report(mapped);
 }
 
 void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
     ErrorSeverity severity = queryDefaultSeverity(category);
     Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
-    report(warn);
+    Owned<IError> mapped = mapError(warn);
+    report(mapped);
 }
 
 const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudience aud)

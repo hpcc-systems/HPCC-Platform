@@ -251,7 +251,6 @@ public:
     }
 
     void logStats(bool logTimings);
-    void checkEclVersionCompatible();
     bool reportErrorSummary();
     inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
 
@@ -1316,10 +1315,16 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         }
     }
 
-    IErrorReceiver & errorProcessor = *severityMapper;
+    Linked<IErrorReceiver> errorProcessor = severityMapper.get();
+    if (optCheckEclVersion)
+    {
+        //Strange function that might modify errorProcessor...
+        checkEclVersionCompatible(errorProcessor, instance.eclVersion);
+    }
+
     //Associate the error handler - so that failures to fetch from git can be reported as errors, but also mapped
     //to warnings to ensure that automated tasks do not fail because the could not connect to git.
-    localRepositoryManager.setErrorReceiver(&errorProcessor);
+    localRepositoryManager.setErrorReceiver(errorProcessor);
     //Ensure the error processor is cleared up when we exit this function
     COnScopeExit scoped([&]() { localRepositoryManager.setErrorReceiver(NULL); });
 
@@ -1342,7 +1347,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
 
     //This option isn't particularly useful, but is here to help test the code to gather disk information
     bool optGatherDiskStats = instance.wu->getDebugValueBool("gatherEclccDiskStats", false);
-    size32_t prevErrs = errorProcessor.errCount();
+    size32_t prevErrs = errorProcessor->errCount();
     cycle_t startCycles = get_cycles_now();
     SystemInfo systemStartTime(ReadAllInfo);
     ProcessInfo processStartTime(ReadAllInfo);
@@ -1485,16 +1490,16 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         addTimeStamp(instance.wu, SSToperation, ">compile:>parse", StWhenStarted);
         try
         {
-            HqlLookupContext ctx(parseCtx, &errorProcessor, instance.dataServer);
+            HqlLookupContext ctx(parseCtx, errorProcessor, instance.dataServer);
 
             if (withinRepository)
             {
                 instance.query.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx, instance.dataServer));
-                if (!instance.query && !syntaxChecking && (errorProcessor.errCount() == prevErrs))
+                if (!instance.query && !syntaxChecking && (errorProcessor->errCount() == prevErrs))
                 {
                     StringBuffer msg;
                     msg.append("Could not resolve attribute ").append(queryAttributePath);
-                    errorProcessor.reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
+                    errorProcessor->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
                 }
             }
             else
@@ -1574,7 +1579,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             if (parseCtx.globalDependTree)
                 instance.globalDependTree.set(parseCtx.globalDependTree);
 
-            if (optEvaluateResult && !errorProcessor.errCount() && instance.query)
+            if (optEvaluateResult && !errorProcessor->errCount() && instance.query)
                 evaluateResult(instance);
         }
         catch (IException *e)
@@ -1584,7 +1589,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             unsigned errorCode = e->errorCode();
             if ((errorCode < HQL_ERROR_START) || (errorCode > HQL_ERROR_END))
                 errorCode = ERR_UNKNOWN_EXCEPTION;
-            errorProcessor.reportError(errorCode, s.str(), defaultErrorPathname, 1, 0, 0);
+            errorProcessor->reportError(errorCode, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
 
@@ -1594,9 +1599,9 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     //Free up the repository (and any cached expressions) as soon as the expression has been parsed
     instance.dataServer.clear();
 
-    if (!syntaxChecking && (errorProcessor.errCount() == prevErrs) && (!instance.query || !containsAnyActions(instance.query)))
+    if (!syntaxChecking && (errorProcessor->errCount() == prevErrs) && (!instance.query || !containsAnyActions(instance.query)))
     {
-        errorProcessor.reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
+        errorProcessor->reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
         return;
     }
 
@@ -1626,10 +1631,10 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             targetFilename.append(".eclout");
     }
 
-    if (errorProcessor.errCount() == prevErrs)
+    if (errorProcessor->errCount() == prevErrs)
     {
         const char * queryFullName = NULL;
-        instantECL(instance, instance.wu, queryFullName, errorProcessor, targetFilename);
+        instantECL(instance, instance.wu, queryFullName, *errorProcessor, targetFilename);
     }
     else
     {
@@ -1784,8 +1789,6 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", true);
 
     instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
-    if (optCheckEclVersion)
-        instance.checkEclVersionCompatible();
 
     EclRepositoryManager localRepositoryManager(&instance);
     processDefinitions(localRepositoryManager);
@@ -2392,12 +2395,6 @@ void EclCC::traceError(char const * format, ...)
         VALOG(MCuserError, format, args);
 
     va_end(args);
-}
-
-void EclCompileInstance::checkEclVersionCompatible()
-{
-    //Strange function that might modify errorProcessor...
-    ::checkEclVersionCompatible(errorProcessor, eclVersion);
 }
 
 class StatsLogger : public WuScopeVisitorBase
