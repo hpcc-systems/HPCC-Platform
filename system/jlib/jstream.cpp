@@ -1031,12 +1031,14 @@ ISerialOutputStream * createSerialOutputStream(IFileIO * output)
     return new CFileSerialOutputStream(output);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 //This base class was created in case we ever want a lighter weight implementation that only implements ISerialOutputStream
-class CStringSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
 {
 public:
-    CStringSerialOutputStreamBase(StringBuffer & _target)
+    CBufferSerialOutputStreamBase(BUFFER_CLASS & _target)
     : target(_target)
     {
     }
@@ -1061,22 +1063,24 @@ public:
     }
 
 protected:
-    StringBuffer & target;
+    BUFFER_CLASS & target;
 };
 
 
-class CStringBufferSerialOutputStream final : public CStringSerialOutputStreamBase
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStream final : public CBufferSerialOutputStreamBase<BUFFER_CLASS>
 {
+    using CBufferSerialOutputStreamBase<BUFFER_CLASS>::target;
 public:
-    CStringBufferSerialOutputStream(StringBuffer & _target)
-    : CStringSerialOutputStreamBase(_target)
+    CBufferSerialOutputStream(BUFFER_CLASS & _target)
+    : CBufferSerialOutputStreamBase<BUFFER_CLASS>(_target)
     {
     }
 
     virtual byte * reserve(size32_t wanted, size32_t & got) override
     {
         size_t sizeGot;
-        char * ret = target.ensureCapacity(wanted, sizeGot);
+        void * ret = target.ensureCapacity(wanted, sizeGot);
         got = sizeGot;
         return (byte *)ret;
     }
@@ -1106,8 +1110,14 @@ protected:
 
 IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target)
 {
-    return new CStringBufferSerialOutputStream(target);
+    return new CBufferSerialOutputStream(target);
 }
+
+IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target)
+{
+    return new CBufferSerialOutputStream(target);
+}
+
 
 /*
  * Future work:
