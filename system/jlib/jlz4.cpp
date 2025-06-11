@@ -1112,6 +1112,19 @@ IFileIOStream *createLZ4StreamWrite(IFileIO *base)
 #include <zstd.h>
 
 // See notes on CStreamCompressor above for the serialized stream format
+
+// The ZStd streaming functions compress data in blocks. We are using ZSTD)e_flush.
+// If all the data is written then there will be a complete frame.
+// If the data is partially written, there will be a complete frame up to the data that was not included.  The last frame will not be marked
+// as the end of the stream, but as long as we do not rely on that the data can be decompressed.
+//
+// Previously this logic assumed the data needed to be recompressed to create a valid terminating frame, but I no longer think that is necessary.
+//
+// See the comment inside ensureCompressionIsValid() for the code that would be needed.
+//
+// Assuming this works as expected, then the logic could be simplified to remove the ensureValidCompress() function
+
+constexpr bool ensureCompressionIsValid = false;
 class CZStdStreamCompressor final : public CStreamCompressor
 {
 public:
@@ -1223,6 +1236,9 @@ protected:
 
     virtual void ensureValidCompress() override
     {
+        if (!ensureCompressionIsValid)
+            return;
+
         // There is no guarantee that the compressed buffer is left in a valid state.
         // Two stage fall back:
 
