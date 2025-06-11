@@ -1087,7 +1087,8 @@ public:
 
     virtual void commit(size32_t written) override
     {
-        target.setLength(target.length() + written);
+        //The data has already been written - the cleanest function to call to skip the write pos forward
+        target.reserve(written);
     }
 
     virtual void suspend(size32_t wanted) override
