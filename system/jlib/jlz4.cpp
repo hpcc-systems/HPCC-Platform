@@ -286,7 +286,6 @@ public:
         active = 0;
         recompressed = 0;
         compressedSizes.clear();
-        uncompressedSizes.clear();
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override
@@ -371,7 +370,6 @@ public:
             return len;
 
         inlen -= len;
-        ensureValidCompress();
         return 0;
     }
 
@@ -408,7 +406,6 @@ public:
 #ifdef LZ4LOGGING
                 DBGLOG("Failed to recompress limit(%u->%u) compressed(%u:0..%u), uncompressed(%u:%u..%u) total(%u)", outMax, newLimit, outlen, lastCompress, inlen - lastCompress, lastCompress, inlen, outlen + 8 + inlen - lastCompress);
 #endif
-                ensureValidCompress();
                 return false;
             }
 
@@ -527,9 +524,7 @@ protected:
         {
             //Now only a single compressed block
             compressedSizes.clear();
-            uncompressedSizes.clear();
             compressedSizes.append(outlen);
-            uncompressedSizes.append(inlen);
             return true;
         }
 
@@ -545,7 +540,6 @@ protected:
 
     virtual bool tryCompress(bool isFinalCompression) = 0;
     virtual void resetStreamContext() = 0;
-    virtual void ensureValidCompress() = 0;
 
 protected:
     size32_t originalMax = 0;
@@ -563,7 +557,6 @@ protected:
     byte active = 0;        // Which output buffer is active?
 
     UnsignedArray compressedSizes;
-    UnsignedArray uncompressedSizes;
     size32_t outputExtra = 0;
 
     //Options for configuring the compressor:
@@ -663,16 +656,10 @@ protected:
             return false;
 
         compressedSizes.append(newCompressedSize);
-        uncompressedSizes.append(uncompressed);
         outputExtra += lenLen;
         outlen += newCompressedSize;
         lastCompress = inlen;
         return true;
-    }
-
-    virtual void ensureValidCompress() override
-    {
-        //The compressed buffer is always left in a valid state - so no need to do anything here
     }
 
 protected:
@@ -1117,14 +1104,7 @@ IFileIOStream *createLZ4StreamWrite(IFileIO *base)
 // If all the data is written then there will be a complete frame.
 // If the data is partially written, there will be a complete frame up to the data that was not included.  The last frame will not be marked
 // as the end of the stream, but as long as we do not rely on that the data can be decompressed.
-//
-// Previously this logic assumed the data needed to be recompressed to create a valid terminating frame, but I no longer think that is necessary.
-//
-// See the comment inside ensureCompressionIsValid() for the code that would be needed.
-//
-// Assuming this works as expected, then the logic could be simplified to remove the ensureValidCompress() function
 
-constexpr bool ensureCompressionIsValid = false;
 class CZStdStreamCompressor final : public CStreamCompressor
 {
 public:
@@ -1176,9 +1156,7 @@ protected:
     {
         size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
         if (ZSTD_isError(result))
-        {
-            DBGLOG("Failed to reset ZStd compression stream: %s", ZSTD_getErrorName(result));
-        }
+            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
     }
 
     virtual bool tryCompress(bool isFinalCompression) override
@@ -1205,13 +1183,11 @@ protected:
         size32_t newCompressedSize = (size32_t)output.pos;
 
         if (ZSTD_isError(result))
-        {
-            DBGLOG("ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
-            return false;
-        }
+            throw makeStringExceptionV(0, "ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+
         if (result != 0)
         {
-            //Not all the data could be flushed
+            //Not all the data could be flushed - the previous streamed blocks are still valid though - so we can unwind the last block of data written
             return false;
         }
 
@@ -1227,61 +1203,10 @@ protected:
             return false;
 
         compressedSizes.append(newCompressedSize);
-        uncompressedSizes.append(uncompressed);
         outputExtra += lenLen;
         outlen += newCompressedSize;
         lastCompress = inlen;
         return true;
-    }
-
-    virtual void ensureValidCompress() override
-    {
-        if (!ensureCompressionIsValid)
-            return;
-
-        // There is no guarantee that the compressed buffer is left in a valid state.
-        // Two stage fall back:
-
-        // 1. Compress everything that was previously compressed as a single block and then check there is
-        //    enough space for the uncompressed data to fit.
-        //    We need to only compress the previous compressed data - not uncompressed, othewise
-        //    it may not fit.
-        size32_t savedInlen = inlen;
-        inlen = lastCompress;
-        if (recompressInput(true))
-        {
-            inlen = savedInlen;
-            size32_t compressedSize = outlen;
-            size32_t remaining = outMax - compressedSize - outputExtra;
-            size32_t uncompressed = inlen - lastCompress;
-            if (uncompressed <= remaining)
-                return;
-        }
-
-        // 2. Boundary case - the compressed data is larger when compressed as a single block than when compressed as multiple blocks
-        //    Recreate the compressed data using the saved sizes
-        resetStreamContext();
-        reinitBufferIndexes(0);
-
-        UnsignedArray savedUncompressedSizes;
-        ForEachItemIn(i1, uncompressedSizes)
-            savedUncompressedSizes.append(uncompressedSizes.item(i1));
-
-        compressedSizes.clear();
-        uncompressedSizes.clear();
-
-        ForEachItemIn(i2, savedUncompressedSizes)
-        {
-            inlen += savedUncompressedSizes.item(i2);
-            if (!tryCompress(i2+1 == savedUncompressedSizes.ordinality()))
-                throwUnexpected();
-        }
-
-        inlen = savedInlen;
-        size32_t compressedSize = outlen;
-        size32_t remaining = outMax - compressedSize - outputExtra;
-        size32_t uncompressed = inlen - lastCompress;
-        assertex(uncompressed <= remaining);
     }
 
 protected:
