@@ -29,7 +29,11 @@
 //       readTime: nanosecond time to read one page
 //     file:
 //     - path: empty or unique index file path
-//       plane: name of place in which the file resides
+//       plane: name of storage plane on which the file resides
+//       except:
+//       - min: offset of first page in exception
+//         max: offset of last page in exception
+//         plane: name of storage plane on which the file segment resides
 //
 // - `kind` is optional; as the first model the value is implied.
 // - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
@@ -37,8 +41,14 @@
 // - `file` is optional; omission implies all files exist in the default plane.
 // - `file/path` is optional; omission, or empty, assigns the storage plane for all files not
 //   explicitly configured.
-// - `file/planes` is optional; omission, or empty, implies the file resides in the default storage
+// - `file/plane` is optional; omission, or empty, implies the file resides in the default storage
 //   plane.
+// - `file/except' is prohibited when `file/path` is empty or omitted, and optional otherwise.
+// - `file/except/min` is optional; omission implies zero.
+// - `file/except/max` is optional; omission implies the end of the file.
+// - `file/except/plane` is optional; omission implies the default storage plane.
+// - Exceptions specifying the same plane as the containing file are ignored.
+// - Exception ranges may not overlap.
 
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
@@ -68,20 +78,34 @@ private:
     class File
     {
     public:
+        struct Exception
+        {
+            __uint64 min{0};
+            __uint64 max{0};
+            const Plane* plane{nullptr};
+            Exception(__uint64 _min, __uint64 _max, const Plane& _plane) : min(_min), max(_max), plane(&_plane) {}
+        };
+        using Exceptions = std::set<Exception, std::less<>>;
+
+    public:
         StringAttr path;
         const Plane* plane{nullptr};
+        Exceptions exceptions;
 
     public:
         File() = default;
         File(const char* _path, const Plane& _plane) : path(_path), plane(&_plane) {}
 
-        // Returns plane unless the page exceptions are defined and the offset is within an
-        // exception, in which case the exception's plane would be returned.
+        // Returns plane unless page exceptions are defined and the offset is within an
+        // exception, in which case the exception's plane is returned.
         const Plane& lookupPlane(__uint64 offset) const;
     };
     friend bool operator < (const File& left, const File& right); // required for set insertion
     friend bool operator < (const File& left, const char* right); // required to search a set by path
     friend bool operator < (const char* left, const File& right); // required to search a set by path
+    friend bool operator < (const File::Exception& left, const File::Exception& right); // required for set insertion
+    friend bool operator < (const File::Exception& left, const __uint64& right); // required to search by offset
+    friend bool operator < (const __uint64& left, const File::Exception& right); // required to search by offset
 
     // An ordered set of storage planes, with key transparency enabled.
     using Planes = std::set<Plane, std::less<>>;

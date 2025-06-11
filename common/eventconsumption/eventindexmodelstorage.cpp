@@ -26,8 +26,15 @@ bool operator < (const Storage::File& left, const Storage::File& right) { return
 bool operator < (const Storage::File& left, const char* right) { return strcmp(left.path.str(), right) < 0; }
 bool operator < (const char* left, const Storage::File& right) { return strcmp(left, right.path.str()) < 0; }
 
+bool operator < (const Storage::File::Exception& left, const Storage::File::Exception& right) { return left.max < right.min; }
+bool operator < (const Storage::File::Exception& left, const __uint64& right) { return left.max < right; }
+bool operator < (const __uint64& left, const Storage::File::Exception& right) { return left < right.min; }
+
 const Storage::Plane& Storage::File::lookupPlane(__uint64 offset) const
 {
+    Exceptions::const_iterator exceptionIt = exceptions.find(offset);
+    if (exceptionIt != exceptions.end())
+        return *exceptionIt->plane;
     return *plane;
 }
 
@@ -103,6 +110,25 @@ void Storage::configureFiles(const IPropertyTree& config)
         File file;
         file.path.set(it->query().queryProp("@path"));
         file.plane = &lookupPlane(it->query().queryProp("@plane"), file.path.str());
+        Owned<IPropertyTreeIterator> exceptions = it->query().getElements("except");
+        if (file.path.isEmpty() && exceptions->first())
+            throw makeStringException(-1, "invalid default storage file configuration - exceptions not allowed");
+        ForEach(*exceptions)
+        {
+            const Plane& plane = lookupPlane(exceptions->query().queryProp("@plane"), file.path.str());
+            if (&plane == file.plane)
+                continue;
+            __uint64 min = __uint64(exceptions->query().getPropInt64("@min", 0));
+            __uint64 max = __uint64(exceptions->query().getPropInt64("@max", UINT64_MAX));
+            if (min > max)
+                throw makeStringExceptionV(-1, "invalid storage file exception configuration for path '%s' - %llu > %llu", file.path.str(), min, max);
+            for (const File::Exception& exception : file.exceptions)
+            {
+                if ((min <= exception.max && max >= exception.min) || (exception.min <= max && exception.max >= min))
+                    throw makeStringExceptionV(-1, "invalid storage file exception configuration for path '%s' - [%llu..%llu] overlaps [%llu..%llu]", file.path.str(), min, max, exception.min, exception.max);
+            }
+            file.exceptions.emplace(min, max, plane);
+        }
         if (!configuredFiles.insert(file).second)
             throw makeStringExceptionV(-1, "duplicate file path '%s'", file.path.str());
         if (isEmptyString(file.path.get()))
