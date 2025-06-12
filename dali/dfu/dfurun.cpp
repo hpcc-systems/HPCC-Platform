@@ -147,6 +147,10 @@ class CDFUengine: public CInterface, implements IDFUengine
         {
             progress->setFileAccessCost(fileAccessCost);
         }
+        virtual void setTransferOptions(const IPropertyTree * options) override
+        {
+            progress->setTransferOptions(options);
+        }
     };
 
     class cAbortNotify : public CInterface, implements IAbortRequestCallback, implements IDFUabortSubscriber

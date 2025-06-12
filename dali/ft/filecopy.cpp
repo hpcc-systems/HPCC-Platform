@@ -1051,6 +1051,41 @@ void FileSprayer::beforeTransfer()
 #endif
 }
 
+void FileSprayer::saveTransferOptions()
+{
+    //Update that workunit with any options that might be interesting in a postmortem
+    if (progressReport)
+    {
+        OwnedPTree derivedOptions = createPTree("Options");
+        if (usePushWholeOperation())
+            derivedOptions->setProp("@mode", "pushWhole");
+        else if (usePullOperation())
+            derivedOptions->setProp("@mode", "pull");
+        else
+            derivedOptions->setProp("@mode", "push");
+
+        derivedOptions->setPropBool("@calcInputCRC", calcInputCRC());
+        derivedOptions->setPropBool("@calcCRC", calcCRC());
+        derivedOptions->setPropInt64("@numConcurrentTransfers", numConcurrentTransfers);
+        derivedOptions->setPropInt64("@slaveUpdateFrequency", slaveUpdateFrequency);
+        derivedOptions->setPropBool("@replicate", replicate);
+        derivedOptions->setPropBool("@mirroring", mirroring);
+        derivedOptions->setPropBool("@isSafeMode", isSafeMode);
+        derivedOptions->setPropInt64("@throttleNicSpeed", throttleNicSpeed);
+        derivedOptions->setPropBool("@compressedInput", compressedInput);
+        derivedOptions->setPropBool("@compressOutput", compressOutput);
+        derivedOptions->setPropBool("@copyCompressed", copyCompressed);
+        derivedOptions->setPropInt64("@transferBufferSize", transferBufferSize);
+        derivedOptions->setPropInt64("@fileUmask", fileUmask);
+
+        if (!encryptKey.isEmpty())
+            derivedOptions->setPropBool("@encrypt", true);
+        if (!decryptKey.isEmpty())
+            derivedOptions->setPropBool("@decrypt", true);
+
+        progressReport->setTransferOptions(derivedOptions);
+    }
+}
 
 bool FileSprayer::calcCRC()
 {
@@ -2571,9 +2606,9 @@ void FileSprayer::performTransfer()
     if (numConcurrentTransfers > 1)
         shuffle(transferSlaves);
 
+    saveTransferOptions();
     if (progressReport)
         progressReport->setRange(getSizeReadAlready(), sizeToBeRead, transferSlaves.ordinality());
-
 
     LOG(MCdebugInfo, "Begin to transfer parts (%d threads)\n", numConcurrentTransfers);
 
@@ -3396,6 +3431,7 @@ void FileSprayer::spray()
     throwExceptionIfAborting();
 
     beforeTransfer();
+
     bool copiedAlready = false;
     if ((replicate || copySource))
     {
