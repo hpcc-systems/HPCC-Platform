@@ -27,7 +27,7 @@ class CActivityRule : public CInterface
 {
 public:
     virtual bool isCandidate(IWuActivity & activity) const = 0;
-    virtual bool check(PerformanceIssue & results, IWuActivity & activity, const IAnalyserOptions & options) = 0;
+    virtual bool check(PerformanceIssue & results, IWuActivity & activity, const IAnalyserOptions & options, const IEnvironmentInfo & envInfo) = 0;
     virtual void updateInformation(PerformanceIssue & result,  IWuActivity & activity)
     {
         StringBuffer def;
