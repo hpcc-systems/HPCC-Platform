@@ -518,6 +518,6 @@ interface IEventVisitor : extends IInterface
 // returned if all data was parsed successfully.
 extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
 
-bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause);
+extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause);
 
 #endif
