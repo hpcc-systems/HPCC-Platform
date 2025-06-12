@@ -383,7 +383,16 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
 
     outputFilename.set(filename);
     outputFile.setown(createIFile(filename));
-    output.setown(outputFile->open(IFOcreate));
+    try
+    {
+        output.setown(outputFile->open(IFOcreate));
+    }
+    catch (...)
+    {
+        isStarted = false;
+        isStopped = true;
+        throw;
+    }
 
     Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
     Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);

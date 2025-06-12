@@ -196,6 +196,7 @@ public:
 
     inline size32_t capacity() { return (maxLen - curLen); }
     void *          ensureCapacity (unsigned max);
+    void *          ensureCapacity(size_t max, size_t & got);
     inline size32_t length() const { return curLen; }
     inline size32_t remaining() const { return curLen - readPos; }
 
@@ -215,6 +216,8 @@ public:
     inline void *   bufferBase() const { return buffer; }
     inline const char * toByteArray() const { return curLen ? buffer : nullptr; }
     inline const byte * bytes() const { return curLen ? (const byte *)buffer : nullptr; }
+
+    void            replace(size_t offset, size_t len, const void * value);
 
 private:
     MemoryBuffer &  read(unsigned long & value);    // unimplemented

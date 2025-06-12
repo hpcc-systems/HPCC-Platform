@@ -39,8 +39,6 @@
 
 enum { NodeBranch, NodeLeaf };
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
-
 class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
 {
 public:
@@ -99,6 +97,7 @@ public:
         CPPUNIT_TEST(testReadEvents);
         CPPUNIT_TEST(testIterateAllAttributes);
         CPPUNIT_TEST(testIterateEventAttributes);
+        CPPUNIT_TEST(testFailCreate);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -294,6 +293,23 @@ public:
         //Add a special event function in the public interface which sleeps for a given time
     }
 
+    void testFailCreate()
+    {
+        EventRecorder &recorder = queryRecorder();
+
+        // Test that recording is initially inactive
+        CPPUNIT_ASSERT(!recorder.isRecording());
+
+        // Try start recording to an invalid filename
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(recorder.startRecording("threadid", "/home/nonexistantuser/eventtrace.evt", false), "Expected startRecording() to throw an exception");
+
+        //Check that the recorder has been left in a good state, and a subsequent recording works
+        CPPUNIT_ASSERT(!recorder.isRecording());
+        CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
+        CPPUNIT_ASSERT(recorder.isRecording());
+        CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+    }
+
     void testCleanup()
     {
         if (cleanup)
@@ -417,6 +433,7 @@ attribute: DataSize = 73
                 break;
             case CEventAttribute::State::Assigned:
                 actualAssigned.insert(attr.queryId());
+                break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
                 break;

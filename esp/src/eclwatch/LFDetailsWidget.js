@@ -164,12 +164,8 @@ define([
         },
         _onSave: function (event) {
             var context = this;
-            var protectedCheckbox = registry.byId(this.id + "isProtected");
-            var restrictedCheckbox = registry.byId(this.id + "isRestricted");
             this.logicalFile.save({
                 Description: dom.byId(context.id + "Description").value,
-                isProtected: protectedCheckbox.get("checked"),
-                isRestricted: restrictedCheckbox.get("checked")
             }, null);
         },
         _onDelete: function (event) {
@@ -277,11 +273,17 @@ define([
             this.logicalFile.refresh();
 
             this.isProtected.on("click", function (evt) {
-                context._onSave();
+                var protectedCheckbox = registry.byId(context.id + "isProtected");
+                context.logicalFile.save({
+                    isProtected: protectedCheckbox.get("checked")
+                }, null);
             });
 
             this.isRestricted.on("click", function (evt) {
-                context._onSave();
+                var restrictedCheckbox = registry.byId(context.id + "isRestricted");
+                context.logicalFile.save({
+                    isRestricted: restrictedCheckbox.get("checked")
+                }, null);
             });
         },
 

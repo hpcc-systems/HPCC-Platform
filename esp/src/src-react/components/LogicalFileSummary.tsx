@@ -108,9 +108,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             onClick: () => {
                 file?.update({
                     UpdateDescription: true,
-                    FileDesc: description,
-                    Protect: _protected ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
-                    Restrict: restricted ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
+                    FileDesc: description
                 })
                     .then(_ => {
                         setShowMessageBar(true);
@@ -144,7 +142,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
         },
-    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted, setShowDeleteConfirm]);
+    ], [canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));

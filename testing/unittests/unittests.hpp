@@ -46,3 +46,16 @@ public:
         so.load(name, true);
     }
 };
+
+#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
+
+#define CPPUNIT_ASSERT_THROWS_IEXCEPTION(expr, msg) \
+    try \
+    {   \
+        expr; \
+        CPPUNIT_FAIL(msg); \
+    } \
+    catch (IException *e) \
+    { \
+        e->Release(); \
+    }
