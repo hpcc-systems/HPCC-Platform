@@ -1354,7 +1354,7 @@ public:
                     break; // none available
                 --slotsToRelease;
             }
-            if (slotsToRelease)
+            if (slotsToRelease && runningCount())
             {
                 ForEachItemIn(threadIndex,threadwrappers)
                 {
