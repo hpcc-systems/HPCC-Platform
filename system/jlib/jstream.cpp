@@ -538,16 +538,18 @@ public:
             throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell());
 
         size32_t decompressedSize = *(const size32_t *)next;   // Technically illegal - should copy to an aligned object
-        if (len < decompressedSize)
-            return BufferTooSmall; // Need to expand the buffer
-
         size32_t compressedSize = *((const size32_t *)next + 1); // Technically illegal - should copy to an aligned object
         if (unlikely(decompressedSize <= skipPending))
         {
             input->skip(sizeHeader + compressedSize);
+            nextOffset += decompressedSize;
             skipPending -= decompressedSize;
             goto again; // go around the loop again. - a goto seems the cleanest way to code this.
         }
+
+        //Check there is enough space in the buffer for the next block once we have skipped any whole blocks
+        if (len < decompressedSize)
+            return BufferTooSmall; // Need to expand the buffer
 
         //If the input buffer is not big enough skip the header so it does not need to be contiguous with the data
         //but that means various offsets need adjusting further down.
