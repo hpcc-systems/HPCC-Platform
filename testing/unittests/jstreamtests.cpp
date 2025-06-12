@@ -381,6 +381,7 @@ class JlibStreamStressTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JlibStreamStressTest);
         CPPUNIT_TEST(testGeneration);
+        CPPUNIT_TEST(testBufferStream);     // Write a file and then read the results
         CPPUNIT_TEST(testSimpleStream);     // Write a file and then read the results
         CPPUNIT_TEST(testIncSequentialStream); // write a file and read results after each flush
         CPPUNIT_TEST(testEvenSequentialStream); // write a file and read results after each flush
@@ -406,6 +407,7 @@ public:
     static constexpr bool testHighCompression   = true;
 
     static constexpr bool timeGeneration = false;
+    static constexpr bool testBuffer = true;
     static constexpr bool testSimple = true;
     static constexpr bool testIncSequential = false;
     static constexpr bool testEvenSequential = true;
@@ -491,6 +493,52 @@ public:
     void runSimpleStream(ICompressHandler * compressHandler, CDataProvider & dataProvider, size32_t bufferSize, size32_t compressedBufferSize, unsigned numRows)
     {
         runSimpleStream("testSimple", compressHandler, dataProvider, bufferSize, compressedBufferSize, numRows, false, false);
+    }
+    void runBufferStream(const char * testname, ICompressHandler * compressHandler, CDataProvider & dataProvider, size32_t bufferSize, size32_t compressedBufferSize, unsigned numRows, bool threadedRead, bool threadedWrite)
+    {
+        try
+        {
+            MemoryBuffer buffer;
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer);
+
+            CCycleTimer timer;
+            offset_t totalWritten = 0;
+            for (unsigned i=0; i < numRows; i++)
+                totalWritten += dataProvider.create(out, i);
+            out->flush();
+
+            offset_t totalRead = 0;
+            for (unsigned i=0; i < numRows; i++)
+            {
+                totalRead += dataProvider.check(in, i);
+                CPPUNIT_ASSERT_EQUAL(totalRead, in->tell());
+            }
+
+            size32_t got;
+            CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", !in->peek(1, got));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", 0U, got);
+            CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", in->eos());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", in->tell(), totalRead);
+
+            byte end;
+            size32_t remaining = in->read(1, &end);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", 0U, remaining);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("eos is not true at end of stream", true, in->eos());
+
+            CPPUNIT_ASSERT_EQUAL(totalWritten, totalRead);
+
+            __uint64 elapsedNs = timer.elapsedNs();
+            reportResult(testname, compressHandler, dataProvider, bufferSize, compressedBufferSize, numRows, totalWritten, elapsedNs);
+        }
+        catch (IException * e)
+        {
+            reportFailure(testname, compressHandler, dataProvider, bufferSize, compressedBufferSize, e);
+        }
+    }
+    void runBufferStream(ICompressHandler * compressHandler, CDataProvider & dataProvider, size32_t bufferSize, size32_t compressedBufferSize, unsigned numRows)
+    {
+        runBufferStream("testSimple", compressHandler, dataProvider, bufferSize, compressedBufferSize, numRows, false, false);
     }
     void runThreadedWriteStream(ICompressHandler * compressHandler, CDataProvider & dataProvider, size32_t bufferSize, size32_t compressedBufferSize, unsigned numRows)
     {
@@ -820,6 +868,32 @@ public:
             runSimpleStream(lz4, resProvider, 43, 97, numTestRows/10);
 
             applyTests(&JlibStreamStressTest::runSimpleStream);
+        }
+    }
+
+    void testBufferStream()
+    {
+        if (testBuffer)
+        {
+            DBGLOG("Simple tests: write then read");
+
+            SequenceDataProvider seqProviderPW(40, false, true);
+            SequenceDataProvider seqProviderRW(40, true, true);
+            SequenceDataProvider seqProviderRC(40, true, false);
+            SequenceDataProvider seqProviderPC(40, false, false);
+            VariableDataProvider varcProvider(true);
+            VariableDataProvider varsProvider(false);
+            Sequence2DataProvider seq2Provider(40);
+            ReservedDataProvider resProvider(40);
+
+            runBufferStream(nullptr, seqProviderPW, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, seqProviderRW, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, seqProviderRC, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, seqProviderPC, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, seq2Provider, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, varsProvider, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, varcProvider, 0x100000, 0x100000, numTestRows);
+            runBufferStream(nullptr, resProvider, 0x100000, 0x100000, numTestRows);
         }
     }
 

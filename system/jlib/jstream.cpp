@@ -1031,12 +1031,14 @@ ISerialOutputStream * createSerialOutputStream(IFileIO * output)
     return new CFileSerialOutputStream(output);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 //This base class was created in case we ever want a lighter weight implementation that only implements ISerialOutputStream
-class CStringSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
 {
 public:
-    CStringSerialOutputStreamBase(StringBuffer & _target)
+    CBufferSerialOutputStreamBase(BUFFER_CLASS & _target)
     : target(_target)
     {
     }
@@ -1061,29 +1063,32 @@ public:
     }
 
 protected:
-    StringBuffer & target;
+    BUFFER_CLASS & target;
 };
 
 
-class CStringBufferSerialOutputStream final : public CStringSerialOutputStreamBase
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStream final : public CBufferSerialOutputStreamBase<BUFFER_CLASS>
 {
+    using CBufferSerialOutputStreamBase<BUFFER_CLASS>::target;
 public:
-    CStringBufferSerialOutputStream(StringBuffer & _target)
-    : CStringSerialOutputStreamBase(_target)
+    CBufferSerialOutputStream(BUFFER_CLASS & _target)
+    : CBufferSerialOutputStreamBase<BUFFER_CLASS>(_target)
     {
     }
 
     virtual byte * reserve(size32_t wanted, size32_t & got) override
     {
         size_t sizeGot;
-        char * ret = target.ensureCapacity(wanted, sizeGot);
+        void * ret = target.ensureCapacity(wanted, sizeGot);
         got = sizeGot;
         return (byte *)ret;
     }
 
     virtual void commit(size32_t written) override
     {
-        target.setLength(target.length() + written);
+        //The data has already been written - the cleanest function to call to skip the write pos forward
+        target.reserve(written);
     }
 
     virtual void suspend(size32_t wanted) override
@@ -1106,8 +1111,75 @@ protected:
 
 IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target)
 {
-    return new CStringBufferSerialOutputStream(target);
+    return new CBufferSerialOutputStream(target);
 }
+
+IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target)
+{
+    return new CBufferSerialOutputStream(target);
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CBufferSerialInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
+{
+public:
+    CBufferSerialInputStream(MemoryBuffer & _source)
+    : source(_source)
+    {
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t available = source.remaining();
+        size32_t toCopy = std::min(len, available);
+        source.read(toCopy, ptr);
+        return toCopy;
+    }
+
+    virtual void skip(size32_t len) override
+    {
+        assertex(len <= source.remaining());
+        source.skip(len);
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        assertex(len <= source.remaining());
+        source.read(len, ptr);
+    }
+    virtual bool eos() override
+    {
+        return source.remaining() == 0;
+    }
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual offset_t tell() const override
+    {
+        return source.getPos();
+    }
+
+    virtual const void * peek(size32_t wanted, size32_t &got) override
+    {
+        size32_t available = source.remaining();
+        got = available;
+        if (available == 0)
+            return nullptr;
+        return source.readDirect(0);
+    }
+
+protected:
+    MemoryBuffer & source;
+};
+
+IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source)
+{
+    return new CBufferSerialInputStream(source);
+}
+
 
 /*
  * Future work:
