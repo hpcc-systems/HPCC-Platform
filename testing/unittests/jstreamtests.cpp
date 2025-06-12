@@ -465,9 +465,13 @@ public:
 
             offset_t totalRead = 0;
             for (unsigned i=0; i < numRows; i++)
+            {
+                CPPUNIT_ASSERT_EQUAL(totalRead, in->tell());
                 totalRead += dataProvider.check(in, i);
+            }
 
             size32_t got;
+            CPPUNIT_ASSERT_EQUAL(totalRead, in->tell());
             CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", !in->peek(1, got));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Data available after the end of stream", 0U, got);
             CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", in->eos());
@@ -827,10 +831,12 @@ public:
             SequenceDataProvider seqProviderRW(40, true, true);
             SequenceDataProvider seqProviderRC(40, true, false);
             SequenceDataProvider seqProviderPC(40, false, false);
+            SkipSequenceDataProvider skipProvider(17);
             VariableDataProvider varcProvider(true);
             VariableDataProvider varsProvider(false);
             Sequence2DataProvider seq2Provider(40);
             ReservedDataProvider resProvider(40);
+            RandomDataProvider randProvider(37);
             ICompressHandler * lz4 = queryCompressHandler(COMPRESS_METHOD_LZ4);
 
             runSimpleStream(nullptr, seqProviderPW, 0x100000, 0x100000, numTestRows);

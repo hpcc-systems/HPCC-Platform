@@ -9,7 +9,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { throttle } from "../util/throttle";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 
 const logger = scopedLogger("src-react/components/WUSSummary.tsx");
 
@@ -257,7 +257,7 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                 </ToolbarGroup>
             </Toolbar>}
             main={
-                <SizeMe monitorHeight>{({ size }) =>
+                <SizeMe>{({ size }) =>
                     <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "scroll" }}>
                             <Field validationMessage={`${nlsHPCC.FetchingErrorDetails}: ${fetched} ${nlsHPCC.of} ${failed.length}.`} validationState={fetched < failed.length ? "none" : "success"}>

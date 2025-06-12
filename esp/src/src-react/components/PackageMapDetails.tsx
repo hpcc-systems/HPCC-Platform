@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -115,7 +115,7 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
     ], [_package, isActive, setShowDeleteConfirm]);
 
     return <>
-        <SizeMe monitorHeight>{({ size }) =>
+        <SizeMe>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
                 onLinkClick={evt => {
