@@ -41,7 +41,7 @@ enum { NodeBranch, NodeLeaf };
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
-class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventAttributeVisitor>
+class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
 {
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
@@ -50,60 +50,33 @@ public:
     }
     virtual bool visitEvent(CEvent& event) override
     {
-        return eventDistributor(event, *this);
-    }
-    virtual Continuation visitEvent(EventType id) override
-    {
-        return visitor->visitEvent(id);
-    }
-    virtual Continuation visitAttribute(EventAttr id, const char * value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual Continuation visitAttribute(EventAttr id, bool value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
-    {
-        return visitor->visitAttribute(id, value);
-    }
-    virtual bool departEvent() override
-    {
-        return visitor->departEvent();
+        return visitor->visitEvent(event);
     }
     virtual void departFile(uint32_t bytesRead) override
     {
         return visitor->departFile(bytesRead);
     }
 protected:
-    Linked<IEventAttributeVisitor> visitor;
+    Linked<IEventVisitor> visitor;
 public:
-    CNoOpEventVisitorDecorator(IEventAttributeVisitor& _visitor) : visitor(&_visitor) {}
+    CNoOpEventVisitorDecorator(IEventVisitor& _visitor) : visitor(&_visitor) {}
 };
 
 class MockEventVisitor : public CNoOpEventVisitorDecorator
 {
 public:
-    virtual Continuation visitAttribute(EventAttr id, __uint64 value) override
+    virtual bool visitEvent(CEvent& event) override
     {
         // Timestamps and thread ID are not predictable. Hard code predictable values.
-        CDateTime dt;
-        switch (id)
+        if (event.hasAttribute(EvAttrEventTimestamp))
         {
-            case EvAttrRecordedTimestamp:
-                dt.setString("2025-05-08T00:00:00.000001000");
-                value = dt.getTimeStampNs();
-                return CNoOpEventVisitorDecorator::visitAttribute(id, value);
-            case EvAttrEventTimestamp:
-                dt.setString("2025-05-08T00:00:00.000001010");
-                value = dt.getTimeStampNs();
-                return CNoOpEventVisitorDecorator::visitAttribute(id, value);
-            case EvAttrEventThreadId:
-                value = 100;
-                break;
+            CDateTime dt;
+            dt.setString("2025-05-08T00:00:00.000001010");
+            event.setValue(EvAttrEventTimestamp, dt.getTimeStampNs());
         }
-        return CNoOpEventVisitorDecorator::visitAttribute(id, value);
+        if (event.hasAttribute(EvAttrEventThreadId))
+            event.setValue(EvAttrEventThreadId, 100ULL);
+        return CNoOpEventVisitorDecorator::visitEvent(event);
     }
 public:
     using CNoOpEventVisitorDecorator::CNoOpEventVisitorDecorator;
@@ -336,16 +309,13 @@ public:
         //Test reading an empty file
         try
         {
-            static const char* expect=R"!!!(attribute: filename = 'eventtrace.evt'
-attribute: version = 1
-attribute: bytesRead = 21
-)!!!";
+            static const char* expect="";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true,compress(0)", "eventtrace.evt", false));
             CPPUNIT_ASSERT(recorder.isRecording());
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
+            Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -360,10 +330,7 @@ attribute: bytesRead = 21
         }
         try
         {
-            static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
-attribute: version = 1
-event: IndexEviction
-attribute: name = 'IndexEviction'
+            static const char* expect = R"!!!(event: IndexEviction
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -371,7 +338,6 @@ attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
-attribute: bytesRead = 76
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -379,7 +345,7 @@ attribute: bytesRead = 76
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
+            Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -394,10 +360,7 @@ attribute: bytesRead = 76
         }
         try
         {
-            static const char* expect = R"!!!(attribute: filename = 'eventtrace.evt'
-attribute: version = 1
-event: IndexEviction
-attribute: name = 'IndexEviction'
+            static const char* expect = R"!!!(event: IndexEviction
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -406,7 +369,6 @@ attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: ExpandedSize = 4567
 event: DaliConnect
-attribute: name = 'DaliConnect'
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
@@ -414,7 +376,6 @@ attribute: Path = '/Workunits/Workunit/abc.wu'
 attribute: ConnectId = 98765
 attribute: ElapsedTime = 100
 attribute: DataSize = 73
-attribute: bytesRead = 161
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all,compress(lz4hc)", "eventtrace.evt", false));
@@ -423,7 +384,7 @@ attribute: bytesRead = 161
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             StringBuffer out;
-            Owned<IEventAttributeVisitor> visitor = createVisitor(out);
+            Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
@@ -540,10 +501,10 @@ attribute: bytesRead = 161
         CPPUNIT_ASSERT_EQUAL(size_t(0), actualUnusedCount);
     }
 
-    IEventAttributeVisitor* createVisitor(StringBuffer& out)
+    IEventVisitor* createVisitor(StringBuffer& out)
     {
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
-        Owned<IEventAttributeVisitor> visitor = createDumpTextEventVisitor(*stream);
+        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
         return new MockEventVisitor(*visitor);
     }
 

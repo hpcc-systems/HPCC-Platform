@@ -2108,7 +2108,7 @@ public:
         }
         if (expired.ordinality())
         {
-            DBGLOG("Closing %d expired %s files", expired.ordinality(), remote ? "remote" : "local");
+            OWARNLOG("Closing %d expired %s files", expired.ordinality(), remote ? "remote" : "local");
             ForEachItemIn(expiredIdx, expired)
             {
                 ILazyFileIO &f = expired.item(expiredIdx);
@@ -2132,7 +2132,7 @@ public:
             if (idx < numFilesLeft)  // Sanity check, should always be true!
             {
                 ILazyFileIO &f = goers.item(idx);
-                DBGLOG("Closing LRU %s files, %d files are open, %d will be closed, last accessed %" I64F "u ms ago or more", remote ? "remote" : "local",  numFilesLeft, numFilesLeft - minFilesOpen[remote], nanoToMilli(nsTick() - f.getLastAccessed()));
+                OWARNLOG("Closing LRU %s files, %d files are open, %d will be closed, last accessed %" I64F "u ms ago or more", remote ? "remote" : "local",  numFilesLeft, numFilesLeft - minFilesOpen[remote], nanoToMilli(nsTick() - f.getLastAccessed()));
             }
             while (idx < numFilesLeft)
             {
