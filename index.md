@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "HPCC-Platform"
   text: Developers Hub
-  tagline: Notes and documentation for developers of the HPCC-Platform
+  tagline: Notes and documentation for developers, administrators, testers, and users of the HPCC-Platform
   image:
     light:
       src: /devdoc/hpccsystems.png
@@ -23,17 +23,60 @@ hero:
       link: https://github.com/hpcc-systems/HPCC-Platform
 
 features:
-  - title: Clone and Build
+  - title: Platform Developer Docs
+    icon:
+      dark:  /coder.png
+      light: /coder.png
+    details: Documentation by developers for developers of platform components
+    link: /devdoc/DeveloperDocs
+  - title: Admin Docs
+    icon:
+      dark:  /director.png
+      light: /director.png
+    details: Documentation for System Administrators
+    link: /devdoc/Operations 
+  - title: End-User Docs
+    icon:
+      dark:  /user.png
+      light: /user.png
+    details: Documentation for End-Users
+    link: /devdoc/EndUsers  
+  - title: QA/Testing User Docs
+    icon:
+      dark:  /QA.png
+      light: /QA.png
+    details: Documentation for QA/Testing Users
+    link: /devdoc/QAUsers    
+  - title: Clone, Build, & Deploy
     details: Building the HPCC Platform from source code, deploying to a test environment and submitting pull requests.
+    icon:
+      dark:  /factory.png
+      light: /factory.png
     link: /devdoc/Development
   - title: Issues
     details: Report and track issues relating to the HPCC Platform.
+    icon:
+      dark:  /Jira.png
+      light: /Jira.png
     link: https://track.hpccsystems.com
-  - title: Discussions
-    details:  Discuss the HPCC Platform with other platform developers.
-    link: https://github.com/hpcc-systems/HPCC-Platform/discussions
+  - title: Contribute to Documentation
+    icon:
+      dark:  /quill.png
+      light: /quill.png
+    details:  Developer's Guide to Contributing to Documentation
+    link: /devdoc/docs/ContributeDocs
   - title: HPCC Systems Homepage
+    icon:
+      dark:  /hpccsystems.ico
+      light: /hpccsystems.ico
+  
     details: Not a HPCC-Platform developer?  Please visit the HPCC Systems homepage for end user information and support.
     link: https://hpccsystems.com
+  - title: Platform RedBook
+    details: Notices about changes in platform releases that may require some changes to coding practices or operational procedures. 
+    icon:
+      dark:  /redbook.png
+      light: /redbook.png
+    link: https://hpccsystems.atlassian.net/wiki/spaces/hpcc/pages/23586808/HPCC+Systems+Red+Book
 ---
 
