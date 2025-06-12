@@ -433,7 +433,8 @@ bool FileTransferThread::launchFtSlaveCmd()
         msg.read(ok);
         setErrorOwn(deserializeException(msg));
 
-        LOG(MCdebugProgressDetail, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
+        if (doTrace(traceSprayDetails, traceDetailed))
+            LOG(MCdebugProgressDetail, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
 
         // if communicating with ftslave, the process has a final ack wait
         if (sprayer.useFtSlave)
@@ -504,9 +505,13 @@ bool FileTransferThread::performTransfer()
         return true;
     }
 
-    LOG(MCdebugProgressDetail, "Start generate part %s [%p]", url.str(), this);
+    if (doTrace(traceSprayDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Start generate part %s [%p]", url.str(), this);
+
     bool ok = launchFtSlaveCmd();
-    LOG(MCdebugProgressDetail, "Stopped generate part %s [%p]", url.str(), this);
+
+    if (doTrace(traceSprayDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Stopped generate part %s [%p]", url.str(), this);
 
     allDone = true;
     return ok;
@@ -691,9 +696,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     compressOutput = options->getPropBool(ANcompress);
     copyCompressed = false;
     transferBufferSize = options->getPropInt(ANtransferBufferSize);
-    if (transferBufferSize)
-        LOG(MCdebugProgressDetail, "Using transfer buffer size %d", transferBufferSize);
-    else // zero is default
+    if (transferBufferSize == 0)
         transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
     progressDone = false;
     encryptKey.set(options->queryProp(ANencryptKey));
@@ -763,7 +766,6 @@ void FileSprayer::addEmptyFilesToPartition(unsigned from, unsigned to)
 {
     for (unsigned i = from; i < to ; i++)
     {
-        LOG(MCdebugProgressDetail, "Insert a dummy entry for target %d", i);
         PartitionPoint & next = createLiteral(0, NULL, 0);
         next.whichOutput = i;
         partition.append(next);
@@ -791,7 +793,8 @@ void FileSprayer::afterTransfer()
 {
     if (calcInputCRC())
     {
-        LOG(MCdebugProgressDetail, "Checking input CRCs");
+        if (doTrace(traceSprayDetails, traceDetailed))
+            LOG(MCdebugProgressDetail, "Checking input CRCs");
         CRC32Merger partCRC;
 
         unsigned startCurSource = 0;
@@ -802,7 +805,8 @@ void FileSprayer::afterTransfer()
 
             if (!curProgress.hasInputCRC)
             {
-                LOG(MCdebugProgressDetail, "Could not calculate input CRCs - cannot check");
+                if (doTrace(traceSprayDetails, traceDetailed))
+                    LOG(MCdebugProgressDetail, "Could not calculate input CRCs - cannot check");
                 break;
             }
             partCRC.addChildCRC(curProgress.inputLength, curProgress.inputCRC, false);
@@ -1121,7 +1125,8 @@ bool FileSprayer::calcInputCRC()
 
 void FileSprayer::calculateOne2OnePartition()
 {
-    LOG(MCdebugProgressDetail, "Setting up one2One partition");
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Setting up one2One partition");
     if (sources.ordinality() != targets.ordinality())
         throwError(DFTERR_ReplicateNumPartsDiffer);
     if (!srcFormat.equals(tgtFormat))
@@ -1192,7 +1197,8 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
     if (!srcFormat.equals(tgtFormat))
        throwError(DFTERR_SplitPrefixSameFormat);
 
-    LOG(MCdebugProgressDetail, "Setting up split prefix partition");
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Setting up split prefix partition");
 
     Owned<TargetLocation> target = &targets.popGet();       // remove target, add lots of new ones
     RemoteFilename blobTarget;
@@ -1229,7 +1235,9 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
 
 void FileSprayer::calculateMany2OnePartition()
 {
-    LOG(MCdebugProgressDetail, "Setting up many2one partition");
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Setting up many2one partition");
+
     const char *partSeparator = srcFormat.getPartSeparatorString();
     offset_t partSeparatorLength = ( partSeparator == nullptr ? 0 : strlen(partSeparator));
     offset_t lastContentLength = 0;
@@ -1261,7 +1269,9 @@ void FileSprayer::calculateMany2OnePartition()
 
 void FileSprayer::calculateNoSplitPartition()
 {
-    LOG(MCdebugProgressDetail, "Setting up no split partition");
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Setting up no split partition");
+
     if (!usePullOperation() && !srcFormat.equals(tgtFormat))
         throwError(DFTERR_NoSplitPushChangeFormat);
 
@@ -1324,7 +1334,8 @@ void FileSprayer::calculateNoSplitPartition()
 
 void FileSprayer::calculateSprayPartition()
 {
-    LOG(MCdebugProgressDetail, "Calculating N:M partition");
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugProgressDetail, "Calculating N:M partition");
 
     bool calcOutput = needToCalcOutput();
     FormatPartitionerArray partitioners;
