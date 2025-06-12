@@ -1014,16 +1014,6 @@ protected:
     static unsigned rdnum;
 #endif
 
-    class : implements IFileSerialStreamCallback
-    {
-    public:
-        CRC32 crc;
-        void process(offset_t ofs, size32_t sz, const void *buf)
-        {
-            crc.tally(sz,buf);
-        }
-    } crccb;
-    
     inline bool fieldFilterMatch(const void * buffer)
     {
         if (actualFilter.numFilterFields())
@@ -1256,7 +1246,7 @@ public:
     virtual CRC32 queryCRC() const override
     {
         // NB CRC will only be right if stopped at eos
-        return crccb.crc;
+        return 0;
     }
 
     virtual offset_t getOffset() const override

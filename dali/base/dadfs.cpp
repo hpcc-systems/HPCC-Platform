@@ -7429,7 +7429,7 @@ offset_t CDistributedFilePart::getSize(bool checkCompressed)
                 Owned<IFileIO> partFileIO = partfile->open(IFOread);
                 if (partFileIO)
                 {
-                    Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partFileIO);
+                    Owned<IFileIO> compressedIO = createCompressedFileReader(partFileIO);
                     if (compressedIO)
                         ret = compressedIO->size();
                     else
