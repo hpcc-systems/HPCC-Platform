@@ -1397,7 +1397,8 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
     StringBuffer remoteFilename;
     FilePartInfo & cur = sources.item(index);
     cur.filename.getRemotePath(remoteFilename.clear());
-    LOG(MCdebugInfoDetail, "Partition %d(%s)", index, remoteFilename.str());
+    if (doTrace(tracePartitionDetails, traceDetailed))
+        LOG(MCdebugInfoDetail, "Partition %d(%s)", index, remoteFilename.str());
 
     srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
     const SocketEndpoint & ep = cur.filename.queryEndpoint();
@@ -1428,7 +1429,7 @@ void FileSprayer::examineCsvStructure()
         Owned<IFormatPartitioner> partitioner = createPartitioner(0, calcOutput, targets.ordinality());
         storeCsvRecordStructure(*partitioner);
     }
-    else
+    else if (doTrace(tracePartitionDetails, traceDetailed))
         LOG(MCdebugInfoDetail, "No source CSV file to examine.");
 }
 
@@ -2007,15 +2008,18 @@ void FileSprayer::displayPartition()
         partition.item(idx).display();
 
 #ifdef _DEBUG
-        if ((partition.item(idx).whichInput >= 0) && (partition.item(idx).whichInput < sources.ordinality()) )
-            LOG(MCdebugInfoDetail,
-                     "   Header size: %" I64F "u, XML header size: %" I64F "u, XML footer size: %" I64F "u",
-                     sources.item(partition.item(idx).whichInput).headerSize,
-                     sources.item(partition.item(idx).whichInput).xmlHeaderLength,
-                     sources.item(partition.item(idx).whichInput).xmlFooterLength
-            );
-        else
-            LOG(MCdebugInfoDetail, "   No source file for this partition");
+        if (doTrace(tracePartitionDetails, traceDetailed))
+        {
+            if ((partition.item(idx).whichInput >= 0) && (partition.item(idx).whichInput < sources.ordinality()) )
+                LOG(MCdebugInfoDetail,
+                        "   Header size: %" I64F "u, XML header size: %" I64F "u, XML footer size: %" I64F "u",
+                        sources.item(partition.item(idx).whichInput).headerSize,
+                        sources.item(partition.item(idx).whichInput).xmlHeaderLength,
+                        sources.item(partition.item(idx).whichInput).xmlFooterLength
+                );
+            else
+                LOG(MCdebugInfoDetail, "   No source file for this partition");
+        }
 #endif
     }
 }
@@ -2680,7 +2684,8 @@ void FileSprayer::performTransfer()
 void FileSprayer::pullParts()
 {
     bool needCalcCRC = calcCRC();
-    LOG(MCdebugInfoDetail, "Calculate CRC = %d", needCalcCRC);
+    if (doTrace(traceSprayDetails, traceDetailed))
+        LOG(MCdebugInfoDetail, "Calculate CRC = %d", needCalcCRC);
     ForEachItemIn(idx, targets)
     {
         FileTransferThread & next = * new FileTransferThread(*this, FTactionpull, targets.item(idx).filename.queryEndpoint(), needCalcCRC, wuid);
@@ -2703,7 +2708,9 @@ void FileSprayer::pullParts()
 void FileSprayer::pushWholeParts()
 {
     bool needCalcCRC = calcCRC();
-    LOG(MCdebugInfoDetail, "Calculate CRC = %d", needCalcCRC);
+    if (doTrace(traceSprayDetails, traceDetailed))
+        LOG(MCdebugInfoDetail, "Calculate CRC = %d", needCalcCRC);
+
     //Create a slave for each of the target files, but execute it on the node corresponding to the first source file
     //For container mode this will need to execute on this node, or on a load balanced service
     ForEachItemIn(idx, targets)
