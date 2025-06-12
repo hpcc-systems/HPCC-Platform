@@ -59,7 +59,8 @@ public:
                             unsigned __int64 scaledDone, unsigned __int64 scaledTotal, const char * scale,
                             unsigned kbPerSecondAve, unsigned kbPerSecondRate, unsigned numNodes);
     virtual void displaySummary(const char * timeTaken, unsigned kbPerSecond);
-    virtual void setFileAccessCost(cost_type fileAccessCost) {};
+    virtual void setFileAccessCost(cost_type fileAccessCost) {}
+    virtual void setTransferOptions(const IPropertyTree * options) {}
 };
 
 #endif

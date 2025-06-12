@@ -537,7 +537,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
 
             offset_t outputOffset = out->tell();
             offset_t inputOffset = input->tell();
-            if (totalLengthToRead)
+            if (totalLengthToRead && doTrace(traceSprayDetails))
                 LOG(MCdebugProgress, "Progress: %d%% done. [%" I64F "u]", (unsigned)(totalLengthRead*100/totalLengthToRead), (unsigned __int64)totalLengthRead);
 
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
@@ -611,15 +611,15 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     if (action == FTactionpull)
     {
         partition.item(0).outputName.getPath(localFilename);
-        LOG(MCdebugProgress, "Process Pull Command: %s", localFilename.str());
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugProgress, "Process Pull Command: %s", localFilename.str());
     }
     else
     {
         partition.item(0).inputName.getPath(localFilename);
-        LOG(MCdebugProgress, "Process Push Command: %s", localFilename.str());
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugProgress, "Process Push Command: %s", localFilename.str());
     }
-    LOG(MCdebugProgress, "Num Parallel Slaves=%d Adjust=%d/%d", numParallelSlaves, adjust, updateFrequency);
-    LOG(MCdebugProgress, "copySourceTimeStamp(%d) mirror(%d) safe(%d) incrc(%d) outcrc(%d)", copySourceTimeStamp, mirror, isSafeMode, calcInputCRC, calcOutputCRC);
 
     displayPartition(partition);
 
@@ -658,14 +658,6 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
             progress.item(i2).deserializeExtra(msg, 2);
     }
 
-    LOG(MCdebugProgress, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
-    PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
-    PROGLOG("encrypt(%d), decrypt(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1);
-    if (fileUmask != -1)
-        PROGLOG("umask(0%o)", fileUmask);
-    else
-        PROGLOG("umask(default)");
-
     //---Finished deserializing ---
     displayProgress(progress);
 
@@ -691,8 +683,11 @@ void TransferServer::transferChunk(unsigned chunkIndex)
 
     StringBuffer targetPath;
     curPartition.outputName.getPath(targetPath);
-    LOG(MCdebugProgress, "Begin to transfer chunk %d (offset: %" I64F "d, size: %" I64F "d) to target:'%s' (offset: %" I64F "d, size: %" I64F "d) ",
-                        chunkIndex, curPartition.inputOffset, curPartition.inputLength, targetPath.str(), curPartition.outputOffset, curPartition.outputLength);
+
+    if (doTrace(traceSprayDetails))
+        LOG(MCdebugProgress, "Begin to transfer chunk %d (offset: %" I64F "d, size: %" I64F "d) to target:'%s' (offset: %" I64F "d, size: %" I64F "d) ",
+                            chunkIndex, curPartition.inputOffset, curPartition.inputLength, targetPath.str(), curPartition.outputOffset, curPartition.outputLength);
+
     const unsigned __int64 startOutOffset = out->tell();
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);
@@ -798,7 +793,8 @@ bool TransferServer::pull()
 
                 StringBuffer localFilename;
                 localTempFilename.getPath(localFilename);
-                LOG(MCdebugProgress, "Continue pulling to file: %s from recovery position", localFilename.str());
+                if (doTrace(traceSprayDetails))
+                    LOG(MCdebugProgress, "Continue pulling to file: %s from recovery position", localFilename.str());
                 start = i;
                 goto processedProgress; // break out of both loops
             }
@@ -837,7 +833,8 @@ processedProgress:
             curOutput = curPartition.whichOutput;
             if (curProgress.status == OutputProgress::StatusRenamed)
             {
-                LOG(MCdebugProgress, "Renamed file found - must be CRC recovery");
+                if (doTrace(traceSprayDetails))
+                    LOG(MCdebugProgress, "Renamed file found - must be CRC recovery");
                 idx = queryLastOutput(curOutput);
                 continue;
             }
@@ -870,8 +867,6 @@ processedProgress:
                 outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZ4));
             }
 
-            LOG(MCdebugProgress, "Start pulling to file: %s", localFilename.str());
-
             //Find the last partition entry that refers to the same file.
             if (!compressOutput && fsProperties.preExtendOutput)
             {
@@ -883,7 +878,8 @@ processedProgress:
                     stat_type prevWrites = outio->getStatistic(StNumDiskWrites);
                     outio->write(lastOffset-sizeof(null),sizeof(null),&null);
                     curProgress.numWrites += (outio->getStatistic(StNumDiskWrites)-prevWrites);
-                    LOG(MCdebugProgress, "Extend length of target file to %" I64F "d", lastOffset);
+                    if (doTrace(traceSprayDetails))
+                        LOG(MCdebugProgress, "Extend length of target file to %" I64F "d", lastOffset);
                 }
             }
 

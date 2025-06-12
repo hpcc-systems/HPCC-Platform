@@ -84,6 +84,8 @@
                <xsl:value-of select="@useFtSlave"/>
             </xsl:attribute>
 
+            <xsl:copy-of select="@*[string(.) != '' and substring(name(), 1, 5) = 'trace']"/>
+
             <xsl:copy-of select="/Environment/Software/Directories"/>  
             <xsl:choose>
                 <xsl:when test="tracing">

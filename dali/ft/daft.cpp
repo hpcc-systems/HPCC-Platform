@@ -183,7 +183,6 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
             lock.queryAttributes().setPropInt64("@size", totalSize);
         }
     }
-    //LOG(MCdebugInfo(1000), "DFS: getSize(%s)=%" I64F "d", file->queryLogicalName(), totalSize);
     return totalSize;
 }
 
