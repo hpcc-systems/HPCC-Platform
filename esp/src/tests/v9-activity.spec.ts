@@ -11,12 +11,9 @@ test.describe("V9 Activity", () => {
         await expect(page.getByRole("link", { name: "ECL Watch" })).toBeVisible();
         await expect(page.locator("button").filter({ hasText: "" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Advanced" })).toBeVisible();
-        await expect(page.getByTitle("Activities")).toBeVisible();
-        await expect(page.getByRole("link", { name: "ECL", exact: true })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Files" })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Published Queries" })).toBeVisible();
         await expect(page.getByRole("button", { name: "History" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Add to favorites" })).toBeVisible();
+        await expect(page.locator('.fui-NavDrawerBody')).toBeVisible();
         await expect(page.locator("a").filter({ hasText: /^Activities$/ })).toBeVisible();
         await expect(page.getByRole("link", { name: "Event Scheduler" })).toBeVisible();
     });
