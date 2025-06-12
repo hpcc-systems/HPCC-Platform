@@ -2,10 +2,10 @@ import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { WsWorkunits, WorkunitsService, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { singletonHook } from "react-singleton-hook";
 import { userKeyValStore } from "src/KeyValStore";
 import { DockPanelLayout } from "../layouts/DockPanel";
 import { singletonDebounce } from "../util/throttle";
+import { signal, useSignal } from "../hooks/signal";
 import { useWorkunit } from "./workunit";
 import { useQuery } from "./query";
 import { useCounter } from "./util";
@@ -123,50 +123,51 @@ export interface useMetricsViewsResult {
 
 const defaultUserMetricViews = JSON.stringify({ viewId: "Default", views: DefaultMetricsViews });
 
-const defaultState: useMetricsViewsResult = {
-    viewIds: Object.keys(DefaultMetricsViews),
-    viewId: "Default",
-    setViewId: (id: string, forceRefresh?: boolean) => { throw new Error("You must useMetricsView before usage."); },
-    view: DefaultMetricsViews.Default,
-    addView: (label: string, view: Partial<MetricsView>) => { throw new Error("You must useMetricsView before usage."); },
-    updateView: (view: Partial<MetricsView>, forceRefresh?: boolean) => { throw new Error("You must useMetricsView before usage."); },
-    resetView: (forceRefresh?: boolean) => { throw new Error("You must useMetricsView before usage."); },
-    save: () => { throw new Error("You must useMetricsView before usage."); },
-};
+const _loaded = signal(false);
+const _origViews = signal<StringMetricsViewMap>(clone(DefaultMetricsViews));
+const _views = signal<StringMetricsViewMap>(clone(DefaultMetricsViews));
+const _viewIds = signal<string[]>(Object.keys(_views.get()));
+const _viewId = signal<string>(_viewIds.get()[0]);
+const _view = signal<MetricsView>(_views.get()[_viewId.get()]);
 
-function useMetricsViewsImpl(): useMetricsViewsResult {
+export function useMetricsViews(): useMetricsViewsResult {
 
-    const [loaded, setLoaded] = React.useState(false);
-    const [origViews, setOrigViews] = React.useState<StringMetricsViewMap>(clone(DefaultMetricsViews));
-    const [views, setViews] = React.useState<StringMetricsViewMap>(clone(DefaultMetricsViews));
-    const [viewIds, setViewIds] = React.useState<string[]>(Object.keys(views));
-    const [viewId, setViewId] = React.useState<string>(viewIds[0]);
-    const [view, setView] = React.useState<MetricsView>(views[viewId]);
+    const loaded = useSignal(_loaded);
+    const origViews = useSignal(_origViews);
+    const views = useSignal(_views);
+    const viewIds = useSignal(_viewIds);
+    const viewId = useSignal(_viewId);
+    const view = useSignal(_view);
+
     const refresh = useForceUpdate();
 
-    const [metricViewStr, setMericViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_3, defaultUserMetricViews);
+    const setViewId = React.useCallback((id: string) => {
+        _viewId.set(id);
+    }, []);
+
+    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_3, defaultUserMetricViews);
     React.useEffect(() => {
         if (metricViewStr && !loaded) {
             try {
                 const userView: UserMetricsView = JSON.parse(metricViewStr);
-                setOrigViews(clone(userView.views));
-                setViews(userView.views);
-                setViewIds(Object.keys(userView.views));
+                _origViews.set(clone(userView.views));
+                _views.set(userView.views);
+                _viewIds.set(Object.keys(userView.views));
                 setViewId(userView.viewId);
-                setLoaded(true);
+                _loaded.set(true);
             } catch (e) {
                 logger.error(e);
                 const def = clone(DefaultMetricsViews);
                 const keys = Object.keys(def);
-                setViews(def);
-                setViewIds(keys);
+                _views.set(def);
+                _viewIds.set(keys);
                 setViewId(keys[0]);
             }
         }
     }, [loaded, metricViewStr, setViewId]);
 
     React.useEffect(() => {
-        setView(views[viewId]);
+        _view.set(views[viewId]);
     }, [viewId, views]);
 
     const addView = React.useCallback((label: string, _: Partial<MetricsView>) => {
@@ -176,7 +177,7 @@ function useMetricsViewsImpl(): useMetricsViewsResult {
         }
         setViewId(label);
         refresh();
-    }, [origViews, refresh, view]);
+    }, [origViews, refresh, setViewId, view]);
 
     const updateView = React.useCallback((_: Partial<MetricsView>, forceRefresh = false) => {
         for (const key in _) {
@@ -198,8 +199,8 @@ function useMetricsViewsImpl(): useMetricsViewsResult {
     }, [refresh, view, viewId]);
 
     const save = React.useCallback(() => {
-        return setMericViewStr(JSON.stringify({ viewId, views }));
-    }, [viewId, views, setMericViewStr]);
+        return setMetricViewStr(JSON.stringify({ viewId, views }));
+    }, [viewId, views, setMetricViewStr]);
 
     return {
         viewIds,
@@ -212,8 +213,6 @@ function useMetricsViewsImpl(): useMetricsViewsResult {
         save
     };
 }
-
-export const useMetricsViews = singletonHook(defaultState, useMetricsViewsImpl);
 
 let wuDetailsMetaResponse: Promise<WsWorkunits.WUDetailsMetaResponse>;
 
