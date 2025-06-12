@@ -303,15 +303,20 @@ const LogicalFile = declare([ESPUtil.Singleton], {
     save(request, args) {
         // WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
         const context = this;
+
+        const dfuInfoRequest: { [key: string]: any } = {
+            Name: context.Name,
+            Cluster: context.Cluster
+        };
+        if (request.Description !== undefined) {
+            dfuInfoRequest.UpdateDescription = true;
+            dfuInfoRequest.FileDesc = request.Description;
+        }
+        dfuInfoRequest.Protect = request.isProtected === undefined ? 0 : (request.isProtected ? 1 : 2);
+        dfuInfoRequest.Restrict = request.isRestricted === undefined ? 0 : (request.isRestricted ? 1 : 2);
+
         WsDfu.DFUInfo({
-            request: {
-                Name: this.Name,
-                Cluster: this.Cluster,
-                UpdateDescription: true,
-                FileDesc: request.Description,
-                Protect: request.isProtected === true ? 1 : 2,
-                Restrict: request.isRestricted === true ? 1 : 2
-            }
+            request: dfuInfoRequest
         }).then(function (response) {
             if (lang.exists("DFUInfoResponse.FileDetail", response)) {
                 context.updateData(response.DFUInfoResponse.FileDetail);
