@@ -424,7 +424,6 @@ bool FileTransferThread::launchFtSlaveCmd()
             newProgress.deserializeExtra(msg, 2);
             sprayer.updateProgress(newProgress);
 
-            LOG(MCdebugProgress(10000), "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
             if (isAborting())
             {
                 if (!sendRemoteAbort(socket))
@@ -463,7 +462,9 @@ bool FileTransferThread::launchFtSlaveCmd()
 
 bool FileTransferThread::performTransfer()
 {
-    LOG(MCdebugProgress, "Transferring part %s [%p]", url.str(), this);
+    if (doTrace(traceSprayDetails))
+        LOG(MCdebugProgress, "Transferring part %s [%p]", url.str(), this);
+
     started = true;
     allDone = true;
     if (sprayer.isSafeMode || action == FTactionpush)
@@ -2031,7 +2032,8 @@ void FileSprayer::gatherFileSizes(bool errorIfMissing)
 {
     FilePartInfoArray fileSizeQueue;
 
-    LOG(MCdebugProgress, "Start gathering file sizes...");
+    if (doTrace(traceSprayDetails))
+        LOG(MCdebugProgress, "Start gathering file sizes...");
 
     ForEachItemIn(idx, sources)
     {
@@ -2041,7 +2043,8 @@ void FileSprayer::gatherFileSizes(bool errorIfMissing)
     }
 
     gatherFileSizes(fileSizeQueue, errorIfMissing);
-    LOG(MCdebugProgress, "Finished gathering file sizes...");
+    if (doTrace(traceSprayDetails))
+        LOG(MCdebugProgress, "Finished gathering file sizes...");
 }
 
 void FileSprayer::afterGatherFileSizes()
@@ -2053,9 +2056,9 @@ void FileSprayer::afterGatherFileSizes()
         {
             FilePartInfo & cur = sources.item(idx2);
 
-            LOG(MCdebugProgress, "%9u:%s (size: %llu bytes)",
-                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size
-                                       );
+            if (doTrace(tracePartitionDetails))
+                LOG(MCdebugProgress, "%9u:%s (size: %llu bytes)",
+                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size);
             cur.offset = totalSize;
             totalSize += cur.size;
             if (cur.size % srcFormat.getUnitSize())
@@ -2067,8 +2070,8 @@ void FileSprayer::afterGatherFileSizes()
                     throwError2(DFTERR_InputIsInvalidMultiple, cur.filename.getRemotePath(s).str(), srcFormat.getUnitSize());
             }
         }
-        LOG(MCdebugProgress, "----------------------------------------------");
-        LOG(MCdebugProgress, "All together: %llu bytes in %u file(s)", totalSize, sources.ordinality());
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "All together: %llu bytes in %u file(s)", totalSize, sources.ordinality());
     }
 }
 
@@ -2084,7 +2087,9 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
         unsigned numThreads = (unsigned)sqrt((float)fileSizeQueue.ordinality());
         if (numThreads>20)
             numThreads = 20;
-        LOG(MCdebugProgress, "Gathering %d file sizes on %d threads", fileSizeQueue.ordinality(), numThreads);
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Gathering %d file sizes on %d threads", fileSizeQueue.ordinality(), numThreads);
+
         unsigned idx;
         for (idx = 0; idx < numThreads; idx++)
             threads.append(*new FileSizeThread(fileSizeQueue, fileSizeCS, compressedInput&&!copyCompressed, errorIfMissing));
@@ -2552,7 +2557,8 @@ void FileSprayer::insertHeaders()
             }
             addPrefix(filePrefix.length(), filePrefix.toByteArray(), idx, partitionWork);
         }
-        LOG(MCdebugProgress, "Publish headers");
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Publish headers");
         partition.swapWith(partitionWork);
     }
 }
@@ -3395,11 +3401,13 @@ void FileSprayer::spray()
 
     if (restorePartition())
     {
-        LOG(MCdebugProgress, "Partition restored from recovery information");
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Partition restored from recovery information");
     }
     else
     {
-        LOG(MCdebugProgress, "Calculate partition information");
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Calculate partition information");
         if (replicate || copySource)
             calculateOne2OnePartition();
         else if (!allowSplit())
@@ -3417,7 +3425,8 @@ void FileSprayer::spray()
     assignPartitionFilenames();     // assign source filenames - used in insertHeaders..
     if (!replicate && !copySource)
     {
-        LOG(MCdebugProgress, "Insert headers");
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Insert headers");
         insertHeaders();
     }
     addEmptyFilesToPartition();

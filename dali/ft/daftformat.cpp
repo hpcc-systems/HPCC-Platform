@@ -971,7 +971,8 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         throwError(DFTERR_EndOfRecordNotFound);
 
 
-    LOG(MCdebugProgress, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
+    if (doTrace(tracePartitionDetails))
+        LOG(MCdebugProgress, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
 
     if (++numOfBufferOverrun > maxNumberOfBufferOverrun)
         throwError1(DFTERR_EndOfCsvRecordNotFound, numOfProcessedBytes);
@@ -1057,7 +1058,8 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                                 ensureSize = format.maxRecordSize;
                         }
                     }
-                    LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
+                    if (doTrace(tracePartitionDetails))
+                        LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
                 }
             }
         }
@@ -1312,7 +1314,8 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     numOfProcessedBytes += (unsigned)(end - start);
 
-    LOG(MCdebugProgress, "UTF splitRecordSize(%d) at end of file", (unsigned) (end - start));
+    if (doTrace(tracePartitionDetails))
+        LOG(MCdebugProgress, "UTF splitRecordSize(%d) at end of file", (unsigned) (end - start));
 
     if (++numOfBufferOverrun > maxNumberOfBufferOverrun)
         throwError1(DFTERR_EndOfUtfRecordNotFound, numOfProcessedBytes);
@@ -1396,7 +1399,9 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                                 ensureSize = format.maxRecordSize;
                         }
                     }
-                    LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
+
+                    if (doTrace(tracePartitionDetails))
+                        LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
                 }
             }
         }
@@ -1829,7 +1834,9 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                     ensureSize = format.maxRecordSize;
                 ensureBuffered(ensureSize);
             }
-            LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
+
+            if (doTrace(tracePartitionDetails))
+                LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
         }
         else if (splitOffset - thisOffset < thisSize)
             throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
