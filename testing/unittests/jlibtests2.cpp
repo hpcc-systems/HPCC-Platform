@@ -417,6 +417,7 @@ attribute: DataSize = 73
                 break;
             case CEventAttribute::State::Assigned:
                 actualAssigned.insert(attr.queryId());
+                break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
                 break;
