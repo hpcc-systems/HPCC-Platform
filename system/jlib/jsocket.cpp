@@ -3854,14 +3854,11 @@ unsigned IpAddress::ipdistance(const IpAddress &other,unsigned offset) const
 {   
     if (offset>3)
         offset = 3;
-    int i1;
+    unsigned i1;
     _cpyrev4(&i1,&netaddr[3-offset]);
-    int i2;
+    unsigned i2;
     _cpyrev4(&i2,&other.netaddr[3-offset]);
-    i1-=i2;
-    if (i1>0)
-        return i1;
-    return -i1;
+    return (i1 > i2) ? (i1 - i2) : (i2 - i1);
 }
 
 bool IpAddress::ipincrement(unsigned count,byte minoctet,byte maxoctet,unsigned short minipv6piece,unsigned maxipv6piece)
