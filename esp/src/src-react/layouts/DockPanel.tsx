@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import * as ReactDOM from "react-dom/client";
 import { Theme, ThemeProvider } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { FluentProvider, Theme as ThemeV9 } from "@fluentui/react-components";
@@ -16,6 +16,7 @@ export class ReactWidget extends HTMLWidget {
     protected _themeV9: ThemeV9 = lightThemeV9;
     protected _children = <div></div>;
 
+    protected root: ReactDOM.Root | undefined;
     protected _div;
 
     constructor() {
@@ -58,16 +59,18 @@ export class ReactWidget extends HTMLWidget {
             .style("height", `${this.height()}px`)
             ;
 
-        ReactDOM.render(
+        if (!this.root) {
+            this.root = ReactDOM.createRoot(this._div.node());
+        }
+        this.root.render(
             <FluentProvider theme={this._themeV9} style={{ height: "100%" }}>
                 <ThemeProvider theme={this._theme} style={{ height: "100%" }}>{this._children}</ThemeProvider>
-            </FluentProvider>,
-            this._div.node()
+            </FluentProvider>
         );
     }
 
     exit(domNode, element) {
-        setTimeout(() => ReactDOM.unmountComponentAtNode(this._div.node()), 0);
+        setTimeout(() => this.root.unmount(), 0);
         super.enter(domNode, element);
     }
 
