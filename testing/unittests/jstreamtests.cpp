@@ -407,6 +407,7 @@ public:
     static constexpr bool testHighCompression   = true;
 
     static constexpr bool timeGeneration = false;
+    static constexpr bool testBuffer = true;
     static constexpr bool testSimple = true;
     static constexpr bool testIncSequential = false;
     static constexpr bool testEvenSequential = true;
@@ -509,7 +510,10 @@ public:
 
             offset_t totalRead = 0;
             for (unsigned i=0; i < numRows; i++)
+            {
                 totalRead += dataProvider.check(in, i);
+                CPPUNIT_ASSERT_EQUAL(totalRead, in->tell());
+            }
 
             size32_t got;
             CPPUNIT_ASSERT_MESSAGE("Data available after the end of stream", !in->peek(1, got));
@@ -869,7 +873,7 @@ public:
 
     void testBufferStream()
     {
-        if (testSimple)
+        if (testBuffer)
         {
             DBGLOG("Simple tests: write then read");
 
