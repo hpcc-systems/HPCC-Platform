@@ -19,8 +19,6 @@
 #include "rtlformat.hpp"
 #include "unittests.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""), std::string(y ? y : ""))
-
 class CommonJsonWriterTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(CommonJsonWriterTest);

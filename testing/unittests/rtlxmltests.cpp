@@ -20,8 +20,6 @@
 #include "unittests.hpp"
 #include "eclrtl.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""), std::string(y ? y : ""))
-
 class RtlXmlTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(RtlXmlTest);
