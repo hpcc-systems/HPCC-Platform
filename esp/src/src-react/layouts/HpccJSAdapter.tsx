@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useId } from "@fluentui/react-hooks";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { Widget } from "@hpcc-js/common";
 
 import "src-react-css/layouts/HpccJSAdapter.css";
@@ -66,7 +66,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     children
 }) => {
 
-    return <SizeMe monitorHeight>{({ size }) => {
+    return <SizeMe>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
         return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
@@ -99,11 +99,11 @@ export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> 
     children
 }) => {
 
-    return <SizeMe monitorHeight>{({ size }) => {
+    return <SizeMe hidden={hidden}>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
-        return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
-            <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
+        return <div style={{ width: "100%", height: fixedHeight, position: "relative" }}>
+            <div style={{ position: "absolute", padding: `${padding}px` }}>
                 <div style={{ width: width - padding * 2, height: height - padding * 2, display: "flex", alignItems: "center", justifyContent: "center" }} >
                     {children}
                 </div>

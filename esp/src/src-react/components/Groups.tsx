@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { SizeMe } from "../layouts/SizeMe";
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -144,7 +144,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <>
-                    <SizeMe monitorHeight>{({ size }) =>
+                    <SizeMe>{({ size }) =>
                         <div style={{ width: "100%", height: "100%" }}>
                             <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
                                 <FluentPagedGrid
