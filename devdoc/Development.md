@@ -8,8 +8,7 @@ The most upto date details of building the system are found on the HPCC
 ## Getting the sources
 
 The HPCC Platform sources are hosted on [GitHub](https://github.com/hpcc-systems/HPCC-Platform). 
-You can download a snapshot of any branch using the download button there, or you can set
-up a git clone of the repository. If you are planning to contribute
+You can download a snapshot of any branch using the download button there, or you can set up a git clone of the repository. If you are planning to contribute
 changes to the system, see the [CONTRIBUTORS](https://github.com/hpcc-systems/HPCC-Platform/blob/master/CONTRIBUTORS) document 
 for information about how to set up a GitHub fork of the project through
 which pull-requests can be made.
