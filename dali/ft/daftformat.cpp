@@ -105,7 +105,6 @@ void CPartitioner::commonCalcPartitions()
     if (endOffset == totalSize) lastSplit = numParts-1;
     if (lastSplit >= numParts) lastSplit = numParts-1;                                      // very rare with variable length records, last file is very small or copying a couple of records 50 ways.
 
-    //LOG(MCdebugInfo, "commonCalcPartitions: partSize:%lld, endOffset: %lld, firstSplit: %d, lastSplit: %d ",partSize ,endOffset, firstSplit, lastSplit);
     JSON_DBGLOG("commonCalcPartitions: partSize:%lld, endOffset: %lld, firstSplit: %d, lastSplit: %d ",partSize ,endOffset, firstSplit, lastSplit);
 
     if (!partSeparator.isEmpty() && appendingContent) //appending to existing content, add a separator if necessary

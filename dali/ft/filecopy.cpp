@@ -495,13 +495,15 @@ bool FileTransferThread::performTransfer()
 
     if (allDone)
     {
-        LOG(MCdebugInfo, "Creation of part %s already completed", url.str());
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Creation of part %s already completed", url.str());
         return true;
     }
 
     if (partition.empty())
     {
-        LOG(MCdebugInfo, "No elements to transfer for this slave");
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "No elements to transfer for this slave");
         return true;
     }
 
@@ -713,7 +715,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
         fileUmask = (int)strtol(umaskStr, &eptr, 8);
         if (errno || *eptr != '\0')
         {
-            LOG(MCdebugInfo, "Invalid umask value <%s> ignored", umaskStr);
+            LOG(MCuserWarning, "Invalid umask value <%s> ignored", umaskStr);
             fileUmask = -1;
         }
         else
@@ -1049,7 +1051,8 @@ void FileSprayer::beforeTransfer()
             if (machine->getOS() == MachineOsW2K)
             {
                 throttleNicSpeed = machine->getNicSpeedMbitSec();
-                LOG(MCdebugInfo, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
+                if (doTrace(traceSprayDetails))
+                    LOG(MCdebugInfo, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
             }
         }
     }
@@ -1752,7 +1755,9 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
         FilePartInfo & cur = sources.item(idx);
         StringBuffer s;
         cur.filename.getPath(s);
-        LOG(MCdebugInfo, "Examine header of file %s", s.str());
+
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugInfo, "Examine header of file %s", s.str());
 
         Owned<IFile> file = createIFile(cur.filename);
         Owned<IFileIO> io = file->open(IFOread);
@@ -2609,7 +2614,6 @@ void FileSprayer::calcNumConcurrentTransfers()
         numConcurrentTransfers = numTransferParts/3;
     if (numConcurrentTransfers > numTransferParts)
         numConcurrentTransfers = numTransferParts;
-    LOG(MCdebugInfo, "numTransferParts: %u, numConcurrentTransfers: %u", numTransferParts, numConcurrentTransfers);
 }
 
 void FileSprayer::performTransfer()
@@ -2630,8 +2634,6 @@ void FileSprayer::performTransfer()
     saveTransferOptions();
     if (progressReport)
         progressReport->setRange(getSizeReadAlready(), sizeToBeRead, transferSlaves.ordinality());
-
-    LOG(MCdebugInfo, "Begin to transfer parts (%d threads)\n", numConcurrentTransfers);
 
     //Throttle maximum number of concurrent transfers by starting n threads, and
     //then waiting for one to complete before going on to the next
@@ -2763,6 +2765,7 @@ void FileSprayer::pushParts()
 
 void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
 {
+    //MORE: It would be useful to have this information in the transferOptions
     LOG(MCdebugInfo, "Transfer files using api: %s", copyClient->name());
 
     OwnedPointerArrayOf<IAPICopyClientOp> apiClients;
@@ -3105,10 +3108,6 @@ void FileSprayer::setTarget(IDistributedFile * target)
 
     compressOutput = target->isCompressed();
 
-    LOG(MCdebugInfo, "FileSprayer::setTarget: compressedInput:%s, compressOutput:%s",
-                                boolToStr(compressedInput),
-                                boolToStr(compressOutput));
-
     if (tgtFormat.restore(&target->queryAttributes()))
         unknownTargetFormat = false;
     else
@@ -3360,15 +3359,12 @@ void FileSprayer::spray()
            progressTree->setPropBool("@noFileMatch", true);
     }
 
-    LOG(MCdebugInfo, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
-    LOG(MCdebugInfo, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
-    LOG(MCdebugInfo, "maxConnections option:%d", options->getPropInt(ANmaxConnections));
-
     LocalAbortHandler localHandler(daftAbortHandler);
 
     if (allowRecovery && progressTree->getPropBool(ANcomplete))
     {
-        LOG(MCdebugInfo, "Command completed successfully in previous invocation");
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Command completed successfully in previous invocation");
         return;
     }
 
@@ -4060,7 +4056,8 @@ bool FileSprayer::calcUsePull() const
     if (allowRecovery && progressTree->hasProp(ANpull))
     {
         bool usePull = progressTree->getPropBool(ANpull);
-        LOG(MCdebugInfo, "Pull = %d from recovery", (int)usePull);
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Pull = %d from recovery", (int)usePull);
         return usePull;
     }
 
@@ -4069,7 +4066,8 @@ bool FileSprayer::calcUsePull() const
 
     if (options->getPropBool(ANpull, false))
     {
-        LOG(MCdebugInfo, "Use pull since explicitly specified");
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Use pull since explicitly specified");
         return true;
     }
 
@@ -4085,7 +4083,8 @@ bool FileSprayer::calcUsePull() const
                 // NB: this is being calculated before partitioning has occurred
                 // It can be refactored so that it decides after partitioning, and only has to force pull
                 // if multiple partitions write to same target file.
-                LOG(MCdebugInfo, "Use pull operation because target doesn't support concurrent write");
+                if (doTrace(traceSprayDetails))
+                    LOG(MCdebugInfo, "Use pull operation because target doesn't support concurrent write");
                 return true;
             }
             // else targets > sources
@@ -4100,14 +4099,16 @@ bool FileSprayer::calcUsePull() const
                 }
             }
         }
-        LOG(MCdebugInfo, "Use push since explicitly specified");
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Use push since explicitly specified");
         return false;
     }
     else // ! targetSupportsConcurrentWrite 
     {
         if (pushRequested)
         {
-            LOG(MCdebugInfo, "Use push since explicitly specified");
+            if (doTrace(traceSprayDetails))
+                LOG(MCdebugInfo, "Use push since explicitly specified");
             return false;
         }
     }
@@ -4118,7 +4119,8 @@ bool FileSprayer::calcUsePull() const
         {
             StringBuffer s;
             sources.item(idx2).filename.queryIP().getHostText(s);
-            LOG(MCdebugInfo, "Use pull operation because %s cannot push", s.str());
+            if (doTrace(traceSprayDetails))
+                LOG(MCdebugInfo, "Use pull operation because %s cannot push", s.str());
             return true;
         }
     }
@@ -4126,7 +4128,8 @@ bool FileSprayer::calcUsePull() const
     {
         StringBuffer s;
         sources.item(0).filename.queryIP().getHostText(s);
-        LOG(MCdebugInfo, "Use pull operation because %s doesn't appear to have an ftslave", s.str());
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Use pull operation because %s doesn't appear to have an ftslave", s.str());
         return true;
     }
 
@@ -4136,7 +4139,8 @@ bool FileSprayer::calcUsePull() const
         {
             StringBuffer s;
             targets.item(idx).queryIP().getHostText(s);
-            LOG(MCdebugInfo, "Use push operation because %s cannot pull", s.str());
+            if (doTrace(traceSprayDetails))
+                LOG(MCdebugInfo, "Use push operation because %s cannot pull", s.str());
             return false;
         }
     }
@@ -4145,18 +4149,19 @@ bool FileSprayer::calcUsePull() const
     {
         StringBuffer s;
         targets.item(0).queryIP().getHostText(s);
-        LOG(MCdebugInfo, "Use push operation because %s doesn't appear to have an ftslave", s.str());
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Use push operation because %s doesn't appear to have an ftslave", s.str());
         return false;
     }
 
     //Use push if going to a single node.
     if ((targets.ordinality() == 1) && (sources.ordinality() > 1))
     {
-        LOG(MCdebugInfo, "Use push operation because going to a single node from many");
+        if (doTrace(traceSprayDetails))
+            LOG(MCdebugInfo, "Use push operation because going to a single node from many");
         return false;
     }
 
-    LOG(MCdebugInfo, "Use pull operation as default");
     return true;
 }
 
