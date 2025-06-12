@@ -36,6 +36,11 @@ on:
         description: 'CMake build options'
         required: false
         default: '--config Release --parallel $NUMBER_OF_PROCESSORS'
+      make-latest:
+        type: boolean
+        description: 'Make Latest'
+        required: false
+        default: false
       
 
 jobs:
@@ -121,6 +126,7 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ inputs.make-latest }}
           artifacts: "./build/hpccsystems-clienttools-community*.exe"
 
       - name: Release Internal Clienttools to JFrog Repository

@@ -28,6 +28,11 @@ on:
         type: string
         description: 'Documentation Asset name'
         required: true
+      make-latest:
+        type: boolean
+        description: 'Make Latest'
+        required: false
+        default: false
 
 jobs:
 
@@ -173,11 +178,12 @@ jobs:
           C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE}} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-eclide*.exe
 
       - name: Upload Assets
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ inputs.make-latest }}
           artifacts: "./ECLIDE/build/*.exe"
       
       - name: Upload Assets to Jfrog

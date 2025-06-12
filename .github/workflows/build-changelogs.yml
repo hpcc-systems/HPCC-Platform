@@ -7,6 +7,11 @@ on:
         description: 'Current Version'
         required: true
         type: string
+      make-latest:
+        description: 'Make Latest'
+        required: false
+        type: boolean
+        default: false
       
   workflow_dispatch:
     inputs:
@@ -136,10 +141,11 @@ jobs:
             perl ./prettyLogs.pl -bt eclide_${current_version} -et eclide_${previous_rc_version} -repo ../ECLIDE -sort -html eclide_${current_version}
           fi
       - name: Upload Changelogs
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ inputs.make-latest }}
           artifacts: PrettyGitLogs/community_*.html,PrettyGitLogs/internal_*.html,PrettyGitLogs/eclide_*.html
           

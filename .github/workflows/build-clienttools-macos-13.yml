@@ -26,6 +26,11 @@ on:
         description: 'CMake build options'
         required: false
         default: "--parallel $(nproc)"
+      make-latest:
+        type: boolean
+        description: 'Make Latest'
+        required: false
+        default: false
 
 jobs:
   generate_macos_13_clienttools:
@@ -102,6 +107,7 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ inputs.make-latest }}
           artifacts: "./build/hpccsystems-clienttools-community*.pkg"
 
       - name: Release Internal Clienttools to JFrog Repository
