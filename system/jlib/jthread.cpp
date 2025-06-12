@@ -823,7 +823,7 @@ public:
     }
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
-    IExceptionHandler *exceptionHandler = nullptr;
+    IExceptionHandler *exceptionHandler{nullptr};
     CriticalSection crit;
     StringAttr poolname;
     Semaphore donesem;
@@ -831,11 +831,10 @@ protected: friend class CPooledThreadWrapper;
     UnsignedArray waitingids;
     std::atomic<bool> stopall{false};
     const bool inheritThreadContext;
-    unsigned defaultmax = 0;
-    unsigned newDefaultmax = 0;
-    unsigned slotsToRelease = 0;
-    unsigned targetpoolsize = 0;
-    unsigned delay = 0;
+    unsigned defaultmax{0};
+    std::atomic_uint slotsToRelease{0};
+    unsigned targetpoolsize{0};
+    unsigned delay{0};
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
@@ -1026,16 +1025,15 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         bool slotConsumed{true};
         if (defaultmax)
         {
-            if (newDefaultmax)
+            if (slotsToRelease)
             {
                 CriticalBlock block(crit);
-                if (newDefaultmax > defaultmax)
+                while (slotsToRelease)
                 {
-                    unsigned num = newDefaultmax - defaultmax;
-                    availsem.signal(num);
-                    defaultmax = newDefaultmax;
+                    if (!availsem.wait(0))
+                        break; // none available
+                    --slotsToRelease;
                 }
-                newDefaultmax = 0;
             }
             waited = !availsem.wait(0);
             if (noBlock)
@@ -1339,12 +1337,6 @@ public:
     void setPoolSize(unsigned newPoolSize)
     {
         CriticalBlock block(crit);
-        if (newDefaultmax)
-        {
-            OWARNLOG("Pool size change already in progress. Request ignored!");
-            return;
-        }
-
         if (newPoolSize > defaultmax)
         {
             availsem.signal(newPoolSize - defaultmax);
@@ -1354,10 +1346,27 @@ public:
 
         if (newPoolSize < defaultmax)
         {
-            if (!runningCount())
-                newDefaultmax = newPoolSize;
-            else
-                slotsToRelease = defaultmax - newPoolSize;
+            slotsToRelease += defaultmax - newPoolSize;
+            defaultmax = newPoolSize;
+            while (slotsToRelease)
+            {
+                if (!availsem.wait(0))
+                    break; // none available
+                --slotsToRelease;
+            }
+            if (slotsToRelease)
+            {
+                ForEachItemIn(threadIndex,threadwrappers)
+                {
+                    CPooledThreadWrapper &it = threadwrappers.item(threadIndex);
+                    if (!it.isStopped() && !it.slotWasConsumed())
+                    {
+                        it.setSlotConsumed();
+                        if (!--slotsToRelease)
+                            break;
+                    }
+                }
+            }
         }
     }
 };
