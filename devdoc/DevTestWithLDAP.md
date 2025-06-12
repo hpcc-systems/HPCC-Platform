@@ -132,7 +132,7 @@ We'll be using the customized Helm values file at `helm/examples/ldap/hpcc-value
     admincredsmountname: "admincredssecretname"
     hpccadmincredsmountname: "myhpccadminsecretkey"
 ```
-- `systemBasedn` is the root of the DS tree used by the platform. It must match the backend suffix used in step #3 when [configuring the 389ds server](#docker-ldap-directory-service-and-admin-setup).
+- `systemBasedn` is the root of the DS tree used by the platform. It must match the backend suffix used in step #3 when [configuring the 389ds server](DevTestWithLDAP.md#docker-ldap-directory-service-and-admin-setup).
 - LDAP auth is only configured for the eclwatch service. Copy and paste the `auth` and `ldap` sections from there to any other ESP service you want to use ldap.
 
 ## Run and Use Platform
@@ -146,6 +146,6 @@ helm install mycluster hpcc/hpcc -f helm/examples/ldap/hpcc-values.yaml
 ```
 2. Login to ECL Watch at [http://127.0.0.1/8010](http://127.0.0.1/8010) using the credentials:
     - user: `hpcc_admin`
-    - password: `<hpcc_admin_pw>` Created in step [Add secret for HPCC Admin user](#add-secret-for-hpcc-admin-user)
+    - password: `<hpcc_admin_pw>` Created in step [Add secret for HPCC Admin user](DevTestWithLDAP.md#add-secret-for-hpcc-admin-user)
 
 Initially your admin will only have SmcAccess, so you may see some access failure warnings, but you can navigate to the Topology | Security tab to customize the HPCCAdministrators permissions and add any other users, groups or permissions needed for testing. These warnings could also be due to permissions caching, and may be resolved after a platform restart.
