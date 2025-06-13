@@ -3131,7 +3131,31 @@
         "type": "object",
         "allOf": [{ "$ref": "#/definitions/sashacommon" }],
         "properties": {
-          "disabled": {}
+          "disabled": {},
+          "interval": {},
+          "env": {},
+          "annotations": {},
+          "labels": {},
+          "at" : {},
+          "image": {},
+          "resources": {},
+          "expert": {},
+          "terminationGracePeriodSeconds": {},
+          "cutoff": {
+            "type": "integer",
+            "description": "cutoff (in days) to ignore recent files.",
+            "default": "1"
+          },
+          "planes": {
+            "type": "string",
+            "description": "comma separated list of storage planes to xref (* for all planes).",
+            "default": "*"
+          },
+          "numThreads": {
+            "type": "integer",
+            "description": "maximum thread count for scanning directories",
+            "default": "500"
+          }
         },
         "additionalProperties": false
     },

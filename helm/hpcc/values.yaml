@@ -532,6 +532,9 @@ sasha:
     #disabled: true
     #interval: 1
     #ignoreLazyLost: false
+    #at: "* 2 * * *"
+    #clusterlist: "*"
+
 
 dfuserver:
 - name: dfuserver
