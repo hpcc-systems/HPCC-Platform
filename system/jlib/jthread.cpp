@@ -43,6 +43,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #endif
+#include <algorithm>
 
 #define LINUX_STACKSIZE_CAP (0x200000)
 
@@ -2772,6 +2773,15 @@ TraceFlags queryTraceFlags()
 TraceFlags queryDefaultTraceFlags()
 {
     return defaultTraceFlags;
+}
+
+TraceFlags combineTraceFlags(TraceFlags existing, TraceFlags request)
+{
+    //Choose the highest level of the two
+    TraceFlags newLevel = std::max(existing & TraceFlags::LevelMask, request & TraceFlags::LevelMask);
+    //Use the union of the different flags
+    TraceFlags newFlags = (existing | request) & ~TraceFlags::LevelMask;
+    return newLevel | newFlags;
 }
 
 //---------------------------
