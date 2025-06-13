@@ -43,6 +43,7 @@
 #include "dadfs.hpp"
 
 #include "remoteerr.hpp"
+#include <random>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -1271,15 +1272,26 @@ protected:
     StringAttr logicalFilename;
     unsigned numInputFields = 0;
 
+    bool applySampling = false;
+    std::random_device randomDevice;
+    std::mt19937 randomGenerator;
+    std::bernoulli_distribution samplingDistribution;
+
     inline bool fieldFilterMatch(const void * buffer)
     {
+        bool shouldRead = true;
         if (filterRow)
         {
             filterRow->setRow(buffer, filter.getNumFieldsRequired());
-            return filter.matches(*filterRow);
+            shouldRead = filter.matches(*filterRow);
         }
-        else
-            return true;
+
+        if (applySampling && shouldRead)
+        {
+            shouldRead = samplingDistribution(randomGenerator);
+        }
+
+        return shouldRead;
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -1290,6 +1302,8 @@ public:
         if (isEmptyString(fileName))
             throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: fileName missing");
         logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
+
+        randomGenerator.seed(randomDevice());
     }
     ~CRemoteDiskBaseActivity()
     {
@@ -1307,6 +1321,20 @@ public:
             Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
             ForEach(*filterIter)
                 filter.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+
+        if (config.hasProp("samplingRate"))
+        {
+            double samplingRate = config.getPropReal("samplingRate", 1.0);
+            const double minSamplingInterval = 1e-9;
+            if (samplingRate <= minSamplingInterval || samplingRate >= 1.0)
+                throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: samplingRate must be between (1e-9, 1.0)");
+
+            applySampling = true;
+            if (samplingRate < 1.0)
+            {
+                samplingDistribution = std::bernoulli_distribution(samplingRate);
+            }
         }
     }
 // IRemoteReadActivity impl.
@@ -1788,7 +1816,10 @@ public:
                 return ret;
             }
             else
+            {
                 outBuilder.removeBytes(retSz);
+            }
+
             if (!fetching) // harmless, but pointless to skip if fetching
                 inputStream->skip(lineLength);
         }
@@ -2064,7 +2095,9 @@ public:
                     return ret;
                 }
                 else
+                {
                     outBuilder.removeBytes(retSz);
+                }
             }
         }
         if (!fetching) // when in fetch mode, don't assume file won't be used again (likely will be another batch)
@@ -4715,6 +4748,8 @@ public:
      * "action" - supported actions = "count" (used if "kind" is auto-detected to specify count should be performed instead of read)
      *
      * "keyFilter" - filter the results by this expression (See: HPCC-18474 for more details).
+     * 
+     * "samplingRate" - sampling the dataset at this rate (e.g. 0.1 for 10% sampling)
      *
      * "chooseN" - maximum # of results to return
      *
@@ -4743,6 +4778,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
@@ -4765,6 +4801,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
@@ -4786,6 +4823,7 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "samplingRate" : 0.1,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
