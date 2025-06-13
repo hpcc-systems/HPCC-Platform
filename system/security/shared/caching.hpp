@@ -223,7 +223,6 @@ private:
     std::atomic<time_t> m_lastCacheFillTime = 0;             // time of last cache fill
 };
 
-time_t getThreadCreateTime();
 
 #ifdef _MSC_VER
 #pragma warning (pop)

@@ -444,9 +444,6 @@ bool CHttpThread::onRequest()
         httpserver.setown(new CEspHttpServer(*m_socket, *m_apport, m_viewConfig, getMaxRequestEntityLength()));
     }
 
-    time_t t = time(NULL);  
-    initThreadLocal(sizeof(t), &t);
-
     m_httpserver = httpserver;
     httpserver->setSocketReturner(this);
     httpserver->setIsSSL(m_is_ssl);
@@ -454,8 +451,6 @@ bool CHttpThread::onRequest()
     httpserver->processRequest();
 
     returnSocket(false);
-
-    clearThreadLocal();
 
     return false;
 }
@@ -570,8 +565,6 @@ void CPooledHttpThread::threadmain()
     m_httpserver = httpserver;
     httpserver->setShouldClose(m_shouldClose);
     httpserver->setSocketReturner(this);
-    time_t t = time(NULL);  
-    initThreadLocal(sizeof(t), &t);
     try
     {
         ESP_TIME_SECTION("CPooledHttpThread::threadmain: httpserver->processRequest()");
@@ -589,8 +582,6 @@ void CPooledHttpThread::threadmain()
         m_processAborted = true;
         IERRLOG("General Exception - in CPooledHttpThread::threadmain().");
     }
-
-    clearThreadLocal();
 }
 
 void CPooledHttpThread::returnSocket()
