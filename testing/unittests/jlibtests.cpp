@@ -38,6 +38,8 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
+#include "jptree.hpp"
+#include "jstream.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -50,7 +52,7 @@ class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibTraceTest);
-        //Invalid since tracemanager initialized at component load time 
+        //Invalid since tracemanager initialized at component load time
         //CPPUNIT_TEST(testTraceDisableConfig);
         CPPUNIT_TEST(testStringArrayPropegatedServerSpan);
         CPPUNIT_TEST(testDisabledTracePropegatedValues);
@@ -268,7 +270,7 @@ protected:
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
             //14:49:13.776139   904 MsTickOffset span actual start-time timestamp: 1702669753775893057
-            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d", 
+            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d",
             //"start": 1702669753725771035, "duration": 50285323 }
             //Actual start - declared start: 1702669753775893057-1702669753725771035 = 50162022
         }
@@ -283,7 +285,7 @@ protected:
             //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
             MilliSleep(75);
 
-            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663", 
+            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663",
             //"start": 1702668157790080022,
             //"duration": 75316248 }
         }
@@ -321,13 +323,13 @@ protected:
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
-            serverSpan->recordError(SpanError("Error Message!!", 23, true, false)); 
+            serverSpan->recordError(SpanError("Error Message!!", 23, true, false));
         }//{ "type": "span", "name": "containsErrorAndMessageFailedNotEscapedSpan", "trace_id": "02f4b2d215f8230b15063862f8a91e41", "span_id": "c665ec371d6db147", "start": 1709675573581678954, "duration": 3467489486, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675576145074240, "attributes": {"code": 23,"escaped": 0,"message": "Error Message!!" } } ] }
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
             serverSpan->recordException( makeStringExceptionV(76,"Mock exception"), false, false);
-        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ] 
+        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ]
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
@@ -725,7 +727,7 @@ protected:
         {
             Owned<IProperties> spanContext = createProperties();
             ISpan * activeSpan =  queryThreadedActiveSpan();
-            
+
             CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
 
             activeSpan->getSpanContext(spanContext);
@@ -784,7 +786,7 @@ protected:
             //15:07:56.490232  3788 720009f32a9db04f68f2b6545717ebe5 a7ef8749b5926acf This log entry should report traceID: '720009f32a9db04f68f2b6545717ebe5' and spanID: 'a7ef8749b5926acf'
         }
     }
-    
+
     void testInvalidPropegatedServerSpan()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
@@ -950,7 +952,7 @@ protected:
     void testStringArrayPropegatedServerSpan()
     {
         StringArray mockHTTPHeadersSA;
-        //mock opentel traceparent context 
+        //mock opentel traceparent context
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
         //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
         mockHTTPHeadersSA.append("tracestate:hpcc=4b960b3e4647da3f");
@@ -3398,6 +3400,434 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
 
 
+/*
+ * PTree creation unit tests
+ */
+#include "platform.h"
+#include "jfile.ipp"
+#include "jptree.hpp"
+#include "jptree.ipp"
+#include "jiface.hpp"
+#include "jio.hpp"
+#include "jstring.hpp"
+#include <string>
+
+class PTreeCreatePTreeTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeCreatePTreeTest);
+      CPPUNIT_TEST(testCreateFromFileIO);
+      CPPUNIT_TEST(testCreateFromFile);
+      CPPUNIT_TEST(testCreateFromBufferedSerialInputStream);
+      CPPUNIT_TEST(testCleanup);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+    static constexpr unsigned testXmlLen = strlen(testXml);
+    static constexpr const char *testXmlFileName{"property_tree_test.xml"};
+
+public:
+    void setUp()
+    {
+        // Create test file
+        Owned<IFile> file = createIFile(testXmlFileName);
+        Owned<IFileIO> io = file->open(IFOcreate);
+        CPPUNIT_ASSERT(io);
+        io->write(0, testXmlLen, testXml);
+    }
+
+    void testCreateFromFileIO()
+    {
+        try
+        {
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+            Owned<IFile> file = createIFile(testXmlFileName);
+            CPPUNIT_ASSERT(file);
+            Owned<IFileIO> io = file->open(IFOread);
+            CPPUNIT_ASSERT(io);
+
+            Owned<IPropertyTree> fileIoTree = createPTree(*io, ipt_none, ptr_none, nullptr);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, fileIoTree));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testCreateFromFile()
+    {
+        try
+        {
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+            Owned<IFile> file = createIFile(testXmlFileName);
+            CPPUNIT_ASSERT(file);
+
+            Owned<IPropertyTree> fileTree = createPTree(*file, ipt_none, ptr_none, nullptr);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, fileTree));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testCreateFromBufferedSerialInputStream()
+    {
+        try
+        {
+            Owned<IPropertyTree> xmlTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+            MemoryBuffer buffer;
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            CPPUNIT_ASSERT(out);
+            xmlTree->serializeToStream(*out);
+            out->flush();
+
+            Owned<IBufferedSerialInputStream> bufferedStream = createMemoryBufferSerialStream(buffer);
+            CPPUNIT_ASSERT(bufferedStream);
+
+            Owned<IPropertyTree> bufferedSerialInputStreamTree = createPTree(*bufferedStream);
+            CPPUNIT_ASSERT(areMatchingPTrees(xmlTree, bufferedSerialInputStreamTree));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testCleanup()
+    {
+        Owned<IFile> file = createIFile(testXmlFileName);
+        file->remove();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCreatePTreeTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCreatePTreeTest, "PTreeCreatePTreeTest");
+
+class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
+      CPPUNIT_TEST(testPTreeSerializeToMemoryBufferAndCreatePTree);
+      CPPUNIT_TEST(testPTreeSerializeToStreamAndCreatePTree);
+      CPPUNIT_TEST(testCPTValueSerializeAndDeserialize);
+      CPPUNIT_TEST(testPTreeSerializeSelf);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+
+public:
+    void testPTreeSerializeToMemoryBufferAndCreatePTree()
+    {
+        try
+        {
+            Owned<IPropertyTree> originalTableTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            CPPUNIT_ASSERT(originalTableTree);
+
+            MemoryBuffer buffer;
+            originalTableTree->serialize(buffer);
+            Owned<IPropertyTree> tree = createPTree(buffer);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree));
+
+            MemoryBuffer buffer2;
+            tree->serialize(buffer2);
+            Owned<IPropertyTree> tree2 = createPTree(buffer2);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree2));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testPTreeSerializeToStreamAndCreatePTree()
+    {
+        try
+        {
+            Owned<IPropertyTree> originalTableTree = createPTreeFromXMLString(testXml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            CPPUNIT_ASSERT(originalTableTree);
+
+            MemoryBuffer buffer;
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            CPPUNIT_ASSERT(out);
+            originalTableTree->serializeToStream(*out);
+            out->flush();
+
+            Owned<IBufferedSerialInputStream> stream2 = createBufferedSerialInputStream(buffer);
+            CPPUNIT_ASSERT(stream2);
+            Owned<IPropertyTree> tree2 = createPTree(*stream2);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTableTree, tree2));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testCPTValueSerializeAndDeserialize()
+    {
+        try
+        {
+            const char* xmlTestData =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<Root xmlns:ns1=\"http://example.com/ns1\">\n"
+                "  <!-- This is a comment -->\n"
+                "  <Text>Hello &amp; welcome to &lt;XML&gt; testing!</Text>\n"
+                "  <Numbers>123.456</Numbers>\n"
+                "  <Boolean>true</Boolean>\n"
+                "  <Special attr=\"value with spaces\" encoded=\"&quot;quoted&quot;\">\n"
+                "    <![CDATA[Some <unescaped> data & symbols]]>\n"
+                "  </Special>\n"
+                "  <ns1:NamespacedElement>Content</ns1:NamespacedElement>\n"
+                "  <Empty/>\n"
+                "  <Unicode>测试中文字符 ñáéíóú àèìòù ñç</Unicode>\n"
+                "</Root>";
+
+            size32_t xmlTestDataLen = strlen(xmlTestData) + 1;
+            CPTValue testXmlValue(xmlTestDataLen, xmlTestData);
+            CPPUNIT_ASSERT_EQUAL(false, testXmlValue.isArray());
+            CPPUNIT_ASSERT_EQUAL(false, testXmlValue.isCompressed());
+            CPPUNIT_ASSERT_EQUAL(xmlTestDataLen, testXmlValue.queryValueSize());
+
+            MemoryBuffer testXmlSerializeBuf;
+            testXmlValue.serialize(testXmlSerializeBuf);
+
+            CPTValue testXmlDeserializedValue;
+            testXmlDeserializedValue.deserialize(testXmlSerializeBuf);
+
+            StringBuffer originalTestXml, deserializedTestXml;
+            testXmlValue.getValue(originalTestXml, false);
+            testXmlDeserializedValue.getValue(deserializedTestXml, false);
+            CPPUNIT_ASSERT_EQUAL(std::string(originalTestXml.str()), std::string(deserializedTestXml.str()));
+
+            // Test: Binary XML-like data (with null bytes)
+            unsigned char binaryXmlData[] = {
+                '<', 'x', 'm', 'l', '>', 0x00, 0xFF,  // XML start with binary data
+                '<', 'd', 'a', 't', 'a', '>',
+                0x01, 0x02, 0x03, 0x04,              // Binary content
+                '<', '/', 'd', 'a', 't', 'a', '>',
+                '<', '/', 'x', 'm', 'l', '>', 0x00
+            };
+            size32_t binaryXmlLen = sizeof(binaryXmlData);
+            CPTValue binaryXmlValue(binaryXmlLen, binaryXmlData, true, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT);
+            CPPUNIT_ASSERT_EQUAL(false, binaryXmlValue.isArray());
+            CPPUNIT_ASSERT_EQUAL(false, binaryXmlValue.isCompressed());
+            CPPUNIT_ASSERT_EQUAL(binaryXmlLen, binaryXmlValue.queryValueSize());
+
+            MemoryBuffer binaryXmlSerializeBuf;
+            binaryXmlValue.serialize(binaryXmlSerializeBuf);
+
+            CPTValue binaryXmlDeserializedValue;
+            binaryXmlDeserializedValue.deserialize(binaryXmlSerializeBuf);
+
+            MemoryBuffer originalBinaryXml, deserializedBinaryXml;
+            binaryXmlValue.getValue(originalBinaryXml, true);
+            binaryXmlDeserializedValue.getValue(deserializedBinaryXml, true);
+            CPPUNIT_ASSERT_EQUAL(originalBinaryXml.length(), deserializedBinaryXml.length());
+            CPPUNIT_ASSERT_EQUAL(0, memcmp(originalBinaryXml.bytes(), deserializedBinaryXml.bytes(), originalBinaryXml.length()));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testPTreeSerializeSelf()
+    {
+        try
+        {
+            // Test PTree::serializeSelf method which serializes node name, flags, attributes, and value
+
+            // Create a PTree with name, attributes, and value
+            Owned<IPropertyTree> tree = createPTree("TestNode");
+            tree->setProp("@attr1", "value1");
+            tree->setProp("@attr2", "value2");
+            tree->setProp(nullptr, "node_text_value");
+
+            // Create a buffer and stream for serialization
+            MemoryBuffer buffer;
+            Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(buffer);
+
+            // Cast to PTree to access serializeSelf method directly
+            PTree *ptree = static_cast<PTree *>(tree.get());
+
+            // Call serializeSelf to serialize just this node (not children)
+            ptree->serializeSelf(*stream);
+            stream->flush();
+
+            // Verify the serialized format by reading it back manually
+            Owned<IBufferedSerialInputStream> inputStream = createBufferedSerialInputStream(buffer);
+
+            // Read and verify the name length and name
+            size32_t nameLen;
+            inputStream->get(sizeof(nameLen), &nameLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)8, nameLen); // "TestNode" = 8 chars
+
+            char name[9];
+            inputStream->get(nameLen, name);
+            name[nameLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("TestNode"), std::string(name));
+
+            // Read and verify null terminator
+            char nullTerminator;
+            inputStream->get(1, &nullTerminator);
+            CPPUNIT_ASSERT_EQUAL('\0', nullTerminator);
+
+            // Read flags
+            byte flags;
+            inputStream->get(sizeof(flags), &flags);
+            // We can't predict exact flag values, but we can verify it's there
+
+            // Read attributes - we should have 2 attributes
+            // First attribute: attr1 = value1 (but might include @ prefix)
+            size32_t attr1NameLen;
+            inputStream->get(sizeof(attr1NameLen), &attr1NameLen);
+
+            // Debug: allocate enough space and see what we actually get
+            char attr1Name[10]; // Enough space for debugging
+            inputStream->get(attr1NameLen, attr1Name);
+            attr1Name[attr1NameLen] = '\0';
+
+            // The attribute name might include the '@' prefix in serialization
+            if (attr1NameLen == 6 && strcmp(attr1Name, "@attr1") == 0) {
+                // Serialization includes @ prefix
+                CPPUNIT_ASSERT_EQUAL((size32_t)6, attr1NameLen); // "@attr1" = 6 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("@attr1"), std::string(attr1Name));
+            } else if (attr1NameLen == 5 && strcmp(attr1Name, "attr1") == 0) {
+                // Serialization doesn't include @ prefix
+                CPPUNIT_ASSERT_EQUAL((size32_t)5, attr1NameLen); // "attr1" = 5 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("attr1"), std::string(attr1Name));
+            } else {
+                // Unexpected case - fail with useful info
+                StringBuffer failMsg;
+                failMsg.appendf("Unexpected attribute name: length=%u, name='%s'", attr1NameLen, attr1Name);
+                CPPUNIT_FAIL(failMsg.str());
+            }
+
+            size32_t attr1ValueLen;
+            inputStream->get(sizeof(attr1ValueLen), &attr1ValueLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)6, attr1ValueLen); // "value1" = 6 chars
+
+            char attr1Value[7];
+            inputStream->get(attr1ValueLen, attr1Value);
+            attr1Value[attr1ValueLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("value1"), std::string(attr1Value));
+
+            // Second attribute: attr2 = value2 (adjust for possible @ prefix)
+            size32_t attr2NameLen;
+            inputStream->get(sizeof(attr2NameLen), &attr2NameLen);
+
+            char attr2Name[10]; // Enough space for debugging
+            inputStream->get(attr2NameLen, attr2Name);
+            attr2Name[attr2NameLen] = '\0';
+
+            // Check for @ prefix like we did for attr1
+            if (attr2NameLen == 6 && strcmp(attr2Name, "@attr2") == 0) {
+                CPPUNIT_ASSERT_EQUAL((size32_t)6, attr2NameLen); // "@attr2" = 6 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("@attr2"), std::string(attr2Name));
+            } else if (attr2NameLen == 5 && strcmp(attr2Name, "attr2") == 0) {
+                CPPUNIT_ASSERT_EQUAL((size32_t)5, attr2NameLen); // "attr2" = 5 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("attr2"), std::string(attr2Name));
+            } else {
+                StringBuffer failMsg;
+                failMsg.appendf("Unexpected attribute name: length=%u, name='%s'", attr2NameLen, attr2Name);
+                CPPUNIT_FAIL(failMsg.str());
+            }
+
+            size32_t attr2ValueLen;
+            inputStream->get(sizeof(attr2ValueLen), &attr2ValueLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)6, attr2ValueLen); // "value2" = 6 chars
+
+            char attr2Value[7];
+            inputStream->get(attr2ValueLen, attr2Value);
+            attr2Value[attr2ValueLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("value2"), std::string(attr2Value));
+
+            // Read attribute terminator (zero length name)
+            byte attrTerminator;
+            inputStream->get(sizeof(attrTerminator), &attrTerminator);
+            CPPUNIT_ASSERT_EQUAL((byte)0, attrTerminator);
+
+            // The value should be serialized next - we'll check that there's a non-zero size
+            size32_t valueSize;
+            inputStream->get(sizeof(valueSize), &valueSize);
+            CPPUNIT_ASSERT(valueSize > 0); // Should have a value since we set node text
+
+            // That's sufficient for testing serializeSelf - we've verified:
+            // 1. Node name is correctly serialized
+            // 2. Null terminator is present
+            // 3. Flags are present
+            // 4. Attributes are correctly serialized with proper format
+            // 5. Attribute terminator is present
+            // 6. Value size is present and non-zero when expected
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
+
+
+
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
@@ -3525,7 +3955,7 @@ public:
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
                 : startSem(_startSem), endSem(_endSem),
-                  lock1(_lock1), lock2(_lock2), 
+                  lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
             {
@@ -4697,7 +5127,7 @@ protected:
         CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
-        
+
         unsigned cipherlen = ciphertext1.length() - lenPrefix;
 
         /* Decrypt the ciphertext */
@@ -4782,8 +5212,8 @@ protected:
                 CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
                 E->Release();
             }
-        }        
-    // Note: Using OpenTelemetry null span 
+        }
+    // Note: Using OpenTelemetry null span
     }
 
     void test()

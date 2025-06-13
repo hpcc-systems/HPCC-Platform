@@ -1194,7 +1194,7 @@ public:
     }
     virtual void reset(offset_t _offset, offset_t _flen) override
     {
-        UNIMPLEMENTED;
+        source.reset(_offset);
     }
     virtual offset_t tell() const override
     {
