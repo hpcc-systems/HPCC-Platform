@@ -4188,7 +4188,7 @@ public:
                     continue;
                 if (strieq(type, "randrow"))
                     continue;
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
@@ -4214,10 +4214,11 @@ public:
         size32_t rowSz = 0;
         initCompressionBuffer(src, rowSz);
 
-
-        const char * compression = "lz4s";
+        const char * compression = "zstds";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
+        CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
+
         testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
     }
 };
@@ -4268,7 +4269,7 @@ public:
                     testCompressor(handler, "hclevel=8", rowSz, src.length(), src.bytes(), RowCompress);
                     testCompressor(handler, "hclevel=10", rowSz, src.length(), src.bytes(), RowCompress);
                 }
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
