@@ -1,0 +1,36 @@
+services:
+  389ds:
+    image: 389ds/dirsrv:latest
+    container_name: 389ds
+    environment:
+      DS_DM_PASSWORD: "admin"
+      # The base Distinguished Name (DN) of the directory
+      # I think must match what is used in the platform config
+      DS_SUFFIX_NAME: "dc=example,dc=com"
+    ports:
+      # Map from the nonstandard internal ports to standard ports
+      # available on the host
+      - "389:3389"
+      - "636:3636"
+    volumes:
+      - ${HOME}/389ds:/data
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    environment:
+      # Simple deployments can just specify the LDAP host
+      # container name, but we need a custom configuration
+      # in the env.yaml file mounted as a volume below
+      # PHPLDAPADMIN_LDAP_HOSTS: "389ds"
+      # Turn off HTTPS for simplicity as it is just for development
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8443:443"
+      - "8080:80"
+    # Enable if you need to debug the container
+    # command: ["--loglevel", "debug"]
+    volumes:
+      - ./pla-env-config.yaml:/container/environment/01-custom/env.yaml
+    depends_on:
+      - 389ds
