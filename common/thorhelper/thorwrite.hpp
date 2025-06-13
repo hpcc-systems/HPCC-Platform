@@ -24,8 +24,15 @@
   #define THORHELPER_API DECL_IMPORT
 #endif
 
+#include "jiface.hpp"
+#include "jfile.hpp"
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
+#include "rtldynfield.hpp"
+
+class RemoteFilename;
+interface IPropertyTree;
+interface IOutputMetaData;
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -53,5 +60,28 @@ public:
 THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode, const char * format, IOutputMetaData & projected, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, const IPropertyTree * formatOptions);
 
 //--------------------------------------------------------------------------------------------------------------------
+
+// The IDiskRowWriter interface is used to write a stream of rows to an external source.
+// It is used to process a single logical file at a time.
+interface IDiskRowWriter : extends IInterface
+{
+public:
+    virtual bool matches(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions) = 0;
+    
+    virtual void clearOutput() = 0;
+    virtual bool setOutputFile(IFile * file, offset_t pos, size32_t recordSize, bool extend) = 0;
+    virtual bool setOutputFile(const char * filename, offset_t pos, size32_t recordSize, bool extend) = 0;
+    virtual bool setOutputFile(const RemoteFilename & filename, offset_t pos, size32_t recordSize, bool extend) = 0;
+
+    virtual void write(const void *row) = 0;
+    virtual void writeGrouped(const void *row) = 0;
+    virtual void flush() = 0;
+    virtual void close() = 0;
+};
+
+//Create a row writer for a thor binary file.
+extern THORHELPER_API IDiskRowWriter * createLocalDiskWriter(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
+extern THORHELPER_API IDiskRowWriter * createRemoteDiskWriter(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
+extern THORHELPER_API IDiskRowWriter * createDiskWriter(const char * format, bool streamRemote, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
 
 #endif // __THORWRITE_HPP_
