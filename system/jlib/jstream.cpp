@@ -270,26 +270,28 @@ private:
             return;
 
         size32_t remaining = available();
-        //If there is rmaining data that isn't at the head of the buffer, move it to the head
-        if (bufferOffset)
+
+        //If there is remaining data that isn't at the head of the buffer, move it to the head
+        //This is only worth doing if it will prevent the buffer being expanded - otherwise
+        //the data will be moved when it is expanded
+        if (bufferOffset && (remaining + blockReadSize < buffer.length()) && (remaining < blockReadSize / 4))
         {
             if (remaining)
-            {
                 memmove(data(0), data(bufferOffset), remaining);
-                dataLength = remaining;
-            }
+
+            dataLength = remaining;
             bufferOffset = 0;
         }
 
         size32_t nextReadSize = blockReadSize;
         for (;;)
         {
-            expandBuffer(remaining + nextReadSize);
-            size32_t got = readNext(nextReadSize, data(remaining)); // will set endOfStream if finished
+            expandBuffer(dataLength + nextReadSize);
+            size32_t got = readNext(nextReadSize, data(dataLength)); // will set endOfStream if finished
             if (likely(got != BufferTooSmall))
             {
                 nextBlockOffset += got;
-                dataLength = remaining + got;
+                dataLength += got;
                 break;
             }
 
@@ -311,8 +313,11 @@ private:
         if (buffer.length() < newLength)
         {
             MemoryAttr expandedBuffer(newLength);
-            memcpy(expandedBuffer.mem(), data(0), available());
+            //NOTE: This could use realloc instead - may not be better because it would copy all the data, not just the valid data.
+            memcpy(expandedBuffer.mem(), data(bufferOffset), available());
             buffer.swapWith(expandedBuffer);
+            dataLength -= bufferOffset;
+            bufferOffset = 0;
         }
     }
 
