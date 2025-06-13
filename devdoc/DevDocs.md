@@ -1,6 +1,6 @@
 # Working with developer documentation
 
-_Some basic guidlines to ensure your documentation works well with VitePress_
+Some basic guidlines to ensure your documentation works well with VitePress
 
 ## Documentation location
 

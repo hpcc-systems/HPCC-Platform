@@ -364,7 +364,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                 }
                 catch(...)
                 {
-                    notes.appendf("\nNon Fatal Error setting 'SmcAccess' permission for '%s'", adminGroupName.str());
+                    notes.appendf("\nNon Fatal Error setting 'SmcAccess' permission for admin group");
                 }
             }
         }
@@ -408,7 +408,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                     }
                     catch(...)
                     {
-                        notes.appendf("\nNon Fatal Error adding '%s' to '%s'", ldapadminUsr.str(), ldapadminGrpOU.str());
+                        notes.appendf("\nNon Fatal Error adding LDAP Admin to administrators group");
                     }
                 }
 
@@ -416,8 +416,8 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                 //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
                 VStringBuffer ldapAdminFQDN("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
                 if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
-                    notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
-                notes.appendf("\nEnsure LDAPAdmin user '%s' has full access permissions to environment OU '%s', including 'This object and all descendant objects'", respLDAPAdminUser.str(), envOU.str());
+                    notes.appendf("\nNon Fatal Error setting LDAPAdmin permission");
+                notes.appendf("\nEnsure LDAPAdmin user has full access permissions to environment OU '%s', including 'This object and all descendant objects'", envOU.str());
             }
         }
 

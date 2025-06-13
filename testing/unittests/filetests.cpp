@@ -41,8 +41,6 @@
 
 #include "unittests.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
-
 static constexpr byte zeros[0x100000] = { 0 };
 
 class JlibFileTest : public CppUnit::TestFixture
@@ -58,7 +56,7 @@ public:
     void createCompressed()
     {
         Owned<IFile> file(createIFile(testFilename));
-        Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+        Owned<IFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
 
         constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
@@ -90,7 +88,7 @@ public:
         for (unsigned i = 0; i < cnt; i++)
         {
             bool append = (i != 0);
-            Owned<ICompressedFileIO> io(createCompressedFileWriter(file, 0, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+            Owned<IFileIO> io(createCompressedFileWriter(file, 0, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
 
             byte temp[size];
 
@@ -113,7 +111,7 @@ public:
         try
         {
             Owned<IFile> file(createIFile(testFilename));
-            Owned<ICompressedFileIO> io(createCompressedFileReader(file));
+            Owned<IFileIO> io(createCompressedFileReader(file));
 
             constexpr size_t cnt = 10000;
             constexpr size_t size = 1000;

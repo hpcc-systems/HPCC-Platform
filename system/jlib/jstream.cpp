@@ -28,6 +28,9 @@
 #endif
 #include "jlzw.hpp"
 
+constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
+constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
+
 //================================================================================
 void CStringBufferOutputStream::writeByte(byte b)
 {
@@ -107,6 +110,13 @@ public:
     CBlockedSerialInputStream(ISerialInputStream * _input, size32_t _blockReadSize)
     : input(_input), blockReadSize(_blockReadSize)
     {
+        // A blockReadSize of 0 is often used for a fetch from a file, where only a single record is likely to be read.
+        // So choose a sensible low value that will avoid too many reads, but not use too much memory.
+        if (blockReadSize < minBlockReadSize)
+            blockReadSize = minBlockReadSize;
+        else if (blockReadSize == (size32_t)-1)
+            blockReadSize = defaultBlockReadSize;
+
         //Allocate the input buffer slightly bigger than the block read size, so that a small peek at the end of a block
         //does not have to expand the block.  (Avoid extra allocation for for pathological unittests where blockReadSize <= 1024)
         size32_t extraSize = (blockReadSize > 1024) ? 1024 : 0;
@@ -132,7 +142,9 @@ public:
         //While there are blocks larger than the buffer size read directly into the target buffer
         while (unlikely(sizeRead + blockReadSize <= len))
         {
-            size32_t got = readNextBlock(blockReadSize, target+sizeRead);
+            //Read multiple blocks in a single operation
+            size32_t numBlocks = (len - sizeRead) / blockReadSize;
+            size32_t got = readNext(blockReadSize * numBlocks, target+sizeRead);
             if ((got == 0) || (got == BufferTooSmall))
                 break;
             sizeRead += got;
@@ -214,7 +226,7 @@ public:
         return nextBlockOffset + bufferOffset - dataLength;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         endOfStream = false;
         nextBlockOffset = _offset;
@@ -273,7 +285,7 @@ private:
         for (;;)
         {
             expandBuffer(remaining + nextReadSize);
-            size32_t got = readNextBlock(nextReadSize, data(remaining)); // will set endOfStream if finished
+            size32_t got = readNext(nextReadSize, data(remaining)); // will set endOfStream if finished
             if (likely(got != BufferTooSmall))
             {
                 nextBlockOffset += got;
@@ -286,7 +298,7 @@ private:
         }
     }
 
-    size32_t readNextBlock(size32_t len, void * ptr)
+    size32_t readNext(size32_t len, void * ptr)
     {
         size32_t got = input->read(len, ptr);
         if (got == 0)
@@ -317,7 +329,6 @@ protected:
 
 IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize)
 {
-    assertex(blockReadSize != 0);
     return new CBlockedSerialInputStream(input, blockReadSize);
 }
 
@@ -344,16 +355,18 @@ public:
             throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell());
 
         size32_t decompressedSize = *(const size32_t *)next;   // Technically illegal - should copy to an aligned object
-        if (len < decompressedSize)
-            return BufferTooSmall; // Need to expand the buffer
-
         size32_t compressedSize = *((const size32_t *)next + 1); // Technically illegal - should copy to an aligned object
         if (unlikely(decompressedSize <= skipPending))
         {
             input->skip(sizeHeader + compressedSize);
+            nextOffset += decompressedSize;
             skipPending -= decompressedSize;
             goto again; // go around the loop again. - a goto seems the cleanest way to code this.
         }
+
+        //Check there is enough space in the buffer for the next block once we have skipped any whole blocks
+        if (len < decompressedSize)
+            return BufferTooSmall; // Need to expand the buffer
 
         //If the input buffer is not big enough skip the header so it does not need to be contiguous with the data
         //but that means various offsets need adjusting further down.
@@ -389,11 +402,6 @@ public:
         throwUnexpected();
     }
 
-    virtual bool eos() override
-    {
-        return input->eos();
-    }
-
     virtual void skip(size32_t sz) override
     {
         skipPending += sz;
@@ -403,7 +411,7 @@ public:
         return nextOffset + skipPending;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen=(offset_t)-1)
+    virtual void reset(offset_t _offset, offset_t _flen=(offset_t)-1) override
     {
         nextOffset = _offset;
         skipPending = 0;
@@ -425,12 +433,42 @@ ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream *
 
 //---------------------------------------------------------------------------
 
+void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in)
+{
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(1,got);
+        if (!start)
+            break;  // eof before nul detected;
+
+        const char * cur = start;
+        const char * end = start + got;
+        while (cur != end)
+        {
+            if (!*cur)
+            {
+                out.append(cur - start, start);
+                in.skip((cur - start) + 1); // skip the text and the nul
+                return;
+            }
+            cur++;
+        }
+        out.append(got, start);
+        in.skip(got);
+    }
+}
+
+//---------------------------------------------------------------------------
+
 class CFileSerialInputStream final : public CInterfaceOf<ISerialInputStream>
 {
 public:
-    CFileSerialInputStream(IFileIO * _input)
-    : input(_input)
+    CFileSerialInputStream(IFileIO * _input, offset_t startOffset, offset_t length)
+    : input(_input), nextOffset(startOffset)
     {
+        if (length != UnknownOffset)
+            lastOffset = startOffset + length;
     }
 
     virtual size32_t read(size32_t len, void * ptr) override
@@ -449,11 +487,6 @@ public:
             throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
     }
 
-    virtual bool eos() override
-    {
-        return nextOffset == input->size();
-    }
-
     virtual void skip(size32_t len) override
     {
         if (nextOffset + len <= lastOffset)
@@ -467,7 +500,7 @@ public:
         return nextOffset;
     }
 
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         nextOffset = _offset;
         lastOffset = _flen;
@@ -483,7 +516,13 @@ protected:
 //Temporary class - long term goal is to have IFile create this directly and avoid an indirect call.
 ISerialInputStream * createSerialInputStream(IFileIO * input)
 {
-    return new CFileSerialInputStream(input);
+    return new CFileSerialInputStream(input, 0, UnknownOffset);
+}
+
+
+ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length)
+{
+    return new CFileSerialInputStream(input, startOffset, length);
 }
 
 
@@ -1031,12 +1070,14 @@ ISerialOutputStream * createSerialOutputStream(IFileIO * output)
     return new CFileSerialOutputStream(output);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 //This base class was created in case we ever want a lighter weight implementation that only implements ISerialOutputStream
-class CStringSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStreamBase : public CInterfaceOf<IBufferedSerialOutputStream>
 {
 public:
-    CStringSerialOutputStreamBase(StringBuffer & _target)
+    CBufferSerialOutputStreamBase(BUFFER_CLASS & _target)
     : target(_target)
     {
     }
@@ -1061,29 +1102,32 @@ public:
     }
 
 protected:
-    StringBuffer & target;
+    BUFFER_CLASS & target;
 };
 
 
-class CStringBufferSerialOutputStream final : public CStringSerialOutputStreamBase
+template <class BUFFER_CLASS>
+class CBufferSerialOutputStream final : public CBufferSerialOutputStreamBase<BUFFER_CLASS>
 {
+    using CBufferSerialOutputStreamBase<BUFFER_CLASS>::target;
 public:
-    CStringBufferSerialOutputStream(StringBuffer & _target)
-    : CStringSerialOutputStreamBase(_target)
+    CBufferSerialOutputStream(BUFFER_CLASS & _target)
+    : CBufferSerialOutputStreamBase<BUFFER_CLASS>(_target)
     {
     }
 
     virtual byte * reserve(size32_t wanted, size32_t & got) override
     {
         size_t sizeGot;
-        char * ret = target.ensureCapacity(wanted, sizeGot);
+        void * ret = target.ensureCapacity(wanted, sizeGot);
         got = sizeGot;
         return (byte *)ret;
     }
 
     virtual void commit(size32_t written) override
     {
-        target.setLength(target.length() + written);
+        //The data has already been written - the cleanest function to call to skip the write pos forward
+        target.reserve(written);
     }
 
     virtual void suspend(size32_t wanted) override
@@ -1106,8 +1150,75 @@ protected:
 
 IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target)
 {
-    return new CStringBufferSerialOutputStream(target);
+    return new CBufferSerialOutputStream(target);
 }
+
+IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target)
+{
+    return new CBufferSerialOutputStream(target);
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CBufferSerialInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
+{
+public:
+    CBufferSerialInputStream(MemoryBuffer & _source)
+    : source(_source)
+    {
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t available = source.remaining();
+        size32_t toCopy = std::min(len, available);
+        source.read(toCopy, ptr);
+        return toCopy;
+    }
+
+    virtual void skip(size32_t len) override
+    {
+        assertex(len <= source.remaining());
+        source.skip(len);
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        assertex(len <= source.remaining());
+        source.read(len, ptr);
+    }
+    virtual bool eos() override
+    {
+        return source.remaining() == 0;
+    }
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual offset_t tell() const override
+    {
+        return source.getPos();
+    }
+
+    virtual const void * peek(size32_t wanted, size32_t &got) override
+    {
+        size32_t available = source.remaining();
+        got = available;
+        if (available == 0)
+            return nullptr;
+        return source.readDirect(0);
+    }
+
+protected:
+    MemoryBuffer & source;
+};
+
+IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source)
+{
+    return new CBufferSerialInputStream(source);
+}
+
 
 /*
  * Future work:

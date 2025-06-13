@@ -323,6 +323,17 @@ void * MemoryBuffer::ensureCapacity(unsigned max)
     return buffer + curLen;
 }
 
+void * MemoryBuffer::ensureCapacity(size_t max, size_t & got)
+{
+    if (maxLen - curLen < max)
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, max);
+        _realloc(newLen);
+    }
+    got = maxLen - curLen;
+    return buffer + curLen;
+}
+
 void MemoryBuffer::kill()
 {
     if (ownBuffer)
@@ -338,6 +349,15 @@ MemoryBuffer & MemoryBuffer::_remove(unsigned start, unsigned len)
     memmove(buffer + start, buffer + start2, curLen - start2);
     setLength(curLen - len);
     return *this;
+}
+
+void MemoryBuffer::replace(size_t offset, size_t len, const void * value)
+{
+    if ((offset >= curLen) || (len == 0))
+        return;
+    if (offset + len > curLen)
+        len = curLen - offset;
+    memcpy(buffer + offset, value, len);
 }
 
 void * MemoryBuffer::reserve(unsigned size)

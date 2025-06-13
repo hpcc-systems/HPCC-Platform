@@ -39,6 +39,76 @@
     #include "parquetembed.hpp"
 #endif
 
+constexpr size32_t defaultReadBufferSize = 0x100000;
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static IBufferedSerialInputStream * createInputStream(IFileIO * inputfileio, const IPropertyTree * providerOptions)
+{
+    assertex(providerOptions);
+    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
+
+    //MORE: Add support for passing these values to the function
+    offset_t startOffset = 0;
+    offset_t length = unknownFileSize;
+
+    //MORE: Is this a good idea?
+    if (length == unknownFileSize)
+    {
+        offset_t filesize = inputfileio->size();
+        assertex(startOffset <= filesize);
+        length = filesize - startOffset;
+    }
+
+    return createFileSerialStream(inputfileio, startOffset, length, readBufferSize);
+};
+
+
+static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions)
+{
+    assertex(providerOptions);
+
+    bool compressed = providerOptions->getPropBool("@compressed", false);
+    bool blockcompressed = providerOptions->getPropBool("@blockCompressed", false);
+    bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
+
+    MemoryBuffer encryptionKey;
+    if (providerOptions->hasProp("encryptionKey"))
+        providerOptions->getPropBin("encryptionKey", encryptionKey);
+
+    bool rowcompressed = false;
+    try
+    {
+        if (compressed)
+        {
+            Owned<IExpander> eexp;
+            if (encryptionKey.length()!=0)
+                eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+            inputfileio.setown(createCompressedFileReader(inputFile, eexp));
+            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+            {
+                inputfileio.setown(inputFile->open(IFOread));
+                if(inputfileio)
+                    rowcompressed = true;
+            }
+        }
+        else
+            inputfileio.setown(inputFile->open(IFOread));
+
+        if (!inputfileio)
+            return false;
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "createInputStream");
+        e->Release();
+        return false;
+    }
+
+    inputStream.setown(createInputStream(inputfileio, providerOptions));
+    return true;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 /*
@@ -209,8 +279,6 @@ static IRowReadFormatMapping * createUnprojectedMapping(IRowReadFormatMapping * 
 
 //---------------------------------------------------------------------------------------------------------------------
 
-constexpr size32_t defaultReadBufferSize = 0x100000;
-
 /*
  * The base class for reading rows from an external file.  Each activity will have an instance of a disk reader for
  * each actual file format.
@@ -254,8 +322,6 @@ protected:
     bool grouped = false;
     bool stranded = false;
     bool compressed = false;
-    bool blockcompressed = false;
-    bool rowcompressed = false;
 
 //The following refer to the current input file:
     offset_t fileBaseOffset = 0;
@@ -273,6 +339,12 @@ DiskRowReader::DiskRowReader(IRowReadFormatMapping * _mapping, const IPropertyTr
     //Options contain information that is the same for each file that is being read, and potentially expensive to reconfigure.
     translator = mapping->queryTranslator();
     keyedTranslator = mapping->queryKeyedTranslator();
+
+    const IPropertyTree * formatOptions = mapping->queryFormatOptions();
+    grouped = formatOptions->getPropBool("@grouped"); // grouping is a feature of how the underlying byte stream is interpreted => format option
+
+    assertex(providerOptions);
+    compressed = providerOptions->getPropBool("@compressed", false);
 }
 
 ILogicalRowStream * DiskRowReader::queryAllocatedRowStream()
@@ -354,9 +426,6 @@ public:
     virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const FieldFilterArray & expectedFilter) override;
 
 protected:
-    virtual bool isBinary() const = 0;
-
-protected:
     IConstArrayOf<IFieldFilter> expectedFilter;  // These refer to the expected layout
     MemoryBuffer tempOutputBuffer;
     MemoryBufferBuilder bufferBuilder;
@@ -375,16 +444,9 @@ bool LocalDiskRowReader::matches(const char * format, bool streamRemote, IRowRea
     return DiskRowReader::matches(format, streamRemote, otherMapping, otherProviderOptions);
 }
 
-
 bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const FieldFilterArray & _expectedFilter)
 {
-    assertex(providerOptions);
-
-    const IPropertyTree * formatOptions = mapping->queryFormatOptions();
-    grouped = formatOptions->getPropBool("@grouped"); // grouping is a feature of how the underyling byte stream is interpreted => format option
-
-    compressed = providerOptions->getPropBool("@compressed", false);
-    blockcompressed = providerOptions->getPropBool("@blockCompressed", false);
+    bool blockcompressed = providerOptions->getPropBool("@blockCompressed", false);
     bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
 
     logicalFilename.set(_logicalFilename);
@@ -396,81 +458,8 @@ bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFi
     if (providerOptions->hasProp("encryptionKey"))
         providerOptions->getPropBin("encryptionKey", encryptionKey);
 
-
-    try
-    {
-        if (!inputFile->exists())
-            return false;
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e, "DiskReadStage::setInputFile()");
-        e->Release();
+    if (!createInputStream(inputStream, inputfileio, inputFile, providerOptions))
         return false;
-    }
-
-    if (isBinary())
-    {
-        size32_t dfsRecordSize = formatOptions->getPropInt("@recordSize");
-        size32_t fixedDiskRecordSize = actualDiskMeta->getFixedSize();
-        if (dfsRecordSize)
-        {
-            if (fixedDiskRecordSize)
-            {
-                if (grouped)
-                    fixedDiskRecordSize++;
-                if (!((dfsRecordSize == fixedDiskRecordSize) || (grouped && (dfsRecordSize+1 == fixedDiskRecordSize)))) //last for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
-                    throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsRecordSize, logicalFilename.str(), fixedDiskRecordSize);
-
-                if (!compressed && forceCompressed && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE))
-                {
-                    StringBuffer msg;
-                    msg.append("Ignoring compression attribute on file ").append(logicalFilename.str()).append(", which is not published as compressed");
-                    WARNLOG("%s", msg.str());
-                    //MORE: No simple way to do this, unless we are passed an engine context:
-                    //agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, MSGAUD_user, "hthor");
-                    compressed = true;
-                }
-            }
-        }
-        else
-        {
-            if (!compressed && forceCompressed)
-            {
-                if ((fixedDiskRecordSize == 0) || (fixedDiskRecordSize + (grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE))
-                    compressed = true;
-            }
-        }
-    }
-
-    rowcompressed = false;
-    if (compressed)
-    {
-        Owned<IExpander> eexp;
-        if (encryptionKey.length()!=0)
-            eexp.setown(createAESExpander256((size32_t)encryptionKey.length(),encryptionKey.bufferBase()));
-        inputfileio.setown(createCompressedFileReader(inputFile,eexp));
-        if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
-        {
-            inputfileio.setown(inputFile->open(IFOread));
-            if(inputfileio)
-                rowcompressed = true;
-        }
-    }
-    else
-        inputfileio.setown(inputFile->open(IFOread));
-    if (!inputfileio)
-        return false;
-
-    if (length == unknownFileSize)
-    {
-        offset_t filesize = inputfileio->size();
-        assertex(startOffset <= filesize);
-        length = filesize - startOffset;
-    }
-
-    //MORE: Allow a previously created input stream to be reused to avoid reallocating the buffer
-    inputStream.setown(createFileSerialStream(inputfileio, startOffset, length, readBufferSize));
 
     expectedFilter.kill();
     ForEachItemIn(i, _expectedFilter)
@@ -512,7 +501,6 @@ public:
 
 protected:
     virtual bool setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const FieldFilterArray & expectedFilter) override;
-    virtual bool isBinary() const { return true; }
 
     inline bool fieldFilterMatch(const void * buffer)
     {
@@ -549,6 +537,41 @@ BinaryDiskRowReader::BinaryDiskRowReader(IRowReadFormatMapping * _mapping, const
     actualRowPrefetcher.setown(actualDiskMeta->createDiskPrefetcher());
     actualRecord = &actualDiskMeta->queryRecordAccessor(true);
     needToTranslate = (translator && translator->needsTranslate());
+
+    bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
+
+    const IPropertyTree * formatOptions = mapping->queryFormatOptions();
+    size32_t dfsRecordSize = formatOptions->getPropInt("@recordSize");
+    size32_t fixedDiskRecordSize = actualDiskMeta->getFixedSize();
+    if (dfsRecordSize)
+    {
+        if (fixedDiskRecordSize)
+        {
+            //Perform a sanity check on the size of a file containing fixed size records
+            if (grouped)
+                fixedDiskRecordSize++;
+            if (!((dfsRecordSize == fixedDiskRecordSize) || (grouped && (dfsRecordSize+1 == fixedDiskRecordSize)))) //last for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
+                throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsRecordSize, logicalFilename.str(), fixedDiskRecordSize);
+
+            if (!compressed && forceCompressed && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE))
+            {
+                StringBuffer msg;
+                msg.append("Ignoring compression attribute on file ").append(logicalFilename.str()).append(", which is not published as compressed");
+                WARNLOG("%s", msg.str());
+                //MORE: No simple way to do this, unless we are passed an engine context:
+                //agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, MSGAUD_user, "hthor");
+                compressed = true;
+            }
+        }
+    }
+    else
+    {
+        if (!compressed && forceCompressed)
+        {
+            if ((fixedDiskRecordSize == 0) || (fixedDiskRecordSize + (grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE))
+                compressed = true;
+        }
+    }
 }
 
 
@@ -792,7 +815,6 @@ public:
     }
 
 protected:
-    virtual bool isBinary() const { return false; }
     inline bool fieldFilterMatchProjected(const void * buffer)
     {
         if (projectedFilter.numFilterFields())

@@ -38,6 +38,7 @@ const pushSelectionUrl = (parentUrl: string, lineageSelection?: string, selectio
 
 interface MetricsProps {
     wuid: string;
+    targetsRoxie?: boolean;
     querySet?: string;
     queryId?: string;
     parentUrl?: string;
@@ -47,6 +48,7 @@ interface MetricsProps {
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
+    targetsRoxie = false,
     querySet = "",
     queryId = "",
     parentUrl = `/workunits/${wuid}/metrics`,
@@ -68,7 +70,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [matchCase, setMatchCase] = React.useState(false);
 
     React.useEffect(() => {
-        if (wuid) {
+        if (targetsRoxie && wuid) {
             const service = new WorkunitsServiceEx({ baseUrl: "" });
             service.WUAnalyseHotspot({
                 Wuid: wuid,
@@ -90,7 +92,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setHotspots(response.Activities?.Activity?.map(activity => activity.Id).join(",") ?? "");
             }).catch(err => logger.error(err));
         }
-    }, [wuid]);
+    }, [targetsRoxie, wuid]);
 
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");

@@ -45,7 +45,6 @@
 #include "sysinfologger.hpp"
 
 //#define COMPAT
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
 // ======================================================================= Support Functions / Classes
 

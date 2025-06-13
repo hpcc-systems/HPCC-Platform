@@ -41,38 +41,23 @@ interface ISerialInputStream : extends IInterface
     virtual size32_t read(size32_t len, void * ptr) = 0;            // returns size read, result < len does NOT imply end of file
     virtual void skip(size32_t sz) = 0;
     virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
-    virtual bool eos() = 0;                                         // no more data
-    virtual void reset(offset_t _offset, offset_t _flen) = 0;       // input stream has changed - restart reading
+    virtual void reset(offset_t _offset, offset_t _flen) = 0;       // start streaming from a difference section of the input (which may have changed)
+                                                                    // throws an error if the input is not seekable (e.g. socket)
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
 interface IBufferedSerialInputStream : extends ISerialInputStream
 {
-    virtual const void * peek(size32_t wanted, size32_t &got) = 0;   // try and ensure wanted bytes are available.
+    virtual bool eos() = 0;                                         // no more data - will perform a read if necessary
+    virtual const void * peek(size32_t wanted, size32_t &got) = 0;  // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
+                                                                    // null may be returned at eos, but not guaranteed
 };
-/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip
-{
-    for (;;) {
-        const char *s = peek(1,got);
-        if (!s)
-            break;  // eof before nul detected;
-        const char *p = s;
-        const char *e = p+got;
-        while (p!=e) {
-            if (!*p) {
-                out.append(p-s,s);
-                skip(p-s+1); // include nul
-                return;
-            }
-            p++;
-        }
-        out.append(got,s);
-        skip(got);
-    }
-}
-*/
+
+/* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip */
+void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in);
+
 
 interface ISerialOutputStream : extends IInterface
 {
@@ -93,15 +78,20 @@ interface IBufferedSerialOutputStream : extends ISerialOutputStream
 interface ICompressor;
 interface IExpander;
 interface IFileIO;
+class MemoryBuffer;
 
 extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize);
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
+extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);
 extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output);
+
+extern jlib_decl IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target);
+extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target);
 
 
 inline IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, bool threaded)

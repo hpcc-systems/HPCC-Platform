@@ -1172,11 +1172,19 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             multicastTTL = ttlTmp;
 
         bool recordStartupEvents = topology->getPropBool("expert/@recordStartupEvents", false);
-        if (topology->getPropBool("@recordAllEvents", false) || recordStartupEvents)
+        if (topology->getPropBool("expert/@recordAllEvents", false) || recordStartupEvents)
         {
-            const char * recordEventOptions = topology->queryProp("@recordEventOptions");
-            const char * optRecordEventFilename = topology->queryProp("@recordEventFilename");
-            startRoxieEventRecording(recordEventOptions, optRecordEventFilename);
+            const char * recordEventOptions = topology->queryProp("expert/@recordEventOptions");
+            const char * optRecordEventFilename = topology->queryProp("expert/@recordEventFilename");
+            try
+            {
+                startRoxieEventRecording(recordEventOptions, optRecordEventFilename);
+            }
+            catch (IException *E)
+            {
+                OERRLOG(E);
+                E->Release();
+            }
         }
 
         workunitGraphCacheEnabled = topology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);

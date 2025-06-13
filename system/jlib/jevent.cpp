@@ -383,7 +383,16 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
 
     outputFilename.set(filename);
     outputFile.setown(createIFile(filename));
-    output.setown(outputFile->open(IFOcreate));
+    try
+    {
+        output.setown(outputFile->open(IFOcreate));
+    }
+    catch (...)
+    {
+        isStarted = false;
+        isStopped = true;
+        throw;
+    }
 
     Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
     Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);
@@ -849,6 +858,47 @@ void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
         outputStream->put(size, (const byte *)buffer.get() + blockOffset);
     }
     nextWriteOffset += size;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause)
+{
+    StringBuffer defaultOptions;
+    if (isEmptyString(optionsText))
+    {
+        defaultOptions.append("threadid");
+        if (queryTraceManager().isTracingEnabled())
+            defaultOptions.append(",traceid");
+        optionsText = defaultOptions.str();
+    }
+
+    StringBuffer outputFilename;
+    const char * path = filename;
+    if (!isAbsolutePath(filename))
+    {
+        getTempFilePath(outputFilename, "eventrecorder", nullptr);
+        outputFilename.append(PATHSEPCHAR);
+        if (!isEmptyString(filename))
+        {
+            outputFilename.append(filename);
+        }
+        else
+        {
+            //MORE: Revisit this at a later date
+            unsigned seq = (unsigned)(get_cycles_now() % 100000);
+            outputFilename.append(component).append("events.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
+        }
+
+        path = outputFilename.str();
+        //MORE: The caller will need to know the full pathname
+    }
+
+    recursiveCreateDirectoryForFile(path);
+    if (!queryRecorder().startRecording(optionsText, path, pause))
+        return false;
+
+    return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------

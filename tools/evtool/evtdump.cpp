@@ -93,7 +93,6 @@ Structured output would, if represented in a property tree, resemble:
     ├── Header
     |   ├── @filename
     |   ├── @version
-    |   └── ... (other header properties)
     ├── Event
     |   ├── @name
     |   └── ... (other event properties)

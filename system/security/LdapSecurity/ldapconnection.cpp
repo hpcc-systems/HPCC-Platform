@@ -295,7 +295,7 @@ private:
         StringBuffer sb;
         getLdapHost(sb);
         DBGLOG("LDAP host = %s", sb.str());
-        DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
+//        DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
         DBGLOG("m_protocol = %s", m_protocol.str());
         DBGLOG("m_cipherSuite = %s", m_cipherSuite.str());
         DBGLOG("m_basedn = %s", m_basedn.str());
@@ -309,12 +309,12 @@ private:
         DBGLOG("m_view_basedn = %s", m_view_basedn.str());
         DBGLOG("m_workunitscope_basedn = %s", m_workunitscope_basedn.str());
 
-        DBGLOG("m_HPCCAdminUser_username = %s", m_HPCCAdminUser_username.str());
+//         DBGLOG("m_HPCCAdminUser_username = %s", m_HPCCAdminUser_username.str());
 //        DBGLOG("m_HPCCAdminUser_password = %s", m_HPCCAdminUser_password.str());
 
-        DBGLOG("m_sysuser = %s", m_sysuser.str());
-        DBGLOG("m_sysuser_dn = %s", m_sysuser_dn.str());
-        DBGLOG("m_sysuser_commonname = %s", m_sysuser_commonname.str());
+//        DBGLOG("m_sysuser = %s", m_sysuser.str());
+//        DBGLOG("m_sysuser_dn = %s", m_sysuser_dn.str());
+//        DBGLOG("m_sysuser_commonname = %s", m_sysuser_commonname.str());
 //        DBGLOG("m_sysuser_password = %s", m_sysuser_password.str());
         DBGLOG("m_sysuser_basedn = %s", m_sysuser_basedn.str());
         DBGLOG("m_sdfieldname = %s", m_sdfieldname.str());
@@ -556,7 +556,6 @@ public:
         if (nullptr == strstr(adminGrp.str(), "DC=") && nullptr == strstr(adminGrp.str(), "dc="))
             adminGrp.appendf(",%s", m_basedn.str());//add DC (Domain Component)
         LdapUtils::cleanupDn(adminGrp, m_adminGroupDN);
-        PROGLOG("adminGroupName '%s'", m_adminGroupDN.str());
 
         StringBuffer dnbuf;
         cfg->getProp(".//@modulesBasedn", dnbuf);
@@ -1683,7 +1682,7 @@ public:
             {
                 //Create HPCC admin group
                 {
-                    DBGLOG("Adding HPCC Admin group %s", adminGroupName.str());
+                    DBGLOG("Adding HPCC Admin group");
                     try { addGroup(adminGroupName.str(), nullptr, "HPCC Administrators"); }
                     catch(...) {}//group may already exist, so just move on
 
@@ -1691,14 +1690,14 @@ public:
                     const char * pUser = m_ldapconfig->getHPCCAdminUser_username();
                     if (!isEmptyString(pUser))
                     {
-                        DBGLOG("Creating HPCC Admin user %s", pUser);
+                        DBGLOG("Creating HPCC Admin user");
                         Owned<ISecUser> user = new CLdapSecUser(pUser, nullptr);
                         user->credentials().setPassword(m_ldapconfig->getHPCCAdminUser_password());
                         try { addUser(*user.get()); }
                         catch(...) {}//user may already exist, so just move on
 
                         //Add HPCC Admin user to admin group
-                        DBGLOG("Adding HPCC Admin user %s to HPCC Admin group %s", pUser, adminGroupName.str());
+                        DBGLOG("Adding HPCC Admin user to HPCC Admin group");
                         try { changeUserGroup("add", pUser, adminGroupName); }
                         catch(...) {}//user may already be in group so just move on
                     }
@@ -1723,7 +1722,7 @@ public:
             action.m_account_type = GROUP_ACT;
             action.m_allows = SecAccess_Full;
             action.m_denies = 0;
-            DBGLOG("Setting permissions for HPCC Admin group %s", adminGroupName.str());
+            DBGLOG("Setting permissions for HPCC Admin group");
             try { changePermission(action); }
             catch(...) {}//nothing to do here, so just move on
         }
