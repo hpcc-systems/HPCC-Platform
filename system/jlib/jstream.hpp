@@ -66,7 +66,7 @@ extern jlib_decl const char * queryZeroTerminatedString(IBufferedSerialInputStre
 extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBufferedSerialInputStream & in, size32_t & len);
 
 //Return pointers to a list of strings - terminated by a null string
-extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len, size32_t maxMatches = (size32_t)-1);
+extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len);
 
 
 interface ISerialOutputStream : extends IInterface

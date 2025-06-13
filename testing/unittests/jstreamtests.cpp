@@ -925,7 +925,6 @@ public:
 
     static inline unsigned check(const char * testName, offset_t offset, const char * data, size32_t delta)
     {
-        size32_t prime = 1997333137;
         unsigned j = 0;
         for (;;)
         {
@@ -997,7 +996,7 @@ public:
         CPPUNIT_ASSERT(in.eos());
     }
 
-    void testStringListPeek(IBufferedSerialInputStream & in, offset_t minLength)
+    void testStringListPeek(IBufferedSerialInputStream & in)
     {
         offset_t offset = 0;
         std::vector<const char *> matches;
@@ -1050,7 +1049,7 @@ public:
         {
             CCycleTimer timer;
             Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
-            testStringListPeek(*in, minFileLength);
+            testStringListPeek(*in);
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
     }
@@ -1088,7 +1087,7 @@ public:
         {
             CCycleTimer timer;
             Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
-            testStringListPeek(*in, minFileLength);
+            testStringListPeek(*in);
             DBGLOG("File:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
 

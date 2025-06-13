@@ -497,6 +497,8 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
             len = scanned;  // It is not clear what should be returned in this case.
             if (valueOffset == (size32_t)-1)
                 return std::pair(nullptr, nullptr);  // eof before nul detected;
+
+            //a key was found, but no associated value
             return std::pair(start, nullptr);
         }
 
@@ -519,7 +521,7 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
     }
 }
 
-extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len, size32_t maxMatches)
+extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len)
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
