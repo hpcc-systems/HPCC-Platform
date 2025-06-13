@@ -1,3 +1,7 @@
+# HPCC Systems Build Workflows
+
+# Overview 
+This document outlines the Build Workflows of the HPCC Platform. These workflows are executed using GitHub Actions. Specifically, these workflows are facilitated through the build-assets.yml and build-vcpkg.yml algorithim.Both of these YAML files are apllicable for both enterprise and commmunity builds of the HPCC Platform.
 # Purpose
 - Build/Test HPCC Systems components using VCPKG package manager
 
