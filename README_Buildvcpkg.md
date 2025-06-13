@@ -28,6 +28,7 @@ How the workflow proceeds depending on the trigger type:
   - This done through a rigorous test suite including smoke ,UI ,regression, and bundle tests. 
 4. Generate and Upload Artifiacts
 - Package the compiled file into the binarie,Docker format, etc
+- In the build-assets.yml workflow, a build Docker action is executed concurrently for each supported operating system (please see supported platforms below for a comprehensive list of all supported operating systems). Separate versions are constructed for community and internal/enterprise versions. Variables are computed and stored, followed by the build-assets workflow invoking the build-vcpkg workflow which assembles the Docker image and verifies if its production was successful. 
 5.
 - Publish this artifact to the known users/systems
 
