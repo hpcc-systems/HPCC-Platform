@@ -2,6 +2,15 @@
 
 # Overview 
 This document outlines the Build Workflows of the HPCC Platform. These workflows are executed using GitHub Actions. Specifically, these workflows are facilitated through the build-assets.yml and build-vcpkg.yml algorithim.Both of these YAML files are apllicable for both enterprise and commmunity builds of the HPCC Platform.
+
+# Platforms which the build processes support: 
+- Ubuntu 20.04-24.04
+- CentOS 7
+- RockyLinux 8
+- Windows 2019/2022
+- macOS 13/14
+- wasm32-emscripten
+
 # Purpose
 Build-vcpkg: 
 - Validate code changes in pull requests, ensuring new contributions do not break existing functions of the HPCC Platform/main codebase
@@ -17,26 +26,18 @@ Build-assets:
 
 # Steps
 How the workflow proceeds depending on the trigger type:
-1.Trigger Event/Workflow
+# 1.Trigger Event/Workflow
    Both files run on:
    - Pull Requests
    - Tagged releases
    - input from user
-2. Execution
+# 2. Execution
 - Compiles the HPCC Platform across the different Operating Systems supported
-3. Tests run
+# 3. Tests run
   - This tests are important to ensure that the HPCC platform is behaving as expxected and no new pull request have disrupted its functions
   - This done through a rigorous test suite including smoke ,UI ,regression, and bundle tests. 
-4. Generate and Upload Artifiacts
+# 4. Generate and Upload Artifiacts
 - Package the compiled file into the binarie,Docker format, etc
 - In the build-assets.yml workflow, a build Docker action is executed concurrently for each supported operating system (please see supported platforms below for a comprehensive list of all supported operating systems). Separate versions are constructed for community and internal/enterprise versions. Variables are computed and stored, followed by the build-assets workflow invoking the build-vcpkg workflow which assembles the Docker image and verifies if its production was successful. 
-5.
 - Publish this artifact to the known users/systems
 
-# Supported Platforms: 
-- Ubuntu 20.04-24.04
-- CentOS 7
-- RockyLinux 8
-- Windows 2019/2022
-- macOS 13/14
-- wasm32-emscripten
