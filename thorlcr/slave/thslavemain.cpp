@@ -22,8 +22,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "jlib.hpp"
 #include "jcontainerized.hpp"
@@ -139,8 +139,9 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.read(vmajor);
         msg.read(vminor);
         Owned<IGroup> processGroup = deserializeIGroup(msg);
-        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
-        Owned<IPropertyTree> masterGlobalConfig = createPTree(msg);
+        DeserializeContext deserializeContext;
+        Owned<IPropertyTree> masterComponentConfig = createPTree(msg, deserializeContext);
+        Owned<IPropertyTree> masterGlobalConfig = createPTree(msg, deserializeContext);
         mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
         assertex(NotFound != mySlaveNum);
         mySlaveNum++; // 1 based;
@@ -336,7 +337,7 @@ class CReleaseMutex : public CSimpleInterface, public Mutex
 public:
     CReleaseMutex(const char *name) : Mutex(name) { }
     ~CReleaseMutex() { if (owner) unlock(); }
-}; 
+};
 #endif
 
 
@@ -351,7 +352,7 @@ void startSlaveLog()
         lf->setCreateAliasFile(false);
         lf->setName(fileName.str());//override default filename
         logHandler = lf->beginLogging();
-#ifndef _DEBUG 
+#ifndef _DEBUG
         // keep duplicate logging output to stderr to aide debugging
         queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
@@ -398,7 +399,7 @@ int main( int argc, const char *argv[]  )
 
 #ifdef _WIN32
     Owned<CReleaseMutex> globalNamedMutex;
-#endif 
+#endif
 
     globals.setown(createPTree("Thor"));
     unsigned multiThorMemoryThreshold = 0;
@@ -444,7 +445,7 @@ int main( int argc, const char *argv[]  )
             slfEp.set(slave);
             localHostToNIC(slfEp);
         }
-        else 
+        else
             slfEp.setLocalHost(0);
 
         // TBD: use new config/init system for generic handling of init settings vs command line overrides
@@ -558,7 +559,7 @@ int main( int argc, const char *argv[]  )
                 PROGLOG"%d%% disk free\n",pc);
             }
 #endif
-     
+
             multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
             if (multiThorMemoryThreshold) {
                 StringBuffer lgname;
@@ -568,7 +569,7 @@ int main( int argc, const char *argv[]  )
                     Owned<ILargeMemLimitNotify> notify = createMultiThorResourceMutex(lgname.str());
                     setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
                     PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
-                }   
+                }
                 else
                     multiThorMemoryThreshold = 0;
             }
@@ -622,7 +623,7 @@ int main( int argc, const char *argv[]  )
 
         DBGLOG("ThorSlave terminated OK");
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         if (!jobListenerStopped)
             FLLOG(MCexception(e), e,"ThorSlave");

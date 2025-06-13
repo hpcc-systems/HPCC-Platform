@@ -4003,7 +4003,7 @@ public:
                 {
                     // NB: this is non-standard, for situations where the cluster name is not known,
                     // which happens where none has been provided/set to the file descriptor,
-                    // and the file descriptor has been built up of parts with ips. 
+                    // and the file descriptor has been built up of parts with ips.
                     // createClusterInfo will perform a reverse lookup to Dali to try to discover
                     // a group name.
                     cluster = createClusterInfo(
@@ -8433,7 +8433,8 @@ private:
             else
                 return false;
         }
-        Owned<IPropertyTree> pt = createPTree(mb);
+        DeserializeContext deserializeContext;
+        Owned<IPropertyTree> pt = createPTree(mb, deserializeContext);
         Owned<IPropertyTreeIterator> pe = pt->getElements("Node");
         groupdir.set(pt->queryProp("@dir"));
         type = translateGroupType(pt->queryProp("@kind"));
@@ -11398,7 +11399,8 @@ public:
     void iterateFilteredFiles3(CMessageBuffer &mb, StringBuffer &trc)
     {
         TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES3, mb.getSender());
-        Owned<IPropertyTree> request = createPTree(mb);
+        DeserializeContext deserializeContext;
+        Owned<IPropertyTree> request = createPTree(mb, deserializeContext);
         mb.clear();
         iterateFilteredFilesCommon(transactionLog, request, mb, trc);
     }
@@ -11517,7 +11519,7 @@ public:
         mb.read(lname);
         if (version >= 2)
         {
-            unsigned _opts;        
+            unsigned _opts;
             mb.read(_opts);
             opts = static_cast<GetFileTreeOpts>(_opts);
             bool hasUser;
@@ -12125,7 +12127,8 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         else
         {
             verifyex(2 == type); // no other valid possibility
-            ret.setown(createPTree(mb));
+            DeserializeContext deserializeContext;
+            ret.setown(createPTree(mb, deserializeContext));
         }
     }
     else
@@ -12138,7 +12141,10 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
             mb.read(ver);
         }
         if (ver==0)
-            ret.setown(createPTree(mb));
+        {
+            DeserializeContext deserializeContext;
+            ret.setown(createPTree(mb, deserializeContext));
+        }
         else
         {
             CDateTime modified;
@@ -13156,7 +13162,8 @@ class CFileRelationshipIterator: implements IFileRelationshipIterator, public CI
     bool setPT()
     {
         if (idx<num) {
-            pt.setown(createPTree(mb));
+            DeserializeContext deserializeContext;
+            pt.setown(createPTree(mb, deserializeContext));
             addForeignName(*pt,foreigndali,"@primary");
             addForeignName(*pt,foreigndali,"@secondary");
         }

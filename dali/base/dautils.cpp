@@ -1793,12 +1793,14 @@ IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
         pt->setProp(NULL, val);
     }
     if (flags&PAF_HAS_SUB) {
+        DeserializeContext deserializeContext;
         for (;;) {
-            StringAttr name;
-            mb.read(name);
-            if (name.length()==0)
+            deserializeContext.name.clear();
+            mb.read(deserializeContext.name);
+            if (deserializeContext.name.length()==0)
                 break;
-            pt->addPropTree(name.get(),createPTree(mb));
+            deserializeContext.name.clear();
+            pt->addPropTree(deserializeContext.name.str(), createPTree(mb, deserializeContext));
         }
     }
     StringAttr _aname;
@@ -2103,7 +2105,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
             file->removeTree(child);
         }
     }
-    
+
 }
 
 
@@ -2383,7 +2385,7 @@ class CTimedCache
         /* The items are ordered, such that oldest items are at the start.
         This method scans through from oldest to newest until the current
         item's "due" time has not expired. It then removes all up to that
-        point, i.e. those that have expired, and returns the timing 
+        point, i.e. those that have expired, and returns the timing
         difference between now and the next due time. */
         unsigned expired = 0;
         unsigned res = (unsigned)-1;
@@ -3410,11 +3412,11 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
             reload = true;
         }
         unsigned pause = 1000*(30+getRandom()%60);
-        if (timeoutms!=INFINITE) 
+        if (timeoutms!=INFINITE)
             if (pause>timeoutms/2)
                 pause = timeoutms/2;
         Sleep(pause);
-        if (timeoutms!=INFINITE) 
+        if (timeoutms!=INFINITE)
             timeoutms -= pause;
     }
 }

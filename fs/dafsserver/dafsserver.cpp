@@ -1166,7 +1166,7 @@ public:
         if (traceParentChanged)
         {
             // Close existing span if we have one
-            closeRequestSpan(); 
+            closeRequestSpan();
 
             Owned<IProperties> traceHeaders = createProperties();
             traceHeaders->setProp("traceparent", fullTraceContext);
@@ -2704,7 +2704,8 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
     JBASE64_Decode(metaInfoB64.str(), compressedMetaInfoMb);
     MemoryBuffer decompressedMetaInfoMb;
     fastLZDecompressToBuffer(decompressedMetaInfoMb, compressedMetaInfoMb);
-    Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb);
+    DeserializeContext deserializeContext;
+    Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb, deserializeContext);
 
     Owned<IPropertyTree> metaInfo;
 #if defined(_USE_OPENSSL)
@@ -2722,7 +2723,8 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
 
     if (isSigned)
     {
-        metaInfo.setown(createPTree(metaInfoBlob));
+        DeserializeContext deserializeContext;
+        metaInfo.setown(createPTree(metaInfoBlob, deserializeContext));
         const char *keyPairName = metaInfo->queryProp("keyPairName");
         dbgassertex(keyPairName); // because it's signed cannot be missing
         const char *fileGroup = metaInfo->queryProp("group");

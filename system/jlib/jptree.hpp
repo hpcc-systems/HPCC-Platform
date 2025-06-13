@@ -77,6 +77,18 @@ typedef unsigned IPTIteratorCodes;
 extern jlib_decl unsigned queryNumLocalTrees();
 extern jlib_decl unsigned queryNumAtomTrees();
 
+struct DeserializeContext
+{
+    StringBuffer name;
+    StringBuffer value;
+
+    void clear()
+    {
+        name.clear();
+        value.clear();
+    }
+};
+
 interface jlib_decl IPropertyTree : extends serializable
 {
     virtual bool hasProp(const char *xpath) const = 0;
@@ -92,7 +104,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void setProp(const char *xpath, const char *val) = 0;
     virtual void addProp(const char *xpath, const char *val) = 0;
     virtual void appendProp(const char *xpath, const char *val) = 0;
-    
+
     virtual bool getPropBool(const char *xpath, bool dft=false) const = 0;
     virtual void setPropBool(const char *xpath, bool val) = 0;
     virtual void addPropBool(const char *xpath, bool val) = 0;
@@ -144,6 +156,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) = 0;
     virtual bool isArray(const char *xpath=NULL) const = 0;
     virtual unsigned getAttributeCount() const = 0;
+
+    virtual void deserialize(MemoryBuffer &src, DeserializeContext &deserializeContext) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
@@ -234,7 +248,7 @@ jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree
 //Similar to ptree->addProp(name, value) except it ensures the appended item is part of a list.  Ensures that YAML is regenerated correctly.
 jlib_decl void addPTreeItem(IPropertyTree *ptree, const char * name, const char * value);
 
-jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, DeserializeContext &deserializeContext, byte flags=ipt_none);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);

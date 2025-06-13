@@ -232,9 +232,9 @@ public:
     CRemoteTreeBase(MemoryBuffer &mb);
     CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL);
 
-    void deserializeRT(MemoryBuffer &src);
-    virtual void deserializeSelfRT(MemoryBuffer &src);
-    virtual void deserializeChildrenRT(MemoryBuffer &src);
+    void deserializeRT(MemoryBuffer &src, DeserializeContext &deserializeContext);
+    virtual void deserializeSelfRT(MemoryBuffer &src, DeserializeContext &deserializeContext);
+    virtual void deserializeChildrenRT(MemoryBuffer &src, DeserializeContext &deserializeContext);
     virtual bool isOrphaned() const { return false; }
 
     void clearChildren();
@@ -247,7 +247,7 @@ public:
 // PTree overrides
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override = 0;
-    virtual IPropertyTree *create(MemoryBuffer &mb) override = 0;
+    virtual IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) override = 0;
 
 protected: // data
     __int64 serverId;
@@ -587,7 +587,7 @@ public:
         root->Release();
         matchTree->Release();
     }
-    
+
     StringBuffer &getCurrentPath(StringBuffer &out)
     {
         if (!currentChild) return out;

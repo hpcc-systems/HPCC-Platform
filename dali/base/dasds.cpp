@@ -1078,7 +1078,7 @@ public:
     {
         IPropertyTree *deltaTree;
         struct
-        {       
+        {
             void *data;
             unsigned dataLength;
             std::atomic<bool> pendingWrite;
@@ -2444,31 +2444,33 @@ CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
     serverId = 0;
 }
 
-void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
+void CRemoteTreeBase::deserializeRT(MemoryBuffer &src, DeserializeContext &deserializeContext)
 {
-    deserializeSelfRT(src);
-    deserializeChildrenRT(src);
+    deserializeSelfRT(src, deserializeContext);
+    deserializeChildrenRT(src, deserializeContext);
 }
 
-void CRemoteTreeBase::deserializeChildrenRT(MemoryBuffer &src)
+void CRemoteTreeBase::deserializeChildrenRT(MemoryBuffer &src, DeserializeContext &deserializeContext)
 {
-    StringAttr eName;
+    StringBuffer eName;
     for (;;)
     {
         size32_t pos = src.getPos();
+        eName.clear();
         src.read(eName);
         if (!eName.length())
             break;
         src.reset(pos); // reset to re-read tree name
         CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL);
-        child->deserializeRT(src);
+        deserializeContext.clear();
+        child->deserializeRT(src, deserializeContext);
         addPropTree(eName, child);
     }
 }
 
-void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb)
+void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb, DeserializeContext &deserializeContext)
 {
-    deserializeSelf(mb);
+    deserializeSelf(mb, deserializeContext);
     assertex(!isnocase());
     __int64 _serverId;
     mb.read(_serverId);
@@ -2700,7 +2702,7 @@ public:
         return new CServerRemoteTree(name, value, children);
     }
 
-    IPropertyTree *create(MemoryBuffer &mb) override
+    IPropertyTree *create(MemoryBuffer &mb, DeserializeContext &deserializeContext) override
     {
         return new CServerRemoteTree(mb);
     }
@@ -2773,9 +2775,9 @@ public:
         mb.append(STIInfo);
     }
 
-    virtual void deserializeSelfRT(MemoryBuffer &src) override
+    virtual void deserializeSelfRT(MemoryBuffer &src, DeserializeContext &deserializeContext) override
     {
-        CRemoteTreeBase::deserializeSelfRT(src);
+        CRemoteTreeBase::deserializeSelfRT(src, deserializeContext);
         assertex(!isnocase());
         byte STIInfo;
         src.read(STIInfo);
@@ -4012,7 +4014,8 @@ int CSDSTransactionServer::run()
                         }
                         case DAMP_SDSCMD_UPDTENV:
                         {
-                            Owned<IPropertyTree> newEnv = createPTree(mb);
+                            DeserializeContext deserializeContext;
+                            Owned<IPropertyTree> newEnv = createPTree(mb, deserializeContext);
                             bool forceGroupUpdate;
                             mb.read(forceGroupUpdate);
                             StringBuffer response;
@@ -4156,7 +4159,8 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
         if (CPS_Changed & state)
         {
             Owned<PTree> clientTree = new LocalPTree();
-            clientTree->deserializeSelf(mb);
+            DeserializeContext deserializeContext;
+            clientTree->deserializeSelf(mb, deserializeContext);
             __int64 serverId;
             mb.read(serverId);
             byte STIInfo;
@@ -4576,7 +4580,10 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                                 changeTree.setown(LINK(t));
                         }
                         else
-                            changeTree.setown(createPTree(mb));
+                        {
+                            DeserializeContext deserializeContext;
+                            changeTree.setown(createPTree(mb, deserializeContext));
+                        }
                     }
                     if (changeTree && tree->processData(*connection, *changeTree, newIds))
                     { // something commited, if RTM_Create was used need to remember this.
@@ -6504,6 +6511,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             unsigned refP = 0;
             unsigned __int64 refN = refExts.item(refP++);
             bool done = false;
+            DeserializeContext deserializeContext;
             ForEachItemIn(l, legacyFmts)
             {
                 CLegacyFmtItem &itm = legacyFmts.item(l);
@@ -6533,7 +6541,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
                     Owned<IPropertyTree> tree = createPTree("tmp");
                     extHandler->read(itm.name, *tree, mb, true);
                     mb.append(""); // no children
-                    tree.setown(createPTree(mb));
+                    tree.setown(createPTree(mb, deserializeContext));
                     IExternalHandler *extHandlerNew = queryExternalHandler(EF_BinaryValue);
                     extHandlerNew->write(itm.name, *tree);
                     extHandler->remove(itm.name);
@@ -6710,7 +6718,8 @@ inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
     {
         MemoryBuffer mb;
         src.serializeSelfRT(mb, false);
-        dst.deserializeSelfRT(mb);
+        DeserializeContext deserializeContext;
+        dst.deserializeSelfRT(mb, deserializeContext);
     }
     else
         dst.cloneIntoSelf(src, false);

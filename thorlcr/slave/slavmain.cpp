@@ -1885,7 +1885,8 @@ public:
                             querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
                         }
 
-                        Owned<IPropertyTree> workUnitInfo = createPTree(msg);
+                        DeserializeContext deserializeContext;
+                        Owned<IPropertyTree> workUnitInfo = createPTree(msg, deserializeContext);
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
 
@@ -1909,7 +1910,7 @@ public:
                             enableThorSlaveAsDaliClient();
                         }
 
-                        Owned<IPropertyTree> deps = createPTree(msg);
+                        Owned<IPropertyTree> deps = createPTree(msg, deserializeContext);
 
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, slaveMsgTag);
                         job->setXGMML(deps);
@@ -2326,7 +2327,7 @@ public:
         }
         write();
     }
-    
+
 // IFileInProgressHandler
     virtual void add(const char *fip)
     {

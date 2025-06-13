@@ -62,7 +62,7 @@ std::atomic<unsigned __int64> reopenedDelay = 0;
 
 class DECL_EXCEPTION NotYetOpenException : implements IException, public CInterface
 {
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return 0; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("not yet open"); }
@@ -126,7 +126,7 @@ public:
 #endif
         lastAccess = 0;
     }
-    
+
     ~CRoxieLazyFileIO()
     {
         setFailure(); // ensures the open file count properly maintained
@@ -173,7 +173,7 @@ public:
             currentIdx = 0;
             _checkOpen();
         }
-        copying = _copying; 
+        copying = _copying;
     }
     virtual void dump() const
     {
@@ -186,12 +186,12 @@ public:
     }
     virtual bool isCopying() const
     {
-        return copying; 
+        return copying;
     }
 
-    virtual bool isOpen() const 
+    virtual bool isOpen() const
     {
-        return open; 
+        return open;
     }
 
     virtual unsigned __int64 getLastAccessed() const
@@ -222,14 +222,14 @@ public:
             current.set(&failure);
             open = false;
         }
-        catch (IException *E) 
+        catch (IException *E)
         {
             if (doTrace(traceRoxieFiles))
             {
                 StringBuffer s;
                 DBGLOG("setFailure ignoring exception %s from IFileIO close", E->errorMessage(s).str());
             }
-            E->Release(); 
+            E->Release();
         }
     }
 
@@ -357,7 +357,7 @@ public:
         }
     }
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data) 
+    virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
@@ -410,8 +410,8 @@ public:
             active->flush();
     }
 
-    virtual offset_t size() 
-    { 
+    virtual offset_t size()
+    {
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
         lastAccess = nsTick();
@@ -529,11 +529,11 @@ public:
         return false;
     }
 
-    virtual IFile *querySource() 
+    virtual IFile *querySource()
     {
         CriticalBlock b(crit);
         _checkOpen();
-        return &sources.item(currentIdx); 
+        return &sources.item(currentIdx);
     };
     virtual IFile *queryTarget() { return logical; }
 
@@ -723,7 +723,7 @@ public:
     {
         // NOTE: single-threaded
         // It's unfortunate that this is done by sorting the entire set, as it means we can't say
-        // "limit the result to most recent N bytes", where N is what is being reported as hot by the OS. 
+        // "limit the result to most recent N bytes", where N is what is being reported as hot by the OS.
         // Though it's debatable whether such a limit would be useful given the way accounting is done, allocating
         // cache usage to the first pod to request a given page.
 
@@ -938,7 +938,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             // A temporary fix - files stored on azure don't have an accurate time stamp, so treat them as up to date.
             if (isUrl(f->queryFilename()))
                 return FileIsValid;
-            if (modified.isNull()) 
+            if (modified.isNull())
                 return FileIsValid;
             CDateTime mt;
             if (f->getTime(NULL, &mt, NULL))
@@ -1344,7 +1344,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 OERRLOG("Dest directory %s does not exist", destPath.str());
                 return false;
             }
-            
+
             const char *msg = background ? "Background copy" : "Copy";
             return doCopyFile(f, targetFilename, destPath.str(), msg, copyFlags);
         }
@@ -1370,7 +1370,7 @@ public:
             if (cacheTrackSize == (offset_t) -1)
             {
                 const char *memLimit = nullptr;
-#ifdef __linux__                        
+#ifdef __linux__
                 StringBuffer contents;
                 try
                 {
@@ -1546,7 +1546,7 @@ public:
                         EXCLOG(MCoperatorError, E, "Roxie background copy: ");
                         E->Release();
                     }
-                    catch (...) 
+                    catch (...)
                     {
                         EXCLOG(MCoperatorError, "Unknown exception in Roxie background copy");
                     }
@@ -1572,7 +1572,7 @@ public:
                 EXCLOG(MCoperatorError, E, "Roxie background copy: ");
             E->Release();
         }
-        catch (...) 
+        catch (...)
         {
             IERRLOG("Unknown exception in background copy thread");
         }
@@ -1607,8 +1607,8 @@ public:
                     unsigned newReopened = filesReopened - lastFilesReopened;
                     if (newReopened)
                     {
-                        DBGLOG("%u files reopened in last %u seconds (average closed time %" I64F "u ms)", 
-                               newReopened, (now - lastReopenReport)/1000, 
+                        DBGLOG("%u files reopened in last %u seconds (average closed time %" I64F "u ms)",
+                               newReopened, (now - lastReopenReport)/1000,
                                nanoToMilli((reopenedDelay - lastReopenedDelay)/newReopened));
                         lastFilesReopened = filesReopened;
                         lastReopenedDelay = reopenedDelay;
@@ -1679,7 +1679,7 @@ public:
                 EXCLOG(MCoperatorError, E, "Roxie handle closer: ");
             E->Release();
         }
-        catch (...) 
+        catch (...)
         {
             IERRLOG("Unknown exception in handle closer thread");
         }
@@ -1922,7 +1922,7 @@ public:
                         case ROXIE_KEY:
                             fileErrorList.setValue(lfn, "Key");
                             break;
-                        
+
                         case ROXIE_FILE:
                             fileErrorList.setValue(lfn, "File");
                             break;
@@ -2124,7 +2124,7 @@ public:
                 f.close();
             }
         }
-        unsigned numFilesLeft = goers.ordinality(); 
+        unsigned numFilesLeft = goers.ordinality();
         if (numFilesLeft > openLimit)
         {
             goers.sort(CRoxieLazyFileIO::compareAccess);
@@ -2163,7 +2163,7 @@ public:
                     const char *thisName = iter->query().queryFilename();
                     flushUnusedDirectories(origBaseDir, thisName, xml);
                 }
-                
+
                 if (stricmp(origBaseDir, directory) != 0)
                 {
                     try
@@ -2759,7 +2759,7 @@ protected:
         globalPackageSetManager->requestReload(false, false, false);
     }
 
-    // We cache all the file maps/arrays etc here. 
+    // We cache all the file maps/arrays etc here.
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
     mutable PerChannelCacheOf<IInMemoryIndexManager> indexMap;
@@ -3186,7 +3186,7 @@ public:
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
                         size32_t blockedIOSize = 0;
-                        if (fdesc) // NB there may be no parts for this channel 
+                        if (fdesc) // NB there may be no parts for this channel
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
                             if (pdesc)
@@ -3523,7 +3523,10 @@ public:
                 bool propertiesPresent;
                 serverData.read(propertiesPresent);
                 if (propertiesPresent)
-                    properties.setown(createPTree(serverData, ipt_lowmem));
+                {
+                    DeserializeContext deserializeContext;
+                    properties.setown(createPTree(serverData, deserializeContext, ipt_lowmem));
+                }
             }
             else
                 throw MakeStringException(ROXIE_CALLBACK_ERROR, "Failed to get response from server for dynamic file callback");
@@ -3663,7 +3666,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 
 MODULE_EXIT()
-{ 
+{
     auto cleanup = [](CRoxieFileCache *cache)
     {
         cache->join();
