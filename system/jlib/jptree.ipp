@@ -771,6 +771,7 @@ private:
     void replaceSelf(IPropertyTree *val);
     IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val, bool alwaysUseArray);
     void addPTreeArrayItem(IPropertyTree *peer, const char *xpath, PTree *val, aindex_t pos = (aindex_t) -1);
+    void readNullTerminatedStringFromStream(IBufferedSerialInputStream &src, size32_t length, MemoryAttr &buffer);
 
 protected: // data
     /* NB: the order of the members here is important to reduce the size of the objects, because very large numbers of these are created.

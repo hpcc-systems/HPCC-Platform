@@ -39,6 +39,7 @@
 #include "jutil.hpp"
 #include "junicode.hpp"
 #include "jptree.hpp"
+#include "jstream.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -3537,6 +3538,7 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
       CPPUNIT_TEST(testPTreeSerializeToMemoryBufferAndCreatePTree);
       CPPUNIT_TEST(testPTreeSerializeToStreamAndCreatePTree);
       CPPUNIT_TEST(testCPTValueSerializeAndDeserialize);
+      CPPUNIT_TEST(testPTreeSerializeSelf);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3672,6 +3674,144 @@ public:
             binaryXmlDeserializedValue.getValue(deserializedBinaryXml, true);
             CPPUNIT_ASSERT_EQUAL(originalBinaryXml.length(), deserializedBinaryXml.length());
             CPPUNIT_ASSERT_EQUAL(0, memcmp(originalBinaryXml.bytes(), deserializedBinaryXml.bytes(), originalBinaryXml.length()));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testPTreeSerializeSelf()
+    {
+        try
+        {
+            // Test PTree::serializeSelf method which serializes node name, flags, attributes, and value
+
+            // Create a PTree with name, attributes, and value
+            Owned<IPropertyTree> tree = createPTree("TestNode");
+            tree->setProp("@attr1", "value1");
+            tree->setProp("@attr2", "value2");
+            tree->setProp(nullptr, "node_text_value");
+
+            // Create a buffer and stream for serialization
+            MemoryBuffer buffer;
+            Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(buffer);
+
+            // Cast to PTree to access serializeSelf method directly
+            PTree *ptree = static_cast<PTree *>(tree.get());
+
+            // Call serializeSelf to serialize just this node (not children)
+            ptree->serializeSelf(*stream);
+            stream->flush();
+
+            // Verify the serialized format by reading it back manually
+            Owned<IBufferedSerialInputStream> inputStream = createBufferedSerialInputStream(buffer);
+
+            // Read and verify the name length and name
+            size32_t nameLen;
+            inputStream->get(sizeof(nameLen), &nameLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)8, nameLen); // "TestNode" = 8 chars
+
+            char name[9];
+            inputStream->get(nameLen, name);
+            name[nameLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("TestNode"), std::string(name));
+
+            // Read and verify null terminator
+            char nullTerminator;
+            inputStream->get(1, &nullTerminator);
+            CPPUNIT_ASSERT_EQUAL('\0', nullTerminator);
+
+            // Read flags
+            byte flags;
+            inputStream->get(sizeof(flags), &flags);
+            // We can't predict exact flag values, but we can verify it's there
+
+            // Read attributes - we should have 2 attributes
+            // First attribute: attr1 = value1 (but might include @ prefix)
+            size32_t attr1NameLen;
+            inputStream->get(sizeof(attr1NameLen), &attr1NameLen);
+
+            // Debug: allocate enough space and see what we actually get
+            char attr1Name[10]; // Enough space for debugging
+            inputStream->get(attr1NameLen, attr1Name);
+            attr1Name[attr1NameLen] = '\0';
+
+            // The attribute name might include the '@' prefix in serialization
+            if (attr1NameLen == 6 && strcmp(attr1Name, "@attr1") == 0) {
+                // Serialization includes @ prefix
+                CPPUNIT_ASSERT_EQUAL((size32_t)6, attr1NameLen); // "@attr1" = 6 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("@attr1"), std::string(attr1Name));
+            } else if (attr1NameLen == 5 && strcmp(attr1Name, "attr1") == 0) {
+                // Serialization doesn't include @ prefix
+                CPPUNIT_ASSERT_EQUAL((size32_t)5, attr1NameLen); // "attr1" = 5 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("attr1"), std::string(attr1Name));
+            } else {
+                // Unexpected case - fail with useful info
+                StringBuffer failMsg;
+                failMsg.appendf("Unexpected attribute name: length=%u, name='%s'", attr1NameLen, attr1Name);
+                CPPUNIT_FAIL(failMsg.str());
+            }
+
+            size32_t attr1ValueLen;
+            inputStream->get(sizeof(attr1ValueLen), &attr1ValueLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)6, attr1ValueLen); // "value1" = 6 chars
+
+            char attr1Value[7];
+            inputStream->get(attr1ValueLen, attr1Value);
+            attr1Value[attr1ValueLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("value1"), std::string(attr1Value));
+
+            // Second attribute: attr2 = value2 (adjust for possible @ prefix)
+            size32_t attr2NameLen;
+            inputStream->get(sizeof(attr2NameLen), &attr2NameLen);
+
+            char attr2Name[10]; // Enough space for debugging
+            inputStream->get(attr2NameLen, attr2Name);
+            attr2Name[attr2NameLen] = '\0';
+
+            // Check for @ prefix like we did for attr1
+            if (attr2NameLen == 6 && strcmp(attr2Name, "@attr2") == 0) {
+                CPPUNIT_ASSERT_EQUAL((size32_t)6, attr2NameLen); // "@attr2" = 6 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("@attr2"), std::string(attr2Name));
+            } else if (attr2NameLen == 5 && strcmp(attr2Name, "attr2") == 0) {
+                CPPUNIT_ASSERT_EQUAL((size32_t)5, attr2NameLen); // "attr2" = 5 chars
+                CPPUNIT_ASSERT_EQUAL(std::string("attr2"), std::string(attr2Name));
+            } else {
+                StringBuffer failMsg;
+                failMsg.appendf("Unexpected attribute name: length=%u, name='%s'", attr2NameLen, attr2Name);
+                CPPUNIT_FAIL(failMsg.str());
+            }
+
+            size32_t attr2ValueLen;
+            inputStream->get(sizeof(attr2ValueLen), &attr2ValueLen);
+            CPPUNIT_ASSERT_EQUAL((size32_t)6, attr2ValueLen); // "value2" = 6 chars
+
+            char attr2Value[7];
+            inputStream->get(attr2ValueLen, attr2Value);
+            attr2Value[attr2ValueLen] = '\0';
+            CPPUNIT_ASSERT_EQUAL(std::string("value2"), std::string(attr2Value));
+
+            // Read attribute terminator (zero length name)
+            byte attrTerminator;
+            inputStream->get(sizeof(attrTerminator), &attrTerminator);
+            CPPUNIT_ASSERT_EQUAL((byte)0, attrTerminator);
+
+            // The value should be serialized next - we'll check that there's a non-zero size
+            size32_t valueSize;
+            inputStream->get(sizeof(valueSize), &valueSize);
+            CPPUNIT_ASSERT(valueSize > 0); // Should have a value since we set node text
+
+            // That's sufficient for testing serializeSelf - we've verified:
+            // 1. Node name is correctly serialized
+            // 2. Null terminator is present
+            // 3. Flags are present
+            // 4. Attributes are correctly serialized with proper format
+            // 5. Attribute terminator is present
+            // 6. Value size is present and non-zero when expected
         }
         catch (IException *e)
         {

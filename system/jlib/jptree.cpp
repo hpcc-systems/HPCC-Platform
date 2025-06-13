@@ -1299,6 +1299,9 @@ PTree::PTree(byte _flags, IPTArrayValue *_value, ChildMap *_children)
     flags = _flags;
     children = LINK(_children);
     value = _value;
+    arrayOwner = nullptr;
+    attrs = nullptr;
+    numAttrs = 0;
 }
 
 PTree::~PTree()
@@ -3033,7 +3036,7 @@ void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt) const
         }
         while (aIter->next());
     }
-    size32_t zero = 0;
+    byte zero = 0;
     tgt.put(sizeof(zero), &zero); // attribute terminator. i.e. blank attr name length.
 }
 
@@ -3045,6 +3048,7 @@ void PTree::serializeSelf(IBufferedSerialOutputStream &tgt) const
 
     tgt.put(sizeof(nameLen), &nameLen);
     tgt.put(nameLen, name);
+    tgt.put(1, "\0");
     tgt.put(sizeof(flags), &flags);
     serializeAttributes(tgt);
     if (value)
@@ -3083,10 +3087,18 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::readNullTerminatedStringFromStream(IBufferedSerialInputStream &src, size32_t length, MemoryAttr &buffer)
+{
+    buffer.allocate(length + 1);
+    src.get(length, buffer.bufferBase());
+    static_cast<char *>(buffer.bufferBase())[length] = 0;
+}
+
 void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
 {
     deserializeSelfFromStream(src);
 
+    MemoryAttr nameBuffer;
     for (;;)
     {
         offset_t pos = src.tell();
@@ -3095,14 +3107,10 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
         if (nameLength == 0)
             break;
 
-        char *nameBuffer = (char *)checked_malloc(nameLength + 1, -4);
-        src.get(nameLength, nameBuffer);
-        nameBuffer[nameLength] = 0;
-
+        readNullTerminatedStringFromStream(src, nameLength, nameBuffer);
         src.reset(pos, (offset_t)-1);
         IPropertyTree *child = create(src);
-        addPropTree(nameBuffer, child);
-        free(nameBuffer);
+        addPropTree(static_cast<const char *>(nameBuffer.bufferBase()), child);
     }
 }
 
@@ -3112,13 +3120,9 @@ void PTree::deserializeSelfFromStream(IBufferedSerialInputStream &src)
     src.get(sizeof(nameLength), &nameLength);
     if (nameLength > 0)
     {
-        char *nameBuffer = (char *)checked_malloc(nameLength + 1, -4);
-        src.get(nameLength, nameBuffer);
-        nameBuffer[nameLength] = 0;
-
-        setName(nameBuffer);
-
-        free(nameBuffer);
+        MemoryAttr nameBuffer;
+        readNullTerminatedStringFromStream(src, nameLength, nameBuffer);
+        setName(static_cast<const char *>(nameBuffer.bufferBase()));
     }
     else
         setName(NULL);
@@ -3132,20 +3136,16 @@ void PTree::deserializeSelfFromStream(IBufferedSerialInputStream &src)
         if (attrNameLength == 0)
             break;
 
-        char * attrNameBuffer = (char *)checked_malloc(attrNameLength + 1, -4);
-        src.get(attrNameLength, attrNameBuffer);
-        attrNameBuffer[attrNameLength] = 0;
+        MemoryAttr attrNameBuffer;
+        readNullTerminatedStringFromStream(src, attrNameLength, attrNameBuffer);
 
         size32_t attrValueLength;
         src.get(sizeof(attrValueLength), &attrValueLength);
-        char * attrValueBuffer = (char *)checked_malloc(attrValueLength + 1, -4);
-        src.get(attrValueLength, attrValueBuffer);
-        attrValueBuffer[attrValueLength] = 0;
 
-        setProp(attrNameBuffer, attrValueBuffer);
+        MemoryAttr attrValueBuffer;
+        readNullTerminatedStringFromStream(src, attrValueLength, attrValueBuffer);
 
-        free(attrNameBuffer);
-        free(attrValueBuffer);
+        setProp(static_cast<const char *>(attrNameBuffer.bufferBase()), static_cast<const char *>(attrValueBuffer.bufferBase()));
     }
 
     size32_t size;
