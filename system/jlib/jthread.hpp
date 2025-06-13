@@ -63,7 +63,7 @@ interface jlib_decl IThread : public IInterface
     virtual int run() = 0;
 };
 
-interface jlib_decl IThreadName 
+interface jlib_decl IThreadName
 {
     virtual const char *get()=0;
 };
@@ -146,10 +146,10 @@ public:
     void captureThreadLoggingInfo();                // Capture current thread logging context to be used by this thread when started
 
     virtual void start(bool inheritThreadContext);
-    virtual void startRelease();        
+    virtual void startRelease();
 
     StringBuffer &getInfo(StringBuffer &str);
-    const char *getLogInfo(int &thandle,unsigned &tid) { 
+    const char *getLogInfo(int &thandle,unsigned &tid) {
 #ifdef _WIN32
         thandle = (int)(memsize_t)hThread;
 #elif defined __FreeBSD__ || defined __APPLE__
@@ -158,7 +158,7 @@ public:
         thandle = (int)threadid;
 #endif
         tid = tidlog;
-        return getName(); 
+        return getName();
     }
 
     // run method not implemented - concrete derived classes must do so
@@ -277,8 +277,8 @@ typedef unsigned PooledThreadHandle;
 interface IThreadPool : extends IInterface
 {
         virtual PooledThreadHandle start(void *param)=0;    // starts a new thread reuses stopped pool entries
-        virtual PooledThreadHandle start(void *param,const char *name)=0;   // starts a new thread reuses stopped pool entries 
-        virtual PooledThreadHandle start(void *param,const char *name,unsigned timeout)=0;  // starts a new thread reuses stopped pool entries, throws exception if can't start within timeout 
+        virtual PooledThreadHandle start(void *param,const char *name)=0;   // starts a new thread reuses stopped pool entries
+        virtual PooledThreadHandle start(void *param,const char *name,unsigned timeout)=0;  // starts a new thread reuses stopped pool entries, throws exception if can't start within timeout
         virtual bool stop(PooledThreadHandle handle)=0;     // initiates stop on specified thread (may return false)
         virtual bool stopAll(bool tryall=false)=0;          // initiates stop on all threads, if tryall continues even if one or more fails
         virtual bool join(PooledThreadHandle handle,unsigned timeout=INFINITE)=0;
@@ -291,6 +291,7 @@ interface IThreadPool : extends IInterface
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual void setNiceValue(int value) = 0;                    // set priority for thread
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
+        virtual void setPoolSize(unsigned newPoolSize) = 0;           // set the maximum number of threads in the pool
 };
 
 extern jlib_decl IThreadPool *createThreadPool(
@@ -302,7 +303,7 @@ extern jlib_decl IThreadPool *createThreadPool(
                                 unsigned delay=1000,        // maximum delay on each block
                                 unsigned stacksize=0,       // stack size (bytes) 0 is default
                                 unsigned timeoutOnRelease=INFINITE, // maximum time waited for thread to terminate on releasing pool
-                                unsigned targetpoolsize=0           // target maximum size of pool (default same as defaultmax)   
+                                unsigned targetpoolsize=0           // target maximum size of pool (default same as defaultmax)
                              );
 
 extern jlib_decl unsigned getThreadCount();
@@ -364,6 +365,7 @@ public:
 private:
     void dostart(unsigned seconds);
     void dostop();
+    virtual void setPoolSize(unsigned newPoolSize) { UNIMPLEMENTED;}
 };
 
 //--------------------------------------------------------
