@@ -7,6 +7,7 @@ Build-vcpkg:
 - Validate code changes in pull requests, ensuring new contributions do not break existing functions of the HPCC Platform/main codebase
 - Ensuring the HPCC Platform can compile and perform on a variety of different operating systems's/architecures
 - A main part of this is due to running a test suite(a series of tests for the HPCC-Platform)
+
 Build-assets:
 - To automate the release process when a version tag is pushed to the Github
 - This release process is a set of actions where the HPCC platform is compiled using through production configurations based on the OS
