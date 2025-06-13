@@ -1446,7 +1446,8 @@ int CHttpRequest::parseFirstLine(char* oneline)
 {
     //if (getEspLogLevel()>LogNormal)
     //  DBGLOG("First Line of request=%s", oneline);
-    DBGLOG("HTTP First Line: %s", oneline);
+    if (doTrace(traceHttp))
+        DBGLOG("HTTP First Line: %s", oneline);
 
     if(*oneline == 0)
         return -1;

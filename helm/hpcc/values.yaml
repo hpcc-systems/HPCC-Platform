@@ -643,6 +643,36 @@ esp:
 #  trustClients:
 #  - commonName: rabc.example.com
 
+  # Logging output can be controlled in three main ways.
+  #
+  # First are the platform standard settings explained in helm/examples/logging
+  # The example below shows the format with the default ESP filter settings.
+  # logging:
+  #   detail: 80        # includes all detail <= 80, debug message threshold
+  #   classes: "ALL"    # all message classes included
+  #   audiences: "ALL"  # all message audiences included
+  #
+  # Second are tracing and feature tracing settings. These allow you to set a simplified detail
+  # filter in addition to toggling messages about specific kinds of activity like HTTP transactions.
+  # They are explained in detail in helm/examples/esp. The example below shows how to enable
+  # detailed HTTP messages.
+  # traceFlags:
+  #   traceHTTP: true
+  #
+  # Third are legacy ESP settings for messages that haven't yet been migrated to use the preferred
+  # settings in the first two categories.
+  #   * logLevel - Filters messages before sending to standard logging. Only applies to `ESPLOG` messages.
+  #   * logRequests - Specifies when to log incoming HTTP request payloads. Accepted values are:
+  #       "all"/"true" : logs all requests
+  #       "never" : does not log any requests
+  #       "only-ones-with-issues" : logs requests when an exception is thrown or the processing time
+  #          exceeds the configurable `slowProcessingTime` property (which defaults to 30 seconds).
+  #   * logResponses - Toggles logging of HTTP response payloads
+  # Following are examples showing the default values.
+  # logLevel: 8 # 1-10, 8 is the default.
+  # logRequests: "never" # default is never
+  # logResponses: false # default is false
+
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
     port: 8888

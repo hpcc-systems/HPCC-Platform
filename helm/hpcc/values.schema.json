@@ -1715,6 +1715,10 @@
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
+        },
+        "traceFlags": {
+          "type": "object",
+          "additionalProperties": { "type": ["integer", "boolean"] }
         }
       }
     },
