@@ -18,11 +18,6 @@
 #include "evtool.hpp"
 #include "eventdump.h"
 #include "jevent.hpp"
-#include "jfile.hpp"
-#include "jptree.hpp"
-#include "jstring.hpp"
-#include <map>
-#include <set>
 
 // Connector between the CLI and the logic of dumping an event file's data as text.
 class CEvtDumpCommand : public TEventConsumingCommand<CDumpEventsOp>

@@ -169,6 +169,24 @@ void CEvToolCommand::usageDetails(IBufferedSerialOutputStream& out)
 {
 }
 
+IPTree* CEvToolCommand::loadConfiguration(const char* path) const
+{
+    Owned<IPTree> tree;
+    StringBuffer markup;
+    markup.loadFile(path);
+    if (markup.isEmpty())
+        throw makeStringExceptionV(-1, "failed to load configuration '%s'", path);
+    if (markup.charAt(0) == '<') // looks like XML
+        tree.setown(createPTreeFromXMLString(markup));
+    else if (markup.charAt(0) == '{') // looks like JSON
+        tree.setown(createPTreeFromJSONString(markup));
+    else // assume YAML
+        tree.setown(createPTreeFromYAMLString(markup));
+    if (!tree)
+        throw makeStringExceptionV(-1, "invalid configuration '%s'", path);
+    return tree.getClear();
+}
+
 namespace
 {
     static Owned<IBufferedSerialOutputStream> out;
@@ -252,6 +270,11 @@ void CEvtCommandGroup::usage(int argc, const char* argv[], int pos, IBufferedSer
         cmd->usage(2, &args.at(0), pos + 1, out);
         out.put(1, "\n");
     }
+}
+
+CEvtCommandGroup::CEvtCommandGroup(CmdMap& _commands)
+    : commands(_commands)
+{
 }
 
 CEvtCommandGroup::CEvtCommandGroup(CmdMap&& _commands)

@@ -20,17 +20,15 @@
 #include "eventconsumption.h"
 #include "eventvisitor.h"
 
-// Extension of IEventAttributeVisitor that supports filtering of visited files and events. Implementations
-// will decorate another visitor, forwarding all visits not blocked by the specified constraints to
-// the decorated visitor.
+// Extension of IEventVisitationLink that supports filtering of visited events. Implementations
+// expect to be linked to another visitor, forwarding all visits not blocked by the specified
+// constraints to the next linked visitor.
 //
-// A file blocked by a version constraint must visit and immediately depart the file.
+// An event blocked by a type or context constraint must not be forwarded to the next chained visitor.
 //
-// An event blocked by a type or context constraint must not be forwarded to the decorated visitor.
-//
-// An event blocked by an attribute constraint must not be forwarded to the decorated visitor.
+// An event blocked by an attribute constraint must not be forwarded to the next chained visitor.
 // Events that do not include a constrained attribute are not blocked.
-interface IEventFilter : extends IEventVisitorDecorator
+interface IEventFilter : extends IEventVisitationLink
 {
     // Filter on a single event type. All events are accepted by default.
     virtual bool acceptEvent(EventType type) = 0;

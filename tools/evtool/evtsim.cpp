@@ -17,7 +17,6 @@
 
 #include "evtool.hpp"
 #include "jevent.hpp"
-#include "jfile.hpp"
 #include "jptree.hpp"
 #include "jstream.hpp"
 
@@ -37,31 +36,20 @@ class CSimulateEventsOp
 public:
     bool ready() const
     {
-        return !inputPath.isEmpty();
+        return input != nullptr;
     }
 
     // Perform the requested action.
     bool doOp()
     {
-        Owned<IPTree> tree;
-        StringBuffer markup;
-        markup.loadFile(inputPath);
-        if (markup.isEmpty())
-            throw makeStringException(-1, "failed to load configuration");
-        if (markup.charAt(0) == '<') // looks like XML
-            tree.setown(createPTreeFromXMLString(markup));
-        else // assume YAML
-            tree.setown(createPTreeFromYAMLString(markup));
-        if (!tree)
-            throw makeStringException(-1, "invalid configuration");
-        const char* name = tree->queryProp("@name");
+        const char* name = input->queryProp("@name");
         if (!name)
             throw makeStringException(-1, "missing binary output file name");
-        const char* options = tree->queryProp("@options");
+        const char* options = input->queryProp("@options");
         EventRecorder& recorder = queryRecorder();
         if (!recorder.startRecording(options, name, false))
             throw makeStringException(-1, "failed to start event recording");
-        Owned<IPTreeIterator> it = tree->getElements("Event");
+        Owned<IPTreeIterator> it = input->getElements("Event");
         ForEach(*it)
         {
             const IPTree& evt = it->query();
@@ -183,20 +171,27 @@ public:
         return true;
     }
 
-    void setInputPath(const char* path)
+    void setInput(const IPTree* _input)
     {
-        inputPath.set(path);
+        input.setown(_input);
     }
 
 protected:
-    StringAttr inputPath;
+    Owned<const IPTree> input;
 };
 
-// Extension of TEvtCLIConnector responsible for the creation of user configured events. No
-// additional operation options are supported.
+// Extension of TEvtCLIConnector responsible for the creation of user configured events. One
+// parameter is accepted, the full path to an XML/JSON/YAML file containing the event
+// specifications.
 class CEvtSimCommand : public TEvtCLIConnector<CSimulateEventsOp>
 {
 public:
+    virtual bool acceptParameter(const char* parameter) override
+    {
+        op.setInput(loadConfiguration(parameter));
+        return true;
+    }
+
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         CEvToolCommand::usageSyntax(argc, argv, pos, out);
@@ -211,7 +206,7 @@ R"!!!([options] <filename>
     {
         static const char* usageStr = R"!!!(
 Create a binary event file containing the events specified in an external
-configuration file. The configuration may use either XML or YAML formats.
+configuration file. The configuration may be either XML, JSON, or YAML markup.
 )!!!";
         static size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
@@ -221,7 +216,7 @@ configuration file. The configuration may use either XML or YAML formats.
     {
         static const char* usageStr = R"!!!(
 Parameters:
-    <filename>                Full path to an XML or YAML file containing
+    <filename>                Full path to an XML/JSON/YAML file containing
                               simulated event specifications.
 )!!!";
         static size32_t usageStrLength = size32_t(strlen(usageStr));

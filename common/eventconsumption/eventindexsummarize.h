@@ -23,7 +23,7 @@
 
 class event_decl CIndexFileSummary : public IEventVisitor, public CEventConsumingOp
 {
-public: // IEventAttributeVisitor
+public: // IEventVisitor
     virtual bool visitFile(const char *filename, uint32_t version) override;
     virtual bool visitEvent(CEvent& event) override;
     virtual void departFile(uint32_t bytesRead) override;
