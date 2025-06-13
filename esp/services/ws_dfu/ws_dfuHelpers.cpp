@@ -20,15 +20,6 @@
 
 #include "ws_dfuHelpers.hpp"
 
-bool WsDFUHelpers::addDFUQueryFilter(DFUQResultField* filters, unsigned short& count, MemoryBuffer& buff, const char* value, DFUQResultField name)
-{
-    if (isEmptyString(value))
-        return false;
-    filters[count++] = name;
-    buff.append(value);
-    return true;
-}
-
 void WsDFUHelpers::appendDFUQueryFilter(const char* name, DFUQFilterType type, const char* value, StringBuffer& filterBuf)
 {
     if (isEmptyString(name) || isEmptyString(value))
@@ -59,7 +50,7 @@ const char* WsDFUHelpers::getPrefixFromLogicalName(const char* logicalName, Stri
 
 bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
 {
-    const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
+    const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQResultField::name));
     if (isEmptyString(logicalName))
         return false;
 
@@ -67,15 +58,15 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
     {
         Owned<IEspDFULogicalFile> lFile = createDFULogicalFile();
         lFile->setName(logicalName);
-        lFile->setOwner(file.queryProp(getDFUQResultFieldName(DFUQRFowner)));
+        lFile->setOwner(file.queryProp(getDFUQResultFieldName(DFUQResultField::owner)));
 
-        StringBuffer buf(file.queryProp(getDFUQResultFieldName(DFUQRFtimemodified)));
+        StringBuffer buf(file.queryProp(getDFUQResultFieldName(DFUQResultField::timemodified)));
         lFile->setModified(buf.replace('T', ' '));
         lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
-        lFile->setDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)));
+        lFile->setDescription(file.queryProp(getDFUQResultFieldName(DFUQResultField::description)));
 
         if (isEmptyString(nodeGroup))
-            nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
+            nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQResultField::nodegroup));
         if (!isEmptyString(nodeGroup))
         {
             if (version < 1.26)
@@ -85,18 +76,18 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
         }
 
         int numSubFiles = 0;
-        if (!file.hasProp(getDFUQResultFieldName(DFUQRFnumsubfiles)))
+        if (!file.hasProp(getDFUQResultFieldName(DFUQResultField::numsubfiles)))
         {
             lFile->setIsSuperfile(false);
-            lFile->setDirectory(file.queryProp(getDFUQResultFieldName(DFUQRFdirectory)));
-            lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
+            lFile->setDirectory(file.queryProp(getDFUQResultFieldName(DFUQResultField::directory)));
+            lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQResultField::numparts)));
         }
         else
         {
             lFile->setIsSuperfile(true);
             if (version >= 1.52)
             {
-                numSubFiles = file.getPropInt(getDFUQResultFieldName(DFUQRFnumsubfiles));
+                numSubFiles = file.getPropInt(getDFUQResultFieldName(DFUQResultField::numsubfiles));
                 lFile->setNumOfSubfiles(numSubFiles);
             }
         }
@@ -104,15 +95,15 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
 
         if (version >= 1.30)
         {
-            if (file.hasProp(getDFUQResultFieldName(DFUQRFprotect)))
+            if (file.hasProp(getDFUQResultFieldName(DFUQResultField::protect)))
                 lFile->setIsProtected(true);
-            if (file.getPropBool(getDFUQResultFieldName(DFUQRFpersistent), false))
+            if (file.getPropBool(getDFUQResultFieldName(DFUQResultField::persistent), false))
                 lFile->setPersistent(true);
-            if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
-                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
+            if (file.hasProp(getDFUQResultFieldName(DFUQResultField::superowners)))
+                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQResultField::superowners)));
         }
 
-        __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize), 0);
+        __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), 0);
         if (size > 0)
         {
             StringBuffer s;
@@ -120,12 +111,12 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
             lFile->setTotalsize(s<<comma(size));
         }
 
-        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount), 0);
+        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::recordcount), 0);
         if (!records)
-            records = file.getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount), 0);
+            records = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::origrecordcount), 0);
         if (!records)
         {
-            __int64 recordSize = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize), 0);
+            __int64 recordSize = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::recordsize), 0);
             if(recordSize > 0)
                 records = size/recordSize;
         }
@@ -139,7 +130,7 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
         bool isKeyFile = false;
         if (version > 1.13)
         {
-            const char* kind = file.queryProp(getDFUQResultFieldName(DFUQRFkind));
+            const char* kind = file.queryProp(getDFUQResultFieldName(DFUQResultField::kind));
             if (!isEmptyString(kind))
             {
                 if (strieq(kind, "key"))
@@ -161,13 +152,13 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
                 lFile->setKeyType("Distributed");
         }
 
-        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQRFiscompressed));
+        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQResultField::iscompressed));
         if (isFileCompressed)
         {
             if (version >= 1.22)
             {
-                if (file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
-                    lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize)));
+                if (file.hasProp(getDFUQResultFieldName(DFUQResultField::compressedsize)))
+                    lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::compressedsize)));
                 else if (isKeyFile)
                     lFile->setCompressedFileSize(size);
             }
@@ -179,7 +170,7 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
 
         if (version >= 1.55)
         {
-            StringBuffer accessed(file.queryProp(getDFUQResultFieldName(DFUQRFaccessed)));
+            StringBuffer accessed(file.queryProp(getDFUQResultFieldName(DFUQResultField::accessed)));
             if (!accessed.isEmpty())
                 lFile->setAccessed(accessed.replace('T', ' '));
         }
@@ -187,23 +178,23 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
         {
             if (version < 1.62)
             {
-                cost_type cost = file.getPropInt64(getDFUQResultFieldName(DFUQRFcost));
+                cost_type cost = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::cost));
                 lFile->setCost(cost_type2money(cost));
             }
             else
             {
-                cost_type atRestCost = file.getPropInt64(getDFUQResultFieldName(DFUQRFatRestCost));
+                cost_type atRestCost = file.getPropInt64(getDFUQResultFieldName(DFUQResultField::atRestCost));
                 lFile->setAtRestCost(cost_type2money(atRestCost));
-                cost_type accessCost = file .getPropInt64(getDFUQResultFieldName(DFUQRFaccessCost));
+                cost_type accessCost = file .getPropInt64(getDFUQResultFieldName(DFUQResultField::accessCost));
                 lFile->setAccessCost(cost_type2money(accessCost));
             }
         }
-        if ((version >= 1.63) && (file.hasProp(getDFUQResultFieldName(DFUQRFmaxSkew))))
+        if ((version >= 1.63) && (file.hasProp(getDFUQResultFieldName(DFUQResultField::maxSkew))))
         {
-            lFile->setMaxSkew(file.getPropInt64(getDFUQResultFieldName(DFUQRFmaxSkew)));
-            lFile->setMinSkew(file.getPropInt64(getDFUQResultFieldName(DFUQRFminSkew)));
-            lFile->setMaxSkewPart(file.getPropInt64(getDFUQResultFieldName(DFUQRFmaxSkewPart)));
-            lFile->setMinSkewPart(file.getPropInt64(getDFUQResultFieldName(DFUQRFminSkewPart)));
+            lFile->setMaxSkew(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::maxSkew)));
+            lFile->setMinSkew(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::minSkew)));
+            lFile->setMaxSkewPart(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::maxSkewPart)));
+            lFile->setMinSkewPart(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::minSkewPart)));
         }
 
         logicalFiles.append(*lFile.getClear());

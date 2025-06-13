@@ -127,7 +127,7 @@ bool HPCCFileCache::cacheAllHpccFiles(const char * filterby)
     else
         filter.append("*");
 
-    Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, true, NULL);
+    Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, true, NULL);
     if(!fi)
         throw MakeStringException(-1,"Cannot get information from file system.");
 

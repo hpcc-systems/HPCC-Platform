@@ -38,12 +38,17 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.18"
-#define MinClientVersion "1.5"
+#define ServerVersion    "3.19"
+
+// last changed to reflect client version in 6.2 when enhanced iterate files support was added
+// Meaning older clients ClientVersion < 3.6 (HPCC version <6.2) will no longer be able to conenct to Dali
+// NB: this is a low bar test, because ClientVersion has not been updated consistently.
+// If older clients (HPCC version <6.2) do try to interact with Dali, they may hit exceptions.
+#define MinClientVersion "3.6"
 
 
 // client side default versioning.
-static StringAttr ClientVersion("3.7");
+static StringAttr ClientVersion("3.8");
 static StringAttr MinServerVersion("3.1");      // when this upped check initClientProcess instances
 static CDaliVersion _ServerVersion;
 

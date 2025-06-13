@@ -2553,8 +2553,10 @@ public:
         // hasProp,Attr/@expireDays,"true" - meaning file has @expireDays attribute
         filterBuf.append(DFUQFThasProp).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFexpiredays)).append(DFUQFilterSeparator).append("true").append(DFUQFilterSeparator);
 
+        std::vector<DFUQResultField> selectiveFields = {DFUQResultField::expireDays, DFUQResultField::accessed, DFUQResultField::persistent, DFUQResultField::term};
+
         bool allMatchingFilesReceived;
-        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesTreeIterator(filterBuf,
+        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf,
             nullptr, nullptr, udesc, true, allMatchingFilesReceived);
         ForEach(*iter)
         {
