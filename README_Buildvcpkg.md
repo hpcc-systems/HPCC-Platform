@@ -29,7 +29,7 @@ How the workflow proceeds depending on the trigger type:
 4. Generate and Upload Artifiacts
 - Package the compiled file into the binarie,Docker format, etc
 5.
-Publish this artifact to the known users/systems
+- Publish this artifact to the known users/systems
 
 # Supported Platforms: 
 - Ubuntu 20.04-24.04
