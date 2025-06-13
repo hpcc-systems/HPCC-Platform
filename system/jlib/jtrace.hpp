@@ -503,6 +503,8 @@ extern jlib_decl bool doTrace(TraceFlags featureFlag, TraceFlags level=TraceFlag
 // Overwrites current trace flags for active thread (and optionally the global default for new threads)
 extern jlib_decl void updateTraceFlags(TraceFlags flag, bool global = false);
 
+extern jlib_decl TraceFlags combineTraceFlags(TraceFlags existing, TraceFlags request);
+
 // Retrieve current trace flags for the active thread
 extern jlib_decl TraceFlags queryTraceFlags();
 
