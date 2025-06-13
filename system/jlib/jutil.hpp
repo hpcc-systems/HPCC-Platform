@@ -345,9 +345,6 @@ inline unsigned hex2num(char next)
     return 0;
 }
 
-extern jlib_decl void initThreadLocal(int len, void* val);
-extern jlib_decl void* getThreadLocalVal();
-extern jlib_decl void clearThreadLocal();
 
 
 extern jlib_decl bool matchesMask(const char *fn, const char *mask, unsigned p, unsigned n);
