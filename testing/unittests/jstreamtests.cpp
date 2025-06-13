@@ -380,6 +380,7 @@ public:
     CPPUNIT_TEST_SUITE(JlibStreamStressTest);
         CPPUNIT_TEST(testGeneration);
         CPPUNIT_TEST(testBufferStream);     // Write a file and then read the results
+        CPPUNIT_TEST(testVarStringHelpers);  // Test functions for reading varstrings from a stream
         CPPUNIT_TEST(testSimpleStream);     // Write a file and then read the results
         CPPUNIT_TEST(testIncSequentialStream); // write a file and read results after each flush
         CPPUNIT_TEST(testEvenSequentialStream); // write a file and read results after each flush
@@ -900,6 +901,217 @@ public:
             runBufferStream(nullptr, resProvider, 0x100000, 0x100000, numTestRows);
         }
     }
+
+    void generateVarStrings(IBufferedSerialOutputStream & out, size32_t maxStringLength, offset_t minLength)
+    {
+        offset_t offset = 0;
+        size32_t prevLength = 0;
+        size32_t prime = 1997333137;
+        unsigned delta = 0;
+        while (offset < minLength)
+        {
+            size32_t length = (prevLength + prime) % maxStringLength;
+            size32_t got;
+            char * data = (char *)out.reserve(length+1, got);
+            CPPUNIT_ASSERT(got > length);
+            for (unsigned j=0; j< length; j++)
+                data[j] = (char)(' ' + (delta + j) % 64);
+            data[length] = 0;
+            out.commit(length+1);
+            offset += length+1;
+            delta++;
+        }
+    }
+
+    static inline unsigned check(const char * testName, offset_t offset, const char * data, size32_t delta)
+    {
+        unsigned j = 0;
+        for (;;)
+        {
+            char c = data[j];
+            if (!c)
+                return j;
+            if (unlikely(c != (char)(' ' + (j + delta) % 64)))
+            {
+                VStringBuffer msg("Invalid string read in %s: expected %02x got %02x at position %llu:%u", testName, (char)(' ' + (j + delta) % 64), c, offset, j);
+                CPPUNIT_FAIL(msg);
+            }
+            j++;
+        }
+    }
+    void testVarStringRead(IBufferedSerialInputStream & in, offset_t minLength)
+    {
+        offset_t offset = 0;
+        unsigned delta = 0;
+        StringBuffer str;
+        while (offset < minLength)
+        {
+            CPPUNIT_ASSERT(readZeroTerminatedString(str.clear(), in));
+            size32_t length = str.length();
+            check("testVarStringRead", offset, str.str(), delta);
+            offset += length+1;
+            delta++;
+        }
+        CPPUNIT_ASSERT(in.eos());
+    }
+    void testVarStringPeek(IBufferedSerialInputStream & in, offset_t minLength)
+    {
+        offset_t offset = 0;
+        unsigned delta = 0;
+        while (offset < minLength)
+        {
+            size32_t length;
+            const char * data = queryZeroTerminatedString(in, length);
+            check("testVarStringPeek", offset, data, delta);
+            in.skip(length+1);
+            offset += length+1;
+            delta++;
+        }
+        CPPUNIT_ASSERT(in.eos());
+    }
+    void testKVStringPeek(IBufferedSerialInputStream & in, offset_t minLength)
+    {
+        offset_t offset = 0;
+        const char * next = nullptr;
+        unsigned skipLen = 0;
+        unsigned delta = 0;
+        while (offset < minLength)
+        {
+            size32_t length;
+            const char * data = next;
+            next = nullptr;
+            if (!data)
+            {
+                in.skip(skipLen);
+                std::tie(data,next) = peekKeyValuePair(in, length);
+                skipLen = length+1;
+            }
+            CPPUNIT_ASSERT(data != nullptr);
+            unsigned len = check("testKVStringPeek", offset, data, delta);
+            offset += len+1;
+            delta++;
+        }
+        assertex(!next);
+        in.skip(skipLen);
+        CPPUNIT_ASSERT(in.eos());
+    }
+
+    void testStringListPeek(IBufferedSerialInputStream & in)
+    {
+        offset_t offset = 0;
+        std::vector<const char *> matches;
+        unsigned skipLen = 0;
+        peekStringList(matches, in, skipLen);
+
+        unsigned delta = 0;
+        for (const char * next : matches)
+        {
+            unsigned len = check("testStringListPeek", offset, next, delta);
+            offset += len+1;
+            delta++;
+        }
+        in.skip(skipLen);
+        CPPUNIT_ASSERT(in.eos());
+    }
+
+    void testVarStringBuffer()
+    {
+        size32_t maxStringLength = 0x10000;
+        offset_t minFileLength = 0x4000000;
+        MemoryBuffer buffer;
+
+        {
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+            generateVarStrings(*out, maxStringLength, minFileLength);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            testVarStringRead(*in, minFileLength);
+            DBGLOG("Buffer:testVarStringRead took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            testVarStringPeek(*in, minFileLength);
+            DBGLOG("Buffer:testVarStringPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            testKVStringPeek(*in, minFileLength);
+            DBGLOG("Buffer:testKVStringPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            testStringListPeek(*in);
+            DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
+        }
+    }
+    void testVarStringFile(size32_t maxStringLength)
+    {
+        size32_t bufferSize = 0x4000;
+        offset_t minFileLength = 0x400000;
+
+        {
+            Owned<IBufferedSerialOutputStream> out = createOutput(filename, bufferSize, nullptr, 0, false);
+            generateVarStrings(*out, maxStringLength, minFileLength);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
+            testVarStringRead(*in, minFileLength);
+            DBGLOG("File:testVarStringRead took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
+            testVarStringPeek(*in, minFileLength);
+            DBGLOG("File:testVarStringPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
+            testKVStringPeek(*in, minFileLength);
+            DBGLOG("File:testKVStringPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
+            testStringListPeek(*in);
+            DBGLOG("File:testStringListPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, true);
+            testVarStringPeek(*in, minFileLength);
+            DBGLOG("File:testVarStringPeekThreaded took %lluus", timer.elapsedNs()/1000);
+        }
+    }
+    void testVarStringFile()
+    {
+        testVarStringFile(0x10000);
+        testVarStringFile(200);
+    }
+    void testVarStringHelpers()
+    {
+        if (testBuffer)
+        {
+            testVarStringBuffer();
+            testVarStringFile();
+        }
+    }
+
 
     void testPathologicalRows()
     {

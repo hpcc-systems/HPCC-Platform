@@ -433,14 +433,14 @@ ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream *
 
 //---------------------------------------------------------------------------
 
-void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in)
+bool readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in)
 {
     for (;;)
     {
         size32_t got;
         const char * start = (const char *)in.peek(1,got);
         if (!start)
-            break;  // eof before nul detected;
+            return false;  // eof before nul detected;
 
         const char * cur = start;
         const char * end = start + got;
@@ -450,12 +450,116 @@ void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInput
             {
                 out.append(cur - start, start);
                 in.skip((cur - start) + 1); // skip the text and the nul
-                return;
+                return true;
             }
             cur++;
         }
         out.append(got, start);
         in.skip(got);
+    }
+}
+
+const char * queryZeroTerminatedString(IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1,got);
+        if (got <= scanned)
+            return nullptr;  // eof before nul detected;
+
+        const char * cur = start + scanned;
+        const char * end = start + got;
+        while (cur != end)
+        {
+            if (!*cur)
+            {
+                len = cur - start;
+                return start;
+            }
+            cur++;
+        }
+        scanned = got;
+    }
+}
+
+extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    size32_t valueOffset = (size32_t)-1;
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1,got);
+        if (got <= scanned)
+        {
+            len = scanned;  // It is not clear what should be returned in this case.
+            if (valueOffset == (size32_t)-1)
+                return std::pair(nullptr, nullptr);  // eof before nul detected;
+
+            //a key was found, but no associated value
+            return std::pair(start, nullptr);
+        }
+
+        const char * cur = start + scanned;
+        const char * end = start + got;
+        while (cur != end)
+        {
+            if (!*cur)
+            {
+                if (valueOffset != (size32_t)-1)
+                {
+                    len = cur - start;
+                    return std::pair(start, start+valueOffset);
+                }
+                valueOffset = cur + 1 - start;
+            }
+            cur++;
+        }
+        scanned = got;
+    }
+}
+
+extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    size32_t startNext = 0;
+    std::vector<size32_t> matchOffsets;
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1,got);
+        if (got <= scanned)
+        {
+            len = scanned;
+            if (startNext == scanned)
+            {
+                //End of file, but the last string was null terminated...
+                for (unsigned match : matchOffsets)
+                    matches.push_back(start + match);
+                return true;
+            }
+            return false;
+        }
+
+        for (size32_t offset = scanned; offset < got; offset++)
+        {
+            char next = start[offset];
+            if (!next)
+            {
+                if (offset == startNext)
+                {
+                    for (unsigned match : matchOffsets)
+                        matches.push_back(start + match);
+                    len = offset + 1;
+                    return true;
+                }
+                matchOffsets.push_back(startNext);
+                startNext = offset + 1;
+            }
+        }
+        scanned = got;
     }
 }
 
@@ -541,6 +645,19 @@ public:
     {
         size32_t initialBufferSize = blockWriteSize;
         buffer.allocate(initialBufferSize);
+    }
+
+    ~CBlockedSerialOutputStream()
+    {
+        try
+        {
+            flush();
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e, "CBlockedSerialOutputStream::~CBlockedSerialOutputStream");
+            e->Release();
+        }
     }
 
     virtual void flush() override

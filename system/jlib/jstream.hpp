@@ -21,6 +21,9 @@
 #define JSTREAM_HPP
 
 #include "jiface.hpp"
+#include <utility>
+#include <vector>
+
 class StringBuffer;
 
 interface jlib_decl IByteOutputStream : public IInterface
@@ -56,7 +59,14 @@ interface IBufferedSerialInputStream : extends ISerialInputStream
 };
 
 /* example of reading a nul terminated string using IBufferedSerialInputStream peek and skip */
-void jlib_decl readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in);
+extern jlib_decl bool readZeroTerminatedString(StringBuffer & out, IBufferedSerialInputStream & in);
+extern jlib_decl const char * queryZeroTerminatedString(IBufferedSerialInputStream & in, size32_t & len);
+
+//return a key value pair - if the key is a null string then return null for the value
+extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBufferedSerialInputStream & in, size32_t & len);
+
+//Return pointers to a list of strings - terminated by a null string
+extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len);
 
 
 interface ISerialOutputStream : extends IInterface
