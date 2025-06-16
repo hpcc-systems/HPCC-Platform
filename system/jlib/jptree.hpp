@@ -92,7 +92,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void setProp(const char *xpath, const char *val) = 0;
     virtual void addProp(const char *xpath, const char *val) = 0;
     virtual void appendProp(const char *xpath, const char *val) = 0;
-    
+
     virtual bool getPropBool(const char *xpath, bool dft=false) const = 0;
     virtual void setPropBool(const char *xpath, bool val) = 0;
     virtual void addPropBool(const char *xpath, bool val) = 0;
@@ -144,6 +144,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) = 0;
     virtual bool isArray(const char *xpath=NULL) const = 0;
     virtual unsigned getAttributeCount() const = 0;
+
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
