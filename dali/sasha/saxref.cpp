@@ -1107,59 +1107,113 @@ public:
 
     bool scanDirectories(bool &abort, unsigned numThreads)
     {
-        class casyncfor: public CAsyncFor
+        if (isContainerized())
         {
-            CNewXRefManager &parent;
-            const char *rootdir;
-            unsigned n;
-            unsigned r;
-            CriticalSection &crit;
-            bool &abort;
-        public:
-            bool ok;
-            casyncfor(CNewXRefManager &_parent,const char *_rootdir,CriticalSection &_crit,bool &_abort)
-                : parent(_parent), crit(_crit), abort(_abort)
+            class casyncfor: public CAsyncFor
             {
-                rootdir = _rootdir;
-                n = parent.numuniqnodes;
-                r = (n+1)/2;
-                ok = true;
-            }
-            void Do(unsigned i)
-            {
-                if (abort)
-                    return;
-                CriticalBlock block(crit);
-                if (!ok||abort)
-                    return;
-                StringBuffer path(rootdir);
-                SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
-                StringBuffer tmp;
-                parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
-                if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
-                    ok = false;
-                    return;
+                CNewXRefManager &parent;
+                const char *rootdir;
+                CriticalSection &crit;
+                bool &abort;
+            public:
+                bool ok;
+                casyncfor(CNewXRefManager &_parent,const char *_rootdir,CriticalSection &_crit,bool &_abort)
+                    : parent(_parent), crit(_crit), abort(_abort)
+                {
+                    rootdir = _rootdir;
+                    ok = true;
                 }
-                if (!isContainerized()) {
-                    i = (i+r)%n;
-                    setReplicateFilename(path,1);
-                    ep = parent.rawgrp->queryNode(i).endpoint();
-                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
-                        ok = false;
+                void Do(unsigned i)
+                {
+                    if (abort)
+                        return;
+                    CriticalBlock block(crit);
+                    if (!ok||abort)
+                        return;
+
+                    StringBuffer path(rootdir);
+                    SocketEndpoint ep = parent.rawgrp->queryNode(0).endpoint();
+                    StringBuffer tmp;
+                    cDirDesc *dir = NULL;
+                    unsigned startLevel = 0;
+                    if (parent.isPlaneStriped)
+                    {
+                        addPathSepChar(path).append('d').append(i+1);
+                        dir = parent.root;
+                        startLevel = 1;
                     }
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
+                    if (!parent.scanDirectory(i,ep,path,0,dir,NULL,startLevel))
+                    {
+                        ok = false;
+                        return;
+                    }
+    //              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
                 }
-//              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
-            }
-        } afor(*this,rootdir,crit,abort);
-        if (numThreads > numuniqnodes)
-            numThreads = numuniqnodes;
-        afor.For(numuniqnodes,numThreads,true,numThreads>1);
-        if (afor.ok)
-            log("Directory scan complete");
+            } afor(*this,rootdir,crit,abort);
+            afor.For(numStripedDevices,numThreads,true,numThreads>1);
+            if (afor.ok)
+                log("Directory scan complete");
+            else
+                log("Errors occurred during scan");
+            return afor.ok;
+        }
         else
-            log("Directory scan complete");
-        return afor.ok;
+        {
+            class casyncfor: public CAsyncFor
+            {
+                CNewXRefManager &parent;
+                const char *rootdir;
+                unsigned n;
+                unsigned r;
+                CriticalSection &crit;
+                bool &abort;
+            public:
+                bool ok;
+                casyncfor(CNewXRefManager &_parent,const char *_rootdir,CriticalSection &_crit,bool &_abort)
+                    : parent(_parent), crit(_crit), abort(_abort)
+                {
+                    rootdir = _rootdir;
+                    n = parent.numuniqnodes;
+                    r = (n+1)/2;
+                    ok = true;
+                }
+                void Do(unsigned i)
+                {
+                    if (abort)
+                        return;
+                    CriticalBlock block(crit);
+                    if (!ok||abort)
+                        return;
+                    StringBuffer path(rootdir);
+                    SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
+                    StringBuffer tmp;
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
+                        ok = false;
+                        return;
+                    }
+                    if (!isContainerized()) {
+                        i = (i+r)%n;
+                        setReplicateFilename(path,1);
+                        ep = parent.rawgrp->queryNode(i).endpoint();
+                        parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
+                            ok = false;
+                        }
+                    }
+    //              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
+                }
+            } afor(*this,rootdir,crit,abort);
+            if (numThreads > numuniqnodes)
+                numThreads = numuniqnodes;
+            afor.For(numuniqnodes,numThreads,true,numThreads>1);
+            if (afor.ok)
+                log("Directory scan complete");
+            else
+                log("Errors occurred during scan");
+            return afor.ok;
+        }
     }
 
     void scanLogicalFiles(bool &abort) 
