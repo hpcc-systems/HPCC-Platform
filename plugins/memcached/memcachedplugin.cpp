@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+// libmemcached-1.0.18 includes the header <cinttypes> which translates to <bits/cinttypes> requiring ISO C++ 2011 standard to build.
+// All lesser versions explicitly include <tr1/cinttypes> which does not.
+static_assert(__cplusplus >= 201103L, "C++11 or newer is required for memcached plugin"); // March 2011 - C++11 standard was finalized (ISO/IEC 14882:2011).
+
 #include "platform.h"
 #include "memcachedplugin.hpp"
 #include "eclrtl.hpp"
