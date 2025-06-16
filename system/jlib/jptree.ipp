@@ -64,17 +64,17 @@ protected:
     {
         return streq(((IPropertyTree *)e)->queryName(), (const char *)fp);
     }
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
     inline unsigned count() const { return SuperHashTableOf<IPropertyTree, constcharptr>::count(); }
 
     ChildMap() : SuperHashTableOf<IPropertyTree, constcharptr>(4)
-    { 
+    {
     }
-    ~ChildMap() 
-    { 
+    ~ChildMap()
+    {
         _releaseAll();
     }
     virtual unsigned numChildren() const;
@@ -158,6 +158,8 @@ interface IPTArrayValue
     virtual IPropertyTree **getRawArray() const = 0;
     virtual CompressionMethod getCompressionType() const = 0;
 
+    virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const = 0;
+//serializable
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
@@ -188,6 +190,8 @@ public:
     {
         return (IPropertyTree **)getArray();
     }
+
+    virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const override { UNIMPLEMENTED; }
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
@@ -198,8 +202,8 @@ class jlib_decl CPTValue final : implements IPTArrayValue, private MemoryAttr
 {
 public:
     CPTValue(MemoryBuffer &src)
-    { 
-        deserialize(src); 
+    {
+        deserialize(src);
     }
     CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, CompressionMethod _compressType = COMPRESS_METHOD_NONE);
 
@@ -222,7 +226,7 @@ public:
     virtual unsigned find(const IPropertyTree *search) const override { throwUnexpected(); }
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
 
-
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -623,6 +627,9 @@ public:
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void deserializeSelf(MemoryBuffer &src);
     void serializeAttributes(MemoryBuffer &tgt);
+    void serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff=-1, int depth=0) const;
+    void serializeAttributes(IBufferedSerialOutputStream &tgt) const;
+
     IPropertyTree *clone(IPropertyTree &srcTree, bool self=false, bool sub=true);
     void clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub=true);
     inline void setOwner(IPTArrayValue *_arrayOwner) { arrayOwner = _arrayOwner; }
@@ -648,6 +655,7 @@ public:
     virtual void createChildMap() { children = isnocase()?new ChildMapNC():new ChildMap(); }
     virtual void setName(const char *name) = 0;
     virtual void serializeSelf(MemoryBuffer &tgt);
+    virtual void serializeSelf(IBufferedSerialOutputStream &tgt) const;
     inline void markNameEncoded() { IptFlagSet(flags, ipt_escaped); }
     inline bool isNameEncoded() const { return IptFlagTst(flags, ipt_escaped); }
     inline bool isAttributeNameEncoded(const char *key) const
@@ -711,6 +719,7 @@ public:
     virtual bool isArray(const char *xpath=NULL) const override;
     virtual unsigned getAttributeCount() const override;
 
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -811,6 +820,7 @@ class jlib_decl CAtomPTree : public PTree
     PtrStrUnion<HashKeyElement> name;
 protected:
     virtual bool removeAttribute(const char *k) override;
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const override { PTree::serializeToStream(out); }
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
@@ -838,6 +848,7 @@ class jlib_decl LocalPTree : public PTree
 {
 protected:
     virtual bool removeAttribute(const char *k) override;
+    virtual void serializeToStream(IBufferedSerialOutputStream &out) const override { PTree::serializeToStream(out); }
     AttrStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
@@ -975,13 +986,13 @@ public:
         else
             nodeCreator = new CDefaultNodeCreator(flags);
         if (_root)
-        { 
+        {
             root = LINK(_root);
             rootProvided = true;
         }
         else
         {
-            root = NULL;    
+            root = NULL;
             rootProvided = false;
         }
         reset();
@@ -1034,7 +1045,7 @@ public:
         else
             currentNode->setProp(NULL, (const char *)value);
         unsigned c = ptreeStack.ordinality();
-        if (c==1 && !noRoot && currentNode != root) 
+        if (c==1 && !noRoot && currentNode != root)
             ::Release(currentNode);
         ptreeStack.pop();
         currentNode = (c>1) ? &ptreeStack.tos() : NULL;

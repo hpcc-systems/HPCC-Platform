@@ -43,6 +43,7 @@
 #include "opentelemetry/sdk/resource/resource.h"
 
 #include "unittests.hpp"
+#include <cppunit/TestAssert.h>
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
@@ -52,7 +53,7 @@ class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibTraceTest);
-        //Invalid since tracemanager initialized at component load time 
+        //Invalid since tracemanager initialized at component load time
         //CPPUNIT_TEST(testTraceDisableConfig);
         CPPUNIT_TEST(testStringArrayPropegatedServerSpan);
         CPPUNIT_TEST(testDisabledTracePropegatedValues);
@@ -270,7 +271,7 @@ protected:
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
             //14:49:13.776139   904 MsTickOffset span actual start-time timestamp: 1702669753775893057
-            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d", 
+            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d",
             //"start": 1702669753725771035, "duration": 50285323 }
             //Actual start - declared start: 1702669753775893057-1702669753725771035 = 50162022
         }
@@ -285,7 +286,7 @@ protected:
             //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
             MilliSleep(75);
 
-            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663", 
+            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663",
             //"start": 1702668157790080022,
             //"duration": 75316248 }
         }
@@ -323,13 +324,13 @@ protected:
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
-            serverSpan->recordError(SpanError("Error Message!!", 23, true, false)); 
+            serverSpan->recordError(SpanError("Error Message!!", 23, true, false));
         }//{ "type": "span", "name": "containsErrorAndMessageFailedNotEscapedSpan", "trace_id": "02f4b2d215f8230b15063862f8a91e41", "span_id": "c665ec371d6db147", "start": 1709675573581678954, "duration": 3467489486, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675576145074240, "attributes": {"code": 23,"escaped": 0,"message": "Error Message!!" } } ] }
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
             serverSpan->recordException( makeStringExceptionV(76,"Mock exception"), false, false);
-        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ] 
+        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ]
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
@@ -708,7 +709,7 @@ protected:
         {
             Owned<IProperties> spanContext = createProperties();
             ISpan * activeSpan =  queryThreadedActiveSpan();
-            
+
             CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
 
             activeSpan->getSpanContext(spanContext);
@@ -767,7 +768,7 @@ protected:
             //15:07:56.490232  3788 720009f32a9db04f68f2b6545717ebe5 a7ef8749b5926acf This log entry should report traceID: '720009f32a9db04f68f2b6545717ebe5' and spanID: 'a7ef8749b5926acf'
         }
     }
-    
+
     void testInvalidPropegatedServerSpan()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
@@ -914,7 +915,7 @@ protected:
     void testStringArrayPropegatedServerSpan()
     {
          StringArray mockHTTPHeadersSA;
-        //mock opentel traceparent context 
+        //mock opentel traceparent context
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
         //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
         mockHTTPHeadersSA.append("tracestate:hpcc=4b960b3e4647da3f");
@@ -3355,7 +3356,579 @@ Nothing_toEncodeHere:
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
+/*
+ * PTree serialization tests
+ *
+ *   Test PTree serialization format matches from MemoryBuffer to IBufferedSerialInputStream
+ *
+ */
 
+#include "platform.h"
+#include "jfile.ipp"
+#include "jptree.hpp"
+#include "jptree.ipp"
+#include "jiface.hpp"
+#include "jio.hpp"
+#include "jstring.hpp"
+#include <string>
+
+class PTreeSerializationTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeSerializationTest);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamRootOnlyPTree);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamFromXmlPTree);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamFromYamlPTree);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+    static constexpr const char *chkTxt = R"!!!(
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                  value: '*'
+                - name: rule-set
+                  value: '*'
+              operation:
+              - name: maskValue
+                presence: r
+              - name: maskContent
+                presence: r
+              - name: maskMarkupValue
+                presence: o
+              accepts:
+              - name: valuetype-set
+                presence: r
+              - name: 'valuetype-set:value-type-set-a'
+                presence: r
+              - name: 'valuetype-set:value-type-set-b'
+                presence: r
+              - name: rule-set
+                presence: r
+              - name: 'rule-set:rule-set-2'
+                presence: r
+              - name: required-acceptance
+                presence: r
+              - name: optional-acceptance
+                presence: o
+              uses:
+              - name: valuetype-set
+                presence: r
+              - name: 'valuetype-set:value-type-set-a'
+                presence: r
+              - name: 'valuetype-set:value-type-set-b'
+                presence: r
+              - name: rule-set
+                presence: r
+              - name: 'rule-set:rule-set-2'
+                presence: r
+              - name: required-acceptance
+                presence: p
+              - name: optional-acceptance
+                presence: p
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: r
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: r
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              - name: '*'
+                presence: r
+              rule:
+              - contentType: ''
+                presence: r
+              - contentType: xml
+                presence: r
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                  value: value-type-set-a
+                - name: rule-set
+                  value: ''
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: r
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: p
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: r
+              - contentType: xml
+                presence: r
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                  value: value-type-set-b
+                - name: rule-set
+                  value: ''
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: p
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: r
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: r
+              - contentType: xml
+                presence: r
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                - name: rule-set
+                  value: ''
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: p
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: p
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: p
+              - contentType: xml
+                presence: p
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                - name: rule-set
+                  value: 'rule-set-2'
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: p
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: p
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: p
+              - contentType: xml
+                presence: p
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                  value: value-type-set-b
+                - name: rule-set
+                  value: 'rule-set-2'
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: p
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: r
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: r
+              - contentType: xml
+                presence: r
+          - compatibility:
+              context:
+                domain: 'urn:hpcc:unittest'
+                version: 0
+                property:
+                - name: valuetype-set
+                - name: rule-set
+                  value: 'rule-set-2'
+              valueType:
+              - name: secret
+                presence: r
+              - name: secret-if-a
+                presence: p
+                maskStyle:
+                - name: keep-last-4-numbers
+                  presence: r
+                - name: mask-last-4-numbers
+                  presence: o
+                Set:
+                - name: value-type-set-a
+                  presence: r
+              - name: secret-if-b
+                presence: p
+                Set:
+                - name: value-type-set-b
+                  presence: r
+              rule:
+              - contentType: ''
+                presence: p
+              - contentType: xml
+                presence: p
+      )!!!";
+    Owned<IPropertyTree> originalTree;
+
+public:
+    void testSerializeVsSerializeToStreamRootOnlyPTree()
+    {
+        testSerializeVsSerializeToStream(createPTree("EmptyRoot"));
+    }
+
+    void testSerializeVsSerializeToStreamFromXmlPTree()
+    {
+        testSerializeVsSerializeToStream(createPTree(testXml));
+    }
+
+    void testSerializeVsSerializeToStreamFromYamlPTree()
+    {
+        testSerializeVsSerializeToStream(createPTreeFromYAMLString(chkTxt));
+    }
+
+protected:
+    void testSerializeVsSerializeToStream(Owned<IPropertyTree> _originalTree)
+    {
+        originalTree.setown(_originalTree.getClear());
+
+        MemoryBuffer memBuf;
+        originalTree->serialize(memBuf);
+
+        StringBuffer stringStreamBuf;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(stringStreamBuf);
+        originalTree->serializeToStream(*out);
+        out->flush();
+        MemoryBuffer memBufStream;
+        memBufStream.append(stringStreamBuf.length(), stringStreamBuf);
+        memBufStream.reset(0);
+        Owned<IBufferedSerialInputStream> in = createMemoryBufferSerialStream(memBufStream);
+        CPPUNIT_ASSERT(in);
+
+        CPPUNIT_ASSERT(SerializeMatches(memBuf, *in, 0));
+    }
+
+    bool readZeroTerminatedString(StringBuffer &out, IBufferedSerialInputStream &in)
+    {
+        out.clear();
+        for (;;)
+        {
+            size32_t got;
+            const char *start = (const char *)in.peek(1, got);
+            if (!start)
+                return false; // eof before nul detected;
+
+            const char *cur = start;
+            const char *end = start + got;
+            while (cur != end)
+            {
+                if (!*cur)
+                {
+                    out.append(cur - start, start);
+                    in.skip((cur - start) + 1); // skip the text and the nul
+                    return true;
+                }
+                cur++;
+            }
+        }
+    }
+
+    bool readByte(byte &out, IBufferedSerialInputStream &in)
+    {
+        size32_t got;
+        const char *start = (const char *)in.peek(1, got);
+        if (!start)
+            return false; // eof before nul detected;
+
+        out = *start;
+        in.skip(1); // skip the byte
+        return true;
+    }
+
+    bool readSize32_t(size32_t &out, IBufferedSerialInputStream &in)
+    {
+        size32_t got;
+        const byte *bytes = (const byte *)in.peek(4, got);
+        if (!bytes)
+            return false; // eof before nul detected;
+
+        in.skip(4); // skip bytes
+        out = ((size32_t)bytes[0]) |
+              ((size32_t)bytes[1] << 8) |
+              ((size32_t)bytes[2] << 16) |
+              ((size32_t)bytes[3] << 24);
+        return true;
+    }
+
+    bool SerializeMatches(MemoryBuffer &memBuf, IBufferedSerialInputStream &in, unsigned depth)
+    {
+        // Tree name
+        StringBuffer nameBuffer;
+        if (!readZeroTerminatedString(nameBuffer, in))
+        {
+            CPPUNIT_FAIL("Failed to read tree name from IBufferedSerialInputStream");
+            return false;
+        }
+        StringAttr _name;
+        memBuf.read(_name);
+        if (!streq(_name.str(), nameBuffer.str()))
+        {
+            VStringBuffer msg("Tree name from IBufferedSerialInputStream \"%s\" does not match tree name from MemoryBuffer \"%s\"", nameBuffer.str(), _name.str());
+            CPPUNIT_FAIL(msg.str());
+            return false;
+        }
+
+        // Flags
+        byte flags;
+        if (!readByte(flags, in))
+        {
+            CPPUNIT_FAIL("Failed to read tree flags from IBufferedSerialInputStream");
+            return false;
+        }
+        byte _flags;
+        memBuf.read(_flags);
+        if (flags != _flags)
+        {
+            VStringBuffer msg("Tree flags from IBufferedSerialInputStream \"%d\" does not match tree flags from MemoryBuffer \"%d\"", flags, _flags);
+            CPPUNIT_FAIL(msg.str());
+            return false;
+        }
+
+        // Attributes
+        if (!SerializeMatchesAttributes(memBuf, in))
+            return false;
+
+        // CPTValue
+        if (!SerializeMatchesCPTValue(memBuf, in))
+            return false;
+
+        // Elements
+        return SerializeMatchesElements(memBuf, in, depth);
+    }
+
+    bool SerializeMatchesAttributes(MemoryBuffer &memBuf, IBufferedSerialInputStream &in)
+    {
+        size32_t pos = memBuf.getPos();
+        byte _eoaByte;
+        memBuf.read(_eoaByte);
+        memBuf.reset(pos); // reset to re-read name
+        byte eoaByte;
+        if (!readByte(eoaByte, in))
+        {
+            CPPUNIT_FAIL("Failed to read eoaByte from IBufferedSerialInputStream");
+            return false;
+        }
+        if (eoaByte != _eoaByte)
+        {
+            VStringBuffer msg("Tree eoaByte from IBufferedSerialInputStream \"%d\" does not match tree eoaByte from MemoryBuffer \"%d\"", eoaByte, _eoaByte);
+            CPPUNIT_FAIL(msg.str());
+            return false;
+        }
+
+        while (eoaByte)
+        {
+            StringBuffer attrName;
+            if (!readZeroTerminatedString(attrName, in))
+            {
+                CPPUNIT_FAIL("Failed to read attribute name from IBufferedSerialInputStream");
+                return false;
+            }
+            char firstChar = eoaByte;
+            attrName.insert(0, firstChar);
+
+            StringAttr _attrName;
+            memBuf.read(_attrName);
+
+            if (!streq(_attrName.str(), attrName.str()))
+            {
+                VStringBuffer msg("Tree attributes name from IBufferedSerialInputStream \"%s\" does not match tree attributes from MemoryBuffer \"%s\"", attrName.str(), _attrName.str());
+                CPPUNIT_FAIL(msg.str());
+                return false;
+            }
+
+            StringBuffer attrValue;
+            if (!readZeroTerminatedString(attrValue, in))
+            {
+                CPPUNIT_FAIL("Failed to read attribute value from IBufferedSerialInputStream");
+                return false;
+            }
+
+            StringAttr _attrValue;
+            memBuf.read(_attrValue);
+            if (!streq(_attrValue.str(), attrValue.str()))
+            {
+                VStringBuffer msg("Tree attributes value from IBufferedSerialInputStream \"%s\" does not match tree attributes from MemoryBuffer \"%s\"", attrValue.str(), _attrValue.str());
+                CPPUNIT_FAIL(msg.str());
+                return false;
+            }
+
+            pos = memBuf.getPos();
+            memBuf.read(_eoaByte);
+            memBuf.reset(pos); // reset to re-read name
+            if (!readByte(eoaByte, in))
+            {
+                CPPUNIT_FAIL("Failed to read eoaByte from IBufferedSerialInputStream");
+                return false;
+            }
+            if (eoaByte != _eoaByte)
+            {
+                VStringBuffer msg("Tree eoaByte from IBufferedSerialInputStream \"%d\" does not match tree eoaByte from MemoryBuffer \"%d\"", eoaByte, _eoaByte);
+                CPPUNIT_FAIL(msg.str());
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool SerializeMatchesCPTValue(MemoryBuffer &memBuf, IBufferedSerialInputStream &in)
+    {
+        size32_t _size;
+        memBuf.read(_size);
+        size32_t size;
+        if (!readSize32_t(size, in))
+        {
+            CPPUNIT_FAIL("Failed to read value size from IBufferedSerialInputStream");
+            return false;
+        }
+        if (size != _size)
+        {
+            VStringBuffer msg("Value size from IBufferedSerialInputStream \"%d\" does not match value size from MemoryBuffer \"%d\"", size, _size);
+            CPPUNIT_FAIL(msg.str());
+            return false;
+        }
+
+        if (size)
+        {
+            byte compressType{0};
+            if (!readByte(compressType, in))
+            {
+                CPPUNIT_FAIL("Failed to read compression type from IBufferedSerialInputStream");
+                return false;
+            }
+
+            byte _compressType;
+            memBuf.read(_compressType);
+            if (compressType != _compressType)
+            {
+                VStringBuffer msg("Compression type from IBufferedSerialInputStream \"%d\" does not match compression type from MemoryBuffer \"%d\"", compressType, _compressType);
+                CPPUNIT_FAIL(msg.str());
+                return false;
+            }
+
+            in.skip(size);
+            memBuf.readDirect(_size);
+        }
+
+        return true;
+    }
+
+    bool SerializeMatchesElements(MemoryBuffer &memBuf, IBufferedSerialInputStream &in, unsigned depth)
+    {
+        size32_t pos = memBuf.getPos();
+
+        StringAttr _eName;
+        memBuf.read(_eName);
+        if (_eName.isEmpty())
+            return true;
+
+        memBuf.reset(pos); // reset to re-read tree name
+        return SerializeMatches(memBuf, in, ++depth);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializationTest");
 
 #include "jdebug.hpp"
 #include "jmutex.hpp"
@@ -3484,7 +4057,7 @@ public:
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
                 : startSem(_startSem), endSem(_endSem),
-                  lock1(_lock1), lock2(_lock2), 
+                  lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
             {
@@ -4645,7 +5218,7 @@ protected:
         CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
-        
+
         unsigned cipherlen = ciphertext1.length() - lenPrefix;
 
         /* Decrypt the ciphertext */
@@ -4730,8 +5303,8 @@ protected:
                 CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
                 E->Release();
             }
-        }        
-    // Note: Using OpenTelemetry null span 
+        }
+    // Note: Using OpenTelemetry null span
     }
 
     void test()
