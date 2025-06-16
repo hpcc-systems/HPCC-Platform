@@ -155,6 +155,7 @@ public:
     }
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
+    void extractIndependent(ClusterType platform);
     void extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
@@ -1115,6 +1116,231 @@ void HqlCppTranslator::markThorBoundaries(WorkflowItem & curWorkflow)
     HqlThorBoundaryTransformer thorTransformer(wu(), targetRoxie(), options.maxRootMaybeThorActions, options.resourceConditionalActions, options.resourceSequential);
     thorTransformer.transformRoot(exprs, bounded);
     replaceArray(exprs, bounded);
+}
+
+
+//---------------------------------------------------------------------------
+
+GlobalDatasetList * GlobalDatasetList::clone()
+{
+    Owned<GlobalDatasetList> cloned = new GlobalDatasetList;
+    ForEachItemIn(i, globals)
+    {
+        GlobalDatasetInfo & cur = globals.item(i);
+        cloned->globals.append(OLINK(cur));
+    }
+    return cloned.getClear();
+}
+
+// If a global dataset is only used by a single graph within a workflow, then it can be converted to a spill,
+// This will prevent it being written to external storage on a containerized system.
+//
+// First build a list of all the global datasets, and for each expression store a list of the global datasets
+// that it accesses.  Use a link counted class to keep the list to avoid using too much memory for pathological
+// cases.
+//
+// After the workflow item has been walked, if there are any globals that are only used by a single graph
+// then transform the graph, converting the global from a jobtemp to a spill.
+
+static HqlTransformerInfo hqlGlobalDatasetTransformerInfo("HqlGlobalDatasetTransformer");
+HqlGlobalDatasetTransformer::HqlGlobalDatasetTransformer()
+    : NewHqlTransformer(hqlGlobalDatasetTransformerInfo)
+{
+}
+
+void HqlGlobalDatasetTransformer::analyseExpr(IHqlExpression * expr)
+{
+    IHqlExpression * body = expr->queryBody();
+    HqlGlobalDatasetInfo * extra = queryBodyExtra(body);
+    if (alreadyVisited(extra))
+        return;
+
+    node_operator op = expr->getOperator();
+    Owned<GlobalDatasetList> globalsUsed;
+    if (expr->hasAttribute(_globalTemp_Atom))
+    {
+        IHqlExpression * name = nullptr;
+        switch (op)
+        {
+        case no_table:
+            name = expr->queryChild(0);
+            break;
+        case no_output:
+            name = expr->queryChild(1);
+            break;
+        default:
+            throwUnexpected();
+        }
+
+        //Associate the global with the name so both no_table and no_output can point to the same info (for consistency checking)
+        HqlGlobalDatasetInfo * nameExtra = queryBodyExtra(name);
+        if (op == no_table)
+        {
+            if (!nameExtra->globalInfo)
+            {
+                //Read before write - something is wrong, so avoid any transformation
+                if (doTrace(traceOptimizations))
+                {
+                    StringBuffer nameText;
+                    name->toString(nameText);
+                    DBGLOG("HqlGlobalDatasetTransformer: Consistency error - read of global %s before write", nameText.str());
+                }
+                consistencyError = true;
+            }
+        }
+        else
+        {
+            if (nameExtra->globalInfo)
+            {
+                //Multiple writes to the same global - something is wrong, so avoid any transformation
+                if (doTrace(traceOptimizations))
+                {
+                    StringBuffer nameText;
+                    name->toString(nameText);
+                    DBGLOG("HqlGlobalDatasetTransformer: Consistency error - multiple writes of global %s", nameText.str());
+                }
+                consistencyError = true;
+            }
+            nameExtra->globalInfo.setown(new GlobalDatasetInfo(name));
+
+            //record globally, so that we can check if there are any candidates once all graphs have been walked
+            allGlobals.append(*nameExtra->globalInfo);
+        }
+        extra->globalInfo.set(nameExtra->globalInfo);
+    }
+
+    NewHqlTransformer::analyseExpr(expr);
+
+    bool merging = false;
+    ForEachChild(idx, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(idx);
+        HqlGlobalDatasetInfo * childExtra = queryBodyExtra(cur);
+        GlobalDatasetList * childGlobalsUsed = childExtra->globalsUsed;
+
+        //Does this child have a different list of globals
+        if (childGlobalsUsed && childGlobalsUsed != globalsUsed)
+        {
+            if (!globalsUsed)
+                globalsUsed.set(childGlobalsUsed);
+            else
+            {
+                //MORE: This could be improved to only create a new item if the child has globals not already in the list
+                if (!merging)
+                {
+                    globalsUsed.setown(globalsUsed->clone());
+                    merging = true;
+                }
+
+                ForEachItemIn(i2, childGlobalsUsed->globals)
+                {
+                    GlobalDatasetInfo & cur = childGlobalsUsed->globals.item(i2);
+                    if (!globalsUsed->globals.contains(cur))
+                        globalsUsed->globals.append(OLINK(cur));
+                }
+            }
+        }
+    }
+
+    //If this expression is a read from a global add it to the list of globals used
+    //If it is a write to a global, then also add it to the list - because a write in a different graph from
+    //the read will still cause problems - so should not be converted.
+    if (extra->globalInfo && expr->hasAttribute(_globalTemp_Atom))
+    {
+        if (!globalsUsed)
+            globalsUsed.setown(new GlobalDatasetList);
+        else if (!merging)
+            globalsUsed.setown(globalsUsed->clone());
+
+        if (!globalsUsed->globals.contains(*extra->globalInfo))
+            globalsUsed->globals.append(*extra->globalInfo);
+    }
+
+    //If we have have a thor graph, check what globals it contains.
+    //There should be a no_thorgraph operator, rather than overloading no_thor....
+    if ((op == no_thor) && expr->numChildren())
+    {
+        if (globalsUsed)
+        {
+            ForEachItemIn(i, globalsUsed->globals)
+            {
+                GlobalDatasetInfo & cur = globalsUsed->globals.item(i);
+                cur.numGraphs++;
+            }
+        }
+    }
+
+    extra->globalsUsed.setown(globalsUsed.getClear());
+}
+
+IHqlExpression * HqlGlobalDatasetTransformer::createTransformed(IHqlExpression * expr)
+{
+    if (expr->hasAttribute(_globalTemp_Atom))
+    {
+        HqlGlobalDatasetInfo * extra = queryBodyExtra(expr);
+        if (extra->globalInfo)
+        {
+            if (extra->globalInfo->numGraphs == 1)
+            {
+                HqlExprArray args;
+                transformChildren(expr, args);
+                removeAttribute(args, jobTempAtom);
+                args.append(*createAttribute(_spill_Atom));
+                OwnedHqlExpr modified = expr->clone(args);
+                return expr->cloneAllAnnotations(modified);
+            }
+        }
+    }
+
+    return NewHqlTransformer::createTransformed(expr);
+}
+
+
+bool HqlGlobalDatasetTransformer::needToTransform() const
+{
+    if (consistencyError)
+        return false;
+
+    bool hasCandidate = false;
+    ForEachItemIn(i, allGlobals)
+    {
+        const GlobalDatasetInfo & cur = allGlobals.item(i);
+        if (cur.numGraphs == 1)
+        {
+            if (doTrace(traceOptimizations))
+            {
+                StringBuffer name;
+                cur.name->toString(name);
+                DBGLOG("HqlGlobalDatasetTransformer: global %s converted from jobtemp to spill", name.str());
+            }
+            hasCandidate = true;
+        }
+        else if (cur.numGraphs > 1)
+        {
+            if (doTrace(traceOptimizations))
+            {
+                StringBuffer name;
+                cur.name->toString(name);
+                DBGLOG("HqlGlobalDatasetTransformer: Skipping global %s used from %u graphs", name.str(), cur.numGraphs);
+            }
+        }
+    }
+    return hasCandidate;
+}
+
+
+void HqlCppTranslator::optimizeSingleGraphGlobals(WorkflowItem & curWorkflow)
+{
+    HqlExprArray & exprs = curWorkflow.queryExprs();
+    HqlGlobalDatasetTransformer transformer;
+    transformer.analyseArray(exprs, 0);
+
+    if (transformer.needToTransform())
+    {
+        HqlExprArray transformed;
+        transformer.transformRoot(exprs, transformed);
+        replaceArray(exprs, transformed);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -5461,6 +5687,14 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     persistOp = no_global;
 }
 
+void GlobalAttributeInfo::extractIndependent(ClusterType platform)
+{
+    few = spillToWorkunitNotFile(value, platform) || value->isDictionary();
+    setOp = no_setresult;
+    sequence.setown(getLocalSequenceNumber());
+    persistOp = no_independent;
+}
+
 void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
@@ -5526,7 +5760,6 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * 
         sequence.setown(getLocalSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflow_Atom));
         setCluster(queryRealChild(expr, 0));
-        op = no_global;
         break;
     case no_once:
         setOp = no_setresult;
@@ -5633,13 +5866,14 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             args.append(*createAttribute(sequenceAtom, getOnceSequenceNumber()));
             break;
         case no_global:
-            //May extend over several different graphs
+            //May extend over several different graphs, but within a single workflow item
             args.append(*createAttribute(sequenceAtom, getLocalSequenceNumber()));
             args.append(*createAttribute(ownedAtom));
             args.append(*createAttribute(jobTempAtom));
+            args.append(*createAttribute(_globalTemp_Atom));
             break;
         default:
-            //global, independent, success, failure, etc. etc.
+            //independent, success, failure, etc. etc.
             args.append(*createAttribute(ownedAtom));
             args.append(*createAttribute(jobTempAtom));
             args.append(*createAttribute(sequenceAtom, getLocalSequenceNumber()));
@@ -5679,6 +5913,8 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
                 args.append(*createAttribute(rowAtom));
             if (output->hasAttribute(jobTempAtom))
                 args.append(*createAttribute(jobTempAtom));
+            if (output->hasAttribute(_globalTemp_Atom))
+                args.append(*createAttribute(_globalTemp_Atom));
             if (persistOp != no_stored)
             {
                 IHqlExpression * recordCountAttr = queryRecordCountInfo(value);
@@ -6514,7 +6750,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
 
     GlobalAttributeInfo info("jobtemp::wfa", "wfa", transformed);
-    info.extractGlobal(NULL, translator.getTargetClusterType());       // should really be a slightly different function
+    info.extractIndependent(translator.getTargetClusterType());       // should really be a slightly different function
 
     OwnedHqlExpr setValue;
     OwnedHqlExpr getValue;
@@ -14328,6 +14564,10 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
         mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
     }
     checkNormalized(curWorkflow);
+
+    //Any global dataset expressions that are only accessed by a single graph can be converted to spills.
+    //This must be performed after all transformations that could introduce new thor graphs
+    optimizeSingleGraphGlobals(curWorkflow);
 
     removeTrivialGraphs(curWorkflow);
     checkNormalized(curWorkflow);

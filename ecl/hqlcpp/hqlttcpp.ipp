@@ -92,6 +92,55 @@ protected:
 
 //---------------------------------------------------------------------------
 
+class GlobalDatasetInfo : public CInterface
+{
+public:
+    GlobalDatasetInfo(IHqlExpression * _name) : name(_name) { }
+
+public:
+    IHqlExpression * name;
+    unsigned numGraphs = 0;
+};
+
+class GlobalDatasetList : public CInterface
+{
+public:
+    GlobalDatasetList * clone();
+
+public:
+    CIArrayOf<GlobalDatasetInfo> globals;
+};
+
+class HqlGlobalDatasetInfo : public NewTransformInfo
+{
+public:
+    HqlGlobalDatasetInfo(IHqlExpression * _original) : NewTransformInfo(_original) { }
+
+public:
+    Owned<GlobalDatasetInfo> globalInfo;
+    Owned<GlobalDatasetList> globalsUsed;
+};
+
+class HqlGlobalDatasetTransformer : public NewHqlTransformer
+{
+public:
+    HqlGlobalDatasetTransformer();
+
+    virtual void analyseExpr(IHqlExpression * expr) override;
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr) override;
+
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(HqlGlobalDatasetInfo, expr); }
+    inline HqlGlobalDatasetInfo * queryBodyExtra(IHqlExpression * expr) { return static_cast<HqlGlobalDatasetInfo *>(queryTransformExtra(expr->queryBody())); }
+
+    bool needToTransform() const;
+
+protected:
+    CICopyArrayOf<GlobalDatasetInfo> allGlobals;
+    bool consistencyError = false;
+};
+
+//---------------------------------------------------------------------------
+
 class ThorScalarInfo : public HoistingTransformInfo
 {
 public:
