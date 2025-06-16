@@ -27,8 +27,10 @@
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jrowstream.hpp"
+#include "jstatcodes.h"
 #include "rtlkey.hpp"
 #include "rtldynfield.hpp"
+#include "thorcommon.hpp"
 
 class RemoteFilename;
 interface IPropertyTree;
@@ -63,6 +65,9 @@ THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTransl
 
 // The IDiskRowWriter interface is used to write a stream of rows to an external source.
 // It is used to process a single logical file at a time.
+//
+// The class is responsible for ensuring that the output file is appropriately buffered and compressed by examining
+// options in the providerOptions.
 interface IDiskRowWriter : extends IInterface
 {
 public:
@@ -77,11 +82,46 @@ public:
     virtual void writeGrouped(const void *row) = 0;
     virtual void flush() = 0;
     virtual void close() = 0;
+    
+    // Statistics and position tracking
+    virtual offset_t getPosition() = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 
 //Create a row writer for a thor binary file.
 extern THORHELPER_API IDiskRowWriter * createLocalDiskWriter(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
 extern THORHELPER_API IDiskRowWriter * createRemoteDiskWriter(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
 extern THORHELPER_API IDiskRowWriter * createDiskWriter(const char * format, bool streamRemote, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions);
+
+//--------------------------------------------------------------------------------------------------------------------
+
+// Adapter interface to bridge IDiskRowWriter with ILogicalRowWriter interface
+// This allows generic disk writers to be used with existing hthor infrastructure
+interface IDiskRowWriterAdapter : extends ILogicalRowWriter
+{
+public:
+    virtual bool setOutputFile(IFile * file, offset_t pos, size32_t recordSize, bool extend) = 0;
+    virtual bool setOutputFile(const char * filename, offset_t pos, size32_t recordSize, bool extend) = 0;
+    virtual bool setOutputFile(const RemoteFilename & filename, offset_t pos, size32_t recordSize, bool extend) = 0;
+};
+
+// Create an adapter that wraps an IDiskRowWriter to make it compatible with ILogicalRowWriter
+extern THORHELPER_API IDiskRowWriterAdapter * createDiskRowWriterAdapter(IDiskRowWriter * diskWriter);
+
+//--------------------------------------------------------------------------------------------------------------------
+
+// A IProviderRowWriter provides the interface that is used to send data to an external provider.
+// It is not yet implemented, and the interface is likely to change.
+//
+// Here to provide an idea of how it will be accessed in the future.
+interface IProviderRowWriter : extends IInterface
+{
+public:
+    virtual void write(const void *row) = 0;
+    virtual void flush() = 0;
+    virtual void close() = 0;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
 
 #endif // __THORWRITE_HPP_

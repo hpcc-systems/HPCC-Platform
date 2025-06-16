@@ -32,7 +32,6 @@
 
 #include "thorwrite.hpp"
 #include "rtlcommon.hpp"
-#include "thorcommon.hpp"
 #include "csvsplitter.hpp"
 #include "thorxmlread.hpp"
 
@@ -150,6 +149,8 @@ public:
 
     virtual bool matches(const char * format, const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions) override;
     virtual void clearOutput() override;
+    virtual offset_t getPosition() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
 
 protected:
     virtual void ensureOutputReady();
@@ -164,6 +165,8 @@ protected:
     bool grouped = false;
     bool compressed = false;
     StringAttr logicalFilename;
+    offset_t currentPosition = 0;
+    unsigned __int64 numRecords = 0;
 };
 
 DiskRowWriter::DiskRowWriter(const IRowWriteFormatMapping * _mapping, const IPropertyTree * _providerOptions)
@@ -200,6 +203,22 @@ void DiskRowWriter::ensureOutputReady()
 {
     if (!outputStream)
         throw MakeStringException(99, "Output file not set for disk writer");
+}
+
+offset_t DiskRowWriter::getPosition()
+{
+    return currentPosition;
+}
+
+unsigned __int64 DiskRowWriter::getStatistic(StatisticKind kind)
+{
+    switch (kind)
+    {
+        case StNumRowsProcessed:
+            return numRecords;
+        default:
+            return 0;
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -291,6 +310,8 @@ public:
     virtual bool matches(const char * format, const IRowWriteFormatMapping * otherMapping, const IPropertyTree * providerOptions) override;
     virtual void write(const void *row) override;
     virtual void writeGrouped(const void *row) override;
+    virtual offset_t getPosition() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
 
 protected:
     void writeRow(const void *row, bool isGrouped);
@@ -332,14 +353,34 @@ void BinaryDiskRowWriter::writeRow(const void *row, bool isGrouped)
     CMemoryRowSerializer target(outputBuffer);
     serializer->serialize(target, (const byte *)row);
     
+    size32_t dataSize = outputBuffer.length();
     if (isGrouped && grouped)
     {
         // Add group marker if needed
         byte groupMarker = 0xFF;
         outputStream->put(sizeof(groupMarker), &groupMarker);
+        currentPosition += sizeof(groupMarker);
     }
     
-    outputStream->put(outputBuffer.length(), outputBuffer.toByteArray());
+    outputStream->put(dataSize, outputBuffer.toByteArray());
+    currentPosition += dataSize;
+    numRecords++;
+}
+
+offset_t BinaryDiskRowWriter::getPosition()
+{
+    return currentPosition;
+}
+
+unsigned __int64 BinaryDiskRowWriter::getStatistic(StatisticKind kind)
+{
+    switch (kind)
+    {
+        case StNumRowsProcessed:
+            return numRecords;
+        default:
+            return 0;
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -395,8 +436,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD + 1)  // Initialize after readers
     // at compile time
     for (auto iter = genericFileTypeWriterMap.begin(); iter != genericFileTypeWriterMap.end(); iter++)
         addAvailableGenericFileTypeName(iter->first.c_str());
-
-    return true;
 
     return true;
 }
