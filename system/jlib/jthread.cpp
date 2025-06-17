@@ -1069,7 +1069,18 @@ public:
             availsem.signal(defaultmax);
         stacksize = _stacksize;
         timeoutOnRelease = _timeoutOnRelease;
-        targetpoolsize = _targetpoolsize?_targetpoolsize:defaultmax;
+        if (_targetpoolsize)
+        {
+            if (INFINITE == delay)
+            {
+                IWARNLOG("%s; targetpoolsize specified but delay is INFINITE - ignoring targetpoolsize", poolname.get());
+                _targetpoolsize = defaultmax;
+            }
+            else
+                targetpoolsize = _targetpoolsize;
+        }
+        else
+            targetpoolsize = defaultmax;
     }
 
     ~CThreadPool()
@@ -1302,8 +1313,46 @@ public:
         }
         return false;
     }
-};
+    // setPoolSize allocates more 'slots' (availsem), or reduces the number of available slots
+    // Due to the throttling mechanism, the number of running threads may exceed the defaultmax
+    // Reducing the pool size, can in effect increase the number of running threads over the limit
+    // Completing threads will only make a slot available if the number running is less than the limit
+    virtual void setPoolSize(unsigned newPoolSize) override
+    {
+        CriticalBlock block(crit);
+        if (newPoolSize == defaultmax)
+            return;
 
+        if (newPoolSize > defaultmax)
+        {
+            unsigned slotsToAdd = newPoolSize - defaultmax;
+            // it doesn't matter how many slots are currently consumed (<= numrunning), we need to "allocate" slotsToAdd more
+            // NB: a slot is only released back (by notifyStopped) if numrunning drops below defaultmax
+            availsem.signal(slotsToAdd);
+        }
+        else if (newPoolSize < defaultmax)
+        {
+            unsigned slotsToConsume = defaultmax - newPoolSize;
+            // consume what we can from those not yet consumed
+            while (slotsToConsume)
+            {
+                if (!availsem.wait(0))
+                    break; // none available
+                --slotsToConsume;
+            }
+            // NB: any unconsumed are now in effect 'burst' threads. Their lifetime (as before) is governed by targetpoolsize
+            if (INFINITE == delay) // tightly bound pool that should have no 'burst' threads.
+            {
+                // reduce targetpoolsize to match defaultmax
+                // NB: in practice this means a tightly bound pool that would normally not have any burst threads,
+                // could do until they finish after the limit is shunk. After they finish the new targetpoolsize will make
+                // them disappear.
+                targetpoolsize = newPoolSize;
+            }
+        }
+        defaultmax = newPoolSize;
+    }
+};
 
 IThreadPool *createThreadPool(const char *poolname,IThreadFactory *factory,bool inheritThreadContext, IExceptionHandler *exceptionHandler,unsigned defaultmax, unsigned delay, unsigned stacksize, unsigned timeoutOnRelease, unsigned targetpoolsize)
 {
