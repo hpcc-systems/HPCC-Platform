@@ -747,18 +747,26 @@ SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
     SecAccessFlags defaultPermission = SecAccess_None;
     const std::string username(user.getName());
     bool addedToCache = false;
+
+    bool needToAdd = false;
     {
         CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
         auto it = m_userDefaultFileScopePermissions.find(username);
         if (it == m_userDefaultFileScopePermissions.end())
-        {
-            defaultPermission = m_secMgr->queryDefaultPermission(user);
-            m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
-            addedToCache = true;
-        }
+            needToAdd = true;
         else
-        {
             defaultPermission = it->second;
+    }
+
+    if (needToAdd)
+    {
+        defaultPermission = m_secMgr->queryDefaultPermission(user);
+        CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+        auto it = m_userDefaultFileScopePermissions.find(username);
+        if (it == m_userDefaultFileScopePermissions.end())
+        {
+            m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
+            addedToCache = true;  // no logging while in critical section
         }
     }
 
