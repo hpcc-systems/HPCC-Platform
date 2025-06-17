@@ -30,13 +30,13 @@
         role="bold">[</emphasis>&lt;options&gt;<emphasis
         role="bold">]</emphasis></title>
 
-        <para></para>
+        <para/>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -142,7 +142,7 @@
           </tgroup>
         </informaltable>
 
-        <para></para>
+        <para/>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_xml" role="brk">
@@ -153,9 +153,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec colwidth="80.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -221,9 +221,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="105.50pt" />
+            <colspec colwidth="105.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -320,9 +320,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="200pt" />
+            <colspec align="left" colwidth="200pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -474,9 +474,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="200pt" />
+            <colspec align="left" colwidth="200pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -635,9 +635,9 @@
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -670,8 +670,8 @@
                   a single entry with the directories separated with the
                   environment separator character. For Linux, use a colon (:)
                   and for Windows, use a semi-colon (;). The paths can also be
-                  set using an environment variable--ESDL_INCLUDE_PATH.
-                  </entry>
+                  set using an environment
+                  variable--ESDL_INCLUDE_PATH.</entry>
                 </row>
 
                 <row>
@@ -732,9 +732,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="125.55pt" />
+            <colspec align="left" colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -790,7 +790,7 @@
         <programlisting>esdl list-definitions -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
 
-        <para></para>
+        <para/>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_delete" role="brk">
@@ -801,9 +801,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -866,7 +866,7 @@
         <programlisting>esdl delete MathService.2 -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
 
-        <para><emphasis role="bold"></emphasis></para>
+        <para><emphasis role="bold"/></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_bind-service" role="brk">
@@ -879,9 +879,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -972,7 +972,7 @@
           </tgroup>
         </informaltable>
 
-        <para><emphasis role="bold"></emphasis></para>
+        <para><emphasis role="bold"/></para>
 
         <para>Use this command to bind a Dynamic ESDL-based ESP service to an
         ESDL definition.</para>
@@ -990,8 +990,8 @@
         syntax:</para>
 
         <programlisting format="linespecific">&lt;Methods&gt;
-  &lt;Method name="myMthd1" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd1" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;<!--#synthpii-->
+  &lt;Method name="myMthd2" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;<!--#synthpii-->
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
@@ -1114,12 +1114,12 @@
         <para><emphasis role="bold">esdl list-bindings
         [options]</emphasis></para>
 
-        <para><emphasis role="bold"></emphasis><informaltable colsep="1"
-            frame="all" rowsep="1">
+        <para><emphasis role="bold"/><informaltable colsep="1" frame="all"
+            rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -1184,9 +1184,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -1263,9 +1263,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -1357,8 +1357,8 @@
         syntax:</para>
 
         <programlisting>&lt;Methods&gt;
-  &lt;Method name="myMthd1" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd1" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;<!--#synthpii-->
+  &lt;Method name="myMthd2" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;<!--#synthpii-->
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
@@ -1374,9 +1374,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -1455,9 +1455,9 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec align="left" colwidth="140.55pt" />
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
@@ -1523,7 +1523,7 @@
 
         <programlisting>esdl get-binding  myesp.8003.MathService -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
   </chapter>

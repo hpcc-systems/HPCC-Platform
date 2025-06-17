@@ -18,9 +18,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -125,7 +125,8 @@
   <para>Example:</para>
 
   <programlisting format="linespecific">DATA15 attachment :=  D'test attachment';
-STD.System.Email.SendEmailAttachData( 'me@mydomain.com',
+  <!--#synthpii-->
+STD.System.Email.SendEmailAttachData( 'me@example.com',
                                   'testing 1,2,3',
                                   'this is a test message',
                                    attachment,

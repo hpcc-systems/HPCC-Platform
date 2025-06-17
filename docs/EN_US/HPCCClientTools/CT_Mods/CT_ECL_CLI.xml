@@ -186,6 +186,7 @@
 eclWatchIP=10.150.50.12
 eclWatchPort=28010
 eclUserName=emilykate
+<!--#synthpii-->
 eclPassword=
 resultLimit=200
 </programlisting>
@@ -8666,6 +8667,8 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
           </informaltable>The <emphasis>ecl url-secret-name </emphasis>command
         generates a secret name from a URL that can be used to support ECL
         SOAPCALL/HTTPCALL automated URL to Secret mapping.</para>
+
+        <!--#synthpii-->
 
         <para>A username can either be embedded in the URL, such as
         https://username@example.com, or passed in as a parameter using the

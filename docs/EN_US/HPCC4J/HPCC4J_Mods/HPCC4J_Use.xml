@@ -19,7 +19,7 @@
     <para><programlisting> //Fetch platform object based on connection settings
  //Provide the connection type, http|https, the ecl watch ip, and port, 
  //your ESP username and password (if required)
- 
+ <!--#synthpii-->
  Platform platform = Platform.get("http", "ip", 8010, "username", "password");
  HPCCWSClient connector = platform.getHPCCWSClient();
 </programlisting></para>

@@ -470,6 +470,7 @@ metadata:
   name: <emphasis role="bold">my-git-secret</emphasis>
 type: Opaque
 stringData:
+<!--#synthpii-->
   password: ghp_eZLHeuoHxxxxxxxxxxxxxxxxxxxxol3986sS=
 </programlisting>
 

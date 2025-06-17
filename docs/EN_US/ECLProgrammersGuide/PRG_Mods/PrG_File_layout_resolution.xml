@@ -191,9 +191,9 @@ OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="125.55pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -221,7 +221,7 @@ OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
                   <entry>password=xxx</entry>
 
                   <entry>Use specified password in filename resolution (Leave
-                  blank to prompt)</entry>
+                  blank to prompt) <!--#synthpii--></entry>
                 </row>
               </tbody>
             </tgroup>

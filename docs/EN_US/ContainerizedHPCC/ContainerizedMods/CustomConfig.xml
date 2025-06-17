@@ -1337,7 +1337,7 @@ thor: []
       and execute a command similar to the following example:</para>
 
       <programlisting lang="bash">kubectl create secret generic admincredssecretname --from-literal=username=hpcc_admin \
-  --from-literal=password=t0pS3cr3tP@ssw0rd
+  --from-literal=password=t0pS3cr3tP@ssw0rd <!--#synthpii-->
 </programlisting>
 
       <para>In the above example, the Kubernetes secret name, is
@@ -1421,6 +1421,8 @@ thor: []
       must be prefixed with "secret/authn/" as illustrated. The LDAP
       administrator "username" and "password" key/values are required.
       Additional properties are ignored.</para>
+
+      <!--#synthpii-->
 
       <programlisting>vault kv put secret/authn/myvaultadmincreds username=hpcc_admin password=t0pS3cr3tP@ssw0rd </programlisting>
 
