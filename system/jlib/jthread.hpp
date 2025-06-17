@@ -365,7 +365,7 @@ public:
 private:
     void dostart(unsigned seconds);
     void dostop();
-    virtual void setPoolSize(unsigned newPoolSize) { UNIMPLEMENTED;}
+// DJPS    virtual void setPoolSize(unsigned newPoolSize) { UNIMPLEMENTED;}
 };
 
 //--------------------------------------------------------

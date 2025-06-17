@@ -832,7 +832,7 @@ protected: friend class CPooledThreadWrapper;
     std::atomic<bool> stopall{false};
     const bool inheritThreadContext;
     unsigned defaultmax{0};
-    std::atomic_uint slotsToRelease{0};
+// DJPS    std::atomic_uint slotsToRelease{0};
     unsigned targetpoolsize{0};
     unsigned delay{0};
     Semaphore availsem;
@@ -893,7 +893,7 @@ public:
     {
         slotConsumed = true;
     }
-    bool resetSlot()
+    bool releaseSlot()
     {
         bool ret = slotConsumed;
         slotConsumed = false;
@@ -1025,6 +1025,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         bool slotConsumed{true};
         if (defaultmax)
         {
+/* DJPS
             if (slotsToRelease)
             {
                 CriticalBlock block(crit);
@@ -1035,6 +1036,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                     --slotsToRelease;
                 }
             }
+*/
             waited = !availsem.wait(0);
             if (noBlock)
                 timedout = waited;
@@ -1310,7 +1312,7 @@ public:
                     break;
                 }
             }
-            if (item->resetSlot())
+            if (item->releaseSlot())
                 availsem.signal();
         }
         return ret;
@@ -1334,11 +1336,14 @@ public:
         }
         return false;
     }
-    void setPoolSize(unsigned newPoolSize)
+    virtual void setPoolSize(unsigned newPoolSize) override
     {
+        DBGLOG("setPoolSize(%u)", newPoolSize);
         CriticalBlock block(crit);
+        DBGLOG("in setPoolSize");
         if (newPoolSize > defaultmax)
         {
+            DBGLOG("newPoolSize > defaultmax");
             availsem.signal(newPoolSize - defaultmax);
             defaultmax = newPoolSize;
             return;
@@ -1346,27 +1351,40 @@ public:
 
         if (newPoolSize < defaultmax)
         {
-            slotsToRelease += defaultmax - newPoolSize;
+            DBGLOG("newPoolSize < defaultmax");
+            unsigned slotsToConsume = defaultmax - newPoolSize;
+            DBGLOG("slotsToConsume = %u", slotsToConsume);
             defaultmax = newPoolSize;
-            while (slotsToRelease)
+            while (slotsToConsume)
             {
                 if (!availsem.wait(0))
                     break; // none available
-                --slotsToRelease;
+                --slotsToConsume;
             }
-            if (slotsToRelease && runningCount())
+            DBGLOG("after signal slotsToConsume = %u", slotsToConsume);
+            if (slotsToConsume)
             {
+                if (runningCount()==0)
+                    return;
+//                assertex(runningCount());
+                DBGLOG("runningCount() = %u", runningCount());
                 ForEachItemIn(threadIndex,threadwrappers)
                 {
                     CPooledThreadWrapper &it = threadwrappers.item(threadIndex);
-                    if (!it.isStopped() && !it.slotWasConsumed())
+                    if (!it.slotWasConsumed())
                     {
+                        assertex(!it.isStopped());
+
                         it.setSlotConsumed();
-                        if (!--slotsToRelease)
+                        if (!--slotsToConsume)
                             break;
                     }
                 }
+                if (slotsToConsume > 0 && slotsToConsume != newPoolSize)
+                    return;
+//              assertex(slotsToConsume > 0 && slotsToConsume != newPoolSize);
             }
+            DBGLOG("after running threads slotsToConsume = %u", slotsToConsume);
         }
     }
 };
