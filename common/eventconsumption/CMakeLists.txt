@@ -21,6 +21,12 @@ include_directories (
     ${HPCC_SOURCE_DIR}/system/include
 )
 
+if (USE_CPPUNIT)
+    include_directories (
+        ${HPCC_SOURCE_DIR}/testing/unittests
+    )
+endif()
+
 set (
     SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdump.cpp
@@ -37,8 +43,20 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
 )
 
+if (USE_CPPUNIT)
+    set (
+        SRCS
+        ${SRCS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/eventunittests.cpp
+    )
+endif()
+
 ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
 
 HPCC_ADD_LIBRARY(eventconsumption SHARED ${SRCS})
 install ( TARGETS eventconsumption RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( eventconsumption jlib )
+
+if (USE_CPPUNIT)
+    target_link_libraries ( eventconsumption ${CppUnit_LIBRARIES} )
+endif()

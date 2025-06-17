@@ -38,8 +38,59 @@ const Storage::Plane& Storage::File::lookupPlane(__uint64 nodeKind) const
     return *planes[nodeKind];
 }
 
+void Storage::PageCache::configure(const IPropertyTree& config)
+{
+    readTime = __uint64(config.getPropInt64("@cache-read", readTime));
+    if (readTime)
+        capacity = __uint64(config.getPropInt64("@cache-capacity", capacity));
+}
+
+__uint64 Storage::PageCache::find(const Key& key)
+{
+    if (!readTime)
+        return 0;
+    Hash::iterator hashIt = hash.find(key);
+    if (hash.end() == hashIt)
+        return 0;
+    MRU::iterator mruIt = std::find(mru.begin(), mru.end(), &(*hashIt));
+    if (mru.end() == mruIt)
+        throw makeStringExceptionV(-1, "page cache MRU unexpectedly missing key %llu, %llu", key.fileId, key.offset);
+    mru.splice(mru.begin(), mru, mruIt);
+    return readTime;
+}
+
+bool Storage::PageCache::insert(const Key& key)
+{
+    if (!readTime)
+        return false;
+    if (find(key))
+        return false;
+    reserve(DefaultPageSize);
+    Hash::iterator hashIt = hash.insert(key).first;
+    mru.push_front(&(*hashIt));
+    used += DefaultPageSize;
+    return true;
+}
+
+void Storage::PageCache::reserve(__uint64 request)
+{
+    if (!capacity)
+        return;
+    if (capacity < request)
+        throw makeStringExceptionV(-1, "page cache capacity %llu less than reserved page request %llu", capacity, request);
+    while ((capacity - used) < request)
+    {
+        if (mru.empty())
+            throw makeStringException(-1, "page cache MRU unexpectedly empty");
+        used -= request;
+        hash.erase(*mru.back());
+        mru.pop_back();
+    }
+}
+
 void Storage::configure(const IPropertyTree& config)
 {
+    cache.configure(config);
     configurePlanes(config);
     configureFiles(config);
 }
@@ -59,12 +110,19 @@ void Storage::observeFile(__uint64 fileId, const char* path)
 
 void Storage::describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const
 {
-    const File& file = lookupFile(fileId); // doesn't return nullptr
-    const Plane& plane = file.lookupPlane(nodeKind); // doesn't return nullptr
+    const File& file = lookupFile(fileId);
     page.fileId = fileId;
     page.offset = offset;
     page.nodeKind = nodeKind;
-    page.readTime = plane.readTime;
+    page.readTime = cache.find(fileId, offset);
+    if (!page.readTime)
+    {
+        const Plane& plane = file.lookupPlane(nodeKind);
+        page.readTime = plane.readTime;
+        // MORE: if multiple pages should be loaded, add all to the cache, with the requested page
+        // added last.
+        (void)cache.insert(fileId, offset);
+    }
 }
 
 void Storage::configurePlanes(const IPropertyTree& config)
@@ -168,3 +226,47 @@ const Storage::File& Storage::lookupFile(__uint64 fileId) const
     assertex(configuredIt != configuredFiles.end());
     return *configuredIt;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+class IndexModelStorageTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(IndexModelStorageTest);
+    CPPUNIT_TEST(testPageCache);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testPageCache()
+    {
+        constexpr const char* configText =
+R"!!!(cache-capacity: 16384
+cache-read: 100
+)!!!";
+        Storage::PageCache cache;
+        Owned<IPropertyTree> configTree = createPTreeFromYAMLString(configText);
+        cache.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.readTime);
+        CPPUNIT_ASSERT_EQUAL(16384ULL, cache.capacity);
+        CPPUNIT_ASSERT(!cache.find(1, 0));
+        CPPUNIT_ASSERT(cache.insert(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 0));
+        CPPUNIT_ASSERT(!cache.insert(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 0));
+        CPPUNIT_ASSERT(cache.insert(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(0ULL, cache.find(1, 16384));
+        CPPUNIT_ASSERT(cache.insert(1, 16384));
+        CPPUNIT_ASSERT_EQUAL(0ULL, cache.find(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 16384));
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(IndexModelStorageTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IndexModelStorageTest, "indexmodelstorage");
+
+#endif // _USE_CPPUNIT

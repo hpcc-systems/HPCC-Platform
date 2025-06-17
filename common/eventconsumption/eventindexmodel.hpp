@@ -19,11 +19,15 @@
 
 #include "eventmodeling.h"
 #include <set>
+#include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 
 // The index event model configuration conforms to this structure:
 //   kind: index-event
 //   storage:
+//     cache-read: nanosecond time to read one page
+//     cache-capacity: maximum bytes to use for the cache
 //     plane:
 //     - name: unique, non-empty, identifier
 //       readTime: nanosecond time to read one page
@@ -34,6 +38,8 @@
 //       leafPlane: name of place in which index leaves reside, if different from the default
 //
 // - `kind` is optional; as the first model the value is implied.
+// - `cache-read` is optional; if zero, empty, or omitted, the cache is disabled.
+// - `cache-capacity` is optional; if zero, empty, or omitted, the cache is unlimited.
 // - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
 //   an alternate choice.
 // - `file` is optional; omission implies all files exist in the default plane.
@@ -60,6 +66,8 @@ struct ModeledPage
 class Storage
 {
 private:
+    friend class IndexModelStorageTest;
+
     // Encapsulation of modeled information describing a named storage plane.
     struct Plane
     {
@@ -86,10 +94,51 @@ private:
 
         // Returns the storage plane associated with the given node kind.
         const Plane& lookupPlane(__uint64 nodeKind) const;
+        __uint64 pageSize() const;
     };
     friend bool operator < (const File& left, const File& right); // required for set insertion
     friend bool operator < (const File& left, const char* right); // required to search a set by path
     friend bool operator < (const char* left, const File& right); // required to search a set by path
+
+    class PageCache
+    {
+    public:
+        static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
+        class Key
+        {
+        public:
+            __uint64 fileId{0};
+            __uint64 offset{0};
+            bool operator == (const Key& other) const { return fileId == other.fileId && offset == other.offset; }
+        };
+
+        struct KeyHash
+        {
+            std::size_t operator()(const Key& key) const
+            {
+                std::size_t h1 = std::hash<__uint64>()(key.fileId);
+                std::size_t h2 = std::hash<__uint64>()(key.offset);
+                return h1 ^ h2;
+            }
+        };
+
+        using Hash = std::unordered_set<Key, KeyHash>;
+        using MRU = std::list<const Key*>;
+    public:
+        void configure(const IPropertyTree& config);
+        inline __uint64 find(__uint64 fileId, __uint64 offset) { return find({fileId, offset}); }
+        __uint64 find(const Key& key);
+        inline bool insert(__uint64 fileId, __uint64 offset) { return insert({fileId, offset}); }
+        bool insert(const Key& key);
+    private:
+        void reserve(__uint64 size);
+    public:
+        __uint64 used{0};
+        __uint64 capacity{0};
+        __uint64 readTime{0};
+        Hash hash;
+        MRU mru;
+    };
 
     // An ordered set of storage planes, with key transparency enabled.
     using Planes = std::set<Plane, std::less<>>;
@@ -124,6 +173,7 @@ private:
     const File& lookupFile(__uint64 fileId) const;
 
 private:
+    mutable PageCache cache;
     Planes planes;
     const Plane* defaultPlane{nullptr};
     Files configuredFiles;
