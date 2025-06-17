@@ -34,7 +34,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     tab = "summary"
 }) => {
 
-    const [file, isProtected, , refresh] = useFile(cluster, logicalFile);
+    const { file, isProtected, refreshData } = useFile(cluster, logicalFile);
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
@@ -96,7 +96,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refresh()
+            onClick: () => refreshData()
         },
         {
             key: "copyFilename", text: nlsHPCC.CopyLogicalFilename, iconProps: { iconName: "Copy" },
@@ -142,7 +142,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
         },
-    ], [canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, setShowDeleteConfirm]);
+    ], [canReplicateFlag, canSave, description, file, logicalFile, refreshData, replicateFlag, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));
