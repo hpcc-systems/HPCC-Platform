@@ -95,7 +95,7 @@ The `IDiskRowWriterAdapter` implements the bridge pattern to:
    - `DiskRowWriter` - Base class with statistics and position tracking
    - `LocalDiskRowWriter` - Local file writing implementation
    - `BinaryDiskRowWriter` - Flat/binary format writer (fully implemented)
-3. **Adapter Pattern**: `IDiskRowWriterAdapter` bridge implementation
+3. **Adapter Pattern**: `IDiskRowWriterAdapter` bridge implementation ✅ **Complete**
 4. **Factory System**: Format registration and creation system
 
 **Note:** Utility functions and format constants were removed from the current interface to keep it minimal and focused on core functionality.
@@ -105,6 +105,7 @@ The `IDiskRowWriterAdapter` implements the bridge pattern to:
 1. **Incomplete Type Error**: Fixed `ILogicalRowWriter` incomplete type issue by including proper headers
 2. **Missing Virtual Functions**: Added required `getPosition()` and `getStatistic()` implementations to base classes
 3. **Abstract Class Error**: Resolved by implementing all pure virtual methods in concrete classes
+4. **Missing Adapter Implementation**: ✅ **Added** `DiskRowWriterAdapter` class and `createDiskRowWriterAdapter()` factory function
 
 ### Current State
 
@@ -114,8 +115,49 @@ The generic writing system is now **functionally complete** with:
 - ✅ Binary/flat format writer fully functional
 - ✅ Statistics and position tracking implemented
 - ✅ Factory and registration system in place
+- ✅ **Adapter implementation complete** - `DiskRowWriterAdapter` bridges generic writers to `ILogicalRowWriter`
+- ✅ **HThor integration implemented** - `CHThorDiskWriteActivity` now uses generic writers
 - ✅ No compilation errors
 - 📝 Utility functions removed (can be added later if needed)
+
+### Adapter Implementation Details
+
+**Class:** `DiskRowWriterAdapter` in `thorwrite.cpp`
+
+The adapter implementation provides a clean bridge between the new generic writing interfaces and existing hthor infrastructure:
+
+**Key Features:**
+- Implements both `IDiskRowWriterAdapter` and `ILogicalRowWriter` interfaces
+- Maintains a `Linked<IDiskRowWriter>` to the underlying generic writer
+- Maps `writeRow()` calls to `diskWriter->write()`
+- Maps `writeGroupedRow()` calls to `diskWriter->writeGrouped()`
+- Forwards statistics and position queries directly to the disk writer
+- Provides all three `setOutputFile()` overloads for different file types
+- Uses `CInterfaceOf<>` for proper reference counting
+
+**Factory Function:**
+```cpp
+IDiskRowWriterAdapter * createDiskRowWriterAdapter(IDiskRowWriter * diskWriter);
+```
+
+### HThor Integration
+
+**File:** `ecl/hthor/hthor.cpp` and `ecl/hthor/hthor.ipp`
+
+The generic writing infrastructure has been successfully integrated into the HThor engine:
+
+1. **Class Enhancement**: Added `Owned<IDiskRowWriter> genericWriter` member to `CHThorDiskWriteActivity`
+2. **Include Integration**: Added `#include "thorwrite.hpp"` to hthor.ipp
+3. **Implementation**: Replaced `throwUnexpected()` in `CHThorDiskWriteActivity::open()` with working generic write logic
+4. **Fallback Support**: If generic write fails, automatically falls back to format-specific writers for compatibility
+5. **Resource Management**: Proper cleanup through existing close() and destructor mechanisms
+
+**Key Features:**
+- Uses binary format as default (configurable in the future)
+- Integrates with existing `formatOptions` and `providerOptions` members
+- Maintains compatibility with existing hthor workflows
+- Provides debug logging for troubleshooting
+- Zero breaking changes to existing interfaces
 
 ### Current Limitations
 
@@ -142,9 +184,29 @@ The generic writing system is now **functionally complete** with:
 ## Integration Points
 
 ### With Existing Code
-- **hthor.cpp**: Can use `IDiskRowWriterAdapter` to integrate generic writers
-- **ILogicalRowWriter**: Existing code continues to work unchanged
+- **hthor.cpp**: ✅ **Implemented** - `CHThorDiskWriteActivity::open()` now uses generic writers via `IDiskRowWriterAdapter`
+- **ILogicalRowWriter**: Existing code continues to work unchanged through adapter pattern
 - **Statistics Framework**: Compatible with platform statistics collection
+- **Fallback Mechanism**: Automatic fallback to format-specific writers ensures compatibility
+
+### HThor Integration Details
+```cpp
+// In CHThorDiskWriteActivity::open()
+if (useGenericReadWrites) {
+    // Create format mapping for binary format
+    Owned<IRowWriteFormatMapping> mapping = createRowWriteFormatMapping(...);
+    
+    // Create generic writer
+    genericWriter.setown(createDiskWriter("binary", false, mapping, providerOptions));
+    
+    // Set output file
+    genericWriter->setOutputFile(file, 0, recordSize, extend);
+    
+    // Create adapter for ILogicalRowWriter compatibility
+    Owned<IDiskRowWriterAdapter> adapter = createDiskRowWriterAdapter(genericWriter);
+    writer = adapter.getClear();
+}
+```
 
 ### Future Implementation Classes
 Additional format writers can be implemented by:

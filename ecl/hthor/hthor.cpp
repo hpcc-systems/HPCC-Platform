@@ -651,7 +651,49 @@ void CHThorDiskWriteActivity::open()
 
     ILogicalRowWriter * writer = nullptr;
     if (useGenericReadWrites)
-        throwUnexpected(); // generic write not yet supported
+    {
+        // Use generic write infrastructure
+        try 
+        {
+            // Create format mapping for the output 
+            // For now, use "binary" format as default - this could be configurable in the future
+            const char * format = "binary";
+            unsigned expectedCrc = 0; // CRC will be calculated
+            unsigned projectedCrc = 0; // CRC will be calculated
+            Owned<IRowWriteFormatMapping> mapping = createRowWriteFormatMapping(
+                RecordTranslationMode::AlwaysECL, // translation mode
+                format,
+                *serializedOutputMeta.querySerializedDiskMeta(), // projected meta (what goes to disk)
+                expectedCrc,
+                *input->queryOutputMeta(), // expected meta (what's in memory)
+                projectedCrc,
+                formatOptions // format options
+            );
+            
+            // Create the generic writer for the specified format
+            bool streamRemote = false; // For local files, set to false
+            genericWriter.setown(createDiskWriter(format, streamRemote, mapping, providerOptions));
+            
+            // Set the output file with current write parameters
+            // Note: extend mode and positioning are limited - see interface documentation
+            size32_t recordSize = serializedOutputMeta.getFixedSize();
+            if (!genericWriter->setOutputFile(file, 0, recordSize, extend))
+                throw MakeStringException(0, "Failed to set output file for generic writer");
+            
+            // Create an adapter to bridge generic writer to ILogicalRowWriter interface
+            Owned<IDiskRowWriterAdapter> adapter = createDiskRowWriterAdapter(genericWriter);
+            writer = adapter.getClear(); // Transfer ownership
+        }
+        catch (IException * e)
+        {
+            // If generic write fails, fall back to format-specific writer
+            // This provides compatibility during transition period
+            StringBuffer msg;
+            DBGLOG("Generic write failed, falling back to format-specific writer: %s", e->errorMessage(msg).str());
+            e->Release();
+            writer = createRowWriter(diskout, rowIf, rwFlags);
+        }
+    }
     else
         writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);

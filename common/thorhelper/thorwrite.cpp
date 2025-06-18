@@ -491,3 +491,76 @@ MODULE_INIT(INIT_PRIORITY_STANDARD + 1)  // Initialize after readers
 
     return true;
 }
+
+//============================================================================
+// Adapter implementation to bridge IDiskRowWriter with ILogicalRowWriter
+//============================================================================
+
+class DiskRowWriterAdapter : public CInterfaceOf<IDiskRowWriterAdapter>
+{
+private:
+    Linked<IDiskRowWriter> diskWriter;
+    
+public:
+    DiskRowWriterAdapter(IDiskRowWriter * _diskWriter) : diskWriter(_diskWriter) 
+    {
+        assertex(diskWriter);
+    }
+    
+    // IDiskRowWriterAdapter interface methods
+    virtual bool setOutputFile(IFile * file, offset_t pos, size32_t recordSize, bool extend) override
+    {
+        return diskWriter->setOutputFile(file, pos, recordSize, extend);
+    }
+    
+    virtual bool setOutputFile(const char * filename, offset_t pos, size32_t recordSize, bool extend) override
+    {
+        return diskWriter->setOutputFile(filename, pos, recordSize, extend);
+    }
+    
+    virtual bool setOutputFile(const RemoteFilename & filename, offset_t pos, size32_t recordSize, bool extend) override
+    {
+        return diskWriter->setOutputFile(filename, pos, recordSize, extend);
+    }
+    
+    // IRowWriter interface methods (inherited by ILogicalRowWriter)
+    virtual void putRow(const void * row) override
+    {
+        diskWriter->write(row);
+    }
+    
+    virtual void writeRow(const void * row) override
+    {
+        diskWriter->write(row);
+    }
+    
+    virtual void flush() override
+    {
+        diskWriter->flush();
+    }
+    
+    virtual void noteStopped() override
+    {
+        // No-op for disk writers - they don't need stop notification
+    }
+    
+    // ILogicalRowWriter interface methods
+    virtual offset_t getPosition() override
+    {
+        return diskWriter->getPosition();
+    }
+    
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        return diskWriter->getStatistic(kind);
+    }
+};
+
+//============================================================================
+// Factory function
+//============================================================================
+
+IDiskRowWriterAdapter * createDiskRowWriterAdapter(IDiskRowWriter * diskWriter)
+{
+    return new DiskRowWriterAdapter(diskWriter);
+}
