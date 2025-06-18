@@ -131,7 +131,10 @@ void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
 
 void CDiskReadMasterBase::done()
 {
-    diskAccessCost = calcFileReadCostStats(true);
+    // Publish file properties for regular disk read activities (exclude spill reads)
+    // future: consider tracking and recording spill file costs
+    bool publishFileProps = (TAKspillread != container.getKind());
+    diskAccessCost = calcFileReadCostStats(publishFileProps);
     CMasterActivity::done();
 }
 
