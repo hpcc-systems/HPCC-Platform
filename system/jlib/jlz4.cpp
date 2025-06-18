@@ -29,6 +29,8 @@
     size32_t trailsize; bytes traildata;    // unexpanded
 */
 
+//--------------------------------------------------------------------------------------------------------------------
+// Non Streaming implementation of LZ4 compression
 class CLZ4Compressor final : public CFcmpCompressor
 {
     bool hc;
@@ -202,112 +204,6 @@ public:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-// See notes on CStreamCompressor in jlzbase.hpp for the serialized stream format
-class CLZ4StreamCompressor final : public CStreamCompressor
-{
-public:
-    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
-    {
-        auto processOption = [this](const char * option, const char * textValue)
-        {
-            this->processOption(option, textValue);
-        };
-        processOptionString(options, processOption);
-        if (hc)
-            lz4HCStream = LZ4_createStreamHC();
-        else
-            lz4Stream = LZ4_createStream();
-    }
-
-    virtual ~CLZ4StreamCompressor()
-    {
-        LZ4_freeStream(lz4Stream);
-        LZ4_freeStreamHC(lz4HCStream);
-    }
-
-    virtual void open(void *buf,size32_t max) override
-    {
-        CStreamCompressor::open(buf, max);
-        if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
-        else
-            LZ4_resetStream_fast(lz4Stream);
-    }
-
-    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
-
-protected:
-    bool processOption(const char * option, const char * textValue)
-    {
-        if (CStreamCompressor::processOption(option, textValue))
-            return true;
-        int intValue = atoi(textValue);
-        if (strieq(option, "hclevel") || strieq(option, "level"))
-        {
-            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
-                compressionLevel = intValue;
-        }
-        else
-            return false;
-        return true;
-    };
-
-    virtual void resetStreamContext() override
-    {
-        if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
-        else
-            LZ4_resetStream_fast(lz4Stream);
-    }
-
-    virtual bool tryCompress(bool isFinalCompression [[maybe_unused]]) override
-    {
-        size32_t uncompressed = inlen - lastCompress;
-        //Sanity check - this could be the case when a limit has been reduced
-        if (uncompressed < minSizeToCompress)
-            return false;
-
-        size32_t compressedSize = outlen;
-        size32_t remaining = outMax - compressedSize - outputExtra;
-
-        const char * from = (const char *)inbuf + lastCompress;
-        char * to = (char *)queryOutputBuffer() + outlen;
-        int newCompressedSize;
-        if (hc)
-            newCompressedSize = LZ4_compress_HC_continue(lz4HCStream, from, to, uncompressed, remaining);
-        else
-            newCompressedSize = LZ4_compress_fast_continue(lz4Stream, from, to, uncompressed, remaining, 1);
-
-#ifdef LZ4LOGGING
-        DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
-#endif
-
-        if (newCompressedSize == 0)
-            return false;
-
-        size32_t lenLen = sizePacked(newCompressedSize);
-        if (newCompressedSize + lenLen > remaining)
-            return false;
-
-        compressedSizes.append(newCompressedSize);
-        outputExtra += lenLen;
-        outlen += newCompressedSize;
-        lastCompress = inlen;
-        return true;
-    }
-
-protected:
-    LZ4_stream_t * lz4Stream = nullptr;
-    LZ4_streamHC_t * lz4HCStream = nullptr;
-
-    //Options for configuring the compressor:
-    bool hc = false;
-    byte compressionLevel = LZ4HC_CLEVEL_DEFAULT;
-};
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
 class CLZ4Expander final : public CFcmpExpander
 {
     size32_t totalExpanded = 0;
@@ -437,6 +333,114 @@ public:
         return true;
     }
 };
+
+
+//---------------------------------------------------------------------------------------------------------------------
+// Streaming implementation of LZ4 compression
+//
+// See notes on CStreamCompressor in jlzbase.hpp for the serialized stream format
+class CLZ4StreamCompressor final : public CStreamCompressor
+{
+public:
+    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
+    {
+        auto processOption = [this](const char * option, const char * textValue)
+        {
+            this->processOption(option, textValue);
+        };
+        processOptionString(options, processOption);
+        if (hc)
+            lz4HCStream = LZ4_createStreamHC();
+        else
+            lz4Stream = LZ4_createStream();
+    }
+
+    virtual ~CLZ4StreamCompressor()
+    {
+        LZ4_freeStream(lz4Stream);
+        LZ4_freeStreamHC(lz4HCStream);
+    }
+
+    virtual void open(void *buf,size32_t max) override
+    {
+        CStreamCompressor::open(buf, max);
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
+
+protected:
+    bool processOption(const char * option, const char * textValue)
+    {
+        if (CStreamCompressor::processOption(option, textValue))
+            return true;
+        int intValue = atoi(textValue);
+        if (strieq(option, "hclevel") || strieq(option, "level"))
+        {
+            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
+                compressionLevel = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    virtual void resetStreamContext() override
+    {
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual bool tryCompress(bool isFinalCompression [[maybe_unused]]) override
+    {
+        size32_t uncompressed = inlen - lastCompress;
+        //Sanity check - this could be the case when a limit has been reduced
+        if (uncompressed < minSizeToCompress)
+            return false;
+
+        size32_t compressedSize = outlen;
+        size32_t remaining = outMax - compressedSize - outputExtra;
+
+        const char * from = (const char *)inbuf + lastCompress;
+        char * to = (char *)queryOutputBuffer() + outlen;
+        int newCompressedSize;
+        if (hc)
+            newCompressedSize = LZ4_compress_HC_continue(lz4HCStream, from, to, uncompressed, remaining);
+        else
+            newCompressedSize = LZ4_compress_fast_continue(lz4Stream, from, to, uncompressed, remaining, 1);
+
+#ifdef LZ4LOGGING
+        DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+#endif
+
+        if (newCompressedSize == 0)
+            return false;
+
+        size32_t lenLen = sizePacked(newCompressedSize);
+        if (newCompressedSize + lenLen > remaining)
+            return false;
+
+        compressedSizes.append(newCompressedSize);
+        outputExtra += lenLen;
+        outlen += newCompressedSize;
+        lastCompress = inlen;
+        return true;
+    }
+
+protected:
+    LZ4_stream_t * lz4Stream = nullptr;
+    LZ4_streamHC_t * lz4HCStream = nullptr;
+
+    //Options for configuring the compressor:
+    bool hc = false;
+    byte compressionLevel = LZ4HC_CLEVEL_DEFAULT;
+};
+
 
 //---------------------------------------------------------------------------------------------------------------------
 
