@@ -144,6 +144,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) = 0;
     virtual bool isArray(const char *xpath=NULL) const = 0;
     virtual unsigned getAttributeCount() const = 0;
+    virtual IPropertyTree *clone(bool sub) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended

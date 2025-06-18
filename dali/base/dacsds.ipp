@@ -361,6 +361,7 @@ public:
     virtual void localizeElements(const char *xpath, bool allTail=false) override;
     virtual IPropertyTree *queryBranch(const char *xpath) const override;
     virtual bool hasChildren() const override { return (children && children->count()) || (!children && 0 != (serverTreeInfo & STI_HaveChildren)); }
+    virtual IPropertyTree *clone(bool sub) override;
 
 // ITrackChanges
     virtual ChangeInfo *queryChanges() override;

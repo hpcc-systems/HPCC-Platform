@@ -628,6 +628,12 @@ IPropertyTree *CClientRemoteTree::queryBranch(const char *xpath) const
     return const_cast<CClientRemoteTree *>(this)->_queryBranch(xpath);
 }
 
+IPropertyTree *CClientRemoteTree::clone(bool sub)
+{
+    checkExt();
+    return PARENT::clone(sub);
+}
+
 IPropertyTree *CClientRemoteTree::_queryBranch(const char *xpath)
 {
     if (queryLazyFetch())

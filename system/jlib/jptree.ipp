@@ -628,7 +628,6 @@ public:
     void serializeAttributes(MemoryBuffer &tgt);
 
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
-    IPropertyTree * clone(const IPropertyTree &srcTree, bool sub);  // create a node (that matches the type of this) and clone the source
     void cloneContents(const IPropertyTree &srcTree, bool sub);
 
     inline void setOwner(IPTArrayValue *_arrayOwner) { arrayOwner = _arrayOwner; }
@@ -726,6 +725,7 @@ public:
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) override;
     virtual bool isArray(const char *xpath=NULL) const override;
     virtual unsigned getAttributeCount() const override;
+    virtual IPropertyTree *clone(bool sub) override;
 
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;

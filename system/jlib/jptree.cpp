@@ -3085,14 +3085,6 @@ void PTree::deserializeSelf(MemoryBuffer &src)
     else value = NULL;
 }
 
-IPropertyTree *PTree::clone(const IPropertyTree &srcTree, bool sub)
-{
-    Owned<IPropertyTree> _dstTree = create(srcTree.queryName());
-    PTree *dstTree = static_cast<PTree *>(_dstTree.get());
-    dstTree->cloneContents(srcTree, sub);
-    return _dstTree.getClear();
-}
-
 void PTree::cloneIntoSelf(const IPropertyTree &srcTree, bool sub)
 {
     setName(srcTree.queryName());
@@ -3125,8 +3117,7 @@ void PTree::cloneContents(const IPropertyTree &srcTree, bool sub)
         {
             do
             {
-                IPropertyTree &child = iter->query();
-                IPropertyTree *newChild = clone(child, sub);
+                IPropertyTree *newChild = iter->query().clone(sub);
                 addPropTree(newChild->queryName(), newChild);
             }
             while (iter->next());
@@ -3138,7 +3129,7 @@ IPropertyTree *PTree::ownPTree(IPropertyTree *tree)
 {
     if (!isEquivalent(tree) || tree->IsShared() || isCaseInsensitive() != tree->isCaseInsensitive())
     {
-        IPropertyTree *newTree = clone(*tree, true);
+        IPropertyTree *newTree = tree->clone(true);
         tree->Release();
         return newTree;
     }
@@ -3607,6 +3598,15 @@ unsigned PTree::getAttributeCount() const
 {
     return numAttrs;
 }
+
+IPropertyTree *PTree::clone(bool sub)
+{
+    Owned<IPropertyTree> _newTree = create(queryName());
+    PTree *newTree = static_cast<PTree *>(_newTree.get());
+    newTree->cloneContents(*this, sub);
+    return _newTree.getClear();
+}
+
 
 AttrValue *PTree::getNextAttribute(AttrValue *cur) const
 {
@@ -4385,8 +4385,7 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 
 IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags)
 {
-    Owned<PTree> tree = (PTree *)createPTree(NULL, flags);
-    return tree->clone(*srcTree->queryBranch(NULL), true);
+    return srcTree->queryBranch(NULL)->clone(true);
 }
 
 void mergePTree(IPropertyTree *target, IPropertyTree *toMerge)
