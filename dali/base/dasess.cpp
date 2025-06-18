@@ -1424,10 +1424,12 @@ public:
     {
         if (err)
             *err = 0;
+
+        // If no LDAP connection available, return full access
         if (!ldapconn)
-            return SecAccess_Unavailable;
+            return SecAccess_Full;
 #ifdef _NO_LDAP
-        return SecAccess_Unavailable;
+        return SecAccess_Full;
 #else
         logNullUser(udesc);//stack trace if NULL user
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
