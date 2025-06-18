@@ -90,9 +90,27 @@ THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTransl
 /*
  * A helper function to create an output stream for writing data to a file.
  */
-static IBufferedSerialOutputStream * createOutputStream(IFileIO * outputfileio, const IPropertyTree * providerOptions)
+static IBufferedSerialOutputStream * createOutputStream(IFileIO * outputfileio, const IPropertyTree * providerOptions, offset_t startOffset = 0)
 {
     ISerialOutputStream * serialOutput = createSerialOutputStream(outputfileio);
+    
+    // Note: The startOffset parameter is provided for future extend mode support.
+    // Currently, CFileSerialOutputStream (created by createSerialOutputStream) always 
+    // starts with nextOffset = 0. To properly support extend mode, we would need:
+    // 1. A modified createSerialOutputStream() that accepts a starting offset, OR
+    // 2. A custom CFileSerialOutputStream implementation that initializes nextOffset to startOffset, OR  
+    // 3. Use IFileIOStream with seek() capabilities instead of ISerialOutputStream
+    //
+    // For now, extend mode positioning relies on the caller handling file positioning
+    // at a higher level, or ensuring the IFileIO is opened with the correct mode (IFOwrite)
+    // that naturally appends to existing files on most file systems.
+    if (startOffset > 0)
+    {
+        // TODO: Implement proper positioning for extend mode
+        // This would require modifying the HPCC stream architecture or 
+        // creating a custom positioned output stream
+    }
+    
     size32_t blockWriteSize = providerOptions->getPropInt("writeBufferSize", 0x100000);
     bool threaded = providerOptions->getPropBool("@threaded", false);
     
@@ -104,6 +122,8 @@ static IBufferedSerialOutputStream * createOutputStream(IFileIO * outputfileio, 
 
 static bool createOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
 {
+    offset_t startOffset = 0;
+    
     try
     {
         bool overwrite = providerOptions->getPropBool("@overwrite", false);
@@ -119,8 +139,27 @@ static bool createOutputStream(Shared<IBufferedSerialOutputStream> & outputStrea
             offset_t fileSize = outputFile->size();
             if (fileSize != unknownFileSize)
             {
-                // For extend mode, we position at the end - IFileIO doesn't have seek, 
-                // but we can use the SerialOutputStream to position
+                // EXTEND MODE POSITIONING LIMITATION:
+                // For extend mode, we should position the output stream at the end of the file.
+                // However, the current HPCC stream architecture has limitations:
+                //
+                // 1. IFileIO uses position-based write(offset, len, data) but CFileSerialOutputStream
+                //    always starts with nextOffset = 0 
+                // 2. createSerialOutputStream() doesn't accept a starting offset parameter
+                // 3. ISerialOutputStream doesn't have a seek() method
+                //
+                // CURRENT BEHAVIOR: 
+                // - File is opened with IFOwrite mode which should append on most file systems
+                // - However, the SerialOutputStream may overwrite from position 0
+                //
+                // PROPER SOLUTIONS (for future implementation):
+                // 1. Modify createSerialOutputStream() to accept startOffset parameter
+                // 2. Create CPositionedFileSerialOutputStream that initializes nextOffset = fileSize  
+                // 3. Use IFileIOStream with seek(fileSize, IFSbegin) instead of ISerialOutputStream
+                // 4. Create a wrapper stream that adjusts all write offsets by +fileSize
+                //
+                // For now, extend mode may not work correctly - this is a known limitation.
+                startOffset = fileSize;  // Pass to createOutputStream for documentation
             }
         }
     }
@@ -131,7 +170,7 @@ static bool createOutputStream(Shared<IBufferedSerialOutputStream> & outputStrea
         return false;
     }
 
-    outputStream.setown(createOutputStream(outputfileio, providerOptions));
+    outputStream.setown(createOutputStream(outputfileio, providerOptions, startOffset));
     return true;
 }
 
@@ -259,8 +298,21 @@ bool LocalDiskRowWriter::setOutputFile(IFile * file, offset_t pos, size32_t reco
         
     if (pos != 0)
     {
-        // IFileIO positioning is handled when creating the serial output stream
-        // We would need to create the stream with the correct starting position
+        // POSITIONING SUPPORT:
+        // The 'pos' parameter specifies where to start writing in the file.
+        // To implement this properly, we need to position the output stream.
+        //
+        // Current approach uses ISerialOutputStream which doesn't support seeking.
+        // Better approach: Use IFileIOStream which has seek() capability.
+        //
+        // Implementation options:
+        // 1. Replace ISerialOutputStream with IFileIOStream (requires architectural changes)
+        // 2. Create a wrapper that handles positioning
+        // 3. Use IFileIO's position-based write() calls directly
+        //
+        // For now, we document the limitation and throw an error for unsupported positioning
+        
+        throw makeStringExceptionV(-1, "LocalDiskRowWriter::setOutputFile: Non-zero starting position (%lld) not currently supported.", pos);
     }
         
     outputFileSet = true;

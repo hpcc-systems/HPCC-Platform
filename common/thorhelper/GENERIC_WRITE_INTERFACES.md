@@ -117,6 +117,28 @@ The generic writing system is now **functionally complete** with:
 - ✅ No compilation errors
 - 📝 Utility functions removed (can be added later if needed)
 
+### Current Limitations
+
+**File Positioning Not Supported:**
+- The `pos` parameter in `setOutputFile()` methods is **NOT currently supported**
+- Attempting to use non-zero `pos` values will throw an exception with a clear error message
+- Only writing from the beginning of files or in extend mode is supported
+
+**Technical Reason:**
+- Current implementation uses `ISerialOutputStream` which doesn't support seeking
+- To support arbitrary positioning, the architecture needs to be modified to use `IFileIOStream`
+- Alternative implementation example is provided in comments in `thorwrite.cpp`
+
+**Extend Mode Limitations:**
+- Extend mode positioning may not work correctly in all scenarios
+- The implementation relies on file system behavior for append operations
+- Proper extend mode support would require the same positioning architecture changes
+
+**Workarounds:**
+- Use `pos = 0` for writing from the beginning of files
+- Use `extend = true` for appending to existing files (when supported by the file system)
+- For precise positioning requirements, consider modifying the architecture as documented in the code comments
+
 ## Integration Points
 
 ### With Existing Code

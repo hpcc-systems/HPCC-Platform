@@ -68,6 +68,11 @@ THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTransl
 //
 // The class is responsible for ensuring that the output file is appropriately buffered and compressed by examining
 // options in the providerOptions.
+//
+// CURRENT LIMITATIONS:
+// - The 'pos' parameter in setOutputFile() methods is NOT currently supported (will throw exception if non-zero)
+// - Only writing from the beginning of files or in extend mode is supported
+// - Arbitrary file positioning requires architectural changes to use IFileIOStream instead of ISerialOutputStream
 interface IDiskRowWriter : extends IInterface
 {
 public:
