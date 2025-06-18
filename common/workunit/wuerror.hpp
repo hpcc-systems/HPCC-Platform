@@ -54,4 +54,6 @@
 #define WUERR_InvalidFieldUsage                 5029
 #define WUERR_InvalidUserInput                  5030
 #define WUERR_CannotImportWorkunit              5031
+#define WUERR_MissingGraph                      5032
+
 #endif

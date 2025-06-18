@@ -10622,11 +10622,17 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatS
             // daliadmin can retrospectively compress existing graphs, so need to check for all versions
             MemoryBuffer mb;
             if (p->getPropBin("xgmml/graphBin", mb))
-                localGraph.setown(createPTree(mb, ipt_lowmem));
+            {
+                //Protect against empty graphBin fixed by HPCC-34368
+                if (mb.length())
+                    localGraph.setown(createPTree(mb, ipt_lowmem));
+            }
             else
                 localGraph.setown(p->getBranch("xgmml/graph"));
+
             if (!localGraph)
-                return NULL;
+                throw makeStringExceptionV(WUERR_MissingGraph, "Graph %s not found in workunit", p->queryProp("@name"));
+
             if (workunitGraphCacheEnabled)
                 graph.set(localGraph);
         }
