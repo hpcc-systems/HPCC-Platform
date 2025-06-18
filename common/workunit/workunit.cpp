@@ -7652,12 +7652,10 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
         if (!user)
             user = queryUserDescriptor();
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
-        if (perm<0) {
-            if (perm == SecAccess_Unavailable)
-                perm = SecAccess_Full;
-            else
-                perm = SecAccess_None;
-        }
+
+        // No access allowed if permissions are not granted
+        if (perm<0)
+            perm = SecAccess_None;
     }
     if (!HASREADPERMISSION(perm))
         throw MakeStringException(WUERR_WorkunitAccessDenied, "Read access denied for workunit %s", queryWuid());
