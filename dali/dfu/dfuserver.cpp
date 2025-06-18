@@ -144,6 +144,9 @@ int main(int argc, const char *argv[])
         PROGLOG("name not specified in configuration");
         return 1;
     }
+
+    updateTraceFlags(loadTraceFlags(globals, dfuServerTraceOptions, queryTraceFlags()), true);
+
     Owned<IFile> sentinelFile;
 #ifndef _CONTAINERIZED
     bool stop = globals->getPropBool("@stop", false);

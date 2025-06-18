@@ -428,6 +428,10 @@ constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
+// Specific to dfuserver and dafilesrv
+constexpr TraceFlags traceSprayDetails = TraceFlags::flag16;
+constexpr TraceFlags tracePartitionDetails = TraceFlags::flag17;
+
 //Specific to the code generator
 // see traceOptimizations above.
 
@@ -478,6 +482,28 @@ constexpr std::initializer_list<TraceOption> eclccTraceOptions
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
     TRACEOPT(traceOptimizations),
+};
+
+constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceSprayDetails),
+    TRACEOPT(tracePartitionDetails),
+};
+
+constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceSprayDetails),
+    TRACEOPT(tracePartitionDetails),
 };
 
 interface IPropertyTree;
