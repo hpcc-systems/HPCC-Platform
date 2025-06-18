@@ -336,6 +336,7 @@ public:
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
     virtual bool removeAttribute(const char *attr) override;
     virtual void serializeSelf(MemoryBuffer &tgt) override;
+    virtual IPTArrayValue * cloneValue() const override;
 
 // IPropertyTree
     virtual bool renameTree(IPropertyTree *tree, const char *newName) override;

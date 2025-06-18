@@ -4193,5 +4193,104 @@ CPPUNIT_TEST_SUITE_REGISTRATION( DaliGlobalMetricsTester );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliGlobalMetricsTester, "DaliGlobalMetricsTester" );
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class DaliBinaryDataTester : public CppUnit::TestFixture
+{
+    /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
+    /* Note: All global messages with time stamp before 2000-03-31 will be deleted */
+    CPPUNIT_TEST_SUITE(DaliBinaryDataTester);
+        CPPUNIT_TEST(doStart);
+        CPPUNIT_TEST(testSimpleBinary);
+        CPPUNIT_TEST(testCompression);
+        CPPUNIT_TEST(doCleanup);
+        CPPUNIT_TEST(doStop);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void doStart()
+    {
+        daliClientInit();
+    }
+    void doCleanup()
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect("/testext", myProcessSession(), RTM_DELETE_ON_DISCONNECT, 2000);
+    }
+    void doStop()
+    {
+        daliClientEnd();
+    }
+
+    void testSimpleBinary(size32_t size, CompressionMethod compression)
+    {
+        DBGLOG("testBinary %u %s", size, translateFromCompMethod(compression));
+
+        Owned<IRemoteConnection> conn = querySDS().connect("/testext", myProcessSession(), RTM_CREATE, 2000);
+        IPropertyTree *root = conn->queryRoot();
+        MemoryBuffer mb;
+        // fill mem buffer with random data - 100k
+        void *mem = mb.reserveTruncate(size);
+        for (size32_t i = 0; i < size; i++)
+            ((byte *)mem)[i] = (i & 256) ? rand() : i;      // ensure some data is not random
+        root->setPropBin("bin", mb.length(), mb.toByteArray(), compression);
+
+        MemoryBuffer result;
+        root->getPropBin("bin", result);
+
+        CPPUNIT_ASSERT_EQUAL(mb.length(), result.length());
+        CPPUNIT_ASSERT(memcmp(mb.toByteArray(), result.toByteArray(), mb.length()) == 0);
+    }
+
+    void testDaliBinary(size32_t size, CompressionMethod compression)
+    {
+        DBGLOG("testDaliBinary %u %s", size, translateFromCompMethod(compression));
+
+        Owned<IRemoteConnection> conn = querySDS().connect("/testext", myProcessSession(), RTM_CREATE, 2000);
+        IPropertyTree *root = conn->queryRoot();
+        MemoryBuffer mb;
+        // fill mem buffer with random data - 100k
+        void *mem = mb.reserveTruncate(size);
+        for (size32_t i = 0; i < size; i++)
+            ((byte *)mem)[i] = (i & 256) ? rand() : i;      // ensure some data is not random
+        root->setPropBin("bin", mb.length(), mb.toByteArray(), compression);
+        conn->commit();
+        conn.clear();
+
+        conn.setown(querySDS().connect("/testext", myProcessSession(), RTM_LOCK_READ, 2000));
+        root = conn->queryRoot();
+        Owned<IPropertyTree> clonedRoot = createPTreeFromIPT(root);
+
+        MemoryBuffer result;
+        clonedRoot->getPropBin("bin", result);
+
+        CPPUNIT_ASSERT_EQUAL(mb.length(), result.length());
+        CPPUNIT_ASSERT(memcmp(mb.toByteArray(), result.toByteArray(), mb.length()) == 0);
+    }
+
+    void testSimpleBinary()
+    {
+        for (size32_t size=0x100; size < 0x1000000; size *= 2)
+        {
+            testSimpleBinary(size, COMPRESS_METHOD_NONE);
+            testDaliBinary(size, COMPRESS_METHOD_NONE);
+        }
+    }
+
+    void testCompression()
+    {
+        auto options = { COMPRESS_METHOD_LZW, COMPRESS_METHOD_FASTLZ, COMPRESS_METHOD_LZ4, COMPRESS_METHOD_LZ4HC };
+        for (auto compression : options)
+        {
+            testSimpleBinary(0x100000, compression);
+            testDaliBinary(0x100000, compression);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( DaliBinaryDataTester );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliBinaryDataTester, "DaliBinaryDataTester" );
+
+
+
 
 #endif // _USE_CPPUNIT

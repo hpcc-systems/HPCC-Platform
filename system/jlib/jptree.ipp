@@ -630,6 +630,7 @@ public:
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
     IPropertyTree * clone(const IPropertyTree &srcTree, bool sub);  // create a node (that matches the type of this) and clone the source
     void cloneContents(const IPropertyTree &srcTree, bool sub);
+    virtual IPTArrayValue * cloneValue() const;
 
     inline void setOwner(IPTArrayValue *_arrayOwner) { arrayOwner = _arrayOwner; }
     IPropertyTree *queryCreateBranch(IPropertyTree *branch, const char *prop, bool *existing=NULL);
