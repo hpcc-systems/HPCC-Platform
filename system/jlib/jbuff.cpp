@@ -738,11 +738,20 @@ MemoryBuffer & MemoryBuffer::read(bool & value)
     return *this;
 }
 
+inline size32_t getStringLength(const char * buffer, size32_t readPos, size32_t length)
+{
+    for (size32_t i = readPos; i < length; i++)
+    {
+        if (buffer[i] == 0)
+            return i - readPos;
+    }
+    throwUnexpectedX("Null terminator not found within buffer");
+}
+
 MemoryBuffer & MemoryBuffer::read(StringAttr & value)
 {
-    char * src = buffer + readPos;
-    size32_t len = (size32_t)strlen(src);
-    CHECKREADPOS(len+1);
+    size32_t len = getStringLength(buffer, readPos, length());
+    const char * src = buffer + readPos;
     value.set(src, len);
     readPos += (len+1);
     return *this;
@@ -750,9 +759,8 @@ MemoryBuffer & MemoryBuffer::read(StringAttr & value)
 
 MemoryBuffer & MemoryBuffer::readOpt(StringAttr & value)
 {
-    char * src = buffer + readPos;
-    size32_t len = (size32_t)strlen(src);
-    CHECKREADPOS(len+1);
+    size32_t len = getStringLength(buffer, readPos, length());
+    const char * src = buffer + readPos;
     if (len)
         value.set(src, len);
     else
@@ -763,9 +771,8 @@ MemoryBuffer & MemoryBuffer::readOpt(StringAttr & value)
 
 MemoryBuffer & MemoryBuffer::read(StringBuffer & value)
 {
-    char * src = buffer + readPos;
-    size32_t len = (size32_t)strlen(src);
-    CHECKREADPOS(len+1);
+    size32_t len = getStringLength(buffer, readPos, length());
+    const char * src = buffer + readPos;
     value.append(len, src);
     readPos += (len+1);
     return *this;
@@ -773,9 +780,9 @@ MemoryBuffer & MemoryBuffer::read(StringBuffer & value)
 
 MemoryBuffer & MemoryBuffer::read(const char * &value)
 {
-    value = buffer+readPos;
-    size32_t len = (size32_t)strlen(value);
-    CHECKREADPOS(len+1);
+    size32_t len = getStringLength(buffer, readPos, length());
+    const char * src = buffer + readPos;
+    value = src;
     readPos += (len+1);
     return *this;
 }
