@@ -964,8 +964,10 @@ public:
             if (optPlatformVersion.length())
                 params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
 
+            // The job name structure:
+            // <deployment-name>-<replicaset-hash>-<pod-hash>-<instance-number>
             StringBuffer jobName;
-            jobName.append("eclcc-").append(instanceName).append("-").append(instanceNumber);
+            jobName.append("eclcc-").append(instanceName).append("-").append(k8s::queryPodSuffix()).append("-").append(instanceNumber);
 
             k8s::runJob("compile", nullptr, jobName, params);
         }
@@ -1433,7 +1435,7 @@ public:
         return new EclccCompileThread(instanceName, threadsActive++);
     }
 
-    virtual bool onAbort() 
+    virtual bool onAbort()
     {
         running = false;
         Linked<IJobQueue> currentQueue;

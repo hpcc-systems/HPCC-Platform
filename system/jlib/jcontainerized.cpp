@@ -317,6 +317,26 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
         throw exception.getClear();
 }
 
+// Returns a pointer to the replica and pod hashes from the pod name to be used as the job name suffix for uniqueness.
+const char *queryPodSuffix()
+{
+    // Unexpected parsing consequences:
+    //   If the rightmost "-" is not found in the pod name, then the whole pod name is used as the suffix.
+    //   If the penultimate rightmost "-" is not found in the pod name, then the pod hash will be used as the suffix.
+    const char *podName = k8s::queryMyPodName();
+    const char *lastDashPos = strrchr(podName, '-');
+    if (lastDashPos && lastDashPos > podName)
+    {
+        for (const char *penultimateDash = lastDashPos-1; penultimateDash > podName; --penultimateDash)
+            if (*penultimateDash == '-')
+                return penultimateDash + 1;
+
+        return lastDashPos + 1;
+    }
+
+    return podName;
+}
+
 // returns a vector of {pod-name, node-name} vectors,
 // represented as a nested vector for extensibility, e.g. to add other meta fields
 std::vector<std::vector<std::string>> getPodNodes(const char *selector)
