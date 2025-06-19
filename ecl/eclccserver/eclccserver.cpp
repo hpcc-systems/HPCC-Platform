@@ -964,8 +964,13 @@ public:
             if (optPlatformVersion.length())
                 params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
 
+            StringBuffer podNameSuffix(k8s::queryMyPodName());
+            const char *lastDash = strrchr(podNameSuffix.str(), '-');
+            if (lastDash && strlen(lastDash) > 1)
+                podNameSuffix = lastDash + 1;
+
             StringBuffer jobName;
-            jobName.append("eclcc-").append(instanceName).append("-").append(instanceNumber);
+            jobName.append("eclcc-").append(instanceName).append("-").append(instanceNumber).append("-").append(podNameSuffix);
 
             k8s::runJob("compile", nullptr, jobName, params);
         }
@@ -1433,7 +1438,7 @@ public:
         return new EclccCompileThread(instanceName, threadsActive++);
     }
 
-    virtual bool onAbort() 
+    virtual bool onAbort()
     {
         running = false;
         Linked<IJobQueue> currentQueue;
