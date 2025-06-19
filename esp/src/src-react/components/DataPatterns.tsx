@@ -30,7 +30,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
     logicalFile
 }) => {
 
-    const [file] = useFile(cluster, logicalFile);
+    const { file } = useFile(cluster, logicalFile);
     const dpWu = React.useMemo(() => {
         if (file) {
             return new DPWorkunit(cluster, logicalFile, file?.Modified);
