@@ -191,7 +191,7 @@ public:
     {
         auto processOption = [this](const char * option, const char * value)
         {
-            if (strieq(option, "hclevel"))
+            if (strieq(option, "hclevel") || strieq(option, "level"))
                 hcLevel = atoi(value);
         };
         processOptionString(options, processOption);
@@ -267,43 +267,9 @@ static unsigned readPacked32(const byte * & cur)
  * When recompressing the other buffer is used as the target, so that the previous
  * compression is preserved in the unusual situation where recompressing makes it larger.
 */
-class CLZ4StreamCompressor final : public CSimpleInterfaceOf<ICompressor>
+class CStreamCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 public:
-    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
-    {
-        auto processOption = [this](const char * option, const char * textValue)
-        {
-            int intValue = atoi(textValue);
-            if (strieq(option, "hclevel"))
-            {
-                if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
-                    hcLevel = intValue;
-            }
-            else if (strieq(option, "maxcompression"))
-            {
-                if ((intValue > 1) && (intValue < 100))
-                    maxCompression = intValue;
-            }
-            else if (strieq(option, "maxRecompress"))
-            {
-                if ((intValue >= 0) && (intValue < 100))
-                    maxRecompress = intValue;
-            }
-        };
-        processOptionString(options, processOption);
-        if (hc)
-            lz4HCStream = LZ4_createStreamHC();
-        else
-            lz4Stream = LZ4_createStream();
-    }
-
-    virtual ~CLZ4StreamCompressor()
-    {
-        LZ4_freeStream(lz4Stream);
-        LZ4_freeStreamHC(lz4HCStream);
-    }
-
     virtual void open(void *buf,size32_t max) override
     {
         result = (byte *)buf;
@@ -312,21 +278,14 @@ public:
         outputs[0].ensureCapacity(max);
         outputs[1].ensureCapacity(max);
 
-        outputExtra = sizeof(size32_t) + 1;
-        lastCompress = 0;
         inMax = max*maxCompression;
         inbuf = (byte *)inma.ensureCapacity(inMax);
 
-        outlen = 0;
-        inlen = 0;
-        lastCompress = 0;
+        reinitBufferIndexes(0);
+
         active = 0;
         recompressed = 0;
         compressedSizes.clear();
-        if (hc)
-            LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
-        else
-            LZ4_resetStream_fast(lz4Stream);
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override
@@ -488,20 +447,49 @@ public:
         throwUnimplemented();
     }
 
-    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
-
 protected:
+    bool processOption(const char * option, const char * textValue)
+    {
+        int intValue = atoi(textValue);
+        if (strieq(option, "maxcompression"))
+        {
+            if ((intValue > 1) && (intValue < 100))
+                maxCompression = intValue;
+        }
+        else if (strieq(option, "maxRecompress"))
+        {
+            if ((intValue >= 0) && (intValue < 100))
+                maxRecompress = intValue;
+        }
+        else if (strieq(option, "minSizeToCompress"))
+        {
+            if (intValue > 0)
+                minSizeToCompress = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    void reinitBufferIndexes(size32_t newInLen)
+    {
+        outlen = 0;
+        outputExtra = sizeof(size32_t) + 1;
+        inlen = newInLen;
+        lastCompress = 0;
+    }
+
     byte * queryOutputBuffer() { return (byte *)outputs[active].bufferBase(); }
 
     //Try and compress the uncompressed data using the stream functions.  If that does not succeed try
     //recompressing all the data that has been written so far to see if that shrinks.
     bool tryFullCompress()
     {
-        if (tryCompress())
+        if (tryCompress(false))
             return true;
 
         //No benefit in trying to recompress if there is no more data to compress, and we already have a single block
-        if ((inlen == lastCompress) && (compressedSizes.ordinality() == 1))
+        if ((inlen < lastCompress + minSizeToCompress) && (compressedSizes.ordinality() == 1))
             return false;
 
         if (recompressed < maxRecompress)
@@ -511,47 +499,138 @@ protected:
 #endif
             //Try and recompress the entire data stream
             recompressed++;
-            if (hc)
-                LZ4_resetStreamHC_fast(lz4HCStream, hcLevel);
-            else
-                LZ4_resetStream_fast(lz4Stream);
-
-            size32_t savedOutlen = outlen;
-            size32_t savedOutputExtra = outputExtra;
-            size32_t savedLastCompress = lastCompress;
-
-            //Compress to the other output buffer - so that the streamed compression is still available if
-            //compressing everything takes up more room.
-            active = 1-active;
-            outlen = 0;
-            outputExtra = sizeof(size32_t) + 1;
-            lastCompress = 0;
-
-            if (tryCompress())
-            {
-                //Now only a single compressed block
-                compressedSizes.clear();
-                compressedSizes.append(outlen);
+            if (recompressInput(recompressed == maxRecompress))
                 return true;
-            }
-
-            //Unusual situation - the size when compressed in a single call is larger then
-            //when compressed as streams, possibly because there is extra uncompressed data.
-            //Restore the previous state - use the previous stream compressed blocks
-            active = 1-active;
-            outlen = savedOutlen;
-            outputExtra = savedOutputExtra;
-            lastCompress = savedLastCompress;
         }
 
         return false;
     }
 
-    bool tryCompress()
+    bool recompressInput(bool isFinalCompression)
+    {
+        resetStreamContext();
+
+        size32_t savedOutlen = outlen;
+        size32_t savedOutputExtra = outputExtra;
+        size32_t savedLastCompress = lastCompress;
+
+        //Compress to the other output buffer - so that the streamed compression is still available if
+        //compressing everything takes up more room.
+        active = 1-active;
+
+        reinitBufferIndexes(inlen);
+
+        if (tryCompress(isFinalCompression))
+        {
+            //Now only a single compressed block
+            compressedSizes.clear();
+            compressedSizes.append(outlen);
+            return true;
+        }
+
+        //Unusual situation - the size when compressed in a single call is larger then
+        //when compressed as streams, possibly because there is extra uncompressed data.
+        //Restore the previous state - use the previous stream compressed blocks
+        active = 1-active;
+        outlen = savedOutlen;
+        outputExtra = savedOutputExtra;
+        lastCompress = savedLastCompress;
+        return false;
+    }
+
+    virtual bool tryCompress(bool isFinalCompression) = 0;
+    virtual void resetStreamContext() = 0;
+
+protected:
+    size32_t originalMax = 0;
+    size32_t outMax = 0;    // maximum output size
+    size32_t inMax = 0;     // maximum size of the input buffer - to limit the compression ratio
+                            // and because the input buffer cannot be reallocated with the streaming api
+    size32_t inlen = 0;     // total length of input data
+    size32_t lastCompress = 0;  // the offset in the input data that has not been compressed yet.
+    size32_t outlen = 0;    // How much compressed data has been generated, or final size once closed
+    MemoryBuffer outputs[2];
+    MemoryBuffer inma;      // Buffer allocated to store a copy of all the input data - must not be reallocated
+    byte *inbuf = nullptr;  // pointer to the input buffer, cleared when the compression is complete
+    byte *result = nullptr;
+    byte recompressed = 0;  // Number of times we have recompressed the entire buffer
+    byte active = 0;        // Which output buffer is active?
+
+    UnsignedArray compressedSizes;
+    size32_t outputExtra = 0;
+
+    //Options for configuring the compressor:
+    byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
+    byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
+    unsigned minSizeToCompress = 1; // If the uncompressed data is less than this size, don't bother compressing it
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// See notes on CStreamCompressor above for the serialized stream format
+class CLZ4StreamCompressor final : public CStreamCompressor
+{
+public:
+    CLZ4StreamCompressor(const char * options, bool _hc) : hc(_hc)
+    {
+        auto processOption = [this](const char * option, const char * textValue)
+        {
+            this->processOption(option, textValue);
+        };
+        processOptionString(options, processOption);
+        if (hc)
+            lz4HCStream = LZ4_createStreamHC();
+        else
+            lz4Stream = LZ4_createStream();
+    }
+
+    virtual ~CLZ4StreamCompressor()
+    {
+        LZ4_freeStream(lz4Stream);
+        LZ4_freeStreamHC(lz4HCStream);
+    }
+
+    virtual void open(void *buf,size32_t max) override
+    {
+        CStreamCompressor::open(buf, max);
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4SHC : COMPRESS_METHOD_LZ4S; }
+
+protected:
+    bool processOption(const char * option, const char * textValue)
+    {
+        if (CStreamCompressor::processOption(option, textValue))
+            return true;
+        int intValue = atoi(textValue);
+        if (strieq(option, "hclevel") || strieq(option, "level"))
+        {
+            if ((intValue >= LZ4HC_CLEVEL_MIN) && (intValue <= LZ4HC_CLEVEL_MAX))
+                compressionLevel = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    virtual void resetStreamContext() override
+    {
+        if (hc)
+            LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
+        else
+            LZ4_resetStream_fast(lz4Stream);
+    }
+
+    virtual bool tryCompress(bool isFinalCompression [[maybe_unused]]) override
     {
         size32_t uncompressed = inlen - lastCompress;
         //Sanity check - this could be the case when a limit has been reduced
-        if (uncompressed == 0)
+        if (uncompressed < minSizeToCompress)
             return false;
 
         size32_t compressedSize = outlen;
@@ -584,31 +663,12 @@ protected:
     }
 
 protected:
-    size32_t originalMax = 0;
-    size32_t outMax = 0;    // maximum output size
-    size32_t inMax = 0;     // maximum size of the input buffer - to limit the compression ratio
-                            // and because the input buffer cannot be reallocated with the streaming api
-    size32_t inlen = 0;     // total length of input data
-    size32_t lastCompress = 0;  // the offset in the input data that has not been compressed yet.
-    size32_t outlen = 0;    // How much compressed data has been generated, or final size once closed
-    MemoryBuffer outputs[2];
-    MemoryBuffer inma;      // Buffer allocated to store a copy of all the input data - must not be reallocated
-    byte *inbuf = nullptr;  // pointer to the input buffer, cleared when the compression is complete
-    byte *result = nullptr;
-    byte recompressed = 0;  // Number of times we have recompressed the entire buffer
-    byte active = 0;        // Which output buffer is active?
-
-    UnsignedArray compressedSizes;
-    size32_t outputExtra = 0;
-
     LZ4_stream_t * lz4Stream = nullptr;
     LZ4_streamHC_t * lz4HCStream = nullptr;
 
     //Options for configuring the compressor:
     bool hc = false;
-    byte hcLevel = LZ4HC_CLEVEL_DEFAULT;
-    byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
-    byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
+    byte compressionLevel = LZ4HC_CLEVEL_DEFAULT;
 };
 
 
@@ -745,7 +805,7 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-class jlib_decl CLZ4StreamExpander : public CExpanderBase
+class jlib_decl CStreamExpander : public CExpanderBase
 {
 public:
     virtual void expand(void *buf) override
@@ -753,6 +813,8 @@ public:
         assertex(buf);
         if (!outlen)
             return;
+
+        resetStreamContext();
 
         const byte * src = in;
         //Skip until we have a zero size - don't bother decoding
@@ -766,7 +828,6 @@ public:
                 next = *src++;
         }
 
-        LZ4_streamDecode_t * lz4Stream = LZ4_createStreamDecode();
 
         char * out = (char *)buf;
         const byte * sizes = in;
@@ -776,25 +837,16 @@ public:
             size32_t srcSize = readPacked32(sizes);
             if (srcSize == 0)
                 break;
-            int expanded = LZ4_decompress_safe_continue (lz4Stream, (const char *)src, out+expandedOffset, srcSize, outlen - expandedOffset);
+            int expanded = decodeStreamBlock(src, srcSize, out+expandedOffset, outlen - expandedOffset);
             if (expanded <= 0)
-            {
-                LZ4_freeStreamDecode(lz4Stream);
                 throw MakeStringException(MSGAUD_operator,0, "Failed to expand offset(%u) size(%u) to %u - returned %d", (size32_t)(src - in), srcSize, outlen, expanded);
-            }
+
             src += srcSize;
             expandedOffset += expanded;
         }
 
         //finally fill with any uncompressed data
         memcpy(out+expandedOffset, src, outlen - expandedOffset);
-        LZ4_freeStreamDecode(lz4Stream);
-    }
-
-    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
-    {
-        assertex(destSize != 0);
-        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
     }
 
     virtual size32_t init(const void *blk)
@@ -811,12 +863,54 @@ public:
     }
 
 protected:
+    virtual void resetStreamContext() = 0;
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) = 0;
+
     virtual void *bufptr() { return nullptr;}
     virtual size32_t buflen() { return outlen;}
 
 protected:
     const byte *in = nullptr;
     size32_t outlen = 0;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+class jlib_decl CLZ4StreamExpander : public CStreamExpander
+{
+public:
+    CLZ4StreamExpander()
+    {
+        lz4Stream = LZ4_createStreamDecode();
+    }
+
+    ~CLZ4StreamExpander()
+    {
+        LZ4_freeStreamDecode(lz4Stream);
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+    }
+
+protected:
+    virtual void resetStreamContext() override
+    {
+        LZ4_setStreamDecode(lz4Stream, nullptr, 0);
+    }
+
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
+    {
+        return LZ4_decompress_safe_continue(lz4Stream, (const char *)src, (char *)dest, srcSize, destSize);
+
+    }
+
+    virtual void *bufptr() { return nullptr;}
+    virtual size32_t buflen() { return outlen;}
+
+protected:
+    LZ4_streamDecode_t * lz4Stream = nullptr;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -997,4 +1091,202 @@ IFileIOStream *createLZ4StreamWrite(IFileIO *base)
     Owned<CLZ4Stream> strm = new CLZ4Stream();
     strm->create(base);
     return strm.getClear();
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+#include <zstd.h>
+
+// See notes on CStreamCompressor above for the serialized stream format
+
+// The ZStd streaming functions compress data in blocks. We are using ZSTD_e_flush.
+// If all the data is written then there will be a complete frame.
+// If the data is partially written, there will be a complete frame up to the data that was not included.  The last frame will not be marked
+// as the end of the stream, but as long as we do not rely on that the data can be decompressed.
+
+class CZStdStreamCompressor final : public CStreamCompressor
+{
+public:
+    CZStdStreamCompressor(const char * options)
+    {
+        auto processOption = [this](const char * option, const char * textValue)
+        {
+            this->processOption(option, textValue);
+        };
+        processOptionString(options, processOption);
+        zstdStream = ZSTD_createCStream();
+        if (!zstdStream)
+            throw makeStringException(0, "Failed to create ZStd compression stream");
+    }
+
+    virtual ~CZStdStreamCompressor()
+    {
+        if (zstdStream)
+            ZSTD_freeCStream(zstdStream);
+    }
+
+    virtual void open(void *buf, size32_t max) override
+    {
+        CStreamCompressor::open(buf, max);
+        size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
+        if (ZSTD_isError(result))
+            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTDS; }
+
+protected:
+    bool processOption(const char * option, const char * textValue)
+    {
+        if (CStreamCompressor::processOption(option, textValue))
+            return true;
+        int intValue = atoi(textValue);
+        if (strieq(option, "level"))
+        {
+            if ((intValue >= ZSTD_minCLevel()) && (intValue <= ZSTD_maxCLevel()))
+                compressionLevel = intValue;
+        }
+        else
+            return false;
+        return true;
+    };
+
+    virtual void resetStreamContext() override
+    {
+        size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
+        if (ZSTD_isError(result))
+            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
+    }
+
+    virtual bool tryCompress(bool isFinalCompression) override
+    {
+        size32_t uncompressed = inlen - lastCompress;
+        //Sanity check - this could be the case when a limit has been reduced
+        if (uncompressed < minSizeToCompress)
+            return false;
+
+        size32_t compressedSize = outlen;
+        size32_t remaining = outMax - compressedSize - outputExtra;
+
+        const char * from = (const char *)inbuf + lastCompress;
+        char * to = (char *)queryOutputBuffer() + outlen;
+
+        // Set up ZStd input and output buffers
+        ZSTD_inBuffer input = { from, uncompressed, 0 };
+        ZSTD_outBuffer output = { to, remaining, 0 };
+
+        // Compress the data using ZSTD_compressStream2 with continue mode
+
+        ZSTD_EndDirective mode = isFinalCompression ? ZSTD_e_end : ZSTD_e_flush;
+        size_t result = ZSTD_compressStream2(zstdStream, &output, &input, mode);
+        size32_t newCompressedSize = (size32_t)output.pos;
+
+        if (ZSTD_isError(result))
+            throw makeStringExceptionV(0, "ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+
+        if (result != 0)
+        {
+            //Not all the data could be flushed - the previous streamed blocks are still valid though - so we can unwind the last block of data written
+            return false;
+        }
+
+#ifdef LZ4LOGGING
+        DBGLOG("Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+#endif
+
+        if (newCompressedSize == 0)
+            return false;
+
+        size32_t lenLen = sizePacked(newCompressedSize);
+        if (newCompressedSize + lenLen > remaining)
+            return false;
+
+        compressedSizes.append(newCompressedSize);
+        outputExtra += lenLen;
+        outlen += newCompressedSize;
+        lastCompress = inlen;
+        return true;
+    }
+
+protected:
+    ZSTD_CStream * zstdStream = nullptr;
+
+    //Options for configuring the compressor:
+    int compressionLevel = ZSTD_CLEVEL_DEFAULT;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+class jlib_decl CZStdStreamExpander : public CStreamExpander
+{
+public:
+    CZStdStreamExpander()
+    {
+        zstdDStream = ZSTD_createDStream();
+        if (!zstdDStream)
+            throw makeStringException(0, "Failed to create ZStd decompression stream");
+    }
+
+    ~CZStdStreamExpander()
+    {
+        if (zstdDStream)
+            ZSTD_freeDStream(zstdDStream);
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("ZStd decompression error: %s", ZSTD_getErrorName(result));
+            return 0;
+        }
+        return (size32_t)result;
+    }
+
+protected:
+    virtual void resetStreamContext() override
+    {
+        size_t result = ZSTD_initDStream(zstdDStream);
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("Failed to reset ZStd decompression stream: %s", ZSTD_getErrorName(result));
+        }
+    }
+
+    virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
+    {
+        ZSTD_inBuffer input = { src, srcSize, 0 };
+        ZSTD_outBuffer output = { dest, destSize, 0 };
+
+        size_t result = ZSTD_decompressStream(zstdDStream, &output, &input);
+
+        if (ZSTD_isError(result))
+        {
+            DBGLOG("ZStd stream decompression error: %s", ZSTD_getErrorName(result));
+            return -1; // Error condition
+        }
+
+        // Return the number of bytes written to the output buffer
+        return (int)output.pos;
+    }
+
+    virtual void *bufptr() { return nullptr;}
+    virtual size32_t buflen() { return outlen;}
+
+protected:
+    ZSTD_DStream * zstdDStream = nullptr;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+ICompressor *createZStdStreamCompressor(const char * options)
+{
+    return new CZStdStreamCompressor(options);
+}
+
+IExpander *createZStdStreamExpander()
+{
+    return new CZStdStreamExpander();
 }

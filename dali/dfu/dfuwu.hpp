@@ -338,6 +338,7 @@ interface IDFUprogress: extends IConstDFUprogress
     virtual void clearProgress() = 0;
     virtual void setFileAccessCost(cost_type fileAccessCost) = 0;
     virtual unsigned incPublisherTaskCount() = 0;
+    virtual void setTransferOptions(const IPropertyTree * options) = 0;
 };
 
 interface IDFUprogressSubscriber: extends IInterface

@@ -495,7 +495,8 @@ void CRemoteSlave::run(int argc, const char * * argv)
                     msg.append(results);
                     catchWriteBuffer(masterSocket, msg);
 
-                    LOG(MCdebugProgress, "Results sent from slave %d", info.replyTag);
+                    if (doTrace(traceSprayDetails))
+                        LOG(MCdebugProgress, "Results sent from slave %d", info.replyTag);
 
                     //Acknowledgement before closing down...
                     msg.clear();
