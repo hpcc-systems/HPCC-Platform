@@ -8534,7 +8534,8 @@ unsigned __int64 CHThorDiskReadBaseActivity::getLocalFilePosition(const void * r
 
 void CHThorDiskReadBaseActivity::closepart()
 {
-    if (opened && inputfileio && ldFile && partNum > 0)
+    // Publish file costs and statistics for file (exclude spill files)
+    if (!(helper.getFlags() & (TDXtemporary | TDXjobtemp)) && (opened && inputfileio && ldFile && partNum > 0))
     {
         unsigned previousPartNum = partNum-1;
         if (previousPartNum < ldFile->numParts())
