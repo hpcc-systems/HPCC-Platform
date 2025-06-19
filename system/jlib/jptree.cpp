@@ -3099,14 +3099,23 @@ void PTree::cloneIntoSelf(const IPropertyTree &srcTree, bool sub)
     cloneContents(srcTree, sub);
 }
 
+IPTArrayValue * PTree::cloneValue() const
+{
+    IPTArrayValue *v = queryValue();
+    if (!v)
+        return nullptr;
+    return new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), isBinary(nullptr), v->getCompressionType(), COMPRESS_METHOD_NONE);
+}
+
+
 void PTree::cloneContents(const IPropertyTree &srcTree, bool sub)
 {
     //MORE: Should any flags be cloned from the srcTree?
 
     bool srcBinary = srcTree.isBinary(NULL);
     //All implementations of IPropertyTree have PTree as a base class, therefore static cast is ok.
-    IPTArrayValue *v = static_cast<const PTree &>(srcTree).queryValue();
-    setValue(v?new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), srcBinary, v->getCompressionType(), COMPRESS_METHOD_NONE):NULL, srcBinary);
+    IPTArrayValue *v = static_cast<const PTree &>(srcTree).cloneValue();
+    setValue(v, srcBinary);
 
     Owned<IAttributeIterator> attrs = srcTree.getAttributes();
     if (attrs->first())

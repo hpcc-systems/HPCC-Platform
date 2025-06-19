@@ -883,6 +883,12 @@ void CClientRemoteTree::serializeSelf(MemoryBuffer &tgt)
     PARENT::serializeSelf(tgt);
 }
 
+IPTArrayValue * CClientRemoteTree::cloneValue() const
+{
+    checkExt();
+    return PARENT::cloneValue();
+}
+
 void CClientRemoteTree::registerRenamed(const char *newName, const char *oldName, unsigned pos, __int64 id)
 {
     mergeState(CPS_Renames);
