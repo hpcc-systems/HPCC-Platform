@@ -24,47 +24,20 @@
 #include <map>
 #include <string>
 
-static void usage(const char* tool, const CmdMap& commands, IBufferedSerialOutputStream& out)
-{
-    const char* argv[] = { tool, nullptr };
-    for (const CmdMap::value_type& c : commands)
-    {
-        Owned<IEvToolCommand> cmd = c.second();
-        argv[1] = c.first.c_str();
-        cmd->usage(2, argv, 1, out);
-        out.put(1, "\n");
-    }
-}
-
 int main(int argc, const char* argv[])
 {
     COnScopeExit cleanup(cleanupConsole);
 
     InitModuleObjects();
 
-    CmdMap commands{
+    CEvtCommandGroup evtool({
         { "dump", createDumpCommand },
         { "sim", createSimCommand },
         { "index", createIndexCommand },
-    };
-    if (argc < 2)
-    {
-        usage(argv[0], commands, consoleOut());
-        return 0;
-    }
-    CmdMap::const_iterator it = commands.find(argv[1]);
-    if (commands.end() == it)
-    {
-        StringBuffer err;
-        err << "unknown command: " << argv[1] << "\n\n";
-        consoleErr().put(err.length(), err.str());
-        usage(argv[0], commands, consoleErr());
-        return 1;
-    }
-    Owned<IEvToolCommand> cmd = it->second();
+    });
     try
     {
-        return cmd->dispatch(argc, argv, 1);
+        evtool.dispatch(argc, argv, 0);
     }
     catch (IException* e)
     {
@@ -75,4 +48,5 @@ int main(int argc, const char* argv[])
         consoleErr().put(msg.length(), msg.str());
         return 1;
     }
+    return 0;
 }

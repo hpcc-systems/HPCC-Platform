@@ -2405,7 +2405,7 @@ public:
         }
 
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
-        const char *clusters = props->queryProp("@clusterlist");
+        const char *clusters = props->queryProp(isContainerized() ? "@planes" : "@clusterlist");
         StringBuffer clusttmp;
         // TODO: xref should support checking superfiles in containerized
         if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true))

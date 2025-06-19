@@ -54,7 +54,7 @@ bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
 {
     if (filter)
     {
-        filter->decorate(visitor);
+        filter->setNextLink(visitor);
         return readEvents(path, *filter);
     }
     return readEvents(path, visitor);

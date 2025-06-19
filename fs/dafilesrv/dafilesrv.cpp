@@ -401,6 +401,8 @@ int main(int argc, const char* argv[])
     // NB: bare-metal dafilesrv does not have a component specific xml, extracting relevant global configuration instead
     Owned<IPropertyTree> config = loadConfiguration(componentDefault, extractedGlobalConfig, argv, componentTag, "DAFILESRV", nullptr, nullptr);
 
+    updateTraceFlags(loadTraceFlags(config, dafilesrvServerTraceOptions, queryTraceFlags()), true);
+
     Owned<IPropertyTree> keyPairInfo; // NB: not used in containerized mode
     // Get SSL Settings
     DAFSConnectCfg  connectMethod;

@@ -81,37 +81,5 @@ interface IBucketVisitor : IInterface
     virtual bool wantAmbiguous() const = 0;
 };
 
-// Abstract base implementation of `IBucketVisitor` that outputs bucket activity to a buffered
-// stream as YAML-formatted text. Each subclass performs a specific analysis of the bucket
-// activity data.
-class CStreamingBucketVisitor : public CInterfaceOf<IBucketVisitor>
-{
-protected: // Abstract interface
-    // Append a brief description of the analysis performed to the buffer.
-    virtual void appendAnalysis(StringBuffer& lines) const = 0;
-
-public: // IBucketVisitor
-    virtual void begin(EventType observedEvent, unsigned granularity) override;
-    virtual void arrive(unsigned id, const char* path) override;
-    virtual void depart() override;
-    virtual void end() override;
-public:
-    CStreamingBucketVisitor(IBufferedSerialOutputStream& _out);
-protected:
-    struct Stats
-    {
-        stat_type minEventsPerBucket;
-        stat_type maxEventsPerBucket;
-        __uint64 totalEvents;
-        bucket_type totalBuckets;
-
-        Stats();
-        void recordEvent(stat_type value);
-        void clear();
-        StringBuffer& toString(StringBuffer& lines, byte indent, const char* label = nullptr) const;
-    };
-    Linked<IBufferedSerialOutputStream> out;
-    Stats stats[BucketKindMax]; // keep statistics for each bucket kind
-    unsigned currentGranularity{0};
-    bool arrived{false};
-};
+extern IBucketVisitor* createTopBucketVisitor(IBufferedSerialOutputStream& out, byte limit);
+extern IBucketVisitor* createAllBucketVisitor(IBufferedSerialOutputStream& out);

@@ -819,6 +819,12 @@ public:
         queryRoot()->setPropInt("@taskcount", ++count);
         return count;
     }
+    virtual void setTransferOptions(const IPropertyTree * options) override
+    {
+        CriticalBlock block(parent->crit);
+        queryRoot()->setPropTree("TransferOptions", createPTreeFromIPT(options));
+    }
+
 };
 
 class CDFUmonitor: public CLinkedDFUWUchild, implements IDFUmonitor

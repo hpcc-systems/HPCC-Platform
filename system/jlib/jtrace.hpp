@@ -442,6 +442,10 @@ constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
+// Specific to dfuserver and dafilesrv
+constexpr TraceFlags traceSprayDetails = TraceFlags::flag16;
+constexpr TraceFlags tracePartitionDetails = TraceFlags::flag17;
+
 //Specific to the code generator
 // see traceOptimizations above.
 constexpr TraceFlags traceResources = TraceFlags::flag16;
@@ -496,12 +500,36 @@ constexpr std::initializer_list<TraceOption> eclccTraceOptions
     TRACEOPT(traceResources),
 };
 
+constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceSprayDetails),
+    TRACEOPT(tracePartitionDetails),
+};
+
+constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceSprayDetails),
+    TRACEOPT(tracePartitionDetails),
+};
+
 interface IPropertyTree;
 
 extern jlib_decl bool doTrace(TraceFlags featureFlag, TraceFlags level=TraceFlags::Standard);
 
 // Overwrites current trace flags for active thread (and optionally the global default for new threads)
 extern jlib_decl void updateTraceFlags(TraceFlags flag, bool global = false);
+
+extern jlib_decl TraceFlags combineTraceFlags(TraceFlags existing, TraceFlags request);
 
 // Retrieve current trace flags for the active thread
 extern jlib_decl TraceFlags queryTraceFlags();
