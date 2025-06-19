@@ -51,38 +51,38 @@ public:
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CDumpEventsOp>::usageSyntax(argc, argv, pos, out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!([options] [filters] <filename>
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Parse a binary event file and write its contents to standard output.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CDumpEventsOp>::usageOptions(out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!(    -c                        Output as comma separated values.
     -j                        Output as JSON.
     -x                        Output as XML.
     -y                        Output as YAML.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageDetails(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Structured output would, if represented in a property tree, resemble:
   EventFile
     ├── Header
@@ -98,7 +98,7 @@ Structured output would, if represented in a property tree, resemble:
 CSV output includes columns for event name, plus one for each event attribute
 used by the event recorder.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 };
