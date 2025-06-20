@@ -1480,7 +1480,7 @@ void HqlCppTranslator::associateRemoteResult(ActivityInstance & instance, IHqlEx
     if (name && targetRoxie())
     {
         OwnedHqlExpr attr = createResultAttribute(seq, name);
-        globalFiles.append(* new GlobalFileTracker(attr, instance.graphNode));
+        globalFiles.append(* new GlobalFileTracker(attr, instance.graphNode, 0));
     }
 }
 
@@ -1679,6 +1679,20 @@ bool GlobalFileTracker::checkMatch(IHqlExpression * searchFilename)
         return true;
     }
     return false;
+}
+
+bool GlobalFileTracker::checkRequiredGraph(unsigned graphSeqNumber) const
+{
+    if (!requiredGraph)
+        return false;
+
+    if (requiredGraph != graphSeqNumber)
+    {
+        StringBuffer name;
+        filename->toString(name);
+        throwError1(HQLERR_UseOfSpillOutsideGraph, name.str());
+    }
+    return true;
 }
 
 void GlobalFileTracker::writeToGraph()
@@ -4908,11 +4922,24 @@ IHqlExpression * HqlCppTranslator::createResultName(IHqlExpression * name, bool 
 
 bool HqlCppTranslator::registerGlobalUsage(IHqlExpression * filename)
 {
+    //On rare occasions an identical THOR graph may be generated twice in the same query.
+    //Walk in reverse to ensure this matches the most recent output.
+    //
+    //For non spills this loop cannot terminate early because the same file may be generated in multiple graphs
+    //and each of them has to have the correct usage count
     bool matched = false;
-    ForEachItemIn(i, globalFiles)
+    ForEachItemInRev(i, globalFiles)
     {
-        if (globalFiles.item(i).checkMatch(filename))
+        GlobalFileTracker & cur = globalFiles.item(i);
+        if (cur.checkMatch(filename))
+        {
+            //If it is a spill that should only be in one graph, then finish so it does not fail the same
+            //test on a duplicate spill in a previous graph
+            if (cur.checkRequiredGraph(graphSeqNumber))
+                return true;
+
             matched = true;
+        }
     }
     return matched;
 }
@@ -11097,7 +11124,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (targetRoxie() && expr->hasAttribute(jobTempAtom))
             graphNode = instance->graphNode;
 
-        GlobalFileTracker * tracker = new GlobalFileTracker(filename, graphNode);
+        //Spills must be read from the graph they are written in - save the current graph to check consistency
+        unsigned requiredGraph = expr->hasAttribute(_spill_Atom) ? graphSeqNumber : 0;
+        GlobalFileTracker * tracker = new GlobalFileTracker(filename, graphNode, requiredGraph);
         globalFiles.append(*tracker);
         OwnedHqlExpr callback = createUnknown(no_callback, LINK(unsignedType), globalAtom, LINK(tracker));
         tempCount.setown(createTranslated(callback));

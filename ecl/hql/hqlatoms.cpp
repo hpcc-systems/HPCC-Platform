@@ -204,6 +204,7 @@ IAtom * fullonlyAtom;
 IAtom * fullouterAtom;
 IAtom * _function_Atom;
 IAtom * globalContextAtom;
+IAtom * _globalTemp_Atom;
 IAtom * gctxmethodAtom;
 IAtom * getAtom;
 IAtom * globalAtom;
@@ -689,6 +690,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(get);
     MAKEATOM(global);
     MAKEATOM(globalContext);
+    MAKESYSATOM(globalTemp);
     MAKEATOM(graph);
     MAKESYSATOM(graphLocal);
     MAKEATOM(group);

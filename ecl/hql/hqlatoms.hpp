@@ -211,6 +211,7 @@ extern HQL_API IAtom * gctxmethodAtom;
 extern HQL_API IAtom * getAtom;
 extern HQL_API IAtom * globalAtom;
 extern HQL_API IAtom * globalContextAtom;
+extern HQL_API IAtom * _globalTemp_Atom;
 extern HQL_API IAtom * graphAtom;
 extern HQL_API IAtom * _graphLocal_Atom;
 extern HQL_API IAtom * groupAtom;
