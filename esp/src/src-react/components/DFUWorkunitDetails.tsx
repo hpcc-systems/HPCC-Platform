@@ -223,7 +223,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
                         "secondsLeft": { label: nlsHPCC.SecondsRemaining, type: "number", value: workunit?.SecsLeft, readonly: true },
                         "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: workunit?.TimeStopped, readonly: true },
-                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone.toString(), readonly: true },
+                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone?.toString(), readonly: true },
                         "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: workunit?.ProgressMessage, readonly: true },
                         "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: workunit?.SummaryMessage, readonly: true },
                     }} onChange={(id, value) => {

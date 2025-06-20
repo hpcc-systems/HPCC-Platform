@@ -24,14 +24,14 @@ function fromString<T>(value: string, defaultValue: T): T {
         switch (typeof defaultValue) {
             case "number":
                 const numericValue = Number(value);
-                return isNaN(numericValue) ? defaultValue : numericValue as any;
+                return (isNaN(numericValue) ? defaultValue : numericValue) as any as T;
             case "boolean":
-                return value === "true" ? true : false as any;
+                return (value === "true" ? true : false) as any as T;
             case "object":
                 return JSON.parse(value);
             case "string":
             default:
-                return value as any;
+                return value as any as T;
         }
     } catch (e) {
         return defaultValue;

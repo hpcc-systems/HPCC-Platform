@@ -47,7 +47,7 @@ export function MonitorComponentStatus(params) {
     return prevResponse;
 }
 
-export function CreateNagiosStore(options) {
-    const store = new NagiosStore(options);
+export function CreateNagiosStore() {
+    const store = new NagiosStore();
     return new Observable(store);
 }

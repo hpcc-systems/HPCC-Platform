@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
+import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
 import * as aspect from "dojo/aspect";
 import * as dom from "dojo/dom";
@@ -21,7 +21,6 @@ import "dijit/layout/ContentPane";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 
-import { declareMixin } from "./DeclareDecorator";
 import nlsHPCC from "./nlsHPCC";
 import { WUScopeController } from "./WUScopeController";
 
@@ -33,22 +32,19 @@ type _Widget = {
     setDisabled(id: string, disabled: boolean, icon?: string, disabledIcon?: string);
 };
 
-interface _Graph7Widget extends _Widget {
-}
+export const Graph7Widget = declare("Graph7Widget", [_Widget], {
+    templateString: template,
+    i18n: nlsHPCC,
 
-class _Graph7Widget {
-    templateString = template;
-    static baseClass = "Graph7Widget";
-    i18n = nlsHPCC;
+    wuid: "",
 
-    wuid = "";
+    graphStatus: null,
 
-    graphStatus = null;
-
-    _graph: GraphWidget;
-    _gc = new WUScopeController();
+    _graph: undefined as GraphWidget | undefined,
+    _gc: undefined as WUScopeController | undefined,
 
     constructor() {
+        this._gc = new WUScopeController();
         this._gc.minClick = (sg: Subgraph) => {
             this.loadGraph(w => {
                 this._graph
@@ -57,11 +53,11 @@ class _Graph7Widget {
                     ;
             });
         };
-    }
+    },
 
     //  Data ---
-    private _prevHashSum;
-    private _prevScopeGraph: Promise<ScopeGraph>;
+    _prevHashSum: undefined as string | undefined,
+    _prevScopeGraph: undefined as Promise<ScopeGraph> | undefined,
     fetchScopeGraph(wuid: string, graphID: string, refresh: boolean = false): Promise<ScopeGraph> {
         this.graphStatus.innerText = this.i18n.FetchingData;
         const hash = hashSum({
@@ -83,34 +79,34 @@ class _Graph7Widget {
             });
         }
         return this._prevScopeGraph;
-    }
+    },
     //  --- ---
 
-    buildRendering(args) {
-        this.inherited(arguments);
-    }
+    buildRendering: function buildRendering(args) {
+        this.inherited(buildRendering, arguments);
+    },
 
-    postCreate(args) {
-        this.inherited(arguments);
+    postCreate: function postCreate(args) {
+        this.inherited(postCreate, arguments);
         this._initGraphControls();
-    }
+    },
 
-    startup(args) {
-        this.inherited(arguments);
-    }
+    startup: function startup(args) {
+        this.inherited(startup, arguments);
+    },
 
-    resize(s) {
-        this.inherited(arguments);
+    resize: function resize(s) {
+        this.inherited(resize, arguments);
         this.widget.MainBorderContainer.resize();
-    }
+    },
 
-    layout(args) {
-        this.inherited(arguments);
-    }
+    layout: function layout(args) {
+        this.inherited(layout, arguments);
+    },
 
-    destroy(args) {
-        this.inherited(arguments);
-    }
+    destroy: function destroy(args) {
+        this.inherited(destroy, arguments);
+    },
 
     //  Implementation  ---
     _initGraphControls() {
@@ -122,11 +118,11 @@ class _Graph7Widget {
                     ;
             }
         });
-    }
+    },
 
     _onRefresh() {
         this.refreshData();
-    }
+    },
 
     _onGraphRefresh() {
         this._graph.data().subgraphs.forEach((sg: Subgraph) => {
@@ -136,7 +132,7 @@ class _Graph7Widget {
         this.loadGraph(w => {
             this._graph.zoomToFit();
         });
-    }
+    },
 
     _onPartial(args) {
         this._graph.data().subgraphs.forEach((sg: Subgraph) => {
@@ -145,7 +141,7 @@ class _Graph7Widget {
         this.loadGraph(w => {
             this._graph.zoomToFit();
         });
-    }
+    },
 
     _onMax(args) {
         this._graph.data().subgraphs.forEach((sg: Subgraph) => {
@@ -154,53 +150,53 @@ class _Graph7Widget {
         this.loadGraph(w => {
             this._graph.zoomToFit();
         });
-    }
+    },
 
     _onZoomToFit(args) {
         this._graph.zoomToFit();
-    }
+    },
 
     _onZoomToWidth(args) {
         this._graph.zoomToWidth();
-    }
+    },
 
     _onZoomToPlus(args) {
         this._graph.zoomPlus();
-    }
+    },
 
     _onZoomToMinus(args) {
         this._graph.zoomMinus();
-    }
+    },
 
     isWorkunit() {
         return lang.exists("params.Wuid", this);
-    }
+    },
 
     isQuery() {
         return lang.exists("params.QueryId", this);
-    }
+    },
 
-    init(params) {
-        if (this.inherited(arguments))
+    init: function init(params) {
+        if (this.inherited(init, arguments))
             return;
 
         this.initGraph();
 
         this.doInit(params.Wuid);
-    }
+    },
 
     clear() {
         this._graph
             .data({ vertices: [], edges: [] })
             .render()
             ;
-    }
+    },
 
     doInit(wuid: string) {
         this.wuid = this.params.Wuid = wuid;
 
         this.refreshData();
-    }
+    },
 
     refreshData() {
         if (this.isWorkunit()) {
@@ -208,13 +204,13 @@ class _Graph7Widget {
         } else if (this.isQuery()) {
         }
         return Promise.resolve();
-    }
+    },
 
     loadGraphFromWu(wuid, graphName, refresh: boolean = false) {
         return this.fetchScopeGraph(wuid, graphName, refresh).then(() => {
             this.loadGraph();
         });
-    }
+    },
 
     initGraph() {
         this.graphStatus = dom.byId(this.id + "GraphStatus");
@@ -242,7 +238,7 @@ class _Graph7Widget {
         this._graph.tooltipHTML((v: Vertex) => {
             return this._gc.calcGraphTooltip2(v);
         });
-    }
+    },
 
     loadGraph(callback?) {
         this._graph
@@ -250,5 +246,4 @@ class _Graph7Widget {
             .render(callback)
             ;
     }
-}
-export const Graph7Widget = declareMixin(_Graph7Widget, "Graph7Widget", _Widget);
+});

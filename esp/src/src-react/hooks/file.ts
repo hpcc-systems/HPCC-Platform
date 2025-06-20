@@ -6,9 +6,18 @@ import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/file.ts");
 
-export function useFile(cluster: string, name: string): [LogicalFile, boolean, number, () => void] {
+interface useFileResponse {
+    file: LogicalFile;
+    protectedBy: WsDfu.DFUFileProtect[];
+    isProtected: boolean;
+    lastUpdate: number;
+    refreshData: () => void
+}
+
+export function useFile(cluster: string, name: string): useFileResponse {
 
     const [file, setFile] = React.useState<LogicalFile>();
+    const [protectedBy, setProtectedBy] = React.useState<WsDfu.DFUFileProtect[]>([]);
     const [isProtected, setIsProtected] = React.useState(false);
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
     const [count, increment] = useCounter();
@@ -22,6 +31,7 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
             .then((response) => {
                 if (active) {
                     setFile(file);
+                    setProtectedBy(response?.ProtectList?.DFUFileProtect || []);
                     setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
                     setLastUpdate(Date.now());
                     handle = file.watch(() => {
@@ -38,12 +48,12 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
         };
     }, [cluster, count, name]);
 
-    return [file, isProtected, lastUpdate, increment];
+    return { file, protectedBy, isProtected, lastUpdate, refreshData: increment };
 }
 
 export function useDefFile(cluster: string, name: string, format: WsDfu.DFUDefFileFormat): [string, () => void] {
 
-    const [file] = useFile(cluster, name);
+    const { file } = useFile(cluster, name);
     const [defFile, setDefFile] = React.useState("");
     const [count, increment] = useCounter();
 
@@ -61,7 +71,7 @@ export function useDefFile(cluster: string, name: string, format: WsDfu.DFUDefFi
 
 export function useFileHistory(cluster: string, name: string): [WsDfu.Origin[], () => void, () => void] {
 
-    const [file] = useFile(cluster, name);
+    const { file } = useFile(cluster, name);
     const [history, setHistory] = React.useState<WsDfu.Origin[]>([]);
     const [count, increment] = useCounter();
 
@@ -90,7 +100,7 @@ export function useFileHistory(cluster: string, name: string): [WsDfu.Origin[], 
 
 export function useSubfiles(cluster: string, name: string): [WsDfu.subfiles, () => void] {
 
-    const [file] = useFile(cluster, name);
+    const { file } = useFile(cluster, name);
     const [subfiles, setSubfiles] = React.useState<WsDfu.subfiles>({ Item: [] });
     const [count, increment] = useCounter();
 

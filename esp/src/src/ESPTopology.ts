@@ -380,15 +380,23 @@ const TopologyRoot = declare([TopologyItem], {
     }
 });
 
-const TopologyTreeStore = declare([ESPTree.Store], {
+class TopologyTreeStore extends ESPTree.Store {
+    cachedTreeItems: {};
+    cachedRelations: {};
+    cachedRelationsPC: {};
+    _viewMode: any;
+    rootItem: any;
+
     constructor() {
+        super();
         this.viewMode("Debug");
         this.cachedTreeItems = {};
         this.cachedRelations = {};
         this.cachedRelationsPC = {};
-    },
-    createTreeNode: ESPUtil.override(function (inherited, parentNode, treeItem) {
-        const retVal = inherited(parentNode, treeItem);
+    }
+
+    createTreeNode(parentNode, treeItem) {
+        const retVal = super.createTreeNode(parentNode, treeItem);
         retVal.hasConfig = function () {
             return this.__hpcc_treeItem.Netaddress && this.__hpcc_treeItem.Directory;
         };
@@ -428,16 +436,18 @@ const TopologyTreeStore = declare([ESPTree.Store], {
             return retVal;
         };
         return retVal;
-    }),
-    clear: ESPUtil.override(function (inherited) {
-        inherited(arguments);
+    }
+
+    clear() {
+        super.clear();
         this.cachedTreeItems = {};
         this.cachedRelations = {};
         this.cachedRelationsPC = {};
-    }),
+    }
+
     viewMode(mode) {
         this._viewMode = mode;
-    },
+    }
     createTreeItemXXX(Type, id, data) {
         const newItem = new Type({ __hpcc_store: this, __hpcc_id: id });
         let retVal = this.cachedTreeItems[newItem.getUniqueID()];
@@ -459,7 +469,7 @@ const TopologyTreeStore = declare([ESPTree.Store], {
             retVal.updateData(data);
         }
         return retVal;
-    },
+    }
     query(query, options) {
         const data = [];
         let instance = {};
@@ -523,11 +533,11 @@ const TopologyTreeStore = declare([ESPTree.Store], {
             }
         }
         return QueryResults(this.queryEngine({}, {})(data));
-    },
+    }
 
     mayHaveChildren(treeNode) {
         return this.getChildren(treeNode, {}).length > 0;
-    },
+    }
 
     getChildren(treeNode, options) {
         let data = [];
@@ -579,7 +589,7 @@ const TopologyTreeStore = declare([ESPTree.Store], {
             }
         }
         return QueryResults(this.queryEngine({}, {})(data));
-    },
+    }
 
     refresh(callback) {
         this.clear();
@@ -622,7 +632,7 @@ const TopologyTreeStore = declare([ESPTree.Store], {
             callback();
         });
     }
-});
+}
 
 export function GetThor(thorName) {
     if (!ThorCache[thorName]) {

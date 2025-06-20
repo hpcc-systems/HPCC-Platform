@@ -37,7 +37,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     sort = defaultSort
 }) => {
 
-    const [file, , , refreshData] = useFile(cluster, logicalFile);
+    const { file, refreshData } = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
     const {

@@ -29,7 +29,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     sort = defaultSort
 }) => {
 
-    const [file] = useFile(cluster, logicalFile);
+    const { file } = useFile(cluster, logicalFile);
     const [subfiles, refreshSubfiles] = useSubfiles(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);

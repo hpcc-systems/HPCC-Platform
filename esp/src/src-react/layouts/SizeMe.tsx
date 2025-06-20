@@ -35,3 +35,4 @@ export const SizeMe: React.FunctionComponent<SizeMeProps> = ({
         {children({ size })}
     </div>;
 };
+
