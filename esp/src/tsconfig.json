@@ -16,8 +16,6 @@
         "importHelpers": true,
         "allowJs": true,
         "skipLibCheck": true,
-        "noImplicitUseStrict": true,
-        "ignoreDeprecations": "5.0",
         "downlevelIteration": true,
         "jsx": "react",
         "lib": [
