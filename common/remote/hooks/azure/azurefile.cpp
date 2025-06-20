@@ -456,7 +456,11 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
         if (!plane)
             throw makeStringExceptionV(99, "Unknown storage plane %s", planeName.str());
 
-        const char * api = plane->queryProp("storageapi/@type");
+        IPropertyTree * storageapi = plane->queryPropTree("storageapi");
+        if (!storageapi)
+            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+
+        const char * api = storageapi->queryProp("@type");
         if (!api)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
 
@@ -479,7 +483,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
             VStringBuffer childPath("containers[%d]", device-1);
-            IPropertyTree * deviceInfo = plane->queryPropTree(childPath);
+            IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
             if (deviceInfo)
             {
                 accountName.set(deviceInfo->queryProp("@account"));
@@ -488,16 +492,16 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 
             //If device-specific information is not provided all defaults come from the storage plane
             if (!accountName)
-                accountName.set(plane->queryProp("@account"));
+                accountName.set(storageapi->queryProp("@account"));
             if (!secretName)
-                secretName.set(plane->queryProp("@secret"));
+                secretName.set(storageapi->queryProp("@secret"));
 
             filename = endDevice+1;
         }
         else
         {
-            accountName.set(plane->queryProp("@account"));
-            secretName.set(plane->queryProp("@secret"));
+            accountName.set(storageapi->queryProp("@account"));
+            secretName.set(storageapi->queryProp("@secret"));
             filename = slash+1;
         }
 
