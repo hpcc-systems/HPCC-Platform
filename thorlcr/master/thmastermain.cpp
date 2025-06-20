@@ -1053,10 +1053,10 @@ int main( int argc, const char *argv[]  )
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
 
-            if (globals->hasProp("@instanceNum"))
+            if (globals->hasProp("@instanceName"))
             {
-                unsigned instanceNum = globals->getPropInt("@instanceNum");
-                cloudJobName.appendf("%s-%d", thorName, instanceNum);
+                cloudJobName.append(thorName).append('-');
+                globals->getProp("@instanceName", cloudJobName);
             }
             else
                 cloudJobName.appendf("%s-%s", workunit, graphName);
