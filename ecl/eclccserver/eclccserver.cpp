@@ -964,11 +964,21 @@ public:
             if (optPlatformVersion.length())
                 params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
 
-            StringBuffer podNameSuffix(k8s::queryMyPodName());
-            const char *lastDash = strrchr(podNameSuffix.str(), '-');
-            if (lastDash && strlen(lastDash) > 1)
-                podNameSuffix = lastDash + 1;
+            // Extract the replica and pod hashes from the pod name to be used as the
+            // job name suffix for uniqueness
+            std::string podNameSuffix = k8s::queryMyPodName();
+            size_t lastDashPos = podNameSuffix.find_last_of("-");
+            if (lastDashPos != std::string::npos && lastDashPos - 1 > 0)
+            {
+                size_t penultimateDashPos = podNameSuffix.find_last_of("-", lastDashPos - 1);
+                if (penultimateDashPos != std::string::npos && penultimateDashPos - 1 > 0)
+                    podNameSuffix = podNameSuffix.substr(penultimateDashPos + 1);
+                else
+                    podNameSuffix = podNameSuffix.substr(lastDashPos + 1);
+            }
 
+            // To ensure a unique job name, it is made up as follows:
+            // <deployment-name>-<replicaset-hash>-<pod-hash>
             StringBuffer jobName;
             jobName.append("eclcc-").append(instanceName).append("-").append(instanceNumber).append("-").append(podNameSuffix);
 
