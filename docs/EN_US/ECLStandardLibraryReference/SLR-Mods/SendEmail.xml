@@ -18,9 +18,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -101,5 +101,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.System.Email.SendEmail( 'me@mydomain.com', 'testing 1,2,3', 'this is a test message');</programlisting>
+  <!--#synthpii-->
+
+  <programlisting format="linespecific">STD.System.Email.SendEmail( 'me@example.com', 'testing 1,2,3', 'this is a test message');</programlisting>
 </sect1>

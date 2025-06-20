@@ -14,7 +14,7 @@
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>( </emphasis><emphasis>length </emphasis><emphasis
-  role="bold">) ])</emphasis><emphasis role="bold"></emphasis></para>
+  role="bold">) ])</emphasis></para>
 
   <para><emphasis role="bold">PARSE(</emphasis><emphasis>dataset, data,
   result</emphasis><emphasis role="bold"> </emphasis><emphasis>,
@@ -29,9 +29,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="91.55pt" />
+        <colspec colwidth="91.55pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -202,9 +202,9 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="103.20pt" />
+          <colspec colwidth="103.20pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -555,12 +555,14 @@ OUTPUT(textout);</programlisting>
     missing area code in the raw input results in three leading zeroes in the
     output.</para>
 
-    <programlisting>infile := DATASET([{'5619994581'},{'15619994581'},
-                   {'(561) 999-4581'},{'(561)999-4581'},
-                   {'561-999-4581'},{'561 999 4581'},
-                   {'561.999.4581'},{'561/999/4581'},
-                   {'561 999-4581'},{'9994581'},
-                   {'999-4581'}],{STRING20 rawnumber});
+    <!--#synthpii-->
+
+    <programlisting>infile := DATASET([{'5615554581'},{'15615554581'},
+                   {'(561) 555-4581'},{'(561)555-4581'},
+                   {'561-555-4581'},{'561 555 4581'},
+                   {'561.555.4581'},{'561/555/4581'},
+                   {'561 555-4581'},{'5554581'},
+                   {'555-4581'}],{STRING20 rawnumber});
   
             
 PATTERN numbers := PATTERN('[0-9]')+;

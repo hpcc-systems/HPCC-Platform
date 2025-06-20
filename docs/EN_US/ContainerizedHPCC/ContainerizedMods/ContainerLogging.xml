@@ -450,7 +450,9 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
             <para><emphasis role="bold">TAGS</emphasis> The tags associated
             with the new workspace.</para>
 
-            <para>For example: "admin=MyName email=my.email@mycompany.com
+            <!--#synthpii-->
+
+            <para>For example: "admin=MyName email=my.email@example.com
             environment=myenv justification=testing"</para>
           </listitem>
 
