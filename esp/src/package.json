@@ -79,7 +79,7 @@
     "query-string": "9.2.1",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "react-hook-form": "7.58.0",
+    "react-hook-form": "7.58.1",
     "react-reflex": "4.2.7",
     "universal-router": "9.2.1",
     "xstyle": "0.3.3"
@@ -110,7 +110,7 @@
     "string-replace-loader": "3.2.0",
     "style-loader": "4.0.0",
     "tslib": "2.8.1",
-    "typescript": "5.4.3",
+    "typescript": "5.8.3",
     "typescript-eslint": "8.34.0",
     "url-loader": "4.1.1",
     "webpack": "5.99.9",
