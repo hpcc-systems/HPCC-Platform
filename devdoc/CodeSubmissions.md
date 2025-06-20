@@ -6,7 +6,20 @@ We welcome submissions to the platform especially in the form of pull requests i
 There are a few things that should be considered when creating a PR to increase the likelihood that they can be accepted quickly.
 
 * Write a good commit message\
-  The format should be HPCC-XXXXX (where XXXXX is the bug number) followed by a description of the issue.  The text should make sense in a change log by itself - without reference to the jira or the contents of the PR.  We should aim to increase the information that is included as part of the commit message - not rely on on the jira.
+
+  The text should make sense in a change log by itself - without reference to the jira or the contents of the PR.  We should aim to increase the information that is included as part of the commit message - not rely on the jira. We should keep in mind the audience could be developers, testers, and any other users of the system.
+* The format should be HPCC-XXXXX (where XXXXX is the bug number) followed by a description of the issue.  Remember to separate the JIRA and commit message with a space.
+  <table><tr><td>HPCC-XXXXX This is the description of the solution.</td></tr></table>
+* Try to keep your top level commit message to max length of 80 characters.
+* If more detail is required, use the extended message section available through the Github UI on a browser or through commandline.
+  - You'll be able to provide more details.
+  - Use bullet points to help keep your information organized and easy to read.
+  - If adding detailed commit messages from commandline, the user can do the following:\
+    git commit -m "HPCC-XXXXX top level commit message" -m " - detailed commit message line 1: <press Enter>
+    1)  - this is the continuation of my detailed commit message <press Enter>
+    2)  - this is the next line in the detailed commit message." 
+    - the final quotation mark will end the detailed commit message.
+* If the component name (when applicable) can fit into the top level commit message, it would help clarify information.
 * Ensure the reviewer has enough information to review the change.\
   The code reviewer only has the JIRA and the PR to go on.  The JIRA (or associated documentation) should contain enough details to review the PR - e.g. the purpose, main aim, why the change was made etc.. If the scope of the jira has changed then the jira should be updated to reflect that.\
   If the submission requires changes to the documentation then the JIRA should contain all the details needed to document it, and the PR should either contain the documentation changes, or a documentation JIRA should be created.
@@ -27,7 +40,24 @@ There are a few things that should be considered when creating a PR to increase 
   - Check subtractions are the right way around, and potential for overflow.
   - New files with the wrong copyright date
 * Check the target branch (see below)
-* Request one or more reviews.  For relatively simple changes a single reviewer is normally enough.
+* Request one or more reviewers.  For relatively simple changes a single reviewer is normally enough.
+* For more suggestions, please refer to https://github.com/hpcc-systems/HPCC-Platform/wiki/Git-commit-message-guidelines 
+* examples of Pull Requests that can be improved\
+  - HPCC-32193 Fix some issues with spill stats in smart join activity 
+    - This could mention affected component.
+    - This PR did have a very detailed explanation of everything that got worked on.
+    - It's just missing a bit more info in the top level summary commit message.
+  - HPCC-32630 Allow lookahead below blocking splitter
+    - A bit cryptic if you're unfamililar with the code.
+    - Naming the file explicitly or affected component might be helpful
+* example of Pull Request that follows most if not all suggestions\
+  - HPCC-32584 Ensure that dfuserver closes files cleanly so errors are reported
+    - This commit message has clean information and tells the reader which component is affected. 
+    - This is also under 80 characters long without sacrificing information.
+  - HPCC-32543 Add statistic for number/size of agent requests
+    - Efficient use of punctuation and symbols for clarity.
+    - Full stops aren't necessary for commit messages so it would save 1 character.
+
 
 ## Reviewers
 
