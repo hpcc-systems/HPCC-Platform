@@ -334,7 +334,7 @@ Internal links are those that point to another file in the same repository or a 
 ```
 
 ### Page Anchor Links
-There is a special kind of links where the generated link point to an section header like this: [Page Anchor Links](page-anchor-links). 
+There is a special kind of links where the generated link point to an section header like this: [Page Anchor Links](#page-anchor-links). 
 In this case the text of section header converted lowercase and all spaces are replaced by '-'.
 
 
