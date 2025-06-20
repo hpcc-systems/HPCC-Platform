@@ -1898,7 +1898,10 @@ public:
     void add(CTransactionItem *item)
     {
         if (item->ext.dataLength > cacheSzLimit)
+        {
+            remove(item->name);
             return;
+        }
         doAdd(item);
     }
     void remove(const char *key)

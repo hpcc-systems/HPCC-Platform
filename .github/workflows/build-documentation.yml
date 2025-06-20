@@ -41,6 +41,11 @@ on:
         type: string
         description: 'Mount point for build'
         required: true
+      make-latest:
+        type: boolean
+        description: 'Make Latest'
+        required: false
+        default: false
 
 jobs:
   build-documentation:
@@ -147,6 +152,7 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ inputs.make-latest }}
           artifacts: ${{ inputs.folder-build }}/Release/docs/*.zip,${{ inputs.folder-build }}/Release/docs/EN_US/*.zip,${{ inputs.folder-build }}/Release/docs/PT_BR/*.zip,${{ inputs.folder-build }}/Release/docs/EN_US/*.pdf,${{ inputs.folder-build }}/Release/docs/PT_BR/*.pdf,${{ inputs.folder-build }}/docs/EN_US/EclipseHelp/*.zip,${{ inputs.folder-build }}/docs/EN_US/HTMLHelp/*.zip,${{ inputs.folder-build }}/docs/PT_BR/HTMLHelp/*.zip
 
       - name: Upload Error Logs

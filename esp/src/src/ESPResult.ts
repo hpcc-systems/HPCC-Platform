@@ -134,6 +134,14 @@ class RowFormatter {
     }
 }
 
+interface StoreOptions {
+    wuid: string;
+    cluster?: string;
+    name?: string;
+    sequence?: number;
+    isComplete: boolean;
+}
+
 class Store extends ESPRequest.Store {
     service = "WsWorkunits";
     action = "WUResult";
@@ -149,11 +157,17 @@ class Store extends ESPRequest.Store {
     cluster: any;
     idPrefix: string;
     wuid: string;
-    sequence: string;
+    sequence: number;
+    isComplete: boolean;
     _structure: any;
 
-    constructor(options?) {
-        super(options);
+    constructor(options: StoreOptions) {
+        super();
+        this.wuid = options.wuid;
+        this.cluster = options.cluster;
+        this.name = options.name;
+        this.sequence = options.sequence;
+        this.isComplete = options.isComplete;
 
         this.preRequest = (request) => {
             if (request.FilterBy) {

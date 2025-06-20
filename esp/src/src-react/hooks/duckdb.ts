@@ -1,6 +1,9 @@
 import * as React from "react";
 import { IScope } from "@hpcc-js/comms";
-import { DuckDB } from "@hpcc-js/wasm/dist/duckdb";
+import { scopedLogger } from "@hpcc-js/util";
+import { DuckDB } from "@hpcc-js/wasm-duckdb";
+
+const logger = scopedLogger("src-react/hooks/duckdb.ts");
 
 type AsyncDuckDB = any;
 type AsyncDuckDBConnection = any;
@@ -16,7 +19,9 @@ export function useDuckDB(): [AsyncDuckDB] {
         });
 
         return () => {
-            duckdb?.db?.close();
+            duckdb?.then(d => {
+                d.db?.close();
+            }).catch(e => logger.error(e));
         };
     }, []);
 

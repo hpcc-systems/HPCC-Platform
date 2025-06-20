@@ -4,9 +4,9 @@ import * as ESPUtil from "./ESPUtil";
 import { Memory } from "./store/Memory";
 
 const TreeItem = declare([ESPUtil.Singleton], {
-    __hpcc_type: "none",
 
     constructor(args) {
+        this.__hpcc_type = "none";
         args.__hpcc_id = this.__hpcc_type + "::" + args.__hpcc_id;  //  args get set to "this" in base class Stateful ---
     },
 
@@ -24,8 +24,8 @@ const TreeItem = declare([ESPUtil.Singleton], {
 });
 
 const TreeNode = declare(null, {
-    treeSeparator: "->",
     constructor(store, parentNode, treeItem) {
+        this.treeSeparator = "->";
         this.__hpcc_store = store;
         if (!(parentNode === null || parentNode instanceof TreeNode)) {
             throw new Error("Invalid Parent Node");

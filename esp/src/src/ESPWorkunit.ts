@@ -159,8 +159,8 @@ class Store extends ESPRequest.Store {
     busy: boolean;
     _toUnwatch: any;
 
-    constructor(options?) {
-        super(options);
+    constructor() {
+        super();
         this._watched = {};
     }
 
@@ -1071,8 +1071,8 @@ export function Get(wuid, data?) {
     return retVal;
 }
 
-export function CreateWUQueryStoreLegacy(options) {
-    const store = new Store(options);
+export function CreateWUQueryStoreLegacy() {
+    const store = new Store();
     return new Observable(store);
 }
 
