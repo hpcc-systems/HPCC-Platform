@@ -15,6 +15,10 @@ import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src-react/components/DFUWorkunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -70,6 +74,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
+    const sashaService = React.useMemo(() => new SashaService({ baseUrl: "" }), []);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const {
@@ -190,6 +195,22 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
+            key: "restore", text: nlsHPCC.Restore, disabled: !uiState.hasSelection,
+            onClick: () => {
+                const wuids = selection.map(item => item.Wuid || item.ID);
+                Promise.all(wuids.map(wuid =>
+                    sashaService.RestoreWU({
+                        Wuid: wuid,
+                        WUType: WsSasha.WUTypes.DFU
+                    })
+                )).then(() => {
+                    refreshTable.call(true);
+                }).catch(err => {
+                    logger.error(err);
+                });
+            }
+        },
+        {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
             onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect").then(() => refreshTable.call()); }
         },
@@ -215,7 +236,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, filter, hasFilter, refreshTable, sashaService, selection, setShowDeleteConfirm, store, total, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     const copyButtons = useCopyButtons(columns, selection, "dfuworkunits");
 

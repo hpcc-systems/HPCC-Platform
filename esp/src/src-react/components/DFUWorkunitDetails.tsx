@@ -13,8 +13,10 @@ import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
 
 const logger = scopedLogger("../components/DFUWorkunitDetails.tsx");
+const sashaService = new SashaService({ baseUrl: "" });
 
 type FieldMap = { key: string, label: string };
 const sourceFieldIds: FieldMap[] = [
@@ -178,6 +180,19 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
             onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "restore", text: nlsHPCC.Restore,
+            onClick: () => {
+                sashaService.RestoreWU({
+                    Wuid: wuid,
+                    WUType: WsSasha.WUTypes.DFU
+                }).then(() => {
+                    refresh();
+                }).catch(err => {
+                    logger.error(err);
+                });
+            }
+        },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: canAbort,
             onClick: () => { workunit?.abort().catch(err => logger.error(err)); }
