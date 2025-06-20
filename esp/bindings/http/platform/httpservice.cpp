@@ -471,11 +471,13 @@ int CEspHttpServer::processRequest()
 
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
-        if (isEmptyString(userid))
-            ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
-        else //user ID is in HTTP header
-            ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
-
+        if (doTrace(traceHttp))
+        {
+            if (isEmptyString(userid))
+                ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
+            else //user ID is in HTTP header
+                ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
+        }
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
@@ -2389,7 +2391,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
         sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
-        ESPLOG(LogMin, "Updated %s for (/%s/%s) : %" PRId64 "", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+        ESPLOG(LogMax, "Updated %s for (/%s/%s) : %" PRId64 "", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
             authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), (int64_t)timeoutAt);
     }
     ///authReq.ctx->setAuthorized(true);

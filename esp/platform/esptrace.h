@@ -25,12 +25,14 @@
 constexpr const char* propTraceFlags = "traceFlags";
 
 // Trace option list fragment for jtrace-defined options used by ESPs
-#define PLATFORM_OPTIONS_FRAGMENT
+#define PLATFORM_OPTIONS_FRAGMENT \
+    TRACEOPT(traceAll), \
+    TRACEOPT(traceDetail), \
+    TRACEOPT(traceHttp),
 
 // Trace option list fragment for options used by most ESPs
 #define ESP_OPTIONS_FRAGMENT \
-    PLATFORM_OPTIONS_FRAGMENT \
-    TRACEOPT(traceDetail),
+    PLATFORM_OPTIONS_FRAGMENT
 
 // Trace option initializer list for ESPs that do not define their own options.
 constexpr std::initializer_list<TraceOption> espTraceOptions
