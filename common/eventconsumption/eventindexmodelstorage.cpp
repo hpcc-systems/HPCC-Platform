@@ -124,7 +124,7 @@ void Storage::configureFiles(const IPropertyTree& config)
                 throw makeStringExceptionV(-1, "invalid storage file exception configuration for path '%s' - %llu > %llu", file.path.str(), min, max);
             for (const File::Exception& exception : file.exceptions)
             {
-                if ((min <= exception.max && max >= exception.min) || (exception.min <= max && exception.max >= min))
+                if (min <= exception.max && max >= exception.min)
                     throw makeStringExceptionV(-1, "invalid storage file exception configuration for path '%s' - [%llu..%llu] overlaps [%llu..%llu]", file.path.str(), min, max, exception.min, exception.max);
             }
             file.exceptions.emplace(min, max, plane);

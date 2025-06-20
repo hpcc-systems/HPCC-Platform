@@ -43,7 +43,7 @@
 //   explicitly configured.
 // - `file/plane` is optional; omission, or empty, implies the file resides in the default storage
 //   plane.
-// - `file/except' is prohibited when `file/path` is empty or omitted, and optional otherwise.
+// - `file/except` is prohibited when `file/path` is empty or omitted, and optional otherwise.
 // - `file/except/min` is optional; omission implies zero.
 // - `file/except/max` is optional; omission implies the end of the file.
 // - `file/except/plane` is optional; omission implies the default storage plane.
