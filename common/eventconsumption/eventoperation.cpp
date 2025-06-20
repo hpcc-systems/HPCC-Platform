@@ -17,6 +17,7 @@
 
 #include "eventoperation.h"
 #include "eventfilter.h"
+#include "eventmodeling.h"
 
 bool CEventConsumingOp::ready() const
 {
@@ -43,6 +44,14 @@ bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
     return ensureFilter()->acceptAttribute(attr, values);
 }
 
+bool CEventConsumingOp::acceptModel(const IPropertyTree& config)
+{
+    if (model)
+        return false; // only one model per operation
+    model.setown(createEventModel(config));
+    return model != nullptr;
+}
+
 IEventFilter* CEventConsumingOp::ensureFilter()
 {
     if (!filter)
@@ -52,10 +61,16 @@ IEventFilter* CEventConsumingOp::ensureFilter()
 
 bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
 {
+    IEventVisitor* actual = &visitor;
     if (filter)
     {
-        filter->setNextLink(visitor);
-        return readEvents(path, *filter);
+        filter->setNextLink(*actual);
+        actual = filter;
     }
-    return readEvents(path, visitor);
+    if (model)
+    {
+        model->setNextLink(*actual);
+        actual = model;
+    }
+    return readEvents(path, *actual);
 }

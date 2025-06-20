@@ -336,6 +336,7 @@
 #define HQLERR_NoMappingForField                4840
 #define HQLERR_InvalidMatchedPatternInJoin      4841
 #define HQLERR_CodeContextNotAvailable          4842
+#define HQLERR_UseOfSpillOutsideGraph           4843
 
 //#define HQLERR_Max                            4999
 
@@ -640,6 +641,7 @@
 #define HQLERR_AccessUnavailableGraph_Text      "INTERNAL: Attempt to access result from unavailable graph (%s)"
 #define HQLERR_NoMappingForField_Text           "INTERNAL: Mapping for field %s is missing from transform"
 #define HQLERR_CodeContextNotAvailable_Text     "INTERNAL: ICodeContext is not available"
+#define HQLERR_UseOfSpillOutsideGraph_Text      "INTERNAL: Use of spill file %s outside of a graph"
 
 #define WARNINGAT(cat, e, x)                 reportWarning(cat, SeverityUnknown, e, x, x##_Text)
 #define WARNINGAT1(cat, e, x, a)             reportWarning(cat, SeverityUnknown, e, x, x##_Text, a)

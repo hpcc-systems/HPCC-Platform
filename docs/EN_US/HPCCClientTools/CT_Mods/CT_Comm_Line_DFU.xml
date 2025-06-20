@@ -301,6 +301,7 @@
           <programlisting>;The values below are examples, you should change them to match your platform deployment
 server=http://10.150.50.12:8010
 username=rlor
+<!--#synthpii-->
 password=password
 overwrite=1
 replicate=1</programlisting>

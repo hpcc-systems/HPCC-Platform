@@ -312,8 +312,8 @@ export function GetVisualisations() {
     return deferred.promise;
 }
 
-export function CreateEventScheduleStore(options) {
-    const store = new EventScheduleStore(options);
+export function CreateEventScheduleStore() {
+    const store = new EventScheduleStore();
     return new Observable(store);
 }
 

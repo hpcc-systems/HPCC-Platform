@@ -29,19 +29,19 @@ public:
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CIndexFileSummary>::usageSyntax(argc, argv, pos, out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!([options] [filters] <filename>
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Summarize the index events in a binary event file.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 };

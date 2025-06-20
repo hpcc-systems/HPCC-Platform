@@ -204,8 +204,8 @@ export function GetFromRequestXML(QuerySetId, requestXml) {
     return null;
 }
 
-export function CreateQueryStoreLegacy(options) {
-    const store = new Store(options);
+export function CreateQueryStoreLegacy() {
+    const store = new Store();
     return new Observable(store);
 }
 

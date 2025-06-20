@@ -147,7 +147,7 @@ const TreeStore = declare(null, {
     cache: null,
     _watched: [],
 
-    constructor(options) {
+    constructor() {
         this.cache = {};
     },
 
@@ -491,13 +491,13 @@ export function Get(Cluster, Name, data?) {
     return retVal;
 }
 
-export function CreateLFQueryStore(options) {
-    const store = new Store(options);
+export function CreateLFQueryStore() {
+    const store = new Store();
     return new Observable(store);
 }
 
-export function CreateLFQueryTreeStore(options) {
-    const store = new TreeStore(options);
+export function CreateLFQueryTreeStore() {
+    const store = new TreeStore();
     return new Observable(store);
 }
 

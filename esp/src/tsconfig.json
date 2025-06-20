@@ -3,7 +3,7 @@
         "baseUrl": ".",
         "outDir": "./lib",
         "declarationDir": "./types",
-        "target": "ES5",
+        "target": "es2022",
         "module": "AMD",
         "moduleResolution": "Node",
         "allowSyntheticDefaultImports": true,
@@ -22,7 +22,7 @@
         "jsx": "react",
         "lib": [
             "DOM",
-            "ES2020"
+            "ES2022"
         ],
         "typeRoots": [],
         "types": [],

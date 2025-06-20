@@ -485,11 +485,11 @@ public:
 class GlobalFileTracker : public IHqlDelayedCodeGenerator, public CInterface
 {
 public:
-    GlobalFileTracker(IHqlExpression * _filename, IPropertyTree * _graphNode)
+    GlobalFileTracker(IHqlExpression * _filename, IPropertyTree * _graphNode, unsigned _requiredGraph)
+    : requiredGraph(_requiredGraph)
     {
         filename.set(_filename->queryBody());
         graphNode.set(_graphNode);
-        usageCount = 0;
     }
     IMPLEMENT_IINTERFACE
 
@@ -497,12 +497,14 @@ public:
     virtual void generateCpp(StringBuffer & out) { out.append(usageCount); }
 
     bool checkMatch(IHqlExpression * searchFilename);
+    bool checkRequiredGraph(unsigned graphSeqNumber) const;
     void writeToGraph();
 
 public:
-    unsigned usageCount;
+    unsigned usageCount = 0;
     OwnedHqlExpr filename;
     Owned<IPropertyTree> graphNode;
+    unsigned requiredGraph = 0;
 };
 
 //===========================================================================
@@ -1996,6 +1998,7 @@ protected:
     void doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg);
 
     void optimizePersists(HqlExprArray & exprs);
+    void optimizeSingleGraphGlobals(WorkflowItem & curWorkflow);
     IHqlExpression * convertSetResultToExtract(IHqlExpression * expr);
     void allocateSequenceNumbers(HqlExprArray & exprs);
     void transformNestedSequential(HqlExprArray & exprs);

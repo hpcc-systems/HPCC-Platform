@@ -186,6 +186,7 @@
 eclWatchIP=10.150.50.12
 eclWatchPort=28010
 eclUserName=emilykate
+<!--#synthpii-->
 eclPassword=
 resultLimit=200
 </programlisting>
@@ -758,6 +759,14 @@ ecl deploy roxie - --job-name=FindPersonService
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1300,6 +1309,14 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1467,6 +1484,14 @@ ecl unpublish roxie "FindpersonService*"
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1843,6 +1868,14 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2004,6 +2037,14 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2148,6 +2189,14 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2290,6 +2339,14 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2484,6 +2541,14 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2638,6 +2703,14 @@ SuperFiles used:
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3002,6 +3075,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3299,6 +3380,14 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3500,6 +3589,14 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3865,6 +3962,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4156,6 +4261,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4326,6 +4439,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4619,6 +4740,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4780,6 +4909,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4930,6 +5067,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -5079,6 +5224,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -5223,6 +5376,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5369,6 +5530,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5659,6 +5828,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -5828,6 +6005,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -5995,6 +6180,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <entry>--wait-read=&lt;Secs&gt;</entry>
 
                 <entry>Timeout while reading from socket (in seconds)</entry>
+              </row>
+
+              <row>
+                <entry>--noKeepAlive </entry>
+
+                <entry>Disable TCP keepalives with the server. If omitted, the
+                default is FALSE, meaning connections to the server remain
+                open. </entry>
               </row>
             </tbody>
           </tgroup>
@@ -6231,6 +6424,14 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6506,6 +6707,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -6651,6 +6860,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -6783,6 +7000,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6917,6 +7142,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -7049,6 +7282,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7225,6 +7466,14 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7877,6 +8126,14 @@ ecl bundle list myb*
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -8022,6 +8279,14 @@ ecl abort -n MyJob</programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -8164,6 +8429,14 @@ ecl status -n MyJob</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8309,10 +8582,11 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
+                  <entry>--noKeepAlive </entry>
 
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8457,6 +8731,14 @@ ecl getname -wu W201407*
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8624,6 +8906,14 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry>--noKeepAlive </entry>
+
+                  <entry>Disable TCP keepalives with the server. If omitted,
+                  the default is FALSE, meaning connections to the server
+                  remain open. </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -8666,6 +8956,8 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
           </informaltable>The <emphasis>ecl url-secret-name </emphasis>command
         generates a secret name from a URL that can be used to support ECL
         SOAPCALL/HTTPCALL automated URL to Secret mapping.</para>
+
+        <!--#synthpii-->
 
         <para>A username can either be embedded in the URL, such as
         https://username@example.com, or passed in as a parameter using the

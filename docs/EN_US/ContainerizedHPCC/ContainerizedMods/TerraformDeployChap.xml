@@ -194,9 +194,9 @@
 
       <informaltable>
         <tgroup cols="2">
-          <colspec align="left" />
+          <colspec align="left"/>
 
-          <colspec align="left" />
+          <colspec align="left"/>
 
           <thead>
             <row>
@@ -277,6 +277,7 @@
 
       <programlisting>admin = { 
   name  = "<emphasis role="bold">YourName</emphasis>" 
+<!--#synthpii-->
   email = "<emphasis role="bold">YourEmail@example.com</emphasis>" 
         } 
 
@@ -355,7 +356,7 @@
           </listitem>
         </orderedlist>
 
-        <graphic fileref="../../images/CNTR-TerraVersion.jpg" />
+        <graphic fileref="../../images/CNTR-TerraVersion.jpg"/>
 
         <orderedlist continuation="continues">
           <listitem>
@@ -426,7 +427,7 @@
         </listitem>
       </orderedlist>
 
-      <para></para>
+      <para/>
     </sect2>
 
     <sect2 id="ApplyingTheTerraformModules">
@@ -532,7 +533,7 @@
         container images from Docker, bring each component online, etc.</para>
 
         <para><graphic
-        fileref="../../images/CNTR_kubctlGetPodsRunning.jpg" />Once all the
+        fileref="../../images/CNTR_kubctlGetPodsRunning.jpg"/>Once all the
         pods STATUS is Running, the HPCC Systems cluster is ready to be
         use.</para>
       </sect3>
@@ -617,7 +618,7 @@ mydali      ClusterIP    10.0.195.229  &lt;none&gt;          7070/TCP        11m
       complete the destruction of all the resources. It will confirm the
       results once competed.</para>
 
-      <para><graphic fileref="../../images/CNTR-DestroyComplete.jpg" /></para>
+      <para><graphic fileref="../../images/CNTR-DestroyComplete.jpg"/></para>
     </sect2>
   </sect1>
 </chapter>

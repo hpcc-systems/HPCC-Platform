@@ -49,10 +49,10 @@ public:
         EventRecorder& recorder = queryRecorder();
         if (!recorder.startRecording(options, name, false))
             throw makeStringException(-1, "failed to start event recording");
-        Owned<IPTreeIterator> it = input->getElements("Event");
+        Owned<IPropertyTreeIterator> it = input->getElements("Event");
         ForEach(*it)
         {
-            const IPTree& evt = it->query();
+            const IPropertyTree& evt = it->query();
             name = evt.queryProp("@name");
             if (streq(name, "IndexLookup"))
             {
@@ -171,13 +171,13 @@ public:
         return true;
     }
 
-    void setInput(const IPTree* _input)
+    void setInput(const IPropertyTree* _input)
     {
         input.setown(_input);
     }
 
 protected:
-    Owned<const IPTree> input;
+    Owned<const IPropertyTree> input;
 };
 
 // Extension of TEvtCLIConnector responsible for the creation of user configured events. One
@@ -195,31 +195,31 @@ public:
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         CEvToolCommand::usageSyntax(argc, argv, pos, out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!([options] <filename>
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Create a binary event file containing the events specified in an external
 configuration file. The configuration may be either XML, JSON, or YAML markup.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageParameters(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Parameters:
     <filename>                Full path to an XML/JSON/YAML file containing
                               simulated event specifications.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 };

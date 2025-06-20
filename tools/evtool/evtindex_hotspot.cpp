@@ -64,15 +64,15 @@ public:
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CIndexHotspotOp>::usageSyntax(argc, argv, pos, out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!(<event> [options] [filters] <filename>
 )!!!";
-        static size32_t usageStrLength = strlen(usageStr);
+        size32_t usageStrLength = strlen(usageStr);
         out.put(usageStrLength, usageStr);
     }
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Identify activity hotspots for each index file referenced within a recorded
 event file. The activity to be analyzed is specified by a obligatory event
 selector correlating to a single event type. Additional options determine the
@@ -82,14 +82,14 @@ Events:
     --load                    Analyze index load events.
     --lookup                  Analyze index lookup events.
 )!!!";
-        static size32_t usageStrLength = strlen(usageStr);
+        size32_t usageStrLength = strlen(usageStr);
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CIndexHotspotOp>::usageOptions(out);
-        static const char* usageStr =
+        constexpr const char* usageStr =
 R"!!!(    --granularity=[0..10]     Set the analysis resolution, where the resolution
                               is 2^granularity pages per bucket; default is 0,
                               or one page per bucket.
@@ -97,13 +97,13 @@ R"!!!(    --granularity=[0..10]     Set the analysis resolution, where the resol
                               reported per file, or 0 to report all buckets;
                               default is 10.
 )!!!";
-        static size32_t usageStrLength = strlen(usageStr);
+        size32_t usageStrLength = strlen(usageStr);
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageDetails(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Activity is reported in terms of buckets. Buckets are groups of one or more
 consecutive pages of an index file, where each page is a block of 8KB that
 starts at an event reported ofsset. The default bucket size is one page and
@@ -215,7 +215,7 @@ file:
     buckets: 1
     total: 11
 )!!!";
-        static size32_t usageStrLength = strlen(usageStr);
+        size32_t usageStrLength = strlen(usageStr);
         out.put(usageStrLength, usageStr);
     }
 

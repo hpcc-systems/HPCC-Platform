@@ -41,7 +41,7 @@ extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutput
 interface IEventPTreeCreator : extends IInterface
 {
     virtual IEventVisitor& queryVisitor() = 0;
-    virtual IPTree* queryTree() const = 0;
+    virtual IPropertyTree* queryTree() const = 0;
 };
 
 // Get an event property tree creator.

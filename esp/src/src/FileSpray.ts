@@ -50,6 +50,13 @@ export const lfEncode = (path: string) => {
     return retVal;
 };
 
+interface FileListStoreParent {
+    fullPath: string;
+    NetAddress: string;
+    OS: number;
+    DropZone?: any;
+}
+
 class FileListStore extends ESPRequest.Store {
 
     service = "FileSpray";
@@ -58,7 +65,12 @@ class FileListStore extends ESPRequest.Store {
     responseTotalQualifier = undefined;
     idProperty = "calculatedID";
 
-    parent: any;
+    parent: FileListStoreParent;
+
+    constructor(parent?: FileListStoreParent) {
+        super();
+        this.parent = parent;
+    }
 
     create(id) {
         const retVal = {
@@ -102,6 +114,16 @@ class FileListStore extends ESPRequest.Store {
     }
 }
 
+interface DropZoneMachine {
+    Netaddress: string;
+    Directory: string;
+    OS: number;
+}
+
+interface DropZone {
+    machine: DropZoneMachine;
+}
+
 class LandingZonesFilterStore extends ESPRequest.Store {
 
     service = "FileSpray";
@@ -109,10 +131,13 @@ class LandingZonesFilterStore extends ESPRequest.Store {
     responseQualifier = "DropZoneFileSearchResponse.Files.PhysicalFileStruct";
     responseTotalQualifier = undefined;
     idProperty = "calculatedID";
-    dropZone: any;
+    dropZone: DropZone;
+    server: unknown;
 
-    constructor(options?) {
-        super(options);
+    constructor(dropZone?: DropZone, server?: unknown) {
+        super();
+        this.dropZone = dropZone;
+        this.server = server;
     }
 
     preProcessRow(row) {
@@ -147,24 +172,22 @@ class LandingZonesStore extends ESPRequest.Store {
 
     userAddedFiles: object = {};
 
-    constructor(options?) {
-        super(options);
+    constructor() {
+        super();
     }
 
     query(query, options) {
         if (!query.filter || Object.entries(query.filter).length === 0) {
             return super.query(query, options);
         }
-        const landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
+        const landingZonesFilterStore = new LandingZonesFilterStore(query.filter.__dropZone, query.filter.Server);
         delete query.filter.__dropZone;
         return landingZonesFilterStore.query(query.filter, options);
     }
 
     addUserFile(_file) {
         //  Just add a file "reference" so it can be remotely sprayed etc.
-        const fileListStore = new FileListStore({
-            parent: null
-        });
+        const fileListStore = new FileListStore(null);
         _file._isUserFile = true;
         const file = fileListStore.get(_file.calculatedID);
         fileListStore.update(_file.calculatedID, _file);
@@ -172,9 +195,7 @@ class LandingZonesStore extends ESPRequest.Store {
     }
 
     removeUserFile(_file) {
-        const fileListStore = new FileListStore({
-            parent: null
-        });
+        const fileListStore = new FileListStore(null);
         fileListStore.remove(_file.calculatedID);
         delete this.userAddedFiles[_file.calculatedID];
     }
@@ -231,9 +252,7 @@ class LandingZonesStore extends ESPRequest.Store {
             });
             return QueryResults(children);
         } else if (parent.isMachine || parent.isDir) {
-            const store = new Observable(new FileListStore({
-                parent
-            }));
+            const store = new Observable(new FileListStore(parent));
             return store.query({
                 DropZoneName: parent.DropZone.Name,
                 Netaddr: parent.NetAddress,
@@ -311,18 +330,18 @@ export const FormatMessages = {
     13: "variablebigendian"
 };
 
-export function CreateLandingZonesStore(options) {
-    const store = new LandingZonesStore(options);
+export function CreateLandingZonesStore() {
+    const store = new LandingZonesStore();
     return new Observable(store);
 }
 
-export function CreateFileListStore(options) {
-    const store = new FileListStore(options);
+export function CreateFileListStore(parent?: FileListStoreParent) {
+    const store = new FileListStore(parent);
     return new Observable(store);
 }
 
-export function CreateLandingZonesFilterStore(options) {
-    const store = new LandingZonesFilterStore(options);
+export function CreateLandingZonesFilterStore(dropZone?: DropZone) {
+    const store = new LandingZonesFilterStore(dropZone);
     return new Observable(store);
 }
 

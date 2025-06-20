@@ -44,7 +44,7 @@ protected:
     virtual void usageFilters(IBufferedSerialOutputStream& out);
     virtual void usageParameters(IBufferedSerialOutputStream& out);
     virtual void usageDetails(IBufferedSerialOutputStream& out);
-    virtual IPTree* loadConfiguration(const char* path) const;
+    virtual IPropertyTree* loadConfiguration(const char* path) const;
 protected:
     bool isHelp = false;
 };
@@ -134,6 +134,13 @@ protected:
             }
             return op.acceptAttribute(attr, value);
         }
+        if (streq(key, "model"))
+        {
+            Owned<IPropertyTree> config = this->loadConfiguration(value); // avoid name collision with jptree
+            if (!config)
+                return false;
+            return op.acceptModel(*config);
+        }
         return CEvToolCommand::acceptKVOption(key, value);
     }
 
@@ -145,17 +152,28 @@ protected:
 
     virtual void usageParameters(IBufferedSerialOutputStream& out) override
     {
-        static const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Parameters:
     <filename>                Full path to an event data file.
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
+    }
+
+    virtual void usageOptions(IBufferedSerialOutputStream& out) override
+    {
+        constexpr const char* usageStr =
+R"!!!(    --model=<filename>        Apply a model to the data using the specified
+                              YAML/XML/JSON configuration file.
+)!!!";
+        size32_t usageStrLength = size32_t(strlen(usageStr));
+        TEvtCLIConnector<event_consuming_op_t>::usageOptions(out);
         out.put(usageStrLength, usageStr);
     }
 
     virtual void usageFilters(IBufferedSerialOutputStream& out) override
     {
-        const char* usageStr = R"!!!(
+        constexpr const char* usageStr = R"!!!(
 Filters:
     --events=<events>         Skip events not in the specified comm-delimited
                               event list.
@@ -242,7 +260,7 @@ Filters:
                                 - RecordedTimestamp
                                 - RecordedOption
 )!!!";
-        static size32_t usageStrLength = size32_t(strlen(usageStr));
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 };

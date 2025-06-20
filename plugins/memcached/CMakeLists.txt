@@ -45,10 +45,6 @@ if (MEMCACHED OR USE_LIBMEMCACHED)
 
         add_definitions(-D_USRDLL -DECL_MEMCACHED_EXPORTS)
 
-        #libmemcached-1.0.18 includes the header <cinttypes> which translates to <bits/cinttypes> requiring ISO C++ 2011 standard to build.
-        #All lesser versions explicitly include <tr1/cinttypes> which does not.
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-
         HPCC_ADD_LIBRARY(memcachedplugin SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")

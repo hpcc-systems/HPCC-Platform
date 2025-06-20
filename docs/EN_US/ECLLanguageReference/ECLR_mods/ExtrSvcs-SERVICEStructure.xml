@@ -18,9 +18,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="85.30pt" />
+        <colspec colwidth="85.30pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -42,7 +42,7 @@
             <entry><emphasis role="bold">TIME</emphasis></entry>
 
             <entry>Tracks timing of all function calls in the SERVICE
-            structure and reports them back as metrics to the user. </entry>
+            structure and reports them back as metrics to the user.</entry>
           </row>
 
           <row>
@@ -83,7 +83,8 @@
             STRING subject) : LIBRARY='ecl2cw',
                  INITFUNCTION='initEcl2Cw';
     END;
-  MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@ln_risk.com',
+<!--#synthpii-->
+  MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@example.com',
                           'FailTemplate',
                           'COUNT failure'));
   //An example of a SERVICE function returning a structured record
