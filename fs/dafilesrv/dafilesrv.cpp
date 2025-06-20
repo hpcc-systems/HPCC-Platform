@@ -485,7 +485,7 @@ int main(int argc, const char* argv[])
         {
             if (connectMethod != SSLNone)
             {
-                OWARNLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
+                OWARNLOG("DaFileSrv SSL specified in config but overridden by --NOSSL in command line");
                 connectMethod = SSLNone;
             }
         }
