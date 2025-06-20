@@ -164,6 +164,8 @@ static void checkDaliVersionInfo(ICommunicator *comm, CDaliVersion &serverVersio
     mb.append(MinServerVersion);
     StringBuffer daliEpStr;
     comm->queryGroup().queryNode(0).endpoint().getEndpointHostText(daliEpStr); // NB: there's always exactly 1 node
+    if (!comm->verifyConnection(0, VERSION_REQUEST_TIMEOUT))
+        throw makeStringExceptionV(-1, "Failed to connect to server [%s]", daliEpStr.str());
     if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
         throw makeStringExceptionV(-1, "Failed retrieving version information from server [%s], legacy server?", daliEpStr.str());
     if (!mb.length())
