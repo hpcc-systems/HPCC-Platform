@@ -1055,8 +1055,26 @@ int main( int argc, const char *argv[]  )
 
             if (globals->hasProp("@instanceNum"))
             {
+                // Extract the replica and pod hashes from the pod name to be used as the
+                // job name suffix for uniqueness.
+                // Unexpected parsing consequences:
+                //   If "-" is not found in the pod name, then the whole pod name is used as the suffix.
+                //   If the penultimate "-" is not found in the pod name, then the pod hash will be used as the suffix.
+                // The job name structure:
+                // <deployment-name>-<replicaset-hash>-<pod-hash>
+                std::string_view podNameSuffix(k8s::queryMyPodName());
+                size_t lastDashPos = podNameSuffix.find_last_of("-");
+                if (lastDashPos != std::string::npos && lastDashPos - 1 > 0)
+                {
+                    size_t penultimateDashPos = podNameSuffix.find_last_of("-", lastDashPos - 1);
+                    if (penultimateDashPos != std::string::npos && penultimateDashPos - 1 > 0)
+                        podNameSuffix = podNameSuffix.substr(penultimateDashPos + 1);
+                    else
+                        podNameSuffix = podNameSuffix.substr(lastDashPos + 1);
+                }
+
                 unsigned instanceNum = globals->getPropInt("@instanceNum");
-                cloudJobName.appendf("%s-%d", thorName, instanceNum);
+                cloudJobName.appendf("%s-%d-%s", thorName, instanceNum, podNameSuffix.data());
             }
             else
                 cloudJobName.appendf("%s-%s", workunit, graphName);
