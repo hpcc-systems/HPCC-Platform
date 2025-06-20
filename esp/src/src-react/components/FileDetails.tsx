@@ -42,7 +42,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     sort = {},
     queryParams = {}
 }) => {
-    const [file] = useFile(cluster, logicalFile);
+    const { file } = useFile(cluster, logicalFile);
     React.useEffect(() => {
         if (file?.NodeGroup && cluster === undefined && !file?.isSuperfile) {
             replaceUrl(`/files/${file.NodeGroup}/${logicalFile}`);

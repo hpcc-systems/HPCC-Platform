@@ -35,7 +35,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
     setShowForm
 }) => {
 
-    const [file] = useFile(cluster, logicalFile);
+    const { file } = useFile(cluster, logicalFile);
     const { handleSubmit, control, reset } = useForm<ReplicateFileFormValues>({ defaultValues });
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
     const [spinnerHidden, setSpinnerHidden] = React.useState(true);

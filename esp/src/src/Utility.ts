@@ -1337,3 +1337,16 @@ export function removeAllExcept(arr: any, keysToKeep: string[]): void {
         }
     }
 }
+function pad(n: number): string {
+    return n.toString().padStart(2, "0");
+}
+
+export function formatDate(date: Date, useUTC: boolean): string {
+    const mm = pad(useUTC ? date.getUTCMonth() + 1 : date.getMonth() + 1);
+    const dd = pad(useUTC ? date.getUTCDate() : date.getDate());
+    const yyyy = useUTC ? date.getUTCFullYear() : date.getFullYear();
+    const hh = pad(useUTC ? date.getUTCHours() : date.getHours());
+    const min = pad(useUTC ? date.getUTCMinutes() : date.getMinutes());
+    const sec = pad(useUTC ? date.getUTCSeconds() : date.getSeconds());
+    return `${mm}/${dd}/${yyyy} ${hh}:${min}:${sec}`;
+}

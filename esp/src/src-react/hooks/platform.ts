@@ -228,12 +228,13 @@ export function useLogAccessInfo(): LogAccessInfo {
             if ("Exceptions" in response) {
                 setLogsStatusMessage((response["Exceptions"] as any)?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException);
             } else {
-                if (response.RemoteLogManagerType === null) {
+                const logResponse = response as any;
+                if (logResponse.RemoteLogManagerType === null) {
                     setLogsStatusMessage(nlsHPCC.LogAccess_LoggingNotConfigured);
                 } else {
                     setLogsEnabled(true);
-                    setLogsManagerType(response.RemoteLogManagerType);
-                    setLogsColumns(response?.Columns?.Column);
+                    setLogsManagerType(logResponse.RemoteLogManagerType);
+                    setLogsColumns(logResponse?.Columns?.Column);
                 }
             }
         }).catch(e => {

@@ -89,7 +89,7 @@ jobs:
           echo "${{ toJSON(steps.vars.outputs) }})"
 
       - name: Release HPCC-Platform
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -272,11 +272,12 @@ jobs:
 
       - name: Upload Assets (community)
         if: ${{ !matrix.ln && !matrix.ee }}
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
+          makeLatest: ${{ needs.preamble.outputs.is_latest }}
           artifacts: |
             ${{ needs.preamble.outputs.folder_build }}/*.deb,
             ${{ needs.preamble.outputs.folder_build }}/*.rpm,
@@ -446,6 +447,7 @@ jobs:
       community-tag: ${{ needs.preamble.outputs.community_tag }}
       mount-platform: ${{ needs.preamble.outputs.mount_platform }}
       mount-build: ${{ needs.preamble.outputs.mount_build }}
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   build-clienttools-community-macos:
@@ -453,6 +455,7 @@ jobs:
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   build-clienttools-internal-macos:
@@ -461,6 +464,7 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   build-clienttools-community-windows:
@@ -470,6 +474,7 @@ jobs:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       upload-package: true
       asset-name: 'clienttools-for-eclide'
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   build-clienttools-internal-windows:
@@ -478,6 +483,7 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   build-bare-metal-eclide:
@@ -488,6 +494,7 @@ jobs:
       eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
       clienttools-asset-name: 'clienttools-for-eclide'
       documentation-asset-name: 'html-help-documents'
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   changelogs:
@@ -495,6 +502,7 @@ jobs:
     uses: ./.github/workflows/build-changelogs.yml
     with:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
+      make-latest: ${{ needs.preamble.outputs.is_latest }}
     secrets: inherit
 
   deploy_wordpress:

@@ -20,7 +20,7 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     sort = defaultSort
 }) => {
 
-    const [file, , , refreshData] = useFile(cluster, logicalFile);
+    const { file, refreshData } = useFile(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,

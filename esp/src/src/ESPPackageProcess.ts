@@ -14,7 +14,7 @@ class Store extends ESPRequest.Store {
     SortbyProperty = "SortBy";
 }
 
-export function CreatePackageMapQueryObjectStore(options) {
-    const store = new Store(options);
+export function CreatePackageMapQueryObjectStore() {
+    const store = new Store();
     return new Observable(store);
 }

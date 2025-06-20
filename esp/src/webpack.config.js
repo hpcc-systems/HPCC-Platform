@@ -39,7 +39,6 @@ module.exports = function (env) {
             buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
             locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
         }),
-
         // For plugins registered after the DojoAMDPlugin, data.request has been normalized and
         // resolved to an absMid and loader-config maps and aliases have been applied
         new webpack.NormalModuleReplacementPlugin(/^dojox\/gfx\/renderer!/, "dojox/gfx/canvas"),
@@ -97,13 +96,7 @@ module.exports = function (env) {
                 }]
         },
         resolve: {
-            alias: {
-                "@hpcc-js/wasm/dist/duckdb": path.resolve(__dirname, "node_modules/@hpcc-js/wasm/dist/duckdb.js"),
-            },
             fallback: {
-                "@hpcc-js/wasm": [
-                    path.resolve(__dirname, "../../../hpcc-js-wasm"),
-                ],
                 "@hpcc-js": [
                     path.resolve(__dirname, "../../../hpcc-js/packages"),
                     path.resolve(__dirname, "../../../Visualization/packages")

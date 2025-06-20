@@ -311,8 +311,8 @@ export function Get(wuid, data?) {
     return retVal;
 }
 
-export function CreateWUQueryStoreLegacy(options) {
-    let store = new Store(options);
+export function CreateWUQueryStoreLegacy() {
+    let store = new Store();
     store = new Observable(store);
     return store;
 }
