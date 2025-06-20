@@ -262,7 +262,7 @@ public:
         : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
-        // The thread pool will never shrink, therefore the pool thread instance numbers will always range between 1 and max active.
+        // nextInstanceNumber always increases
         myInstanceNumber = ++nextInstanceNumber;
     }
     virtual void init(void *param) override
