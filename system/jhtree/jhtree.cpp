@@ -1360,7 +1360,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
         isTLK = true;
     assertex((hdr.ktype & COL_PREFIX) != 0);   // We have not generated a key without COL_PREFIX set for over 20 years
 
-    keyHdr = new CKeyHdr();
+    keyHdr = new CKeyHdr(iD);
     try
     {
         keyHdr->load(hdr);

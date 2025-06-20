@@ -245,7 +245,7 @@ int main(int argc, const char **argv)
             bool isTLK = index->isTopLevelKey();
             if (optFullHeader)
             {
-                Owned<CKeyHdr> header = new CKeyHdr;
+                Owned<CKeyHdr> header = new CKeyHdr(index->queryId());
                 MemoryAttr block(sizeof(KeyHdr));
                 io->read(0, sizeof(KeyHdr), (void *)block.get());
                 header->load(*(KeyHdr*)block.get());

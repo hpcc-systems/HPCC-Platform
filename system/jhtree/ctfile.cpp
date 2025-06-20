@@ -186,7 +186,7 @@ extern jhtree_decl bool isIndexFile(const char *fileName)
 
 
 // CKeyHdr
-CKeyHdr::CKeyHdr()
+CKeyHdr::CKeyHdr(unsigned _id) : keyId(_id)
 {
     memset(&hdr, 0, sizeof(hdr));
 }
