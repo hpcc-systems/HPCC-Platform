@@ -1,5 +1,3 @@
-/* eslint-disable no-undef */
-/* eslint-disable @typescript-eslint/no-var-requires */
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
 
 var fs = require("fs");
@@ -51,7 +49,37 @@ module.exports = function (env) {
             /^xstyle\/css!/, function (data) {
                 data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!");
             }
-        )
+        ),
+
+        // Custom plugin to remove "use strict" from final bundles
+        {
+            apply: (compiler) => {
+                compiler.hooks.thisCompilation.tap('RemoveUseStrictPlugin', (compilation) => {
+                    compilation.hooks.processAssets.tap(
+                        {
+                            name: 'RemoveUseStrictPlugin',
+                            stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE
+                        },
+                        () => {
+                            try {
+                                for (const filename of Object.keys(compilation.assets)) {
+                                    if (filename.endsWith('.js')) {
+                                        const asset = compilation.assets[filename];
+                                        const source = asset.source();
+                                        const newSource = source.replace(/["']use strict["'];?\s*/g, '');
+                                        if (source !== newSource) {
+                                            compilation.assets[filename] = new webpack.sources.RawSource(newSource);
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('RemoveUseStrictPlugin warning:', error.message);
+                            }
+                        }
+                    );
+                });
+            }
+        }
     ];
 
     return {
