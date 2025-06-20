@@ -1058,10 +1058,10 @@ bool CClientRemoteTree::getProp(const char *xpath, StringBuffer &ret) const
     return CRemoteTreeBase::getProp(xpath, ret);
 }
 
-const char *CClientRemoteTree::queryProp(const char * xpath) const
+const char *CClientRemoteTree::queryProp(const char * xpath, const char * dft) const
 {
     if (!xpath) checkExt();
-    return CRemoteTreeBase::queryProp(xpath);
+    return CRemoteTreeBase::queryProp(xpath, dft);
 }
 
 bool CClientRemoteTree::getPropBool(const char *xpath, bool dft) const

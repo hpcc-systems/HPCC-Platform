@@ -683,7 +683,7 @@ public:
     virtual CompressionMethod getCompressionType() const override;
     virtual bool renameProp(const char *xpath, const char *newName) override;
     virtual bool renameTree(IPropertyTree *tree, const char *newName) override;
-    virtual const char *queryProp(const char *xpath) const override;
+    virtual const char *queryProp(const char *xpath, const char * dft = nullptr) const override;
     virtual bool getProp(const char *xpath, StringBuffer &ret) const override;
     virtual void setProp(const char *xpath, const char *val) override;
     virtual void addProp(const char *xpath, const char *val) override;
@@ -748,7 +748,7 @@ protected:
     virtual bool removeAttribute(const char *k) = 0;
 
     AttrValue *findAttribute(const char *k) const;
-    const char *getAttributeValue(const char *k) const;
+    const char *getAttributeValue(const char *k, const char * dft) const;
     AttrValue *getNextAttribute(AttrValue *cur) const;
 
 private:

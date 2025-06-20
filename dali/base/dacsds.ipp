@@ -355,7 +355,7 @@ public:
     virtual bool isCompressed(const char *xpath=NULL) const override;
     virtual CompressionMethod getCompressionType() const override;
     virtual bool getProp(const char *xpath, StringBuffer &ret) const override;
-    virtual const char *queryProp(const char * xpath) const override;
+    virtual const char *queryProp(const char * xpath, const char * dft = nullptr) const override;
     virtual bool getPropBool(const char *xpath, bool dft=false) const override;
     virtual __int64 getPropInt64(const char *xpath, __int64 dft=0) const override;
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const override;

@@ -88,7 +88,7 @@ interface jlib_decl IPropertyTree : extends serializable
 
     // string - all types can be converted to string
     virtual bool getProp(const char *xpath, StringBuffer &ret) const = 0;
-    virtual const char *queryProp(const char * xpath) const = 0;
+    virtual const char *queryProp(const char * xpath, const char * dft = nullptr) const = 0;
     virtual void setProp(const char *xpath, const char *val) = 0;
     virtual void addProp(const char *xpath, const char *val) = 0;
     virtual void appendProp(const char *xpath, const char *val) = 0;
