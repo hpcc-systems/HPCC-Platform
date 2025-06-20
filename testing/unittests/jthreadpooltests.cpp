@@ -137,11 +137,12 @@ public:
         pool.setown(createThreadPool("TestPool", factory, true, nullptr, 2)); // Thread pool has a default start delay of 1 second
 
         // Both threads should start immediately
+        auto beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&lifespan5seconds, "Thread1");
         pool->start(&lifespan5seconds, "Thread2");
 
         // Wait for both threads to signal that they've started
-        auto startDuration = measureThreadStartDuration(2);
+        auto startDuration = measureThreadStartDuration(beforeStart, 2);
         CPPUNIT_ASSERT(startDuration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
@@ -162,10 +163,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // The fourth thread should start after one of the above completes
-        auto beforeStart = std::chrono::high_resolution_clock::now();
+        beforeStart = std::chrono::high_resolution_clock::now();
         try
         {
-            pool->start(&lifespan1second, "Thread4", fiveSeconds);
+            pool->start(&lifespan10seconds, "Thread4", fiveSeconds);
         }
         catch (IException *e)
         {
@@ -175,17 +176,22 @@ public:
             e->Release();
         }
         auto afterStart = std::chrono::high_resolution_clock::now();
-        auto startDelayDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
-        CPPUNIT_ASSERT(startDelayDuration.count() > 2000);
+        startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
+        CPPUNIT_ASSERT(startDuration.count() > 2000);
 
-        auto threadStartDuration = measureThreadStartDuration(1);
-        CPPUNIT_ASSERT(threadStartDuration.count() < 1000);
+        waitForThreadsToStart(1);
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
 
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        CPPUNIT_ASSERT_EQUAL(3U, threadCompletedCount.load());
-        CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
-        CPPUNIT_ASSERT(pool->running());
+        // Test Thread Pool default start delay
+        pool->start(&lifespan10seconds, "Thread5");
+        waitForThreadsToStart(1);
+        beforeStart = std::chrono::high_resolution_clock::now();
+        // Thread6 should start after the Thread Pool default start delay of 1 second
+        pool->start(&lifespan10seconds, "Thread6");
+        startDuration = measureThreadStartDuration(beforeStart, 1);
+        DBGLOG("Thread6 start duration: %lu", startDuration.count());
+        CPPUNIT_ASSERT(startDuration.count() >= 1000);
+        CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
     }
 
     void testTightlyBoundThreadPoolWithInfiniteStartDelay()
@@ -610,9 +616,8 @@ private:
     }
 
     // Helper method to measure how long it takes for a given number of threads to start
-    std::chrono::milliseconds measureThreadStartDuration(unsigned expectedThreadCount)
+    std::chrono::milliseconds measureThreadStartDuration(std::chrono::high_resolution_clock::time_point beforeStart, unsigned expectedThreadCount)
     {
-        auto beforeStart = std::chrono::high_resolution_clock::now();
         waitForThreadsToStart(expectedThreadCount);
         auto afterStart = std::chrono::high_resolution_clock::now();
         return std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
