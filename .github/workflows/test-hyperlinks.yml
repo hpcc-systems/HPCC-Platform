@@ -219,6 +219,7 @@ jobs:
       - name: Test Internal Links
         run: |
           if [[ -f internalLinks.txt ]]; then
+            set +x
             for LINE in $( cat internalLinks.txt )
             do 
               REFERENCE=$( echo $LINE | cut -d ':' -f3- )
@@ -252,6 +253,7 @@ jobs:
                 fi
               fi
             done
+            set -x
           fi
 
       - name: Report Error links
