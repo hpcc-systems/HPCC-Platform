@@ -898,9 +898,7 @@ void recordQueueFilePrefixes(IWorkUnit * wu, IPropertyTree * configuration)
     {
         IPropertyTree & cur = iter->query();
         const char * name = cur.queryProp("@name");
-        const char * prefix = cur.queryProp("@prefix");
-        if (!prefix)
-            prefix = "";
+        const char * prefix = cur.queryProp("@prefix", "");
         wu->setApplicationValue("prefix", name, prefix, true);
     }
 }

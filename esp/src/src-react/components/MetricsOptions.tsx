@@ -44,12 +44,12 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
     }, [label]);
 
     React.useEffect(() => {
-        setData(strArray.map(str => ({ id: str })));
+        setData(strArray.map(str => ({ id: str, key: str })));
     }, [strArray]);
 
     const selectionHandler = useConst(() => {
         return new Selection({
-            getKey: (item: { id: string }) => item.id,
+            getKey: (item: { id: string; key: string }) => item.key,
             onSelectionChanged: () => setSelection(selectionHandler.getSelection().map(item => item.id)),
             onItemsChanged: () => {
                 selectionHandler.setAllSelected(false);

@@ -1386,15 +1386,15 @@ bool PTree::hasProp(const char * xpath) const
     }
 }
 
-const char *PTree::queryProp(const char *xpath) const
+const char *PTree::queryProp(const char *xpath, const char * dft) const
 {
     if (!xpath)
     {
-        if (!value) return NULL;
+        if (!value) return dft;
         return (const char *) value->queryValue();
     }
     else if (isAttribute(xpath))
-        return getAttributeValue(xpath);
+        return getAttributeValue(xpath, dft);
     else
     {
         const char *prop = splitXPathX(xpath);
@@ -1402,14 +1402,14 @@ const char *PTree::queryProp(const char *xpath) const
         {
             MAKE_LSTRING(path, xpath, prop-xpath);
             IPropertyTree *branch = queryPropTree(path);
-            if (!branch) return NULL;
-            return branch->queryProp(prop);
+            if (!branch) return dft;
+            return branch->queryProp(prop, dft);
         }
         else
         {
             IPropertyTree *branch = queryPropTree(xpath);
-            if (!branch) return NULL;
-            return branch->queryProp(NULL);
+            if (!branch) return dft;
+            return branch->queryProp(NULL, dft);
         }
     }
 }
@@ -1424,7 +1424,7 @@ bool PTree::getProp(const char *xpath, StringBuffer &ret) const
     }
     else if (isAttribute(xpath))
     {
-        const char *value = getAttributeValue(xpath);
+        const char *value = getAttributeValue(xpath, nullptr);
         if (!value) return false;
         ret.append(value);
         return true;
@@ -1695,7 +1695,8 @@ __int64 PTree::getPropInt64(const char *xpath, __int64 dft) const
     }
     else if (isAttribute(xpath))
     {
-        const char *v = getAttributeValue(xpath);
+        // NOTE: Passing null rather than dft is deliberate - to deterimine if attribute exists
+        const char *v = getAttributeValue(xpath, nullptr);
         if (!v || !*v) // intentional return dft if attribute equals ""
             return dft;
         return _atoi64(v);
@@ -3604,12 +3605,12 @@ AttrValue *PTree::findAttribute(const char *key) const
     return nullptr;
 }
 
-const char *PTree::getAttributeValue(const char *key) const
+const char *PTree::getAttributeValue(const char *key, const char * dft) const
 {
     AttrValue *e = findAttribute(key);
     if (e)
         return e->value.get();
-    return nullptr;
+    return dft;
 }
 
 unsigned PTree::getAttributeCount() const
