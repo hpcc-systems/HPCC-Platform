@@ -1,7 +1,5 @@
 /*##############################################################################
-
     HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
-
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
@@ -143,10 +141,7 @@ public:
         pool->start(&lifespan5seconds, "Thread2");
 
         // Wait for both threads to signal that they've started
-        auto beforeStart = std::chrono::high_resolution_clock::now();
-        waitForThreadsToStart(2);
-        auto afterStart = std::chrono::high_resolution_clock::now();
-        auto startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
+        auto startDuration = measureThreadStartDuration(2);
         CPPUNIT_ASSERT(startDuration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
@@ -167,7 +162,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // The fourth thread should start after one of the above completes
-        beforeStart = std::chrono::high_resolution_clock::now();
+        auto beforeStart = std::chrono::high_resolution_clock::now();
         try
         {
             pool->start(&lifespan1second, "Thread4", fiveSeconds);
@@ -179,15 +174,12 @@ public:
             CPPUNIT_FAIL(msg.str());
             e->Release();
         }
-        afterStart = std::chrono::high_resolution_clock::now();
-        startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
-        CPPUNIT_ASSERT(startDuration.count() > 2000);
+        auto afterStart = std::chrono::high_resolution_clock::now();
+        auto startDelayDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
+        CPPUNIT_ASSERT(startDelayDuration.count() > 2000);
 
-        beforeStart = std::chrono::high_resolution_clock::now();
-        waitForThreadsToStart(1);
-        afterStart = std::chrono::high_resolution_clock::now();
-        startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        auto threadStartDuration = measureThreadStartDuration(1);
+        CPPUNIT_ASSERT(threadStartDuration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
 
         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -603,7 +595,7 @@ public:
             CPPUNIT_ASSERT_EQUAL(5U, exceptionCount);
         }
     */
-public:
+private:
     // Helper method to wait for a specific number of threads to start
     void waitForThreadsToStart(unsigned expectedCount)
     {
@@ -615,6 +607,15 @@ public:
     void resetSemaphore()
     {
         startSemaphore.reinit(0);
+    }
+
+    // Helper method to measure how long it takes for a given number of threads to start
+    std::chrono::milliseconds measureThreadStartDuration(unsigned expectedThreadCount)
+    {
+        auto beforeStart = std::chrono::high_resolution_clock::now();
+        waitForThreadsToStart(expectedThreadCount);
+        auto afterStart = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
     }
 
 };
