@@ -69,9 +69,9 @@ public:
                 offset_t offset = (offset_t)evt.getPropInt64("@offset");
                 byte nodeKind = (byte)evt.getPropInt("@nodeKind");
                 size32_t size = (size32_t)evt.getPropInt("@size");
-                __uint64 elapsedTime = (__uint64)evt.getPropInt64("@elapsed");
+                __uint64 expandTime = (__uint64)evt.getPropInt64("@expand");
                 __uint64 readTime = (__uint64)evt.getPropInt64("@read");
-                recorder.recordIndexLoad(fileId, offset, nodeKind, size, elapsedTime, readTime);
+                recorder.recordIndexLoad(fileId, offset, nodeKind, size, expandTime, readTime);
             }
             else if (streq(name, "IndexEviction"))
             {

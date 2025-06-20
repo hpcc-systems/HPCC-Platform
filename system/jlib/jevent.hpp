@@ -83,6 +83,7 @@ enum EventAttr : byte
     EvAttrEventThreadId,
     EvAttrEventStackTrace,
     EvAttrDataSize,
+    EvAttrExpandTime,
     EvAttrMax
 };
 
@@ -393,7 +394,7 @@ public:
 
 //Functions for each of the events that can be recorded..
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit);
-    void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 elapsedTime, __uint64 readTime);
+    void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
 
     void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);
