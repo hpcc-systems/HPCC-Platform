@@ -1071,7 +1071,9 @@ public:
             {
                 eoi = true;
                 got = prefetchBuffer.queryRowSize();
-                return got ? prefetchBuffer.queryRow() : nullptr;
+                if (!got)
+                    return nullptr;
+                break;
             }
             rowPrefetcher->readAhead(prefetchBuffer);
             pendingFinishRow = true;
@@ -1079,10 +1081,9 @@ public:
                 prefetchBuffer.read(sizeof(eog), &eog);
             got = prefetchBuffer.queryRowSize();
             if (got >= min)
-                return prefetchBuffer.queryRow();
+                break;
         }
-        got = 0;
-        return nullptr;
+        return prefetchBuffer.queryRow();
     }
 // NB: the methods below should be called before start()
     virtual void addFieldFilter(const char *textFilter) override
