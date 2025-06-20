@@ -46,9 +46,12 @@ file(COPY
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/BuildInfo.ts ${CMAKE_CURRENT_BINARY_DIR}/src/BuildInfo.ts @ONLY)
 
 set ( SRCS
+    # eclwatch files
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/cmDarcula.css
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/ecl.css
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/hpcc.css
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/ActivityPageWidget.html
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/ActivityPageContainerWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/CurrentUserDetailsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/DataPatternsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/DFUQueryWidget.html
@@ -101,6 +104,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/ResultWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/SelectionGridWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/SFDetailsWidget.html
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/SourceFilesWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/TimingPageWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/TimingTreeMapWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/TopologyDetailsWidget.html
@@ -113,13 +117,14 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/XrefDetailsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/DojoD3.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/DojoD3Choropleth.js
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/DojoD3NDChart.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/DojoD32DChart.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/DojoD3NDChart.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/viz/Mapping.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/_TabContainerWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/_Widget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/ActivityWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/ClusterProcessesQueryWidget.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/ComponentUsageDetails.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/CurrentUserDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DelayLoadWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DFUQueryWidget.js
@@ -141,6 +146,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FileBloomsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FileHistoryWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FilePartsWidget.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FileProtectListWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FilterDropDownWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/FullResultWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/GetDFUWorkunitsWidget.js
@@ -174,6 +180,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MachineInformationWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MemberOfWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MembersWidget.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MonitoringWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapPartsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapQueryWidget.js
@@ -182,6 +189,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageSourceWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PermissionsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PreflightDetailsWidget.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/ProcessesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/QuerySetDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/QuerySetErrorsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/QuerySetLogicalFilesWidget.js
@@ -201,6 +209,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/ShowPermissionsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/SourceFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/stub.js
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/SummaryStatsQueryWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/SystemServersQueryWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/TableContainer.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/TargetClustersQueryWidget.js
@@ -227,7 +236,8 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefLostFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefOrphanFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefQueryWidget.js
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hpcc.ts
+
+    # src files
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/AttributeDesc.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/Cardinality.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/config.ts
@@ -237,19 +247,36 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/PopularPatterns.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/Report.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/StatChart.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/bs/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/es/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/fr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hu/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/pt-br/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/sr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/zh/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/react/hooks/useWsStore.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/index.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/render.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/wuStatus.tsx
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/Deferred.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/Memory.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/Paged.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/Store.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/Tree.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/store/util/SimpleQueryEngine.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/UserPreferences/EnvironmentTheme.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/UserPreferences/Recent.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Clippy.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatternsWidget.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/DeclareDecorator.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DiskUsage.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/dojoLib.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ECLArchiveWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPActivity.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPBase.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPDFUWorkunit.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ESPLog.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPLogicalFile.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPPackageProcess.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPPreflight.ts
@@ -258,6 +285,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPRequest.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPResource.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPResult.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ESPSearch.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPTopology.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPTree.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPUtil.ts
@@ -268,18 +296,19 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/GraphTree7Widget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/GraphTreeWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/KeyValStore.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nlsHPCC.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Pagination.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Session.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Timings.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Utility.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ws_access.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ws_account.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/ws_elk.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/ws_machine.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsDfu.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsDFUXref.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsEcl.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ws_elk.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsESDLConfig.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ws_machine.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsPackageMaps.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsSMC.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsTopology.ts
@@ -287,10 +316,64 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUGraphLegend.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUScopeController.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUStatus.ts
-    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/DojoAdapter.tsx
-    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/history.ts
+
+    # src-react files
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/comms/workunit.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/controls/TabbedPanes/TabInfo.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/activity.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/cloud.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/deepHooks.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/duckdb.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/favorite.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/file.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/index.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/logging.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/metrics.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/platform.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/query.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/resources.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/store.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/theme.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/user.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/util.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/workunit.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/index.css
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react/index.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/pivot.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/react-reflex.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react/routes.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/themes.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/themes.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/hashUrl.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/history.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/metricArchive.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/metricGraph.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/throttle.ts
+
+    # Key src-react tsx components
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Workunits.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/DFUWorkunits.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Files.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Activities.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Queries.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/QueryDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/WorkunitDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/DFUWorkunitDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/FileDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/ECLPlayground.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Security.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/UserDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/GroupDetails.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Monitoring.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/Xrefs.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/components/PackageMaps.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/banner.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/confirm.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/hooks/grid.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/DojoAdapter.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/HpccJSAdapter.tsx
+
+    # Root configuration files
     ${CMAKE_CURRENT_SOURCE_DIR}/eslint.config.mjs
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
     ${CMAKE_CURRENT_SOURCE_DIR}/index.html

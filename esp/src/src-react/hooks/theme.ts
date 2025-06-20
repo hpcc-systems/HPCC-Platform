@@ -35,4 +35,3 @@ export function useUserTheme(): { theme: Theme, themeV9: ThemeV9, setTheme: (val
         isDark: theme === "dark"
     };
 }
-

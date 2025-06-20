@@ -1,6 +1,5 @@
 import * as arrayUtil from "dojo/_base/array";
 import * as config from "dojo/_base/config";
-import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as cookie from "dojo/cookie";
@@ -359,12 +358,7 @@ export abstract class Store {
     useSingletons = true;
     cachedArray = {};
 
-    constructor(options?) {
-
-        //  TODO Remove Options
-        if (options) {
-            declare.safeMixin(this, options);
-        }
+    constructor() {
     }
 
     notify(itme, id) {

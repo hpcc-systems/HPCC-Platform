@@ -102,7 +102,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     }, []);
 
     //  Grid ---
-    const store = useConst(() => FileSpray.CreateLandingZonesStore({}));
+    const store = useConst(() => FileSpray.CreateLandingZonesStore());
 
     const query = React.useMemo(() => {
         return formatQuery(targetDropzones, filter);
@@ -115,9 +115,9 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({ dropZone: filter.__dropZone })]);
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore( filter.__dropZone )]);
             }
-            return this.inherited(arguments, [FileSpray.CreateFileListStore({})]);
+            return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
         },
         columns: {
             col1: selector({
