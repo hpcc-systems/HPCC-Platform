@@ -71,7 +71,6 @@ public:
     virtual StringBuffer &getName(StringBuffer &name) = 0;
 };
 
-typedef IIteratorOf<IPropertyTree> IDFAttributesIterator;
 
 
 interface IDFScopeIterator: public IInterface
@@ -261,52 +260,78 @@ enum DFUQFilterField
     DFUQFFwild = 2048
 };
 
-enum DFUQResultField
+#pragma once
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <cctype>
+
+// 1. Enum definitions
+enum class DFUQResultField
 {
-    DFUQRFname = 0,
-    DFUQRFdescription = 1,
-    DFUQRFnodegroups = 2,
-    DFUQRFkind = 3,
-    DFUQRFtimemodified = 4,
-    DFUQRFjob = 5,
-    DFUQRFowner = 6,
-    DFUQRFrecordcount = 7,
-    DFUQRForigrecordcount = 8,
-    DFUQRFrecordsize = 9,
-    DFUQRFsize = 10,
-    DFUQRForigsize = 11,
-    DFUQRFworkunit = 12,
-    DFUQRFnodegroup = 13,
-    DFUQRFnumsubfiles = 14,
-    DFUQRFaccessed = 15,
-    DFUQRFnumparts = 16,
-    DFUQRFcompressedsize = 17,
-    DFUQRFdirectory = 18,
-    DFUQRFpartmask = 19,
-    DFUQRFsuperowners = 20,
-    DFUQRFpersistent = 21,
-    DFUQRFprotect = 22,
-    DFUQRFiscompressed = 23,
-    DFUQRFcost = 24,
-    DFUQRFnumDiskReads = 25,
-    DFUQRFnumDiskWrites = 26,
-    DFUQRFatRestCost = 27,
-    DFUQRFaccessCost = 28,
-    DFUQRFmaxSkew = 29,
-    DFUQRFminSkew = 30,
-    DFUQRFmaxSkewPart = 31,
-    DFUQRFminSkewPart = 32,
-    DFUQRFreadCost = 33,
-    DFUQRFwriteCost = 34,
-    DFUQRFterm = 35, // must be last in list
-    DFUQRFreverse = 256,
-    DFUQRFnocase = 512,
-    DFUQRFnumeric = 1024,
-    DFUQRFfloat = 2048
+    name,               // some code will assume this is the first field (and all other up to 'term' follow in order)
+    description,
+    nodegroups,
+    kind,
+    timemodified,
+    job,
+    owner,
+    recordcount,
+    origrecordcount,
+    recordsize,
+    size,
+    origsize,
+    workunit,
+    nodegroup,
+    numsubfiles,
+    accessed,
+    numparts,
+    compressedsize,
+    directory,
+    partmask,
+    superowners,
+    persistent,
+    protect,
+    iscompressed,
+    cost,
+    numDiskReads,
+    numDiskWrites,
+    atRestCost,
+    accessCost,
+    maxSkew,
+    minSkew,
+    maxSkewPart,
+    minSkewPart,
+    readCost,
+    writeCost,
+    expireDays,
+    includeAll,
+    term,               // NB: only used by client code, not passed to server. Signifies end of a list of fields
+    fieldMask = 0xff,
+    stringType = 1<<8,
+    numericType = 1<<9,
+    floatType = 1<<10,
+    boolType = 1<<11,
+    typeMask = 0x0f<<8, // Masks bits 8-11 (type flags). Could compact the type bits into 2 bits if really wanted to save space
+    reverse = 1<<12,
+    nocase = 1<<13,
+    unknown = 1<<14,
+// for field filtering
+    include = 1<<15,
+    exclude = 1<<16
 };
+BITMASK_ENUM(DFUQResultField);
+
+typedef DFUQResultField DFUQResultFieldType;
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField field);
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField field);
+extern da_decl const char* getDFUQResultFieldKey(DFUQResultField field);
+extern da_decl DFUQResultFieldType getDFUQResultFieldType(DFUQResultField field);
+extern da_decl DFUQResultField getDFUQResultField(const char *fieldName);
+extern da_decl DFUQResultField getDFUQResultFieldAndType(const char *fieldName);
+extern da_decl const char* getDFUQResultFieldTypeName(DFUQResultField field);
+
 
 /**
  * File operations can be included in a transaction to ensure that multiple
@@ -629,11 +654,11 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedFile *createExternal(IFileDescriptor *desc, const char *name) = 0;
 
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user,bool isPrivilegedUser) = 0;
-            // wildname is in form scope/name and may contain wild components for either
-    virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
-    virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
-        const char *localFilterBuf, IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
-    virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    // wildname is in form scope/name and may contain wild components for either
+    // NB: getDFAttributesIterator is just a wrapper onto of getDFAttributesFilteredIterator
+    virtual IPropertyTreeIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual IPropertyTreeIterator *getDFAttributesFilteredIterator(const char *filters, const char *localFilters, const DFUQResultField *fields,
+        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
 
@@ -733,10 +758,10 @@ interface IDistributedFileDirectory: extends IInterface
                                      ) = 0;
 
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
-    virtual IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived) = 0;
-    virtual IDFAttributesIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted) = 0;
+    virtual IPropertyTreeIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, const char *localFilters,
+            DFUQResultField *fields, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived) = 0;
+    virtual IPropertyTreeIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, const char *localFilters,
+            DFUQResultField *fields, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted) = 0;
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
@@ -863,7 +888,7 @@ extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUs
 
 extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized);
 
-extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timems=INFINITE); // takes ownership of iter
+extern da_decl IPropertyTreeIterator *createSubFileFilter(IPropertyTreeIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timems=INFINITE); // takes ownership of iter
 
 extern da_decl GroupType translateGroupType(const char *groupType);
 
@@ -918,7 +943,7 @@ inline cost_type calcLegacyReadCost(const IPropertyTree & fileAttr, Source sourc
     // files, as the reads may have been from page cache and not from disk.)
     if (!isFileKey(fileAttr) && source)
     {
-        stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+        stat_type numDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskReads), 0);
         return calcFileAccessCost(source, 0, numDiskReads);
     }
     return 0;
@@ -929,13 +954,13 @@ inline cost_type calcLegacyReadCost(const IPropertyTree & fileAttr, Source sourc
 template<typename Source>
 inline cost_type getReadCost(IPropertyTree & fileAttr, Source source, bool migrateLegacyCost = false)
 {
-    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
-        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
+    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQResultField::readCost)))
+        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), 0);
     else
     {
         cost_type readCost = calcLegacyReadCost(fileAttr, source);
         if (migrateLegacyCost)
-            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), readCost);
+            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), readCost);
         return readCost;
     }
 }
@@ -944,8 +969,8 @@ inline cost_type getReadCost(IPropertyTree & fileAttr, Source source, bool migra
 template<typename Source>
 inline cost_type getReadCost(const IPropertyTree & fileAttr, Source source)
 {
-    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)))
-        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
+    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQResultField::readCost)))
+        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::readCost), 0);
     else
         return calcLegacyReadCost(fileAttr, source);
 }
@@ -955,7 +980,7 @@ inline cost_type calcLegacyWriteCost(const IPropertyTree & fileAttr, Source sour
 {
     if (source)
     {
-        stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+        stat_type numDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), 0);
         return calcFileAccessCost(source, numDiskWrites, 0);
     }
     return 0;
@@ -966,13 +991,13 @@ inline cost_type calcLegacyWriteCost(const IPropertyTree & fileAttr, Source sour
 template<typename Source>
 inline cost_type getWriteCost(IPropertyTree & fileAttr, Source source, bool migrateLegacyCost = false)
 {
-    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
-        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
+    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQResultField::writeCost)))
+        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), 0);
     else
     {
         cost_type writeCost = calcLegacyWriteCost(fileAttr, source);
         if (migrateLegacyCost)
-            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+            fileAttr.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), writeCost);
         return writeCost;
     }
 }
@@ -981,8 +1006,8 @@ inline cost_type getWriteCost(IPropertyTree & fileAttr, Source source, bool migr
 template<typename Source>
 inline cost_type getWriteCost(const IPropertyTree & fileAttr, Source source)
 {
-    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost)))
-        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), 0);
+    if (fileAttr.hasProp(getDFUQResultFieldName(DFUQResultField::writeCost)))
+        return fileAttr.getPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), 0);
     else
         return calcLegacyWriteCost(fileAttr, source);
 }

@@ -3726,11 +3726,11 @@ cost_type FileSprayer::updateTargetProperties()
                     }
                     DistributedFilePropertyLock lock(subfile);
                     IPropertyTree &subFileProps = lock.queryAttributes();
-                    cost_type prevNumWrites = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
-                    cost_type prevWriteCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
+                    cost_type prevNumWrites = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites));
+                    cost_type prevWriteCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost));
                     cost_type curWriteCost = calcFileAccessCost(subfile, curProgress.numWrites, 0);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), prevWriteCost + curWriteCost);
-                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), prevNumWrites + curProgress.numWrites);
+                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), prevWriteCost + curWriteCost);
+                    subFileProps.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), prevNumWrites + curProgress.numWrites);
                     totalWriteCost += curWriteCost;
                 }
                 else // not sure if tgt superfile can have whichOutput==-1 (but if so, the following cost calc works)
@@ -3746,8 +3746,8 @@ cost_type FileSprayer::updateTargetProperties()
 
         if (!superTgt)
             totalWriteCost = calcFileAccessCost(distributedTarget, totalNumWrites, 0);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), totalWriteCost);
-        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), totalNumWrites);
+        curProps.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), totalWriteCost);
+        curProps.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), totalNumWrites);
 
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());

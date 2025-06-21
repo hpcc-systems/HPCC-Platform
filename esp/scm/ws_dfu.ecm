@@ -261,6 +261,7 @@ ESPrequest [nil_remove] DFUQueryRequest
     int PageStartFrom;
     //int CurrentPage;
     string Sortby;
+    [min_ver("1.66")] string Fields;
     bool Descending(false);
 
     bool OneLevelDirFileReturn(false);
@@ -992,17 +993,35 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 {
 };
 
+ESPrequest [nil_remove] DFUMetaInquiryRequest
+{
+};
+
+ESPStruct DFUMetaFieldInfo
+{
+    string Name;
+    string Type;
+};
+
+ESPresponse [exceptions_inline, nil_remove] DFUMetaInquiryResponse
+{
+    ESParray<ESPstruct DFUMetaFieldInfo> Fields;
+};
+
+
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.65"),
-    default_client_version("1.65"),
+    version("1.66"),
+    default_client_version("1.66"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_fileview.xslt")] DFUFileView(DFUFileViewRequest, DFUFileViewResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_search.xslt")] DFUSearch(DFUSearchRequest, DFUSearchResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu.xslt")] DFUQuery(DFUQueryRequest, DFUQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_metainquiry.xslt")] DFUGetMetaInquiry(DFUMetaInquiryRequest, DFUMetaInquiryResponse);
+
     ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUArrayAction(DFUArrayActionRequest, DFUArrayActionResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_file.xslt")] DFUInfo(DFUInfoRequest, DFUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_file_space.xslt")] DFUSpace(DFUSpaceRequest, DFUSpaceResponse);
