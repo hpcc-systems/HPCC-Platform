@@ -374,7 +374,7 @@ BUILD(VehicleKey3);
             <entry><emphasis role="bold">LZW</emphasis></entry>
 
             <entry>The default compression. A variant of the Lempel-Ziv-Welch
-            algorithm. </entry>
+            algorithm.</entry>
           </row>
 
           <row>
@@ -420,8 +420,16 @@ BUILD(VehicleKey3);
             compression on the payload. This uses the high compression (HC)
             version of the LZ4 stream API to avoid recompressing the data and
             reduce the index build times. The default compression for inplace
-            indexes in versions after versions 9.6.90, 9.8.66, and 9.10.12.
-            </entry>
+            indexes in versions after versions 9.6.90, 9.8.66, and
+            9.10.12.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace:zstds'</emphasis></entry>
+
+            <entry>Causes inplace compression using the Zstandard (zstd)
+            algorithm, a fast compression algorithm, providing high
+            compression ratios.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -438,6 +446,11 @@ BUILD(VehicleKey3);
     In other words, <emphasis role="bold">if you build an index using the lz4s
     or lz4shc formats, you must use a platform later than 9.6.90, 9.8.66, and
     9.10.12 to read those indexes.</emphasis></para>
+
+    <para>The same is true for indexes built using the zstds format. <emphasis
+    role="bold">If you build an index using the zstds format, you must use a
+    platform later than 9.10.40 or 9.12.14 to read those
+    indexes.</emphasis></para>
 
     <para>If you attempt to read an index with the inplace compression format
     on a system that does not support it, you will receive an error
