@@ -21,7 +21,9 @@ export const SizeMe: React.FunctionComponent<SizeMeProps> = ({
         if (containerRef.current) {
             const resizeObserver = new ResizeObserver((entries) => {
                 const { width, height } = entries[0].contentRect;
-                setSize({ width, height });
+                if (!isNaN(width) && !isNaN(height)) {
+                    setSize({ width, height });
+                }
             });
             resizeObserver.observe(containerRef.current);
 
