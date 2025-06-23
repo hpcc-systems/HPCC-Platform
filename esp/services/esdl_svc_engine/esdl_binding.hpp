@@ -73,6 +73,233 @@ typedef int (*cpp_service_method_t)(const char* CtxXML, const char* ReqXML, Stri
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
+    /**
+     * @brief Utility wrapper interface for secret access.
+     *
+     * At service load, secrets are cached directly in a TransactionSecrets instance. When
+     * processing requests, secrets are cached in the script context. Both provide the same
+     * interface to obtain a secret. This wrapper decouples gateway secret updating from the
+     * cache in use.
+     */
+    interface ITransactionSecretsWrapper
+    {
+        virtual IPTree* getSecret(const char* category, const SecretId& id) const = 0;
+    };
+
+    /**
+     * @brief Concrete implementation of `ITransactionSecretsWrapper` wrapping multiple caches.
+     *
+     * @tparam secret_cache_t
+     */
+    template <typename secret_cache_t>
+    struct TTransactionSecretsWrapper : public ITransactionSecretsWrapper
+    {
+        TTransactionSecretsWrapper(secret_cache_t& _wrapped) : wrapped(_wrapped) {}
+        virtual IPTree* getSecret(const char* category, const SecretId& id) const override { return wrapped.getSecret(category, id); }
+    private:
+        secret_cache_t& wrapped;
+    };
+
+    /**
+     * @brief Abstraction of a per-transaction gateway updater.
+     *
+     * During service load, the method configurations are parsed for Gateways/Gateway elements.
+     * Matching elements containing both `@name` and `@url` properties may be updated when
+     * preparing backend service requests. Updates may inject user credentials into a configured
+     * URL or assemble a new URL from a secret.
+     *
+     * Each instance contains the information and logic to update a single Gateway property tree
+     * as needed. Only one instance per gateay should be created per transaction. No instance
+     * should be created for gateways that do not require updates.
+     */
+    interface IGatewayUpdater : public IInterface
+    {
+        virtual void updateGateway(IPTree& gw) = 0;
+    };
+    using GatewayUpdaters = std::map<std::string, Owned<IGatewayUpdater>>;
+
+    /**
+     * @brief Abstraction of a per-service-method gateway update handler.
+     *
+     * During service load, the method configurations are parsed for Gateways/Gateway elements.
+     * Matching elements containing both `@name` and `@url` properties may be updated when
+     * preparing backend service requests. Updates may inject user credentials into a configured
+     * URL or assemble a new URL from a secret.
+     *
+     * Implementations are expected to retain all gateway configuration values at load time to
+     * enable an `IGatewayUpdater` instance to update a copy of the gateway element during
+     * backend request preparation.
+     *
+     * - If the `Gateway` element is a self-contained gateway specification, the retained data
+     *   may be the updated values. Inline URLs fit this description.
+     * - If the `Gateway` element refers to external data that could change between service load
+     *   and a transaction, the retained data must be sufficient to retrieve current values on
+     *   demand. Local secrets fit this description.
+     *
+     * Implementations may assume that each gateway configuration will include both `@name` and
+     *  `@url` properties. No other assumptions are valid.
+     */
+    interface IUpdatableGateway : public IInterface
+    {
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const = 0;
+    };
+    using UpdatableGateways = std::map<std::string, Owned<IUpdatableGateway>>;
+
+    /**
+     * @brief Abstract extension of `IUpdatableGateway` with some standardized behaviors.
+     *
+     * - Subclasses supply the updater map key used to locate an existing updater or store a new
+     *   updater. It is assumed the key given is the value of `Gateway/@name`. This value must not
+     *   be null.
+     * - An existing updater in a given map of updaters will always be reused before creating a
+     *   new updater.
+     * - Insertion (or replacement) of user credentials in a URL string is available to any
+     *   subclass that needs it..
+     *
+     * All extensions must implement `getUpdater(ITransactionSecretsWrapper&)`. In some cases
+     * this may entail creation of a new updater instance. In other cases a single instance may
+     * be reused.
+     */
+    class CUpdatableGateway : public CInterfaceOf<IUpdatableGateway>
+    {
+    public:
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const override;
+    protected:
+        std::string updatersKey;
+    protected:
+        CUpdatableGateway(const char* gwName);
+        virtual IGatewayUpdater* getUpdater(ITransactionSecretsWrapper& secrets) const = 0;
+        bool updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
+    };
+    
+    /**
+     * @brief Concrete extension of both `CUpdatableGateway` and `IGatewayUpdater` for handling
+     *        legecy URL gateways
+     *
+     * - User credentials embedded in `Gateway/@url` are dropped.
+     * - `Gateway/@username` may specify a user name to embed in an updated URL.
+     * - If `Gateway/@username` is given, `Gateway/@password` may specify an exncrypted password
+     *   value to be decrypted and embedded in an updated URL.
+     * - It is an error to specify `Gateway/@password` without `Gateway/@username`.
+     *
+     * Support is provided for backward compatibility. Use of these secrets is strongly discouraged
+     * and should be avoided whenever possible.
+     */
+    class CLegacyUrlGateway : public CUpdatableGateway, public IGatewayUpdater
+    {
+    protected: // CUpdatableGateway
+        virtual CLegacyUrlGateway* getUpdater(ITransactionSecretsWrapper&) const override;
+    public: // IGatewayUpdater
+        virtual void updateGateway(IPTree& gw) override;
+    protected:
+        StringBuffer url;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CUpdatableGateway);
+        CLegacyUrlGateway(const IPTree& gw, const char* gwName, const char* gwUrl);
+    };
+    
+    /**
+     * @brief Concrete extension of `CUpdatableGateway` for handling local secrets that is always
+     *        extended with secret usage-specific logic.
+     *
+     * - Ensures `Gateway/@url` matches the pattern `"local-secret:" [ vault-id "::" ] secret-name [ "::" version ]`.
+     *   - `secret-name` is required always
+     *   - `vault-id` is required before `version` can be specified
+     * - Defines a standard updater separating dynamically changing secrets from the configuration.
+     *
+     * Support is provided as an alternative to inline definitions when secret names cannot be
+     * passed to the target roxie for resolution. Use is discouraged unless it is unavoidable.
+     */
+    template <typename secret_identity_t>
+    class TLocalSecretGateway : public CUpdatableGateway
+    {
+    protected:
+        class CUpdater : public CInterfaceOf<IGatewayUpdater>
+        {
+            friend class TLocalSecretGateway<secret_identity_t>;
+            static constexpr const char* category = "espUser";
+        public: // IGatewayUpdater
+            virtual void updateGateway(IPTree& gw) override
+            {
+                if (!secret)
+                    throw makeStringExceptionV(-1, "gateway %s: '%s' category secret '%s' not found", "?", entry->identifier.str(), category);
+                entry->doUpdate(gw, *secret);
+            }
+        protected:
+            Linked<const TLocalSecretGateway<secret_identity_t>> entry;
+            Owned<IPTree> secret;
+        public:
+            CUpdater(const TLocalSecretGateway<secret_identity_t>& _entry, ITransactionSecretsWrapper& secrets)
+            {
+                entry.set(&_entry);
+                secret.setown(secrets.getSecret(category, entry->identity));
+            }
+        };
+    protected: // CUpdatableGateway
+        virtual IGatewayUpdater* getUpdater(ITransactionSecretsWrapper& secrets) const override
+        {
+            return new CUpdater(*this, secrets);
+        }
+    protected:
+        StringBuffer      identifier;
+        secret_identity_t identity;
+    protected:
+        TLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl)
+            : CUpdatableGateway(gwName)
+            , identifier(gwUrl + gwLocalSecretPrefixLength)
+            , identity(identifier)
+        {
+        }
+    protected:
+        virtual void doUpdate(IPTree& gw, const IPTree& secret) const
+        {
+        }
+    };
+
+    /**
+     * @brief Concete extension of `TLocalSecretGateway<>` to construct a new `Gateway/@url` value
+     *        from secret-defined values.
+     *
+     * - A secret name must begin with "http-connect-". Configurations should omit this prefix,
+     *   but its presence is acceptable.
+     * - A secret must satisfy the requirements defined in `TLocalSecretGateway<>`.
+     * - A secret must define a non-empty `url` property.
+     * - A secret must define either a non-empty `username` property or set the `omitCredentials`
+     *   property to true.
+     * - A secret may define a `password` property if `username` is also defined.
+     * - A secret must not define `username` and set `omitCredentials` to true.
+     * - A secret must not define a `password` property if `username` is not defined.
+     */
+    class CHttpConnectGateway : public TLocalSecretGateway<HttpConnectSecretId>
+    {
+    protected: // TLocalSecretGateway
+        void doUpdate(IPTree& gw, const IPTree& secret) const override;
+    public:
+        CHttpConnectGateway(const IPTree& gw, const char* gwName, const char* gwUrl);
+    };
+
+    /**
+     * @brief Storage of updateable gateway handlers for a single method.
+     *
+     * Gateway updates may occur in either or both of two locations within a backend
+     * service request. The storage layout must enable support for both locations.
+     *
+     * 1. The optional inclusion of a method's binding definition that does not exclude defined
+     *    gateways, also known as the target context. Target context inclusion must update all
+     *    gateways referring to local secrets. Target context inclusion must not, for backward
+     *    compatibility, update any inline gateways unless `Gateways/@updateInline` is true.
+     * 2. The optional request for "legacy gateway transformation". Legacy transformations must
+     *    update all local secret and inline gateways when `Gateways/@legacyTransformTarget` is
+     *    not empty.
+     */
+    struct GatewaysCacheEntry
+    {
+        UpdatableGateways targetContext;
+        UpdatableGateways legacyTransform;
+    };
+    using GatewaysCache = std::map<std::string, GatewaysCacheEntry>;
+
+private:
     inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
     inline Owned<IDataMaskingEngine>& maskingEngine() { return m_oDynamicMaskingEngine ? m_oDynamicMaskingEngine : m_oStaticMaskingEngine; }
     IEspContainer *container = nullptr;
@@ -101,6 +328,7 @@ private:
     Owned<ILoadedDllEntry> javaPluginDll;
 #endif
     Owned<IEmbedContext> javaplugin;
+    GatewaysCache m_methodGatewaysCache;
 
 public:
     StringBuffer                m_espServiceType;
@@ -201,6 +429,39 @@ public:
     virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken){}
     virtual void processHeaders(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &headers){};
     virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req) {};
+    
+    /**
+     * @brief Assemble a SOAP request to be sent to a backend service.
+     *
+     * Assembly includes construction of an initial SOAP request and processing backend request
+     * ESDL script entry point transforms, if any exist.
+     *
+     * Initial request construction of all backend requests wraps the given request content in a
+     * SOAP envelope and SOAP body. For published requests, where `isroxie` is true, updatable
+     * gateways are updated prior to inclusion with the `tgtctx` configuration and as part of
+     * legacy gateway transformations.
+     *
+     * Support for inline URLs in the target configuration, and context which is a subset of the
+     * configuration, is provided for backward compatibility. Use is strongly discouraged.
+     *
+     * Support for local secrets in the target configuration is offered for use cases where the
+     * ESP cannot identify a connection secret known to the target service. It is an improvement
+     * on inline URLs, but still involves risk by disclosing secret data.
+     *
+     * It is a best practice for all Gateay URLs to be defined in terms of secrets known to the
+     * target service, eliminating the need for any additional data disclosures in the request.
+     *
+     * @param context 
+     * @param scriptContext 
+     * @param tgtcfg 
+     * @param tgtctx 
+     * @param srvdef 
+     * @param mthdef 
+     * @param isroxie 
+     * @param ns 
+     * @param reqcontent 
+     * @param reqProcessed 
+     */
     void prepareFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, bool isroxie, const char* ns, StringBuffer &reqcontent, StringBuffer &reqProcessed);
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
     virtual bool handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
@@ -214,6 +475,51 @@ public:
     virtual bool subscribeServiceToDali() override {return false;}
     virtual bool attachServiceToDali() override {return false;}
     virtual bool detachServiceFromDali() override {return false;}
+
+protected:
+    static constexpr const char* gwLocalSecretPrefix = "local-secret:";
+    static constexpr const size_t gwLocalSecretPrefixLength = strlen(gwLocalSecretPrefix);
+
+    /**
+     * @brief Factory method to create an updatable gateway handler for a gateway referencing a
+     *        local secret.
+     * 
+     * @param gw 
+     * @param gwName 
+     * @param gwUrl 
+     * @return IUpdatableGateway* 
+     */
+    IUpdatableGateway* createLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const;
+
+    /**
+     * @brief Factory method to create an updatable gateway handler for a gateway defined inline.
+     * 
+     * @param gw 
+     * @param gwName 
+     * @param gwUrl 
+     * @return IUpdatableGateway* 
+     */
+    IUpdatableGateway* createInlineGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const;
+
+    /**
+     * @brief Update all iterated nodes, as needed.
+     * 
+     * @param gwIt       property tree nodes, presumed to be `Gateway` nodes, for possible updates
+     * @param updatables set of update handlers to be applied to nodes
+     * @param updaters   cache of updaters used in the current transaction
+     * @param secrets    cache of secrets used in the current transaction
+     */
+    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const;
+
+    /**
+     * @brief Implementation of legacy gateway transformation invoked only during preparation of
+     *        published requests.
+     *
+     * @param inputs         iterator of all gateways
+     * @param forRoxie       the transformed gateway structure
+     * @param altElementName configurable element name used in the transformed gateway structure
+     */
+    void transformGatewaysConfig( IPTreeIterator* inputs, IPropertyTree* forRoxie, const char* altElementName = nullptr ) const;
 
 private:
     bool initMaskingEngineDirectory(const char* dir);
@@ -327,8 +633,6 @@ public:
 
     int onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
-    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr );
-    static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);
