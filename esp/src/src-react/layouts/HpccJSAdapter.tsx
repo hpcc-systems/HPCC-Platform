@@ -30,7 +30,7 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
     }, [widget]);
 
     React.useEffect(() => {
-        if (widget?.target()) {
+        if (widget?.target() && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
             widget.resize({ width, height });
             if (debounce) {
                 widget.lazyRender(() => onReady?.());
@@ -40,10 +40,8 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         }
     }, [debounce, height, onReady, widget, width]);
 
-    return (isNaN(width) || isNaN(height) || width === 0 || height === 0) ?
-        <></> :
-        <div ref={setDivRef} id={divID} className="hpcc-js-component" style={{ width, height }}>
-        </div>;
+    return <div ref={setDivRef} id={divID} className="hpcc-js-component" style={{ width, height }}>
+    </div>;
 };
 
 export interface AutosizeHpccJSComponentProps {
