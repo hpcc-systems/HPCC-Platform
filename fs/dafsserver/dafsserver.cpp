@@ -1325,15 +1325,28 @@ public:
 
         if (config.hasProp("recordSamplingRate"))
         {
-            double recordSamplingRate = config.getPropReal("recordSamplingRate", 1.0);
-            const double minSamplingInterval = 1e-9;
-            if (recordSamplingRate <= minSamplingInterval || recordSamplingRate >= 1.0)
-                throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: recordSamplingRate must be between (1e-9, 1.0)");
+            // std::bernoulli_distribution may support smaller sampling rates, depending on implementation,
+            // but we limit it to 1e-12 to avoid issues with very small probabilities
+            constexpr double MIN_SAMPLING_RATE = 1e-12;
+            constexpr double MAX_SAMPLING_RATE = 1.0;
+
+            double recordSamplingRate = config.getPropReal("recordSamplingRate", MAX_SAMPLING_RATE);
+            if (recordSamplingRate <= MIN_SAMPLING_RATE || recordSamplingRate > MAX_SAMPLING_RATE)
+                throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: recordSamplingRate must be between (1e-12, 1.0)");
 
             applySampling = true;
-            if (recordSamplingRate < 1.0)
+            if (recordSamplingRate < MAX_SAMPLING_RATE)
             {
                 recordSamplingDistribution = std::bernoulli_distribution(recordSamplingRate);
+            }
+        }
+
+        if (config.hasProp("recordSamplingSeed"))
+        {
+            __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
+            if (recordSamplingSeed >= 0)
+            {
+                randomGenerator.seed(recordSamplingSeed);
             }
         }
     }
@@ -4741,6 +4754,8 @@ public:
      * "keyFilter" - filter the results by this expression (See: HPCC-18474 for more details).
      * 
      * "recordSamplingRate" - sampling the dataset at this rate (e.g. 0.1 for 10% sampling)
+     * 
+     * "recordSamplingSeed" - seed for random sampling [0,UINT32_MAX]
      *
      * "chooseN" - maximum # of results to return
      *
@@ -4770,6 +4785,7 @@ public:
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
          *   "recordSamplingRate" : 0.1,
+         *   "recordSamplingSeed" : 123456789,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
