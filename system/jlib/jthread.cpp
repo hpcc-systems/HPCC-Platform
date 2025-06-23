@@ -1698,7 +1698,7 @@ public:
         doCloseError();
     }
 
-    void abort()
+    virtual void abort(bool gracefull) override
     {
         CriticalBlock block(sect);
         if (pipeProcess != (HANDLE)-1) {
@@ -2424,7 +2424,7 @@ public:
         }
     }
 
-    void abort()
+    virtual void abort(bool graceful) override
     {
         CriticalBlock block(sect);
         aborted = true;
@@ -2440,10 +2440,11 @@ public:
             if (pipeProcess != (HANDLE)-1) {
                 if (title.length())
                     PROGLOG("%s: Forcibly killing pipe process %d",title.get(),pipeProcess);
+                int signalToSend = graceful ? SIGTERM : SIGKILL;
                 if (newProcessGroup)
-                    ::kill(-pipeProcess,SIGKILL);
+                    ::kill(-pipeProcess,signalToSend);
                 else
-                    ::kill(pipeProcess,SIGKILL);            // if this doesn't kill it we are in trouble
+                    ::kill(pipeProcess,signalToSend);            // if this doesn't kill it we are in trouble
                 CriticalUnblock unblock(sect);
                 wait();
             }
