@@ -467,7 +467,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(sinkMode, wu, "sinkMode");
     updateFromWorkUnit(numWorkflowThreads, wu, "numWorkflowthreads");
 
-    updateTraceFlags(loadTraceFlags(&wu, roxieTraceOptions, queryTraceFlags()));
+    updateTraceFlags(wuLoadTraceFlags(&wu, roxieTraceOptions, queryTraceFlags()));
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
