@@ -96,6 +96,7 @@ interface ICompiledStrRegExpr
     virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, char * tgt, size32_t slen, char const * str, size32_t rlen, char const * rstr) const = 0;
     virtual IStrRegExprFindInstance * findTimed(ISectionTimer * timer, const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
     virtual void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
+    virtual void getExtractTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _subject) = 0;
 };
 
 // RegEx Compiler for unicode strings
@@ -116,6 +117,7 @@ interface ICompiledUStrRegExpr
     virtual void replaceFixedTimed(ISectionTimer * timer, size32_t tlen, UChar * tgt, size32_t slen, UChar const * str, size32_t rlen, UChar const * rstr) const = 0;
     virtual IUStrRegExprFindInstance * findTimed(ISectionTimer * timer, const UChar * str, size32_t from, size32_t len) const = 0;
     virtual void getMatchSetTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
+    virtual void getExtractTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _subject) = 0;
 };
 
 //-----------------------------------------------------------------------------
