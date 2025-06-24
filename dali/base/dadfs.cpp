@@ -1446,11 +1446,10 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
     udesc.set(user);
 }
 
-static bool scopePermissionsAvail = true;
 static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
     SecAccessFlags perms = SecAccess_Full;
-    if (scopePermissionsAvail && scopename && *scopename) {
+    if (scopename && *scopename) {
         if (!user)
         {
             logNullUser(user);//stack trace if NULL user
@@ -1458,14 +1457,8 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         }
 
         perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
-        if (perms<0) {
-            if (perms == SecAccess_Unavailable) {
-                scopePermissionsAvail=false;
-                perms = SecAccess_Full;
-            }
-            else
-                perms = SecAccess_None;
-        }
+        if (perms<0)
+            perms = SecAccess_None;
     }
     return perms;
 }
@@ -11252,7 +11245,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = scopePermissionsAvail && querySessionManager().checkScopeScansLDAP();
+        bool auth = querySessionManager().checkScopeScansLDAP();
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
@@ -11329,7 +11322,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = scopePermissionsAvail && querySessionManager().checkScopeScansLDAP();
+        bool auth = querySessionManager().checkScopeScansLDAP();
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
