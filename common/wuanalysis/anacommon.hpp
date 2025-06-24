@@ -41,6 +41,10 @@ interface IWuEdge : public IWuScope
     virtual IWuActivity * queryTarget() = 0;
 };
 
+interface IWuSubGraph : public IWuScope
+{
+};
+
 interface IWuActivity : public IWuScope
 {
     virtual IWuEdge * queryInput(unsigned idx) = 0;
