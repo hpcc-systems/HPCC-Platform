@@ -386,8 +386,7 @@ extern da_decl StringBuffer &makePhysicalPartName(
                                 DFD_OS os,                          // os must be specified if no dir specified
                                 const char *diroverride,            // override default directory
                                 bool dirPerPart,                    // generate a subdirectory per part
-                                unsigned stripeNum,                 // stripe number
-                                bool isExternalFile);               // file does not end with ._n_of_m
+                                unsigned stripeNum);                // stripe number
 extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // single part file
                                                         StringBuffer &result,
                                                         bool allowospath,   // allow an OS (absolute) file path

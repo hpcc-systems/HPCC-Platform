@@ -1369,7 +1369,7 @@ public:
 
         bool isExternalFile = !f->isHPCCFile();
         unsigned drv;
-        unsigned drvs = isContainerized() || isExternalFile ? 1 : 2;
+        unsigned drvs = isContainerized() ? 1 : 2;
         for (drv=0;drv<drvs;drv++) {
             unsigned i0;
             for (i0=0;i0<f->N;i0++) 
@@ -1384,25 +1384,17 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (!isExternalFile) {
-            if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-                try {
-                    if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                        warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
-                        return;
-                    }
-                }
-                catch (IException *e) {
-                    EXCLOG(e,"CNewXRefManager::listOrphans");
+        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
+            try {
+                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                     return;
                 }
             }
-        }
-        else {
-            // NB: This occurs when cFileDesc fails to find a valid logical file tail (e.g., ._1_of_1)
-            // If getName returns false, nothing is appended. This could be an external found file, so we call getNameMask
-            // to ensure the full filename is appended to scopeBuf
-            f->getNameMask(scopeBuf);
+            catch (IException *e) {
+                EXCLOG(e,"CNewXRefManager::listOrphans");
+                return;
+            }
         }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
@@ -1430,7 +1422,7 @@ public:
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
+                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -1476,7 +1468,7 @@ public:
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
                     RemoteFilename rfn;
-                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, isExternalFile, rfn);
+                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {
