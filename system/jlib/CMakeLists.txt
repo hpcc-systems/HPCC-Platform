@@ -75,6 +75,7 @@ set (    SRCS
          jlib.cpp
          jlog.cpp
          jlz4.cpp
+         jlzbase.cpp
          jlzma.cpp
          jlzw.cpp
          jmd5.cpp
@@ -105,6 +106,7 @@ set (    SRCS
          junicode.cpp
          jutil.cpp
          jtrace.cpp
+         jzstd.cpp
          ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/gpgcodesigner.cpp
@@ -150,6 +152,7 @@ set (    INCLUDES
         jlog.hpp
         jlog.ipp
         jlz4.hpp
+        jlzbase.hpp
         jlzma.hpp
         jlzw.hpp
         jlzw.ipp
@@ -189,6 +192,7 @@ set (    INCLUDES
         junicode.hpp
         jutil.hpp
         jtrace.hpp
+        jzstd.hpp
         ${HPCC_SOURCE_DIR}/system/httplib/httplib.h
         ${HPCC_SOURCE_DIR}/system/security/shared/opensslcommon.hpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/cryptocommon.cpp
