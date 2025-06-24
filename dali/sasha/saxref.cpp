@@ -1351,8 +1351,43 @@ public:
             pb = branch->addPropTree("Part",pb);
         }
         pb->setProp(rep?"RNode":"Node",ep.getEndpointHostText(tmp.clear()).str());
-    }   
+    }
 
+    void addExternalFoundFile(cFileDesc *file, const char *currentPath)
+    {
+        // Treat external files as a single file because without a partmask there is no way
+        // to determine the number of parts or the part number
+        StringBuffer filePath(currentPath);
+        file->getNameMask(addPathSepChar(filePath));
+        RemoteFilename rfn;
+        SocketEndpoint ep;
+        if (grp)
+            ep = grp->queryNode(0).endpoint();
+        rfn.setPath(ep, filePath.str());
+        offset_t sz;
+        CDateTime dt;
+        Owned<IPropertyTree> branch;
+        StringBuffer tmp;
+        bool found;
+        {
+            CheckTime ct("checkOrphanPhysicalFile ");
+            found = checkOrphanPhysicalFile(rfn,sz,dt);
+            if (ct.slow()) {
+                rfn.getPath(tmp.clear());
+                ct.appendMsg(tmp.str());
+            }
+        }
+        if (found)
+        {
+            addOrphanPartNode(branch,rfn.queryEndpoint(),0,false);
+            branch->setPropInt64("Size",sz);
+            branch->setProp("Partmask",filePath.str());
+            branch->setProp("Modified",dt.getString(tmp.clear()));
+            branch->setPropInt("Numparts",1);
+            branch->setPropInt("Partsfound",1);
+            foundbranch->addPropTree("File",branch.getClear());
+        }
+    }
 
     void listOrphans(cFileDesc *f,const char *currentPath,const char *currentScope,bool &abort,unsigned int recentCutoffDays)
     {
@@ -1367,7 +1402,12 @@ public:
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
 
-        bool isExternalFile = !f->isHPCCFile();
+        // Non-conforming files won't have a part mask and should be treated as single files
+        if (!f->isHPCCFile()) {
+            addExternalFoundFile(f,currentPath);
+            return;
+        }
+
         unsigned drv;
         unsigned drvs = isContainerized() ? 1 : 2;
         for (drv=0;drv<drvs;drv++) {
@@ -1384,17 +1424,17 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-            try {
-                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
-                    return;
-                }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CNewXRefManager::listOrphans");
+        assert(f->getName(scopeBuf)); // Should always return true for HPCC files
+        // orphans are only orphans if there doesn't exist a valid file
+        try {
+            if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                 return;
             }
+        }
+        catch (IException *e) {
+            EXCLOG(e,"CNewXRefManager::listOrphans");
+            return;
         }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
