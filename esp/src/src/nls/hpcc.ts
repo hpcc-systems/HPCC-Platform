@@ -888,6 +888,7 @@ export = {
         SelectValue: "Select a value",
         SelectEllipsis: "Select...",
         SelectPackageFile: "Select Package File",
+        SelectWorkunitToRestore: "Please select one or more workunits to restore.",
         SendEmail: "Send Email",
         Separators: "Separators",
         Sequence: "Sequence",
