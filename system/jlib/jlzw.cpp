@@ -25,6 +25,7 @@
 #include "jencrypt.hpp"
 #include "jflz.hpp"
 #include "jlz4.hpp"
+#include "jzstd.hpp"
 
 #ifdef _WIN32
 #include <io.h>

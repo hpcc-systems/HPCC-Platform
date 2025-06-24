@@ -3164,7 +3164,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
 
         if (unlikely(recordingEvents()))
-            queryRecorder().recordIndexLoad(iD, pos, type, ownedCacheEntry->queryNode()->getMemSize(), cycle_to_nanosec(actualLoadCycles), cycle_to_nanosec(fetchCycles));
+        {
+            stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
+            queryRecorder().recordIndexLoad(iD, pos, type, ownedCacheEntry->queryNode()->getMemSize(), cycle_to_nanosec(actualLoadCycles) - fetchTimeNs, fetchTimeNs);
+        }
 
         if (actualLoadCycles > traceNodeLoadThreshold)
         {

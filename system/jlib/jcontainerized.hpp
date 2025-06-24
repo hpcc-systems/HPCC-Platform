@@ -29,6 +29,7 @@ jlib_decl std::vector<std::vector<std::string>> getPodNodes(const char *selector
 jlib_decl const char *queryMyPodName();
 jlib_decl const char *queryMyContainerName();
 jlib_decl const char *queryMyJobName();
+jlib_decl const char *queryPodSuffix();
 
 enum class KeepJobs { none, podfailures, all };
 jlib_decl KeepJobs translateKeepJobs(const char *keepJobs);

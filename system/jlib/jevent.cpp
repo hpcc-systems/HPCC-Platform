@@ -100,7 +100,7 @@ struct EventInformation
 #define ATTR_HEADER           EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace
 #define INDEX_HEADER          ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
 #define INDEXLOOKUP_ATTRS     INDEX_HEADER, EvAttrInCache, EvAttrExpandedSize
-#define INDEXLOAD_ATTRS       INDEX_HEADER, EvAttrExpandedSize, EvAttrElapsedTime, EvAttrReadTime
+#define INDEXLOAD_ATTRS       INDEX_HEADER, EvAttrExpandedSize, EvAttrExpandTime, EvAttrReadTime
 #define INDEXEVICTION_ATTRS   INDEX_HEADER, EvAttrExpandedSize
 #define DALI_ATTRS            ATTR_HEADER, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
 #define FILEINFORMATION_ATTRS ATTR_HEADER, EvAttrFileId, EvAttrPath
@@ -172,6 +172,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(EventThreadId, u8),
     DEFINE_ATTR(EventStackTrace, string),
     DEFINE_ATTR(DataSize, u4),
+    DEFINE_ATTR(ExpandTime, u8),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -613,17 +614,17 @@ void EventRecorder::recordIndexLookup(unsigned fileid, offset_t offset, byte nod
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 elapsedTime, __uint64 readTime)
+void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime)
 {
     if (!isRecording())
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexLoad\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"size\": %u, \"elapsed\": %llu, \"read\": %llu }", fileid, offset, nodeKind, size, elapsedTime, readTime);
+        TRACEEVENT("{ \"name\": \"IndexLoad\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %d, \"size\": %u, \"expandTime\": %llu, \"readTime\": %llu }", fileid, offset, nodeKind, size, expandTime, readTime);
 
     if (unlikely(createSpans))
     {
-        Owned<ISpan> span = createBackdatedInternalSpan("IndexLoad", elapsedTime);
+        Owned<ISpan> span = createBackdatedInternalSpan("IndexLoad", readTime + expandTime);
         span->setSpanAttribute("id", fileid);
         span->setSpanAttribute("offset", offset);
         span->setSpanAttribute("kind", queryIndexNodeTypeText(nodeKind));
@@ -631,7 +632,7 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
         span->setSpanAttribute("readTimeNs", readTime);
     }
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, elapsedTime, readTime);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, expandTime, readTime);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexLoad, pos);
@@ -639,7 +640,7 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
     write(pos, EvAttrExpandedSize, size);
-    write(pos, EvAttrElapsedTime, elapsedTime);
+    write(pos, EvAttrExpandTime, expandTime);
     write(pos, EvAttrReadTime, readTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }

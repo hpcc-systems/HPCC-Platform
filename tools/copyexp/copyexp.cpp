@@ -138,11 +138,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
         if (strmsrc)
             flzstrm = true;
         else
-        {
-            strmsrc.setown(createLZ4StreamRead(srcio));
-            if (strmsrc)
-                lz4strm = true;
-        }
+            UNIMPLEMENTED;
     }
 
     int ret = 0;
@@ -241,8 +237,6 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     if (!cmpio)
     {
         strmsrc.setown(createFastLZStreamRead(baseio));
-        if (!strmsrc)
-            strmsrc.setown(createLZ4StreamRead(baseio));
     }
 
     bool plaincopy = false;
@@ -302,8 +296,6 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
         {
             if (flzstrm)
                 strmdst.setown(createFastLZStreamWrite(dstio));
-            else if (lz4strm)
-                strmdst.setown(createLZ4StreamWrite(dstio));
         }
     }
     else 
@@ -374,11 +366,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
             Owned<ICompressedFileIO> cmpio = createCompressedFileReader(dstio);
             Owned<IFileIOStream> strmchk;
             if (!cmpio)
-            {
                 strmchk.setown(createFastLZStreamRead(dstio));
-                if (!strmchk)
-                    strmchk.setown(createLZ4StreamRead(dstio));
-            }
             if (cmpio||strmchk)
                 printCompDetails(to,dstio,cmpio,strmchk,flzstrm,lz4strm);
             else 

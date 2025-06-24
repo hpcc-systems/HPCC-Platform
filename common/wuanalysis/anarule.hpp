@@ -23,7 +23,7 @@
 #include "jstatcodes.h"
 #include "wuattr.hpp"
 
-class AActivityRule : public CInterface
+class CActivityRule : public CInterface
 {
 public:
     virtual bool isCandidate(IWuActivity & activity) const = 0;
@@ -36,6 +36,13 @@ public:
     }
 };
 
-void gatherRules(CIArrayOf<AActivityRule> & rules);
+class CSubgraphRule : public CInterface
+{
+public:
+    virtual bool check(PerformanceIssue & results, IWuSubGraph & subgraph, const IAnalyserOptions & options) = 0;
+};
+
+void gatherRules(CIArrayOf<CActivityRule> & rules);
+void gatherRules(CIArrayOf<CSubgraphRule> & rules);
 
 #endif
