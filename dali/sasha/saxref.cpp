@@ -1132,33 +1132,56 @@ public:
                 CriticalBlock block(crit);
                 if (!ok||abort)
                     return;
+
                 StringBuffer path(rootdir);
-                SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                 StringBuffer tmp;
-                parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
-                if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
-                    ok = false;
-                    return;
-                }
-                if (!isContainerized()) {
-                    i = (i+r)%n;
-                    setReplicateFilename(path,1);
-                    ep = parent.rawgrp->queryNode(i).endpoint();
-                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
+                // A hosted plane will never be striped, so for striped planes, use local host
+                if (parent.isPlaneStriped)
+                {
+                    assert(!parent.storagePlane->hasProp("@hostGroup"));
+                    SocketEndpoint localEP;
+                    localEP.setLocalHost(0);
+                    addPathSepChar(path).append('d').append(i+1);
+                    parent.log("Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root,NULL,1))
+                    {
                         ok = false;
+                        return;
                     }
                 }
-//              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
+                else
+                {
+                    SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
+                        ok = false;
+                        return;
+                    }
+                    if (!isContainerized()) {
+                        i = (i+r)%n;
+                        setReplicateFilename(path,1);
+                        ep = parent.rawgrp->queryNode(i).endpoint();
+                        parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
+                            ok = false;
+                        }
+                    }
+                }
+    //             PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
             }
         } afor(*this,rootdir,crit,abort);
-        if (numThreads > numuniqnodes)
-            numThreads = numuniqnodes;
-        afor.For(numuniqnodes,numThreads,true,numThreads>1);
+        unsigned numMaxThreads = 0;
+        if (isPlaneStriped)
+            numMaxThreads = numStripedDevices;
+        else
+            numMaxThreads = numuniqnodes;
+        if (numThreads > numMaxThreads)
+            numThreads = numMaxThreads;
+        afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
             log("Directory scan complete");
         else
-            log("Directory scan complete");
+            log("Errors occurred during scan");
         return afor.ok;
     }
 
