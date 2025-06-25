@@ -1362,8 +1362,7 @@ public:
         file->getNameMask(addPathSepChar(filePath));
         RemoteFilename rfn;
         SocketEndpoint ep;
-        if (grp)
-            ep = grp->queryNode(0).endpoint();
+        ep = grp->queryNode(0).endpoint();
         rfn.setPath(ep, filePath.str());
         offset_t sz;
         CDateTime dt;
