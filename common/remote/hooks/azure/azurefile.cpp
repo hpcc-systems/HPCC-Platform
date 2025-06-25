@@ -27,6 +27,7 @@
 #include "jstring.hpp"
 #include "jsecrets.hpp"
 #include "jlog.hpp"
+#include "jplane.hpp"
 #include "azurefile.hpp"
 
 #include <chrono>

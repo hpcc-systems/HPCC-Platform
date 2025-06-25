@@ -17,6 +17,8 @@
 
 #include "jlib.hpp"
 #include "jfile.hpp"
+#include "jplane.hpp"
+
 #include "jhtree.hpp"
 #include "ctfile.hpp"
 #include "ccdfile.hpp"

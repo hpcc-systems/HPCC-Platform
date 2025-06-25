@@ -87,6 +87,7 @@ set (    SRCS
          jmisc.cpp
          jmutex.cpp
          jobserve.cpp
+         jplane.cpp
          jprop.cpp
          jptree.cpp
          jqueue.cpp
@@ -166,6 +167,7 @@ set (    INCLUDES
         jobserve.hpp
         jobserve.ipp
         jpqueue.hpp
+        jplane.hpp
         jprop.hpp
         jptree.hpp
         jptree.ipp

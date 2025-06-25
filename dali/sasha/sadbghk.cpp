@@ -6,6 +6,7 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
+#include "jplane.hpp"
 
 #include "saserver.hpp"
 #include "sautil.hpp"

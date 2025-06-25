@@ -28,6 +28,7 @@
 #include <string>
 
 #include "jiface.hpp"
+#include "jplane.hpp"
 #include "mpbase.hpp"
 class RemoteFilename;
 class RemoteFilenameArray;
