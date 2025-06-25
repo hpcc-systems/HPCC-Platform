@@ -50,8 +50,6 @@ typedef unsigned long   bucket_t;
 // typedef long long       lbucket_t;
 typedef __int64 lbucket_t;
 
-constexpr size32_t defaultCompressedIOSize = (size32_t)-1; // i.e. use the same as the block size.
-
 static std::atomic<bool> disableZeroSizeCompressedFiles{false};
 static std::atomic<bool> initialisedCompressionOptions{false};
 
@@ -2095,18 +2093,21 @@ protected:
     unsigned numBlocksToBuffer = 1; // default to buffering 1 block
 };
 
-class CCompressedFileReader : public CCompressedFileBase
+class CCompressedFileReader final : public CCompressedFileBase
 {
     Linked<IMemoryMappedFile> mmfile;
     unsigned curblocknum;
     offset_t curblockpos;           // logical pos (reading only)
+    MemoryBuffer expandedBuffer;    // buffer that contains the expanded input
     MemoryBuffer iobuffer;          // buffer used for reading
     MemoryBuffer indexbuf;          // non-empty once index read
     Owned<IExpander> expander;
     MemoryAttr compressedInputBlock;
     offset_t nextExpansionPos = (offset_t)-1;
-    offset_t startBlockPos = (offset_t)-1;
+    offset_t startBlockPos = (offset_t)-1;  // The offset of the start of the current compressed block
     size32_t fullBlockSize = 0;
+    offset_t firstIOOffset = 0;     // First offset in the current IO block
+    offset_t lastIOOffset = 0;      // Last offset in the current IO block
 
     unsigned indexNum() { return indexbuf.length()/sizeof(offset_t); }
 
@@ -2132,9 +2133,17 @@ class CCompressedFileReader : public CCompressedFileBase
         return b;
     }
 
+    void * getCompressedData(offset_t offset)
+    {
+        if (fileio)
+            return (byte *)iobuffer.bufferBase() + offset - firstIOOffset;
+        else
+            return mmfile->base()+offset;
+    }
+
     void getblock(offset_t pos)
     {
-        iobuffer.clear();
+        expandedBuffer.clear();
 
         //If the blocks are being expanded incrementally check if the position is within the current block
         //This test will never be true for row compressed data, or non-incremental decompression
@@ -2145,26 +2154,22 @@ class CCompressedFileReader : public CCompressedFileBase
                 if (pos < nextExpansionPos)
                 {
                     //Start decompressing again and avoid re-reading the data from disk
-                    const void * rawData;
-                    if (fileio)
-                        rawData = compressedInputBlock.get();
-                    else
-                        rawData = mmfile->base()+startBlockPos;
-
+                    const void * rawData = getCompressedData(pos);
                     assertex(rawData);
+
                     nextExpansionPos = startBlockPos; // update in case an exception is thrown
-                    size32_t exp = expander->expandFirst(iobuffer, rawData);
+                    size32_t exp = expander->expandFirst(expandedBuffer, rawData);
                     curblockpos = startBlockPos;
                     nextExpansionPos = startBlockPos + exp;
                     if (pos < nextExpansionPos)
                         return;
 
-                    iobuffer.clear();
+                    expandedBuffer.clear();
                 }
 
                 for (;;)
                 {
-                    size32_t nextSize = expander->expandNext(iobuffer);
+                    size32_t nextSize = expander->expandNext(expandedBuffer);
                     if (nextSize == 0)
                         throw makeStringException(-1, "Unexpected zero length compression block");
 
@@ -2187,24 +2192,39 @@ class CCompressedFileReader : public CCompressedFileBase
         size32_t expsize;
         curblocknum = lookupIndex(pos,curblockpos,expsize);
         size32_t toread = trailer.blockSize;
-        offset_t p = (offset_t)curblocknum*toread;
-        assertex(p<=trailer.indexPos);
-        if (trailer.indexPos-p<(offset_t)toread)
-            toread = (size32_t)(trailer.indexPos-p);
+        offset_t nextOffset = (offset_t)curblocknum*toread;
+        assertex(nextOffset <= trailer.indexPos);
+        if (trailer.indexPos-nextOffset < (offset_t)toread)
+            toread = (size32_t)(trailer.indexPos - nextOffset);
         if (!toread) 
             return;
-        if (fileio) {
-            //Allocate on the first call, reuse on subsequent calls.
-            void * b = compressedInputBlock.allocate(trailer.blockSize);
 
-            size32_t r = fileio->read(p,toread,b);
-            assertex(r==toread);
-            expand(b,iobuffer,expsize,p);
+        if (fileio)
+        {
+            //Only read from the file if the block has not already been read
+            if (nextOffset >= lastIOOffset)
+            {
+                size32_t sizeRead = fileio->read(nextOffset, sizeIoBuffer, iobuffer.bufferBase());
+                firstIOOffset = nextOffset;
+                lastIOOffset = firstIOOffset + sizeRead;
+
+                if (sizeRead < toread)
+                    throw makeStringException(-1, "Read past end of IO buffer");
+            }
+            else
+            {
+                // We always read whole blocks - so this should be guaranteed to be false
+                if (nextOffset + toread > lastIOOffset)
+                    throw makeStringException(-1, "Read past end of IO buffer");
+            }
         }
-        else { // memory mapped
-            assertex((memsize_t)p==p);
-            expand(mmfile->base()+(memsize_t)p,iobuffer,expsize,p);
+        else
+        {
+            assertex((memsize_t)nextOffset == nextOffset);
         }
+
+        void * rawData = getCompressedData(nextOffset);
+        expand(rawData, expandedBuffer, expsize, nextOffset);
     }
 
     void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize, offset_t compressedPos)
@@ -2262,14 +2282,17 @@ public:
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
 
-        //Allocate an io buffer that can be used for reading
-        iobuffer.ensureCapacity(sizeIoBuffer);
+        //Allocate an io buffer that can be used for reading - not needed if using memory mapped files
+        if (fileio)
+            iobuffer.ensureCapacity(sizeIoBuffer);
 
         // Read the index of blocks from the end of the file
         unsigned nb = trailer.numBlocks();
         size32_t toread = sizeof(offset_t)*nb;
         if (fileio)
         {
+            //MORE: This could be avoided if the file is only being read sequentially from the start
+            //Therefore could delay until it was actually needed (and save an IO operation)
             size32_t r = fileio->read(trailer.indexPos,toread,indexbuf.reserveTruncate(toread));
             assertex(r==toread);
         }
@@ -2314,11 +2337,11 @@ public:
         while (pos<trailer.expandedSize) {
             if ((offset_t)len>trailer.expandedSize-pos)
                 len = (size32_t)(trailer.expandedSize-pos);
-            if ((pos>=curblockpos)&&(pos<curblockpos+iobuffer.length())) { // see if in current buffer
-                size32_t tocopy = (size32_t)(curblockpos+iobuffer.length()-pos);
+            if ((pos>=curblockpos)&&(pos<curblockpos+expandedBuffer.length())) { // see if in current buffer
+                size32_t tocopy = (size32_t)(curblockpos+expandedBuffer.length()-pos);
                 if (tocopy>len)
                     tocopy = len;
-                memcpy(data,iobuffer.toByteArray()+(pos-curblockpos),tocopy);
+                memcpy(data,expandedBuffer.toByteArray()+(pos-curblockpos),tocopy);
                 ret += tocopy;
                 len -= tocopy;
                 data = (byte *)data+tocopy;
@@ -2736,7 +2759,7 @@ bool isCompressedFile(IFile *iFile)
     return isCompressedFile(iFileIO);
 }
 
-ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander)
+ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander, size32_t ioBufferSize)
 {
     CompressedFileTrailer trailer;
     if (isCompressedFile(fileio, &trailer))
@@ -2746,13 +2769,13 @@ ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expande
 
         //MORE: Revisit the compressed io size when the compressed file supports it (post refactoring)
         unsigned compMethod = getCompressedMethod(trailer.compressedType);
-        return new CCompressedFileReader(fileio,NULL,trailer,expander,compMethod,defaultCompressedIOSize);
+        return new CCompressedFileReader(fileio,NULL,trailer,expander,compMethod, ioBufferSize);
     }
     return nullptr;
 }
 
 
-ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, bool memorymapped, IFEflags extraFlags)
+ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, size32_t ioBufferSize, bool memorymapped, IFEflags extraFlags)
 {
     if (file)
     {
@@ -2775,14 +2798,14 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
                             throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
 
                         //MORE: Revisit the compressed io size when the compressed file supports it (post refactoring)
-                        return new CCompressedFileReader(NULL,mmfile,trailer,expander,compMethod,defaultCompressedIOSize);
+                        return new CCompressedFileReader(NULL,mmfile,trailer,expander,compMethod,ioBufferSize);
                     }
                 }
             }
         }
         Owned<IFileIO> fileio = file->open(IFOread, extraFlags);
         if (fileio) 
-            return createCompressedFileReader(fileio,expander);
+            return createCompressedFileReader(fileio, expander, ioBufferSize);
     }
     return NULL;
 }

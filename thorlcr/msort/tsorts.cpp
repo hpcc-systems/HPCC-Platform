@@ -161,7 +161,7 @@ class CWriteIntercept : public CSimpleInterface
         {
             if (parent->compressedOverflowFile)
             {
-                Owned<IFileIO> iFileIO = createCompressedFileReader(&(parent->dataFile->queryIFile()));
+                Owned<IFileIO> iFileIO = createCompressedFileReader(&(parent->dataFile->queryIFile()), nullptr, useDefaultIoBufferSize, false, IFEnone);
                 assertex(iFileIO);
                 stream.setown(createRowStreamEx(iFileIO, parent->rowIf, startOffset, (offset_t)-1, max));
             }
@@ -300,7 +300,7 @@ public:
             dataFileIO.setown(dataFile->queryIFile().open(IFOread));
             if (compressedOverflowFile)
             {
-                dataFileIO.setown(createCompressedFileReader(dataFileIO));
+                dataFileIO.setown(createCompressedFileReader(dataFileIO, nullptr, useDefaultIoBufferSize));
                 assertex(dataFileIO);
             }
             dataFileStream.setown(createFileSerialStream(dataFileIO));

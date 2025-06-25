@@ -289,10 +289,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 free(encryptedKey);
             }
             IFileIO *fileIO;
-            if (nullptr != eexp.get())
-                fileIO = createCompressedFileReader(iFile, eexp);
-            else if (compressed)
-                fileIO = createCompressedFileReader(iFile);
+            if (nullptr != eexp.get() || compressed)
+                fileIO = createCompressedFileReader(iFile, eexp, useDefaultIoBufferSize, false, IFEnone);
             else
                 fileIO = iFile->open(IFOread);
             if (!fileIO)

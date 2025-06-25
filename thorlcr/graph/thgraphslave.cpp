@@ -2355,10 +2355,8 @@ IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
     {
         cache.opening(*this);
         Owned<IFile> iFile = repFile->open(activity);
-        if (NULL != expander.get())
-            iFileIO.setown(createCompressedFileReader(iFile, expander));
-        else if (compressed)
-            iFileIO.setown(createCompressedFileReader(iFile));
+        if (NULL != expander.get() || compressed)
+            iFileIO.setown(createCompressedFileReader(iFile, expander, useDefaultIoBufferSize, false, IFEnone));
         else
             iFileIO.setown(iFile->open(IFOread));
         if (!iFileIO.get())

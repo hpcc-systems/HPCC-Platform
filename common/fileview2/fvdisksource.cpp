@@ -153,7 +153,7 @@ bool PhysicalFileInfo::readData(MemoryBuffer & out, __int64 startOffset, size32_
         }
         if (df->isCompressed())
         {
-            cachedIO.setown(createCompressedFileReader(cachedIO));
+            cachedIO.setown(createCompressedFileReader(cachedIO, nullptr, useDefaultIoBufferSize));
             if (!cachedIO)
             {
                 StringBuffer str;

@@ -288,7 +288,7 @@ public:
                     if (fileStatus == FileIsValid)
                     {
                         if (isCompressed && !isKey)
-                            current.setown(createCompressedFileReader(f));
+                            current.setown(createCompressedFileReader(f, nullptr, useDefaultIoBufferSize, false, IFEnone));
                         else
                             current.setown(f->open(IFOread));
                         if (current)

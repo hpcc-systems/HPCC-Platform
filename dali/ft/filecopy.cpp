@@ -646,7 +646,7 @@ int FileSizeThread::run()
                 cur->psize = thisSize;
                 if (isCompressed)
                 {
-                    Owned<IFileIO> io = createCompressedFileReader(thisFile); //check succeeded?
+                    Owned<IFileIO> io = createCompressedFileReader(thisFile, nullptr, useDefaultIoBufferSize, false, IFEnone); //check succeeded?
                     if (!io)
                     {
                         StringBuffer s;
@@ -1799,7 +1799,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
                 decrypt(key,decryptKey);
                 expander.setown(createAESExpander256(key.length(),key.str()));
             }
-            io.setown(createCompressedFileReader(io,expander));
+            io.setown(createCompressedFileReader(io, expander, useDefaultIoBufferSize));
         }
 
         if (defaultFormat != FFTunknown)

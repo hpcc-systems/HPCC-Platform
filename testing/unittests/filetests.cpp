@@ -105,13 +105,14 @@ public:
         }
         DBGLOG("Compressed file size = %llu -> %llu", pos, file->size());
     }
-    void readCompressed(bool errorExpected)
+    void readCompressed(bool errorExpected, size32_t ioBufferSize = useDefaultIoBufferSize)
     {
         bool success = false;
+        CCycleTimer timer;
         try
         {
             Owned<IFile> file(createIFile(testFilename));
-            Owned<IFileIO> io(createCompressedFileReader(file));
+            Owned<IFileIO> io(createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone));
 
             constexpr size_t cnt = 10000;
             constexpr size_t size = 1000;
@@ -131,6 +132,7 @@ public:
                 pos += size;
             }
 
+            DBGLOG("Read compressed file (%u) in %u ms", ioBufferSize, timer.elapsedMs());
             success = true;
         }
         catch (IException *e)
@@ -166,6 +168,7 @@ public:
     {
         createCompressed();
         readCompressed(false);
+        readCompressed(false, 0x400000);
 
         // patch the file with zeroes in various places, retest
 
@@ -204,6 +207,8 @@ public:
     {
         createCompressedAppend();
         readCompressed(false);
+        readCompressed(false, 0x400000);
+        readCompressed(false, 0x4000000);
     }
     void cleanup()
     {

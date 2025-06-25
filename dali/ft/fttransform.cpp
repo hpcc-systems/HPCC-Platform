@@ -101,7 +101,7 @@ bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _star
             decrypt(key,decryptKey);
             expander.setown(createAESExpander256(key.length(),key.str()));
         }
-        input.setown(createCompressedFileReader(input,expander));   
+        input.setown(createCompressedFileReader(input, expander, useDefaultIoBufferSize));
     }
     cursor = startOffset;
     return (input != NULL);
