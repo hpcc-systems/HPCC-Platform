@@ -934,9 +934,7 @@ public:
             clusterscsl.append(',').append(gname.str());
         }
         if (isContainerized()) {
-            Owned<IPropertyTree> plane = getStoragePlane(_clustname);
-            if (!plane)
-                throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
+            Owned<const IPropertyTree> plane = getStoragePlaneConfig(_clustname, true);
             rootdir.set(plane->queryProp("@prefix"));
         }
         else if (basedir.length()==0) {

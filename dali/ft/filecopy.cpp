@@ -1617,7 +1617,7 @@ IAPICopyClient * FileSprayer::getAPICopyClient()
 
     StringBuffer sourceClusterName;
     distributedSource->getClusterName(0, sourceClusterName);
-    Owned<IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
+    Owned<const IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
     if (!sourcePlane)
         return nullptr;
 
@@ -1630,7 +1630,7 @@ IAPICopyClient * FileSprayer::getAPICopyClient()
 
     StringBuffer targetClusterName;
     distributedTarget->getClusterName(0, targetClusterName);
-    Owned<IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
+    Owned<const IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
     if (!targetPlane)
         return nullptr;
 

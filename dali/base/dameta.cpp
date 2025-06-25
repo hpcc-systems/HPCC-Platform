@@ -143,11 +143,8 @@ void LogicalFileResolver::ensurePlane(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    Owned<IPropertyTree> plane = getStoragePlane(name);
-    if (!plane)
-        throw makeStringExceptionV(0, "No entry found for plane: '%s'", name);
-
-    storage->addPropTreeArrayItem("planes", LINK(plane));
+    Owned<const IPropertyTree> plane = getStoragePlaneConfig(name, true);
+    storage->addPropTreeArrayItem("planes", createPTreeFromIPT(plane));
     ensureHostGroup(plane->queryProp("@hosts"));
 }
 

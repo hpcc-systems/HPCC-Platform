@@ -49,79 +49,6 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
-static IPropertyTree *getPlaneHostGroup(IPropertyTree *plane)
-{
-    if (plane->hasProp("@hostGroup"))
-        return getHostGroup(plane->queryProp("@hostGroup"), true);
-    else if (plane->hasProp("hosts"))
-        return LINK(plane); // plane itself holds 'hosts'
-    return nullptr;
-}
-
-unsigned getNumPlaneStripes(const char *clusterName)
-{
-    Owned<IPropertyTree> storagePlane = getStoragePlane(clusterName);
-    if (!storagePlane)
-    {
-        OWARNLOG("lookupNumStripedDevices: Storage plane %s not found", clusterName);
-        return 1;
-    }
-
-    unsigned numDevices = storagePlane->getPropInt("@numDevices");
-    bool isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
-
-    return isPlaneStriped ? numDevices : 1;
-}
-
-bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
-{
-    Owned<IPropertyTree> planeGroup = getPlaneHostGroup(plane);
-    if (!planeGroup)
-        return false;
-    Owned<IPropertyTreeIterator> hostsIter = planeGroup->getElements("hosts");
-    SocketEndpoint hostEp;
-    if (ipMatch)
-        hostEp.set(host);
-    ForEach (*hostsIter)
-    {
-        const char *planeHost = hostsIter->query().queryProp(nullptr);
-        if (ipMatch)
-        {
-            SocketEndpoint planeHostEp(planeHost);
-            if (planeHostEp.ipequals(hostEp))
-                return true;
-        }
-        else if (streq(planeHost, host))
-            return true;
-    }
-    return false;
-}
-
-bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
-{
-    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
-    if (!hostGroup)
-        return false;
-
-    unsigned maxHosts = hostGroup->getCount("hosts");
-    if (which >= maxHosts)
-        throw makeStringExceptionV(0, "getPlaneHost: index %u out of range 1..%u", which, maxHosts);
-    VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
-    host.append(hostGroup->queryProp(xpath));
-    return true;
-}
-
-void getPlaneHosts(StringArray &hosts, IPropertyTree *plane)
-{
-    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
-    if (hostGroup)
-    {
-        Owned<IPropertyTreeIterator> hostsIter = hostGroup->getElements("hosts");
-        ForEach (*hostsIter)
-            hosts.append(hostsIter->query().queryProp(nullptr));
-    }
-}
-
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
 {
     return getPlanesIterator("lz", name);
@@ -133,32 +60,6 @@ IPropertyTree * getDropZonePlane(const char * name)
         throw makeStringException(-1, "Drop zone name required");
     Owned<IPropertyTreeIterator> iter = getDropZonePlanesIterator(name);
     return iter->first() ? &iter->get() : nullptr;
-}
-
-bool isPathInPlane(IPropertyTree *plane, const char *path)
-{
-    if (isEmptyString(path))
-        return true;
-
-    const char *prefix = plane->queryProp("@prefix");
-    if (isEmptyString(prefix))
-        return false; //prefix is empty, path is not - can't match.
-
-    while (*prefix && *prefix == *path)
-    {
-        path++;
-        prefix++;
-    }
-    if (0 == *prefix)
-    {
-        if (0 == *path || isPathSepChar(*path))
-            return true;
-        if (isPathSepChar(*(path - 1))) //implies both last characters of prefix and path were '/'
-            return true;
-    }
-    else if (0 == *path && isPathSepChar(*prefix) && (0 == *(prefix + 1)))
-        return true;
-    return false;
 }
 
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
@@ -1460,7 +1361,7 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 
             //Resolve the plane, and return the ip if it is a bare metal zone (or a legacy drop zone)
             StringBuffer planeName(end - startPlane, startPlane);
-            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+            Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
             if (!plane)
                 return false;
 
@@ -1544,7 +1445,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
             if (planeLen)
             {
                 StringBuffer planeName(planeLen, startPlane);
-                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
                 if (!plane)
                 {
                     if (e)
@@ -3706,7 +3607,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
     {
         IPropertyTree &cluster = iter->query();
         const char *planeName = cluster.queryProp("@name");
-        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+        Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, true);
         if (isAbsolutePath(plane->queryPrefix())) // if url (i.e. not absolute prefix path) don't touch
         {
             if (isContainerized())
