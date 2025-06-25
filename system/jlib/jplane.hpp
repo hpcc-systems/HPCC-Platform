@@ -121,8 +121,8 @@ extern jlib_decl bool getDefaultJobTempPlane(StringBuffer &ret);
 
 extern jlib_decl unsigned getNumPlaneStripes(const char *clusterName);
 extern jlib_decl bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch);
-extern jlib_decl bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which);
-extern jlib_decl void getPlaneHosts(StringArray &hosts, IPropertyTree *plane);
+extern jlib_decl bool getPlaneHost(StringBuffer &host, const IPropertyTree *plane, unsigned which);
+extern jlib_decl void getPlaneHosts(StringArray &hosts, const IPropertyTree *plane);
 extern jlib_decl bool isPathInPlane(IPropertyTree *plane, const char *path);
 
 #endif

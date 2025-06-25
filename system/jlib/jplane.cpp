@@ -57,9 +57,103 @@ const char *getPlaneAttributeString(PlaneAttributeType attr)
     return planeAttributeInfo[attr].name;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+static bool isAccessible(const IPropertyTree * xml)
+{
+    //Unusual to have components specified, so short-cicuit the common case
+    if (!xml->hasProp("components"))
+        return true;
+
+    const char * thisComponentName = queryComponentName();
+    if (!thisComponentName)
+        return false;
+
+    Owned<IPropertyTreeIterator> component = xml->getElements("components");
+    ForEach(*component)
+    {
+        if (strsame(component->query().queryProp(nullptr), thisComponentName))
+            return true;
+    }
+    return false;
+}
+
+class CStoragePlaneAlias : public CInterfaceOf<IStoragePlaneAlias>
+{
+public:
+    CStoragePlaneAlias(IPropertyTree *_xml) : xml(_xml)
+    {
+        Owned<IPropertyTreeIterator> modeIter = xml->getElements("mode");
+        ForEach(*modeIter)
+        {
+            const char *modeStr = modeIter->query().queryProp(nullptr);
+            modes |= getAccessModeFromString(modeStr);
+        }
+        accessible = ::isAccessible(xml);
+    }
+    virtual AccessMode queryModes() const override { return modes; }
+    virtual const char *queryPrefix() const override { return xml->queryProp("@prefix"); }
+    virtual bool isAccessible() const override { return accessible; }
+
+private:
+    Linked<IPropertyTree> xml;
+    AccessMode modes = AccessMode::none;
+    bool accessible = false;
+};
+
+class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
+{
+public:
+    CStorageApiInfo(const IPropertyTree * _xml) : xml(_xml)
+    {
+        if (!xml) // shouldn't happen
+            throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
+    }
+    virtual const char * getStorageType() const override
+    {
+        return xml->queryProp("@type");
+    }
+    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
+    {
+        const char *account = queryContainer(stripeNumber)->queryProp("@account");
+        if (isEmptyString(account))
+            account = xml->queryProp("@account");
+        return account;
+    }
+    virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
+    {
+        return queryContainer(stripeNumber)->queryProp("@name");
+    }
+    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
+    {
+        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
+        if (isEmptyString(secretName))
+        {
+            secretName = xml->queryProp("@secret");
+            if (isEmptyString(secretName))
+                return token.clear();  // return empty string if no secret name is specified
+        }
+        getSecretValue(token, "storage", secretName, "token", false);
+        return token.trimRight();
+    }
+
+private:
+    IPropertyTree * queryContainer(unsigned stripeNumber) const
+    {
+        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
+            stripeNumber++;
+        VStringBuffer path("containers[%u]", stripeNumber);
+        IPropertyTree *container = xml->queryPropTree(path.str());
+        if (!container)
+            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
+        return container;
+    }
+    Owned<const IPropertyTree> xml;
+};
+
 //------------------------------------------------------------------------------------------------------------
 
-class CStoragePlane final : public CInterface   // Of<IStoragePlane>
+class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
     CStoragePlane() = default;
@@ -121,10 +215,74 @@ public:
                     throwUnexpected();
             }
         }
+
+        Owned<IPropertyTreeIterator> srcAliases = plane.getElements("aliases");
+        ForEach(*srcAliases)
+            aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
+
+        StringArray planeHosts;
+        getPlaneHosts(planeHosts, config);
+        ForEachItemIn(h, planeHosts)
+            hosts.emplace_back(planeHosts.item(h));
+    }
+
+    virtual const char * queryPrefix() const override { return config->queryProp("@prefix"); }
+
+    virtual unsigned numDevices() const override { return config->getPropInt("@numDevices", 1); }
+
+    virtual const std::vector<std::string> &queryHosts() const override
+    {
+        return hosts;
+    }
+
+    virtual unsigned numDefaultSprayParts() const override { return config->getPropInt("@defaultSprayParts", 1); }
+
+    virtual bool queryDirPerPart() const override { return config->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
+
+    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
+    {
+        if (AccessMode::none == desiredModes)
+            return nullptr;
+        // go through and return one with most mode matches (should there be any other weighting?)
+        unsigned bestScore = 0;
+        IStoragePlaneAlias *bestMatch = nullptr;
+        for (const auto & alias : aliases)
+        {
+            // Some aliases are only mounted in a restricted set of components (to avoid limits on the number of connections)
+            if (!alias->isAccessible())
+                continue;
+
+            AccessMode aliasModes = alias->queryModes();
+            unsigned match = static_cast<unsigned>(aliasModes & desiredModes);
+            unsigned score = 0;
+            while (match)
+            {
+                score += match & 1;
+                match >>= 1;
+            }
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMatch = alias;
+            }
+        }
+        return LINK(bestMatch);
+    }
+    virtual IStorageApiInfo *getStorageApiInfo()
+    {
+        IPropertyTree *apiInfo = config->getPropTree("storageapi");
+        if (apiInfo)
+            return new CStorageApiInfo(config);        //BUG!!! passing the wrong ptree
+        return nullptr;
+    }
+
+    virtual bool isAccessible() const override
+    {
+        return ::isAccessible(config);
     }
 
     const char * queryName() const { return name.c_str(); }
-    const char * queryPrefix() const { return prefix.c_str(); }
+
     const IPropertyTree * queryConfig() const { return config; }
 
     unsigned __int64 getAttribute(PlaneAttributeType attr) const
@@ -138,6 +296,8 @@ private:
     std::string prefix;
     std::array<unsigned __int64, PlaneAttributeCount> values;
     Linked<const IPropertyTree> config;
+    std::vector<Owned<IStoragePlaneAlias>> aliases;
+    std::vector<std::string> hosts;
 };
 
 // {prefix, {key1: value1, key2: value2, ...}}
@@ -406,7 +566,7 @@ bool isPathInPlane(IPropertyTree *plane, const char *path)
 //---------------------------------------------------------------------------------------------------------------------
 
 
-static IPropertyTree *getPlaneHostGroup(IPropertyTree *plane)
+static const IPropertyTree *getPlaneHostGroup(const IPropertyTree *plane)
 {
     if (plane->hasProp("@hostGroup"))
         return getHostGroup(plane->queryProp("@hostGroup"), true);
@@ -432,7 +592,7 @@ unsigned getNumPlaneStripes(const char *clusterName)
 
 bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
 {
-    Owned<IPropertyTree> planeGroup = getPlaneHostGroup(plane);
+    Owned<const IPropertyTree> planeGroup = getPlaneHostGroup(plane);
     if (!planeGroup)
         return false;
     Owned<IPropertyTreeIterator> hostsIter = planeGroup->getElements("hosts");
@@ -454,9 +614,9 @@ bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
     return false;
 }
 
-bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
+bool getPlaneHost(StringBuffer &host, const IPropertyTree *plane, unsigned which)
 {
-    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
+    Owned<const IPropertyTree> hostGroup = getPlaneHostGroup(plane);
     if (!hostGroup)
         return false;
 
@@ -468,9 +628,9 @@ bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
     return true;
 }
 
-void getPlaneHosts(StringArray &hosts, IPropertyTree *plane)
+void getPlaneHosts(StringArray &hosts, const IPropertyTree *plane)
 {
-    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
+    Owned<const IPropertyTree> hostGroup = getPlaneHostGroup(plane);
     if (hostGroup)
     {
         Owned<IPropertyTreeIterator> hostsIter = hostGroup->getElements("hosts");
@@ -478,172 +638,6 @@ void getPlaneHosts(StringArray &hosts, IPropertyTree *plane)
             hosts.append(hostsIter->query().queryProp(nullptr));
     }
 }
-
-//---------------------------------------------------------------------------------------------------------------------
-
-static bool isAccessible(const IPropertyTree * xml)
-{
-    //Unusual to have components specified, so short-cicuit the common case
-    if (!xml->hasProp("components"))
-        return true;
-
-    const char * thisComponentName = queryComponentName();
-    if (!thisComponentName)
-        return false;
-
-    Owned<IPropertyTreeIterator> component = xml->getElements("components");
-    ForEach(*component)
-    {
-        if (strsame(component->query().queryProp(nullptr), thisComponentName))
-            return true;
-    }
-    return false;
-}
-
-class CStoragePlaneAlias : public CInterfaceOf<IStoragePlaneAlias>
-{
-public:
-    CStoragePlaneAlias(IPropertyTree *_xml) : xml(_xml)
-    {
-        Owned<IPropertyTreeIterator> modeIter = xml->getElements("mode");
-        ForEach(*modeIter)
-        {
-            const char *modeStr = modeIter->query().queryProp(nullptr);
-            modes |= getAccessModeFromString(modeStr);
-        }
-        accessible = ::isAccessible(xml);
-    }
-    virtual AccessMode queryModes() const override { return modes; }
-    virtual const char *queryPrefix() const override { return xml->queryProp("@prefix"); }
-    virtual bool isAccessible() const override { return accessible; }
-
-private:
-    Linked<IPropertyTree> xml;
-    AccessMode modes = AccessMode::none;
-    bool accessible = false;
-};
-
-class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
-{
-public:
-    CStorageApiInfo(IPropertyTree * _xml) : xml(_xml)
-    {
-        if (!xml) // shouldn't happen
-            throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
-    }
-    virtual const char * getStorageType() const override
-    {
-        return xml->queryProp("@type");
-    }
-    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
-    {
-        const char *account = queryContainer(stripeNumber)->queryProp("@account");
-        if (isEmptyString(account))
-            account = xml->queryProp("@account");
-        return account;
-    }
-    virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
-    {
-        return queryContainer(stripeNumber)->queryProp("@name");
-    }
-    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
-    {
-        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
-        if (isEmptyString(secretName))
-        {
-            secretName = xml->queryProp("@secret");
-            if (isEmptyString(secretName))
-                return token.clear();  // return empty string if no secret name is specified
-        }
-        getSecretValue(token, "storage", secretName, "token", false);
-        return token.trimRight();
-    }
-
-private:
-    IPropertyTree * queryContainer(unsigned stripeNumber) const
-    {
-        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
-            stripeNumber++;
-        VStringBuffer path("containers[%u]", stripeNumber);
-        IPropertyTree *container = xml->queryPropTree(path.str());
-        if (!container)
-            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
-        return container;
-    }
-    Owned<IPropertyTree> xml;
-};
-
-class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
-{
-public:
-    CStoragePlaneInfo(IPropertyTree * _xml) : xml(_xml)
-    {
-        Owned<IPropertyTreeIterator> srcAliases = xml->getElements("aliases");
-        ForEach(*srcAliases)
-            aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
-        StringArray planeHosts;
-        getPlaneHosts(planeHosts, xml);
-        ForEachItemIn(h, planeHosts)
-            hosts.emplace_back(planeHosts.item(h));
-    }
-
-    virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
-    virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
-    virtual const std::vector<std::string> &queryHosts() const override
-    {
-        return hosts;
-    }
-    virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
-    virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
-
-    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
-    {
-        if (AccessMode::none == desiredModes)
-            return nullptr;
-        // go through and return one with most mode matches (should there be any other weighting?)
-        unsigned bestScore = 0;
-        IStoragePlaneAlias *bestMatch = nullptr;
-        for (const auto & alias : aliases)
-        {
-            // Some aliases are only mounted in a restricted set of components (to avoid limits on the number of connections)
-            if (!alias->isAccessible())
-                continue;
-
-            AccessMode aliasModes = alias->queryModes();
-            unsigned match = static_cast<unsigned>(aliasModes & desiredModes);
-            unsigned score = 0;
-            while (match)
-            {
-                score += match & 1;
-                match >>= 1;
-            }
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestMatch = alias;
-            }
-        }
-        return LINK(bestMatch);
-    }
-    virtual IStorageApiInfo *getStorageApiInfo()
-    {
-        IPropertyTree *apiInfo = xml->getPropTree("storageapi");
-        if (apiInfo)
-            return new CStorageApiInfo(xml);
-        return nullptr;
-    }
-
-    virtual bool isAccessible() const override
-    {
-        return ::isAccessible(xml);
-    }
-
-private:
-    Linked<IPropertyTree> xml;
-    std::vector<Owned<IStoragePlaneAlias>> aliases;
-    std::vector<std::string> hosts;
-};
-
 
 //MORE: This could be cached
 static IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
@@ -665,7 +659,7 @@ static IStoragePlane * getStoragePlane(const char * name, const std::vector<std:
         return nullptr;
     }
 
-    return new CStoragePlaneInfo(match);
+    return new CStoragePlane(*match);
 }
 
 IStoragePlane * getDataStoragePlane(const char * name, bool required)
@@ -687,7 +681,7 @@ IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
 
 IStoragePlane * createStoragePlane(IPropertyTree *meta)
 {
-    return new CStoragePlaneInfo(meta);
+    return new CStoragePlane(*meta);
 }
 
 
