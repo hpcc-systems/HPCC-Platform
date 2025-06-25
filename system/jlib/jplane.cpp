@@ -51,6 +51,14 @@ static const std::array<PlaneAttributeInfo, PlaneAttributeCount> planeAttributeI
 
 static constexpr unsigned __int64 unsetPlaneAttrValue = 0xFFFFFFFF00000000;
 
+const char *getPlaneAttributeString(PlaneAttributeType attr)
+{
+    assertex(attr < PlaneAttributeCount);
+    return planeAttributeInfo[attr].name;
+}
+
+//------------------------------------------------------------------------------------------------------------
+
 class CStoragePlane final : public CInterface   // Of<IStoragePlane>
 {
 public:
@@ -161,6 +169,38 @@ MODULE_EXIT()
 }
 
 
+//The following static functions must be called with the planeAttributeMapCrit held
+static const CStoragePlane * doFindStoragePlaneFromPath(const char *filePath)
+{
+    for (auto &e: planeAttributesMap)
+    {
+        const char *prefix = e.second.queryPrefix();
+        if (!isEmptyString(prefix)) // sanity check, std::string cannot be null, so check if empty
+        {
+            if (startsWith(filePath, prefix))
+                return &e.second;
+        }
+    }
+    return nullptr;
+}
+
+#if 0
+//MORE: Not yet used
+static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool required)
+{
+    auto it = planeAttributesMap.find(name);
+    if (it != planeAttributesMap.end())
+        return &it->second;
+
+    if (required)
+        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+
+    return nullptr;
+}
+#endif
+
+//------------------------------------------------------------------------------------------------------------
+
 IPropertyTree * getHostGroup(const char * name, bool required)
 {
     if (!isEmptyString(name))
@@ -176,18 +216,6 @@ IPropertyTree * getHostGroup(const char * name, bool required)
     return nullptr;
 }
 
-const IPropertyTree * getStoragePlane(const char * name, bool required)
-{
-    CriticalBlock b(planeAttributeMapCrit);
-    auto it = planeAttributesMap.find(name);
-    if (it != planeAttributesMap.end())
-        return LINK(it->second.queryConfig());
-
-    if (required)
-        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
-    return nullptr;
-}
-
 IPropertyTree * getRemoteStorage(const char * name)
 {
     VStringBuffer xpath("storage/remote[@name='%s']", name);
@@ -200,6 +228,22 @@ IPropertyTreeIterator * getRemoteStoragesIterator()
     return getGlobalConfigSP()->getElements("storage/remote");
 }
 
+//------------------------------------------------------------------------------------------------------------
+
+//MORE: Revisit every call to this function to see if it can be replaced with a more specialized call
+const IPropertyTree * getStoragePlane(const char * name, bool required)
+{
+    CriticalBlock b(planeAttributeMapCrit);
+    auto it = planeAttributesMap.find(name);
+    if (it != planeAttributesMap.end())
+        return LINK(it->second.queryConfig());
+
+    if (required)
+        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+    return nullptr;
+}
+
+//MORE: Revisit every call to this function to see if it can be replaced
 IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name)
 {
     StringBuffer xpath("storage/planes");
@@ -208,12 +252,6 @@ IPropertyTreeIterator * getPlanesIterator(const char * category, const char *nam
     if (!isEmptyString(name))
         xpath.appendf("[@name='%s']", name);
     return getGlobalConfigSP()->getElements(xpath);
-}
-
-const char *getPlaneAttributeString(PlaneAttributeType attr)
-{
-    assertex(attr < PlaneAttributeCount);
-    return planeAttributeInfo[attr].name;
 }
 
 unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue)
@@ -232,24 +270,10 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
     return defaultValue;
 }
 
-static CStoragePlane *findPlaneElementFromPath(const char *filePath)
-{
-    for (auto &e: planeAttributesMap)
-    {
-        const char *prefix = e.second.queryPrefix();
-        if (!isEmptyString(prefix)) // sanity check, std::string cannot be null, so check if empty
-        {
-            if (startsWith(filePath, prefix))
-                return &e.second;
-        }
-    }
-    return nullptr;
-}
-
 const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
 {
     CriticalBlock b(planeAttributeMapCrit);
-    CStoragePlane *e = findPlaneElementFromPath(filePath);
+    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath);
     if (!e)
         return nullptr;
 
@@ -260,7 +284,7 @@ const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
 bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue)
 {
     CriticalBlock b(planeAttributeMapCrit);
-    CStoragePlane *e = findPlaneElementFromPath(filePath);
+    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath);
     if (e)
     {
         unsigned __int64 value = e->getAttribute(planeAttrType);
