@@ -427,7 +427,7 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
         if (!name.isEmpty())
         {
 #ifdef _CONTAINERIZED
-            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
+            Owned<const IStoragePlane> plane = getDataStoragePlane(name, false);
             mspec.numStripedDevices = plane ? plane->numDevices() : 1;
             if (mspec.numStripedDevices>1)
                 mspec.flags |= CPDMSF_striped;
@@ -1391,7 +1391,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 // then the IClusterInfo's will have no resolved names (aka groups) because the remote groups
                 // don't exist in the client environment. Instead, if the foreign file came from k8s, it will
                 // have remoteStoragePlane serialized/set.
-                Owned<IStoragePlane> plane;
+                Owned<const IStoragePlane> plane;
                 if (remoteStoragePlane)
                     plane.set(remoteStoragePlane);
                 else if (cluster)
@@ -2708,7 +2708,7 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
 
 IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts)
 {
-    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+    Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, true);
     if (!numParts)
         numParts = plane->numDefaultSprayParts();
 

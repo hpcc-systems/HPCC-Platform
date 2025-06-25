@@ -642,7 +642,7 @@ void getPlaneHosts(StringArray &hosts, const IPropertyTree *plane)
 }
 
 //MORE: This could be cached
-static IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
+static const IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
 {
     CriticalBlock b(planeAttributeMapCrit);
     const CStoragePlane * match = doFindStoragePlaneByName(name, required);
@@ -658,11 +658,11 @@ static IStoragePlane * getStoragePlane(const char * name, const std::vector<std:
         return nullptr;
     }
 
-    IStoragePlane * result = const_cast<CStoragePlane *>(match); // temporary cast
+    const IStoragePlane * result = match;
     return LINK(result);
 }
 
-IStoragePlane * getDataStoragePlane(const char * name, bool required)
+const IStoragePlane * getDataStoragePlane(const char * name, bool required)
 {
     StringBuffer group;
     group.append(name).toLowerCase();
@@ -672,7 +672,7 @@ IStoragePlane * getDataStoragePlane(const char * name, bool required)
     return getStoragePlane(group, { "data", "lz", "remote" }, required);
 }
 
-IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
+const IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
 {
     StringBuffer group;
     group.append(name).toLowerCase();

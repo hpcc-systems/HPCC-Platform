@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "jptree.hpp"
 
 #ifdef _WIN32

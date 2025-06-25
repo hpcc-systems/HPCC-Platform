@@ -32,6 +32,8 @@
 #include "jerror.hpp"
 #include "jsecrets.hpp"
 #include "jmd5.hpp"
+#include "jplane.hpp"
+
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime
 #include <float.h> //for _isnan and _fpclass

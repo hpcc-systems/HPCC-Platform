@@ -1361,7 +1361,7 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 
             //Resolve the plane, and return the ip if it is a bare metal zone (or a legacy drop zone)
             StringBuffer planeName(end - startPlane, startPlane);
-            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+            Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
             if (!plane)
                 return false;
 
@@ -1445,7 +1445,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
             if (planeLen)
             {
                 StringBuffer planeName(planeLen, startPlane);
-                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
                 if (!plane)
                 {
                     if (e)
@@ -3607,7 +3607,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
     {
         IPropertyTree &cluster = iter->query();
         const char *planeName = cluster.queryProp("@name");
-        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+        Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, true);
         if (isAbsolutePath(plane->queryPrefix())) // if url (i.e. not absolute prefix path) don't touch
         {
             if (isContainerized())
