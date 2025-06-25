@@ -4116,7 +4116,7 @@ public:
     {
         IPropertyTree *apiInfo = xml->getPropTree("storageapi");
         if (apiInfo)
-            return new CStorageApiInfo(xml);
+            return new CStorageApiInfo(apiInfo);
         return nullptr;
     }
 
