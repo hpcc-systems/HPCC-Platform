@@ -1367,18 +1367,16 @@ public:
         offset_t sz;
         CDateTime dt;
         Owned<IPropertyTree> branch;
-        StringBuffer tmp;
         bool found;
         {
             CheckTime ct("checkOrphanPhysicalFile ");
             found = checkOrphanPhysicalFile(rfn,sz,dt);
-            if (ct.slow()) {
-                rfn.getPath(tmp.clear());
-                ct.appendMsg(tmp.str());
-            }
+            if (ct.slow())
+                ct.appendMsg(filePath.str());
         }
         if (found)
         {
+            StringBuffer tmp;
             addOrphanPartNode(branch,rfn.queryEndpoint(),0,false);
             branch->setPropInt64("Size",sz);
             branch->setProp("Partmask",filePath.str());
