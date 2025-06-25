@@ -410,6 +410,7 @@ constexpr TraceFlags traceFilters = TraceFlags::flag6;
 constexpr TraceFlags traceKafka = TraceFlags::flag7;
 constexpr TraceFlags traceJava = TraceFlags::flag8;
 constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
+constexpr TraceFlags traceDaFsClient = TraceFlags::flag10;          // dafilesrv client tracing
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -472,6 +473,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
     TRACEOPT(traceAcknowledge),
+    TRACEOPT(traceDaFsClient),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
@@ -493,6 +495,7 @@ constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
     TRACEOPT(traceMax),
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
+    TRACEOPT(traceDaFsClient),
 };
 
 constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions

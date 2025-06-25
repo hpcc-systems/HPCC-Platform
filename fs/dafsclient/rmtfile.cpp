@@ -228,7 +228,12 @@ class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
     CIArrayOf<CDaliServixFilter> filters;
     StringAttr forceRemotePattern;
     CriticalSection secretCrit;
-    std::unordered_map<std::string, std::tuple<unsigned, std::string>> endpointMap;
+    struct EndpointData
+    {
+        unsigned count;
+        std::string secret;
+    };
+    std::unordered_map<std::string, EndpointData> endpointMap;
 
     void addFilter(CDaliServixFilter *filter)
     {
@@ -371,7 +376,7 @@ public:
             auto it = endpointMap.find(endpointStr.str());
             if (it != endpointMap.end())
             {
-                storageSecret.append(std::get<1>(it->second).c_str());
+                storageSecret.append(it->second.secret.c_str());
                 if (0 == storageSecret.length())
                 {
                     VStringBuffer secureUrl("https://%s", endpointStr.str());
@@ -387,14 +392,23 @@ public:
         auto it = endpointMap.find(endpoint);
         if (it == endpointMap.end())
             endpointMap[endpoint] = { 1, optSecret ? optSecret : "" };
+        else
+            it->second.count++;
     }
     virtual void removeSecretEndpoint(const char *endpoint) override
     {
         CriticalBlock b(secretCrit);
         auto it = endpointMap.find(endpoint);
-        assertex(it != endpointMap.end());
-        if (--std::get<0>(it->second) == 0)
+        if (it == endpointMap.end())
+        {
+            if (doTrace(traceDaFsClient, traceDetailed))
+                DBGLOG("CDaliServixIntercept::removeSecretEndpoint - endpoint %s not found", endpoint);
+            return;
+        }
+        if (1 == it->second.count)
             endpointMap.erase(it);
+        else
+            it->second.count--;
     }
 } *DaliServixIntercept = NULL;
 
