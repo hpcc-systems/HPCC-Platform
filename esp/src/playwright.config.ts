@@ -1,24 +1,34 @@
 import { defineConfig, devices } from "@playwright/test";
-import { baseURL } from "./tests/global";
+import { baseURL, setBaseURL } from "./tests/global";
+
+const isCI = !!process.env.CI;
+if (isCI) {
+    setBaseURL("http://127.0.0.1:8010");
+} else {
+    setBaseURL("http://127.0.0.1:8080");
+}
+
+console.log("target URL", baseURL);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
+
 export default defineConfig({
     testDir: "./tests",
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 1,
-    workers: process.env.CI ? 1 : "80%",
-    timeout: process.env.CI ? 60_000 : 20_000,
+    forbidOnly: isCI,
+    retries: isCI ? 2 : 1,
+    workers: isCI ? "50%" : "80%",
+    timeout: isCI ? 60_000 : 20_000,
     expect: {
-        timeout: process.env.CI ? 30_000 : 10_000
+        timeout: isCI ? 30_000 : 10_000
     },
     reporter: "html",
     use: {
         baseURL: `${baseURL}/esp/files/`,
         trace: "on-first-retry",
         screenshot: "on-first-failure",
-        video: process.env.CI ? undefined : "on-first-retry",
+        video: isCI ? undefined : "on-first-retry",
         ignoreHTTPSErrors: true
     },
 
@@ -37,25 +47,26 @@ export default defineConfig({
             use: { ...devices["Desktop Chrome"] },
             dependencies: ["setup"]
         },
-        {
-            name: "firefox",
-            use: { ...devices["Desktop Firefox"] },
-            dependencies: ["setup"]
-        },
-        {
-            name: "webkit",
-            use: { ...devices["Desktop Safari"] },
-            dependencies: ["setup"],
-
-        }
+        ...(isCI ? [] : [
+            {
+                name: "firefox",
+                use: { ...devices["Desktop Firefox"] },
+                dependencies: ["setup"]
+            },
+            {
+                name: "webkit",
+                use: { ...devices["Desktop Safari"] },
+                dependencies: ["setup"],
+            }
+        ])
     ],
 
     /* Run your local dev server before starting the tests */
-    webServer: {
+    webServer: !isCI ? {
         command: "npm run start",
         url: baseURL,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: !isCI,
         ignoreHTTPSErrors: true,
         stdout: "pipe"
-    },
+    } : undefined,
 });
