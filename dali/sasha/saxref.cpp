@@ -1333,6 +1333,7 @@ public:
             StringBuffer tmp(LOGPFX "listOrphans reading ");
             rfn.getRemotePath(tmp);
             EXCLOG(e,tmp.str());
+            e->Release();
         }
         return false;
     }
@@ -1432,6 +1433,7 @@ public:
         }
         catch (IException *e) {
             EXCLOG(e,"CNewXRefManager::listOrphans");
+            e->Release();
             return;
         }
         // treat drive differently for orphans (bit silly but bward compatible
@@ -1803,6 +1805,7 @@ public:
                         StringBuffer tmp(LOGPFX "Checking file ");
                         rfn.getRemotePath(tmp);
                         EXCLOG(e, tmp.str());
+                        e->Release();
                         ok = false;
                     }
                     if (!ok)
