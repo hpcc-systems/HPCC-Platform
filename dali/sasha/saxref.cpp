@@ -1366,7 +1366,6 @@ public:
         rfn.setPath(ep, filePath.str());
         offset_t sz;
         CDateTime dt;
-        Owned<IPropertyTree> branch;
         bool found;
         {
             CheckTime ct("checkOrphanPhysicalFile ");
@@ -1377,6 +1376,7 @@ public:
         if (found)
         {
             StringBuffer tmp;
+            Owned<IPropertyTree> branch;
             addOrphanPartNode(branch,rfn.queryEndpoint(),0,false);
             branch->setPropInt64("Size",sz);
             branch->setProp("Partmask",filePath.str());
