@@ -66,7 +66,7 @@ module.exports = function (env) {
                                     if (filename.endsWith('.js')) {
                                         const asset = compilation.assets[filename];
                                         const source = asset.source();
-                                        const newSource = source.replace(/["']use strict["'];?\s*/g, '');
+                                        const newSource = source.replace(/["']use strict["'];?\s*/g, "\n");
                                         if (source !== newSource) {
                                             compilation.assets[filename] = new webpack.sources.RawSource(newSource);
                                         }
@@ -104,7 +104,7 @@ module.exports = function (env) {
                         loader: "source-map-loader",
                         options: {
                             filterSourceMappingUrl: (url, resourcePath) => {
-                                if (resourcePath.includes("node_modules") && !resourcePath.includes("hpcc-js")) {
+                                if (resourcePath.includes("node_modules")) {
                                     return false;
                                 }
                                 return true;
