@@ -440,7 +440,7 @@ define([
         },
 
         _onOpenJira: function (evt) {
-            this._openNewTab("https://track.hpccsystems.com/issues");
+            this._openNewTab("https://hpccsystems.atlassian.net/issues");
         },
 
         _onOpenForums: function (evt) {
