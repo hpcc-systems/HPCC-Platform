@@ -169,6 +169,8 @@ public:
 
         name = plane.queryProp("@name");
         prefix = plane.queryProp("@prefix", "");
+        category = plane.queryProp("@category", "");
+
         for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
         {
             const PlaneAttributeInfo &attrInfo = planeAttributeInfo[propNum];
@@ -268,7 +270,7 @@ public:
         }
         return LINK(bestMatch);
     }
-    virtual IStorageApiInfo *getStorageApiInfo()
+    virtual IStorageApiInfo *getStorageApiInfo() const
     {
         IPropertyTree *apiInfo = config->getPropTree("storageapi");
         if (apiInfo)
@@ -285,6 +287,8 @@ public:
 
     const IPropertyTree * queryConfig() const { return config; }
 
+    const char * queryCategory() const { return category.c_str(); }
+
     unsigned __int64 getAttribute(PlaneAttributeType attr) const
     {
         assertex(attr < PlaneAttributeCount);
@@ -294,6 +298,7 @@ public:
 private:
     std::string name;
     std::string prefix;
+    std::string category;
     std::array<unsigned __int64, PlaneAttributeCount> values;
     Linked<const IPropertyTree> config;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
@@ -344,8 +349,6 @@ static const CStoragePlane * doFindStoragePlaneFromPath(const char *filePath)
     return nullptr;
 }
 
-#if 0
-//MORE: Not yet used
 static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool required)
 {
     auto it = planeAttributesMap.find(name);
@@ -357,7 +360,6 @@ static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool re
 
     return nullptr;
 }
-#endif
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -642,15 +644,12 @@ void getPlaneHosts(StringArray &hosts, const IPropertyTree *plane)
 //MORE: This could be cached
 static IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
 {
-    VStringBuffer xpath("storage/planes[@name='%s']", name);
-    Owned<IPropertyTree> match = getGlobalConfigSP()->getPropTree(xpath);
+    CriticalBlock b(planeAttributeMapCrit);
+    const CStoragePlane * match = doFindStoragePlaneByName(name, required);
     if (!match)
-    {
-        if (required)
-            throw makeStringExceptionV(-1, "Unknown storage plane '%s'", name);
         return nullptr;
-    }
-    const char * category = match->queryProp("@category");
+
+    const char * category = match->queryCategory();
     auto r = std::find(categories.begin(), categories.end(), category);
     if (r == categories.end())
     {
@@ -659,7 +658,8 @@ static IStoragePlane * getStoragePlane(const char * name, const std::vector<std:
         return nullptr;
     }
 
-    return new CStoragePlane(*match);
+    IStoragePlane * result = const_cast<CStoragePlane *>(match); // temporary cast
+    return LINK(result);
 }
 
 IStoragePlane * getDataStoragePlane(const char * name, bool required)

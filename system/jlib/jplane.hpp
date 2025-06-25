@@ -104,7 +104,7 @@ interface IStoragePlane: extends IInterface
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
-    virtual IStorageApiInfo *getStorageApiInfo() = 0;
+    virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;
 };
 
