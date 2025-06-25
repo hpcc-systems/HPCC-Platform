@@ -11,7 +11,7 @@ Return a copy of the input data with XML-restricted characters replaced by chara
 
 ###### HPCC-28673
 
-https://track.hpccsystems.com/browse/HPCC-28673
+https://hpccsystems.atlassian.net/browse/HPCC-28673
 
 Insertion of content containing XML-restricted characters into the script context as element content does not behave as expected. Given operations `<es:set-value target="unencoded" select="'<tag/>'"/>` and `<es:set-value target="encodeded" select="'&lt;tag/&gt;')"/>`, both `unencoded` and `encoded` evaluate to `<tag/>`, when `encoded` is expected to be `&lt;tag/&gt;`.
 
