@@ -108,6 +108,8 @@ interface IStoragePlane: extends IInterface
     virtual bool isAccessible() const = 0;
 };
 
+extern jlib_decl const IStoragePlane * getStoragePlaneByName(const char * name, bool required);
+extern jlib_decl const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool required);
 extern jlib_decl const IStoragePlane * getDataStoragePlane(const char * name, bool required);
 extern jlib_decl const IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
 extern jlib_decl IStoragePlane * createStoragePlane(IPropertyTree *meta);

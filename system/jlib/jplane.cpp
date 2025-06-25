@@ -170,6 +170,7 @@ public:
         name = plane.queryProp("@name");
         prefix = plane.queryProp("@prefix", "");
         category = plane.queryProp("@category", "");
+        devices = config->getPropInt("@numDevices", 1);
 
         for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
         {
@@ -191,7 +192,7 @@ public:
                             value *= attrInfo.scale;
                         }
                     }
-                    values[propNum] = value;
+                    attributeValues[propNum] = value;
                     break;
                 }
                 case PlaneAttrType::boolean:
@@ -210,7 +211,7 @@ public:
                     }
                     else
                         value = unsetPlaneAttrValue;
-                    values[propNum] = value;
+                    attributeValues[propNum] = value;
                     break;
                 }
                 default:
@@ -228,9 +229,9 @@ public:
             hosts.emplace_back(planeHosts.item(h));
     }
 
-    virtual const char * queryPrefix() const override { return config->queryProp("@prefix"); }
+    virtual const char * queryPrefix() const override { return prefix.c_str(); }
 
-    virtual unsigned numDevices() const override { return config->getPropInt("@numDevices", 1); }
+    virtual unsigned numDevices() const override { return devices; }
 
     virtual const std::vector<std::string> &queryHosts() const override
     {
@@ -292,14 +293,15 @@ public:
     unsigned __int64 getAttribute(PlaneAttributeType attr) const
     {
         assertex(attr < PlaneAttributeCount);
-        return values[attr];
+        return attributeValues[attr];
     }
 
 private:
     std::string name;
     std::string prefix;
     std::string category;
-    std::array<unsigned __int64, PlaneAttributeCount> values;
+    unsigned devices{1};
+    std::array<unsigned __int64, PlaneAttributeCount> attributeValues;
     Linked<const IPropertyTree> config;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
     std::vector<std::string> hosts;
@@ -335,17 +337,21 @@ MODULE_EXIT()
 
 
 //The following static functions must be called with the planeAttributeMapCrit held
-static const CStoragePlane * doFindStoragePlaneFromPath(const char *filePath)
+static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool required)
 {
     for (auto &e: planeAttributesMap)
     {
         const char *prefix = e.second.queryPrefix();
         if (!isEmptyString(prefix)) // sanity check, std::string cannot be null, so check if empty
         {
-            if (startsWith(filePath, prefix))
+            if (startsWith(path, prefix))
                 return &e.second;
         }
     }
+
+    if (required)
+        throw makeStringExceptionV(99, "Could not map filename to storage plane %s", path);
+
     return nullptr;
 }
 
@@ -392,6 +398,28 @@ IPropertyTreeIterator * getRemoteStoragesIterator()
 
 //------------------------------------------------------------------------------------------------------------
 
+const IStoragePlane * getStoragePlaneByName(const char * name, bool required)
+{
+    CriticalBlock b(planeAttributeMapCrit);
+    const CStoragePlane *e = doFindStoragePlaneByName(name, required);
+    if (!e)
+        return nullptr;
+
+    LINK(e);
+    return e;
+}
+
+const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool required)
+{
+    CriticalBlock b(planeAttributeMapCrit);
+    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, required);
+    if (!e)
+        return nullptr;
+
+    LINK(e);
+    return e;
+}
+
 //MORE: Revisit every call to this function to see if it can be replaced with a more specialized call
 const IPropertyTree * getStoragePlane(const char * name, bool required)
 {
@@ -435,7 +463,7 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
 const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
 {
     CriticalBlock b(planeAttributeMapCrit);
-    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath);
+    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, false);
     if (!e)
         return nullptr;
 
@@ -443,10 +471,11 @@ const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
     return result;
 }
 
+
 bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue)
 {
     CriticalBlock b(planeAttributeMapCrit);
-    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath);
+    const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, false);
     if (e)
     {
         unsigned __int64 value = e->getAttribute(planeAttrType);
