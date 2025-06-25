@@ -250,7 +250,7 @@ bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogical
     if (!isEmptyString(groupName))
     {
 #ifdef _CONTAINERIZED
-        Owned<IPropertyTree> plane = getStoragePlane(groupName);
+        Owned<const IPropertyTree> plane = getStoragePlane(groupName, false);
         if (plane)
             defaultFolder.append(plane->queryProp("@prefix"));
 #else

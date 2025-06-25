@@ -558,7 +558,7 @@ void CHThorDiskWriteActivity::resolve()
                 getDefaultStoragePlane(planeName);
             bool outputCompressionDefault = agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized());
             outputPlaneCompressed = outputCompressionDefault;
-            Owned<IPropertyTree> plane = getStoragePlane(planeName);
+            Owned<const IPropertyTree> plane = getStoragePlane(planeName, false);
             if (plane)
                 outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
         }

@@ -52,8 +52,8 @@ public:
             WARNLOG("Failed to get default debug plane");
             return;
         }
-        Owned<IPropertyTree> plane = getStoragePlane(planeName);
-        verifyex(plane && plane->getProp("@prefix", debugDir));
+        Owned<const IPropertyTree> plane = getStoragePlane(planeName, true);
+        verifyex(plane->getProp("@prefix", debugDir));
 
         stopped = false;
         Thread::start(false);

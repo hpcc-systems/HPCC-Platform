@@ -95,8 +95,7 @@ class CExceptionInterceptor : implements IExceptionIntercept
             WARNLOG("Exception handlers configured, but debug plane is missing");
             return;
         }
-        Owned<IPropertyTree> plane = getStoragePlane(planeName);
-        assertex(plane);
+        Owned<const IPropertyTree> plane = getStoragePlane(planeName, true);
         verifyex(plane->getProp("@prefix", debugDir));
 #else
         verifyex(getConfigurationDirectory(nullptr, "temp", nullptr, "debug", debugDir));

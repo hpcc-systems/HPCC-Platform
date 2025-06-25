@@ -176,11 +176,16 @@ IPropertyTree * getHostGroup(const char * name, bool required)
     return nullptr;
 }
 
-IPropertyTree * getStoragePlane(const char * name)
+const IPropertyTree * getStoragePlane(const char * name, bool required)
 {
-    VStringBuffer xpath("storage/planes[@name='%s']", name);
-    Owned<IPropertyTree> global = getGlobalConfig();
-    return global->getPropTree(xpath);
+    CriticalBlock b(planeAttributeMapCrit);
+    auto it = planeAttributesMap.find(name);
+    if (it != planeAttributesMap.end())
+        return LINK(it->second.queryConfig());
+
+    if (required)
+        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+    return nullptr;
 }
 
 IPropertyTree * getRemoteStorage(const char * name)
@@ -388,7 +393,7 @@ static IPropertyTree *getPlaneHostGroup(IPropertyTree *plane)
 
 unsigned getNumPlaneStripes(const char *clusterName)
 {
-    Owned<IPropertyTree> storagePlane = getStoragePlane(clusterName);
+    Owned<const IPropertyTree> storagePlane = getStoragePlane(clusterName, false);
     if (!storagePlane)
     {
         OWARNLOG("lookupNumStripedDevices: Storage plane %s not found", clusterName);

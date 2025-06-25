@@ -193,7 +193,7 @@ static IPropertyTree *getEmptyAttr()
 
 static IPropertyTree *getCostPropTree(const char *cluster)
 {
-    Owned<IPropertyTree> plane = getStoragePlane(cluster);
+    Owned<const IPropertyTree> plane = getStoragePlane(cluster, false);
 
     if (plane && plane->hasProp("cost/@storageAtRest"))
     {
@@ -11589,8 +11589,8 @@ public:
                         groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
 
                         const char *remotePlaneName = tree->queryProp("@group");
-                        Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
-                        assertex(filePlane);
+                        Owned<const IPropertyTree> filePlane = getStoragePlane(remotePlaneName, true);
+
                         // Used by DFS clients to determine if stripe and/or alias translation needed
                         tree->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
                     }

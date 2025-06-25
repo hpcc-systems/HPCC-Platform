@@ -2675,7 +2675,7 @@ static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOp
     if (!getDefaultPlane(planeName, componentOption, category))
         return false;
 
-    Owned<IPropertyTree> storagePlane = getStoragePlane(planeName);
+    Owned<const IPropertyTree> storagePlane = getStoragePlane(planeName, true);
     return storagePlane->getProp("@prefix", ret);
 }
 #endif
@@ -2685,7 +2685,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
 #ifdef _CONTAINERIZED
     if (streq(category, "data"))
     {
-        Owned<IPropertyTree> storagePlane = getStoragePlane(instance);
+        Owned<const IPropertyTree> storagePlane = getStoragePlane(instance, false);
         if (!storagePlane)
             throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
         return storagePlane->getProp("@prefix", dirout);

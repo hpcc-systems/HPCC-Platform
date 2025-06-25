@@ -453,10 +453,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             throw makeStringException(99, "Missing / in azureblob: file reference");
 
         StringBuffer planeName(slash-filename, filename);
-        Owned<IPropertyTree> plane = getStoragePlane(planeName);
-        if (!plane)
-            throw makeStringExceptionV(99, "Unknown storage plane %s", planeName.str());
-
+        Owned<const IPropertyTree> plane = getStoragePlane(planeName, true);
         IPropertyTree * storageapi = plane->queryPropTree("storageapi");
         if (!storageapi)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());

@@ -28,7 +28,7 @@ interface IPropertyTree;
 interface IPropertyTreeIterator;
 
 extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
-extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
+extern jlib_decl const IPropertyTree * getStoragePlane(const char * name, bool required);
 extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
 extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
 extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
