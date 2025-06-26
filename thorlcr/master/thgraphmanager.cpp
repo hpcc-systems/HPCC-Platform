@@ -540,6 +540,9 @@ bool CJobManager::fireException(IException *e)
 bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep)
 {
     Owned<IException> exception;
+    TraceFlags startTraceFlags = queryTraceFlags();
+    COnScopeExit restoreTraceFlags([&](){ updateTraceFlags(startTraceFlags, true); });
+
     try
     {
         unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
@@ -548,6 +551,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
         dbgassertex(existingLogHandler);
         if (existingLogHandler->queryMaxDetail() != maxLogDetail)
             verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+        updateTraceFlags(wuLoadTraceFlags(workunit, thorTraceOptions, startTraceFlags), true);
 
         if (!workunit) // check workunit is available and ready to run.
             throw MakeStringException(0, "Could not locate workunit %s", wuid);

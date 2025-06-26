@@ -536,7 +536,7 @@ void dfscsv(const char *logicalNameMask,IUserDescriptor *udesc,StringBuffer &out
     const char *mask = isEmptyString(logicalNameMask) ? "*" : logicalNameMask;
 
     unsigned start = msTick();
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(mask,udesc,true,false,nullptr);
+    IPropertyTreeIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(mask,udesc,true,false,nullptr);
     StringBuffer ln;
     unsigned i;
     for (i=0;fields[i];i++) {
@@ -1408,7 +1408,7 @@ void checksubfile(const char *lfn)
 
 void listexpires(const char * lfnmask, IUserDescriptor *user)
 {
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
+    IPropertyTreeIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
         IPropertyTree &attr=iter->query();
         if (attr.hasProp("@expireDays"))
@@ -1694,7 +1694,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name)
 {
     if (!name)
         name = "*";
-    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(name, user, true, true);
+    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(name, user, true, true);
     ForEach(*iter)
     {
         IPropertyTree &attr = iter->query();
@@ -2287,7 +2287,7 @@ void checkFileSize(IUserDescriptor *user, const char *lfnPattern, bool fix)
     if (containsWildcard(lfnPattern))
     {
         unsigned count = 0;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnPattern, user, true, false); // no supers
+        Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnPattern, user, true, false); // no supers
         CCycleTimer timer;
         if (iter->first())
         {

@@ -289,10 +289,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 free(encryptedKey);
             }
             IFileIO *fileIO;
-            if (nullptr != eexp.get())
-                fileIO = createCompressedFileReader(iFile, eexp);
-            else if (compressed)
-                fileIO = createCompressedFileReader(iFile);
+            if (nullptr != eexp.get() || compressed)
+                fileIO = createCompressedFileReader(iFile, eexp, useDefaultIoBufferSize, false, IFEnone);
             else
                 fileIO = iFile->open(IFOread);
             if (!fileIO)
@@ -1775,6 +1773,7 @@ public:
 
         OwnedPtr<CThorPerfTracer> perf;
         JobNameScope activeJobName;
+        TraceFlags startTraceFlags = queryTraceFlags();
         while (!stopped && queryNodeComm().recv(msg, 0, managerWorkerMpTag))
         {
             doReply = true;
@@ -1889,6 +1888,8 @@ public:
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
 
+                        updateTraceFlags(wuLoadTraceFlags(workUnitInfo, thorTraceOptions, startTraceFlags), true);
+
                         unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
                         unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxlogdetail", defaultConfigLogLevel);
                         ILogMsgFilter *existingLogFilter = queryLogMsgManager()->queryMonitorFilter(logHandler);
@@ -1954,6 +1955,7 @@ public:
                         }
                         jobs.removeExact(job);
                         DBGLOG("QueryDone, removed %s from jobs", key.get());
+                        updateTraceFlags(startTraceFlags, true);
 
                         // reset for next job
                         setProcessAborted(false);

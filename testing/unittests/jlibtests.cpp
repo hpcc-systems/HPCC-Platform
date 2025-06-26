@@ -50,7 +50,7 @@ class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibTraceTest);
-        //Invalid since tracemanager initialized at component load time 
+        //Invalid since tracemanager initialized at component load time
         //CPPUNIT_TEST(testTraceDisableConfig);
         CPPUNIT_TEST(testStringArrayPropegatedServerSpan);
         CPPUNIT_TEST(testDisabledTracePropegatedValues);
@@ -268,7 +268,7 @@ protected:
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
             //14:49:13.776139   904 MsTickOffset span actual start-time timestamp: 1702669753775893057
-            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d", 
+            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d",
             //"start": 1702669753725771035, "duration": 50285323 }
             //Actual start - declared start: 1702669753775893057-1702669753725771035 = 50162022
         }
@@ -283,7 +283,7 @@ protected:
             //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
             MilliSleep(75);
 
-            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663", 
+            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663",
             //"start": 1702668157790080022,
             //"duration": 75316248 }
         }
@@ -321,13 +321,13 @@ protected:
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
-            serverSpan->recordError(SpanError("Error Message!!", 23, true, false)); 
+            serverSpan->recordError(SpanError("Error Message!!", 23, true, false));
         }//{ "type": "span", "name": "containsErrorAndMessageFailedNotEscapedSpan", "trace_id": "02f4b2d215f8230b15063862f8a91e41", "span_id": "c665ec371d6db147", "start": 1709675573581678954, "duration": 3467489486, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675576145074240, "attributes": {"code": 23,"escaped": 0,"message": "Error Message!!" } } ] }
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
             serverSpan->recordException( makeStringExceptionV(76,"Mock exception"), false, false);
-        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ] 
+        }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ]
 
         {
             OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
@@ -725,7 +725,7 @@ protected:
         {
             Owned<IProperties> spanContext = createProperties();
             ISpan * activeSpan =  queryThreadedActiveSpan();
-            
+
             CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
 
             activeSpan->getSpanContext(spanContext);
@@ -784,7 +784,7 @@ protected:
             //15:07:56.490232  3788 720009f32a9db04f68f2b6545717ebe5 a7ef8749b5926acf This log entry should report traceID: '720009f32a9db04f68f2b6545717ebe5' and spanID: 'a7ef8749b5926acf'
         }
     }
-    
+
     void testInvalidPropegatedServerSpan()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
@@ -950,7 +950,7 @@ protected:
     void testStringArrayPropegatedServerSpan()
     {
         StringArray mockHTTPHeadersSA;
-        //mock opentel traceparent context 
+        //mock opentel traceparent context
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
         //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
         mockHTTPHeadersSA.append("tracestate:hpcc=4b960b3e4647da3f");
@@ -3396,7 +3396,303 @@ Nothing_toEncodeHere:
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
+/*
+ * PTree serialization tests
+ *
+ *   Test PTree serialization format matches from MemoryBuffer to IBufferedSerialInputStream
+ *
+ */
 
+#include "platform.h"
+#include "jfile.ipp"
+#include "jptree.hpp"
+#include "jptree.ipp"
+#include "jiface.hpp"
+#include "jio.hpp"
+#include "jstring.hpp"
+#include <string>
+
+class PTreeSerializationTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeSerializationTest);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamForRootOnlyPTree);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamForCompatibilityConfigPropertyTree);
+    CPPUNIT_TEST(testSerializeVsSerializeToStreamForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+    Owned<IPropertyTree> originalTree;
+
+public:
+    void testSerializeVsSerializeToStreamForRootOnlyPTree()
+    {
+        testSerializeVsSerializeToStream(__func__, createPTree("EmptyRoot"));
+    }
+
+    void testSerializeVsSerializeToStreamForCompatibilityConfigPropertyTree()
+    {
+        testSerializeVsSerializeToStream(__func__, createCompatibilityConfigPropertyTree());
+    }
+
+    void testSerializeVsSerializeToStreamForBinaryDataCompressionTestPTree()
+    {
+        testSerializeVsSerializeToStream(__func__, createBinaryDataCompressionTestPTree());
+    }
+
+protected:
+    void testSerializeVsSerializeToStream(const char *testName, IPropertyTree *_originalTree)
+    {
+        originalTree.setown(_originalTree);
+
+        DBGLOG("Starting timing test for %s", testName);
+
+        // Time serialize() method
+        MemoryBuffer memBufOriginalTree;
+        CCycleTimer timer;
+        originalTree->serialize(memBufOriginalTree);
+        __uint64 serializedElapsedNs = timer.elapsedNs();
+
+        // Time serializeToStream() method
+        MemoryBuffer memoryBufferStream;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(memoryBufferStream);
+        timer.reset();
+        originalTree->serializeToStream(*out);
+        out->flush();
+        __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
+
+        // Convert to milliseconds for display
+        double serializeTimeMs = serializedElapsedNs / 1e6;
+        double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
+
+        DBGLOG("Timing results for %s:", testName);
+        DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
+        DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
+        DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
+
+        // Compare memoryBufferStream to memBufOriginalTree using memcmp
+        CPPUNIT_ASSERT_EQUAL(memBufOriginalTree.length(), memoryBufferStream.length());
+        CPPUNIT_ASSERT(memcmp(memBufOriginalTree.toByteArray(), memoryBufferStream.toByteArray(), memBufOriginalTree.length()) == 0);
+    }
+
+    IPropertyTree *createCompatibilityConfigPropertyTree()
+    {
+        // Creates a complex nested property tree with multiple compatibility elements for serialization testing
+        Owned<IPropertyTree> root = createPTree("__array__");
+
+        // Helper lambda to add property elements with name/value attributes
+        auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
+        {
+            IPropertyTree *prop = parent->addPropTree("property");
+            prop->setProp("@name", name);
+            if (value)
+                prop->setProp("@value", value);
+        };
+
+        // Helper lambda to add operation/accepts/uses elements
+        auto addNamedElement = [](IPropertyTree *parent, const char *elementName, const char *name, const char *presence)
+        {
+            IPropertyTree *elem = parent->addPropTree(elementName);
+            elem->setProp("@name", name);
+            elem->setProp("@presence", presence);
+        };
+
+        // Helper lambda to add valueType elements with maskStyle children
+        auto addValueType = [](IPropertyTree *parent, const char *name, const char *presence, bool addMaskStyle = false, const char *setName = nullptr)
+        {
+            IPropertyTree *valueType = parent->addPropTree("valueType");
+            valueType->setProp("@name", name);
+            valueType->setProp("@presence", presence);
+
+            if (addMaskStyle)
+            {
+                IPropertyTree *maskStyle1 = valueType->addPropTree("maskStyle");
+                maskStyle1->setProp("@name", "keep-last-4-numbers");
+                maskStyle1->setProp("@presence", "r");
+
+                IPropertyTree *maskStyle2 = valueType->addPropTree("maskStyle");
+                maskStyle2->setProp("@name", "mask-last-4-numbers");
+                maskStyle2->setProp("@presence", "o");
+            }
+
+            if (setName)
+            {
+                IPropertyTree *set = valueType->addPropTree("Set");
+                set->setProp("@name", setName);
+                set->setProp("@presence", "r");
+            }
+        };
+
+        // Helper lambda to add rule elements
+        auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
+        {
+            IPropertyTree *rule = parent->addPropTree("rule");
+            rule->setProp("@contentType", contentType);
+            rule->setProp("@presence", presence);
+        };
+
+        // First compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            // Context
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set", "*");
+            addProperty(context, "rule-set", "*");
+
+            // Operations
+            addNamedElement(compat, "operation", "maskValue", "r");
+            addNamedElement(compat, "operation", "maskContent", "r");
+            addNamedElement(compat, "operation", "maskMarkupValue", "o");
+
+            // Accepts
+            addNamedElement(compat, "accepts", "valuetype-set", "r");
+            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-a", "r");
+            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-b", "r");
+            addNamedElement(compat, "accepts", "rule-set", "r");
+            addNamedElement(compat, "accepts", "rule-set:rule-set-2", "r");
+            addNamedElement(compat, "accepts", "required-acceptance", "r");
+            addNamedElement(compat, "accepts", "optional-acceptance", "o");
+
+            // Uses
+            addNamedElement(compat, "uses", "valuetype-set", "r");
+            addNamedElement(compat, "uses", "valuetype-set:value-type-set-a", "r");
+            addNamedElement(compat, "uses", "valuetype-set:value-type-set-b", "r");
+            addNamedElement(compat, "uses", "rule-set", "r");
+            addNamedElement(compat, "uses", "rule-set:rule-set-2", "r");
+            addNamedElement(compat, "uses", "required-acceptance", "p");
+            addNamedElement(compat, "uses", "optional-acceptance", "p");
+
+            // ValueTypes
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
+            addValueType(compat, "*", "r");
+
+            // Rules
+            addRule(compat, "", "r");
+            addRule(compat, "xml", "r");
+        }
+
+        // Second compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set", "value-type-set-a");
+            addProperty(context, "rule-set", "");
+
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
+
+            addRule(compat, "", "r");
+            addRule(compat, "xml", "r");
+        }
+
+        // Third compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set"); // No value attribute
+            addProperty(context, "rule-set", "rule-set-2");
+
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
+
+            addRule(compat, "", "p");
+            addRule(compat, "xml", "p");
+        }
+
+        // Fourth compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set", "value-type-set-b");
+            addProperty(context, "rule-set", "rule-set-2");
+
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
+
+            addRule(compat, "", "r");
+            addRule(compat, "xml", "r");
+        }
+
+        return root.getClear();
+}
+
+    IPropertyTree *createBinaryDataCompressionTestPTree()
+    {
+        // Create a tree with various binary data sizes to test compression thresholds
+        Owned<IPropertyTree> tree = createPTree(testXml);
+
+        // Add some regular properties first
+        tree->setProp("normalProp", "normalValue");
+        tree->setPropInt("intProp", 42);
+
+        // Create binary data of different sizes to test compression thresholds
+        MemoryBuffer largeBinary;
+
+        // Small binary data (under compression threshold)
+        const char *smallData = "This is small binary data";
+        tree->setPropBin("smallBinary", strlen(smallData), smallData);
+
+        // Large binary data (over PTREE_COMPRESS_THRESHOLD to trigger compression)
+        // PTREE_COMPRESS_THRESHOLD is typically 4KB based on the comment in the existing test
+        const size_t largeSize = 8 * 1024; // 8KB to ensure compression
+        largeBinary.ensureCapacity(largeSize);
+        for (size_t i = 0; i < largeSize; i++)
+            largeBinary.append((byte)(i % 256));
+        tree->setPropBin("largeBinary", largeBinary.length(), largeBinary.toByteArray());
+
+        // Add nested elements with binary data
+        IPropertyTree *subTree = tree->addPropTree("subElement");
+        subTree->setProp("subProp", "subValue");
+
+        MemoryBuffer nestedBinary;
+        const char *nestedData = "Nested binary content with some repetitive data for compression testing";
+        // Repeat the data to make it larger and more compressible
+        for (int i = 0; i < 100; i++)
+            nestedBinary.append(strlen(nestedData), nestedData);
+        subTree->setPropBin("nestedBinary", nestedBinary.length(), nestedBinary.toByteArray());
+
+        return tree.getClear();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializationTest");
 
 #include "jdebug.hpp"
 #include "jmutex.hpp"
@@ -3525,7 +3821,7 @@ public:
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
                 : startSem(_startSem), endSem(_endSem),
-                  lock1(_lock1), lock2(_lock2), 
+                  lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
             {
@@ -4698,7 +4994,7 @@ protected:
         CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
-        
+
         unsigned cipherlen = ciphertext1.length() - lenPrefix;
 
         /* Decrypt the ciphertext */
@@ -4783,8 +5079,8 @@ protected:
                 CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
                 E->Release();
             }
-        }        
-    // Note: Using OpenTelemetry null span 
+        }
+    // Note: Using OpenTelemetry null span
     }
 
     void test()

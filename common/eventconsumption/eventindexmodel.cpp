@@ -61,7 +61,7 @@ protected:
     bool onIndexLoad(CEvent& event)
     {
         ModeledPage page;
-        storage.describePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), page);
+        storage.describePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
         event.setValue(EvAttrReadTime, page.readTime);
         return true;
     }

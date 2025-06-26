@@ -84,7 +84,7 @@ static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, 
             Owned<IExpander> eexp;
             if (encryptionKey.length()!=0)
                 eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
-            inputfileio.setown(createCompressedFileReader(inputFile, eexp));
+            inputfileio.setown(createCompressedFileReader(inputFile, eexp, useDefaultIoBufferSize, false, IFEnone));
             if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
             {
                 inputfileio.setown(inputFile->open(IFOread));
