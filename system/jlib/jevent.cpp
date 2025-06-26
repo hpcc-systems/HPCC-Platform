@@ -105,7 +105,7 @@ struct EventInformation
 #define DALI_ATTRS            ATTR_HEADER, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
 #define FILEINFORMATION_ATTRS ATTR_HEADER, EvAttrFileId, EvAttrPath
 #define RECORDINGACTIVE_ATTRS ATTR_HEADER, EvAttrEnabled
-#define INDEXPAYLOAD_ATTRS    ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrInCache, EvAttrExpandTime, EvAttrExpandedSize
+#define INDEXPAYLOAD_ATTRS    ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrExpandTime, EvAttrExpandedSize
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -668,30 +668,28 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexPayload(unsigned fileid, offset_t offset, bool hit, __uint64 expandTime, size32_t size)
+void EventRecorder::recordIndexPayload(unsigned fileid, offset_t offset, __uint64 expandTime, size32_t size)
 {
     if (!isRecording())
         return;
 
     // Tracing all the payload hits could generate a lot of data (e.g. when smart stepping) - and it is not needed for cache
     // modelling, so allow it to be suppressed.
-    if (hit && suppressPayloadHits)
+    if ((expandTime == 0) && suppressPayloadHits)
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexPayload\", \"file\": %u, \"offset\"=0x%llx, \"kind\": %s, \"expandTime\": %llu, \"size\": %u }", fileid, offset, boolToStr(hit), expandTime, size);
+        TRACEEVENT("{ \"name\": \"IndexPayload\", \"file\": %u, \"offset\"=0x%llx, \"expandTime\": %llu, \"size\": %u }", fileid, offset, expandTime, size);
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, hit, expandTime, size);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, expandTime, size);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexPayload, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrFileOffset, offset);
-    write(pos, EvAttrInCache, hit);
     write(pos, EvAttrExpandTime, expandTime);
     write(pos, EvAttrExpandedSize, size);
     writeEventFooter(pos, requiredSize, writeOffset);
-
 }
 
 void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)

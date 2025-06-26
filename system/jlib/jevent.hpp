@@ -397,7 +397,7 @@ public:
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
-    void recordIndexPayload(unsigned fileid, offset_t offset, bool hit, __uint64 expandTime, size32_t size);
+    void recordIndexPayload(unsigned fileid, offset_t offset, __uint64 expandTime, size32_t size);
 
     void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliCommit(__int64 id, stat_type elapsedNs, size32_t dataSize);

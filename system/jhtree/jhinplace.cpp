@@ -1958,7 +1958,7 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
 
     const byte * payloadData = payload;
     bool recording = recordingEvents();
-    //If recording and and not expanding on demand, fake it so we can get accurate information about the lifetime
+    //If recording and not expanding on demand, fake it so we can get accurate information about the lifetime
     //of the expanded payload.
     if (expandPayloadOnDemand || recording)
     {
@@ -1994,8 +1994,8 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
 
         if (recording)
         {
-            unsigned __int64 expandTime = startTimer.elapsedNs();
-            queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), hit, expandTime, sizeExpanded);
+            unsigned __int64 expandTime = hit ? 0 : startTimer.elapsedNs();
+            queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), expandTime, sizeExpanded);
         }
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until
