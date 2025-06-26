@@ -492,13 +492,17 @@ int main(int argc, const char* argv[])
         recvbufsize = config->getPropInt("@rbSize");
     
     if (config->hasProp("@local"))
-        locallisten = true;
+        locallisten = config->getPropBool("@local", true); // i.e. hasProp means it's present, treat as true, unless value says otherwise
+
     if (config->hasProp("@noSSL"))
     {
-        if (connectMethod != SSLNone)
+        if (config->getPropBool("@noSSL", true)) // i.e. hasProp means it's present, treat as true, unless value says otherwise
         {
-            PROGLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
-            connectMethod = SSLNone;
+            if (connectMethod != SSLNone)
+            {
+                OWARNLOG("DaFileSrv SSL specified in config but overridden by --NOSSL in command line");
+                connectMethod = SSLNone;
+            }
         }
     }
 
