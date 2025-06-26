@@ -238,7 +238,9 @@ public:
     {
         ICoven &coven=queryCoven();
         ICommunicator &comm=coven.queryComm();
-        CMessageHandler<CLockRequestServer> handler("CLockRequestServer",this,&CLockRequestServer::processMessage);
+        unsigned maxThreads = 100; // NB: can exceed with up to 1s delay
+        maxThreads = getComponentConfigSP()->getPropInt("expert/@daliLockPoolLimit", maxThreads);
+        CMessageHandler<CLockRequestServer> handler("CLockRequestServer", this, &CLockRequestServer::processMessage, nullptr, maxThreads);
         stopped = false;
         CMessageBuffer mb;
         while (!stopped) {
