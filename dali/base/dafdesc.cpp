@@ -872,7 +872,7 @@ public:
                     Owned<IFileIO> partFileIO = partfile->open(IFOread);
                     if (partFileIO)
                     {
-                        Owned<IFileIO> compressedIO = createCompressedFileReader(partFileIO);
+                        Owned<IFileIO> compressedIO = createCompressedFileReader(partFileIO, nullptr, useDefaultIoBufferSize);
                         if (compressedIO)
                             ret = compressedIO->size();
                         else
@@ -1380,7 +1380,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 cluster->getReplicateDir(repDir, os);
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
             }
-            // else // I am not sure cluster can ever be null.
+            // NB: 'cluster' can be null if 'copy' does not map to an existing cluster in this file descriptor
+            // To maintain long standing previous behaviour, continue based on base directory
 
             // Adding striping and/or aliasing to path unless this is a IFileDescriptor constructed with absolute paths
             if (!hasMask(fileFlags, FileDescriptorFlags::absoluteparts))
@@ -1415,7 +1416,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                         }
                     }
                     StringBuffer stripeDir;
-                    // JCS - this is a safeguard, I think 'cluster' should always be set, and it should always have same # devices as remote plane
+                    // 'cluster' might be null if 'copy' is >0 and doesn't exist in this file descriptor
+                    // NB: if cluster is exists, numStripedDevices should match the number of devices in the plane 
                     unsigned numDevices = cluster ? cluster->queryPartDiskMapping().numStripedDevices : plane->numDevices();
                     addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, numDevices);
                     if (!stripeDir.isEmpty())

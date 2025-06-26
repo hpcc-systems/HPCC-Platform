@@ -2460,7 +2460,15 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                             GraphPrintLog(graph, e, "graphDone");
                             e->Release();
                         }
-                        graphInfo.clear(); // NB: at this point the graph will be destroyed
+                        graphInfo.clear();
+                        graph_id gid = graph->queryGraphId();
+                        if (doTrace(traceGraphDtor))
+                        {
+                            CCycleTimer timer;
+                            graph.clear(); // NB: at this point the graph will be destroyed
+                            // Not very satisfactory to use WARN, but default worker logging level default suppresses anything higher
+                            WARNLOG("CGraphExecutor: Destroyed graph, graphId=%" GIDPF "d, took %u ms", gid, timer.elapsedMs());
+                        }
                         if (e)
                             throw e.getClear();
                         if (!nextGraphInfo)
@@ -2495,7 +2503,13 @@ public:
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory();
-        graphPool.setown(createThreadPool("CGraphExecutor pool", factory, true, &jobChannel, limit));
+
+        // double the limit, so that finishing threads can clearup asynchronously (destruction of a graph can take a short time).
+        // NB: the limit of 'running' threads is imposed by a check on running.ordinality() in add()
+        // The delay should never be hit, but leaving as it was for now, in case the thread pools are lingering longer than
+        // expected.
+        constexpr unsigned delay = 1000;
+        graphPool.setown(createThreadPool("CGraphExecutor pool (delay=1000)", factory, true, &jobChannel, limit*2, delay));
     }
     ~CGraphExecutor()
     {

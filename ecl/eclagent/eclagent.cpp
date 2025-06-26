@@ -564,6 +564,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     }
     abortmonitor->setGuillotineCost(getGuillotineCost(wu));
     configurePreferredPlanes();
+    agentMachineCost = getMachineCostRate();
 }
 
 EclAgent::~EclAgent()
@@ -3003,7 +3004,7 @@ void EclAgent::deleteLRUPersists(const char * logicalName, unsigned keep)
     head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
 restart:     // If things change beneath us as we are deleting, repeat the process
     IArrayOf<IPropertyTree> persists;
-    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
+    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(), false, false, nullptr);
     ForEach(*iter)
     {
         IPropertyTree &pt = iter->query();

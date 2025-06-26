@@ -648,6 +648,7 @@ int main( int argc, const char *argv[]  )
         //MORE: What about updates to storage planes - they will not be passed through to the slaves
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
     }
+    updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
 #ifdef _DEBUG
     unsigned holdWorker = globals->getPropInt("@holdSlave", NotFound);
     if (0 == holdWorker) // manager
@@ -1053,10 +1054,10 @@ int main( int argc, const char *argv[]  )
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
 
-            if (globals->hasProp("@instanceNum"))
+            if (globals->hasProp("@instanceName"))
             {
-                unsigned instanceNum = globals->getPropInt("@instanceNum");
-                cloudJobName.appendf("%s-%d", thorName, instanceNum);
+                cloudJobName.append(thorName).append('-');
+                globals->getProp("@instanceName", cloudJobName);
             }
             else
                 cloudJobName.appendf("%s-%s", workunit, graphName);

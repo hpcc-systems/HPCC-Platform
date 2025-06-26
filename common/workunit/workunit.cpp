@@ -7043,6 +7043,29 @@ public:
 };
 //==========================================================================================
 
+static StringBuffer &getDebugPropName(StringBuffer &result, const char *propName)
+{
+    result.append("Debug/");
+    if (!strchr(propName, ':'))
+    {
+        size_t l = strlen(propName);
+        char *tgt = result.reserveTruncate(l);
+        while (l)
+        {
+            if (isupper(*propName))
+                *tgt = tolower(*propName);
+            else
+                *tgt = *propName;
+            ++propName;
+            ++tgt;
+            --l;
+        }
+    }
+    else
+        result.append(propName);
+    return result;
+}
+
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
 {
     clearCached(false);
@@ -8574,23 +8597,17 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    return p->hasProp(prop.append(lower));
+    return p->hasProp(lower);
 }
 
 IStringVal& CLocalWorkUnit::getDebugValue(const char *propname, IStringVal &str) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    str.set(p->queryProp(prop.append(lower).str()));
+    str.set(p->queryProp(lower));
     return str;
 }
 
@@ -8601,67 +8618,45 @@ IStringIterator& CLocalWorkUnit::getDebugValues() const
 
 IStringIterator& CLocalWorkUnit::getDebugValues(const char *prop) const
 {
-    CriticalBlock block(crit);
-    StringBuffer path("Debug/");
+    StringBuffer path;
     if (prop)
-    {
-        StringBuffer lower;
-        lower.append(prop);
-        if (!strchr(lower, ':'))
-            lower.toLowerCase();
-        path.append(lower);
-    }
+        getDebugPropName(path, prop);
     else
-        path.append("*");
+        path.append("Debug/*");
+    CriticalBlock block(crit);
     return *new CStringPTreeTagIterator(p->getElements(path.str()));
 }
 
 int CLocalWorkUnit::getDebugValueInt(const char *propname, int defVal) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    return p->getPropInt(prop.str(), defVal);
+    return p->getPropInt(lower, defVal);
 }
 
 __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    return p->getPropInt64(prop.str(), defVal);
+    return p->getPropInt64(lower, defVal);
 }
 
 double CLocalWorkUnit::getDebugValueReal(const char *propname, double defVal) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    return p->getPropReal(prop.str(), defVal);
+    return p->getPropReal(lower, defVal);
 }
 
 bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
 {
     StringBuffer lower;
-    lower.append(propname);
-    if (!strchr(lower, ':'))
-        lower.toLowerCase();
+    getDebugPropName(lower, propname);
     CriticalBlock block(crit);
-    StringBuffer prop("Debug/");
-    prop.append(lower);
-    return p->getPropBool(prop.str(), defVal);
+    return p->getPropBool(lower, defVal);
 }
 
 IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
@@ -8782,14 +8777,14 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     try
     {
         CriticalBlock block(crit);
-        StringBuffer prop("Debug/");
-        prop.append(lower);
-        if (overwrite || !p->hasProp(prop.str()))
+        IPropertyTree *debug = p->queryPropTree("Debug");
+        if (!debug)
         {
-            // MORE - not sure this line should be needed....
-            p->setProp("Debug", "");
-            p->setProp(prop.str(), value);
+            debug = p->setPropTree("Debug");
+            debug->setProp(lower, value);
         }
+        else if (overwrite || !debug->hasProp(lower))
+            debug->setProp(lower, value);
     }
     catch (IException * e)
     {
@@ -8879,14 +8874,14 @@ void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool over
     try
     {
         CriticalBlock block(crit);
-        StringBuffer prop("Debug/");
-        prop.append(lower);
-        if (overwrite || !p->hasProp(prop.str()))
+        IPropertyTree *debug = p->queryPropTree("Debug");
+        if (!debug)
         {
-            // MORE - not sure this line should be needed....
-            p->setProp("Debug", "");
-            p->setPropInt(prop.str(), value);
+            debug = p->setPropTree("Debug");
+            debug->setPropInt(lower, value);
         }
+        else if (overwrite || !debug->hasProp(lower))
+            debug->setPropInt(lower, value);
     }
     catch (IException * e)
     {
@@ -14843,13 +14838,30 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 #endif
 }
 
-TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & optNames, TraceFlags dft)
+TraceFlags wuLoadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & optNames, TraceFlags dft)
 {
     for (auto &o: optNames)
     {
         if (wu->hasDebugValue(o.name))
         {
             if (wu->getDebugValueBool(o.name, false))
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+    }
+    return dft;
+}
+
+TraceFlags wuLoadTraceFlags(const IPropertyTree * wuInfo, const std::initializer_list<TraceOption> & optNames, TraceFlags dft)
+{
+    for (auto &o: optNames)
+    {
+        StringBuffer lower;
+        getDebugPropName(lower, o.name);
+        if (wuInfo->hasProp(lower))
+        {
+            if (wuInfo->getPropBool(lower, false))
                 dft |= o.value;
             else
                 dft &= ~o.value;

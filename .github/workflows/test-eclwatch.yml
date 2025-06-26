@@ -3,20 +3,52 @@ name: Test ECL Watch (test-eclwatch.yml)
 on:
   workflow_call:
     inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
       asset-name:
         type: string
-        description: 'eclwatch asset name'
-        required: true
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
 
 jobs:
+
   build:
     name: "Test eclwatch"
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.os }}
 
     steps:
-      - uses: actions/checkout@v4
+
+      - name: Download Package
+        uses: actions/download-artifact@v4
         with:
-          submodules: "recursive"
+          name: ${{ inputs.asset-name }}
+          path: ${{ inputs.asset-name }}
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+          sudo apt-get install -y xmlstarlet
+          sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
+          sudo chown -R $USER:$USER /opt/HPCCSystems
+          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
+
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /etc/init.d/hpcc-init start
+
+      - uses: actions/checkout@v4
           
       - uses: actions/setup-node@v4
         with:
@@ -28,22 +60,14 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: ${{ github.workspace }}/esp/src
-        run: npx playwright install --with-deps
+        run: CI=1 npx playwright install --with-deps
 
       - name: Set Server IP
         working-directory: ${{ github.workspace }}/esp/src
         run: |
-          echo "https://play.hpccsystems.com:18010" > lws.target.txt
+          echo "http://localhost:8010" > lws.target.txt
           echo "" >> lws.target.txt
 
-      - name: Download Package
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.asset-name }}
-          merge-multiple: true
-          path: |
-            ${{ github.workspace }}/esp/src/build
-          
       - name: Test
         working-directory: ${{ github.workspace }}/esp/src
         run: npm run test-ci

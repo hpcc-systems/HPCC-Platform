@@ -174,6 +174,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
                 Sleep(5);
         }
 #endif
+        updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
+
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);

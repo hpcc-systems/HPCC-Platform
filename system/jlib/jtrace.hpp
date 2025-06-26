@@ -424,6 +424,7 @@ constexpr TraceFlags traceFilters = TraceFlags::flag6;
 constexpr TraceFlags traceKafka = TraceFlags::flag7;
 constexpr TraceFlags traceJava = TraceFlags::flag8;
 constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
+constexpr TraceFlags traceDaFsClient = TraceFlags::flag10;          // dafilesrv client tracing
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -441,6 +442,9 @@ constexpr TraceFlags traceAffinity = TraceFlags::flag27;
 constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
+
+// Specific to Thor
+constexpr TraceFlags traceGraphDtor = TraceFlags::flag16; // trace timing of graph destruction
 
 // Specific to dfuserver and dafilesrv
 constexpr TraceFlags traceSprayDetails = TraceFlags::flag16;
@@ -487,6 +491,17 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
     TRACEOPT(traceAcknowledge),
+    TRACEOPT(traceDaFsClient),
+};
+
+constexpr std::initializer_list<TraceOption> thorTraceOptions
+{
+    TRACEOPT(traceNone),
+    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceGraphDtor),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
@@ -509,6 +524,7 @@ constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
     TRACEOPT(traceMax),
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
+    TRACEOPT(traceDaFsClient),
 };
 
 constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions

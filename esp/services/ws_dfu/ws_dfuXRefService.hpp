@@ -202,7 +202,7 @@ class CWsDfuXRefEx : public CWsDFUXRef
     IXRefNode* getXRefNodeByCluster(const char* cluster);
     IUserDescriptor* getUserDescriptor(IEspContext& context);
     void updateSkew(IPropertyTree &node);
-    IDFAttributesIterator* getAllLogicalFilesInCluster(IEspContext &context, const char *cluster, bool &allMatchingFilesReceived);
+    IPropertyTreeIterator* getAllLogicalFilesInCluster(IEspContext &context, const char *cluster, bool &allMatchingFilesReceived);
     void findUnusedFilesWithDetailsInDFS(IEspContext &context, const char *process, const MapStringTo<bool> &usedFileMap, IArrayOf<IEspDFULogicalFile> &unusedFiles);
     const char* formatResult(IEspContext& context, IPropertyTree* result, StringBuffer& formatedResult);
     const char* formatResult(IEspContext& context, StringBuffer& result, StringBuffer& encodedResult);

@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <list>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -798,5 +799,27 @@ class CLRUCache
             return true;
         }
 };
+
+
+// Case-insensitive hash for std::string_view
+struct CaseInsensitiveHash
+{
+    std::size_t operator()(std::string_view key) const
+    {
+        return hashnc_fnv1a((const byte *)key.data(), key.size(), fnvInitialHash32);
+    }
+};
+
+// Case-insensitive equality for std::string_view for use in std maps
+struct CaseInsensitiveEqual
+{
+    bool operator()(std::string_view lhs, std::string_view rhs) const
+    {
+        if (lhs.size() != rhs.size())
+            return false;
+        return 0 == memicmp(lhs.data(), rhs.data(), lhs.size());
+    }
+};
+
 
 #endif

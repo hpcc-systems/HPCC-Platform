@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,21 +15,27 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _WSDFU_HELPERS_HPP__
-#define _WSDFU_HELPERS_HPP__
 
-#include "dadfs.hpp"
 
-#include "jstring.hpp"
-#include "exception_util.hpp"
-#include "ws_dfu_common_esp.ipp"
+#ifndef JSTREAMHELPERS_HPP
+#define JSTREAMHELPERS_HPP
 
-namespace WsDFUHelpers
+#include "platform.h"
+#include "jstream.hpp"
+
+// Global helper functions for buffered serial output
+inline void append(IBufferedSerialOutputStream & target, const char * value)
 {
-    void appendDFUQueryFilter(const char*name, DFUQFilterType type, const char* value, StringBuffer& filterBuf);
-    void appendDFUQueryFilter(const char*name, DFUQFilterType type, const char* value, const char* valueHigh, StringBuffer& filterBuf);
-    const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
-    bool addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
-};
+    if (value)
+        target.put(strlen(value)+1, value);
+    else
+        target.put(1, "");
+}
+
+template <class T>
+inline void append(IBufferedSerialOutputStream & target, const T & value)
+{
+    target.put(sizeof(T), &value);
+}
 
 #endif

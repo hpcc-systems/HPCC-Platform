@@ -1736,7 +1736,6 @@ public:
     }
 };
 
-#define SLAVEGRAPHPOOLLIMIT 10
 CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
 {
     workUnitInfo.set(_workUnitInfo);
@@ -2355,10 +2354,8 @@ IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
     {
         cache.opening(*this);
         Owned<IFile> iFile = repFile->open(activity);
-        if (NULL != expander.get())
-            iFileIO.setown(createCompressedFileReader(iFile, expander));
-        else if (compressed)
-            iFileIO.setown(createCompressedFileReader(iFile));
+        if (NULL != expander.get() || compressed)
+            iFileIO.setown(createCompressedFileReader(iFile, expander, useDefaultIoBufferSize, false, IFEnone));
         else
             iFileIO.setown(iFile->open(IFOread));
         if (!iFileIO.get())

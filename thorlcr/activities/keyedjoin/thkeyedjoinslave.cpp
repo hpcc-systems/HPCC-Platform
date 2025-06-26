@@ -2347,10 +2347,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 memset(encryptedKey, 0, encryptedKeyLen);
                 free(encryptedKey);
             }
-            if (nullptr != eexp.get())
-                partIO.iFileIO = createCompressedFileReader(iFile, eexp);
-            else if (compressed)
-                partIO.iFileIO = createCompressedFileReader(iFile);
+            if (nullptr != eexp.get() || compressed)
+                partIO.iFileIO = createCompressedFileReader(iFile, eexp, useDefaultIoBufferSize, false, IFEnone);
             else
                 partIO.iFileIO = iFile->open(IFOread);
             if (!partIO.iFileIO)
@@ -3555,7 +3553,7 @@ public:
                 if (orderedParts)
                     iFileIO.setown(iFile->open(IFOread));
                 else
-                    iFileIO.setown(createCompressedFileReader(iFile));
+                    iFileIO.setown(createCompressedFileReader(iFile, nullptr, useDefaultIoBufferSize, false, IFEnone));
                 offset_t offset = 0;
                 if (orderedParts)
                 {

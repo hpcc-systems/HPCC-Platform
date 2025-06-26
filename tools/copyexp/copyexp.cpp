@@ -127,7 +127,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
         printf("ERROR: could not open '%s' for read\n",from);
         doexit(3);
     }
-    Owned<IFileIO> io = createCompressedFileReader(srcio);
+    Owned<IFileIO> io = createCompressedFileReader(srcio, nullptr, useDefaultIoBufferSize);
     ICompressedFileIO * cmpio = dynamic_cast<ICompressedFileIO *>(io.get());
     Owned<IFileIOStream> strmsrc;
     bool flzstrm = false;
@@ -232,7 +232,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
         doexit(3);
     }
 
-    Owned<ICompressedFileIO> cmpio = createCompressedFileReader(baseio);
+    Owned<ICompressedFileIO> cmpio = createCompressedFileReader(baseio, nullptr, useDefaultIoBufferSize);
     Owned<IFileIOStream> strmsrc;
     if (!cmpio)
     {
@@ -363,7 +363,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     { // print details 
         dstio.setown(dstfile->open(IFOread, extraFlags));
         if (dstio) {
-            Owned<ICompressedFileIO> cmpio = createCompressedFileReader(dstio);
+            Owned<ICompressedFileIO> cmpio = createCompressedFileReader(dstio, nullptr, useDefaultIoBufferSize);
             Owned<IFileIOStream> strmchk;
             if (!cmpio)
                 strmchk.setown(createFastLZStreamRead(dstio));

@@ -330,6 +330,79 @@ write.df(df, source = "hpcc",
       filter fields that are key fields are used for an index lookup. Any
       filter field unmentioned is treated as wild.</para>
 
+      <para><emphasis role="bold">Simple File Filter Details</emphasis></para>
+
+      <para>Filtering is supported using a limited subset of SQL. Limitations
+      are imposed on the HPCC platform side. The largest limitation is that
+      you cannot use an <emphasis role="bold">AND</emphasis> statement on the
+      same field. For example, "AGE &gt; 21 AND AGE &lt; 65" is not valid. You
+      can use <emphasis role="bold">IN</emphasis> as a workaround, in most
+      cases.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Supported Subset of Operators</para>
+
+            <itemizedlist>
+              <listitem>
+                <para><emphasis role="bold">=</emphasis> (Equal) e.g.,
+                AGE=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;&gt;</emphasis> (Not Equal)
+                e.g., AGE&lt;&gt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&gt;</emphasis> (Greater Than)
+                e.g., AGE&gt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;</emphasis> (Less Than) e.g.,
+                AGE&lt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&gt;</emphasis>= (Greater Than or
+                Equal To) e.g., AGE&gt;=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;=</emphasis> (Less Than or
+                Equal To) e.g., AGE&lt;=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">IN(value1, value2, ... ,
+                valueNN)</emphasis> (in the specified set of comma-separated
+                values) e.g., IN ('US', 'France', 'UK')</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">NOT IN(value1, value2, ... ,
+                valueNN)</emphasis> (Not in the specified set of
+                comma-separated values) e.g., NOT IN ('US', 'France',
+                'UK')</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">AND</emphasis> (The AND operator
+                returns a record if all the conditions are TRUE) e.g., AGE =
+                33 AND GENDER = 'M' . <emphasis role="bold">Note:</emphasis>
+                You cannot use AND on the same field.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">OR</emphasis> (The OR operator
+                returns a record if any of the conditions are TRUE) e.g., AGE
+                = 33 OR GENDER = 'M' .</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist></para>
+
       <para>The usual deployment architecture for HPCC Clusters consists of a
       collection of nodes on a network. The file management information
       includes the IP addresses of the nodes that hold the partitions of the

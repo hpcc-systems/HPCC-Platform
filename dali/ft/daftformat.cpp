@@ -403,7 +403,7 @@ void CInputBasePartitioner::setSource(unsigned _whichInput, const RemoteFilename
             decrypt(key,_decryptKey);
             expander.setown(createAESExpander256(key.length(),key.str()));
         }
-        inIO.setown(createCompressedFileReader(inIO,expander));
+        inIO.setown(createCompressedFileReader(inIO, expander, useDefaultIoBufferSize));
     }
 
     if (thisSize != noSizeLimit)
@@ -1747,7 +1747,7 @@ void CJsonInputPartitioner::setSource(unsigned _whichInput, const RemoteFilename
             decrypt(key,_decryptKey);
             expander.setown(createAESExpander256(key.length(),key.str()));
         }
-        inIO.setown(createCompressedFileReader(inIO,expander));
+        inIO.setown(createCompressedFileReader(inIO, expander, useDefaultIoBufferSize));
     }
 
     inStream.setown(createIOStream(inIO));
