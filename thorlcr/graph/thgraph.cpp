@@ -2460,7 +2460,15 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                             GraphPrintLog(graph, e, "graphDone");
                             e->Release();
                         }
-                        graphInfo.clear(); // NB: at this point the graph will be destroyed
+                        graphInfo.clear();
+                        graph_id gid = graph->queryGraphId();
+                        if (doTrace(traceGraphDtor))
+                        {
+                            CCycleTimer timer;
+                            graph.clear(); // NB: at this point the graph will be destroyed
+                            // Not very satisfactory to use WARN, but default worker logging level default suppresses anything higher
+                            WARNLOG("CGraphExecutor: Destroyed graph, graphId=%" GIDPF "d, took %u ms", gid, timer.elapsedMs());
+                        }
                         if (e)
                             throw e.getClear();
                         if (!nextGraphInfo)
