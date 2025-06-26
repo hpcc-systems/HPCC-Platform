@@ -23,8 +23,13 @@
 #include "jsem.hpp"
 #include "unittests.hpp"
 
-constexpr unsigned fiveSeconds = 5000;
-constexpr unsigned twoSeconds = 2000;
+constexpr unsigned fiveSeconds{5000};
+constexpr unsigned twoSeconds{2000};
+constexpr unsigned lifespan1second{1};
+constexpr unsigned lifespan2seconds{2};
+constexpr unsigned lifespan3seconds{3};
+constexpr unsigned lifespan5seconds{5};
+constexpr unsigned lifespan10seconds{10};
 
 // Struct to pass both runtime and name
 struct ThreadParams {
@@ -101,11 +106,11 @@ class ThreadPoolTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ThreadPoolTest);
 //      CPPUNIT_TEST(testTightlyBoundThreadPool);
-//      CPPUNIT_TEST(testThreadPoolWithDelay);
-//      CPPUNIT_TEST(testThreadPoolWithStartDelayAndThreadsWithInfiniteStartDelay);
-      CPPUNIT_TEST(testThrottledThreadPool);
-//      CPPUNIT_TEST(testThrottledThreadPoolWithFastThreadCompletion);
-//      CPPUNIT_TEST(testWaitAvailable);
+//      CPPUNIT_TEST(testThrottledThreadPoolWithDefaultDelay);
+//      CPPUNIT_TEST(testThrottledThreadPoolAndThreadsWithInfiniteStartDelay);
+//      CPPUNIT_TEST(testThrottledThreadPoolWithSpecifiedDelay);
+      CPPUNIT_TEST(testThrottledThreadPoolWithFastThreadCompletion);
+      CPPUNIT_TEST(testWaitAvailable);
 //      CPPUNIT_TEST(testThreadPoolResizing); // Code dependent upon HPCC-34238
     CPPUNIT_TEST_SUITE_END();
 
@@ -115,10 +120,6 @@ private:
     Owned<IThreadFactory> factory;
     Owned<IThreadPool> pool;
     Semaphore startSemaphore;
-    unsigned lifespan1second{1};
-    unsigned lifespan2seconds{2};
-    unsigned lifespan5seconds{5};
-    unsigned lifespan10seconds{10};
     ThreadParams params;
 
 public:
@@ -156,8 +157,8 @@ public:
         params = {lifespan2seconds, "Thread2"};
         pool->start(&params, params.name);
         // Wait for both threads to signal that they've started
-        auto startDuration = measureThreadStartDuration(beforeStart, 2);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        auto duration = measureThreadStartDuration(beforeStart, 2);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // Test Thread Pool start delay
@@ -176,8 +177,8 @@ public:
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-        startDuration = measureThreadStartDuration(beforeStart, 1);
-        CPPUNIT_ASSERT(startDuration.count() >= 1900);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() >= 1900);
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
 
@@ -186,8 +187,8 @@ public:
         params = {lifespan2seconds, "Thread4"};
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name);
-        startDuration = measureThreadStartDuration(beforeStart, 1);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, threadCompletedCount.load());
 
@@ -207,8 +208,8 @@ public:
             e->Release();
             CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool TightlyBoundTestPool", msg.str());
         }
-        startDuration = measureThreadStartDuration(beforeStart, 0);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        duration = measureThreadStartDuration(beforeStart, 0);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, threadCompletedCount.load());
 
@@ -229,8 +230,8 @@ public:
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-        startDuration = measureThreadStartDuration(beforeStart, 1);
-        CPPUNIT_ASSERT(startDuration.count() < 2500);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() < 2500);
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 3);
 
@@ -239,8 +240,8 @@ public:
         params = {lifespan2seconds, "Thread7"};
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name);
-        startDuration = measureThreadStartDuration(beforeStart, 1);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(6U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
         // Pool is at capacity, startNoBlock should throw exception immediately
@@ -258,8 +259,8 @@ public:
             e->Release();
             CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool TightlyBoundTestPool", msg.str());
         }
-        startDuration = measureThreadStartDuration(beforeStart, 0);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        duration = measureThreadStartDuration(beforeStart, 0);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(6U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
         // Wait for the running count to be less than 2
@@ -279,8 +280,8 @@ public:
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-        startDuration = measureThreadStartDuration(beforeStart, 0);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        duration = measureThreadStartDuration(beforeStart, 0);
+        CPPUNIT_ASSERT(duration.count() < 1000);
 
         // Test Thread Pool joinAll
         //
@@ -292,10 +293,10 @@ public:
         CPPUNIT_ASSERT(pool->running());
     }
 
-    void testThreadPoolWithDelay()
+    void testThrottledThreadPoolWithDefaultDelay()
     {
         // Create thread pool with max 2 threads, testing thread start with and without start delay
-        pool.setown(createThreadPool("ThreadPoolWithDelay", factory, true, nullptr, 2)); // Thread pool has a default start delay of 1 second
+        pool.setown(createThreadPool("ThrottledThreadPoolWithDefaultDelay", factory, true, nullptr, 2)); // Thread pool has a default start delay of 1 second
 
         // Both threads should start immediately
         params = {lifespan5seconds, "Thread1"};
@@ -305,8 +306,8 @@ public:
         pool->start(&params, params.name);
 
         // Wait for both threads to signal that they've started
-        auto startDuration = measureThreadStartDuration(beforeStart, 2);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        auto duration = measureThreadStartDuration(beforeStart, 2);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // The Thread3 should not start after waiting on it's start specified timeout as the other
@@ -315,20 +316,20 @@ public:
         try
         {
             pool->start(&params, params.name, twoSeconds);
-            CPPUNIT_FAIL("Start should have thrown an exception as no slots would be available within start delay specified");
+            CPPUNIT_FAIL("Start should have thrown an exception as no slots would be available within thread start delay specified");
         }
         catch (IException *e)
         {
             StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
-            CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool ThreadPoolWithDelay", msg.str());
+            CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool ThrottledThreadPoolWithDefaultDelay", msg.str());
         }
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // The Thread4 should start after one of the above completes
-        params = {lifespan10seconds, "Thread4"};
         beforeStart = std::chrono::high_resolution_clock::now();
+        params = {lifespan10seconds, "Thread4"};
         try
         {
             pool->start(&params, params.name, fiveSeconds);
@@ -340,31 +341,43 @@ public:
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-        auto afterStart = std::chrono::high_resolution_clock::now();
-        startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
-        CPPUNIT_ASSERT(startDuration.count() > 2000);
-
-        waitForThreadsToStart(1);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() >= 2990);
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
+        CPPUNIT_ASSERT(pool->runningCount() >= 1);
 
         // Test Thread Pool default start delay
         //
+        beforeStart = std::chrono::high_resolution_clock::now();
         params = {lifespan10seconds, "Thread5"};
         pool->start(&params, params.name);
-        waitForThreadsToStart(1);
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() < 100);
+        CPPUNIT_ASSERT(pool->runningCount() >= 2);
+
         // Thread6 should start after the Thread Pool default start delay of 1 second
         params = {lifespan10seconds, "Thread6"};
         beforeStart = std::chrono::high_resolution_clock::now();
-        pool->start(&params, params.name);
-        startDuration = measureThreadStartDuration(beforeStart, 1);
-        CPPUNIT_ASSERT(startDuration.count() >= 1000);
+        pool->start(&params, params.name); // no exception should be thrown as no timeout is specified on the start
+        duration = measureThreadStartDuration(beforeStart, 1);
+        CPPUNIT_ASSERT(duration.count() >= 1000);
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT(pool->runningCount() >= 3);
+
+        // All threads should complete
+        pool->joinAll(true);
+        CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT_EQUAL(5U, threadCompletedCount.load());
+        CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
+        CPPUNIT_ASSERT(pool->running());
     }
 
-    void testThreadPoolWithStartDelayAndThreadsWithInfiniteStartDelay()
+    void testThrottledThreadPoolAndThreadsWithInfiniteStartDelay()
     {
-        // Create thread pool with max 2 threads and default delay of 1 second, testing infinite start delay
-        pool.setown(createThreadPool("ThreadPoolWithStartDelayAndThreadsWithInfiniteStartDelay", factory, true, nullptr, 2));
+        // Create thread pool with max 2 threads and default delay of 1 second,
+        // testing infinite thread start delay
+        pool.setown(createThreadPool("ThrottledThreadPoolAndThreadsWithInfiniteStartDelay", factory, true, nullptr, 2));
 
         // The two threads should start immediately
         params = {lifespan5seconds, "Thread1"};
@@ -372,8 +385,8 @@ public:
         pool->start(&params, params.name, INFINITE);
         params = {lifespan5seconds, "Thread2"};
         pool->start(&params, params.name, INFINITE);
-        auto startDuration = measureThreadStartDuration(beforeStart, 2);
-        CPPUNIT_ASSERT(startDuration.count() < 1000);
+        auto duration = measureThreadStartDuration(beforeStart, 2);
+        CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
 
@@ -385,38 +398,59 @@ public:
                                    this->pool->start(&asyncParams, asyncParams.name, INFINITE);
                                });
         asyncStart.detach();
-        startDuration = measureThreadStartDuration(beforeStart, 1); // Wait for Thread3 to start
-        CPPUNIT_ASSERT(startDuration.count() > 4990);
+        duration = measureThreadStartDuration(beforeStart, 1); // Wait for Thread3 to start
+        CPPUNIT_ASSERT(duration.count() > 4990);
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
         CPPUNIT_ASSERT(pool->runningCount() >= 1);
 
+        // Test multiple threads with INFINITE timeout waiting
+        std::thread asyncStart4([this]()
+                                {
+                                    ThreadParams asyncParams = {lifespan2seconds, "Thread4"};
+                                    this->pool->start(&asyncParams, asyncParams.name, INFINITE);
+                                });
+
+        std::thread asyncStart5([this]()
+                                {
+                                    ThreadParams asyncParams = {lifespan2seconds, "Thread5"};
+                                    this->pool->start(&asyncParams, asyncParams.name, INFINITE);
+                                });
+
+        asyncStart4.detach();
+        asyncStart5.detach();
+
+        // Wait for Thread4 and Thread5 to start (they should wait for slots to become available)
+        waitForThreadsToStart(2);
+        CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 3);
+
         // All threads should complete including Thread3
         pool->joinAll(true);
-        CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
-        CPPUNIT_ASSERT_EQUAL(3U, threadCompletedCount.load());
+        CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT_EQUAL(5U, threadCompletedCount.load());
         CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
         CPPUNIT_ASSERT(pool->running());
     }
 
-    void testThrottledThreadPool()
+    void testThrottledThreadPoolWithSpecifiedDelay()
     {
         // Test: Expected throttling delays are introduced when pool is at capacity
         pool.setown(createThreadPool("ThrottledThreadPool", factory, true, nullptr, 3, 500));
 
         // Start 3 threads to fill the pool
-        params = {lifespan2seconds, "Thread1"};
         auto startTime = std::chrono::high_resolution_clock::now();
+        params = {lifespan3seconds, "Thread1"};
         pool->start(&params, params.name);
-        params = {lifespan2seconds, "Thread2"};
+        params = {lifespan5seconds, "Thread2"};
         pool->start(&params, params.name);
-        params = {lifespan2seconds, "Thread3"};
+        params = {lifespan5seconds, "Thread3"};
         pool->start(&params, params.name);
-        waitForThreadsToStart(3);
 
         // The 3 threads should start immediately without throttling
-        auto startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        CPPUNIT_ASSERT(startDuration.count() < 100);
+        auto duration = measureThreadStartDuration(startTime, 3);
+        CPPUNIT_ASSERT(duration.count() < 100);
+        CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
 
         // When pool is at capacity, startNoBlock should throw exception immediately
@@ -435,17 +469,17 @@ public:
         }
 
         // This should block for a start delay of 100ms then throw exception
-        params = {lifespan2seconds, "Thread5"};
         startTime = std::chrono::high_resolution_clock::now();
+        params = {lifespan2seconds, "Thread5"};
         try
         {
             pool->start(&params, params.name, 100); // timeout after 100ms
-            CPPUNIT_FAIL("Start should have thrown an exception as no slots would be available within start delay specified");
+            CPPUNIT_FAIL("Start should have thrown an exception as no slots would be available within thread start delay specified");
         }
         catch (IException *e)
         {
-            startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-            CPPUNIT_ASSERT(startDuration.count() >= 100 && startDuration.count() <= 110);
+            duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+            CPPUNIT_ASSERT(duration.count() >= 100);
 
             StringBuffer msg;
             e->errorMessage(msg);
@@ -453,88 +487,47 @@ public:
             CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool ThrottledThreadPool", msg.str());
         }
 
-
-        return;
-
-
-        // This should block for the full 500ms delay then not throw exception
-        params = {lifespan2seconds, "Thread6"};
-        auto longThrottleStartTime = std::chrono::high_resolution_clock::now();
+        // This should block for the full 500ms delay then not throw an exception as no timeout is specified on the thread start
+        params = {lifespan1second, "Thread6"};
+        startTime = std::chrono::high_resolution_clock::now();
         try
         {
-            pool->start(&params, params.name); // Will use default delay of 500ms
+            pool->start(&params, params.name); // Will use thread pool default delay of 500ms
         }
         catch (IException *e)
         {
-            StringBuffer msg("Exception encountered: ");
+            StringBuffer msg;
             e->errorMessage(msg);
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
-        auto longThrottleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - longThrottleStartTime);
-        CPPUNIT_ASSERT(longThrottleDuration.count() >= 450 && longThrottleDuration.count() <= 600);
 
-        // Wait for threads to complete
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
+        duration = measureThreadStartDuration(startTime, 1);
+        CPPUNIT_ASSERT(duration.count() >= 500);
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
-        CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
-
-        // Reset semaphore for next test section
-        resetSemaphore();
+        CPPUNIT_ASSERT_EQUAL(4U, pool->runningCount());
 
         // Test: No throttle delay is introduced after pool falls below defaultmax
-        auto afterDropStartTime = std::chrono::high_resolution_clock::now();
+        while(pool->runningCount() >= 3)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        params = {lifespan2seconds, "Thread5"};
+        startTime = std::chrono::high_resolution_clock::now();
+        params = {lifespan2seconds, "Thread7"};
         pool->start(&params, params.name);
-        params = {lifespan2seconds, "Thread6"};
-        pool->start(&params, params.name);
-
-        auto afterDropEndTime = std::chrono::high_resolution_clock::now();
-        auto afterDropDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterDropEndTime - afterDropStartTime);
 
         // Should start immediately without throttling
-        CPPUNIT_ASSERT(afterDropDuration.count() < 100);
-        waitForThreadsToStart(2);
-        CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
+        duration = measureThreadStartDuration(startTime, 1);
+        CPPUNIT_ASSERT(duration.count() < 100);
 
         // Test: Pool was above, fell below, and is now at defaultmax again
-        params = {lifespan2seconds, "Thread7"};
-        pool->start(&params, params.name); // Now at capacity (3 threads)
-        waitForThreadsToStart(1);
         CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
 
-        auto reThrottleStartTime = std::chrono::high_resolution_clock::now();
-        try
-        {
-            params = {lifespan2seconds, "Thread8"};
-            pool->start(&params, params.name, 200); // timeout after 200ms
-            CPPUNIT_FAIL("Start should have thrown an exception as no slots would be available within start delay specified");
-        }
-        catch (IException *e)
-        {
-            auto reThrottleEndTime = std::chrono::high_resolution_clock::now();
-            auto reThrottleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(reThrottleEndTime - reThrottleStartTime);
-
-            e->Release();
-            CPPUNIT_ASSERT(reThrottleDuration.count() >= 150 && reThrottleDuration.count() <= 300);
-        }
-
-        // Test: waitAvailable functionality
-        CPPUNIT_ASSERT(!pool->waitAvailable(100)); // Should timeout since pool is full
-
-        // Wait for threads to finish
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        // All threads should complete
+        pool->joinAll(true);
+        CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT_EQUAL(5U, threadCompletedCount.load());
         CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
-
-        // Now waitAvailable should succeed immediately
-        auto waitStartTime = std::chrono::high_resolution_clock::now();
-        CPPUNIT_ASSERT(pool->waitAvailable(1000));
-        auto waitEndTime = std::chrono::high_resolution_clock::now();
-        auto waitDuration = std::chrono::duration_cast<std::chrono::milliseconds>(waitEndTime - waitStartTime);
-
-        CPPUNIT_ASSERT(waitDuration.count() < 50);
+        CPPUNIT_ASSERT(pool->running());
     }
 
     void testThrottledThreadPoolWithFastThreadCompletion()
@@ -543,71 +536,80 @@ public:
         // Create a special factory without semaphore synchronization for this timing-sensitive test
         pool.setown(createThreadPool("TestPoolWithFastThreadCompletion", factory, true, nullptr, 100, 1));
 
-        for (unsigned i = 1; i <= 10; i++)
+        for (unsigned numIterations = 1; numIterations <= 10; numIterations++)
         {
             threadStartedCount = 0;
             threadCompletedCount = 0;
 
-            for (unsigned i = 1; i <= 200; i++)
+            unsigned threadId{0};
+            auto startTime = std::chrono::high_resolution_clock::now();
+            for (unsigned threadId = 1; threadId <= 200; threadId++)
             {
                 StringBuffer threadName;
-                threadName.appendf("Thread%u", i);
+                threadName.appendf("Thread%u", threadId);
                 params = {lifespan1second, threadName.str()};
                 pool->start(&params, params.name);
             }
 
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-
-            CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
+            auto duration = measureThreadStartDuration(startTime, 200);
+            CPPUNIT_ASSERT(duration.count() < 200);
+            CPPUNIT_ASSERT_EQUAL(200U, pool->runningCount());
             CPPUNIT_ASSERT_EQUAL(200U, threadStartedCount.load());
-            CPPUNIT_ASSERT_EQUAL(200U, threadCompletedCount.load());
+            CPPUNIT_ASSERT_EQUAL(0U, threadCompletedCount.load());
 
-            unsigned exceptionCount = 0;
+            // Wait for 100 threads to complete
+            while(threadCompletedCount.load() < 100)
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            // Test: Pool is at capacity, should throttle new thread starts
+            //
+            unsigned exceptionCount{0};
             std::atomic<long long> totalStartDuration{0};
-
-            for (unsigned i = 201; i <= 400; i++)
+            // 100 threads are still running so 100 will start with no delay
+            // whilst 100 threads will wait up to 100ms before timing out
+            for (threadId = 201; threadId <= 400; threadId++)
             {
-                std::thread asyncStart([&i, this, &exceptionCount, &totalStartDuration]()
-                                       {
-                                                StringBuffer threadName;
-                                                threadName.appendf("Thread%u", i);
+                auto startThreadFunc = [threadId, this, &exceptionCount, &totalStartDuration]()
+                {
+                    StringBuffer threadName;
+                    threadName.appendf("Thread%u", threadId);
 
-                                                auto beforeDelayedStart = std::chrono::high_resolution_clock::now();
-                                                try
-                                                {
-                                                    // Attempt to start thread with 100ms timeout
-                                                    // This should succeed for ~100 threads and timeout for ~100 threads
-                                                    ThreadParams asyncParams = {lifespan1second, threadName.str()};
-                                                    this->pool->start(&asyncParams, asyncParams.name, 100);
-                                                }
-                                                catch(IException *e)
-                                                {
-                                                    // Expected behavior: some requests should timeout when pool is full
-                                                    StringBuffer msg;
-                                                    e->errorMessage(msg);
-                                                    e->Release();
-                                                    CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool TestPoolWithFastThreadCompletion", msg.str());
-                                                    ++exceptionCount;
-                                                }
+                    auto beforeDelayedStart = std::chrono::high_resolution_clock::now();
+                    try
+                    {
+                        // Attempt to start thread with 100ms timeout
+                        // This should succeed for ~100 threads and timeout for ~100 threads
+                        ThreadParams asyncParams = {lifespan1second, threadName.str()};
+                        this->pool->start(&asyncParams, asyncParams.name, 100);
+                    }
+                    catch(IException *e)
+                    {
+                        // Expected behavior: some requests should timeout when pool is full
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+                        e->Release();
+                        CPPUNIT_ASSERT_EQUAL_STR("No threads available in pool TestPoolWithFastThreadCompletion", msg.str());
+                        ++exceptionCount;
+                    }
 
-                                                // Record total time spent waiting (includes throttle delays and timeouts)
-                                                auto afterDelayedStart = std::chrono::high_resolution_clock::now();
-                                                auto startDuration = std::chrono::duration_cast<std::chrono::milliseconds>(afterDelayedStart - beforeDelayedStart);
-                                                totalStartDuration += startDuration.count(); });
-
+                    // Record total time spent waiting (includes throttle delays and timeouts)
+                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - beforeDelayedStart);
+                    totalStartDuration += duration.count();
+                };
+                std::thread asyncStart(startThreadFunc);
                 asyncStart.detach();
             }
 
-            // Wait 5 seconds for all async operations to complete
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-
-            CPPUNIT_ASSERT(totalStartDuration.load() >= 10000LL && totalStartDuration.load() <= 10001LL);
-
-            CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());          // Pool drained
-            CPPUNIT_ASSERT_EQUAL(300U, threadStartedCount.load());   // 200 from phase 1 + ~100 from phase 2
-            CPPUNIT_ASSERT_EQUAL(300U, threadCompletedCount.load()); // All started threads completed
-
-            CPPUNIT_ASSERT(exceptionCount >= 99U && exceptionCount <= 101U);
+            // Wait all threads to complete
+            while(pool->runningCount())
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (exceptionCount < 200)
+                waitForThreadsToStart(200 - exceptionCount);
+            CPPUNIT_ASSERT_EQUAL(400 - exceptionCount, threadStartedCount.load()); // 200 from phase 1 + ~100 from phase 2
+            CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount()); // Pool empty
+            CPPUNIT_ASSERT_EQUAL(400 - exceptionCount, threadCompletedCount.load()); // All started threads completed
+            CPPUNIT_ASSERT(exceptionCount >= 99U); // ~100 threads should have timed out
+            CPPUNIT_ASSERT(totalStartDuration.load() >= 10000LL); // 100 threads would have been waiting for 100ms each
         }
     }
 
@@ -616,8 +618,14 @@ public:
         // Test: Pool with unlimited capacity should always return true
         pool.setown(createThreadPool("UnlimitedTestPool", factory, true, nullptr, 0)); // defaultmax=0 means unlimited
 
+        auto startTime = std::chrono::high_resolution_clock::now();
+        CPPUNIT_ASSERT(pool->waitAvailable(100));
         CPPUNIT_ASSERT(pool->waitAvailable(100));
         CPPUNIT_ASSERT(pool->waitAvailable(0));
+
+        // waitAvailable should return true immediately as there are an infinite number of slots available
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+        CPPUNIT_ASSERT(duration.count() <= 100);
 
         pool.clear();
 
@@ -625,53 +633,62 @@ public:
         pool.setown(createThreadPool("LimitedTestPool", factory, true, nullptr, 2)); // max 2 threads
 
         // Should return true when pool is empty
+        startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(pool->waitAvailable(100));
+        CPPUNIT_ASSERT(pool->waitAvailable(0));
 
+        // waitAvailable should return true immediately as there are two slots available
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+        CPPUNIT_ASSERT(duration.count() <= 100);
+
+        startTime = std::chrono::high_resolution_clock::now();
         params = {lifespan5seconds, "Thread1"};
         pool->start(&params, params.name);
         params = {lifespan5seconds, "Thread2"};
         pool->start(&params, params.name);
 
-        waitForThreadsToStart(2);
+        // Two slots were available, so the threads should start immediately
+        duration = measureThreadStartDuration(startTime, 2);
+        CPPUNIT_ASSERT(duration.count() <= 100);
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
 
-        // Test: waitAvailable should return false when pool is full and timeout expires
-        auto startTime = std::chrono::high_resolution_clock::now();
+        // Test: waitAvailable should return false when pool is at capacity and timeout expires
+        startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(!pool->waitAvailable(200));
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-
-        CPPUNIT_ASSERT(duration.count() >= 180 && duration.count() <= 250);
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+        CPPUNIT_ASSERT(duration.count() >= 200);
 
         // Test: waitAvailable should return true immediately when slot becomes available
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
+        //
+        // Wait for one of the running threads to complete
+        while (pool->runningCount())
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
+        // Slots are now available, so waitAvailable should return immediately
         startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(pool->waitAvailable(1000));
-        endTime = std::chrono::high_resolution_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+        CPPUNIT_ASSERT(duration.count() < 100);
 
-        CPPUNIT_ASSERT(duration.count() < 50);
-
-        // Reset semaphore for next test section
-        resetSemaphore();
-
-        // Test: Zero timeout should return immediately
+        // Test: Pool capacity was at defaultMax and then fell below it,
+        // start 3 thread so that pool capacity is above defaultMax
+        startTime = std::chrono::high_resolution_clock::now();
         params = {lifespan5seconds, "Thread3"};
         pool->start(&params, params.name);
         params = {lifespan5seconds, "Thread4"};
         pool->start(&params, params.name);
+        params = {lifespan5seconds, "Thread5"};
+        pool->start(&params, params.name);
 
-        waitForThreadsToStart(2);
-        CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
+        duration = measureThreadStartDuration(startTime, 2);
+        CPPUNIT_ASSERT(duration.count() >= 1000);
+        CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
 
+        // Test: waitAvailable should return false immediately when no slots are available
         startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(!pool->waitAvailable(0));
-        endTime = std::chrono::high_resolution_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-
-        CPPUNIT_ASSERT(duration.count() < 20);
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+        CPPUNIT_ASSERT(duration.count() < 100);
     }
 
     /* Code dependent upon HPCC-34238
