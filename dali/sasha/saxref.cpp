@@ -135,9 +135,7 @@ struct cFileDesc // no virtuals
         size32_t ml = (n*4+7)/8;
         size32_t sz = sizeof(cFileDesc)+sl+ml;
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
-        // If fnLen is 0, the file is missing a part mask, so we don't know the true number of parts
-        // In this case, default to 1 part rather than number of nodes in cluster
-        ret->N = fnLen != 0 ? (unsigned short)n : 1;
+        ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
         ret->isDirPerPart = d;
         ret->filenameLen = (byte)fnLen;
@@ -1360,9 +1358,35 @@ public:
         // to determine the number of parts or the part number
         StringBuffer filePath(currentPath);
         file->getNameMask(addPathSepChar(filePath));
+
+        // In the case of external files, the part number is unknown, so the
+        // part that is marked present is the node where it was found.
+        unsigned node = 0;
+        bool nodeFound = false;
+        unsigned drvs = isContainerized() ? 1 : 2; // Mirror plane can be ignored in containerized
+        for (unsigned drv = 0; drv < drvs; drv++)
+        {
+            for (node = 0; node < file->N; node++)
+            {
+                if (file->testpresent(drv, node))
+                {
+                    nodeFound = true;
+                    break;
+                }
+            }
+            if (nodeFound)
+                break;
+        }
+
+        if (!nodeFound)
+        {
+#ifdef _DEBUG
+            PROGLOG("addExternalFoundFile: No node marked as present in file %s", filePath.str());
+#endif
+            return;
+        }
+        SocketEndpoint ep = grp->queryNode(node).endpoint();
         RemoteFilename rfn;
-        SocketEndpoint ep;
-        ep = grp->queryNode(0).endpoint();
         rfn.setPath(ep, filePath.str());
         offset_t sz;
         CDateTime dt;
