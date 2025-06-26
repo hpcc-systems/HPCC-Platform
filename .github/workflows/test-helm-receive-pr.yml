@@ -1,5 +1,5 @@
 # Helm Test - Receive PR (Unprivileged)
-name: test-helm
+name: test-helm-receive-pr
 
 on:
   pull_request:

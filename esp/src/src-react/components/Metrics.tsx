@@ -66,7 +66,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [hotspots, setHotspots] = React.useState<string>("");
-    const [includePendingItems, setIncludePendingItems] = React.useState(false);
+    const [includePendingItems, setIncludePendingItems] = React.useState(true);
     const [matchCase, setMatchCase] = React.useState(false);
 
     React.useEffect(() => {
@@ -340,7 +340,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
                             header={<Stack horizontal>
-                                <ToggleButton appearance="subtle" icon={matchCase ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
+                                <ToggleButton appearance="subtle" icon={includePendingItems ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
                                 <Stack.Item grow>
                                     <TooltipHost content={nlsHPCC.FilterMetricsTooltip}>
                                         <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />

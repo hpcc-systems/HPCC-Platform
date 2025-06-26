@@ -26,9 +26,16 @@ bool operator < (const Storage::File& left, const Storage::File& right) { return
 bool operator < (const Storage::File& left, const char* right) { return strcmp(left.path.str(), right) < 0; }
 bool operator < (const char* left, const Storage::File& right) { return strcmp(left, right.path.str()) < 0; }
 
-const Storage::Plane& Storage::File::lookupPlane(__uint64 offset) const
+Storage::File::File(const char* _path, const Plane& _plane) : path(_path)
 {
-    return *plane;
+    planes[0] = &_plane;
+    planes[1] = &_plane;
+}
+
+const Storage::Plane& Storage::File::lookupPlane(__uint64 nodeKind) const
+{
+    assertex(nodeKind < 2);
+    return *planes[nodeKind];
 }
 
 void Storage::configure(const IPropertyTree& config)
@@ -50,12 +57,13 @@ void Storage::observeFile(__uint64 fileId, const char* path)
         assertex(&mappedFile == observation);
 }
 
-void Storage::describePage(__uint64 fileId, __uint64 offset, ModeledPage& page) const
+void Storage::describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const
 {
     const File& file = lookupFile(fileId); // doesn't return nullptr
-    const Plane& plane = file.lookupPlane(offset); // doesn't return nullptr
+    const Plane& plane = file.lookupPlane(nodeKind); // doesn't return nullptr
     page.fileId = fileId;
     page.offset = offset;
+    page.nodeKind = nodeKind;
     page.readTime = plane.readTime;
 }
 
@@ -101,8 +109,31 @@ void Storage::configureFiles(const IPropertyTree& config)
     ForEach(*it)
     {
         File file;
-        file.path.set(it->query().queryProp("@path"));
-        file.plane = &lookupPlane(it->query().queryProp("@plane"), file.path.str());
+        const IPropertyTree& fileConfig = it->query();
+        file.path.set(fileConfig.queryProp("@path"));
+        // allow the configuration to place the entire file in a single plane
+        if (fileConfig.hasProp("@plane"))
+        {
+            const Plane& plane = lookupPlane(fileConfig.queryProp("@plane"), file.path.str());
+            for (size_t i = 0; i < File::NumPlanes; ++i)
+                file.planes[i] = &plane;
+        }
+        // branch nodes may be stored separately from leaf nodes
+        if (fileConfig.hasProp("@branchPlane"))
+        {
+            const Plane& plane = lookupPlane(fileConfig.queryProp("@branchPlane"), file.path.str());
+            file.planes[0] = &plane;
+        }
+        else if (!file.planes[0])
+            file.planes[0] = defaultPlane;
+        // leaf nodes may be stored separately from branch nodes
+        if (fileConfig.hasProp("@leafPlane"))
+        {
+            const Plane& plane = lookupPlane(fileConfig.queryProp("@leafPlane"), file.path.str());
+            file.planes[1] = &plane;
+        }
+        else if (!file.planes[1])
+            file.planes[1] = defaultPlane;
         if (!configuredFiles.insert(file).second)
             throw makeStringExceptionV(-1, "duplicate file path '%s'", file.path.str());
         if (isEmptyString(file.path.get()))

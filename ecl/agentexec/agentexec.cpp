@@ -317,8 +317,16 @@ public:
                         if (targetName)
                         {
                             jobName.append(targetName).append('-');
+                            StringBuffer instanceName;
+                            const char *podSuffix = k8s::queryPodSuffix();
+                            if (podSuffix)
+                            {
+                                instanceName.append(podSuffix).append('-');
+                                jobName.append(instanceName);
+                            }
                             jobName.append(myInstanceNumber);
-                            params.push_back({ "instanceNum", std::to_string(myInstanceNumber) });
+                            instanceName.append(myInstanceNumber);
+                            params.push_back({ "instanceName", instanceName.str() });
                         }
                         else
                             jobName.append(wuid).append('-').append(graphName);

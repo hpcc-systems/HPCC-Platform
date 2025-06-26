@@ -564,6 +564,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     }
     abortmonitor->setGuillotineCost(getGuillotineCost(wu));
     configurePreferredPlanes();
+    agentMachineCost = getMachineCostRate();
 }
 
 EclAgent::~EclAgent()
