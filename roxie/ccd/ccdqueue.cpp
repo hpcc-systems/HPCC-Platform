@@ -1978,7 +1978,6 @@ class RoxieThrottledPacketSender : public Thread
     TokenBucket &bucket;
     InterruptableSemaphore queued;
     Semaphore started;
-    unsigned maxPacketSize;
     SafeQueueOf<IRoxieQueryPacket, false> queue;
 
     class DECL_EXCEPTION StoppedException: public IException, public CInterface
@@ -2004,8 +2003,8 @@ class RoxieThrottledPacketSender : public Thread
     }
 
 public:
-    RoxieThrottledPacketSender(TokenBucket &_bucket, unsigned _maxPacketSize)
-        : Thread("RoxieThrottledPacketSender"), bucket(_bucket), maxPacketSize(_maxPacketSize)
+    RoxieThrottledPacketSender(TokenBucket &_bucket)
+        : Thread("RoxieThrottledPacketSender"), bucket(_bucket)
     {
         start(false);
         started.wait();
@@ -2054,36 +2053,6 @@ public:
 
     void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
-        RoxiePacketHeader &header = x->queryHeader();
-
-        unsigned length = x->queryHeader().packetlength;
-        assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
-        switch (header.retries & ROXIE_RETRIES_MASK)
-        {
-        case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
-            if (doTrace(traceRoxiePackets))
-            {
-                StringBuffer s;
-                logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
-            }
-            break;
-        default:
-            if (doTrace(traceRoxiePackets))
-            {
-                StringBuffer s;
-                logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
-            }
-            break; 
-        case 0:
-            if (doTrace(traceRoxiePackets, TraceFlags::Max))
-            {
-                StringBuffer s;
-                logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
-            }
-            break;
-        }
-        if (length > maxPacketSize)
-            throwPacketTooLarge(x, maxPacketSize);
         enqueue(x);
     }
 
@@ -2423,34 +2392,35 @@ public:
 
     virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
+        RoxiePacketHeader &header = x->queryHeader();
+
+        unsigned length = x->queryHeader().packetlength;
+        assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
+        if (doTrace(traceRoxiePackets))
+        {
+            StringBuffer s;
+            switch (header.retries & ROXIE_RETRIES_MASK)
+            {
+            case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
+                logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
+                break;
+            default:
+                logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
+                break;
+            case 0:
+                if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                    logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
+                break;
+            }
+        }
+        if (length > maxPacketSize)
+            throwPacketTooLarge(x, maxPacketSize);
+
         if (throttledPacketSendManager)
             throttledPacketSendManager->sendPacket(x, logctx);
         else
         {
-            MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
-            RoxiePacketHeader &header = x->queryHeader();
-
-            unsigned length = x->queryHeader().packetlength;
-            assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
-            if (doTrace(traceRoxiePackets))
-            {
-                StringBuffer s;
-                switch (header.retries & ROXIE_RETRIES_MASK)
-                {
-                case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
-                    logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
-                    break;
-                default:
-                    logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
-                    break; 
-                case 0:
-                    if (doTrace(traceRoxiePackets, TraceFlags::Max))
-                        logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
-                    break;
-                }
-            }
-            if (length > maxPacketSize)
-                throwPacketTooLarge(x, maxPacketSize);
             x->noteTimeSent();
             Owned <ISerializedRoxieQueryPacket> serialized = x->serialize();
             if (!channelWrite(serialized->queryHeader(), true))
@@ -2930,7 +2900,7 @@ public:
             unsigned sendMaxRate = topology->getPropInt("@sendMaxRate");
             unsigned sendMaxRatePeriod = topology->getPropInt("@sendMaxRatePeriod", 1);
             bucket.setown(new TokenBucket(sendMaxRate, sendMaxRatePeriod, sendMaxRate));
-            throttledPacketSendManager.setown(new RoxieThrottledPacketSender(*bucket, maxPacketSize));
+            throttledPacketSendManager.setown(new RoxieThrottledPacketSender(*bucket));
         }
 
         unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
