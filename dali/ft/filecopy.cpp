@@ -3482,7 +3482,7 @@ void FileSprayer::spray()
     beforeTransfer();
 
     bool copiedAlready = false;
-    if ((replicate || copySource))
+    if ((replicate || copySource) && keyCompression.isEmpty())
     {
         Owned<IAPICopyClient> copyClient = getAPICopyClient();
         if (copyClient)
