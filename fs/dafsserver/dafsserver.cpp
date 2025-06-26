@@ -1327,27 +1327,24 @@ public:
         {
             // std::bernoulli_distribution may support smaller sampling rates, depending on implementation,
             // but we limit it to 1e-12 to avoid issues with very small probabilities
-            constexpr double MIN_SAMPLING_RATE = 1e-12;
-            constexpr double MAX_SAMPLING_RATE = 1.0;
+            constexpr double minSamplingRate = 1e-12;
+            constexpr double maxSamplingRate = 1.0;
 
-            double recordSamplingRate = config.getPropReal("recordSamplingRate", MAX_SAMPLING_RATE);
-            if (recordSamplingRate <= MIN_SAMPLING_RATE || recordSamplingRate > MAX_SAMPLING_RATE)
+            double recordSamplingRate = config.getPropReal("recordSamplingRate", maxSamplingRate);
+            if (recordSamplingRate <= minSamplingRate || recordSamplingRate > maxSamplingRate)
                 throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: recordSamplingRate must be between (1e-12, 1.0)");
 
             applySampling = true;
-            if (recordSamplingRate < MAX_SAMPLING_RATE)
+            if (recordSamplingRate < maxSamplingRate)
             {
                 recordSamplingDistribution = std::bernoulli_distribution(recordSamplingRate);
             }
         }
 
-        if (config.hasProp("recordSamplingSeed"))
+        __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
+        if (recordSamplingSeed >= 0)
         {
-            __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
-            if (recordSamplingSeed >= 0)
-            {
-                randomGenerator.seed(recordSamplingSeed);
-            }
+            randomGenerator.seed(recordSamplingSeed);
         }
     }
 // IRemoteReadActivity impl.
