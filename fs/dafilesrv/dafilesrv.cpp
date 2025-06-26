@@ -401,7 +401,33 @@ int main(int argc, const char* argv[])
     // NB: bare-metal dafilesrv does not have a component specific xml, extracting relevant global configuration instead
     Owned<IPropertyTree> config = loadConfiguration(componentDefault, extractedGlobalConfig, argv, componentTag, "DAFILESRV", nullptr, nullptr);
 
-    updateTraceFlags(loadTraceFlags(config, dafilesrvServerTraceOptions, queryTraceFlags()), true);
+    config->getProp("@name", componentName);
+    if (isContainerized())
+        setupContainerizedLogMsgHandler(dafilesrvServerTraceOptions);
+    else
+    {
+        StringBuffer logDir;
+        config->getProp("@logDir", logDir);
+        if (0 == logDir.length())
+        {
+            getConfigurationDirectory(NULL,"log","dafilesrv",componentName.str(),logDir);
+            if (0 == logDir.length())
+                logDir.append(".");
+        }
+        if (componentName.length())
+        {
+            addPathSepChar(logDir);
+            logDir.append(componentName.str());
+        }
+        {
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
+            lf->setCreateAliasFile(false);
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+        }
+        updateTraceFlags(loadTraceFlags(config, dafilesrvServerTraceOptions, queryTraceFlags()), true);
+    }
+
 
     Owned<IPropertyTree> keyPairInfo; // NB: not used in containerized mode
     // Get SSL Settings
@@ -463,8 +489,6 @@ int main(int argc, const char* argv[])
         isdaemon = true;
 #endif
     }
-    StringBuffer logDir;
-    config->getProp("@logDir", logDir);
 #endif
     if (config->hasProp("@trace"))
     {
@@ -473,7 +497,6 @@ int main(int argc, const char* argv[])
         isdaemon = false;
 #endif
     }
-    config->getProp("@name", componentName);
     if (config->hasProp("@addr"))
     {
         unsigned portOnly = config->getPropInt("@addr");
@@ -646,18 +669,6 @@ int main(int argc, const char* argv[])
     }
 #endif
 
-    if (0 == logDir.length())
-    {
-        getConfigurationDirectory(NULL,"log","dafilesrv",componentName.str(),logDir);
-        if (0 == logDir.length())
-            logDir.append(".");
-    }
-    if (componentName.length())
-    {
-        addPathSepChar(logDir);
-        logDir.append(componentName.str());
-    }
-
     if ( (connectMethod == SSLNone) && (listenep.port == 0) )
     {
         printf("\nError, port must not be 0\n");
@@ -677,12 +688,6 @@ int main(int argc, const char* argv[])
         exit(-1);
     }
 
-    {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
-        lf->setCreateAliasFile(false);
-        lf->setMaxDetail(TopDetail);
-        lf->beginLogging();
-    }
     write_pidfile(componentName.str());
 #else // _CONTAINERIZED
     setupContainerizedLogMsgHandler();

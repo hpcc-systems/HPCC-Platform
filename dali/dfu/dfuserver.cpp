@@ -145,8 +145,6 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    updateTraceFlags(loadTraceFlags(globals, dfuServerTraceOptions, queryTraceFlags()), true);
-
     Owned<IFile> sentinelFile;
 #ifndef _CONTAINERIZED
     bool stop = globals->getPropBool("@stop", false);
@@ -158,8 +156,10 @@ int main(int argc, const char *argv[])
         removeSentinelFile(sentinelFile);
     }
 #ifdef _CONTAINERIZED
-    setupContainerizedLogMsgHandler();
+    setupContainerizedLogMsgHandler(dfuServerTraceOptions);
 #else
+    updateTraceFlags(loadTraceFlags(globals, dfuServerTraceOptions, queryTraceFlags()), true);
+
     if (!stop)
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
