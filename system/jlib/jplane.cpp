@@ -156,14 +156,7 @@ private:
 class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
-    CStoragePlane() = default;
-
     CStoragePlane(const IPropertyTree & plane)
-    {
-        init(plane);
-    }
-
-    void init(const IPropertyTree & plane)
     {
         config.set(&plane);
 
@@ -308,7 +301,7 @@ private:
 };
 
 // {prefix, {key1: value1, key2: value2, ...}}
-static std::unordered_map<std::string, CStoragePlane> planeAttributesMap;
+static std::unordered_map<std::string, Owned<CStoragePlane>> planeAttributesMap;
 static CriticalSection planeAttributeMapCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -322,7 +315,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         {
             const IPropertyTree &plane = planesIter->query();
             const char * name = plane.queryProp("@name");
-            planeAttributesMap[name].init(plane);
+            planeAttributesMap[name].setown(new CStoragePlane(plane));
         }
     };
 
@@ -341,11 +334,11 @@ static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool 
 {
     for (auto &e: planeAttributesMap)
     {
-        const char *prefix = e.second.queryPrefix();
+        const char *prefix = e.second->queryPrefix();
         if (!isEmptyString(prefix)) // sanity check, std::string cannot be null, so check if empty
         {
             if (startsWith(path, prefix))
-                return &e.second;
+                return e.second;
         }
     }
 
@@ -359,7 +352,7 @@ static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool re
 {
     auto it = planeAttributesMap.find(name);
     if (it != planeAttributesMap.end())
-        return &it->second;
+        return it->second;
 
     if (required)
         throw makeStringExceptionV(99, "Unknown storage plane %s", name);
@@ -426,7 +419,7 @@ const IPropertyTree * getStoragePlane(const char * name, bool required)
     CriticalBlock b(planeAttributeMapCrit);
     auto it = planeAttributesMap.find(name);
     if (it != planeAttributesMap.end())
-        return LINK(it->second.queryConfig());
+        return LINK(it->second->queryConfig());
 
     if (required)
         throw makeStringExceptionV(99, "Unknown storage plane %s", name);
@@ -453,7 +446,7 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
     auto it = planeAttributesMap.find(planeName);
     if (it != planeAttributesMap.end())
     {
-        unsigned __int64 v = it->second.getAttribute(planeAttrType);
+        unsigned __int64 v = it->second->getAttribute(planeAttrType);
         if (v != unsetPlaneAttrValue)
             return v;
     }
