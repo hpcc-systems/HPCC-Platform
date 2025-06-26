@@ -242,7 +242,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         } else {
             setInfoChecked(false);
         }
-    }, [filterCounts]);
+    }, [filterCounts?.cost, filterCounts?.error, filterCounts?.warning]);
 
     return <div style={{ height: "100%", overflow: "hidden" }}>
         <CommandBar items={buttons} farItems={copyButtons} />
