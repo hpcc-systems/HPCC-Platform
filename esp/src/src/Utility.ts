@@ -1337,6 +1337,7 @@ export function removeAllExcept(arr: any, keysToKeep: string[]): void {
         }
     }
 }
+
 function pad(n: number): string {
     return n.toString().padStart(2, "0");
 }
@@ -1349,4 +1350,11 @@ export function formatDate(date: Date, useUTC: boolean): string {
     const min = pad(useUTC ? date.getUTCMinutes() : date.getMinutes());
     const sec = pad(useUTC ? date.getUTCSeconds() : date.getSeconds());
     return `${mm}/${dd}/${yyyy} ${hh}:${min}:${sec}`;
+}
+
+export function capitalize(str: string): string {
+    if (str === "") {
+        return str;
+    }
+    return `${str.charAt(0).toUpperCase()}${str.slice(1)}`;
 }

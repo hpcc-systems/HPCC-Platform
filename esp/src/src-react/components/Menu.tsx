@@ -14,6 +14,7 @@ import {
 import { IconButton, IContextualMenuItem, Link, mergeStyleSets, Stack } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { containerized, bare_metal } from "src/BuildInfo";
+import { capitalize } from "src/Utility";
 import { navCategory } from "../util/history";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
@@ -273,6 +274,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
                                 href={item.href}
                                 icon={<item.icon href={item.href} />}
                                 value={item.value}
+                                title={capitalize(item.value)}
                                 style={{
                                     paddingLeft: "4px", paddingRight: "4px", color: selKey === item.value ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
                                 }}
