@@ -29,7 +29,9 @@
 //       readTime: nanosecond time to read one page
 //     file:
 //     - path: empty or unique index file path
-//       plane: name of place in which the file resides
+//       plane: name of place in which the file resides, if different from the default
+//       branchPlane: name of place in which index branches reside, if different from the default
+//       leafPlane: name of place in which index leaves reside, if different from the default
 //
 // - `kind` is optional; as the first model the value is implied.
 // - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
@@ -37,8 +39,12 @@
 // - `file` is optional; omission implies all files exist in the default plane.
 // - `file/path` is optional; omission, or empty, assigns the storage plane for all files not
 //   explicitly configured.
-// - `file/planes` is optional; omission, or empty, implies the file resides in the default storage
+// - `file/plane` is optional; omission, or empty, implies the file resides in the default storage
 //   plane.
+// - `file/branchPlane` is optional; omission, or empty, implies the file's index branches reside in
+//   the file's default storage plane.
+// - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
+//   file's default storage plane.
 
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
@@ -46,6 +52,7 @@ struct ModeledPage
 {
     __uint64 fileId{0};
     __uint64 offset{0};
+    __uint64 nodeKind{1};
     __uint64 readTime{0};
 };
 
@@ -68,16 +75,17 @@ private:
     class File
     {
     public:
+        static constexpr size_t NumPlanes = 2;
+    public:
         StringAttr path;
-        const Plane* plane{nullptr};
+        const Plane* planes[NumPlanes]{nullptr,};
 
     public:
         File() = default;
-        File(const char* _path, const Plane& _plane) : path(_path), plane(&_plane) {}
+        File(const char* _path, const Plane& _plane);
 
-        // Returns plane unless the page exceptions are defined and the offset is within an
-        // exception, in which case the exception's plane would be returned.
-        const Plane& lookupPlane(__uint64 offset) const;
+        // Returns the storage plane associated with the given node kind.
+        const Plane& lookupPlane(__uint64 nodeKind) const;
     };
     friend bool operator < (const File& left, const File& right); // required for set insertion
     friend bool operator < (const File& left, const char* right); // required to search a set by path
@@ -106,7 +114,7 @@ public:
 
     // Fill in the page data with storage information known about the file and offset. A file ID
     // not previously obseved will use information from the default file specification.
-    void describePage(__uint64 fileId, __uint64 offset, ModeledPage& page) const;
+    void describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const;
 
 private:
     void configurePlanes(const IPropertyTree& config);
