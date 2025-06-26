@@ -228,9 +228,8 @@ jobs:
                 IS_PRESENT=$(cat $FILE | grep -oE "# ${LINK_TEXT}" | wc -w)
                 if [[ $IS_PRESENT -eq 0 ]]
                 then
-                    echo "Link text ${LINK_TEXT} not found"
                     REFERENCE_CONVERTED=$(echo $REFERENCE | tr -d '#' | tr '-' ' ')         # Remove leading '#' and replace all '-' with ' '
-                    IS_PRESENT=$(cat $FILE | grep -oiE "# ${REFERENCE_CONVERTED}" | wc -w)  # Check whether the converted reference find case insensitive in the file 
+                    IS_PRESENT=$(cat $FILE | grep -oiE "# ${REFERENCE_CONVERTED}" | wc -w)  # Check whether the converted reference is in the file case insensitive.
                 fi
                 if [[ $IS_PRESENT -eq 0 ]]; then 
                   echo -e "${LINE} -\e[31m invalid reference\e[0m" 

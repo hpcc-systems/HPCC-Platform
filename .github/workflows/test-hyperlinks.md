@@ -336,7 +336,8 @@ Internal links are those that point to another file in the same repository or a 
 
 ### Mid-page Anchor Links
 There is a special kind of links where the generated link points to a section header like this: [Anchor Links](#mid-page-anchor-links). 
-In this case the text of section header converted lowercase and all spaces are replaced by '-'.
+To check this kind of links, the link checker action try fo find the link reference as is in the file.
+If this attempt fails, the action converts all '-' characters of the link reference to space then searching it case insensitive in the file.
 
 
 ### Report Error links
