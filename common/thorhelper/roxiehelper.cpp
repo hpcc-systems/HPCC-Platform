@@ -2457,7 +2457,7 @@ ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const *
 
 void ClusterWriteHandler::getPhysicalName(StringBuffer & name, const char * cluster) const
 {
-    Owned<IStoragePlane> plane = getDataStoragePlane(cluster, false);
+    Owned<const IStoragePlane> plane = getDataStoragePlane(cluster, false);
     const char * prefix = plane ? plane->queryPrefix() : nullptr;
     unsigned stripeNum = 0;
     if (plane)
@@ -2522,7 +2522,7 @@ void ClusterWriteHandler::getDirAndFilename(StringBuffer & dir, StringBuffer & f
 #ifdef _CONTAINERIZED
     assertex(localClusterName.length());
 #endif
-    Owned<IStoragePlane> plane = getDataStoragePlane(localClusterName, false);
+    Owned<const IStoragePlane> plane = getDataStoragePlane(localClusterName, false);
     unsigned stripeNum = 0;
     const char *prefix = nullptr;
     if (plane)

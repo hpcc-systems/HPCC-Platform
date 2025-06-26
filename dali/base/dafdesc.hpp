@@ -28,6 +28,7 @@
 #include <string>
 
 #include "jiface.hpp"
+#include "jplane.hpp"
 #include "mpbase.hpp"
 class RemoteFilename;
 class RemoteFilenameArray;
@@ -65,36 +66,6 @@ enum DFD_Replicate
 };
 
 enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_dropzone, grp_unknown, __grp_size };
-
-enum class AccessMode : unsigned
-{
-
-    none            = 0x00000000,
-    read            = 0x00000001,
-    write           = 0x00000002,
-    sequential      = 0x00000004,
-    random          = 0x00000008,           // corresponds to "random" reason in alias reasons
-    noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
-
-    readRandom      = read | random,
-    readSequential  = read | sequential,
-    readNoMount     = read | noMount,
-    writeSequential = write | sequential,
-
-    readMeta        = read,                  // read access - may not actually read the contents
-    writeMeta       = write,                 // write access - may also be used for delete
-
-//The following are used for mechanical replacement of writeattr to update the function prototypes but not change
-//the behaviour but allow all the calls to be revisited later to ensure the correct parameter is used.
-
-    tbdRead          = read,                 // writeattr was false
-    tbdWrite         = write,                // writeattr was true
-};
-BITMASK_ENUM(AccessMode);
-inline bool isWrite(AccessMode mode) { return (mode & AccessMode::write) != AccessMode::none; }
-
-extern da_decl AccessMode getAccessModeFromString(const char *access); // single access mode
-
 
 // ==CLUSTER PART MAPPING ==============================================================================================
 
@@ -312,7 +283,6 @@ interface ISuperFileDescriptor: extends IFileDescriptor
 
 // == CLUSTER INFO (currently not exposed outside dali base) =================================================================================
 
-interface IStoragePlane;
 interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDistributedFile
 {
     virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL) const = 0;
@@ -330,27 +300,6 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual StringBuffer &getClusterLabel(StringBuffer &name) const = 0; // node group name
     virtual void applyPlane(IStoragePlane *plane) = 0;
-};
-
-interface IStoragePlaneAlias: extends IInterface
-{
-    virtual AccessMode queryModes() const = 0;
-    virtual const char *queryPrefix() const = 0 ;
-    virtual bool isAccessible() const = 0;
-};
-
-//I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
-interface IStorageApiInfo;
-interface IStoragePlane: extends IInterface
-{
-    virtual const char * queryPrefix() const = 0;
-    virtual unsigned numDevices() const = 0;
-    virtual const std::vector<std::string> &queryHosts() const = 0;
-    virtual unsigned numDefaultSprayParts() const = 0 ;
-    virtual bool queryDirPerPart() const = 0;
-    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
-    virtual IStorageApiInfo *getStorageApiInfo() = 0;
-    virtual bool isAccessible() const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
@@ -409,15 +358,6 @@ extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isr
 
 extern da_decl void initializeStoragePlanes(bool createPlanesFromGroups, bool threadSafe);  // threadSafe should be true if no other threads will be accessing the global config
 extern da_decl void disableStoragePlanesDaliUpdates();
-
-extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
-extern da_decl bool getDefaultSpillPlane(StringBuffer &ret);
-extern da_decl bool getDefaultIndexBuildStoragePlane(StringBuffer &ret);
-extern da_decl bool getDefaultPersistPlane(StringBuffer &ret);
-extern da_decl bool getDefaultJobTempPlane(StringBuffer &ret);
-extern da_decl IStoragePlane * getDataStoragePlane(const char * name, bool required);
-extern da_decl IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
-extern da_decl IStoragePlane * createStoragePlane(IPropertyTree *meta);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken

@@ -34,6 +34,7 @@
 #include "jfile.hpp"
 #include "jset.hpp"
 #include "jqueue.tpp"
+#include "jplane.hpp"
 
 #include "thmem.hpp"
 #include "thalloc.hpp"

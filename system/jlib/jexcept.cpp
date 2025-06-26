@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "jptree.hpp"
 
 #ifdef _WIN32
@@ -95,9 +96,8 @@ class CExceptionInterceptor : implements IExceptionIntercept
             WARNLOG("Exception handlers configured, but debug plane is missing");
             return;
         }
-        Owned<IPropertyTree> plane = getStoragePlane(planeName);
-        assertex(plane);
-        verifyex(plane->getProp("@prefix", debugDir));
+        Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+        verifyex(debugDir.append(plane->queryPrefix()));
 #else
         verifyex(getConfigurationDirectory(nullptr, "temp", nullptr, "debug", debugDir));
 #endif

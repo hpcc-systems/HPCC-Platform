@@ -193,7 +193,7 @@ static IPropertyTree *getEmptyAttr()
 
 static IPropertyTree *getCostPropTree(const char *cluster)
 {
-    Owned<IPropertyTree> plane = getStoragePlane(cluster);
+    Owned<const IPropertyTree> plane = getStoragePlane(cluster, false);
 
     if (plane && plane->hasProp("cost/@storageAtRest"))
     {
@@ -4594,7 +4594,7 @@ public:
             const char *planeName = iClusterInfo.queryGroupName();
             if (!isEmptyString(planeName))
             {
-                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
                 if (plane)
                 {
                     if (clusters.ordinality() > 1)
@@ -5217,7 +5217,7 @@ StringBuffer &CDistributedFilePart::getStorageFilePath(StringBuffer & path, unsi
     }
     // Need storage path(prefix) to work out path on storage plane
     // (After removing prefix, the remaining path is the path on storage plane)
-    Owned<IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
+    Owned<const IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
     if (!storagePlane)
         throw new CDFS_Exception(DFSERR_MissingStoragePlane, planeName);
 
@@ -5245,7 +5245,7 @@ unsigned CDistributedFilePart::getStripeNum(unsigned copy)
             parent.getLogicalName(lname);
             throw new CDFS_Exception(DFSERR_EmptyStoragePlane, lname.str());
         }
-        Owned<IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
+        Owned<const IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
         if (!storagePlane)
             throw new CDFS_Exception(DFSERR_MissingStoragePlane, planeName);
         if (copy >= stripeNumber.size())
@@ -7536,7 +7536,7 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         parent.adjustClusterDir(partIndex,copy,dir);
         unsigned cn = copyClusterNum(copy, nullptr);
         IClusterInfo &cluster = parent.clusters.item(cn);
-        Owned<IStoragePlane> plane;
+        Owned<const IStoragePlane> plane;
 
         // this is for the remote useDafilesrv case,
         // where the remote storage plane may be needed to remap/stripe, see below.
@@ -11589,8 +11589,8 @@ public:
                         groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
 
                         const char *remotePlaneName = tree->queryProp("@group");
-                        Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
-                        assertex(filePlane);
+                        Owned<const IPropertyTree> filePlane = getStoragePlane(remotePlaneName, true);
+
                         // Used by DFS clients to determine if stripe and/or alias translation needed
                         tree->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
                     }
