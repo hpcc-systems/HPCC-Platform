@@ -472,7 +472,7 @@ public:
     virtual void reset(offset_t _offset, offset_t _flen)
     {
         nextOffset = _offset;
-        lastOffset = _flen;
+        lastOffset = (_flen == UnknownOffset) ? UnknownOffset : _offset + _flen;
         assertex(nextOffset <= lastOffset);
     }
 
