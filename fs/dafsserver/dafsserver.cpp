@@ -1302,13 +1302,12 @@ public:
         if (isEmptyString(fileName))
             throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: fileName missing");
         logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
-
-        randomGenerator.seed(randomDevice());
     }
     ~CRemoteDiskBaseActivity()
     {
         delete filterRow;
     }
+
     void setupInputMeta(const IPropertyTree &config, IOutputMetaData *_inMeta)
     {
         inMeta.setown(_inMeta);
@@ -1334,17 +1333,21 @@ public:
             if (recordSamplingRate <= minSamplingRate || recordSamplingRate > maxSamplingRate)
                 throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: recordSamplingRate must be between (1e-12, 1.0)");
 
-            applySampling = true;
             if (recordSamplingRate < maxSamplingRate)
             {
+                applySampling = true;
                 recordSamplingDistribution = std::bernoulli_distribution(recordSamplingRate);
             }
-        }
 
-        __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
-        if (recordSamplingSeed >= 0)
-        {
-            randomGenerator.seed(recordSamplingSeed);
+            __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
+            if (recordSamplingSeed >= 0)
+            {
+                randomGenerator.seed(recordSamplingSeed);
+            }
+            else
+            {
+                randomGenerator.seed(randomDevice());
+            }
         }
     }
 // IRemoteReadActivity impl.
