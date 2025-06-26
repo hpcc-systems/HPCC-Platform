@@ -269,7 +269,7 @@ protected:
     const char * querySplitPrefix();
     bool restorePartition();
     void savePartition();
-    void saveTransferOptions();
+    void saveTransferOptions(bool usedApi);
     void setCopyCompressedRaw();
     void setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy = (unsigned)-1);
     cost_type updateTargetProperties();
