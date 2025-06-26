@@ -1,4 +1,7 @@
-export const baseURL = "http://127.0.0.1:8080";
+export let baseURL = "http://127.0.0.1:8080";
+export function setBaseURL(baseUrl:string){
+    baseURL = baseUrl;
+}
 
 export namespace ecl {
     export const helloWorld = "OUTPUT('Hello World')";
