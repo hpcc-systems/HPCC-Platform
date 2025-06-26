@@ -2626,6 +2626,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         filter.setIncludeNesting(3);
         filter.addOutputStatistic(StCostExecute);
         filter.addRequiredStat(StCostExecute);
+        filter.setIncludeMatch(false); // always re-calculate the cost from the children
     }
     else
         filter.addFilter("stat[CostExecute],depth[1..3],nested[0],where[CostExecute]");
