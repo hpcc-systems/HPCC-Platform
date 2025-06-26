@@ -471,7 +471,10 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
         if (optSummary)
         {
             if (corruptOutput)
+            {
                 optSummary->filename.set("Output deleted because it was corrupt");
+                optSummary->valid = false;
+            }
             else
                 optSummary->filename.set(outputFilename);
             optSummary->numEvents = numEvents;
@@ -816,8 +819,24 @@ void EventRecorder::writeEventFooter(offset_type & offset, size32_t requiredSize
     assertex(offset == writeOffset + requiredSize);
 }
 
+void EventRecorder::checkDataWrite(offset_type offset, size_t size)
+{
+    offset_t endOffset = offset + size;
+    if (unlikely((endOffset > nextWriteOffset + OutputBufferSize) && !corruptOutput))
+    {
+        //Internal consistency check which should never occur.  It can occur if blocking/discarding
+        //is not implemented and the compression takes too long (e.g. lz4hc)
+        OERRLOG("writeBlock: fileOffset %llu, nextWriteOffset %llu", endOffset, nextWriteOffset);
+        //Avoid writing any more data to the output and delete when the recording is stopped
+        //aborting recording at this point is too complex
+        corruptOutput = true;
+    }
+}
+
 void EventRecorder::writeData(offset_type & offset, size_t size, const void * data)
 {
+    checkDataWrite(offset, size);
+
     const byte * source = (const byte *)data;
     const offset_type startOffset = offset;
     byte * target = (byte *)buffer.mem();
@@ -832,6 +851,8 @@ void EventRecorder::writeData(offset_type & offset, size_t size, const void * da
 
 void EventRecorder::writeByte(offset_type & offset, byte value)
 {
+    checkDataWrite(offset, 1);
+
     byte * target = (byte *)buffer.mem();
     size32_t buffOffset = offset & bufferMask;
     target[buffOffset] = value;
@@ -841,21 +862,9 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
     //MORE: Make this asynchronous - on a background thread.
-    offset_t fileOffset = startOffset & ~blockMask;
-
-    //Internal consistency check which should never occur.  It can occur if blocking/discarding
-    //is not implemented and the compression takes too long (e.g. lz4hc)
-    if (fileOffset != nextWriteOffset)
-    {
-        OERRLOG("writeBlock: fileOffset %llu, nextWriteOffset %llu", fileOffset, nextWriteOffset);
-        //Avoid writing any more data to the output and delete when the recording is stopped
-        //aborting recording at this point is too complex
-        corruptOutput = true;
-    }
-
     if (!corruptOutput)
     {
-        size32_t blockOffset = nextWriteOffset & blockMask;
+        size32_t blockOffset = nextWriteOffset & bufferMask;
         outputStream->put(size, (const byte *)buffer.get() + blockOffset);
     }
     nextWriteOffset += size;

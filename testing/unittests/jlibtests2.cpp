@@ -176,6 +176,46 @@ public:
         }
     }
 
+    using ExpectedCounts = std::initializer_list<std::pair<EventType, __uint64>>;
+    void verifyCounts(const char * filename, const ExpectedCounts & expected)
+    {
+        class EventCounter final : implements CInterfaceOf<IEventVisitor>
+        {
+        public:
+            virtual bool visitEvent(CEvent& event) override
+            {
+                counts[event.queryType()]++;
+                return true;
+            }
+            virtual bool visitFile(const char* filename, uint32_t version) override
+            {
+                return true;
+            }
+            virtual void departFile(uint32_t bytesRead) override
+            {
+            }
+        public:
+            __uint64 counts[EventMax] = { };
+        };
+
+        try
+        {
+            EventCounter counter;
+            CPPUNIT_ASSERT(readEvents(filename, counter));
+
+            for (auto & [type, expectedCount] : expected)
+            {
+                CPPUNIT_ASSERT_EQUAL(expectedCount, counter.counts[type]);
+            }
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
     void testMultiBlock()
     {
         //Add a test to write more than one block of data
@@ -201,7 +241,13 @@ public:
             EventRecordingSummary summary;
             CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT(summary.valid);
             CPPUNIT_ASSERT_EQUAL(200'000U, summary.numEvents);
+
+            verifyCounts("eventtrace.evt", {
+                { EventIndexLookup, 100'000 },
+                { EventIndexLoad, 100'000 }
+            });
         }
         catch (IException * e)
         {
@@ -254,19 +300,25 @@ public:
                 threads.item(t).start(true);
             }
 
+            EventRecordingSummary summary;
             if (delay)
             {
                 MilliSleep(delay);
-                CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+                CPPUNIT_ASSERT(recorder.stopRecording(&summary));
             }
 
             ForEachItemIn(t2, threads)
                 threads.item(t2).join();
 
             if (!delay)
-                CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+                CPPUNIT_ASSERT(recorder.stopRecording(&summary));
 
             CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT(summary.valid);
+
+            //The counts are only valid if we waited for the threads to finish
+            if (!delay)
+                verifyCounts("eventtrace.evt", { { EventIndexLookup, 200'000 }, { EventIndexLoad, 200'000 } });
         }
         catch (IException * e)
         {
