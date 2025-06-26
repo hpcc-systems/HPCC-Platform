@@ -1416,7 +1416,7 @@ protected:
         cursorDirty = false;
         OwnedIFile iFile = createIFile(fileName);
         assertex(iFile);
-        iFileIO.setown(createCompressedFileReader(iFile));
+        iFileIO.setown(createCompressedFileReader(iFile, nullptr, useDefaultIoBufferSize, false, IFEnone));
         if (iFileIO)
         {
             if (!compressed)

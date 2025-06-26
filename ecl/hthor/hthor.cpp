@@ -8787,7 +8787,7 @@ bool CHThorDiskReadBaseActivity::openNext()
                             Owned<IExpander> eexp;
                             if (encryptionkey.length()!=0)
                                 eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.bufferBase()));
-                            inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                            inputfileio.setown(createCompressedFileReader(inputfile, eexp, useDefaultIoBufferSize, false, IFEnone));
                             if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
                             {
                                 inputfileio.setown(inputfile->open(IFOread));
@@ -8839,7 +8839,7 @@ bool CHThorDiskReadBaseActivity::openNext()
                 Owned<IExpander> eexp;
                 if (encryptionkey.length()) 
                     eexp.setown(createAESExpander256((size32_t) encryptionkey.length(),encryptionkey.bufferBase()));
-                inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                inputfileio.setown(createCompressedFileReader(inputfile, eexp, useDefaultIoBufferSize, false, IFEnone));
                 if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
                 {
                     inputfileio.setown(inputfile->open(IFOread));

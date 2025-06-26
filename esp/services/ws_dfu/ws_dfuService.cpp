@@ -6817,7 +6817,7 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
                 if (compressed)
                 {
                     props.setPropInt64("@compressedSize", file->size());
-                    Owned<IFileIO> io = createCompressedFileReader(file);
+                    Owned<IFileIO> io = createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone);
                     if (io)
                         props.setPropInt64("@size", io->size());
                 }

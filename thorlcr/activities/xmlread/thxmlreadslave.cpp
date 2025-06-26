@@ -71,7 +71,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
             OwnedIFileIO partFileIO;
             if (compressed)
             {
-                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
+                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp, useDefaultIoBufferSize, false, IFEnone));
                 if (!partFileIO)
                     throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
             }
