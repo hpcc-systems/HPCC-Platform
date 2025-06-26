@@ -290,8 +290,8 @@ public:
                 props.setPropInt64("@totalCRC", totalCRC);
             }
             props.setPropInt("@formatCrc", helper->getFormatCrc());
-            props.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), statsCollection.getStatisticSum(StNumDiskWrites));
-            props.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
+            props.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), statsCollection.getStatisticSum(StNumDiskWrites));
+            props.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), diskAccessCost);
             if (isLocal)
             {
                 props.setPropBool("@local", true);

@@ -335,7 +335,7 @@ public:
                 CDfsLogicalFileName sub;
                 sub.setAllowWild(true);
                 sub.set(tmp);
-                Owned<IDFAttributesIterator> iter;
+                Owned<IPropertyTreeIterator> iter;
                 SocketEndpoint foreignEp;
                 if (sub.isForeign(&foreignEp))
                 {
@@ -2876,7 +2876,7 @@ IClusterFileScanIterator *getClusterFileScanIterator(
             }
         }
     }
-    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator("*",user);
+    Owned<IPropertyTreeIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator("*",user);
     StringBuffer chkname;
     StringBuffer gname;
     ForEach(*iter) {
@@ -2918,7 +2918,7 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 {
     // for fileservices
     IsSuperFileMap supermap;
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",user,true,true);
+    IPropertyTreeIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",user,true,true);
     if (iter) {
         ForEach(*iter) {
             IPropertyTree &attr=iter->query();

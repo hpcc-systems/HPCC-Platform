@@ -55,6 +55,8 @@ static IRemoteConnection *Rconn;
 static IDistributedFileDirectory & dir = queryDistributedFileDirectory();
 static IUserDescriptor *user = createUserDescriptor();
 static unsigned initCounter = 0; // counter for initialiser
+static unsigned numStdFiles = 0;
+static unsigned numSuperFiles = 0;
 
 // Declared in dadfs.cpp *only* when CPPUNIT is active
 extern void removeLogical(const char *fname, IUserDescriptor *user);
@@ -1849,6 +1851,7 @@ static void setupDFS(const IContextLogger &logctx, const char *scope, unsigned s
         // Make sure it got created
         ASSERT(dir.exists(sub.str(),user,true,false) && "Can't add physical files");
     }
+    numStdFiles = subsToCreate;
 }
 
 class CDaliDFSStressTests : public CppUnit::TestFixture
@@ -2585,6 +2588,277 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CDaliDFSStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSStressTests, "CDaliDFSStressTests" );
+
+
+class DaliDFSIteratorTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DaliDFSIteratorTests);
+        CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testIteratorSetup);
+        CPPUNIT_TEST(testDirectoryIterator);
+        CPPUNIT_TEST(testDFAttrIteratorSimple);
+        CPPUNIT_TEST(testDFAttrIterator);
+        CPPUNIT_TEST(testDFAttrIteratorSelectFields);
+        CPPUNIT_TEST(testGetLogicalFilesSorted);
+    CPPUNIT_TEST_SUITE_END();
+
+    const IContextLogger &logctx;
+
+public:
+    DaliDFSIteratorTests() : logctx(queryDummyContextLogger())
+    {
+    }
+    ~DaliDFSIteratorTests()
+    {
+        daliClientEnd();
+    }
+    void testInit()
+    {
+        daliClientInit();
+    }
+    void testIteratorSetup()
+    {
+        setupDFS(logctx, "iterator", 1, 4);
+        Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::iterator::super1", user, false);
+        sfile1->addSubFile("regress::iterator::sub1");
+        sfile1->addSubFile("regress::iterator::sub2");
+        sfile1.clear();
+        numSuperFiles++;
+
+        // Remove first
+        if (dir.exists("regress::iterator::othergroup", user, true, false))
+            ASSERT(dir.removeEntry("regress::iterator::othergroup", user) && "Can't remove sub-file");
+
+        Owned<IFileDescriptor> fdesc = createDescriptor("regress/iterator", "othergroup", 1, 17);
+        Owned<IGroup> grp1 = createIGroup("127.0.0.1");
+        ClusterPartDiskMapSpec mapping;
+        fdesc->setClusterGroup(0, grp1);
+        fdesc->setClusterGroupName(0, "grp1");
+        Owned<IGroup> grp2 = createIGroup("127.0.0.2");
+        fdesc->addCluster("grp2", grp2, mapping);
+        Owned<IDistributedFile> dsub = dir.createNew(fdesc);
+        dsub->attach("regress::iterator::othergroup", user);
+        dsub.clear();
+        fdesc.clear();
+        numStdFiles += 2; // iterators treats as one per group
+    }
+
+    void testDirectoryIterator()
+    {
+        // Test basic directory iterator functionality, check counts
+        // and populate some attributes for other tests
+
+        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+
+        Owned<IDistributedFileIterator> iter = dir.getIterator("regress::iterator::*", false, user, false);
+        unsigned count = 0;
+        ForEach(*iter)
+            ++count;
+        CPPUNIT_ASSERT_MESSAGE("testDirectoryIterator: expected 5 sub files", count == numStdFiles);
+
+        iter.setown(dir.getIterator("regress::iterator::*", true, nullptr, false));
+        count = 0;
+        ForEach(*iter)
+            ++count;
+        CPPUNIT_ASSERT_MESSAGE("testDirectoryIterator: expected 6 sub files", count == (numStdFiles+numSuperFiles));
+
+        iter.setown(dir.getIterator("regress::iterator::*", false, nullptr, false));
+
+        ForEach(*iter)
+        {
+            IDistributedFile &file = iter->query();
+            const char *logicalName = file.queryLogicalName();
+            CDfsLogicalFileName lfn;
+            lfn.set(logicalName);
+
+            CDateTime dt;
+            dt.setNow();
+            file.setAccessedTime(dt);
+            file.setExpire(4);
+
+            DistributedFilePropertyLock lock(&file);
+            IPropertyTree &attr = lock.queryAttributes();
+            const char *tail = lfn.queryTail();
+            StringBuffer attrValue(tail);
+            attr.setProp("@job", attrValue);
+            attr.setProp("@owner", attrValue);
+            attr.setProp("@workunit", attrValue);
+        }
+    }
+
+    void testDFAttrIteratorSimple()
+    {
+        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+
+        const char *wildName = "regress::iterator::*";
+        Owned<IPropertyTreeIterator> iter = dir.getDFAttributesIterator(wildName, user, true, false);
+        unsigned count = 0;
+        ForEach(*iter)
+            ++count;
+        VStringBuffer msg("testDFAttrIteratorSimple: expected %u files", numStdFiles);
+        CPPUNIT_ASSERT_MESSAGE(msg, count == numStdFiles);
+    }
+
+    void testDFAttrIterator()
+    {
+        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+
+        const char *wildName = "regress::iterator::*";
+        StringBuffer filterBuf;
+        // all non-superfiles
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildName).append(DFUQFilterSeparator);
+
+        bool allReceived = false;
+        Owned<IPropertyTreeIterator> iter = dir.getDFAttributesFilteredIterator(filterBuf,
+            nullptr,                      // no local filters
+            nullptr,                      // no fields specified (default all)
+            user,                         // user context
+            true,                         // recursive
+            allReceived                   // output parameter
+        );
+        CPPUNIT_ASSERT(allReceived);
+
+        unsigned count = 0;
+        ForEach(*iter)
+        {
+            const IPropertyTree &attrs = iter->query();
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: missing 'name' attribute", attrs.hasProp(getDFUQResultFieldName(DFUQResultField::name)));
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: missing 'group' attribute", attrs.hasProp(getDFUQResultFieldName(DFUQResultField::nodegroup)));
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: missing 'modified' attribute", attrs.hasProp(getDFUQResultFieldName(DFUQResultField::timemodified)));
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: missing 'numparts' attribute", attrs.hasProp(getDFUQResultFieldName(DFUQResultField::numparts)));
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: missing 'partmask' attribute", attrs.hasProp(getDFUQResultFieldName(DFUQResultField::partmask)));
+            ++count;
+        }
+        VStringBuffer msg("testDFAttrIterator: expected %u files", numStdFiles);
+        CPPUNIT_ASSERT_MESSAGE(msg, count == numStdFiles);
+
+        // very fake local filter test - DFUQFFgroup is the only local filter supported
+        const char *groupText = "grp2";
+        // server side filter to get only files with this group
+        filterBuf.append(DFUQFTcontainString).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFgroup)).append(DFUQFilterSeparator).append(groupText).append(DFUQFilterSeparator).append(",").append(DFUQFilterSeparator);
+
+        StringBuffer localFilterBuf;
+        localFilterBuf.append(DFUQFTwildcardMatch).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFgroup)).append(DFUQFilterSeparator).append(groupText);
+
+        iter.setown(dir.getDFAttributesFilteredIterator(filterBuf,
+            localFilterBuf,
+            nullptr,                      // no fields specified (default all)
+            user,                         // user context
+            true,                         // recursive
+            allReceived                   // output parameter
+        ));
+        CPPUNIT_ASSERT(allReceived);
+
+        count = 0;
+        ForEach(*iter)
+            ++count;
+        CPPUNIT_ASSERT_MESSAGE("testDFAttrIterator: expected 1 files", count == 1);
+    }
+
+    void testDFAttrIteratorSelectFields()
+    {
+        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+
+        const char *wildName = "regress::iterator::sub4";
+        StringBuffer filterBuf;
+        // all non-superfiles
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildName).append(DFUQFilterSeparator);
+
+        std::vector<DFUQResultField> fields = {DFUQResultField::recordsize, DFUQResultField::term};
+
+        bool allReceived = false;
+        Owned<IPropertyTreeIterator> iter = dir.getDFAttributesFilteredIterator(filterBuf,
+            nullptr,                      // no local filters
+            fields.data(),                // select fields
+            user,                         // user context
+            true,                         // recursive
+            allReceived                   // output parameter
+        );
+        CPPUNIT_ASSERT(allReceived);
+
+        unsigned count = 0;
+        ForEach(*iter)
+        {
+            const IPropertyTree &attrs = iter->query();
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIteratorSelectFields: recordSize attribute should be present", attrs.hasProp("@recordSize"));
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIteratorSelectFields: directory attribute should NOT be present", !attrs.hasProp("@directory"));
+            ++count;
+        }
+        CPPUNIT_ASSERT_MESSAGE("testDFAttrIteratorSelectFields: expected 1 file", count == 1);
+
+        auto testInclusionExclusion = [&](bool inclusion)
+        {
+            // test includeAll with an exclusion
+            if (inclusion)
+                fields = { DFUQResultField::includeAll, DFUQResultField::recordsize|DFUQResultField::exclude, DFUQResultField::term};
+            else
+                fields = { DFUQResultField::includeAll|DFUQResultField::exclude, DFUQResultField::recordsize, DFUQResultField::term};
+
+            iter.setown(dir.getDFAttributesFilteredIterator(filterBuf,
+                nullptr,                      // no local filters
+                fields.data(),                // select fields
+                user,                         // user context
+                true,                         // recursive
+                allReceived                   // output parameter
+            ));
+            CPPUNIT_ASSERT(allReceived);
+            count = 0;
+            ForEach(*iter)
+            {
+                const IPropertyTree &attrs = iter->query();
+                CPPUNIT_ASSERT(inclusion == attrs.hasProp("@directory"));
+                CPPUNIT_ASSERT(inclusion == attrs.hasProp("@job"));
+                CPPUNIT_ASSERT(inclusion == attrs.hasProp("@owner"));
+                CPPUNIT_ASSERT(inclusion == attrs.hasProp("@workunit"));
+                CPPUNIT_ASSERT(inclusion == !attrs.hasProp("@recordSize"));
+                ++count;
+            }
+            CPPUNIT_ASSERT_MESSAGE("testDFAttrIteratorSelectFields: expected 1 file", count == 1);
+        };
+        testInclusionExclusion(true);
+        testInclusionExclusion(false);
+    }
+
+    void testGetLogicalFilesSorted()
+    {
+        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+
+        const char *wildName = "regress::iterator::sub*";
+        StringBuffer filterBuf;
+        // all non-superfiles
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildName).append(DFUQFilterSeparator);
+
+        std::vector<DFUQResultField> fields = {DFUQResultField::size, DFUQResultField::cost, DFUQResultField::term};
+
+        DFUQResultField sortOrder[2] = {DFUQResultField::job|DFUQResultField::reverse, DFUQResultField::term};
+        __int64 hint;
+        unsigned totalFiles;
+        bool allMatchingFilesReceived;
+        Owned<IPropertyTreeIterator> iter = dir.getLogicalFilesSorted(nullptr, sortOrder, filterBuf.str(),
+            nullptr, fields.data(), 0, INFINITE, &hint, &totalFiles, &allMatchingFilesReceived);
+
+        unsigned subJobs = numStdFiles - 2; // -2 exclude iterator::othergroup files
+        VStringBuffer expectedJob("sub%u", subJobs); // <numStdFiles> subs, <numStdFiles> jobs, reverse order
+        ForEach(*iter)
+        {
+            const IPropertyTree &attrs = iter->query();
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: group property missing", attrs.hasProp("@group"));
+            VStringBuffer msg("testGetLogicalFilesSorted: expected @job == %s", expectedJob.str());
+            CPPUNIT_ASSERT_MESSAGE(msg.str(), streq(attrs.queryProp("@job"), expectedJob.str()));
+            expectedJob.setf("sub%u", --subJobs);
+            bool costAttrsPresent = attrs.hasProp("@cost") && attrs.hasProp("@readCost") && attrs.hasProp("@writeCost") && attrs.hasProp("@atRestCost");
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: Missing cost attributes", costAttrsPresent);
+            bool dirAttrsPresent = attrs.hasProp("@directory");
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: directory attribute should NOT be present", !dirAttrsPresent);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( DaliDFSIteratorTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliDFSIteratorTests, "DaliDFSIteratorTests" );
 
 class CDaliDFSRetrySlowTests : public CppUnit::TestFixture
 {
@@ -4192,6 +4466,7 @@ testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
 CPPUNIT_TEST_SUITE_REGISTRATION( DaliGlobalMetricsTester );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliGlobalMetricsTester, "DaliGlobalMetricsTester" );
 
+//---------------------------------------------------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------------------------------------------------
 
