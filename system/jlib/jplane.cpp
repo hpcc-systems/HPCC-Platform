@@ -275,7 +275,7 @@ public:
     {
         IPropertyTree *apiInfo = config->getPropTree("storageapi");
         if (apiInfo)
-            return new CStorageApiInfo(config);        //BUG!!! passing the wrong ptree
+            return new CStorageApiInfo(apiInfo);
         return nullptr;
     }
 
