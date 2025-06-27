@@ -169,8 +169,12 @@ class jhtree_decl CKeyHdr : public CInterface
 {
 protected:
     KeyHdr hdr;
+
+    // Extra information that is not in the header, but is key-specific and needs to be accessed from the index nodes.
+    const unsigned keyId{0};        // the id of the key - used by event recording for payload expansion
+
 public:
-    CKeyHdr();
+    CKeyHdr(unsigned _keyId);
 
     void load(KeyHdr &_hdr);
 
@@ -196,6 +200,7 @@ public:
     inline bool hasSpecialFileposition() const { return true; }
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
     inline offset_t queryBloomHead() const { return hdr.bloomHead; }
+    inline unsigned getKeyId() const { return keyId; }
     __uint64 getPartitionFieldMask() const
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
@@ -219,6 +224,8 @@ public:
 class CWriteKeyHdr : public CKeyHdr, implements IWritableNode
 {
 public:
+    CWriteKeyHdr() : CKeyHdr(0) { }
+
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     virtual size32_t getMemorySize() const override { return 0; }
 };

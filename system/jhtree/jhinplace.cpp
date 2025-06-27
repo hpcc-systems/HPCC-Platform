@@ -31,6 +31,7 @@
 #include "ctfile.hpp"
 #include "jhinplace.hpp"
 #include "jstats.h"
+#include "jevent.hpp"
 
 #ifdef _DEBUG
 //#define SANITY_CHECK_INPLACE_BUILDER     // painfully expensive consistency check
@@ -1956,23 +1957,45 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
     if (!dst) return true;
 
     const byte * payloadData = payload;
-    if (expandPayloadOnDemand)
+    bool recording = recordingEvents();
+    //If recording and not expanding on demand, fake it so we can get accurate information about the lifetime
+    //of the expanded payload.
+    if (expandPayloadOnDemand || recording)
     {
         std::shared_ptr<byte []> sharedPayload;
 
+        CCycleTimer startTimer(recording);
+        size32_t sizeExpanded = 0;
+        bool hit = true;
         {
             CriticalBlock block(cs);
 
             sharedPayload = expandedPayload.lock();
             if (!sharedPayload)
             {
-                const byte * data = payload;
-                CompressionMethod payloadCompression = (CompressionMethod)*data++;
-                size32_t compressedLen = readPacked32(data);
-                size32_t sizeExpanded;
-                sharedPayload = std::shared_ptr<byte []>(expandPayload(sizeExpanded, payloadCompression, compressedLen, data));
-                expandedPayload = sharedPayload;
+                if (likely(expandPayloadOnDemand))
+                {
+                    const byte * data = payload;
+                    CompressionMethod payloadCompression = (CompressionMethod)*data++;
+                    size32_t compressedLen = readPacked32(data);
+                    sharedPayload = std::shared_ptr<byte []>(expandPayload(sizeExpanded, payloadCompression, compressedLen, data));
+                    expandedPayload = sharedPayload;
+                }
+                else
+                {
+                    //Allocate a dummy payload so we can track whether it is hit or not
+                    sharedPayload = std::shared_ptr<byte []>(new byte[1]);
+                    expandedPayload = sharedPayload;
+                    sizeExpanded = -1;
+                }
+                hit = false;
             }
+        }
+
+        if (recording)
+        {
+            unsigned __int64 expandTime = hit ? 0 : startTimer.elapsedNs();
+            queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), expandTime, sizeExpanded);
         }
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until

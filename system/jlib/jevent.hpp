@@ -46,6 +46,7 @@ enum EventType : byte
     EventDaliSubscribe,
     MetaFileInformation,          // information about a file
     EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
+    EventIndexPayload,            // payload of a leaf node accessed
     EventMax
 };
 
@@ -396,6 +397,7 @@ public:
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
+    void recordIndexPayload(unsigned fileid, offset_t offset, __uint64 expandTime, size32_t size);
 
     void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliCommit(__int64 id, stat_type elapsedNs, size32_t dataSize);
@@ -479,6 +481,7 @@ protected:
     bool outputToLog{false};
     bool corruptOutput{false};
     bool createSpans{false};
+    bool suppressPayloadHits{false};
     StringBuffer outputFilename;
     Owned<IFile> outputFile;
     Owned<IFileIO> output;
