@@ -192,6 +192,11 @@ struct cFileDesc // no virtuals
         return memcmp(key,name+1,sl)==0;
     }
 
+    bool isHPCCFile() const
+    {
+        return filenameLen > 0;
+    }
+
     bool getName(StringBuffer &buf) const
     {
         // Check mask exists
@@ -1351,6 +1356,7 @@ public:
             StringBuffer tmp(LOGPFX "listOrphans reading ");
             rfn.getRemotePath(tmp);
             EXCLOG(e,tmp.str());
+            e->Release();
         }
         return false;
     }
@@ -1369,8 +1375,66 @@ public:
             pb = branch->addPropTree("Part",pb);
         }
         pb->setProp(rep?"RNode":"Node",ep.getEndpointHostText(tmp.clear()).str());
-    }   
+    }
 
+    void addExternalFoundFile(cFileDesc *file, const char *currentPath)
+    {
+        // Treat external files as a single file because without a partmask there is no way
+        // to determine the number of parts or the part number
+        StringBuffer filePath(currentPath);
+        file->getNameMask(addPathSepChar(filePath));
+
+        // In the case of external files, the part number is unknown, so the
+        // part that is marked present is the node where it was found.
+        unsigned node = 0;
+        bool nodeFound = false;
+        unsigned drvs = isContainerized() ? 1 : 2; // Mirror plane can be ignored in containerized
+        for (unsigned drv = 0; drv < drvs; drv++)
+        {
+            for (node = 0; node < file->N; node++)
+            {
+                if (file->testpresent(drv, node))
+                {
+                    nodeFound = true;
+                    break;
+                }
+            }
+            if (nodeFound)
+                break;
+        }
+
+        if (!nodeFound)
+        {
+#ifdef _DEBUG
+            PROGLOG("addExternalFoundFile: No node marked as present in file %s", filePath.str());
+#endif
+            return;
+        }
+        SocketEndpoint ep = grp->queryNode(node).endpoint();
+        RemoteFilename rfn;
+        rfn.setPath(ep, filePath.str());
+        offset_t sz;
+        CDateTime dt;
+        bool found;
+        {
+            CheckTime ct("checkOrphanPhysicalFile ");
+            found = checkOrphanPhysicalFile(rfn,sz,dt);
+            if (ct.slow())
+                ct.appendMsg(filePath.str());
+        }
+        if (found)
+        {
+            StringBuffer tmp;
+            Owned<IPropertyTree> branch;
+            addOrphanPartNode(branch,rfn.queryEndpoint(),0,false);
+            branch->setPropInt64("Size",sz);
+            branch->setProp("Partmask",filePath.str());
+            branch->setProp("Modified",dt.getString(tmp.clear()));
+            branch->setPropInt("Numparts",1);
+            branch->setPropInt("Partsfound",1);
+            foundbranch->addPropTree("File",branch.getClear());
+        }
+    }
 
     void listOrphans(cFileDesc *f,const char *currentPath,const char *currentScope,bool &abort,unsigned int recentCutoffDays)
     {
@@ -1384,6 +1448,12 @@ public:
         f->getNameMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
+
+        // Non-conforming files won't have a part mask and should be treated as single files
+        if (!f->isHPCCFile()) {
+            addExternalFoundFile(f,currentPath);
+            return;
+        }
 
         unsigned drv;
         unsigned drvs = isContainerized() ? 1 : 2;
@@ -1401,17 +1471,18 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-            try {
-                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
-                    return;
-                }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CNewXRefManager::listOrphans");
+        assert(f->getName(scopeBuf)); // Should always return true for HPCC files
+        // orphans are only orphans if there doesn't exist a valid file
+        try {
+            if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                 return;
             }
+        }
+        catch (IException *e) {
+            EXCLOG(e,"CNewXRefManager::listOrphans");
+            e->Release();
+            return;
         }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
@@ -1782,6 +1853,7 @@ public:
                         StringBuffer tmp(LOGPFX "Checking file ");
                         rfn.getRemotePath(tmp);
                         EXCLOG(e, tmp.str());
+                        e->Release();
                         ok = false;
                     }
                     if (!ok)
