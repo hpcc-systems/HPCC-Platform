@@ -43,9 +43,8 @@
     *(char *) (name+(length)) = '\0';
 
 #include "jfile.hpp"
-#include "jlog.hpp"
-#include "jstreamhelpers.hpp"
 #include "jptree.ipp"
+#include "jlog.hpp"
 
 #define WARNLEGACYCOMPARE
 #define XMLTAG_CONTENT "<>"
@@ -3046,6 +3045,72 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelf(src);
+
+    for (;;)
+    {
+        switch (isNextByteZero(src))
+        {
+        case NextByteStatus::nextByteIsNonZero:
+        {
+            IPropertyTree *child = create(src);
+            addPropTree(child->queryName(), child);
+            break;
+        }
+        case NextByteStatus::nextByteIsZero:
+            src.skip(1); // Skip over null terminator.
+            return;
+        case NextByteStatus::endOfStream:
+            throwUnexpectedX("PTree deserialization error: end of stream, expected child tree name, or terminator");
+        default:
+            throwUnexpected();
+        }
+    }
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    size32_t len{0};
+    const char *name = queryZeroTerminatedString(src, len);
+    if (len == 0)
+        throwUnexpectedX("PTree deserialization error: end of stream, expected name");
+    setName(name);
+    src.skip(len + 1); // Skip over name and null terminator
+
+    read(src, flags);
+
+    // Read attributes until we encounter a zero byte (attribute list terminator)
+    for (;;)
+    {
+        NextByteStatus status = isNextByteZero(src);
+        if (status == NextByteStatus::nextByteIsZero)
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        if (status == NextByteStatus::endOfStream)
+            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
+
+        // NextByteStatus::nextByteIsNonZero - read the attribute key-value pair
+        std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
+        if (attrPair.second == nullptr)
+            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+        setProp(attrPair.first, attrPair.second);
+        src.skip(len + 1); // +1 to skip over second null terminator.
+    }
+
+    if (value)
+        delete value;
+    size32_t size{0};
+    read(src, size);
+    if (size > 0)
+        value = new CPTValue(src, size);
+    else
+        value = nullptr;
+}
+
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -4456,6 +4521,24 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
     tree->deserialize(src);
     return tree;
 }
+
+IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
+    return tree;
+}
+
+IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNodeCreator *nodeCreator)
+{
+    if (!nodeCreator)
+        return createPTreeFromBinary(src, ipt_none);
+
+    IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
+    tree->deserializeFromStream(src);
+    return tree;
+}
+
 
 IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags)
 {
