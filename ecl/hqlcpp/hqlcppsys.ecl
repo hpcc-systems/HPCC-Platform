@@ -580,6 +580,10 @@ const char * cppSystemText[]  = {
     "   regexNewU8StrReplaceFixed(noconst utf8 _tgt, const utf8 _search, const utf8 _replace) : method,pure,entrypoint='replaceFixedTimed',timer('REGEXREPLACE');"
     "   set of utf8 regexU8StrMatchSet(const utf8 _search) : method,pure,entrypoint='getMatchSetTimed',timer('REGEXFINDSET');"
 
+    "   set of string regexStrExtract(const string _subject) : method,pure,entrypoint='getExtractTimed',timer('REGEXEXTRACT');"
+    "   set of unicode regexUStrExtract(const unicode _subject) : method,pure,entrypoint='getExtractTimed',timer('REGEXEXTRACT');"
+    "   set of utf8 regexU8StrExtract(const utf8 _subject) : method,pure,entrypoint='getExtractTimed',timer('REGEXEXTRACT');"
+
     //clibrary functions that are called from the code generation
     "   free(noconst data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
     "   integer4 memcmp(const data1 target, const data1 src, unsigned4 len) : sys,pure,entrypoint='memcmp';",

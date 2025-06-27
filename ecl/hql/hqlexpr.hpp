@@ -573,7 +573,7 @@ enum node_operator : unsigned short {
         no_temprow,
         no_activerow,                   // no_activerow(dataset) - used to disambiguate rows that are in scope.
         no_catch,
-    no_unused80,
+        no_regex_extract,
         no_reference,
         no_callback,                    // only used by code generator to backpatch the source
         no_keyedlimit,
