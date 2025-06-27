@@ -63,7 +63,7 @@ class DistributeSkewRule : public ActivityKindRule
 public:
     DistributeSkewRule() : ActivityKindRule(TAKhashdistribute) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options, const IEnvironmentInfo & envInfo) override
     {
         IWuEdge * outputEdge = activity.queryOutput(0);
         if (!outputEdge)
@@ -150,7 +150,7 @@ public:
         return false;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options, const IEnvironmentInfo & envInfo) override
     {
         stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
         stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
@@ -230,7 +230,7 @@ public:
         return true;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options, const IEnvironmentInfo & envInfo) override
     {
         stat_type localExecuteMaxSkew = activity.getStatRaw(StTimeLocalExecute, StSkewMax);
         if (localExecuteMaxSkew<options.queryOption(watOptSkewThreshold))
@@ -273,7 +273,7 @@ class KeyedJoinExcessRejectedRowsRule : public ActivityKindRule
 public:
     KeyedJoinExcessRejectedRowsRule() : ActivityKindRule(TAKkeyedjoin) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options, const IEnvironmentInfo & envInfo) override
     {
         stat_type preFiltered = activity.getStatRaw(StNumPreFiltered);
         if (preFiltered)

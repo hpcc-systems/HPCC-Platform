@@ -2101,7 +2101,7 @@ void EclAgent::doProcess()
 
     if (getClusterType(clusterType)==ThorLCRCluster)
     {
-        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCostPerHour(getNodes()));
+        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCostPerHour(getNodes()), nullptr);
     }
 }
 

@@ -166,6 +166,44 @@ private:
 
 //-----------------------------------------------------------------------------------------------------------
 
+class WuEnvironmentInfo : implements IEnvironmentInfo
+{
+public:
+    WuEnvironmentInfo()
+    {
+        for (int i = 0; i < envInfoMax; ++i)
+            environInfo[i] = 0;
+    }
+
+    void initialize(IPropertyTree * environInfoPT)
+    {
+        if (!environInfoPT)
+            return;
+
+        IPropertyTree * workerInfo = environInfoPT->queryPropTree("worker");
+        if (workerInfo)
+        {
+            environInfo[envWorkerHeapLockMemory] = workerInfo->getPropInt64("@heapLockMemory");
+            environInfo[envWorkerHeapRetainMemory] = workerInfo->getPropInt64("@heapRetainMemory");
+            environInfo[envWorkerHeapUseHugePages] = workerInfo->getPropInt64("@heapUseHugePages");
+            environInfo[envWorkerHeapUseTransparentHugePages] = workerInfo->getPropInt64("@heapUseTransparentHugePages");
+            environInfo[envWorkerQueryMemoryMB] = workerInfo->getPropInt64("@queryMemoryMB");
+            environInfo[envWorkerTotalMemoryMB] = workerInfo->getPropInt64("@totalMemoryMB");
+        }
+    }
+
+    int64_t operator[](WutEnvironInfoType infoType) const override
+    {
+        assertex(infoType < envInfoMax);
+        return environInfo[infoType];
+    }
+
+private:
+    int64_t environInfo[envInfoMax];
+};
+
+//-----------------------------------------------------------------------------------------------------------
+
 //MORE: Split this in two - for new code and old code.
 class WorkunitAnalyserBase
 {
@@ -191,7 +229,7 @@ class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 public:
     WorkunitRuleAnalyser();
 
-    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
+    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate, IPropertyTree *environInfoPT);
 
     void applyRules();
     void check(IWuActivity & activity);
@@ -205,6 +243,7 @@ protected:
     CIArrayOf<CSubgraphRule> subgraphRules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
+    WuEnvironmentInfo environInfo;
     CCycleTimer timer;
     cycle_t maxExecuteCycles = 0;
 
@@ -1451,7 +1490,7 @@ WorkunitRuleAnalyser::WorkunitRuleAnalyser()
     gatherRules(subgraphRules);
 }
 
-void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
+void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate, IPropertyTree *environInfoPT)
 {
     options.applyConfig(cfg);
     options.applyConfig(wu);
@@ -1459,6 +1498,7 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
+    environInfo.initialize(environInfoPT);
 }
 
 void WorkunitRuleAnalyser::check(IWuActivity & wuScope)
@@ -2186,7 +2226,7 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour)
+void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour, IPropertyTree *environinfoPT)
 {
     if (!workunit.getDebugValueBool("analyzeWorkunit", true))
         return;
@@ -2195,8 +2235,7 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
 
     WorkunitRuleAnalyser analyser;
     Owned<IException> error;
-
-    analyser.applyConfig(options, &workunit, costPerHour);
+    analyser.applyConfig(options, &workunit, costPerHour, environinfoPT);
 
     // Examine workunit's cost or execute time to determine if it is worth analyzing
     // (If the workunit's statistic below the 'interesting' thresholds, then it is not worth analyzing
@@ -2251,7 +2290,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
     CCycleTimer totalTimer;
     {
         CCycleTimer collateTimer;
-        analyser.applyConfig(nullptr, wu, costPerHour);
+        analyser.applyConfig(nullptr, wu, costPerHour, nullptr);
         analyser.analyse(wu, optGraph);
         timingInfo.append(" collate ");
         formatStatistic(timingInfo, cycle_to_nanosec(collateTimer.elapsedCycles()), SMeasureTimeNs);
@@ -2285,7 +2324,7 @@ static bool getBoolWUOption(const IConstWorkUnit * workunit, IPropertyTree *cfg,
     return cfg ? cfg->getPropBool(cfgOption, defaultValue) : defaultValue;
 }
 
-void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour)
+void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour, IPropertyTree *environInfoPT)
 {
     Owned<IPropertyTree> analyzerCfg = cfg->getPropTree("analyzerOptions");
     bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
@@ -2300,7 +2339,7 @@ void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree 
         // - analyzeWhenComplete is true and graph is not specified OR
         // - analyzeWhenComplete is false and graph is specified
         if (optAnalyzeWhenComplete != graphSpecified)
-            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour);
+            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour, environInfoPT);
     }
 }
 
