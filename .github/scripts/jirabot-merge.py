@@ -5,10 +5,33 @@ This script is called from the secure jirabot-process-merge workflow
 """
 import os
 import re
-import subprocess
 import sys
 import json
+import shlex
+import subprocess
+import requests
 from atlassian.jira import Jira
+
+
+def sanitize_input(input_str: str, input_type: str) -> str:
+    """Sanitize input based on type"""
+    if input_type.lower() == 'text':
+        # Remove potentially dangerous characters
+        import re
+        # Allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
+        sanitized = re.sub(r'[^\w\s\-._@#()[\]{},;:!?+=*/\\&%$]', '', input_str)
+        return sanitized.strip()
+    elif input_type.lower() == 'branch_name':
+        # Branch names should only contain safe characters
+        sanitized = re.sub(r'[^a-zA-Z0-9\-_./]', '', input_str)
+        return sanitized.strip()
+    else:
+        return input_str
+
+
+def escape_regex_chars(text: str) -> str:
+    """Escape regex metacharacters in text"""
+    return re.escape(text)
 
 
 def extract_version(version_str):
@@ -24,20 +47,36 @@ def extract_version(version_str):
     return [major, minor, point]
 
 
-def get_tag_version_for_cmd(cmd):
+def get_tag_version_for_cmd(pattern):
     """Get version from git tag command"""
     version_pattern = re.compile(r".*([0-9]+\.[0-9]+\.[0-9]+).*")
 
-    # Get latest release version
-    git_tag_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-    (output, err) = git_tag_process.communicate()
-    git_tag_process_status = git_tag_process.wait()
+    # Get latest release version - use safe subprocess call
+    try:
+        # Use safe subprocess call with proper shell escaping
+        cmd = ['git', 'tag', '--list', '--sort=-v:refname']
+        git_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, err) = git_process.communicate()
+        git_tag_process_status = git_process.wait()
 
-    if git_tag_process_status != 0:
-        print('Unable to retrieve latest git tag.')
+        if git_tag_process_status != 0:
+            print('Unable to retrieve latest git tag.')
+            sys.exit(1)
+
+        # Filter the output using Python instead of shell grep
+        output_str = output.decode('utf-8')
+        pattern_re = re.compile(pattern)
+        for line in output_str.split('\n'):
+            if pattern_re.match(line.strip()):
+                latest_git_tag = line.strip()
+                break
+        else:
+            print('No matching git tag found.')
+            sys.exit(1)
+
+    except Exception as e:
+        print(f'Error executing git command: {e}')
         sys.exit(1)
-
-    latest_git_tag = str(output)
 
     version_match = version_pattern.match(latest_git_tag)
     if version_match:
@@ -85,8 +124,8 @@ def create_release_tag_pattern(project_config, major=None, minor=None, point=Non
 
 def get_latest_sem_ver(project_config, major=None, minor=None, point=None):
     """Get latest semantic version matching criteria"""
-    cmd = "git tag --list --sort=-v:refname | grep -E '" + create_release_tag_pattern(project_config, major, minor, point) + "' | head -n 1"
-    return get_tag_version_for_cmd(cmd)
+    pattern = create_release_tag_pattern(project_config, major, minor, point)
+    return get_tag_version_for_cmd(pattern)
 
 
 def generate_fix_version_list(jira, project_config, project_name, branch_name):
@@ -206,11 +245,11 @@ def main():
     jira_url = os.environ['JIRA_URL']
 
     pr_number = os.environ['PR_NUMBER']
-    title = os.environ['PR_TITLE']
-    user = os.environ['PR_AUTHOR']
+    title = sanitize_input(os.environ['PR_TITLE'], 'text')
+    user = sanitize_input(os.environ['PR_AUTHOR'], 'text')
     pull_url = os.environ['PR_URL']
     github_token = os.environ['GITHUB_TOKEN']
-    branch_name = os.environ['BRANCH_NAME']
+    branch_name = sanitize_input(os.environ['BRANCH_NAME'], 'branch_name')
     comments_url = os.environ['PR_COMMENTS_URL']
 
     project_config = json.loads(os.environ['PROJECT_CONFIG'])
@@ -227,7 +266,7 @@ def main():
         print('Error: PROJECT_CONFIG is missing required field: projectPrefixes')
         sys.exit(1)
 
-    project_list_regex = '|'.join(project_prefixes)
+    project_list_regex = '|'.join([escape_regex_chars(prefix) for prefix in project_prefixes])
 
     result = ''
     issue_match = re.search("(" + project_list_regex + ")-[0-9]+", title, re.IGNORECASE)
@@ -251,7 +290,14 @@ def main():
         # Escape the result for JSON
         result = json.dumps(result)
 
-        subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {github_token}', '--data', f'{{ "body": {result} }}'], check=True)
+        # Use requests instead of subprocess to avoid token exposure
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'token {github_token}'
+        }
+        payload = {'body': result}
+        response = requests.post(comments_url, headers=headers, json=payload)
+        response.raise_for_status()
     else:
         print('Unable to find Jira issue name in title')
 

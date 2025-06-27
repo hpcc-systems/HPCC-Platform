@@ -30,6 +30,10 @@ jobs:
             var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
               return artifact.name == "helm-test-info"
             })[0];
+            if (!matchArtifact) {
+              core.setFailed('helm-test-info artifact not found');
+              return;
+            }
             var download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,
                repo: context.repo.repo,
@@ -42,10 +46,21 @@ jobs:
       - name: "Extract Helm Test Info"
         run: |
           unzip helm-info.zip
-          echo "PR_NUMBER=$(cat pr_number)" >> $GITHUB_ENV
-          echo "HEAD_SHA=$(cat head_sha)" >> $GITHUB_ENV
-          echo "BASE_SHA=$(cat base_sha)" >> $GITHUB_ENV
-          echo "BASE_REF=$(cat base_ref)" >> $GITHUB_ENV
+          # Use delimiter to prevent injection attacks
+          {
+            echo "PR_NUMBER<<EOF"
+            cat pr_number
+            echo "EOF"
+            echo "HEAD_SHA<<EOF"
+            cat head_sha
+            echo "EOF"
+            echo "BASE_SHA<<EOF"
+            cat base_sha
+            echo "EOF"
+            echo "BASE_REF<<EOF"
+            cat base_ref
+            echo "EOF"
+          } >> $GITHUB_ENV
           
       - name: "Checkout base branch" 
         uses: actions/checkout@v4

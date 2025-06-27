@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import json
-import subprocess
+import requests
 from email.utils import parseaddr
 from atlassian.jira import Jira
 
@@ -17,6 +17,12 @@ def sanitize_input(input_str: str, input_type: str) -> str:
     if input_type.lower() == 'email':
         # Return the email address only, returns '' if not valid or found
         return parseaddr(input_str)[1]
+    elif input_type.lower() == 'text':
+        # Remove potentially dangerous characters
+        import re
+        # Allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
+        sanitized = re.sub(r'[^\w\s\-._@#()[\]{},;:!?+=*/\\&%$]', '', input_str)
+        return sanitized.strip()
     else:
         return ''
 
@@ -85,8 +91,8 @@ def main():
     jirabot_pass = os.environ['JIRABOT_PASSWORD']
     jira_url = os.environ['JIRA_URL']
     pr_number = os.environ['PR_NUMBER']
-    title = os.environ['PR_TITLE']
-    pr_author = os.environ['PR_AUTHOR']
+    title = sanitize_input(os.environ['PR_TITLE'], 'text')
+    pr_author = sanitize_input(os.environ['PR_AUTHOR'], 'text')
     pull_url = os.environ['PR_URL']
     github_token = os.environ['GITHUB_TOKEN']
     comments_url = os.environ['PR_COMMENTS_URL']
@@ -134,7 +140,15 @@ def main():
         # Escape the result for JSON
         result = json.dumps(result)
 
-        subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {github_token}', '--data', f'{{ "body": {result} }}'], check=True)
+        # Use requests instead of subprocess to avoid token exposure
+        import requests
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'token {github_token}'
+        }
+        payload = {'body': result}
+        response = requests.post(comments_url, headers=headers, json=payload)
+        response.raise_for_status()
     else:
         print('Unable to find Jira issue name in title')
 
