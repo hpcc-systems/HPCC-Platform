@@ -19,21 +19,8 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-  schedule:
-    - cron: "0 7 * * 1"
 
 jobs:
-  pre_job:
-    runs-on: ubuntu-latest
-    # Map a step output to a job output
-    outputs:
-      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
-    steps:
-      - id: skip_check
-        uses: hpcc-systems/github-actions/changed-modules@main
-        with:
-          github_token: ${{ github.token }}
-
   analyze:
     name: Analyze
 
@@ -45,8 +32,7 @@ jobs:
         # Learn more:
         # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
 
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.eclwatch && github.repository == 'hpcc-systems/HPCC-Platform' }}
+    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
     runs-on: ubuntu-latest
 
     steps:

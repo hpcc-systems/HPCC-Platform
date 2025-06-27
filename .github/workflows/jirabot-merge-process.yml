@@ -21,7 +21,7 @@ jobs:
       - name: "Checkout base branch"
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           fetch-tags: true
           
@@ -37,6 +37,10 @@ jobs:
             var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
               return artifact.name == "pr-merge-info"
             })[0];
+            if (!matchArtifact) {
+              core.setFailed('pr-merge-info artifact not found');
+              return;
+            }
             var download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,
                repo: context.repo.repo,
@@ -49,12 +53,27 @@ jobs:
       - name: "Extract PR Info"
         run: |
           unzip pr-info.zip
-          echo "PR_NUMBER=$(cat number)" >> $GITHUB_ENV
-          echo "PR_TITLE=$(cat title)" >> $GITHUB_ENV
-          echo "PR_AUTHOR=$(cat author)" >> $GITHUB_ENV
-          echo "PR_URL=$(cat url)" >> $GITHUB_ENV
-          echo "PR_COMMENTS_URL=$(cat comments_url)" >> $GITHUB_ENV
-          echo "BRANCH_NAME=$(cat branch_name)" >> $GITHUB_ENV
+          # Use delimiter to prevent injection attacks
+          {
+            echo "PR_NUMBER<<EOF"
+            cat number
+            echo "EOF"
+            echo "PR_TITLE<<EOF"
+            cat title
+            echo "EOF"
+            echo "PR_AUTHOR<<EOF"
+            cat author
+            echo "EOF"
+            echo "PR_URL<<EOF"
+            cat url
+            echo "EOF"
+            echo "PR_COMMENTS_URL<<EOF"
+            cat comments_url
+            echo "EOF"
+            echo "BRANCH_NAME<<EOF"
+            cat branch_name
+            echo "EOF"
+          } >> $GITHUB_ENV
           
       - uses: "actions/setup-python@v5"
         with:
@@ -66,7 +85,7 @@ jobs:
           python -VV
           python -m site
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade atlassian-python-api
+          python -m pip install --upgrade atlassian-python-api requests
           python -m pip install --upgrade jira
           
       - name: "Run Jirabot Merge Script"

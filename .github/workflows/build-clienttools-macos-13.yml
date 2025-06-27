@@ -117,7 +117,11 @@ jobs:
           cd ./build
           packages=($(ls -1 hpccsystems-clienttools-internal*.pkg ))
           for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+            # Use netrc to avoid exposing credentials in command line
+            echo "machine ${{ secrets.JFROG_REGISTRY }} login ${{ secrets.JFROG_USERNAME }} password ${{ secrets.JFROG_PASSWORD }}" > ~/.netrc
+            chmod 600 ~/.netrc
+            curl --netrc "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+            rm ~/.netrc
           done
 
       - name: Upload Error Logs
