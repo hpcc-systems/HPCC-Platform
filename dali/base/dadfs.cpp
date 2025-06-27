@@ -1448,14 +1448,8 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         }
 
         perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
-        if (perms<0) {
-            if (perms == SecAccess_Unavailable) {
-                scopePermissionsAvail=false;
-                perms = SecAccess_Full;
-            }
-            else
-                perms = SecAccess_None;
-        }
+        if (perms<0)
+            perms = SecAccess_None;
     }
     return perms;
 }
