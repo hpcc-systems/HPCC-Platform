@@ -238,6 +238,7 @@ jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree
 jlib_decl void addPTreeItem(IPropertyTree *ptree, const char * name, const char * value);
 
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags=ipt_none);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);

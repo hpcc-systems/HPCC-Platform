@@ -19,3 +19,8 @@ eclcc.log
 dockerfiles/platform-build-incremental/hpcc.gitpatch
 .env
 /vcpkg.json
+dockerfiles/values*.yaml
+testing/regress/ecl-test-local.json
+dockerfiles/*.ecl
+dockerfiles/t*
+dockerfiles/nohup.out

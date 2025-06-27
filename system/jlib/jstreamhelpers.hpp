@@ -65,4 +65,13 @@ const byte * readDirect(IBufferedSerialInputStream & source, size32_t len)
     return nullptr;  // Not enough data available or len 0 was requested
 }
 
+template <class T>
+inline const void * peek(IBufferedSerialInputStream & source, T & value)
+{
+    size32_t got;
+    const void * ptr = source.peek(sizeof(T), got);
+    if (ptr && got>=sizeof(T))
+        return ptr;
+    return nullptr;  // Not enough data available
+}
 #endif

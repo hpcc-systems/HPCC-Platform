@@ -3066,21 +3066,51 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
 
 void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
 {
-/* DJPS
     deserializeSelf(src);
 
-    StringAttr eName;
+    StringBuffer eName;
     for (;;)
     {
-        size32_t pos = src.getPos();
-        append(src, eName);
+        if (!readZeroTerminatedString(eName, src))
+            break;
         if (eName.isEmpty())
             break;
-        src.reset(pos); // reset to re-read tree name
         IPropertyTree *child = create(src);
         addPropTree(eName, child);
     }
-*/
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    StringBuffer _name;
+    if (!readZeroTerminatedString(_name, src))
+        return;
+    if (_name[0]==0)
+        setName(nullptr);
+    else
+        setName(_name);
+
+    read(src, flags);
+
+    StringBuffer attrName, attrValue;
+    for (;;)
+    {
+        if (!readZeroTerminatedString(attrName, src))
+            break;
+        if (attrName.isEmpty())
+            break;
+        if (!readZeroTerminatedString(attrValue, src))
+            return;
+        setProp(attrName, attrValue);
+    }
+
+    if (value) delete value;
+    size32_t size{0};
+    // Do we have enough bytes for a size32_t? If so then we can deseriaize a CPTValue
+    if (peek(src, size))
+        value = new CPTValue(src);
+    else
+        value = nullptr;
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
@@ -4491,6 +4521,13 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
     IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
+    return tree;
+}
+
+IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
     return tree;
 }
 
