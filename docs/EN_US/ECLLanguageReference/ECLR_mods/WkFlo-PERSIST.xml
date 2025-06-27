@@ -9,8 +9,8 @@
       <primary>PERSIST</primary>
     </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis
-  role="bold">]</emphasis><emphasis role="bold"> [, CLUSTER<indexterm>
-      <primary>CLUSTER</primary>
+  role="bold">]</emphasis><emphasis role="bold"> [, PLANE<indexterm>
+      <primary>PLANE</primary>
     </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
   role="bold">)] [, EXPIRE<indexterm>
       <primary>EXPIRE</primary>
@@ -30,9 +30,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.80pt" />
+        <colspec colwidth="82.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -69,11 +69,11 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+            <entry><emphasis role="bold">PLANE</emphasis></entry>
 
             <entry>Optional. Specifies writing the
             <emphasis>filename</emphasis> to the specified list of
-            <emphasis>target</emphasis> clusters. If omitted, the
+            <emphasis>target</emphasis> planes or clusters. If omitted, the
             <emphasis>filename</emphasis> is written to the cluster on which
             the PERSIST executes (as specified by the
             <emphasis>cluster</emphasis> parameter). The number of physical
@@ -87,13 +87,13 @@
             <entry><emphasis>target</emphasis></entry>
 
             <entry>A comma-delimited list of string constants containing the
-            names of the clusters to write the <emphasis>filename</emphasis>
-            to. The names must be listed as they appear on the ECL Watch
-            Activity page or returned by the Std.System.Thorlib.Group()
-            function, optionally with square brackets containing a
-            comma-delimited list of node-numbers (1-based) and/or ranges
-            (specified with a dash, as in n-m) to indicate the specific set of
-            nodes to write to.</entry>
+            names of the planes or clusters to write the
+            <emphasis>filename</emphasis> to. The names must be listed as they
+            appear on the ECL Watch Activity page or returned by the
+            Std.System.Thorlib.Group() function, optionally with square
+            brackets containing a comma-delimited list of node-numbers
+            (1-based) and/or ranges (specified with a dash, as in n-m) to
+            indicate the specific set of nodes to write to.</entry>
           </row>
 
           <row>
@@ -216,9 +216,9 @@ sPeople := SORT(Person,first_name): PERSIST('SortPerson'),WHEN(Daily);
   
 s1 := SORT(Person,first_name): PERSIST('SortPerson1','OtherThor');
       //run the code on the OtherThor cluster
-s2 := SORT(Person,first_name): PERSIST('SortPerson2','OtherThor',CLUSTER('AnotherThor'));
+s2 := SORT(Person,first_name): PERSIST('SortPerson2','OtherThor',PLANE('AnotherThor'));
        //run the code on the OtherThor cluster
-       // and write the file to the AnotherThor cluster
+       // and write the file to the AnotherThor plane
 </programlisting>
 
   <para>See Also: <link linkend="STORED">STORED</link>, <link
