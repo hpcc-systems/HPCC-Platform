@@ -1104,6 +1104,24 @@ void CPTValue::serializeToStream(IBufferedSerialOutputStream &out) const
     }
 }
 
+void CPTValue::deserializeFromStream(IBufferedSerialInputStream &in)
+{
+    size32_t sz;
+    read(in, sz);
+    if (sz)
+    {
+        read(in, compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+        set(sz, readDirect(in, sz));
+    }
+    else
+    {
+        compressType = COMPRESS_METHOD_NONE;
+        clear();
+    }
+}
+
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
     //Retain backward compatibility for the serialization format.
@@ -3046,6 +3064,66 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelf(src);
+
+    StringBuffer eName;
+    for (;;)
+    {
+        eName.clear();
+        peekReadZeroTerminatedString(src, eName);
+        if (eName.isEmpty())
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        IPropertyTree *child = create(src);
+        addPropTree(eName, child);
+    }
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    StringBuffer _name;
+    dbgassertex(readZeroTerminatedString(_name, src));
+    if (_name[0]==0)
+        setName(nullptr);
+    else
+        setName(_name);
+
+    read(src, flags);
+
+    StringBuffer attrName, attrValue;
+    for (;;)
+    {
+        if (getZeroTerminatedStringLength(src) == 0)
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        attrName.clear();
+        dbgassertex(readZeroTerminatedString(attrName, src));
+        attrValue.clear();
+        dbgassertex(readZeroTerminatedString(attrValue, src));
+        setProp(attrName, attrValue);
+    }
+
+    if (value) delete value;
+    size32_t size{0};
+    // Do we have enough bytes for a size32_t? If so then we can deserialize a CPTValue.
+    // Do not move buffer on as deserializing CPTValue will read the size again!
+    if (peekRead(src, size) && (size > 0))
+    {
+        value = new CPTValue(src);
+    }
+    else
+    {
+        read(src, size); // Move the buffer onto next field.
+        value = nullptr;
+    }
+}
+
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -4454,6 +4532,13 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
     IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
+    return tree;
+}
+
+IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
     return tree;
 }
 

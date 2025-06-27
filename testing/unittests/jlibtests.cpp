@@ -3412,6 +3412,206 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jstring.hpp"
 #include <string>
 
+IPropertyTree *createCompatibilityConfigPropertyTree()
+{
+    // Creates a complex nested property tree with multiple compatibility elements for serialization testing
+    Owned<IPropertyTree> root = createPTree("__array__");
+
+    // Helper lambda to add property elements with name/value attributes
+    auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
+    {
+        IPropertyTree *prop = parent->addPropTree("property");
+        prop->setProp("@name", name);
+        if (value)
+            prop->setProp("@value", value);
+    };
+
+    // Helper lambda to add operation/accepts/uses elements
+    auto addNamedElement = [](IPropertyTree *parent, const char *elementName, const char *name, const char *presence)
+    {
+        IPropertyTree *elem = parent->addPropTree(elementName);
+        elem->setProp("@name", name);
+        elem->setProp("@presence", presence);
+    };
+
+    // Helper lambda to add valueType elements with maskStyle children
+    auto addValueType = [](IPropertyTree *parent, const char *name, const char *presence, bool addMaskStyle = false, const char *setName = nullptr)
+    {
+        IPropertyTree *valueType = parent->addPropTree("valueType");
+        valueType->setProp("@name", name);
+        valueType->setProp("@presence", presence);
+
+        if (addMaskStyle)
+        {
+            IPropertyTree *maskStyle1 = valueType->addPropTree("maskStyle");
+            maskStyle1->setProp("@name", "keep-last-4-numbers");
+            maskStyle1->setProp("@presence", "r");
+
+            IPropertyTree *maskStyle2 = valueType->addPropTree("maskStyle");
+            maskStyle2->setProp("@name", "mask-last-4-numbers");
+            maskStyle2->setProp("@presence", "o");
+        }
+
+        if (setName)
+        {
+            IPropertyTree *set = valueType->addPropTree("Set");
+            set->setProp("@name", setName);
+            set->setProp("@presence", "r");
+        }
+    };
+
+    // Helper lambda to add rule elements
+    auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
+    {
+        IPropertyTree *rule = parent->addPropTree("rule");
+        rule->setProp("@contentType", contentType);
+        rule->setProp("@presence", presence);
+    };
+
+    // First compatibility element
+    {
+        IPropertyTree *compatibility = root->addPropTree("__item__");
+        IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+        // Context
+        IPropertyTree *context = compat->addPropTree("context");
+        context->setProp("@domain", "urn:hpcc:unittest");
+        context->setProp("@version", "0");
+        addProperty(context, "valuetype-set", "*");
+        addProperty(context, "rule-set", "*");
+
+        // Operations
+        addNamedElement(compat, "operation", "maskValue", "r");
+        addNamedElement(compat, "operation", "maskContent", "r");
+        addNamedElement(compat, "operation", "maskMarkupValue", "o");
+
+        // Accepts
+        addNamedElement(compat, "accepts", "valuetype-set", "r");
+        addNamedElement(compat, "accepts", "valuetype-set:value-type-set-a", "r");
+        addNamedElement(compat, "accepts", "valuetype-set:value-type-set-b", "r");
+        addNamedElement(compat, "accepts", "rule-set", "r");
+        addNamedElement(compat, "accepts", "rule-set:rule-set-2", "r");
+        addNamedElement(compat, "accepts", "required-acceptance", "r");
+        addNamedElement(compat, "accepts", "optional-acceptance", "o");
+
+        // Uses
+        addNamedElement(compat, "uses", "valuetype-set", "r");
+        addNamedElement(compat, "uses", "valuetype-set:value-type-set-a", "r");
+        addNamedElement(compat, "uses", "valuetype-set:value-type-set-b", "r");
+        addNamedElement(compat, "uses", "rule-set", "r");
+        addNamedElement(compat, "uses", "rule-set:rule-set-2", "r");
+        addNamedElement(compat, "uses", "required-acceptance", "p");
+        addNamedElement(compat, "uses", "optional-acceptance", "p");
+
+        // ValueTypes
+        addValueType(compat, "secret", "r");
+        addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+        addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
+        addValueType(compat, "*", "r");
+
+        // Rules
+        addRule(compat, "", "r");
+        addRule(compat, "xml", "r");
+    }
+
+    // Second compatibility element
+    {
+        IPropertyTree *compatibility = root->addPropTree("__item__");
+        IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+        IPropertyTree *context = compat->addPropTree("context");
+        context->setProp("@domain", "urn:hpcc:unittest");
+        context->setProp("@version", "0");
+        addProperty(context, "valuetype-set", "value-type-set-a");
+        addProperty(context, "rule-set", "");
+
+        addValueType(compat, "secret", "r");
+        addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+        addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
+
+        addRule(compat, "", "r");
+        addRule(compat, "xml", "r");
+    }
+
+    // Third compatibility element
+    {
+        IPropertyTree *compatibility = root->addPropTree("__item__");
+        IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+        IPropertyTree *context = compat->addPropTree("context");
+        context->setProp("@domain", "urn:hpcc:unittest");
+        context->setProp("@version", "0");
+        addProperty(context, "valuetype-set"); // No value attribute
+        addProperty(context, "rule-set", "rule-set-2");
+
+        addValueType(compat, "secret", "r");
+        addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
+        addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
+
+        addRule(compat, "", "p");
+        addRule(compat, "xml", "p");
+    }
+
+    // Fourth compatibility element
+    {
+        IPropertyTree *compatibility = root->addPropTree("__item__");
+        IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+        IPropertyTree *context = compat->addPropTree("context");
+        context->setProp("@domain", "urn:hpcc:unittest");
+        context->setProp("@version", "0");
+        addProperty(context, "valuetype-set", "value-type-set-b");
+        addProperty(context, "rule-set", "rule-set-2");
+
+        addValueType(compat, "secret", "r");
+        addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
+        addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
+
+        addRule(compat, "", "r");
+        addRule(compat, "xml", "r");
+    }
+
+    return root.getClear();
+}
+
+IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
+{
+    // Create a tree with various binary data sizes to test compression thresholds
+    Owned<IPropertyTree> tree = createPTree(testXml);
+
+    // Add some regular properties first
+    tree->setProp("normalProp", "normalValue");
+    tree->setPropInt("intProp", 42);
+
+    // Create binary data of different sizes to test compression thresholds
+    MemoryBuffer largeBinary;
+
+    // Small binary data (under compression threshold)
+    const char *smallData = "This is small binary data";
+    tree->setPropBin("smallBinary", strlen(smallData), smallData);
+
+    // Large binary data (over PTREE_COMPRESS_THRESHOLD to trigger compression)
+    // PTREE_COMPRESS_THRESHOLD is typically 4KB based on the comment in the existing test
+    const size_t largeSize = 8 * 1024; // 8KB to ensure compression
+    largeBinary.ensureCapacity(largeSize);
+    for (size_t i = 0; i < largeSize; i++)
+        largeBinary.append((byte)(i % 256));
+    tree->setPropBin("largeBinary", largeBinary.length(), largeBinary.toByteArray());
+
+    // Add nested elements with binary data
+    IPropertyTree *subTree = tree->addPropTree("subElement");
+    subTree->setProp("subProp", "subValue");
+
+    MemoryBuffer nestedBinary;
+    const char *nestedData = "Nested binary content with some repetitive data for compression testing";
+    // Repeat the data to make it larger and more compressible
+    for (int i = 0; i < 100; i++)
+        nestedBinary.append(strlen(nestedData), nestedData);
+    subTree->setPropBin("nestedBinary", nestedBinary.length(), nestedBinary.toByteArray());
+
+    return tree.getClear();
+}
+
 class PTreeSerializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationTest);
@@ -3452,7 +3652,7 @@ public:
 
     void testSerializeVsSerializeToStreamForBinaryDataCompressionTestPTree()
     {
-        testSerializeVsSerializeToStream(__func__, createBinaryDataCompressionTestPTree());
+        testSerializeVsSerializeToStream(__func__, createBinaryDataCompressionTestPTree(testXml));
     }
 
 protected:
@@ -3489,211 +3689,116 @@ protected:
         CPPUNIT_ASSERT_EQUAL(memBufOriginalTree.length(), memoryBufferStream.length());
         CPPUNIT_ASSERT(memcmp(memBufOriginalTree.toByteArray(), memoryBufferStream.toByteArray(), memBufOriginalTree.length()) == 0);
     }
-
-    IPropertyTree *createCompatibilityConfigPropertyTree()
-    {
-        // Creates a complex nested property tree with multiple compatibility elements for serialization testing
-        Owned<IPropertyTree> root = createPTree("__array__");
-
-        // Helper lambda to add property elements with name/value attributes
-        auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
-        {
-            IPropertyTree *prop = parent->addPropTree("property");
-            prop->setProp("@name", name);
-            if (value)
-                prop->setProp("@value", value);
-        };
-
-        // Helper lambda to add operation/accepts/uses elements
-        auto addNamedElement = [](IPropertyTree *parent, const char *elementName, const char *name, const char *presence)
-        {
-            IPropertyTree *elem = parent->addPropTree(elementName);
-            elem->setProp("@name", name);
-            elem->setProp("@presence", presence);
-        };
-
-        // Helper lambda to add valueType elements with maskStyle children
-        auto addValueType = [](IPropertyTree *parent, const char *name, const char *presence, bool addMaskStyle = false, const char *setName = nullptr)
-        {
-            IPropertyTree *valueType = parent->addPropTree("valueType");
-            valueType->setProp("@name", name);
-            valueType->setProp("@presence", presence);
-
-            if (addMaskStyle)
-            {
-                IPropertyTree *maskStyle1 = valueType->addPropTree("maskStyle");
-                maskStyle1->setProp("@name", "keep-last-4-numbers");
-                maskStyle1->setProp("@presence", "r");
-
-                IPropertyTree *maskStyle2 = valueType->addPropTree("maskStyle");
-                maskStyle2->setProp("@name", "mask-last-4-numbers");
-                maskStyle2->setProp("@presence", "o");
-            }
-
-            if (setName)
-            {
-                IPropertyTree *set = valueType->addPropTree("Set");
-                set->setProp("@name", setName);
-                set->setProp("@presence", "r");
-            }
-        };
-
-        // Helper lambda to add rule elements
-        auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
-        {
-            IPropertyTree *rule = parent->addPropTree("rule");
-            rule->setProp("@contentType", contentType);
-            rule->setProp("@presence", presence);
-        };
-
-        // First compatibility element
-        {
-            IPropertyTree *compatibility = root->addPropTree("__item__");
-            IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-            // Context
-            IPropertyTree *context = compat->addPropTree("context");
-            context->setProp("@domain", "urn:hpcc:unittest");
-            context->setProp("@version", "0");
-            addProperty(context, "valuetype-set", "*");
-            addProperty(context, "rule-set", "*");
-
-            // Operations
-            addNamedElement(compat, "operation", "maskValue", "r");
-            addNamedElement(compat, "operation", "maskContent", "r");
-            addNamedElement(compat, "operation", "maskMarkupValue", "o");
-
-            // Accepts
-            addNamedElement(compat, "accepts", "valuetype-set", "r");
-            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-a", "r");
-            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-b", "r");
-            addNamedElement(compat, "accepts", "rule-set", "r");
-            addNamedElement(compat, "accepts", "rule-set:rule-set-2", "r");
-            addNamedElement(compat, "accepts", "required-acceptance", "r");
-            addNamedElement(compat, "accepts", "optional-acceptance", "o");
-
-            // Uses
-            addNamedElement(compat, "uses", "valuetype-set", "r");
-            addNamedElement(compat, "uses", "valuetype-set:value-type-set-a", "r");
-            addNamedElement(compat, "uses", "valuetype-set:value-type-set-b", "r");
-            addNamedElement(compat, "uses", "rule-set", "r");
-            addNamedElement(compat, "uses", "rule-set:rule-set-2", "r");
-            addNamedElement(compat, "uses", "required-acceptance", "p");
-            addNamedElement(compat, "uses", "optional-acceptance", "p");
-
-            // ValueTypes
-            addValueType(compat, "secret", "r");
-            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
-            addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
-            addValueType(compat, "*", "r");
-
-            // Rules
-            addRule(compat, "", "r");
-            addRule(compat, "xml", "r");
-        }
-
-        // Second compatibility element
-        {
-            IPropertyTree *compatibility = root->addPropTree("__item__");
-            IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-            IPropertyTree *context = compat->addPropTree("context");
-            context->setProp("@domain", "urn:hpcc:unittest");
-            context->setProp("@version", "0");
-            addProperty(context, "valuetype-set", "value-type-set-a");
-            addProperty(context, "rule-set", "");
-
-            addValueType(compat, "secret", "r");
-            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
-            addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
-
-            addRule(compat, "", "r");
-            addRule(compat, "xml", "r");
-        }
-
-        // Third compatibility element
-        {
-            IPropertyTree *compatibility = root->addPropTree("__item__");
-            IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-            IPropertyTree *context = compat->addPropTree("context");
-            context->setProp("@domain", "urn:hpcc:unittest");
-            context->setProp("@version", "0");
-            addProperty(context, "valuetype-set"); // No value attribute
-            addProperty(context, "rule-set", "rule-set-2");
-
-            addValueType(compat, "secret", "r");
-            addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
-            addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
-
-            addRule(compat, "", "p");
-            addRule(compat, "xml", "p");
-        }
-
-        // Fourth compatibility element
-        {
-            IPropertyTree *compatibility = root->addPropTree("__item__");
-            IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-            IPropertyTree *context = compat->addPropTree("context");
-            context->setProp("@domain", "urn:hpcc:unittest");
-            context->setProp("@version", "0");
-            addProperty(context, "valuetype-set", "value-type-set-b");
-            addProperty(context, "rule-set", "rule-set-2");
-
-            addValueType(compat, "secret", "r");
-            addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
-            addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
-
-            addRule(compat, "", "r");
-            addRule(compat, "xml", "r");
-        }
-
-        return root.getClear();
-}
-
-    IPropertyTree *createBinaryDataCompressionTestPTree()
-    {
-        // Create a tree with various binary data sizes to test compression thresholds
-        Owned<IPropertyTree> tree = createPTree(testXml);
-
-        // Add some regular properties first
-        tree->setProp("normalProp", "normalValue");
-        tree->setPropInt("intProp", 42);
-
-        // Create binary data of different sizes to test compression thresholds
-        MemoryBuffer largeBinary;
-
-        // Small binary data (under compression threshold)
-        const char *smallData = "This is small binary data";
-        tree->setPropBin("smallBinary", strlen(smallData), smallData);
-
-        // Large binary data (over PTREE_COMPRESS_THRESHOLD to trigger compression)
-        // PTREE_COMPRESS_THRESHOLD is typically 4KB based on the comment in the existing test
-        const size_t largeSize = 8 * 1024; // 8KB to ensure compression
-        largeBinary.ensureCapacity(largeSize);
-        for (size_t i = 0; i < largeSize; i++)
-            largeBinary.append((byte)(i % 256));
-        tree->setPropBin("largeBinary", largeBinary.length(), largeBinary.toByteArray());
-
-        // Add nested elements with binary data
-        IPropertyTree *subTree = tree->addPropTree("subElement");
-        subTree->setProp("subProp", "subValue");
-
-        MemoryBuffer nestedBinary;
-        const char *nestedData = "Nested binary content with some repetitive data for compression testing";
-        // Repeat the data to make it larger and more compressible
-        for (int i = 0; i < 100; i++)
-            nestedBinary.append(strlen(nestedData), nestedData);
-        subTree->setPropBin("nestedBinary", nestedBinary.length(), nestedBinary.toByteArray());
-
-        return tree.getClear();
-    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializationTest");
 
+/*
+ * PTree deserialization tests
+ *
+ *   Test PTree deserialization format matches from MemoryBuffer to IBufferedSerialInputStream
+ *
+ */
+
+class PTreeDeserializationTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeDeserializationTest);
+    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForRootOnlyPTree);
+    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree);
+    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+    Owned<IPropertyTree> originalTree;
+
+public:
+    void testDeserializeVsDeserializeFromStreamForRootOnlyPTree()
+    {
+        testDeserializeVsDeserializeFromStream(__func__, createPTree("EmptyRoot"));
+    }
+
+    void testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree()
+    {
+        testDeserializeVsDeserializeFromStream(__func__, createCompatibilityConfigPropertyTree());
+    }
+
+    void testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree()
+    {
+        testDeserializeVsDeserializeFromStream(__func__, createBinaryDataCompressionTestPTree(testXml));
+    }
+
+protected:
+    void testDeserializeVsDeserializeFromStream(const char *testName, IPropertyTree *_originalTree)
+    {
+        originalTree.setown(_originalTree);
+
+        DBGLOG("Starting deserialization timing test for %s", testName);
+
+        // First serialize the original tree to get data for deserialization
+        MemoryBuffer serializedData;
+        originalTree->serialize(serializedData);
+
+        // Create buffer for stream serialization
+        MemoryBuffer streamSerializedData;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamSerializedData);
+        originalTree->serializeToStream(*out);
+        out->flush();
+
+        // Ensure serialization matches
+        CPPUNIT_ASSERT_EQUAL(serializedData.length(), streamSerializedData.length());
+        CPPUNIT_ASSERT(memcmp(serializedData.toByteArray(), streamSerializedData.toByteArray(), serializedData.length()) == 0);
+
+        // Test deserialize() method
+        MemoryBuffer deserializeBuffer;
+        deserializeBuffer.append(serializedData.length(), serializedData.toByteArray());
+        Owned<IPropertyTree> deserializedTree = createPTree();
+        CCycleTimer timer;
+        deserializedTree->deserialize(deserializeBuffer);
+        __uint64 deserializeElapsedNs = timer.elapsedNs();
+
+        // Test deserializeFromStream() method
+        MemoryBuffer streamBuffer;
+        streamBuffer.append(streamSerializedData.length(), streamSerializedData.toByteArray());
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
+        Owned<IPropertyTree> deserializedFromStreamTree = createPTree();
+        timer.reset();
+        deserializedFromStreamTree->deserializeFromStream(*in);
+        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
+
+        // Verify both deserialized trees are equivalent to the original
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedTree));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedFromStreamTree));
+
+        // Convert to milliseconds for display
+        double deserializeTimeMs = deserializeElapsedNs / 1e6;
+        double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
+
+        DBGLOG("Deserialization timing results for %s:", testName);
+        DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
+        DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
+        DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeDeserializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeDeserializationTest, "PTreeDeserializationTest");
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
