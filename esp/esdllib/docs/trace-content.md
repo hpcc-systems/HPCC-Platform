@@ -25,6 +25,6 @@ Trace output will be generated unless `@test` is present and evaluates to *false
 
 Future development will extend the ability to use, manipulate, and inspect masking capabilities:
 
-- [Extend ESDL script syntax to mask data within an XPath](https://track.hpccsystems.com/browse/HPCC-28771)
-- [Extend ESDL script syntax to interrogate data masking capabilities](https://track.hpccsystems.com/browse/HPCC-28772)
-- [Extend ESDL script syntax to control the data masking environment](https://track.hpccsystems.com/browse/HPCC-28770)
+- [Extend ESDL script syntax to mask data within an XPath](https://hpccsystems.atlassian.net/browse/HPCC-28771)
+- [Extend ESDL script syntax to interrogate data masking capabilities](https://hpccsystems.atlassian.net/browse/HPCC-28772)
+- [Extend ESDL script syntax to control the data masking environment](https://hpccsystems.atlassian.net/browse/HPCC-28770)

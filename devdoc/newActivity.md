@@ -116,7 +116,7 @@ We also summarised a few implementation details:
 
 Finally, deciding on the name of the activity took almost as long as designing it!
 
-The end result of this process was summarised in a JIRA issue: <https://track.hpccsystems.com/browse/HPCC-12267>, which
+The end result of this process was summarised in a JIRA issue: <https://hpccsystems.atlassian.net/browse/HPCC-12267>, which
 contains details of the desired syntax and semantics. It also contains some details of the next blog topic - test cases.
 
 Incidentally, a question that arose from of the design discussion was \"What ECL can we use if we want to annotate a
@@ -124,9 +124,9 @@ dataset with partition points?\". Ideally the user needs a join activity which w
 matches against the first row that contains key values less than or equal to the values in the search row. There are
 other situations where that operation would also be useful. Our conclusion was that the system does not have a simple
 way to achieve that, and that it was a deficiency in the current system, so another JIRA was created (see
-<https://track.hpccsystems.com/browse/HPCC-13016>). This is often how the design discussions proceed, with discussions
+<https://hpccsystems.atlassian.net/browse/HPCC-13016>). This is often how the design discussions proceed, with discussions
 in one area leading to new ideas in another. Similarly we concluded it would be useful to distribute rows in a dataset
-based on a partition (see <https://track.hpccsystems.com/browse/HPCC-13260>).
+based on a partition (see <https://hpccsystems.atlassian.net/browse/HPCC-13260>).
 
 Quantile 2 - Test cases
 =======================
@@ -304,7 +304,7 @@ locations were found by searching for an activity with a similar syntax e.g., no
 
 It is too easy to miss something, especially for somebody new to the code - although if you do then you will trigger a
 runtime internal error. It would be much better if the code was refactored so that the bulk of the changes were in one
-place. (See JIRA <https://track.hpccsystems.com/browse/HPCC-13434> that has been added to track improvement of the
+place. (See JIRA <https://hpccsystems.atlassian.net/browse/HPCC-13434> that has been added to track improvement of the
 situation.)
 
 With these changes implemented the examples from the previous pull request now syntax check. The next stage in the
