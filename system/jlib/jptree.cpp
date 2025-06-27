@@ -1104,6 +1104,24 @@ void CPTValue::serializeToStream(IBufferedSerialOutputStream &out) const
     }
 }
 
+void CPTValue::deserializeFromStream(IBufferedSerialInputStream &in)
+{
+    size32_t sz;
+    read(in, sz);
+    if (sz)
+    {
+        read(in, compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+        set(sz, readDirect(in, sz));
+    }
+    else
+    {
+        compressType = COMPRESS_METHOD_NONE;
+        clear();
+    }
+}
+
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
     //Retain backward compatibility for the serialization format.
@@ -3046,6 +3064,55 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelf(src);
+
+    StringBuffer eName;
+    for (;;)
+    {
+        if (!readZeroTerminatedString(eName, src))
+            break;
+        if (eName.isEmpty())
+            break;
+        IPropertyTree *child = create(src);
+        addPropTree(eName, child);
+    }
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    StringBuffer _name;
+    if (!readZeroTerminatedString(_name, src))
+        return;
+    if (_name[0]==0)
+        setName(nullptr);
+    else
+        setName(_name);
+
+    read(src, flags);
+
+    StringBuffer attrName, attrValue;
+    for (;;)
+    {
+        if (!readZeroTerminatedString(attrName, src))
+            break;
+        if (attrName.isEmpty())
+            break;
+        if (!readZeroTerminatedString(attrValue, src))
+            return;
+        setProp(attrName, attrValue);
+    }
+
+    if (value) delete value;
+    size32_t size{0};
+    // Do we have enough bytes for a size32_t? If so then we can deseriaize a CPTValue
+    if (peek(src, size))
+        value = new CPTValue(src);
+    else
+        value = nullptr;
+}
+
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -4454,6 +4521,13 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
     IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
+    return tree;
+}
+
+IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
     return tree;
 }
 

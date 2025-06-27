@@ -38,4 +38,40 @@ inline void append(IBufferedSerialOutputStream & target, const T & value)
     target.put(sizeof(T), &value);
 }
 
+// Global helper functions for buffered serial input
+inline void read(IBufferedSerialInputStream & source, char * buffer, size32_t size)
+{
+    source.read(size, buffer);
+}
+
+template <class T>
+inline void read(IBufferedSerialInputStream & source, T & value)
+{
+    source.read(sizeof(T), &value);
+}
+
+const byte * readDirect(IBufferedSerialInputStream & source, size32_t len)
+{
+    if (len)
+    {
+        size32_t got;
+        const byte * result = static_cast<const byte *>(source.peek(len, got));
+        if (got >= len)
+        {
+            source.skip(len);
+            return result;
+        }
+    }
+    return nullptr;  // Not enough data available or len 0 was requested
+}
+
+template <class T>
+inline const void * peek(IBufferedSerialInputStream & source, T & value)
+{
+    size32_t got;
+    const void * ptr = source.peek(sizeof(T), got);
+    if (ptr && got>=sizeof(T))
+        return ptr;
+    return nullptr;  // Not enough data available
+}
 #endif
