@@ -191,7 +191,9 @@ public:
     int run()
     {
         ICoven &coven=queryCoven();
-        CMessageHandler<CDaliPublisherServer> handler("CDaliPublisherServer",this,&CDaliPublisherServer::processMessage,NULL, 100);
+        unsigned maxThreads = 100; // NB: can exceed with up to 1s delay
+        maxThreads = getComponentConfigSP()->getPropInt("expert/@daliPublisherServerPoolLimit", maxThreads);
+        CMessageHandler<CDaliPublisherServer> handler("CDaliPublisherServer", this, &CDaliPublisherServer::processMessage, nullptr, maxThreads);
         CMessageBuffer mb;
         while (running)
         {
@@ -575,7 +577,9 @@ public:
     int run()
     {
         ICoven &coven=queryCoven();
-        CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages",this,&CDaliPublisherClient::processMessage);
+        unsigned maxThreads = 100; // NB: can exceed with up to 1s delay
+        maxThreads = getComponentConfigSP()->getPropInt("expert/@daliPublisherClientPoolLimit", maxThreads);
+        CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages", this, &CDaliPublisherClient::processMessage, nullptr, maxThreads);
         CMessageBuffer mb;
         while (running)
         {
