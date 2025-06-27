@@ -159,6 +159,7 @@ interface IPTArrayValue
     virtual CompressionMethod getCompressionType() const = 0;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const = 0;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src) = 0;
 //serializable
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
@@ -192,6 +193,7 @@ public:
     }
 
     virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const override { UNIMPLEMENTED; }
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override { UNIMPLEMENTED; }
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
@@ -230,6 +232,7 @@ public:
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -737,6 +740,7 @@ public:
     virtual unsigned getAttributeCount() const override;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;

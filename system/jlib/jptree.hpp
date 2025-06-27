@@ -146,6 +146,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual unsigned getAttributeCount() const = 0;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &in) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended

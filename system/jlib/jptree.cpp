@@ -1104,6 +1104,24 @@ void CPTValue::serializeToStream(IBufferedSerialOutputStream &out) const
     }
 }
 
+void CPTValue::deserializeFromStream(IBufferedSerialInputStream &in)
+{
+    size32_t sz;
+    read(in, sz);
+    if (sz)
+    {
+        read(in, compressType);
+        if (compressType == COMPRESS_METHOD_LZWLEGACY)
+            compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+        set(sz, readDirect(in, sz));
+    }
+    else
+    {
+        compressType = COMPRESS_METHOD_NONE;
+        clear();
+    }
+}
+
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
     //Retain backward compatibility for the serialization format.
@@ -3044,6 +3062,25 @@ void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int de
 void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
 {
     serializeCutOff(tgt, -1, 0);
+}
+
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+/* DJPS
+    deserializeSelf(src);
+
+    StringAttr eName;
+    for (;;)
+    {
+        size32_t pos = src.getPos();
+        append(src, eName);
+        if (eName.isEmpty())
+            break;
+        src.reset(pos); // reset to re-read tree name
+        IPropertyTree *child = create(src);
+        addPropTree(eName, child);
+    }
+*/
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
