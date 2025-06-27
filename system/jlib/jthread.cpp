@@ -1070,18 +1070,7 @@ public:
             availsem.signal(defaultmax);
         stacksize = _stacksize;
         timeoutOnRelease = _timeoutOnRelease;
-        if (_targetpoolsize)
-        {
-            if (INFINITE == delay)
-            {
-                IWARNLOG("%s; targetpoolsize specified but delay is INFINITE - ignoring targetpoolsize", poolname.get());
-                _targetpoolsize = defaultmax;
-            }
-            else
-                targetpoolsize = _targetpoolsize;
-        }
-        else
-            targetpoolsize = defaultmax;
+        targetpoolsize = _targetpoolsize?_targetpoolsize:defaultmax;
     }
 
     ~CThreadPool()
@@ -1281,6 +1270,7 @@ public:
         bool ret = true;
         if (defaultmax) {
             unsigned n=threadwrappers.ordinality();
+            // JCSMORE - only considering those above targetpoolsize, means it could remain in excess if leading threads stop
             for (unsigned i2=targetpoolsize;i2<n;i2++) {        // only check excess for efficiency
                 if (item==&threadwrappers.item(i2)) {
                     threadwrappers.remove(i2);
@@ -1318,18 +1308,26 @@ public:
     // Due to the throttling mechanism, the number of running threads may exceed the defaultmax
     // Reducing the pool size, can in effect increase the number of running threads over the limit
     // Completing threads will only make a slot available if the number running is less than the limit
-    virtual void setPoolSize(unsigned newPoolSize) override
+    virtual void setPoolSize(unsigned newPoolSize, unsigned newTargetPoolSize) override
     {
         CriticalBlock block(crit);
-        if (newPoolSize == defaultmax)
-            return;
-
         if (newPoolSize > defaultmax)
         {
+            // NB: calc difference, but consider 'burst' threads, and discount them from the number to add
+            // because the new defaultmax will mean those burst(any thread) threads will add to slot capacity.
+
             unsigned slotsToAdd = newPoolSize - defaultmax;
-            // it doesn't matter how many slots are currently consumed (<= numrunning), we need to "allocate" slotsToAdd more
-            // NB: a slot is only released back (by notifyStopped) if numrunning drops below defaultmax
-            availsem.signal(slotsToAdd);
+            if (numrunning > defaultmax) // i.e. some 'burst' threads are running
+            {
+                // consider some of the 'burst' threads as part of the new pool size
+                unsigned burstThreads = numrunning - defaultmax;
+                if (burstThreads >= slotsToAdd)
+                    slotsToAdd = 0; // already enough capacity
+                else
+                    slotsToAdd -= burstThreads;
+            }
+            if (slotsToAdd)
+                availsem.signal(slotsToAdd);
         }
         else if (newPoolSize < defaultmax)
         {
@@ -1342,15 +1340,27 @@ public:
                 --slotsToConsume;
             }
             // NB: any unconsumed are now in effect 'burst' threads. Their lifetime (as before) is governed by targetpoolsize
-            if (INFINITE == delay) // tightly bound pool that should have no 'burst' threads.
-            {
-                // reduce targetpoolsize to match defaultmax
-                // NB: in practice this means a tightly bound pool that would normally not have any burst threads,
-                // could do until they finish after the limit is shunk. After they finish the new targetpoolsize will make
-                // them disappear.
-                targetpoolsize = newPoolSize;
-            }
         }
+
+        if (0 == newTargetPoolSize)
+            newTargetPoolSize = newPoolSize;
+
+        unsigned n = threadwrappers.ordinality();
+        unsigned i = n;
+        // walk backwards, removing stopped thread until we reach the new targetpoolsize
+        while (n>newTargetPoolSize)
+        {
+            --i;
+            CPooledThreadWrapper &t = threadwrappers.item(i);
+            if (t.isStopped())
+            {
+                threadwrappers.remove(i);
+                --n;
+            }
+            if (0 == i)
+                break;
+        }
+        targetpoolsize = newTargetPoolSize;
         defaultmax = newPoolSize;
     }
 };
