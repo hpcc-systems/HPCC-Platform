@@ -21,6 +21,11 @@ import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src-react/components/Workunits.tsx");
+const sashaService = new SashaService({ baseUrl: "" });
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -230,6 +235,20 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             onClick: () => setShowAbortConfirm(true)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "restore", text: nlsHPCC.Restore, disabled: !(filter.Type === true && uiState.hasSelection),
+            onClick: () => {
+                const wuids = selection.map(item => item.Wuid || item.ID);
+                Promise.all(wuids.map(wuid =>
+                    sashaService.RestoreWU({
+                        Wuid: wuid,
+                        WUType: WsSasha.WUTypes.ECL
+                    })
+                ))
+                    .then(() => refreshTable.call(true))
+                    .catch(err => logger.error(err));
+            }
+        },
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
             onClick: () => {
