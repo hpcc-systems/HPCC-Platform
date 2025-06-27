@@ -21,6 +21,10 @@ import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
+import { SashaService, WsSasha } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -75,6 +79,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
+    const sashaService = React.useMemo(() => new SashaService({ baseUrl: "" }), []);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [showTimeline, setShowTimeline] = useUserStore<boolean>(WORKUNITS_SHOWTIMELINE, true);
@@ -231,6 +236,20 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
+            key: "restore", text: nlsHPCC.Restore, disabled: !(filter.Type === true && uiState.hasSelection),
+            onClick: () => {
+                const wuids = selection.map(item => item.Wuid || item.ID);
+                Promise.all(wuids.map(wuid =>
+                    sashaService.RestoreWU({
+                        Wuid: wuid,
+                        WUType: WsSasha.WUTypes.ECL
+                    })
+                ))
+                    .then(() => refreshTable.call(true))
+                    .catch(err => logger.error(err));
+            }
+        },
+        {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
             onClick: () => {
                 WsWorkunits.WUAction(selection, "Protect").then(() => refreshTable.call());
@@ -266,7 +285,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 refreshTable.call();
             }
         },
-    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, showTimeline, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser.username, filter, hasFilter, refreshTable, sashaService, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, showTimeline, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
