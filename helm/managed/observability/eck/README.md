@@ -16,6 +16,22 @@
 - Fetch elastic user pass for kibana ui access
 -- kubectl get secret elasticsearch-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 --decode; echo
 
-TODO
-- configure HPCC to export out to collector
-  create sample values file akin to this one: https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/tracing/otlp-http-collector-k8s.yaml
+-- helm upgrade myhpcc HPCC-Platform/helm/hpcc -f HPCC-Platform/helm/managed/observability/eck/otlp-http-collector-k8s.yaml
+
+or 
+
+-- helm install myhpcc HPCC-Platform/helm/hpcc -f HPCC-Platform/helm/managed/observability/eck/otlp-http-collector-k8s.yaml
+
+
+to fetch elastic token and ca_cert:
+
+>  export ELASTIC_APM_SECRET_TOKEN=$(kubectl get secret/eck-apm-eck-apm-server-apm-token --template '{{index .data "secret-token"}}' | base64 -d)
+> export ELASTIC_APM_SERVER_CA_CERT_FILE=$(mktemp)
+> env | grep ELASTIC_APM_
+
+to test APM server cert based connectivity
+> curl --resolve *:8200:127.0.0.1 --cacert ${ELASTIC_APM_SERVER_CA_CERT_FILE} -H "Authorization: Bearer ${ELASTIC_APM_SECRET_TOKEN}" https://eck-apm-eck-apm-server-apm-http.default.svc:8200
+
+to test sample traces to collector
+> docker run --rm ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest   traces   --otlp-endpoint=host.docker.internal:4317   --otlp-insecure   --duration=30s   --rate=5   --service="test-service"
+
