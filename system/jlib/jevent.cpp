@@ -135,7 +135,7 @@ static constexpr EventAttrTypeClass attrTypeClasses[] = {
     EATCnumeric,
     EATCnumeric,
     EATCnumeric,
-    EATCnumeric,
+    EATCtimestamp,
     EATCtext,
     EATCtext,
 };
@@ -229,6 +229,20 @@ EventAttrType queryEventAttributeType(EventAttr attr)
 {
     assertex(attr < EvAttrMax);
     return attrInformation[attr].type;
+}
+
+bool isHeaderAttribute(EventAttr attr)
+{
+    switch (attr)
+    {
+    case EvAttrEventTimestamp:
+    case EvAttrEventTraceId:
+    case EvAttrEventThreadId:
+    case EvAttrEventStackTrace:
+        return true;
+    default:
+        return false;
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -414,14 +428,14 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     else
         outputStream.set(bufferedDiskStream);
 
-    __uint64 startTimestamp = getTimeStampNowValue()*1000;
+    startTimestamp.store(getTimeStampNowValue()*1000, std::memory_order_release);
     numEvents = 0;
     startCycles.store(get_cycles_now(), std::memory_order_release);
 
     //Revisit: If the file is being compressed, then these fields should be output uncompressed at the head
     offset_type pos = 0;
     write(pos, options);
-    write(pos, startTimestamp);
+    write(pos, startTimestamp.load(std::memory_order_acquire));
     nextOffset = pos;
     nextWriteOffset = 0;
     for (unsigned i=0; i < numBlocks; i++)
@@ -780,6 +794,120 @@ void EventRecorder::recordDaliSubscribe(const char * xpath, __int64 id, stat_typ
     recordDaliEvent(EventDaliSubscribe, xpath, id, elapsedNs, 0);
 }
 
+void EventRecorder::recordEvent(CEvent& event)
+{
+    // FileInformation events record even when recording is paused. All others record when actively recording.
+    switch (event.queryType())
+    {
+    case MetaFileInformation:
+        if (!isStarted || isStopped)
+            return;
+        break;
+    default:
+        if (!isRecording())
+            return;
+        break;
+    }
+
+    // fail the request if the event data is incomplete - all required attributes must be present
+    assertex(event.isComplete());
+
+    // Handle logging to the trace log. No attempt is made to match names recorded elsewhere.
+    if (unlikely(outputToLog))
+    {
+        VStringBuffer trace("{ \"name\": \"%s\"", queryEventName(event.queryType()));
+        for (CEventAttribute& attr : event.assignedAttributes)
+        {
+            trace.append(", \"").append(queryEventAttributeName(attr.queryId())).append("\": ");
+            switch (attrInformation[attr.queryId()].typeClass)
+            {
+            case EATCnone:
+                break;
+            case EATCboolean:
+                trace.append(boolToStr(attr.queryBooleanValue()));
+                break;
+            case EATCnumeric:
+                trace.append(attr.queryNumericValue());
+                break;
+            case EATCtext:
+                trace.append('"').append(attr.queryTextValue()).append('"');
+                break;
+            default:
+                UNIMPLEMENTED;
+            }
+        }
+        trace.append(" }");
+        TRACEEVENT("%s", trace.str());
+    }
+
+    // Prepare to write the event data.
+    size32_t requiredSize = sizeMessageHeaderFooter;
+    for (CEventAttribute&  attr : event.definedAttributes)
+    {
+        if (isHeaderAttribute(attr.queryId())) // already counted
+            continue;
+        switch (attrInformation[attr.queryId()].type)
+        {
+        case EATbool:
+            requiredSize += getSizeOfAttr(attr.queryBooleanValue());
+            break;
+        case EATu1:
+            requiredSize += getSizeOfAttr(uint8_t(attr.queryNumericValue()));
+            break;
+        case EATu2:
+            requiredSize += getSizeOfAttr(uint16_t(attr.queryNumericValue()));
+            break;
+        case EATu4:
+            requiredSize += getSizeOfAttr(uint32_t(attr.queryNumericValue()));
+            break;
+        case EATu8:
+        case EATtimestamp:
+            requiredSize += getSizeOfAttr(attr.queryNumericValue());
+            break;
+        case EATstring:
+            requiredSize += getSizeOfAttr(attr.queryTextValue());
+            break;
+        default:
+            UNIMPLEMENTED;
+        }
+    }
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+
+    // Write the event data. Note the critical assumption that the defined attributes are presented in expected recording order.
+    writeEventHeader(event.queryType(), pos, event.queryNumericValue(EvAttrEventTimestamp), event.queryTextValue(EvAttrEventTraceId), event.queryNumericValue(EvAttrEventThreadId));
+    for (CEventAttribute& attr : event.definedAttributes)
+    {
+        if (isHeaderAttribute(attr.queryId())) // already written
+            continue;
+        // Write each remaining attribute using its native type information.
+        switch (attrInformation[attr.queryId()].type)
+        {
+        case EATbool:
+            write(pos, attr.queryId(), attr.queryBooleanValue());
+            break;
+        case EATu1:
+            write(pos, attr.queryId(), uint8_t(attr.queryNumericValue()));
+            break;
+        case EATu2:
+            write(pos, attr.queryId(), uint16_t(attr.queryNumericValue()));
+            break;
+        case EATu4:
+            write(pos, attr.queryId(), uint32_t(attr.queryNumericValue()));
+            break;
+        case EATu8:
+        case EATtimestamp:
+            write(pos, attr.queryId(), attr.queryNumericValue());
+            break;
+        case EATstring:
+            write(pos, attr.queryId(), attr.queryTextValue());
+            break;
+        default:
+            UNIMPLEMENTED;
+        }
+    }
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
 
 void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
 {
@@ -789,18 +917,35 @@ void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
     write(offset, ts);
 
     if (options & ERFtraceid)
-    {
-        const char * traceid = queryThreadedActiveSpan()->queryTraceId();
-        assertex(strlen(traceid) == 32);
-        for (unsigned i=0; i < 32; i += 2)
-        {
-            byte next = getHexPair(traceid + i);
-            writeByte(offset, next);
-        }
-    }
+        writeTraceId(offset, queryThreadedActiveSpan()->queryTraceId());
     if (options & ERFthreadid)
     {
         __uint64 threadId = (__uint64)GetCurrentThreadId();
+        write(offset, threadId);
+    }
+}
+
+void EventRecorder::writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char * traceid, __uint64 threadId)
+{
+    __uint64 ts;
+    if (timestamp)
+        ts = timestamp - startTimestamp.load(std::memory_order_acquire);
+    else
+        ts = cycle_to_nanosec(get_cycles_now() - startCycles.load(std::memory_order_acquire)); // nanoseconds relative to the start of the recording
+
+    write(offset, type);
+    write(offset, ts);
+
+    if (options & ERFtraceid)
+    {
+        if (isEmptyString(traceid))
+            traceid = queryThreadedActiveSpan()->queryTraceId();
+        writeTraceId(offset, traceid);
+    }
+    if (options & ERFthreadid)
+    {
+        if (!threadId)
+            threadId = (__uint64)GetCurrentThreadId();
         write(offset, threadId);
     }
 }
@@ -927,6 +1072,16 @@ EventAttrTypeClass CEventAttribute::queryTypeClass() const
 const char* CEventAttribute::queryTextValue() const
 {
     assertex(isText());
+    if (isTimestamp())
+    {
+        CDateTime dt;
+        dt.setTimeStampNs(number);
+        dt.getString(text);
+        // dt.getString() includes microseconds for all fractional seconds. Ensure all nanoseconds
+        // are represented.
+        if (number % 1000000000)
+            text.appendf("%03llu", number % 1000ULL);
+    }
     return text;
 }
 
@@ -959,7 +1114,19 @@ void CEventAttribute::reset(State _state)
 void CEventAttribute::setValue(const char* value)
 {
     assertex(isText() && !isUnused());
-    text.set(value);
+    if (isTimestamp())
+    {
+        if (strchr(value, '-')) // hyphen hints at a formatted date/time string
+        {
+            CDateTime dt;
+            dt.setString(value);
+            number = dt.getTimeStampNs();
+        }
+        else // no hyphen suggests a nanasecond count
+            number = strtoull(value, nullptr, 0);
+    }
+    else
+        text.set(value);
     state = Assigned;
 }
 
@@ -1010,16 +1177,8 @@ bool CEvent::isComplete() const
 {
     for (EventAttr attr : eventInformation[type].attributes)
     {
-        switch (attr)
-        {
-        case EvAttrEventTraceId:
-        case EvAttrEventThreadId:
-        case EvAttrEventStackTrace:
-            continue;
-        default:
-            if (attributes[attr].isDefined())
-                return false;
-        }
+        if (!isHeaderAttribute(attr) && attributes[attr].isDefined())
+            return false;
     }
     return true;
 }
@@ -1088,6 +1247,21 @@ bool CEvent::setValue(EventAttr attr, __uint64 value)
     ASSERT_ATTR(attr);
     if (attributes[attr].isNumeric())
     {
+        switch (attrInformation[attr].type)
+        {
+        case EATu1:
+            assertex(value <= std::numeric_limits<uint8_t>::max());
+            break;
+        case EATu2:
+            assertex(value <= std::numeric_limits<uint16_t>::max());
+            break;
+        case EATu4:
+            assertex(value <= std::numeric_limits<uint32_t>::max());
+            break;
+        case EATu8:
+        case EATtimestamp:
+            break;
+        }
         attributes[attr].setValue(value);
         return true;
     }
