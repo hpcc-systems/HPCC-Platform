@@ -75,7 +75,6 @@ opentelemetry-collector:
       cpu: 200m
       memory: 400Mi
   image:
-    #tag: "0.122.5"
     repository: otel/opentelemetry-collector-k8s
     tag: "0.123.0"
   extraEnvs:
@@ -124,20 +123,13 @@ opentelemetry-collector:
         spike_limit_mib: 150
 
     exporters:
-      #otlp:
       #Full otlphttp config options documented here: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlphttpexporter/config.go
       otlphttp:
         endpoint: https://eck-apm-eck-apm-server-apm-http.default.svc:8200
         headers:
           Authorization: "Bearer ${env:ELASTIC_APM_SECRET_TOKEN}"
-        #api-key: ${OBSERVABILITY_API_KEY}
-        #        compression: none
-        #        encoding: json
         tls:
           ca_file: "/etc/ca-certificates/tls.crt"
-#          insecure_skip_verify: true
-#          cert_file: "/etc/ca-certificates/tls.crt" 
-#          insecure: true
 
     service:
       pipelines:
@@ -145,10 +137,6 @@ opentelemetry-collector:
           receivers: [otlp]
           processors: [memory_limiter, batch, k8sattributes]
           exporters: [otlphttp]
-            #metrics:
-            #receivers: [otlp]
-            #processors: [memory_limiter, batch, k8sattributes]
-            #exporters: [otlp]
   service:
   # Enable the creation of a Service.
   # By default, it's enabled on mode != daemonset.
@@ -157,6 +145,3 @@ opentelemetry-collector:
 
     type: LoadBalancer
     # trafficDistribution: PreferClose
-    # type: LoadBalancer
-#certSecretName: my-cert-secret
-#mountPath: /etc/certs
