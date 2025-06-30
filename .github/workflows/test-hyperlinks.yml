@@ -226,6 +226,11 @@ jobs:
               if [[ ${REFERENCE:0:1} == '#' ]]; then 
                 LINK_TEXT=$( cat $FILE | grep  -oE "\[.*\]\(${REFERENCE}\)" | sed 's/\[//' | cut -d ']' -f1 )
                 IS_PRESENT=$(cat $FILE | grep -oE "# ${LINK_TEXT}" | wc -w)
+                if [[ $IS_PRESENT -eq 0 ]]
+                then
+                    REFERENCE_CONVERTED=$(echo $REFERENCE | tr -d '#' | tr '-' ' ')         # Remove leading '#' and replace all '-' with ' '
+                    IS_PRESENT=$(cat $FILE | grep -oiE "# ${REFERENCE_CONVERTED}" | wc -w)  # Check whether the converted reference is in the file case insensitive.
+                fi
                 if [[ $IS_PRESENT -eq 0 ]]; then 
                   echo -e "${LINE} -\e[31m invalid reference\e[0m" 
                   echo "${LINE}" >> error-report.log
