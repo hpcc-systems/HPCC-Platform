@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "evtool.hpp"
+#include "eventiterator.h"
 #include "jevent.hpp"
 #include "jptree.hpp"
 #include "jstream.hpp"
@@ -30,7 +31,11 @@
 // - support events per threads
 // - support events per trace ID (requires enabling tracing)
 
-// Record configured events to a configured location.
+// Record configured events to a configured location. The input property tree must conform to the
+// event format supported by CPropertyTreeEvents, and must include the following required root
+// element attribute(s), and may include the following optional root element attribute(s).:
+// - name: required recording output file path
+// - options: optional recording options string
 class CSimulateEventsOp
 {
 public:
@@ -49,123 +54,10 @@ public:
         EventRecorder& recorder = queryRecorder();
         if (!recorder.startRecording(options, name, false))
             throw makeStringException(-1, "failed to start event recording");
-        Owned<IPropertyTreeIterator> it = input->getElements("Event");
-        ForEach(*it)
-        {
-            const IPropertyTree& evt = it->query();
-            name = evt.queryProp("@name");
-            if (streq(name, "IndexLookup"))
-            {
-                unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropInt64("@offset");
-                byte nodeKind = (byte)evt.getPropInt("@nodeKind");
-                bool hit = evt.getPropBool("@hit");
-                size32_t size = (size32_t)evt.getPropInt("@size");
-                recorder.recordIndexLookup(fileId, offset, nodeKind, hit, size);
-            }
-            else if (streq(name, "IndexLoad"))
-            {
-                unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropInt64("@offset");
-                byte nodeKind = (byte)evt.getPropInt("@nodeKind");
-                size32_t size = (size32_t)evt.getPropInt("@size");
-                __uint64 expandTime = (__uint64)evt.getPropInt64("@expand");
-                __uint64 readTime = (__uint64)evt.getPropInt64("@read");
-                recorder.recordIndexLoad(fileId, offset, nodeKind, size, expandTime, readTime);
-            }
-            else if (streq(name, "IndexEviction"))
-            {
-                unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                offset_t offset = (offset_t)evt.getPropInt64("@offset");
-                byte nodeKind = (byte)evt.getPropInt("@nodeKind");
-                size32_t size = (size32_t)evt.getPropInt("@size");
-                recorder.recordIndexEviction(fileId, offset, nodeKind, size);
-            }
-            else if (streq(name, "DaliChangeMode"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliChangeMode(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliCommit"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliCommit(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliConnect"))
-            {
-                const char* path = evt.queryProp("@path");
-                __uint64 id = (__uint64)evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliConnect(path, id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliEnsureLocal"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliEnsureLocal(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliGet"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliGet(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliGetChildren"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliGetChildren(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliGetChildrenFor"))
-            {
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliGetChildrenFor(id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliGetElements"))
-            {
-                const char* path = evt.queryProp("@path");
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                size32_t dataSize = (size32_t)evt.getPropInt("@dataSize");
-                recorder.recordDaliGetElements(path, id, elapsedNs, dataSize);
-            }
-            else if (streq(name, "DaliSubscribe"))
-            {
-                const char* path = evt.queryProp("@path");
-                __int64 id = evt.getPropInt64("@id");
-                __uint64 elapsedNs = (__uint64)evt.getPropInt64("@elapsedNs");
-                recorder.recordDaliSubscribe(path, id, elapsedNs);
-            }
-            else if (streq(name, "FileInformation"))
-            {
-                unsigned fileId = (unsigned)evt.getPropInt("@fileId");
-                const char* filename = evt.queryProp("@filename");
-                recorder.recordFileInformation(fileId, filename);
-            }
-            else if (streq(name, "RecordingActive"))
-            {
-                // Always resume immediately after pausing. The simulation does not verify that
-                // pausing will suppress the recording of future events. It verifies only that the
-                // pause and resume events themselves are recorded when expected, based on API
-                // input parameters.
-                bool recordPause = evt.getPropBool("@recordPause");
-                bool recordResume = evt.getPropBool("@recordResume");
-                recorder.pauseRecording(true, recordPause);
-                recorder.pauseRecording(false, recordResume);
-            }
-            else
-                throw makeStringExceptionV(-1, "unknown event: %s", name);;
-        }
+        CPropertyTreeEvents eventsIt(*input);
+        CEvent event;
+        while (eventsIt.nextEvent(event))
+            recorder.recordEvent(event);
         if (!recorder.stopRecording(nullptr))
             throw makeStringException(-1, "failed to stop event recording");
         return true;

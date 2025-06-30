@@ -109,6 +109,7 @@ enum EventAttrTypeClass : byte
     EATCtext,
     EATCnumeric,
     EATCboolean,
+    EATCtimestamp,
     EATCmax
 };
 
@@ -141,8 +142,9 @@ public:
 public:
     EventAttr queryId() const;
     EventAttrTypeClass queryTypeClass() const;
-    inline bool isText() const { return EATCtext == queryTypeClass(); }
-    inline bool isNumeric() const { return EATCnumeric == queryTypeClass(); }
+    inline bool isTimestamp() const { return EATCtimestamp == queryTypeClass(); }
+    inline bool isText() const { return EATCtext == queryTypeClass() || isTimestamp(); }
+    inline bool isNumeric() const { return EATCnumeric == queryTypeClass() || isTimestamp(); }
     inline bool isBoolean() const { return EATCboolean == queryTypeClass(); }
     inline State queryState() const { return state; }
     inline bool isUnused() const { return Unused == queryState(); }
@@ -160,7 +162,7 @@ public:
     void reset(State _state);
 
 protected:
-    StringBuffer text;
+    mutable StringBuffer text; // mutable allows `queryTextValue() const` to generate timestamp strings on demand
     __uint64 number{0};
     bool boolean{false};
     EventAttr id{EvAttrNone};
@@ -412,6 +414,8 @@ public:
 
     void recordFileInformation(unsigned fileid, const char * filename);
 
+    void recordEvent(CEvent& event);
+
     //-------------------------- End of the public interface --------------------------
 
 protected:
@@ -423,6 +427,7 @@ protected:
     void checkDataWrite(offset_type offset, size_t size);
 
     void writeEventHeader(EventType type, offset_type & offset);
+    void writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char* traceId, __uint64 threadId);
     void writeEventFooter(offset_type & offset, size32_t requiredSize, offset_t writeOffset);
 
     template <class T>
@@ -460,6 +465,16 @@ protected:
 
     unsigned getBlockFromOffset(offset_type offset) { return (unsigned)((offset & bufferMask) / OutputBlockSize); }
 
+    inline void writeTraceId(offset_type & offset, const char* traceid)
+    {
+        assertex(strlen(traceid) == 32);
+        for (unsigned i=0; i < 32; i += 2)
+        {
+            byte next = getHexPair(traceid + i);
+            writeByte(offset, next);
+        }
+    }
+
 protected:
     static constexpr size32_t numBlocks = 2;
     static constexpr size32_t OutputBlockSize = 0x100000;
@@ -475,6 +490,7 @@ protected:
     offset_type numEvents{0};
     unsigned pendingEventCounts[numBlocks] = {0};
     std::atomic<cycle_t> startCycles{0};
+    std::atomic<__uint64> startTimestamp{0};
     MemoryAttr buffer;
     CriticalSection cs;
     unsigned sizeMessageHeaderFooter{0};
