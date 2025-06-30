@@ -2686,11 +2686,17 @@ void CSDSFileScanner::processFiles(IRemoteConnection *conn,IPropertyTree &root,S
             if (!fn||!*fn)
                 continue;
             name.append(fn);
-            if (checkFileOk(file,name.str())) {
-                processFile(file,name);
+            try {
+                if (checkFileOk(file,name.str())) {
+                    processFile(file,name);
+                }
             }
-            else
-                ; // DBGLOG("ignoreFile %s",name.str());
+            catch (IException *e) {
+                StringBuffer tmp("CSDSFileScanner::processFiles ");
+                tmp.appendf("(%s)", name.str());
+                EXCLOG(e, tmp.str());
+                e->Release();
+            }
 
             name.setLength(ns);
             conn->rollbackChildren(&file,true);
