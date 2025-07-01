@@ -877,6 +877,18 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #endif
 
+        //Add roxieMode configuration option, which can be used to set the defaults for various other options
+        bool isBatchRoxie = false;
+        const char * roxieMode = topology->queryProp("@roxieMode");
+        if (roxieMode && strieq(roxieMode, "batch"))
+            isBatchRoxie = true;
+
+        //Configure defaults based on whether the system is being used for batch or interactive queries
+        if (isBatchRoxie)
+        {
+            acknowledgeAllRequests = false;
+        }
+
         if (!topology->hasProp("@resolveLocally"))
             topology->setPropBool("@resolveLocally", !topology->hasProp("@daliServers"));
 
@@ -1335,6 +1347,15 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (topology->hasProp("@nodeFetchThresholdNs"))
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
         setIndexWarningThresholds(topology);
+
+        //Enabling the localNVMeCache will also by default enable remote file related optimizations
+        offset_t localNVMeCacheSize = topology->getPropInt64("@localNVMeCacheSize", 0);
+        bool usingRemoteStorage = (localNVMeCacheSize != 0);
+
+        unsigned inplaceSizeFactor = topology->getPropInt("@inplaceSizeFactor", usingRemoteStorage ? 0 : 100);
+        unsigned lz4SpeedFactor = topology->getPropInt("@lz4SpeedFactor", usingRemoteStorage ? 0 : 600);             // If lz4 is 5x faster then value should be 500
+        unsigned zStdSpeedFactor = topology->getPropInt("@zStdSpeedFactor", usingRemoteStorage ? 0 : 350);
+        setIndexScaling(inplaceSizeFactor, lz4SpeedFactor, zStdSpeedFactor);
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
