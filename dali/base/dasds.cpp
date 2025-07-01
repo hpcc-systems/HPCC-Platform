@@ -84,6 +84,8 @@ static unsigned readWriteTimeout = 60000;
 #define DEFAULT_LCIDLE_RATE 1          // 1 write transactions per idle period. <= this rate is deemed idle (suitable for save)
 #define STORENOTSAVE_WARNING_PERIOD 72 // hours
 
+constexpr const char * temporaryBinaryFileSaveName = "dali_store_tmp.bin";
+
 static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsReceived;
 static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsStarted;
 static std::shared_ptr<hpccMetrics::CounterMetric> pSdsRequestsCompleted;
@@ -1078,7 +1080,7 @@ public:
     {
         IPropertyTree *deltaTree;
         struct
-        {       
+        {
             void *data;
             unsigned dataLength;
             std::atomic<bool> pendingWrite;
@@ -5254,10 +5256,12 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 {
     StringAttr storeName, location, remoteBackupLocation;
     CStoreInfo storeInfo, deltaInfo;
-    unsigned configFlags;
+    unsigned configFlags{0};;
     const bool *abort;
-    unsigned delay, keepStores;
-    SessionId mySessId;
+    unsigned delay{0};
+    unsigned keepStores{0};
+    SessionId mySessId{0};
+    bool saveBinary{false};
 
     void clearStoreInfo(const char *base, const char *location, unsigned edition, CStoreInfo *storeInfo=NULL)
     {
@@ -5471,7 +5475,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores)
+    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary)
     {
         mySessId = daliClientActive()?myProcessSession():0;
         if (!keepStores) keepStores = DEFAULT_KEEP_LASTN_STORES;
@@ -5695,6 +5699,96 @@ public:
         }
         return res;
     }
+    unsigned saveStoreToXMLFile(IPropertyTree *root, IFileIO *_iFileIOTmpStore, IFile *_iFileTmpStore)
+    {
+        LOG(MCdebugProgress, "Saving store to XML");
+        assertex(root);
+        assertex(_iFileIOTmpStore);
+        assertex(_iFileTmpStore);
+        unsigned crc{0};
+
+        OwnedIFileIO iFileIOTmpStore;
+        iFileIOTmpStore.set(_iFileIOTmpStore);
+        OwnedIFile iFileTmpStore;
+        iFileTmpStore.set(_iFileTmpStore);
+        try
+        {
+            OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
+            Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+            Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
+
+#ifdef _DEBUG
+            toXML(root, *ios); // formatted (default)
+#else
+            toXML(root, *ios, 0, 0);
+#endif
+            ios->flush(); // ensure flushed outside of dtor (to ensure any exception thrown)
+            ios.clear();
+            fstream.clear();
+            crcPipeStream->flush(); // ensure flushed outside of dtor. NB: calls wrapped stream flush()
+            crc = crcPipeStream->queryCrc();
+            crcPipeStream.clear();
+            iFileIOTmpStore->close(); // ensure flushed outside of dtor
+            iFileIOTmpStore.clear();
+        }
+        catch (IException *e)
+        {
+            DISLOG(e, "Exception - Error saving store XML file");
+            iFileIOTmpStore.clear();
+            iFileTmpStore->remove();
+            throw;
+        }
+
+        return crc;
+    }
+    unsigned saveStoreToBinaryFile(IPropertyTree *root)
+    {
+        LOG(MCdebugProgress, "Saving store to binary");
+        assertex(root);
+        unsigned crc{0};
+
+        MemoryBuffer memBuf;
+        StringBuffer tmpStoreName;
+        try
+        {
+            OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
+            OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
+            try
+            {
+                // Serialize to memory buffer first to enable CRC calculation
+                Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(memBuf);
+                root->serializeToStream(*out);
+                out->flush();
+                out.clear();
+
+                // Write to file through CRC stream
+                OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
+                Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+                crcPipeStream->write(memBuf.length(), memBuf.toByteArray());
+                crcPipeStream->flush();
+                crc = crcPipeStream->queryCrc();
+                crcPipeStream.clear();
+                fstream.clear();
+                iFileIOTmpStore->close(); // ensure flushed outside of dtor
+                iFileIOTmpStore.clear();
+            }
+            catch (IException *e)
+            {
+                DISLOG(e, "Exception - Error saving binary store file");
+                iFileIOTmpStore.clear();
+                iFileTmpStore->remove();
+                throw;
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer s("Exception - Error creating save files during saving binary store file");
+            DISLOG(e, s.str());
+            throw;
+        }
+
+        return crc;
+    }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition)
     {
         LOG(MCdebugProgress, "Saving store");
@@ -5706,38 +5800,12 @@ public:
         bool done = false;
         try
         {
-            unsigned crc = 0;
             StringBuffer tmpStoreName;
             OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, NULL, tmpStoreName);
             OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
-            try
-            {
-                OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
-                Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
-                Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
-
-#ifdef _DEBUG
-                toXML(root, *ios);          // formatted (default)
-#else
-                toXML(root, *ios, 0, 0);
-#endif
-                ios->flush(); // ensure flushed outside of dtor (to ensure any exception thrown)
-                ios.clear();
-                fstream.clear();
-                crcPipeStream->flush(); // ensure flushed outside of dtor. NB: calls wrapped stream flush()
-                crc = crcPipeStream->queryCrc();
-                crcPipeStream.clear();
-                iFileIOTmpStore->close(); // ensure flushed outside of dtor
-                iFileIOTmpStore.clear();
-            }
-            catch (IException *e)
-            {
-                DISLOG(e, "Exception(1) - Error saving store file");
-                iFileIOTmpStore.clear();
-                iFileTmpStore->remove();
-                throw;
-            }
-
+            unsigned crc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+            if (saveBinary)
+                saveStoreToBinaryFile(root);
             StringBuffer newStoreName;
             constructStoreName(storeName, newEdition, newStoreName);
             StringBuffer newStoreNamePath(location);
@@ -5922,10 +5990,10 @@ public:
 friend struct CheckDeltaBlock;
 };
 
-IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort)
+IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary)
 {
     if (!storeName) storeName = "dalisds";
-    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort);
+    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary);
 }
 
 ///////////////
@@ -6064,7 +6132,8 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
 
     unsigned configFlags = config.getPropBool("@recoverFromIncErrors", true) ? SH_RecoverFromIncErrors : 0;
     configFlags |= config.getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-    iStoreHelper = createStoreHelper(storeName, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped());
+    bool saveBinary = config.getPropBool("@saveBinary", false);
+    iStoreHelper = createStoreHelper(storeName, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped(), saveBinary);
     doTimeComparison = false;
     if (config.getPropBool("@lightweightCoalesce", true))
         coalesce.setown(new CLightCoalesceThread(config, iStoreHelper));
