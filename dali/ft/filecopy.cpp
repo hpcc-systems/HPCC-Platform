@@ -1074,13 +1074,15 @@ void FileSprayer::beforeTransfer()
 #endif
 }
 
-void FileSprayer::saveTransferOptions()
+void FileSprayer::saveTransferOptions(bool usedApi)
 {
     //Update that workunit with any options that might be interesting in a postmortem
     if (progressReport)
     {
         OwnedPTree derivedOptions = createPTree("Options");
-        if (usePushWholeOperation())
+        if (usedApi)
+            derivedOptions->setProp("@mode", "api");
+        else if (usePushWholeOperation())
             derivedOptions->setProp("@mode", "pushWhole");
         else if (usePullOperation())
             derivedOptions->setProp("@mode", "pull");
@@ -2657,7 +2659,7 @@ void FileSprayer::performTransfer()
     if (numConcurrentTransfers > 1)
         shuffle(transferSlaves);
 
-    saveTransferOptions();
+    saveTransferOptions(false);
     if (progressReport)
         progressReport->setRange(getSizeReadAlready(), sizeToBeRead, transferSlaves.ordinality());
 
@@ -3482,7 +3484,7 @@ void FileSprayer::spray()
     beforeTransfer();
 
     bool copiedAlready = false;
-    if ((replicate || copySource))
+    if ((replicate || copySource) && keyCompression.isEmpty())
     {
         Owned<IAPICopyClient> copyClient = getAPICopyClient();
         if (copyClient)
@@ -3490,6 +3492,7 @@ void FileSprayer::spray()
             try
             {
                 transferUsingAPI(copyClient);
+                saveTransferOptions(true);
                 copiedAlready=true;
             }
             catch (IException *e)
