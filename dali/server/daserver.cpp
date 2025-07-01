@@ -78,9 +78,9 @@ void AddServers(const char *auditdir)
     // order significant
     servers.append(*createDaliSessionServer());
     servers.append(*createDaliPublisherServer());
-    servers.append(*createDaliSDSServer(serverConfig));
+    servers.append(*createDaliSDSServer());
     servers.append(*createDaliNamedQueueServer());
-    servers.append(*createDaliDFSServer(serverConfig));
+    servers.append(*createDaliDFSServer());
     if (!isContainerized()) // NB: audit logging is output locally by the container in containerized mode (and picked up by a logging backend)
         servers.append(*createDaliAuditServer(auditdir));
     servers.append(*createDaliDiagnosticsServer());

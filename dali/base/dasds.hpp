@@ -242,7 +242,7 @@ public:
 };
 
 interface IDaliServer;
-extern da_decl IDaliServer *createDaliSDSServer(IPropertyTree *store); // called for coven members
+extern da_decl IDaliServer *createDaliSDSServer(); // called for coven members
 
 extern da_decl unsigned querySDSLockTimeoutCount();
 

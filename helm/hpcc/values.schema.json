@@ -1496,6 +1496,14 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "sds": {
+          "description": "Dali SDS settings",
+          "type": "object"
+        },
+        "dfs": {
+          "description": "Dali DFS settings",
+          "type": "object"
         }
       }
     },
