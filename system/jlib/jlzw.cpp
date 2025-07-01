@@ -2096,16 +2096,21 @@ protected:
 class CCompressedFileReader final : public CCompressedFileBase
 {
     Linked<IMemoryMappedFile> mmfile;
-    unsigned curblocknum;
-    offset_t curblockpos;           // logical pos (reading only)
     MemoryBuffer expandedBuffer;    // buffer that contains the expanded input
     MemoryBuffer iobuffer;          // buffer used for reading
     MemoryBuffer indexbuf;          // non-empty once index read
     Owned<IExpander> expander;
     MemoryAttr compressedInputBlock;
-    offset_t nextExpansionPos = (offset_t)-1;
-    offset_t startBlockPos = (offset_t)-1;  // The offset of the start of the current compressed block
-    size32_t fullBlockSize = 0;
+
+    //Each block in the file consists of a sequence of compressed chunks
+    offset_t startBlockExpandedPos = (offset_t)-1;  // The offset of the start of the current compressed block
+    offset_t startBlockIOPos = 0;   // The offset in the input of the current compressed block
+    size32_t fullBlockSize = 0;     // The size of the current compressed block - which contains multiple chunks
+
+    offset_t startChunkExpandedPos = (offset_t)-1;  // The expanded position of the current chunk
+    offset_t nextChunkExpandedPos = (offset_t)-1;   // The expanded position of the next chunk (i.e. end of the current chunk)
+
+    // The reader may read multiple uncompressed blocks at once - save the range currently in memory
     offset_t firstIOOffset = 0;     // First offset in the current IO block
     offset_t lastIOOffset = 0;      // Last offset in the current IO block
 
@@ -2136,7 +2141,10 @@ class CCompressedFileReader final : public CCompressedFileBase
     void * getCompressedData(offset_t offset)
     {
         if (fileio)
+        {
+            assertex(offset >= firstIOOffset && offset < lastIOOffset);
             return (byte *)iobuffer.bufferBase() + offset - firstIOOffset;
+        }
         else
             return mmfile->base()+offset;
     }
@@ -2149,19 +2157,24 @@ class CCompressedFileReader final : public CCompressedFileBase
         //This test will never be true for row compressed data, or non-incremental decompression
         try
         {
-            if ((pos >= startBlockPos) && (pos < startBlockPos + fullBlockSize))
+            //Is the file position within the current block of chunks?
+            if ((pos >= startBlockExpandedPos) && (pos < startBlockExpandedPos + fullBlockSize))
             {
-                if (pos < nextExpansionPos)
+                //Is the file position in a previous chunk - in which case we need to start decompressing the chunks from
+                //the beginning
+                if (pos < nextChunkExpandedPos)
                 {
-                    //Start decompressing again and avoid re-reading the data from disk
-                    const void * rawData = getCompressedData(pos);
+                    // Start decompressing again from the beginning of the block
+                    // and avoid re-reading the data from disk
+                    const void * rawData = getCompressedData(startBlockIOPos);
                     assertex(rawData);
 
-                    nextExpansionPos = startBlockPos; // update in case an exception is thrown
+                    nextChunkExpandedPos = startBlockExpandedPos; // update in case an exception is thrown
                     size32_t exp = expander->expandFirst(expandedBuffer, rawData);
-                    curblockpos = startBlockPos;
-                    nextExpansionPos = startBlockPos + exp;
-                    if (pos < nextExpansionPos)
+
+                    startChunkExpandedPos = startBlockExpandedPos;
+                    nextChunkExpandedPos = startBlockExpandedPos + exp;
+                    if (pos < nextChunkExpandedPos)
                         return;
 
                     expandedBuffer.clear();
@@ -2173,9 +2186,9 @@ class CCompressedFileReader final : public CCompressedFileBase
                     if (nextSize == 0)
                         throw makeStringException(-1, "Unexpected zero length compression block");
 
-                    curblockpos = nextExpansionPos;
-                    nextExpansionPos = nextExpansionPos+nextSize;
-                    if (pos < nextExpansionPos)
+                    startChunkExpandedPos = nextChunkExpandedPos;
+                    nextChunkExpandedPos = nextChunkExpandedPos+nextSize;
+                    if (pos < nextChunkExpandedPos)
                         return;
                 }
             }
@@ -2184,28 +2197,27 @@ class CCompressedFileReader final : public CCompressedFileBase
         {
             unsigned code = e->errorCode();
             StringBuffer msg;
-            e->errorMessage(msg).appendf(" at uncompressed position %llu block %u of %llu", nextExpansionPos, curblocknum, trailer.indexPos);
+            e->errorMessage(msg).appendf(" at uncompressed position %llu block %llu of %llu", nextChunkExpandedPos, startBlockIOPos/trailer.blockSize, trailer.indexPos);
             e->Release();
             throw makeStringException(code, msg.str());
         }
 
-        size32_t expsize;
-        curblocknum = lookupIndex(pos,curblockpos,expsize);
+        unsigned curblocknum = lookupIndex(pos, startBlockExpandedPos, fullBlockSize);
         size32_t toread = trailer.blockSize;
-        offset_t nextOffset = (offset_t)curblocknum*toread;
-        assertex(nextOffset <= trailer.indexPos);
-        if (trailer.indexPos-nextOffset < (offset_t)toread)
-            toread = (size32_t)(trailer.indexPos - nextOffset);
+        offset_t nextIOOffset = (offset_t)curblocknum*toread;
+        assertex(nextIOOffset <= trailer.indexPos);
+        if (trailer.indexPos-nextIOOffset < (offset_t)toread)
+            toread = (size32_t)(trailer.indexPos - nextIOOffset);
         if (!toread) 
             return;
 
         if (fileio)
         {
             //Only read from the file if the block has not already been read
-            if (nextOffset >= lastIOOffset)
+            if ((nextIOOffset < firstIOOffset) || (nextIOOffset >= lastIOOffset))
             {
-                size32_t sizeRead = fileio->read(nextOffset, sizeIoBuffer, iobuffer.bufferBase());
-                firstIOOffset = nextOffset;
+                size32_t sizeRead = fileio->read(nextIOOffset, sizeIoBuffer, iobuffer.bufferBase());
+                firstIOOffset = nextIOOffset;
                 lastIOOffset = firstIOOffset + sizeRead;
 
                 if (sizeRead < toread)
@@ -2214,26 +2226,28 @@ class CCompressedFileReader final : public CCompressedFileBase
             else
             {
                 // We always read whole blocks - so this should be guaranteed to be false
-                if (nextOffset + toread > lastIOOffset)
+                if (nextIOOffset + toread > lastIOOffset)
                     throw makeStringException(-1, "Read past end of IO buffer");
             }
+            startBlockIOPos = nextIOOffset;
         }
         else
         {
-            assertex((memsize_t)nextOffset == nextOffset);
+            assertex((memsize_t)nextIOOffset == nextIOOffset);
         }
 
-        void * rawData = getCompressedData(nextOffset);
-        expand(rawData, expandedBuffer, expsize, nextOffset);
+        void * rawData = getCompressedData(nextIOOffset);
+        expand(rawData, expandedBuffer, nextIOOffset);
     }
 
-    void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize, offset_t compressedPos)
+    void expand(const void *compbuf,MemoryBuffer &expbuf, offset_t compressedPos)
     {
         try
         {
             size32_t rs = trailer.recordSize;
             if (rs) { // diff expand
                 const byte *src = (const byte *)compbuf;
+                size32_t expsize = fullBlockSize;
                 byte *dst = (byte *)expbuf.reserve(expsize);
                 if (expsize) {
                     assertex(expsize>=rs);
@@ -2259,9 +2273,8 @@ class CCompressedFileReader final : public CCompressedFileBase
                         throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
                 }
 
-                startBlockPos = curblockpos;
-                nextExpansionPos = startBlockPos + exp;
-                fullBlockSize = expsize;
+                startChunkExpandedPos = startBlockExpandedPos;
+                nextChunkExpandedPos = startBlockExpandedPos + exp;
             }
         }
         catch (IException * e)
@@ -2279,8 +2292,6 @@ public:
         : CCompressedFileBase(_fileio, _trailer, _bufferSize), mmfile(_mmfile)
     {
         expander.set(_expander);
-        curblockpos = 0;
-        curblocknum = (unsigned)-1; // relies on wrap
 
         //Allocate an io buffer that can be used for reading - not needed if using memory mapped files
         if (fileio)
@@ -2337,11 +2348,11 @@ public:
         while (pos<trailer.expandedSize) {
             if ((offset_t)len>trailer.expandedSize-pos)
                 len = (size32_t)(trailer.expandedSize-pos);
-            if ((pos>=curblockpos)&&(pos<curblockpos+expandedBuffer.length())) { // see if in current buffer
-                size32_t tocopy = (size32_t)(curblockpos+expandedBuffer.length()-pos);
+            if ((pos>=startChunkExpandedPos)&&(pos<nextChunkExpandedPos)) { // see if in current buffer
+                size32_t tocopy = (size32_t)(nextChunkExpandedPos-pos);
                 if (tocopy>len)
                     tocopy = len;
-                memcpy(data,expandedBuffer.toByteArray()+(pos-curblockpos),tocopy);
+                memcpy(data,expandedBuffer.toByteArray()+(pos-startChunkExpandedPos),tocopy);
                 ret += tocopy;
                 len -= tocopy;
                 data = (byte *)data+tocopy;
@@ -2373,8 +2384,6 @@ public:
         CriticalBlock block(crit);
         if (fileio)
             fileio->close();
-        curblockpos = 0;
-        curblocknum = (unsigned)-1; // relies on wrap
     }
 
 // CCompressedFile impl.
