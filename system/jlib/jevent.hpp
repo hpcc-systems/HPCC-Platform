@@ -122,6 +122,7 @@ struct jlib_decl EventRecordingSummary
     unsigned numEvents{0};
     offset_t totalSize{0};
     offset_t rawSize{0};
+    bool valid{true};
     StringBuffer filename;
 };
 
@@ -417,6 +418,7 @@ protected:
     void recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize);
 
     void checkAttrValue(EventAttr attr, size_t size);
+    void checkDataWrite(offset_type offset, size_t size);
 
     void writeEventHeader(EventType type, offset_type & offset);
     void writeEventFooter(offset_type & offset, size32_t requiredSize, offset_t writeOffset);

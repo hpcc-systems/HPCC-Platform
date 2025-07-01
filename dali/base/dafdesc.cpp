@@ -1761,6 +1761,15 @@ public:
             lfnHash = getFilenameHash(tracename.length(), tracename.str());
             attr->setPropInt("@lfnHash", lfnHash);
         }
+        else // it really should have an lfnHash!, but if missing (likely due to a bug elsewhere), we can create from OrigName
+        {
+            const char *origName = tree->queryProp("OrigName");
+            if (!isEmptyString(origName))
+            {
+                lfnHash = getFilenameHash(origName);
+                attr->setPropInt("@lfnHash", lfnHash);
+            }
+        }
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
 
@@ -4118,7 +4127,7 @@ public:
     {
         IPropertyTree *apiInfo = xml->getPropTree("storageapi");
         if (apiInfo)
-            return new CStorageApiInfo(xml);
+            return new CStorageApiInfo(apiInfo);
         return nullptr;
     }
 

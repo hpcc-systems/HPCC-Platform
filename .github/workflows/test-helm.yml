@@ -1,5 +1,4 @@
-# Helm Test - Receive PR (Unprivileged)
-name: test-helm
+name: Run helm chart tests
 
 on:
   pull_request:
@@ -13,37 +12,83 @@ on:
       - "!candidate-7.0.*"
       - "!candidate-6.*"
 
-permissions:
-  contents: read
-
 jobs:
   pre_job:
-    runs-on: ubuntu-latest
-    outputs:
-      helm: ${{ steps.skip_check.outputs.helm }}
-    steps:
-      - id: skip_check
-        uses: hpcc-systems/github-actions/changed-modules@main
-        with:
-          github_token: ${{ github.token }}
-          
-  check-helm:
+     # continue-on-error: true # Uncomment once integration is finished
+     runs-on: ubuntu-latest
+     # Map a step output to a job output
+     outputs:
+       helm: ${{ steps.skip_check.outputs.helm }}
+     steps:
+       - id: skip_check
+         uses: hpcc-systems/github-actions/changed-modules@main
+         with:
+           github_token: ${{ github.token }}
+  build:
+    name: "Check helm chart lint"
     runs-on: ubuntu-latest
     needs: pre_job
     if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.helm }}
     steps:
-      - name: "Signal helm test needed"
-        run: |
-          mkdir -p ./helm-info
-          echo "helm-test-needed" > ./helm-info/action
-          echo "${{ github.event.pull_request.number }}" > ./helm-info/pr_number
-          echo "${{ github.event.pull_request.head.sha }}" > ./helm-info/head_sha
-          echo "${{ github.event.pull_request.base.sha }}" > ./helm-info/base_sha
-          echo "${{ github.base_ref }}" > ./helm-info/base_ref
-          
-      - name: "Upload Helm Test Info"
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: helm-test-info
-          path: helm-info/
-          retention-days: 1
+          submodules: false
+      - uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+          token: ${{ secrets.GITHUB_TOKEN }}
+        id: install
+      - name: Install additional tools
+        working-directory: .
+        run: wget https://github.com/zegl/kube-score/releases/download/v1.8.1/kube-score_1.8.1_linux_amd64 && sudo mv kube-score_1.8.1_linux_amd64 /usr/bin/kube-score && sudo chmod +x /usr/bin/kube-score
+      - name: Validate Helm Templates
+        working-directory: ./testing/helm
+        run: ./run.sh
+      - name: Check for changes in helm output for default values
+        working-directory: .
+        run: |
+          resultcode=0
+          mkdir ${{ runner.temp }}/new
+          mkdir ${{ runner.temp }}/old
+
+          helm version
+          #Generate the output for the default values file, and each of the specialised test files.
+          #Check to see if anything has changed between old and new, and report the differences
+          echo Generating helm template output for PR changes
+          helm template helm/hpcc > ${{ runner.temp }}/new/output.txt
+          for file in testing/helm/tests/*.yaml
+          do
+            tail=$(basename $file)
+            helm template helm/hpcc --values $file > ${{ runner.temp }}/new/$tail.txt
+          done
+
+          git fetch --no-tags --prune --progress --no-recurse-submodules --quiet --depth=1 origin ${{ github.base_ref }}
+          echo git checkout ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+
+          echo Generating helm template for base branch
+          helm template helm/hpcc > ${{ runner.temp }}/old/output.txt
+          for file in testing/helm/tests/*.yaml
+          do
+            tail=$(basename $file)
+            helm template helm/hpcc --values $file > ${{ runner.temp }}/old/$tail.txt
+          done
+
+          diff ${{ runner.temp }}/old/output.txt ${{ runner.temp }}/new/output.txt
+          if [ $? -ne 0 ]
+          then
+            resultcode=1
+          else
+            #Only check for differences in the specialised test files if the default values file is the same
+            for file in testing/helm/tests/*.yaml
+            do
+              tail=$(basename $file)
+              diff ${{ runner.temp }}/old/$tail.txt ${{ runner.temp }}/new/$tail.txt
+              if [ $? -ne 0 ]
+              then
+                resultcode=1
+              fi
+            done
+          fi
+
+          exit $resultcode
