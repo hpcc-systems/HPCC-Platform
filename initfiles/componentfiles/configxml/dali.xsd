@@ -29,7 +29,7 @@
       <xs:appinfo>
     	<docid>da.t1</docid>
       </xs:appinfo>
-    </xs:annotation>  
+    </xs:annotation>
       <xs:sequence>
         <xs:element name="Instance" maxOccurs="unbounded">
           <xs:annotation>
@@ -87,7 +87,7 @@
                 <xs:appinfo>
                   <tooltip>Significance of this note.</tooltip>
                   <title>Severity</title>
-                                    <colIndex>1</colIndex>                  
+                                    <colIndex>1</colIndex>
                 </xs:appinfo>
               </xs:annotation>
               <xs:simpleType>
@@ -216,7 +216,7 @@
       	<xs:appinfo>
       	  <docid>da.t2</docid>
       	</xs:appinfo>
-    </xs:annotation>  
+    </xs:annotation>
 
     <xs:attribute name="lightweightCoalesce" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
@@ -274,6 +274,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="saveBinary" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Switch on saving the store in binary format</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="deltaSaveThresholdSecs" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
@@ -302,7 +309,7 @@
       <xs:appinfo>
         <docid>da.t3</docid>
       </xs:appinfo>
-   </xs:annotation>  
+   </xs:annotation>
     <xs:attribute name="backupComputer" type="computerType" use="optional">
       <xs:annotation>
         <xs:appinfo>
@@ -331,7 +338,7 @@
         <xs:appinfo>
           <docid>da.t5</docid>
          </xs:appinfo>
-       </xs:annotation>  
+       </xs:annotation>
     <xs:attribute name="forceGroupUpdate" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
@@ -353,7 +360,7 @@
         <xs:appinfo>
           <docid>da.t4</docid>
          </xs:appinfo>
-       </xs:annotation>  
+       </xs:annotation>
     <xs:attribute name="ldapServer" type="ldapServerType" use="optional">
       <xs:annotation>
         <xs:appinfo>
