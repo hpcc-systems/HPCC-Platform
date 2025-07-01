@@ -552,7 +552,10 @@ public:
     virtual void abort(IException *e) override;
     virtual void reset() override;
     virtual void done() override;
+    // The following 3 methods are not implemented because they are only required on master
     virtual cost_type getDiskAccessCost() override { UNIMPLEMENTED; }
+    virtual cost_type getExecuteCost() const override { UNIMPLEMENTED; }
+    virtual cost_type getTotalCost() override { UNIMPLEMENTED; }
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler

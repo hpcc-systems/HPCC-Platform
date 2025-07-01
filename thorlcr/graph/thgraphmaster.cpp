@@ -3214,6 +3214,8 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
     cost_type costDiskAccess = getDiskAccessCost();
     if (costDiskAccess)
         stats.addStatistic(StCostFileAccess, costDiskAccess);
+    stats.addStatistic(StCostExecute, getExecuteCost());
+    stats.addStatistic(StTimeElapsed, cycle_to_nanosec(getElapsedCycles()));
 }
 
 cost_type CMasterGraph::getDiskAccessCost()
