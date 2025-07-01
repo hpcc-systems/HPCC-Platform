@@ -1266,9 +1266,7 @@ public:
         // if maxConnection is not passed as a user option, check for a default defined in the config/environment.
         if (!opttree->hasProp("@maxConnections"))
         {
-            int configDefault = getComponentConfigSP()->getPropInt("expert/@maxConnections", -1);
-            if (-1 == configDefault)
-                configDefault = getGlobalConfigSP()->getPropInt("expert/@maxConnections", -1);
+            int configDefault = getConfigInt("expert/@maxConnections", -1);
             if (-1 != configDefault)
                 opttree->setPropInt("@maxConnections", configDefault);
         }

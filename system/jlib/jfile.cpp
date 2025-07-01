@@ -7300,7 +7300,7 @@ static bool isAvoidRenameEnabled()
         CriticalBlock b(avoidRenameCS);
         if (-1 == avoidRename)
         {
-            avoidRename = getComponentConfigSP()->getPropBool("expert/@avoidRename");
+            avoidRename = getConfigBool("expert/@avoidRename");
             DBGLOG("FileSystemProperties.canRename = %s", boolToStr(!avoidRename)); // NB: canRename if !avoidRename
         }
     }

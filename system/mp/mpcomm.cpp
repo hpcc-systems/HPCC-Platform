@@ -2300,15 +2300,8 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
     parent->mpTraceLevel = getComponentConfigSP()->getPropInt("logging/@detail", InfoMsgThreshold);
     if (listen)
     {
-        if (getComponentConfigSP()->hasProp("expert/@mpSoMaxConn"))
-            mpSoMaxConn = getComponentConfigSP()->getPropInt("expert/@mpSoMaxConn");
-        else
-            mpSoMaxConn = getGlobalConfigSP()->getPropInt("expert/@mpSoMaxConn", 0);
-
-        if (getComponentConfigSP()->hasProp("expert/@acceptThreadPoolSize"))
-            acceptThreadPoolSize = getComponentConfigSP()->getPropInt("expert/@acceptThreadPoolSize");
-        else
-            acceptThreadPoolSize = getGlobalConfigSP()->getPropInt("expert/@acceptThreadPoolSize", defaultAcceptThreadPoolSize);
+        mpSoMaxConn = getConfigInt("expert/@mpSoMaxConn", 0);
+        acceptThreadPoolSize = getConfigInt("expert/@acceptThreadPoolSize", defaultAcceptThreadPoolSize);
     }
 #endif
 
