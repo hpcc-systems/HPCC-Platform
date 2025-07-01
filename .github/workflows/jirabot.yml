@@ -1,34 +1,170 @@
-# JiraBot - Receive PR (Unprivileged)
-# This workflow runs on pull_request and has no write permissions or secrets
+# JiraBot github action
+# =====================
+#
 name: jirabot
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened]
     branches:
       - "master"
       - "candidate-*"
 
-permissions:
-  contents: read
-
 jobs:
-  process-pr:
+  jirabot:
     runs-on: ubuntu-latest
     steps:
-      - name: "Extract PR Info"
-        run: |
-          mkdir -p ./pr-info
-          echo "${{ github.event.pull_request.number }}" > ./pr-info/number
-          echo "${{ github.event.pull_request.title }}" > ./pr-info/title
-          echo "${{ github.event.pull_request.user.login }}" > ./pr-info/author
-          echo "${{ github.event.pull_request.html_url }}" > ./pr-info/url
-          echo "${{ github.event.pull_request.comments_url }}" > ./pr-info/comments_url
-          echo "opened" > ./pr-info/action
-          
-      - name: "Upload PR Info"
-        uses: actions/upload-artifact@v4
+      - uses: "actions/setup-python@v5"
         with:
-          name: pr-info
-          path: pr-info/
-          retention-days: 1
+          python-version: "3.8"
+      - name: "Install dependencies"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade atlassian-python-api
+          python -m pip --version
+      - name: "Run"
+        env:
+          JIRABOT_USERNAME : ${{ secrets.JIRABOT_USERNAME }}
+          JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASSWORD }}
+          JIRA_URL : ${{ vars.JIRA_URL }}
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHUB_JIRA_USER_MAP: ${{ vars.GHUB_JIRA_USER_MAP }}
+          JIRA_ISSUE_PROPERTY_MAP: ${{ vars.JIRA_ISSUE_PROPERTY_MAP }}
+        run: |
+            import os
+            import re
+            import time
+            import sys
+            import json
+            import subprocess
+            from email.utils import parseaddr
+            from atlassian.jira import Jira
+
+            def sanitizeInput(input: str, inputType: str) -> str:
+                if inputType.lower() == 'email':
+                    # Return the email address only, returns '' if not valid or found
+                    return parseaddr(input)[1]
+                else:
+                    return ''
+
+            def updateIssue(jira, issue, prAuthor : str, propertyMap: dict, pull_url: str) -> str:
+                result = ''
+
+                issueName = issue['key']
+                issueFields = issue['fields']
+
+                # Need to update user first in case we are starting from Unresourced
+                if prAuthor:
+                    assignee = issueFields['assignee']
+                    if assignee is None:
+                        assigneeId = ''
+                        assigneeEmail = ''
+                    else:
+                        assigneeId = assignee['accountId']
+                        assigneeEmail = assignee["emailAddress"]
+
+                    assigneeEmail = sanitizeInput(assigneeEmail, 'email')
+
+                    prAuthorId = prAuthor["accountId"]
+                    prAuthorEmail = prAuthor["emailAddress"]
+                    prAuthorEmail = sanitizeInput(prAuthorEmail, 'email')
+
+                    if assigneeId is None or assigneeId == '':
+                        jira.assign_issue(issueName, prAuthorId)
+                        result += 'Assigning user: ' + prAuthorEmail + '\n'
+                    elif assigneeId != prAuthorId:
+                        result += 'Changing assignee from: ' + assigneeEmail + ' to: ' + prAuthorEmail + '\n'
+                        jira.assign_issue(issueName, prAuthorId)
+
+                transitionFlow = ['Merge Pending']
+                for desiredStatus in transitionFlow:
+                    try:
+                        transitionId = jira.get_transition_id_to_status_name(issueName, desiredStatus)
+                        jira.set_issue_status_by_transition_id(issueName, transitionId)
+                        result += 'Workflow Transition To: ' + desiredStatus + '\n'
+                    except Exception as error:
+                        transitions = jira.get_issue_transitions(issueName)
+                        result += 'Error: Transitioning to: "' + desiredStatus + '" failed with: "' + str(error) + '" Valid transitions=' + str(transitions) + '\n'
+
+                prFieldName = propertyMap.get('pullRequestFieldName', 'customfield_10010')
+
+                if prFieldName in issueFields:
+                    currentPR = issueFields[prFieldName]
+                else:
+                    print('Error: Unable to find pull request field with field name: ' + prFieldName)
+                    currentPR = None
+
+                if currentPR is None:
+                    jira.update_issue_field(issueName, {prFieldName: pull_url})
+                    result += 'Updated PR\n'
+                elif currentPR is not None and currentPR != pull_url:
+                    result += 'Additional PR: ' + pull_url + '\n'
+
+                return result
+
+            jirabot_user = os.environ['JIRABOT_USERNAME']
+            jirabot_pass = os.environ['JIRABOT_PASSWORD']
+            jira_url = os.environ['JIRA_URL']
+            pr = os.environ['PULL_REQUEST_NUMBER']
+            title = os.environ['PULL_REQUEST_TITLE']
+            prAuthor = os.environ['PULL_REQUEST_AUTHOR_NAME']
+            pull_url = os.environ['PULL_URL']
+            github_token = os.environ['GITHUB_TOKEN']
+            comments_url = os.environ['COMMENTS_URL']
+
+            result = ''
+            issuem = re.search("(HPCC|HH|IDE|EPE|ML|HPCC4J|JAPI)-[0-9]+", title)
+            if issuem:
+                issue_name = issuem.group()
+
+                userDict = json.loads(os.environ['GHUB_JIRA_USER_MAP'])
+                if not isinstance(userDict, dict):
+                    userDict = {}
+
+                if prAuthor in userDict:
+                    prAuthor = userDict.get(prAuthor)
+                    print('Mapped Github user to Jira user: ' + prAuthor)
+
+                jira = Jira(url=jira_url, username= jirabot_user, password= jirabot_pass, cloud=True)
+
+                jiraUser = None
+                userSearchResults = jira.user_find_by_user_string(query=prAuthor)
+                if userSearchResults and len(userSearchResults) > 0:
+                    jiraUser = userSearchResults[0]
+                else:
+                    print('Error: Unable to map GitHub user to Jira user, continuing without assigning')
+
+                if not jira.issue_exists(issue_name):
+                    sys.exit('Error: Unable to find Jira issue: ' + issue_name)
+                else:
+                    issue = jira.issue(issue_name)
+
+                result = 'Jirabot Action Result:\n'
+
+                jiraIssuePropertyMap = json.loads(os.environ['JIRA_ISSUE_PROPERTY_MAP'])
+                if not isinstance(jiraIssuePropertyMap, dict):
+                    print('Error: JIRA_ISSUE_PROPERTY_MAP is not a valid JSON object, ignoring.')
+                    jiraIssuePropertyMap = {}
+
+                result += updateIssue(jira, issue, jiraUser, jiraIssuePropertyMap, pull_url)
+                jira.issue_add_comment(issue_name, result)
+
+                result = 'Jira Issue: ' + jira_url + '/browse/' + issue_name + '\n\n' + result
+
+                # Escape the result for JSON
+                result = json.dumps(result)
+
+                subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {github_token}', '--data', f'{{ "body": {result} }}'], check=True)
+            else:
+                print('Unable to find Jira issue name in title')
+
+            print(result)
+        shell: python
