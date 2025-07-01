@@ -632,6 +632,8 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
     AtomicShared<CFileSizeTracker> tempFileSizeTracker;
+    cycle_t startsCycles = 0;
+
     void clean();
 
 protected:
@@ -795,6 +797,8 @@ public:
     void doExecuteChild(size32_t parentExtractSz, const byte *parentExtract);
     void setResults(IThorGraphResults *results);
     virtual cost_type getDiskAccessCost() = 0;
+    virtual cost_type getExecuteCost() const = 0;
+    virtual cost_type getTotalCost() = 0;
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb) override { return false; }
@@ -816,6 +820,10 @@ public:
     {
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
+    }
+    cycle_t getElapsedCycles() const
+    {
+        return get_cycles_now() - startsCycles;
     }
 // IExceptionHandler
     virtual bool fireException(IException *e);
