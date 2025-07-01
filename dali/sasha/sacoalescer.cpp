@@ -33,15 +33,15 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
     {
         StringBuffer dataPath, backupPath;
         IPropertyTree &confProps = querySDS().queryProperties();
-        confProps.getProp("@dataPathUrl", dataPath); 
-        confProps.getProp("@backupPathUrl", backupPath); 
+        confProps.getProp("@dataPathUrl", dataPath);
+        confProps.getProp("@backupPathUrl", backupPath);
         unsigned keepStores = confProps.getPropInt("@keepStores");
         if (0 == dataPath.length())
         {
             OERRLOG("COALESCER: No dali data path found.");
             return;
         }
-        
+
         if (backupPath.length())
             addPathSepChar(backupPath);
         addPathSepChar(dataPath);
@@ -53,11 +53,12 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
+            bool saveBinary = querySDS().queryProperties().getPropBool("Client/@saveBinary", false);
             bool stopped;
-            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped);
+            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
-            if (minDeltaSize) 
+            if (minDeltaSize)
             {
                 StringBuffer detachPath;
                 detachPath.append(dataPath);
@@ -80,7 +81,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             }
 
 
-            StringBuffer storeFilename(dataPath);   
+            StringBuffer storeFilename(dataPath);
             iStoreHelper->getCurrentStoreFilename(storeFilename);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
@@ -194,7 +195,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         CriticalBlock b(suspendResumeCrit);
@@ -251,13 +252,13 @@ public:
 #ifdef _CONTAINERIZED
                     cmd.append(" --config=").append(coalesceProps->queryProp("@config"));
                     cmd.append(" --daliServers=").append(coalesceProps->queryProp("@daliServers"));
-#endif                    
+#endif
                     char cwd[1024];
                     if (GetCurrentDirectory(1024, cwd))
                         PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
                     else
                         OERRLOG("COALESCE: Running '%s' in unknown current directory",cmd.str());
-                    if (!invoke_program(cmd.str(), runcode, false, NULL, &h)) 
+                    if (!invoke_program(cmd.str(), runcode, false, NULL, &h))
                         OERRLOG("Could not run saserver in coalesce mode");
                     else {
                         PROGLOG("COALESCE: started pid = %d",(int)h);
