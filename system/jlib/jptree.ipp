@@ -29,6 +29,7 @@
 #include "jptree.hpp"
 #include "jbuff.hpp"
 #include "jlog.hpp"
+#include "jstreamhelpers.hpp"
 
 #define ANE_APPEND -1
 #define ANE_SET -2
@@ -159,7 +160,6 @@ interface IPTArrayValue
     virtual CompressionMethod getCompressionType() const = 0;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const = 0;
-    virtual void deserializeFromStream(IBufferedSerialInputStream &src) = 0;
 //serializable
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
@@ -193,7 +193,6 @@ public:
     }
 
     virtual void serializeToStream(IBufferedSerialOutputStream &tgt) const override { UNIMPLEMENTED; }
-    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override { UNIMPLEMENTED; }
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
@@ -207,9 +206,22 @@ public:
     {
         deserialize(src);
     }
-    CPTValue(IBufferedSerialInputStream &src)
+    CPTValue(IBufferedSerialInputStream &src, size32_t len)
     {
-        deserializeFromStream(src);
+        if (len)
+        {
+            read(src, compressType);
+            if (compressType == COMPRESS_METHOD_LZWLEGACY)
+                compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+            MemoryAttr mem(len);
+            src.read(len, mem.bufferBase());
+            set(len, mem.detach());
+        }
+        else
+        {
+            compressType = COMPRESS_METHOD_NONE;
+            clear();
+        }
     }
     explicit CPTValue() = default;   //MORE: Should there be a single shared null instance?
     CPTValue(size32_t size, const void *data) : CPTValue(size, data, false, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT)
@@ -236,7 +248,6 @@ public:
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
-    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;

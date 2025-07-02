@@ -3704,9 +3704,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializatio
 class PTreeDeserializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeDeserializationTest);
-    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForRootOnlyPTree);
-    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree);
-    CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree);
+      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForRootOnlyPTree);
+      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree);
+      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3753,13 +3753,19 @@ protected:
 
         // First serialize the original tree to get data for deserialization
         MemoryBuffer serializedData;
+        CCycleTimer timer;
         originalTree->serialize(serializedData);
+        __uint64 serializeElapsedNs = timer.elapsedNs();
+        auto serializeSize = serializedData.length();
 
         // Create buffer for stream serialization
         MemoryBuffer streamSerializedData;
         Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamSerializedData);
+        timer.reset();
         originalTree->serializeToStream(*out);
         out->flush();
+        __uint64 serializeFromStreamElapsedNs = timer.elapsedNs();
+        auto serializeFromStreamSize = streamSerializedData.length();
 
         // Ensure serialization matches
         CPPUNIT_ASSERT_EQUAL(serializedData.length(), streamSerializedData.length());
@@ -3769,7 +3775,7 @@ protected:
         MemoryBuffer deserializeBuffer;
         deserializeBuffer.append(serializedData.length(), serializedData.toByteArray());
         Owned<IPropertyTree> deserializedTree = createPTree();
-        CCycleTimer timer;
+        timer.reset();
         deserializedTree->deserialize(deserializeBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
@@ -3787,8 +3793,20 @@ protected:
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedFromStreamTree));
 
         // Convert to milliseconds for display
+        double serializeTimeMs = serializeElapsedNs / 1e6;
+        double serializeFromStreamTimeMs = serializeFromStreamElapsedNs / 1e6;
         double deserializeTimeMs = deserializeElapsedNs / 1e6;
         double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
+
+        DBGLOG("Serialization size results for %s:", testName);
+        DBGLOG("  serialize() size: %u bytes", serializeSize);
+        DBGLOG("  serializeFromStream() size: %u bytes", serializeFromStreamSize);
+        DBGLOG("  Size ratio (serializeFromStream/serialize): %.6f", (double)serializeFromStreamSize / serializeSize);
+
+        DBGLOG("Serialization timing results for %s:", testName);
+        DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
+        DBGLOG("  serializeFromStream() time: %.6f ms", serializeFromStreamTimeMs);
+        DBGLOG("  Performance ratio (serializeFromStream/serialize): %.6f", serializeFromStreamTimeMs / serializeTimeMs);
 
         DBGLOG("Deserialization timing results for %s:", testName);
         DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);

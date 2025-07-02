@@ -15,8 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef JSTREAMHELPERS_HPP
-#define JSTREAMHELPERS_HPP
+#pragma once
 
 #include "platform.h"
 #include "jstream.hpp"
@@ -25,9 +24,9 @@
 inline void append(IBufferedSerialOutputStream &target, const char *value)
 {
     if (value)
-        target.put(strlen(value) + 1, value);
+        target.put(strlen(value) + 1, static_cast<const void *>(value));
     else
-        target.put(1, "");
+        target.put(1, static_cast<const void *>(""));
 }
 
 template <class T>
@@ -37,81 +36,24 @@ inline void append(IBufferedSerialOutputStream &target, const T &value)
 }
 
 // Global helper functions for buffered serial input
-inline void read(IBufferedSerialInputStream &source, char *buffer, size32_t size)
+inline void read(IBufferedSerialInputStream &source, void *buffer, size32_t size)
 {
-    source.read(size, buffer);
+    size32_t got = source.read(size, buffer);
+    if (got != size)
+        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %u, only read %u bytes", size, got);
 }
 
 template <class T>
 inline void read(IBufferedSerialInputStream &source, T &value)
 {
-    source.read(sizeof(T), &value);
+    size32_t got = source.read(sizeof(T), &value);
+    if (got != sizeof(T))
+        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %lu, only read %u bytes", sizeof(T), got);
 }
 
-const byte *readDirect(IBufferedSerialInputStream &source, size32_t len)
-{
-    if (len)
-    {
-        size32_t got;
-        const byte *result = static_cast<const byte *>(source.peek(len, got));
-        if (got >= len)
-        {
-            source.skip(len);
-            return result;
-        }
-    }
-    return nullptr; // Not enough data available or len 0 was requested
-}
-
-template <class T>
-inline const void *peek(IBufferedSerialInputStream &source, T &value)
+inline bool peekIsNextNullTerminatedString(IBufferedSerialInputStream &source)
 {
     size32_t got{0};
-    const void *ptr = source.peek(sizeof(T), got);
-    if (ptr && got >= sizeof(T))
-        return ptr;
-    return nullptr; // Not enough data available
+    const char *start = static_cast<const char *>(source.peek(1, got));
+    return (got >= 1) && (*start == '\0');
 }
-
-template <typename T>
-inline bool peekRead(IBufferedSerialInputStream &source, T &value)
-{
-    unsigned len = sizeof(T);
-    size32_t got;
-    const char *start = (const char *)source.peek(len, got);
-    if (got >= len)
-    {
-        memcpy_iflen(&value, start, len);
-        return true;
-    }
-    return false;
-}
-
-inline size32_t getZeroTerminatedStringLength(IBufferedSerialInputStream &source)
-{
-    unsigned available{0};
-    const char *start = (const char *)source.peek(1, available);
-    const char *originalStart = start;
-    while (start && *start)
-    {
-        if (--available == 0)
-            throwUnexpectedX("Null terminator not found within buffer");
-
-        ++start;
-    }
-    return start - originalStart;
-}
-
-inline void peekReadZeroTerminatedString(IBufferedSerialInputStream &source, StringBuffer &value)
-{
-    size32_t stringLen = getZeroTerminatedStringLength(source);
-    if (stringLen > 0)
-    {
-        size32_t got;
-        const char *start = (const char *)source.peek(1, got);
-        if (start && *start)
-            value.append(start);
-    }
-}
-
-#endif
