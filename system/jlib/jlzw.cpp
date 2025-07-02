@@ -26,6 +26,7 @@
 #include "jflz.hpp"
 #include "jlz4.hpp"
 #include "jzstd.hpp"
+#include "jplane.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -2057,6 +2058,28 @@ public:
         //Allow the disk read and write to send multiple blocks in a single operation - to reduce cloud io costs.
         assertex(trailer.blockSize);
         numBlocksToBuffer = 1;
+        if (fileio && _bufferSize == (size32_t)-1)
+        {
+            IFile * file = fileio->queryFile();
+            if (file)
+            {
+                const char * filename = file->queryFilename();
+                if (filename)
+                {
+                    Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
+                    if (plane)
+                    {
+                        _bufferSize = plane->getAttribute(BlockedSequentialIO);
+                    }
+                    else
+                    {
+                        if (isContainerized())
+                            _bufferSize = 0x400000; // Default to 4MB if containerized and no plane - so that dafilesrv default to large reads
+                    }
+
+                }
+            }
+        }
         if (_bufferSize && (_bufferSize != (size32_t)-1))
             numBlocksToBuffer = _bufferSize / trailer.blockSize;
         if (numBlocksToBuffer < 1)
@@ -2083,6 +2106,12 @@ public:
     virtual unsigned method() override
     {
         return trailer.method();
+    }
+    virtual IFile * queryFile() const override
+    {
+        if (fileio)
+            return fileio->queryFile();
+        return nullptr;
     }
 
 protected:

@@ -102,6 +102,7 @@ public:
     virtual void flush();
     virtual void close();
     virtual unsigned __int64 getStatistic(StatisticKind kind);
+    virtual IFile * queryFile() const { return creator; }
 
     HANDLE queryHandle() { return file; } // for debugging
     const char * queryFilename() const { return creator ? creator->queryFilename() : nullptr; }
@@ -141,6 +142,7 @@ public:
     virtual void flush() { io->flush(); }
     virtual void close() { io->close(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
+    virtual IFile * queryFile() const { return io->queryFile(); }
 
 protected:
     Linked<IFileIO>     io;
@@ -195,6 +197,7 @@ public:
     virtual void flush();
     virtual void close();
     virtual unsigned __int64 getStatistic(StatisticKind kind);
+    virtual IFile * queryFile() const { return nullptr; }
 
     virtual void setSize(offset_t size);
     virtual IFileAsyncResult *readAsync(offset_t pos, size32_t len, void * data);

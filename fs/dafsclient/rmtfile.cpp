@@ -1610,6 +1610,11 @@ public:
 
     }
 
+    virtual IFile * queryFile() const override
+    {
+        return parent;
+    }
+
     void setDisconnectOnExit(bool set) { disconnectonexit = set; }
 
     void sendRemoteCommand(MemoryBuffer & sendBuffer, MemoryBuffer & replyBuffer, bool retry=true, bool lengthy=false, bool handleErrCode=true)
@@ -2365,6 +2370,11 @@ public:
         if (firstRequest)
             handleFirstRequest();
     }
+    virtual IFile * queryFile() const override
+    {
+        return nullptr;//MORE
+    }
+
 protected:
     StringBuffer &openRequest()
     {
