@@ -43,6 +43,7 @@
 #include "dadfs.hpp"
 
 #include "remoteerr.hpp"
+#include <random>
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -1271,15 +1272,26 @@ protected:
     StringAttr logicalFilename;
     unsigned numInputFields = 0;
 
+    bool applySampling = false;
+    std::random_device randomDevice;
+    std::mt19937 randomGenerator;
+    std::bernoulli_distribution recordSamplingDistribution;
+
     inline bool fieldFilterMatch(const void * buffer)
     {
+        bool shouldRead = true;
         if (filterRow)
         {
             filterRow->setRow(buffer, filter.getNumFieldsRequired());
-            return filter.matches(*filterRow);
+            shouldRead = filter.matches(*filterRow);
         }
-        else
-            return true;
+
+        if (applySampling && shouldRead)
+        {
+            shouldRead = recordSamplingDistribution(randomGenerator);
+        }
+
+        return shouldRead;
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -1295,6 +1307,7 @@ public:
     {
         delete filterRow;
     }
+
     void setupInputMeta(const IPropertyTree &config, IOutputMetaData *_inMeta)
     {
         inMeta.setown(_inMeta);
@@ -1307,6 +1320,34 @@ public:
             Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
             ForEach(*filterIter)
                 filter.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
+
+        if (config.hasProp("recordSamplingRate"))
+        {
+            // std::bernoulli_distribution may support smaller sampling rates, depending on implementation,
+            // but we limit it to 1e-12 to avoid issues with very small probabilities
+            constexpr double minSamplingRate = 1e-12;
+            constexpr double maxSamplingRate = 1.0;
+
+            double recordSamplingRate = config.getPropReal("recordSamplingRate", maxSamplingRate);
+            if (recordSamplingRate <= minSamplingRate || recordSamplingRate > maxSamplingRate)
+                throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: recordSamplingRate must be between (1e-12, 1.0)");
+
+            if (recordSamplingRate < maxSamplingRate)
+            {
+                applySampling = true;
+                recordSamplingDistribution = std::bernoulli_distribution(recordSamplingRate);
+
+                __int64 recordSamplingSeed = config.getPropInt64("recordSamplingSeed", -1);
+                if (recordSamplingSeed >= 0)
+                {
+                    randomGenerator.seed(recordSamplingSeed);
+                }
+                else
+                {
+                    randomGenerator.seed(randomDevice());
+                }
+            }
         }
     }
 // IRemoteReadActivity impl.
@@ -4711,6 +4752,10 @@ public:
      * "action" - supported actions = "count" (used if "kind" is auto-detected to specify count should be performed instead of read)
      *
      * "keyFilter" - filter the results by this expression (See: HPCC-18474 for more details).
+     * 
+     * "recordSamplingRate" - sampling the dataset at this rate (e.g. 0.1 for 10% sampling)
+     * 
+     * "recordSamplingSeed" - seed for random sampling [0,UINT32_MAX]
      *
      * "chooseN" - maximum # of results to return
      *
@@ -4739,6 +4784,8 @@ public:
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
          *   "keyFilter" : "f1='1    '",
+         *   "recordSamplingRate" : 0.1,
+         *   "recordSamplingSeed" : 123456789,
          *   "chooseN" : 5,
          *   "compressed" : "false"
          *   "input" : {
