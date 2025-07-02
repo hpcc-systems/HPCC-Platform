@@ -7,7 +7,7 @@ type: application
 # to the chart and its templates, including the app version.
 version: 1.0.0
 
-# Dependencies can be automatically updated via HELM dependancy update command:
+# Dependencies can be automatically updated via HELM dependency update command:
 # > 'helm dependency update' command
 # or helm install parameter —dependency-update
 # > helm install myelastic ./ —-dependency-update

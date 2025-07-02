@@ -697,7 +697,11 @@ esp:
     #labels:
     #  mylabel: "3"
     ## Links specify the web links for a service. The web links may be shown on ECLWatch.
-    #links:
+    links:
+    - name: Traces on ECK stack
+      description: "View Traces on ECK stack"
+      url: "https://localhost:5601/app/apm/traces/explorer/waterfall?comparisonEnabled=false&detailTab=timeline&environment=ENVIRONMENT_ALL&kuery=&query=&rangeFrom=now-15m&rangeTo=now&showCriticalPath=false&traceId={trace_id}&waterfallItemId="
+      linkedResource: "traces"
     #- name: linkname
     #  description: "some description"
     #  url: "http://abc.com/def?g=1"

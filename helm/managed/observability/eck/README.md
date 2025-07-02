@@ -1,6 +1,6 @@
 # elastic4hpccobservability
 
-**elastic4hpccobservability** is a comprehensive, self-contained observability solution for the HPCC Platform. It leverages the Elastic Stack (Elasticsearch, Kibana, APM Server) and OpenTelemetry Collector to provide distributed tracing, metrics, and observability data for HPCC clusters. This project delivers a streamlined, secure, and automated way to deploy, configure, and access observability infrastructure using Helm charts.
+**elastic4hpccobservability** is a self-contained observability solution for the HPCC Platform. It leverages the Elastic Stack (Elasticsearch, Kibana, APM Server) and OpenTelemetry Collector to provide tracing observability data for HPCC clusters. This project delivers a streamlined, secure, and automated way to deploy, configure, and access observability infrastructure for testing and developmen using Helm charts.
 
 ---
 
@@ -80,18 +80,6 @@ helm install myhpcc helm/hpcc -f helm/managed/observability/eck/otlp-http-collec
 
 ## Debugging & Validation
 
-### Fetch Elastic APM Token and CA Certificate
-
-```sh
-export ELASTIC_APM_SECRET_TOKEN=$(kubectl get secret/eck-apm-eck-apm-server-apm-token --template '{{index .data "secret-token"}}' | base64 -d)
-export ELASTIC_APM_SERVER_CA_CERT_FILE=$(mktemp)
-```
-
-Confirm environment variables:
-
-```sh
-env | grep ELASTIC_APM_
-```
 ### Test OpenTelemetry Collector
 
 Generate sample traces:
@@ -107,6 +95,22 @@ docker run --rm ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetry
 ```
 
 ### Test APM Server Certificate-Based Connectivity
+By default the APM server is not accessible outside of the cluster. To test, perform the following steps from within the cluster, or expose the service outside of the cluster.
+
+#### Fetch Elastic APM Token and CA Certificate
+
+```sh
+export ELASTIC_APM_SECRET_TOKEN=$(kubectl get secret/eck-apm-eck-apm-server-apm-token --template '{{index .data "secret-token"}}' | base64 -d)
+export ELASTIC_APM_SERVER_CA_CERT_FILE=$(mktemp)
+```
+
+#### Confirm environment variables:
+
+```sh
+env | grep ELASTIC_APM_
+```
+
+#### Contact APM server
 
 ```sh
 curl --resolve *:8200:127.0.0.1 --cacert ${ELASTIC_APM_SERVER_CA_CERT_FILE} \
