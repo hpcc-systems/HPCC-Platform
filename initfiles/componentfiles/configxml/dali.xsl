@@ -149,10 +149,12 @@
       </SecurityManagers>
      </xsl:if>
 
-      <xsl:element name="SDS">
+      <xsl:element name="sds">
         <xsl:attribute name="store">dalisds.xml</xsl:attribute>
         <xsl:attribute name="caseInsensitive">0</xsl:attribute>
-        <xsl:copy-of select="@nobackup | @recoverFromIncErrors | @snmpSendWarnings | @enableSNMP | @enableSysLog | @snmpErrorMsgLevel | @msgLevel | @lightweightCoalesce | @keepStores | @deltaSaveThresholdSecs | @deltaTransactionQueueLimit | @deltaTransactionMaxMemMB | @leakStore"/>
+        <xsl:copy-of select="@asyncBackup | @deltaSaveThresholdSecs | @deltaTransactionMaxMemMB | @deltaTransactionQueueLimit |
+                             @externalSizeThreshold | @enableSNMP | @enableSysLog | @keepStores | @leakStore | @lightweightCoalesce |
+                             @msgLevel | @nobackup | @recoverFromIncErrors | @snmpSendWarnings | @snmpErrorMsgLevel | @useNFSBackupMount"/>
         <xsl:if test="string(@IdlePeriod) != ''">
             <xsl:attribute name="lCIdlePeriod">
                 <xsl:value-of select="@IdlePeriod"/>
@@ -200,11 +202,10 @@
             <xsl:value-of select="/Environment/Hardware/Computer[@name=current()/@backupComputer]/@netAddress"/>
           </xsl:attribute>
         </xsl:if>
-        <xsl:copy-of select="@asyncBackup | @useNFSBackupMount"/>
       </xsl:element>
-      <DFS>
+      <dfs>
       <xsl:copy-of select="@forceGroupUpdate | @numThreads"/>
-      </DFS>
+      </dfs>
       <xsl:element name="Coven">
         <xsl:attribute name="store">dalicoven.xml</xsl:attribute>
         <xsl:element name="Alerts">
