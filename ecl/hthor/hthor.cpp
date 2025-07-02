@@ -8534,28 +8534,32 @@ unsigned __int64 CHThorDiskReadBaseActivity::getLocalFilePosition(const void * r
 
 void CHThorDiskReadBaseActivity::closepart()
 {
-    if (opened && inputfileio && ldFile && partNum > 0)
+    // Publish file costs and statistics for file (exclude spill files)
+    if ((opened && inputfileio && ldFile && partNum > 0))
     {
         unsigned previousPartNum = partNum-1;
         if (previousPartNum < ldFile->numParts())
         {
             stat_type curDiskReads = inputfileio->getStatistic(StNumDiskReads);
-            IDistributedFile * dFile = ldFile->queryDistributedFile();
-            if (dFile)
+            if (!(helper.getFlags() & (TDXtemporary | TDXjobtemp)))
             {
-                if (superfile)
+                IDistributedFile * dFile = ldFile->queryDistributedFile();
+                if (dFile)
                 {
-                    unsigned subfileNum, lnum;
-                    if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
+                    if (superfile)
                     {
-                        IDistributedSuperFile * super = dFile->querySuperFile();
-                        IDistributedFile & subfile = super->querySubFile(subfileNum, true);
-                        graph.queryFileReadPropsUpdater()->addCostAndNumReads(&subfile, curDiskReads, 0);
+                        unsigned subfileNum, lnum;
+                        if (superfile->mapSubPart(previousPartNum, subfileNum, lnum))
+                        {
+                            IDistributedSuperFile * super = dFile->querySuperFile();
+                            IDistributedFile & subfile = super->querySubFile(subfileNum, true);
+                            graph.queryFileReadPropsUpdater()->addCostAndNumReads(&subfile, curDiskReads, 0);
+                        }
                     }
-                }
-                else
-                {
-                    graph.queryFileReadPropsUpdater()->addCostAndNumReads(dFile, curDiskReads, 0);
+                    else
+                    {
+                        graph.queryFileReadPropsUpdater()->addCostAndNumReads(dFile, curDiskReads, 0);
+                    }
                 }
             }
             numDiskReads += curDiskReads;
