@@ -534,7 +534,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
     if(groupName != NULL && *groupName != '\0')
     {
 #ifdef _CONTAINERIZED
-        Owned<IPropertyTree> plane = getStoragePlane(groupName);
+        Owned<const IPropertyTree> plane = getStoragePlaneConfig(groupName, false);
         if (plane)
             defaultFolder.append(plane->queryProp("@prefix"));
 #else

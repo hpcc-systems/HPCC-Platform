@@ -12145,7 +12145,7 @@ protected:
             if (1 == clusterIdx)
             {
                 // establish default compression from 1st plane, but ECL compression attributes take precedence
-                Owned<IPropertyTree> plane = getStoragePlane(cluster);
+                Owned<const IPropertyTree> plane = getStoragePlaneConfig(cluster, false);
                 if (plane)
                     outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
             }
@@ -12165,7 +12165,7 @@ protected:
             if (defaultCluster.length())
             {
                 clusters.append(defaultCluster);
-                Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
+                Owned<const IPropertyTree> plane = getStoragePlaneConfig(defaultCluster, false);
                 if (plane)
                     outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
             }

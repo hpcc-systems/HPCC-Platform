@@ -512,7 +512,7 @@ public:
         getLFNDirectoryUsingBaseDir(dstdir, dstlfn.get(), spec.defaultBaseDir.get());
         dstfdesc->setDefaultDir(dstdir.str());
 
-        Owned<IStoragePlane> plane = getDataStoragePlane(cluster1, false);
+        Owned<const IStoragePlane> plane = getDataStoragePlane(cluster1, false);
         if (plane) // I think it should always exist, even in bare-metal.., but guard against it not for now (assumes initializeStoragePlanes has been called)
         {
             DBGLOG("cloneSubFile: destfilename='%s', plane='%s', dirPerPart=%s", destfilename, cluster1.get(), boolToStr(plane->queryDirPerPart()));
@@ -1163,7 +1163,7 @@ public:
                 //replace @directory with a directory calculated from the storage plane
                 //prefix and the scope of the logical filename
                 //MORE: This could should be commoned up with similar code elsewhere
-                Owned<IStoragePlane> plane = getDataStoragePlane(cluster, true);
+                Owned<const IStoragePlane> plane = getDataStoragePlane(cluster, true);
                 StringBuffer location(plane->queryPrefix());
                 const char * temp = lfn;
                 for (;;)
