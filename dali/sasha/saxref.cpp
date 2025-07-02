@@ -957,7 +957,7 @@ public:
             rootdir.set(basedir);
             iswin = getPathSepChar(rootdir.get())=='\\';
         }
-        assert(!rootdir.isEmpty());
+        assertex(!rootdir.isEmpty());
         return true;
     }
 
@@ -1086,7 +1086,15 @@ public:
                 nsz += fsz;
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
-                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    try {
+                        pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    }
+                    catch (IException *e) {
+                        StringBuffer tmp(LOGPFX "scanDirectory: Error adding file ");
+                        addPathSepChar(rfn.getRemotePath(tmp)).append(fname);
+                        EXCLOG(e,tmp.str());
+                        e->Release();
+                    }
                 }
             }
             path.setLength(dsz);
@@ -1138,7 +1146,7 @@ public:
                 // A hosted plane will never be striped, so for striped planes, use local host
                 if (parent.isPlaneStriped)
                 {
-                    assert(!parent.storagePlane->hasProp("@hostGroup"));
+                    assertex(!parent.storagePlane->hasProp("@hostGroup"));
                     SocketEndpoint localEP;
                     localEP.setLocalHost(0);
                     addPathSepChar(path).append('d').append(i+1);
@@ -1642,7 +1650,15 @@ public:
         i = 0;
         cFileDesc *file = d->files.first(i);
         while (file) {
-            listOrphans(file,basedir,scope,abort,recentCutoffDays);
+            try {
+                listOrphans(file,basedir,scope,abort,recentCutoffDays);
+            }
+            catch (IException *e) {
+                StringBuffer tmp(LOGPFX "listOrphans: Error processing file ");
+                file->getNameMask(addPathSepChar(tmp.append(basedir.str())));
+                EXCLOG(e,tmp.str());
+                e->Release();
+            }
             if (abort)
                 return;
             file = d->files.next(i);
