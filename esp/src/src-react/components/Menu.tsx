@@ -273,6 +273,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
                                 href={item.href}
                                 icon={<item.icon href={item.href} />}
                                 value={item.value}
+                                title={item.name}
                                 style={{
                                     paddingLeft: "4px", paddingRight: "4px", color: selKey === item.value ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
                                 }}
