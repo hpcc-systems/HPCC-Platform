@@ -52,6 +52,13 @@ ECL_PHONENUMBER_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 #define verify(p) ((void) (p))
 #define ForEach(i) for((i).first();(i).isValid();(i).next())
 
+static void parseNumber(size32_t lenNumber,const char *number, size32_t lenCountryCode, const char *countryCode, i18n::phonenumbers::PhoneNumber &phoneNumber)
+{
+    const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+    std::string numberStr(number);
+    std::string countryCodeStr(countryCode);
+    phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+}
 
 namespace HPCCPhoneNumber
 {
@@ -64,9 +71,7 @@ ECL_PHONENUMBER_API bool ECL_PHONENUMBER_CALL checkValidity(ICodeContext *_ctx, 
     i18n::phonenumbers::PhoneNumber phoneNumber;
     try
     {
-        std::string numberStr(number, lenNumber);
-        std::string countryCodeStr(countryCode, lenCountryCode);
-        phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
         return phoneUtil->IsValidNumber(phoneNumber);
     }
     catch (...)
@@ -83,9 +88,7 @@ ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL phonenumberType(ICodeContext *_ctx
     
     try
     {
-        std::string numberStr(number, lenNumber);
-        std::string countryCodeStr(countryCode, lenCountryCode);
-        phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
         i18n::phonenumbers::PhoneNumberUtil::PhoneNumberType type = phoneUtil->GetNumberType(phoneNumber);
         switch (type)
         {
@@ -148,9 +151,7 @@ ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL regionCode(ICodeContext *_ctx, siz
     
     try
     {
-        std::string numberStr(number, lenNumber);
-        std::string countryCodeStr(countryCode, lenCountryCode);
-        phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
         phoneUtil->GetRegionCodeForNumber(phoneNumber, &regionCodeStr);
     }
     catch (...)
@@ -171,9 +172,7 @@ ECL_PHONENUMBER_API unsigned ECL_PHONENUMBER_CALL countryCode(ICodeContext *_ctx
     i18n::phonenumbers::PhoneNumber phoneNumber;
     try
     {
-        std::string numberStr(number, lenNumber);
-        std::string countryCodeStr(countryCode, lenCountryCode);
-        phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
         return phoneNumber.country_code();
     }
     catch (...)
