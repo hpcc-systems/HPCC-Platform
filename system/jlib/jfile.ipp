@@ -94,14 +94,15 @@ public:
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data);
-    virtual offset_t size();
-    virtual size32_t write(offset_t pos, size32_t len, const void * data);
-    virtual void setSize(offset_t size);
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
-    virtual void flush();
-    virtual void close();
-    virtual unsigned __int64 getStatistic(StatisticKind kind);
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual offset_t size() override;
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+    virtual void setSize(offset_t size) override;
+    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override;
+    virtual void flush() override;
+    virtual void close() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const override { return creator; }
 
     HANDLE queryHandle() { return file; } // for debugging
     const char * queryFilename() const { return creator ? creator->queryFilename() : nullptr; }
@@ -141,6 +142,7 @@ public:
     virtual void flush() { io->flush(); }
     virtual void close() { io->close(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
+    virtual IFile * queryFile() const { return io->queryFile(); }
 
 protected:
     Linked<IFileIO>     io;
@@ -195,6 +197,7 @@ public:
     virtual void flush();
     virtual void close();
     virtual unsigned __int64 getStatistic(StatisticKind kind);
+    virtual IFile * queryFile() const { return nullptr; }
 
     virtual void setSize(offset_t size);
     virtual IFileAsyncResult *readAsync(offset_t pos, size32_t len, void * data);
