@@ -55,7 +55,7 @@
 #define SDS_TRANSACTION_RETRY (60000)
 #define SDS_UPDATEFS_TIMEOUT (10000)
 
-#define DEFAULT_NUM_DFS_THREADS 30
+#define DEFAULT_NUM_DFS_THREADS 100
 #define TIMEOUT_ON_CLOSEDOWN 120000 // On closedown, give up on trying to join a thread in CDaliDFSServer after two minutes
 #define MAX_PHYSICAL_DELETE_THREADS 1000
 
@@ -11490,7 +11490,7 @@ public:
     {
         stopped = true;
         defaultTimeout = INFINITE; // server uses default
-        numThreads = config->getPropInt("DFS/@numThreads", DEFAULT_NUM_DFS_THREADS);
+        numThreads = getComponentConfigSP()->getPropInt("expert/@daliDfsPoolLimit", config->getPropInt("DFS/@numThreads", DEFAULT_NUM_DFS_THREADS));
         PROGLOG("DFS Server: numThreads=%d", numThreads);
     }
 
