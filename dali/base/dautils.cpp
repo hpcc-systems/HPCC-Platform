@@ -103,17 +103,9 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
 
 bool allowForeign()
 {
-    StringBuffer optValue;
-    // NB: component setting takes precedence over global
-    getComponentConfigSP()->getProp("expert/@allowForeign", optValue);
-    if (!optValue.isEmpty())
-        return strToBool(optValue);
-
-    getGlobalConfigSP()->getProp("expert/@allowForeign", optValue);
-    if (!optValue.isEmpty())
-        return strToBool(optValue);
     // default denied in cloud, allowed in bare-metal
-    return isContainerized() ? false : true;
+    bool defaultValue = isContainerized() ? false : true;
+    return getConfigBool("expert/@allowForeign", defaultValue);
 }
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
@@ -2587,11 +2579,17 @@ void CSDSFileScanner::processFiles(IRemoteConnection *conn,IPropertyTree &root,S
             if (!fn||!*fn)
                 continue;
             name.append(fn);
-            if (checkFileOk(file,name.str())) {
-                processFile(file,name);
+            try {
+                if (checkFileOk(file,name.str())) {
+                    processFile(file,name);
+                }
             }
-            else
-                ; // DBGLOG("ignoreFile %s",name.str());
+            catch (IException *e) {
+                StringBuffer tmp("CSDSFileScanner::processFiles ");
+                tmp.appendf("(%s)", name.str());
+                EXCLOG(e, tmp.str());
+                e->Release();
+            }
 
             name.setLength(ns);
             conn->rollbackChildren(&file,true);

@@ -335,6 +335,7 @@ jlib_decl const char * queryComponentName();
 
 // utility functions that check component configuration 1st, then global configuration, then default to the provided default value
 jlib_decl bool getConfigBool(const char *xpath, bool defaultValue=false);
+jlib_decl int getConfigInt(const char *xpath, int defaultValue=0);
 jlib_decl __int64 getConfigInt64(const char *xpath, __int64 defaultValue=0);
 jlib_decl bool getConfigString(const char *xpath, StringBuffer &result);
 jlib_decl double getConfigReal(const char *xpath, double defaultValue=0.0);

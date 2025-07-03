@@ -123,6 +123,7 @@ static const char * eclReserved4[] = { //String functions
     "keyunicode",
     "length",
     "realformat",
+    "regexextract",
     "regexfind",
     "regexfindset",
     "regexreplace",

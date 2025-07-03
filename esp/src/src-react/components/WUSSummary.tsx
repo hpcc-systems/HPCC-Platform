@@ -269,7 +269,13 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                                         <AccordionHeader icon={severityIcon(exceptions[code].severity)} style={{ margin: 4, borderStyle: "solid", borderWidth: 1, borderColor: severityBorderColor(exceptions[code].severity), background: severityBackgroundColor(exceptions[code].severity) }}>{code} ({exceptions[code].errors.length}):  {exceptions[code].messageSummary}</AccordionHeader>
                                         <AccordionPanel>
                                             {exceptions[code].errors.map((err, idx) => {
-                                                return <div key={idx}><Link href={`#/workunits/${err.workunit.Wuid}`}>{err.workunit.Wuid}</Link> - {severityIcon(err.severity, true)} <Text style={{ color: severityForegroundColor(err.severity) }}>{err.message}</Text><br /></div>;
+                                                return <div key={idx}>
+                                                    <Link href={`#/workunits/${err.workunit.Wuid}`}>{err.workunit.Wuid}</Link> - {severityIcon(err.severity, true)}
+                                                    <Text style={{ color: severityForegroundColor(err.severity) }}>
+                                                        <code style={{ whiteSpace: "pre-wrap", display: "inline" }}>{err.message}</code>
+                                                    </Text>
+                                                    <br />
+                                                </div>;
                                             })}
                                         </AccordionPanel>
                                     </AccordionItem>;

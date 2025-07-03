@@ -62,7 +62,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/b
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 
-RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.6.1_amd64.deb/download && \
+RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.7.0_amd64.deb/download && \
     dpkg -i download && \
     rm download
 
@@ -78,7 +78,7 @@ RUN passwd -l hpcc
 
 RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
 RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
-RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystemsw
+RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 USER hpcc
