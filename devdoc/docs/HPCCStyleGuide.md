@@ -3,204 +3,205 @@
 This section covers the best practice information for writing and
 contributing to the HPCC Systems® Platform documentation.
 
-## General 
+## General
 
-We strive to maintain a consistent voice. These guidelines can help your
-writing match that voice.
+We strive to maintain a consistent voice. These guidelines can help your writing match that voice.
 
--   **Use present tense, active voice**. Documentation should be you
-    speaking directly to the reader. Simply tell them what to do.
+* **Use present tense, active voice**. Documentation should be you speaking directly to the reader. Simply tell them what to do.
 
-    This example sentence: "The user selects the file menu." is passive
-    voice. You wouldn’t say it that way in a conversation.
+    This example sentence:
+    >The user selects the file menu.
 
-    You should use active voice wording, such as: "Select the file
-    menu".
+    is passive voice. You wouldn’t say it that way in a conversation.
 
-    Similarly, instructions like these are active voice: "Press the
-    button" or "Submit the file".
+    You should use active voice wording, such as:
+    >Select the file menu.
 
-    Documentation is you instructing the user. Just tell them what to
-    do.
+    Similarly, instructions like these are active voice:
 
--   **Be Brief and keep it simple.** Be efficient with your words. Keep
-    sentences short and concise. Keep paragraphs short as well. Use just
-    a few sentences per paragraph. Use simple words wherever possible
-    and try to avoid lengthy explanations.
+    >Press the button.
 
--   **Consistency:** Be consistent. Use the same voice across all
+     or
+
+     >Submit the file.
+
+    Documentation is you instructing the user. Just tell them what to do.
+
+* **Be Brief and keep it simple.** Be efficient with your words. Keep sentences short and concise. Keep paragraphs short as well. Use just a few sentences per paragraph. Use simple words wherever possible and try to avoid lengthy explanations.
+
+* **Consistency:** Be consistent. Use the same voice across all
     documents. Use the same term, use the same spelling, punctuation,
     etc. Follow the conventions in this guide.
 
--   When writing formal documentation that is more than a new feature
-    announcement, do not refer to a new feature, or coming features as
-    such, this does not hold up well over time.
+* When writing formal documentation that is more than a new feature announcement, do not refer to a new feature, or coming features as such, this does not hold up well over time.
 
-    Do not refer to how things were done in the past. For example, "in
-    the past we had to do X-Y-Z steps and now we no longer have to. This
-    ‘new feature’ can do it in one step, Z". This only adds potential
-    confusion. Just instruct on exactly what needs to be done now, using
-    words efficiently as possible, so for this example just say “perform
+    Do not refer to how things were done in the past. For example, "in the past we had to do X-Y-Z steps and now we no longer have to. This ‘new feature’ can do it in one step, Z". This only adds potential confusion. Just instruct on exactly what needs to be done now, using words efficiently as possible, so for this example just say “perform
     step Z”
 
-## Terms 
+## Terms
 
-There are many terms specific to HPCC Systems® and the HPCC Systems
-platform. Use the following style guide for word usage and
-capitalization guidelines to use when referring to system components or
-other HPCC-specific entities. Maintain consistent usage throughout all
-docs.
+There are many terms specific to HPCC Systems® and the HPCC Systems platform. Use the following style guide for word usage and capitalization guidelines to use when referring to system components or other HPCC-specific entities. Maintain consistent usage throughout all docs.
 
-### HPCC Systems® 
+### HPCC Systems®
 
-Officially and legally the organizaion's name is HPCC Systems® and it is a
-registered trademark.
+Officially and legally the organization's name is HPCC Systems® and it is a registered trademark.
 
-You should always refer to the platform as the HPCC Systems® platform and the
-registration mark ® should appear in the first and most prominent
-mention of the name.
+You should always refer to the platform as the HPCC Systems® platform and the registration mark ® should appear in the first and most prominent mention of the name.
 
 While it is acceptable to use the ® anywhere in a document, it is
-required to be used in the first and most prominent mention - so the
-average reader will be aware. Any usage after that first and most
-prominent is optional.
+required to be used in the first and most prominent mention so the average reader will be aware. Any usage after that first and most prominent is optional.
 
-**Components and Tools**
+#### Components and Tools
 
--   HPCC Systems Platform
+* HPCC Systems Platform
 
--   Dali
+* Dali
 
--   Sasha
+* Sasha
 
--   Thor
+* Thor
 
--   hThor
+* hThor
 
--   ROXIE
+* ROXIE
 
--   DFU Server (Distributed File Utility Server)
+* DFU Server (Distributed File Utility Server)
 
--   ESP Server (Enterprise Server Platform)
+* ESP Server (Enterprise Server Platform)
 
--   ESP Services
+* ESP Services
 
--   WsECL
+* WsECL
 
--   ECL Watch
+* ECL Watch
 
--   ECL Server
+* ECL Server
 
--   ECLCC Server
+* ECLCC Server
 
--   ECL Agent
+* ECL Agent
 
--   ECL IDE
+* ECL IDE
 
--   ECL Plug-in for Eclipse
+* ECL Plug-in for Eclipse
 
--   ECL Playground
+* ECL Playground
 
--   LDAP
+* LDAP
 
--   dafilesrv
+* dafilesrv
 
--   VS Code (no hyphen)
+* VS Code (no hyphen)
 
--   ECL Language Extension for VS Code
+* ECL Language Extension for VS Code
 
--   Configuration Manager (not ConfigMgr or ConfigManager)
+* Configuration Manager (not ConfigMgr or ConfigManager)
 
-**Note:** when referring to the startup command, use configmgr (always
-lowercase)
+**Note:** when referring to the startup command, use configmgr (always lowercase)
 
-### Other Terms 
+### Other Terms
 
--   HPCCSystems.com or [http://HPCCSystems.com](http://hpccsystems.com/)
+* HPCCSystems.com or [http://HPCCSystems.com](http://hpccsystems.com/)
     (do not include the www portion)
 
--   ECL (Enterprise Control Language)
+* ECL (Enterprise Control Language)
 
--   ECL command-line interface
+* ECL command-line interface
 
-**Note:** when referring to the ECL command-line tool command, ecl is
-lowercase
+**Note:** when referring to the ECL command-line tool command, ecl is lowercase
 
--   DFU Plus command-line interface
+* DFU Plus command-line interface
 
-<!-- -->
+* cloud-native (always hyphenated when used as an adjective)
 
--   cloud-native (always hyphenated when used as an adjective)
+* DFU Workunits
 
-<!-- -->
+* ECL Workunits
 
--   DFU Workunits
+* Workunit
 
--   ECL Workunits
+* WUID
 
--   Workunit
+* HPCC Systems®
 
--   WUID
+* multi-node
 
--   HPCC Systems®
+* Superfiles, subfiles
 
--   multi-node
+* package map
 
--   Superfiles, subfiles
+* The **username** is the (usually unique) thing you type in with your password, for example: bobsmith66.
 
--   package map
-
--   The **username** is the (usually unique) thing you type in with your
-    password, for example: bobsmith66.
-
--   The **user name** is the name of the user, the user's real-life
+* The **user name** is the name of the user, the user's real-life
     name, for example: Bob Smith.
 
-###  Common Documentation terms 
+### Common Documentation terms
 
 Use the following conventions for these commonly used terms:
 
--   right-click
+* right-click
 
--   double-click
+* double-click
 
--   drag-and-drop
+* drag-and-drop
 
--   click-and-drag
+* click-and-drag
 
--   plug-in
+* plug-in
 
--   drop list
+* drop list
 
--   bare metal (no hyphen)
+* bare metal (no hyphen)
 
--   blue/green (not blue-green)
+* blue/green (not blue-green)
 
--   Common Vulnerabilities and Exposures (CVEs)
+* Common Vulnerabilities and Exposures (CVEs)
 
-###  Usage Instructions 
+#### Products and Tools
 
--   You **click** a link.
+* ARM
 
--   You **select** a tab.
+* Helm vs helm
 
--   You **press** a button.
+    Helm is the name of the project, but the command line client is also named helm. By convention, when speaking of the project, Helm is capitalized. When speaking of the client, helm is in lowercase.
 
--   You **check** a (check)box.
+    For example:
 
-### Word Choices 
+    > Use the helm command line interface to install the Helm chart.
 
-#### Write up vs Write-up 
+* Linux Bash vs bash
+
+  In Linux Bash, "Bash" is capitalized to refer to the shell itself, while "bash" (lowercase) is used to refer to the command or script. Bash is the name of the shell, so it's capitalized like any proper noun, while the commands or scripts within the shell are lowercase. For example, you might say "I'm using the Bash shell," but you would execute a command like `bash myscript.sh`.
+
+* macOS
+
+* PowerShell
+
+* SharePoint
+
+#### Usage Instructions
+
+* You **click** a link.
+
+* You **select** a tab.
+
+* You **press** a button.
+
+* You **check** a (check)box.
+
+### Word Choices
+
+#### Write up vs Write-up
 
 Hyphenated when used as a noun. No Hyphen when used as a verb phrase.
 
 Examples:
 
--   Did you read the write-up?
+* Did you read the write-up?
 
--   Would you write up the steps to reproduce?
+* Would you write up the steps to reproduce?
 
-#### Assure vs ensure vs insure 
+#### Assure vs ensure vs insure
 
 To “assure” a person of something is to make him or her confident of it.
 
