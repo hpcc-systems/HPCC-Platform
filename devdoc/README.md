@@ -18,6 +18,7 @@ These documents are generated from Markdown by VitePress.  See [VitePress Markdo
 - [Code Review Guidelines](CodeReviews.md):  Guidelines for reviewing submissions PRs
 - [Building with Github Actions](UserBuildAssets.md): How to build source using Github Actions
 - [Writing Developer Documentation](/devdoc/docs/ContributeDocs.md): How to ensure your documentation conforms to our style and voice
+- [Log Cost Mitigation Outline](/devdoc/docs/LogCostMitigation.md): Outline of log cost mitigation heuristics for developers
 
 - [GitHub Wiki](https://github.com/hpcc-systems/HPCC-Platform/wiki):  GitHub wiki for HPCC-Platform
 
