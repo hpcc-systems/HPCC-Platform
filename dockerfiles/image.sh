@@ -78,10 +78,10 @@ create_platform_core_image() {
 
     if [ "$MODE" = "relwithdebinfo" ]; then
         echo "--- Create 'platform-core:relwithdebinfo' image ---"
-        docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-debug-$BUILD_OS.dockerfile" \
+        docker build --rm -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:relwithdebinfo \
             --build-arg BASE_IMAGE=platform-core:release \
-                "$SCRIPT_DIR/vcpkg/."
+                "$SCRIPT_DIR/."
     fi
 }
 
