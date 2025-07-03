@@ -521,7 +521,7 @@ public:
                     {
 // JCSMORE->GH - I think this needs to change to pass in accessMode to get correct aliased plane
 // and similarly for anywhere else that has placeholder of AccessMode::tbdWrite
-                        Owned<IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
+                        Owned<const IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
                         thisPlaneDir.append(plane->queryPrefix());
                         thisDirPerPart = plane->queryDirPerPart();
                     }

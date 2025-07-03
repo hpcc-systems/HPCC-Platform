@@ -2240,7 +2240,8 @@ public:
 
     virtual void initializeThreadPool()
     {
-        threadPool.setown(createThreadPool("hthor fetch activity thread pool", &threadFactory, true, nullptr));
+        unsigned maxThreads = 400; // NB: can exceed with throttling (up to 1s delay)
+        threadPool.setown(createThreadPool("hthor fetch activity thread pool", &threadFactory, true, nullptr, maxThreads));
     }
 
     virtual void initParts(IDistributedFile * f)
@@ -3105,7 +3106,8 @@ public:
     DistributedKeyLookupHandler(IDistributedFile *f, IJoinProcessor &_owner, IAgentContext &_agent, IContextLogger & _contextLogger)
         : owner(_owner), file(f), agent(_agent), contextLogger(_contextLogger)
     {
-        threadPool.setown(createThreadPool("hthor keyed join lookup thread pool", &threadFactory, true, nullptr));
+        unsigned maxThreads = 400; // NB: can exceed with throttling (up to 1s delay)
+        threadPool.setown(createThreadPool("hthor keyed join lookup thread pool", &threadFactory, true, nullptr, maxThreads));
         IDistributedSuperFile *super = f->querySuperFile();
         if (super)
         {
@@ -3476,7 +3478,8 @@ public:
 
     virtual void initializeThreadPool()
     {
-        threadPool.setown(createThreadPool("hthor keyed join fetch thread pool", &threadFactory, true, nullptr));
+        unsigned maxThreads = 400; // NB: can exceed with throttling (up to 1s delay)
+        threadPool.setown(createThreadPool("hthor keyed join fetch thread pool", &threadFactory, true, nullptr, maxThreads));
     }
 
     virtual void initParts(IDistributedFile * f)

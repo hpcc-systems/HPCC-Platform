@@ -726,41 +726,17 @@ interface IFileEventWatcher : extends IInterface
 typedef std::function<void (const char *, FileWatchEvents)> FileWatchFunc;
 jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
-//---- Storage plane related functions ----------------------------------------------------
-
-interface IPropertyTree;
-interface IPropertyTreeIterator;
-extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
-extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
-extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
-extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
-extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
-
 extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);
-//MORE: Should use enum class to avoid potential symbol clashes
-enum PlaneAttributeType // remember to update planeAttributeInfo in jfile.cpp
-{
-    BlockedSequentialIO,
-    BlockedRandomIO,
-    FileSyncWriteClose,
-    ConcurrentWriteSupport,
-    WriteSyncMarginMs,
-    PlaneAttributeCount
-};
-extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
-extern jlib_decl unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue);
-extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffer &result);
-//returns true if plane exists, fills resultValue with defaultValue if attribute is unset
-extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
-extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
-extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
-extern jlib_decl bool getFileSyncWriteCloseEnabled(const char *planeName);
-extern jlib_decl bool getConcurrentWriteSupported(const char *planeName);
-extern jlib_decl unsigned getWriteSyncMarginMs(const char * planeName);
 
 //---- Pluggable file type related functions ----------------------------------------------
 
 extern jlib_decl void addAvailableGenericFileTypeName(const char * name);
 extern jlib_decl bool hasGenericFiletypeName(const char * name);
+
+
+//MORE: These should move to jplane.hpp once more refactoring is done
+extern jlib_decl bool getFileSyncWriteCloseEnabled(const char *planeName);
+extern jlib_decl bool getConcurrentWriteSupported(const char *planeName);
+extern jlib_decl unsigned getWriteSyncMarginMs(const char * planeName);
 
 #endif

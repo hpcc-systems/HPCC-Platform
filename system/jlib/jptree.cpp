@@ -8790,6 +8790,11 @@ bool getConfigBool(const char *xpath, bool defaultValue)
     return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropBool);
 }
 
+int getConfigInt(const char *xpath, int defaultValue)
+{
+    return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropInt);
+}
+
 __int64 getConfigInt64(const char *xpath, __int64 defaultValue)
 {
     return getConfigValue(xpath, defaultValue, &IPropertyTree::getPropInt64);

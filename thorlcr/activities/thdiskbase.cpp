@@ -189,7 +189,7 @@ void CWriteMasterBase::init()
             if (1 == idx)
             {
                 // establish default compression from 1st plane, but ECL compression attributes take precedence
-                Owned<IPropertyTree> plane = getStoragePlane(cluster);
+                Owned<const IPropertyTree> plane = getStoragePlaneConfig(cluster, false);
                 if (plane)
                     outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
             }
@@ -222,7 +222,7 @@ void CWriteMasterBase::init()
                 if (defaultCluster.length())
                 {
                     clusters.append(defaultCluster);
-                    Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
+                    Owned<const IPropertyTree> plane = getStoragePlaneConfig(defaultCluster, false);
                     if (plane)
                         outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
                 }

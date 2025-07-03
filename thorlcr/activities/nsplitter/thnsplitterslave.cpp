@@ -21,6 +21,7 @@
 #include "thormisc.hpp"
 #include "thexception.hpp"
 #include "thbufdef.hpp"
+#include "jplane.hpp"
 
 interface ISharedSmartBuffer;
 class NSplitterSlaveActivity;

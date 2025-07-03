@@ -1266,9 +1266,7 @@ public:
         // if maxConnection is not passed as a user option, check for a default defined in the config/environment.
         if (!opttree->hasProp("@maxConnections"))
         {
-            int configDefault = getComponentConfigSP()->getPropInt("expert/@maxConnections", -1);
-            if (-1 == configDefault)
-                configDefault = getGlobalConfigSP()->getPropInt("expert/@maxConnections", -1);
+            int configDefault = getConfigInt("expert/@maxConnections", -1);
             if (-1 != configDefault)
                 opttree->setPropInt("@maxConnections", configDefault);
         }
@@ -1460,7 +1458,7 @@ public:
                     IDFUfileSpec *dst = wu->queryUpdateDestination();
                     StringBuffer clusterName;
                     destination->getGroupName(0, clusterName);
-                    Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                    Owned<const IPropertyTree> plane = getStoragePlaneConfig(clusterName, false);
                     if (plane)
                         dirPerPart = plane->getPropBool("@subDirPerFilePart", isContainerized());
                     // keys default wrap for copy

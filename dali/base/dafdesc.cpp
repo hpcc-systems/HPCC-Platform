@@ -427,7 +427,7 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
         if (!name.isEmpty())
         {
 #ifdef _CONTAINERIZED
-            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
+            Owned<const IStoragePlane> plane = getDataStoragePlane(name, false);
             mspec.numStripedDevices = plane ? plane->numDevices() : 1;
             if (mspec.numStripedDevices>1)
                 mspec.flags |= CPDMSF_striped;
@@ -1392,7 +1392,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 // then the IClusterInfo's will have no resolved names (aka groups) because the remote groups
                 // don't exist in the client environment. Instead, if the foreign file came from k8s, it will
                 // have remoteStoragePlane serialized/set.
-                Owned<IStoragePlane> plane;
+                Owned<const IStoragePlane> plane;
                 if (remoteStoragePlane)
                     plane.set(remoteStoragePlane);
                 else if (cluster)
@@ -2719,7 +2719,7 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
 
 IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts)
 {
-    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+    Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, true);
     if (!numParts)
         numParts = plane->numDefaultSprayParts();
 
@@ -3912,301 +3912,6 @@ void disableStoragePlanesDaliUpdates()
     savedConnectedToDali = false;
 }
 
-bool getDefaultStoragePlane(StringBuffer &ret)
-{
-    if (!isContainerized())
-        return false;
-    if (getDefaultPlane(ret, "@dataPlane", "data"))
-        return true;
-
-    throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
-}
-
-bool getDefaultSpillPlane(StringBuffer &ret)
-{
-    if (!isContainerized())
-        return false;
-    if (getComponentConfigSP()->getProp("@spillPlane", ret))
-        return true;
-    else if (getGlobalConfigSP()->getProp("storage/@spillPlane", ret))
-        return true;
-    else if (getDefaultPlane(ret, nullptr, "spill"))
-        return true;
-
-    throwUnexpectedX("Default spill plane not specified"); // The default should always have been configured by the helm charts
-}
-
-bool getDefaultIndexBuildStoragePlane(StringBuffer &ret)
-{
-    if (!isContainerized())
-        return false;
-    if (getComponentConfigSP()->getProp("@indexBuildPlane", ret))
-        return true;
-    else if (getGlobalConfigSP()->getProp("storage/@indexBuildPlane", ret))
-        return true;
-    else
-        return getDefaultStoragePlane(ret);
-}
-
-bool getDefaultPersistPlane(StringBuffer &ret)
-{
-    if (!isContainerized())
-        return false;
-    if (getComponentConfigSP()->getProp("@persistPlane", ret))
-        return true;
-    else if (getGlobalConfigSP()->getProp("storage/@persistPlane", ret))
-        return true;
-    else
-        return getDefaultStoragePlane(ret);
-}
-
-bool getDefaultJobTempPlane(StringBuffer &ret)
-{
-    if (!isContainerized())
-        return false;
-    if (getComponentConfigSP()->getProp("@jobTempPlane", ret))
-        return true;
-    else if (getGlobalConfigSP()->getProp("storage/@jobTempPlane", ret))
-        return true;
-    else
-    {
-        // NB: In hthor jobtemps are written to the spill plane and hence ephemeral storage by default
-        // In Thor they are written to the default data storage plane by default.
-        // This is because HThor doesn't need them persisted beyond the lifetime of the process, but Thor does.
-        return getDefaultStoragePlane(ret);
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-static bool isAccessible(const IPropertyTree * xml)
-{
-    //Unusual to have components specified, so short-cicuit the common case
-    if (!xml->hasProp("components"))
-        return true;
-
-    const char * thisComponentName = queryComponentName();
-    if (!thisComponentName)
-        return false;
-
-    Owned<IPropertyTreeIterator> component = xml->getElements("components");
-    ForEach(*component)
-    {
-        if (strsame(component->query().queryProp(nullptr), thisComponentName))
-            return true;
-    }
-    return false;
-}
-
-class CStoragePlaneAlias : public CInterfaceOf<IStoragePlaneAlias>
-{
-public:
-    CStoragePlaneAlias(IPropertyTree *_xml) : xml(_xml)
-    {
-        Owned<IPropertyTreeIterator> modeIter = xml->getElements("mode");
-        ForEach(*modeIter)
-        {
-            const char *modeStr = modeIter->query().queryProp(nullptr);
-            modes |= getAccessModeFromString(modeStr);
-        }
-        accessible = ::isAccessible(xml);
-    }
-    virtual AccessMode queryModes() const override { return modes; }
-    virtual const char *queryPrefix() const override { return xml->queryProp("@prefix"); }
-    virtual bool isAccessible() const override { return accessible; }
-
-private:
-    Linked<IPropertyTree> xml;
-    AccessMode modes = AccessMode::none;
-    bool accessible = false;
-};
-
-class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
-{
-public:
-    CStorageApiInfo(IPropertyTree * _xml) : xml(_xml)
-    {
-        if (!xml) // shouldn't happen
-            throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
-    }
-    virtual const char * getStorageType() const override
-    {
-        return xml->queryProp("@type");
-    }
-    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
-    {
-        const char *account = queryContainer(stripeNumber)->queryProp("@account");
-        if (isEmptyString(account))
-            account = xml->queryProp("@account");
-        return account;
-    }
-    virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
-    {
-        return queryContainer(stripeNumber)->queryProp("@name");
-    }
-    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
-    {
-        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
-        if (isEmptyString(secretName))
-        {
-            secretName = xml->queryProp("@secret");
-            if (isEmptyString(secretName))
-                return token.clear();  // return empty string if no secret name is specified
-        }
-        getSecretValue(token, "storage", secretName, "token", false);
-        return token.trimRight();
-    }
-
-private:
-    IPropertyTree * queryContainer(unsigned stripeNumber) const
-    {
-        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
-            stripeNumber++;
-        VStringBuffer path("containers[%u]", stripeNumber);
-        IPropertyTree *container = xml->queryPropTree(path.str());
-        if (!container)
-            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
-        return container;
-    }
-    Owned<IPropertyTree> xml;
-};
-
-class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
-{
-public:
-    CStoragePlaneInfo(IPropertyTree * _xml) : xml(_xml)
-    {
-        Owned<IPropertyTreeIterator> srcAliases = xml->getElements("aliases");
-        ForEach(*srcAliases)
-            aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
-        StringArray planeHosts;
-        getPlaneHosts(planeHosts, xml);
-        ForEachItemIn(h, planeHosts)
-            hosts.emplace_back(planeHosts.item(h));
-    }
-
-    virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
-    virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
-    virtual const std::vector<std::string> &queryHosts() const override
-    {
-        return hosts;
-    }
-    virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
-    virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
-
-    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
-    {
-        if (AccessMode::none == desiredModes)
-            return nullptr;
-        // go through and return one with most mode matches (should there be any other weighting?)
-        unsigned bestScore = 0;
-        IStoragePlaneAlias *bestMatch = nullptr;
-        for (const auto & alias : aliases)
-        {
-            // Some aliases are only mounted in a restricted set of components (to avoid limits on the number of connections)
-            if (!alias->isAccessible())
-                continue;
-
-            AccessMode aliasModes = alias->queryModes();
-            unsigned match = static_cast<unsigned>(aliasModes & desiredModes);
-            unsigned score = 0;
-            while (match)
-            {
-                score += match & 1;
-                match >>= 1;
-            }
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestMatch = alias;
-            }
-        }
-        return LINK(bestMatch);
-    }
-    virtual IStorageApiInfo *getStorageApiInfo()
-    {
-        IPropertyTree *apiInfo = xml->getPropTree("storageapi");
-        if (apiInfo)
-            return new CStorageApiInfo(apiInfo);
-        return nullptr;
-    }
-
-    virtual bool isAccessible() const override
-    {
-        return ::isAccessible(xml);
-    }
-
-private:
-    Linked<IPropertyTree> xml;
-    std::vector<Owned<IStoragePlaneAlias>> aliases;
-    std::vector<std::string> hosts;
-};
-
-
-//MORE: This could be cached
-static IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
-{
-    VStringBuffer xpath("storage/planes[@name='%s']", name);
-    Owned<IPropertyTree> match = getGlobalConfigSP()->getPropTree(xpath);
-    if (!match)
-    {
-        if (required)
-            throw makeStringExceptionV(-1, "Unknown storage plane '%s'", name);
-        return nullptr;
-    }
-    const char * category = match->queryProp("@category");
-    auto r = std::find(categories.begin(), categories.end(), category);
-    if (r == categories.end())
-    {
-        if (required)
-            throw makeStringExceptionV(-1, "storage plane '%s' does not match request categories (plane category=%s)", name, category);
-        return nullptr;
-    }
-
-    return new CStoragePlaneInfo(match);
-}
-
-IStoragePlane * getDataStoragePlane(const char * name, bool required)
-{
-    StringBuffer group;
-    group.append(name).toLowerCase();
-
-    // NB: need to include "remote" planes too, because std. file access will encounter
-    // files on the "remote" planes, when they have been remapped to them via ~remote access
-    return getStoragePlane(group, { "data", "lz", "remote" }, required);
-}
-
-IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
-{
-    StringBuffer group;
-    group.append(name).toLowerCase();
-    return getStoragePlane(group, { "remote" }, required);
-}
-
-IStoragePlane * createStoragePlane(IPropertyTree *meta)
-{
-    return new CStoragePlaneInfo(meta);
-}
-
-
-AccessMode getAccessModeFromString(const char *access)
-{
-    // use a HT?
-    if (streq(access, "read"))
-        return AccessMode::read;
-    else if (streq(access, "write"))
-        return AccessMode::write;
-    else if (streq(access, "random"))
-        return AccessMode::random;
-    else if (streq(access, "sequential"))
-        return AccessMode::sequential;
-    else if (streq(access, "noMount"))
-        return AccessMode::noMount;
-    else if (isEmptyString(access))
-        return AccessMode::none;
-    throwUnexpectedX("getAccessModeFromString : unrecognized access mode string");
-}
-
 unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAttributeType attr, size32_t defaultValue)
 {
     unsigned clusterNum = part.copyClusterNum(copy);
@@ -4214,4 +3919,3 @@ unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAtt
     part.queryOwner().getClusterLabel(clusterNum, planeName);
     return getPlaneAttributeValue(planeName, attr, defaultValue);
 }
-

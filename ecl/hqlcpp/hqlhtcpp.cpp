@@ -19031,6 +19031,53 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
     ctx.associateExpr(expr, bound);
 }
 
+// doBuildExprRegexExtract and doBuildExprRegexFindSet are nearly identical, differing only by the functions they call;
+// they could be combined, like doBuildExprRegexFindReplace, but the code is clearer this way (for some definition of "clearer")
+void HqlCppTranslator::doBuildExprRegexExtract(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound)
+{
+    CHqlBoundExpr boundMatch;
+    if (ctx.getMatchExpr(expr, boundMatch))
+    {
+        bound.set(boundMatch);
+        return;
+    }
+
+    IHqlExpression * patternExpr = expr->queryChild(0);
+    ITypeInfo * patternStringType = patternExpr->queryType();
+    OwnedITypeInfo normalizedDataType;
+    switch (patternStringType->getTypeCode())
+    {
+        case type_varstring:
+            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            break;
+        case type_varunicode:
+            normalizedDataType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));
+            break;
+        default:
+            normalizedDataType.setown(getStretchedType(UNKNOWN_LENGTH, patternStringType));
+            break;
+    }
+    OwnedHqlExpr searchExpr = ensureExprType(expr->queryChild(1), normalizedDataType);
+    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, patternExpr, patternStringType, !expr->hasAttribute(noCaseAtom));
+
+    HqlExprArray args;
+    args.append(*LINK(compiled));
+    args.append(*LINK(searchExpr));
+    IIdAtom * func = nullptr;
+    if (isUTF8Type(patternStringType))
+        func = regexU8StrExtractId;
+    else if (isUnicodeType(patternStringType))
+        func = regexUStrExtractId;
+    else
+        func = regexStrExtractId;
+
+    OwnedHqlExpr call = bindFunctionCall(func, args);
+    buildExprOrAssign(ctx, NULL, call, &bound);
+    //REGEXEXTRACT() can never return ALL - so explicitly clear it in the result.
+    bound.isAll.setown(createConstant(false));
+    ctx.associateExpr(expr, bound);
+}
+
 //---------------------------------------------------------------------------
 
 void HqlCppTranslator::buildTimerBase(BuildCtx & ctx, CHqlBoundExpr & boundTimer, const char * name, int statsOption)

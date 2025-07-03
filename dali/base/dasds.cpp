@@ -3896,7 +3896,9 @@ CSDSTransactionServer::CSDSTransactionServer(CCovenSDSManager &_manager)
 int CSDSTransactionServer::run()
 {
     ICoven &coven=queryCoven();
-    CMessageHandler<CSDSTransactionServer> handler("CSDSTransactionServer",this,&CSDSTransactionServer::processMessage, &manager, 100, TIMEOUT_ON_CLOSEDOWN);
+    unsigned maxThreads = 400; // NB: can exceed with up to 1s delay
+    maxThreads = getComponentConfigSP()->getPropInt("expert/@daliSdsTransactionPoolLimit", maxThreads);
+    CMessageHandler<CSDSTransactionServer> handler("CSDSTransactionServer", this, &CSDSTransactionServer::processMessage, &manager, maxThreads, TIMEOUT_ON_CLOSEDOWN);
     stopped = false;
     CMessageBuffer mb;
     while (!stopped)
