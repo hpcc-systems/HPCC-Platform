@@ -63,6 +63,7 @@ public: // IEventVisitor
             switch (attr.queryTypeClass())
             {
             case EATCtext:
+            case EATCtimestamp:
                 doVisitAttribute(attr.queryId(), attr.queryTextValue());
                 break;
             case EATCnumeric:
@@ -113,17 +114,6 @@ protected:
 
     void doVisitAttribute(EventAttr id, const char* name, __uint64 value)
     {
-        if (queryEventAttributeType(id) == EATtimestamp)
-        {
-            StringBuffer timestamp;
-            CDateTime dt;
-            dt.setTimeStampNs(value);
-            dt.getString(timestamp);
-            // assumes CDateTime output is in microseconds
-            timestamp.appendf("%03llu", value % 1000);
-            recordAttribute(id, name, timestamp, true);
-            return;
-        }
         recordAttribute(id, name, StringBuffer().append(value), false);
     }
 
