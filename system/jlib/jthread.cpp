@@ -1277,7 +1277,10 @@ public:
                     break;
                 }
             }
-            availsem.signal();
+            // NB: a threadpool can have an arbitrary number of threads in running state if started after throttling period
+            // Only release a 'slot' if the number of remaining running threads has fallen under the limit
+            if (numrunning < defaultmax)
+                availsem.signal();
         }
         return ret;
     }
