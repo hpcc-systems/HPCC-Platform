@@ -291,6 +291,7 @@ interface IThreadPool : extends IInterface
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual void setNiceValue(int value) = 0;                    // set priority for thread
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
+        virtual void setPoolSize(unsigned newPoolSize, unsigned newTargetPoolSize) = 0;          // redefine the defaultmax size of the pool
 };
 
 extern jlib_decl IThreadPool *createThreadPool(

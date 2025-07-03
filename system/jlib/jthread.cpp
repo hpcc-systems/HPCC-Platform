@@ -1270,6 +1270,7 @@ public:
         bool ret = true;
         if (defaultmax) {
             unsigned n=threadwrappers.ordinality();
+            // JCSMORE - only considering those above targetpoolsize, means it could remain in excess if leading threads stop
             for (unsigned i2=targetpoolsize;i2<n;i2++) {        // only check excess for efficiency
                 if (item==&threadwrappers.item(i2)) {
                     threadwrappers.remove(i2);
@@ -1303,8 +1304,70 @@ public:
         }
         return false;
     }
-};
+    // setPoolSize allocates more 'slots' (availsem), or reduces the number of available slots
+    // Due to the throttling mechanism, the number of running threads may exceed the defaultmax
+    // Reducing the pool size, can in effect increase the number of running threads over the limit
+    // Completing threads will only make a slot available if the number running is less than the limit
+    virtual void setPoolSize(unsigned newPoolSize, unsigned newTargetPoolSize) override
+    {
+        CriticalBlock block(crit);
+        if (newPoolSize > defaultmax)
+        {
+            // NB: calc difference, but consider 'burst' threads, and discount them from the number to add
+            // because the new defaultmax will mean those burst(any thread) threads will add to slot capacity.
 
+            unsigned slotsToAdd = newPoolSize - defaultmax;
+            if (numrunning > defaultmax) // i.e. some 'burst' threads are running
+            {
+                // consider some of the 'burst' threads as part of the new pool size
+                unsigned burstThreads = numrunning - defaultmax;
+                if (burstThreads >= slotsToAdd)
+                    slotsToAdd = 0; // already enough capacity
+                else
+                    slotsToAdd -= burstThreads;
+            }
+            if (slotsToAdd)
+                availsem.signal(slotsToAdd);
+        }
+        else if (newPoolSize < defaultmax)
+        {
+            unsigned slotsToConsume = defaultmax - newPoolSize;
+            // consume what we can from those not yet consumed
+            while (slotsToConsume)
+            {
+                if (!availsem.wait(0))
+                    break; // none available
+                --slotsToConsume;
+            }
+            // NB: any unconsumed are now in effect 'burst' threads. Their lifetime (as before) is governed by targetpoolsize
+        }
+
+        if (0 == newTargetPoolSize)
+            newTargetPoolSize = newPoolSize;
+
+        unsigned n = threadwrappers.ordinality();
+        unsigned i = n;
+        // walk backwards, removing stopped threads until we reach the new targetpoolsize (or have considered all threadwrappers)
+        while (n>newTargetPoolSize)
+        {
+            --i;
+            CPooledThreadWrapper &t = threadwrappers.item(i);
+            if (t.isStopped())
+            {
+                threadwrappers.remove(i);
+                --n;
+            }
+            if (0 == i)
+            {
+                // NB: if n>0, it implies the # of running threads is greater than newTargetPoolSize.
+                // Excess threadwrappers will continue to be considered for removal when completed by notifyStopped.
+                break;
+            }
+        }
+        targetpoolsize = newTargetPoolSize;
+        defaultmax = newPoolSize;
+    }
+};
 
 IThreadPool *createThreadPool(const char *poolname,IThreadFactory *factory,bool inheritThreadContext, IExceptionHandler *exceptionHandler,unsigned defaultmax, unsigned delay, unsigned stacksize, unsigned timeoutOnRelease, unsigned targetpoolsize)
 {
