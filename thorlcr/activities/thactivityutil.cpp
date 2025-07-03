@@ -760,6 +760,10 @@ public:
     {
         checkAndHandleClose();
     }
+    virtual IFile * queryFile() const override
+    {
+        return primaryio->queryFile();
+    }
 };
 
 // This function creates an output stream for writing, and wraps it in a class that renames the file, and copies it

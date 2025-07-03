@@ -174,7 +174,8 @@ class GitRepositoryFileIO : implements CSimpleInterfaceOf<IFileIO>
         return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
     }
 public:
-    GitRepositoryFileIO(const char * filename, GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid, const char * gitUser)
+    GitRepositoryFileIO(IFile * _file, const char * filename, GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid, const char * gitUser)
+    : file(_file)
     {
         git_blob *blob = nullptr;
         int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), oid);
@@ -226,6 +227,10 @@ public:
     {
         //This could be implemented, but not likely to be useful so currently return nothing.
         return 0;
+    }
+    virtual IFile * queryFile() const override
+    {
+        return file;
     }
 
 protected:
@@ -287,6 +292,7 @@ protected:
     }
 
 protected:
+    Linked<IFile> file;
     MemoryBuffer buf;
 };
 
@@ -395,12 +401,12 @@ public:
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(fullName, commitTree, gitDirectory, &oid, gitUser);
+        return new GitRepositoryFileIO(this, fullName, commitTree, gitDirectory, &oid, gitUser);
     }
     virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(fullName, commitTree, gitDirectory, &oid, gitUser);
+        return new GitRepositoryFileIO(this, fullName, commitTree, gitDirectory, &oid, gitUser);
     }
 
 

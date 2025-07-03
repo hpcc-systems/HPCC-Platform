@@ -1758,6 +1758,10 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
                 throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
+        virtual IFile * queryFile() const override
+        {
+            return nullptr;
+        }
 
         offset_t appendFile(IFile *file,offset_t pos,offset_t len)
         {
@@ -6892,6 +6896,7 @@ class CLazyFileIOCache;
 class CCachedFileIO: implements IFileIO, public CInterface
 {
     CLazyFileIOCache &owner;
+    Owned<IFile> inFile;
     RemoteFilename filename;
     CriticalSection &sect;
     CRuntimeStatisticCollection fileStats;
@@ -6914,13 +6919,14 @@ public:
         filename.set(_filename);
         mode = _mode;
         accesst = 0;
+        inFile.setown(createIFile(filename));
     }
 
     virtual void Link(void) const       { CInterface::Link(); }                     \
 
     virtual bool Release(void) const;
     
-    unsigned __int64 getStatistic(StatisticKind kind)
+    unsigned __int64 getStatistic(StatisticKind kind) override
     {
         CriticalBlock block(sect);
         unsigned __int64 openValue = cachedio ? cachedio->getStatistic(kind) : 0;
@@ -6929,35 +6935,39 @@ public:
 
     IFileIO *open();
 
-    size32_t read(offset_t pos, size32_t len, void * data)
+    virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->read(pos,len,data);
     }
-    offset_t size() 
+    virtual offset_t size() override
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->size();
     }
-    size32_t write(offset_t pos, size32_t len, const void * data) 
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->write(pos,len,data);
     }
-    virtual void flush()
+    virtual void flush() override
     {
         CriticalBlock block(sect);
         if (cachedio)
             cachedio->flush();
     }
-    virtual void close()
+    virtual void close() override
     {
         CriticalBlock block(sect);
         if (cachedio)
             forceClose();
+    }
+    virtual IFile * queryFile() const override
+    {
+        return inFile;
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {
@@ -7069,7 +7079,6 @@ IFileIO *CCachedFileIO::open()
     // called in sect
     if (!cachedio) {
         owner.checkCache();
-        Owned<IFile> inFile = createIFile(filename);
         cachedio.setown(inFile->open(mode));
         if (!cachedio.get()) {
             StringBuffer tmp;
@@ -7622,6 +7631,7 @@ public:
     virtual void flush() override { throwUnexpected(); }
     virtual void close() override { io->close(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) override { return io->getStatistic(kind); }
+    virtual IFile * queryFile() const { return io->queryFile(); }
 };
 
 extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)
