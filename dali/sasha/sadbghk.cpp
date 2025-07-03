@@ -6,6 +6,7 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
+#include "jplane.hpp"
 
 #include "saserver.hpp"
 #include "sautil.hpp"
@@ -51,8 +52,8 @@ public:
             WARNLOG("Failed to get default debug plane");
             return;
         }
-        Owned<IPropertyTree> plane = getStoragePlane(planeName);
-        verifyex(plane && plane->getProp("@prefix", debugDir));
+        Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, true);
+        verifyex(plane->getProp("@prefix", debugDir));
 
         stopped = false;
         Thread::start(false);

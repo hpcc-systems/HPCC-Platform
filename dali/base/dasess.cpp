@@ -512,7 +512,9 @@ public:
     {
         ICoven &coven=queryCoven();
 
-        CMessageHandler<CSessionRequestServer> handler("CSessionRequestServer",this,&CSessionRequestServer::processMessage);
+        unsigned maxThreads = 400; // NB: can exceed with up to 1s delay
+        maxThreads = getComponentConfigSP()->getPropInt("expert/@daliSessionPoolLimit", maxThreads);
+        CMessageHandler<CSessionRequestServer> handler("CSessionRequestServer", this, &CSessionRequestServer::processMessage, nullptr, maxThreads);
         stopped = false;
         CMessageBuffer mb;
         while (!stopped) {

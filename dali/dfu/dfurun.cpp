@@ -1460,7 +1460,7 @@ public:
                     IDFUfileSpec *dst = wu->queryUpdateDestination();
                     StringBuffer clusterName;
                     destination->getGroupName(0, clusterName);
-                    Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                    Owned<const IPropertyTree> plane = getStoragePlaneConfig(clusterName, false);
                     if (plane)
                         dirPerPart = plane->getPropBool("@subDirPerFilePart", isContainerized());
                     // keys default wrap for copy

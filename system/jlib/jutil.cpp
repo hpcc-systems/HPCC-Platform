@@ -32,6 +32,8 @@
 #include "jerror.hpp"
 #include "jsecrets.hpp"
 #include "jmd5.hpp"
+#include "jplane.hpp"
+
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime
 #include <float.h> //for _isnan and _fpclass
@@ -2584,7 +2586,7 @@ static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOp
     if (!getDefaultPlane(planeName, componentOption, category))
         return false;
 
-    Owned<IPropertyTree> storagePlane = getStoragePlane(planeName);
+    Owned<const IPropertyTree> storagePlane = getStoragePlaneConfig(planeName, true);
     return storagePlane->getProp("@prefix", ret);
 }
 #endif
@@ -2594,7 +2596,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
 #ifdef _CONTAINERIZED
     if (streq(category, "data"))
     {
-        Owned<IPropertyTree> storagePlane = getStoragePlane(instance);
+        Owned<const IPropertyTree> storagePlane = getStoragePlaneConfig(instance, false);
         if (!storagePlane)
             throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
         return storagePlane->getProp("@prefix", dirout);
