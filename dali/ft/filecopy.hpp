@@ -157,7 +157,7 @@ public:
 
 };
 
-extern DALIFT_API IFileSprayer * createFileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid);
+extern DALIFT_API IFileSprayer * createFileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid, IUserDescriptor * userdesc);
 
 extern DALIFT_API void testPartitions();
 

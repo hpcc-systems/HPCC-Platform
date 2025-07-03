@@ -28,13 +28,13 @@ public:
     IMPLEMENT_IINTERFACE
 
 //operations on multiple files.
-    virtual void copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
-    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
+    virtual void copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
+    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc=nullptr);
 
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,bool forceget,bool dontsetattr);
@@ -44,7 +44,7 @@ public:
 //operations on a file part
     virtual IFile *getIFile(IDistributedFilePart * part, unsigned copy);
     virtual offset_t getSize(IDistributedFilePart * part,bool forceget,bool dontsetattr);
-    virtual void replicate(IDistributedFilePart * part, INode *node);
+    virtual void replicate(IDistributedFilePart * part, INode *node, IUserDescriptor * userdesc=nullptr);
     virtual bool compress(IDistributedFilePart * part);                                                  
     virtual offset_t getCompressedSize(IDistributedFilePart * part);
 };
