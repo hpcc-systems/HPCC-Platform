@@ -599,7 +599,7 @@ void ECLEngine::generateSelectStruct(HPCCSQLTreeWalker * selectsqlobj, IProperti
 
             //AS OF community_3.8.6-4 this is causing error:
             // (0,0): error C3000: assert(!cond) failed - file: /var/jenkins/workspace/<build number>/HPCC-Platform/ecl/hqlcpp/hqlhtcpp.cpp, line XXXXX
-            //Bug reported: https://track.hpccsystems.com/browse/HPCC-8268
+            //Bug reported: https://hpccsystems.atlassian.net/browse/HPCC-8268
             //Leaving this code out until fix is produced.
             //UPDATE: Issue has been resolved as of 3.10.0
 

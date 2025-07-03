@@ -428,7 +428,7 @@ Each `<Scripts>` element contains ESDL Script entry points that are executed as 
 
 As the ESP processes a Method request and reaches each script entry point, it executes all of that entry point's scripts. The service-level scripts execute first, in order, followed by the method-level scripts in order. The CDATA sections ensure that the order of operations within each entry point's script is preserved.
 
-ESDL service methods must have a `<Method>` element in the *service bundle config* to be invoked. The `@auth_feature` attribute on the `<Definition>` or `<Method>` elements specify security as described in the [Security Readme](https://github.com/hpcc-systems/HPCC-Platform/master/esp/esdllib/README-SECURITY.md#esdl-binding).
+ESDL service methods must have a `<Method>` element in the *service bundle config* to be invoked. The `@auth_feature` attribute on the `<Definition>` or `<Method>` elements specify security as described in the [Security Readme](./README-SECURITY.md#esdl-binding).
 
 The `<LoggingManager>` section contains settings for the service's logging. The `<LogAgent>` elements may contain `XSL/Transform` elements used to customize the outgoing logging request before it is dispatched.
 
@@ -615,7 +615,7 @@ TODO: Add details about configuring logging.
 
 ### Service Security
 
-Keeping your DESDL service secure and ensuring proper access to product features is an important part of the process of writing and configuring your service. Basic security settings can be configured with a combination of attributes in your ESDL definition file and settings in your *process configuration*. Please refer to the separate document [README-SECURITY.md](https://github.com/hpcc-systems/HPCC-Platform/tree/master/esp/esdllib/README-SECURITY.md) for details.
+Keeping your DESDL service secure and ensuring proper access to product features is an important part of the process of writing and configuring your service. Basic security settings can be configured with a combination of attributes in your ESDL definition file and settings in your *process configuration*. Please refer to the separate document [README-SECURITY.md](./README-SECURITY.md) for details.
 
 ESDL integration scripts can assist with enforcing more complex authorization requirments. HPCC Systems platform security model has the concept of *Secure User Properties* - properties associated with a *Secure User* authenticated with an ESP. Each Security Manager plugin defines what is included in these properties, and the ESDL Scripting engine makes them available as [system parameters](#system-parameters).
 
@@ -729,7 +729,7 @@ The `@source` and `@target` attributes in the entry point elements have some spe
   - XPath can include any [Implicit Variables](#implicit-variables).
 - `@target`
   - XPath can include any [Implicit Variables](#implicit-variables).
-  - XPath must exist at runtime or an exception will be thrown. [A future release](https://track.hpccsystems.com/browse/HPCC-25844) will ensure the path exists without throwing an exception.
+  - XPath must exist at runtime or an exception will be thrown. [A future release](https://hpccsystems.atlassian.net/browse/HPCC-25844) will ensure the path exists without throwing an exception.
 
 ### BackendRequest
 ```xml
@@ -1102,14 +1102,14 @@ The special default prefix `n` is only valid for the first default namespace enc
 
 ### EXSLT Functions
 
-In addition to the spec XPath functions, we support a subset of EXSLT-Functions (Extended XSLT) for use in XPath expressions. The exslt functions are grouped into modules of related features like *strings*, *sets* and *math*. There are different implmentations of the modules and not all implementations support all functions. We are using the `libxslt` implementation. The reference at [exslt.org](http://exslt.org/func/index.html) lists the functions in each module and which implementations support each function. See below for details of our supported modules
+In addition to the spec XPath functions, we support a subset of EXSLT-Functions (Extended XSLT) for use in XPath expressions. The exslt functions are grouped into modules of related features like *strings*, *sets* and *math*. There are different implmentations of the modules and not all implementations support all functions. We are using the `libxslt` implementation. The reference at [exslt.github.io](https://exslt.github.io/func/index.html) lists the functions in each module and which implementations support each function. See below for details of our supported modules
 
 | Module Name | Namespace Prefix | libxslt Supported Functions |
 |-------------|------------------|-----------------------------|
-|[dates and times](http://exslt.org/date/index.html)| date | all except `date:format-date`, `date:parse-date`, `date:sum`, `date:date-format`
-|[math](http://exslt.org/math/index.html)| math | all
-|[sets](http://exslt.org/set/index.html)| set | all except `set:distinct`
-|[strings](http://exslt.org/str/index.html) | str | all except `str:decode-uri`, `str:encode-uri`, `str:replace`, `str:split`
+|[dates and times](http://exslt.github.io/date/index.html)| date | all except `date:format-date`, `date:parse-date`, `date:sum`, `date:date-format`
+|[math](http://exslt.github.io/math/index.html)| math | all
+|[sets](http://exslt.github.io/set/index.html)| set | all except `set:distinct`
+|[strings](http://exslt.github.io/str/index.html) | str | all except `str:decode-uri`, `str:encode-uri`, `str:replace`, `str:split`
 
 ### Custom Functions
 

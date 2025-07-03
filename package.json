@@ -4,7 +4,9 @@
   "type":"commonjs",
   "scripts": {
     "clean": "rimraf ./devdoc/.vitepress/cache ./devdoc/.vitepress/dist",
-    "copy-res": "cp ./devdoc/*.png ./devdoc/.vitepress/dist/devdoc",
+    "copy-png": "cp ./devdoc/*.png ./devdoc/.vitepress/dist/devdoc",
+    "copy-ico": "cp ./devdoc/*.ico ./devdoc/.vitepress/dist/devdoc",
+    "copy-res": "npm run copy-png && npm run copy-ico",
     "dev-docs": "vitepress dev devdoc",
     "build-docs": "vitepress build devdoc",
     "preview-docs": "vitepress preview devdoc",
@@ -30,7 +32,7 @@
   "author": "hpcc-systems",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://track.hpccsystems.com/"
+    "url": "https://hpccsystems.atlassian.net/"
   },
   "homepage": "https://hpccsystems.com"
 }
