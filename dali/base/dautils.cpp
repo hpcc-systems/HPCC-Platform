@@ -103,17 +103,9 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
 
 bool allowForeign()
 {
-    StringBuffer optValue;
-    // NB: component setting takes precedence over global
-    getComponentConfigSP()->getProp("expert/@allowForeign", optValue);
-    if (!optValue.isEmpty())
-        return strToBool(optValue);
-
-    getGlobalConfigSP()->getProp("expert/@allowForeign", optValue);
-    if (!optValue.isEmpty())
-        return strToBool(optValue);
     // default denied in cloud, allowed in bare-metal
-    return isContainerized() ? false : true;
+    bool defaultValue = isContainerized() ? false : true;
+    return getConfigBool("expert/@allowForeign", defaultValue);
 }
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
