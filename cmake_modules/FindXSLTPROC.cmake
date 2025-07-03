@@ -27,27 +27,7 @@ if (NOT XSLTPROC_FOUND)
     SET (xsltproc_n "xsltproc")
   ENDIF()
 
-  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
-    IF (UNIX)
-      IF (${ARCH64BIT} EQUAL 1)
-        SET (osdir "linux64_gcc4.1.1")
-      ELSE()
-        SET (osdir "linux32_gcc4.1.1")
-      ENDIF()
-    ELSEIF(WIN32)
-      SET (osdir "lib")
-    ELSE()
-      SET (osdir "unknown")
-    ENDIF()
-    IF (NOT ("${osdir}" STREQUAL "unknown"))
-      FIND_PROGRAM(XSLTPROC_EXECUTABLE ${xsltproc_n} PATHS "${EXTERNALS_DIRECTORY}/xsltproc/${osdir}")
-    ENDIF() 
-  ENDIF()
-
-  if (USE_NATIVE_LIBRARIES)
-    # if we didn't find in externals, look in system include path
-    FIND_PROGRAM(XSLTPROC_EXECUTABLE ${xsltproc_n})
-  endif()
+  FIND_PROGRAM(XSLTPROC_EXECUTABLE NAMES ${xsltproc_n})
 
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(XSLTPROC DEFAULT_MSG
