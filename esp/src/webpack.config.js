@@ -66,7 +66,7 @@ module.exports = function (env) {
                                     if (filename.endsWith('.js')) {
                                         const asset = compilation.assets[filename];
                                         const source = asset.source();
-                                        const newSource = source.replace(/["']use strict["'];?\s*/g, '');
+                                        const newSource = source.replace(/["']use strict["'];?\s*/g, "\n");
                                         if (source !== newSource) {
                                             compilation.assets[filename] = new webpack.sources.RawSource(newSource);
                                         }

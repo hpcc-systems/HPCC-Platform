@@ -16,8 +16,8 @@ globals() {
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
     set +e
-    if [ -f $ROOT_DIR/.env ]; then
-        export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    if [ -f "$ROOT_DIR/.env" ]; then
+        export $(grep -v '^#' "$ROOT_DIR/.env" | sed -e 's/\r$//' | xargs) > /dev/null
     fi
     set -e
 
