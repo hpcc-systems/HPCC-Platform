@@ -88,8 +88,6 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         CURLcode                curlResponseCode;
         static constexpr size_t initialBufferSize = 32768; // 2^15
         MemoryBuffer            captureBuffer(initialBufferSize);
-        char                    curlErrBuffer[CURL_ERROR_SIZE];
-        curlErrBuffer[0] = '\0';
 
         VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
         VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=https://api.loganalytics.io&client_secret=%s&client_id=%s", clientSecret, clientID);
@@ -116,13 +114,10 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer)) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
-
         if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
             throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 0L) != CURLE_OK) // Do not treat non-ok HTTP codes as an error
             throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
 
         try
@@ -134,34 +129,101 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
             throw makeStringExceptionV(-1, "%s Access token request: Unknown error!", COMPONENT_NAME);
         }
 
-        if (curlResponseCode == CURLE_OK && captureBuffer.length() > 0)
+        if (curlResponseCode == CURLE_OK) // this is not the same as http success
         {
-            try
+            DBGLOG("%s: Access token request: curlResponse == CURLE_OK", COMPONENT_NAME);
+
+            long httpResponseCode;
+            curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode);
+            DBGLOG("%s: Access token request: HTTP response code %ld", COMPONENT_NAME, httpResponseCode);
+
+            if(httpResponseCode == 200L) // HTTP OK
             {
-                std::string responseStr = std::string(captureBuffer.toByteArray(), captureBuffer.length());
+                if (captureBuffer.length() > 0)
+                {
+                    try
+                    {
+                        /*Expected response format
+                        {  "ext_expires_in": "3599", "expires_on": "1653408922", "access_token": "XYZ",
+                            "expires_in": "3599", "not_before": "1653405022", "token_type": "Bearer",
+                            "resource": "https://api.loganalytics.io"
+                        }*/
 
-                /*Expected response format
-                {  "ext_expires_in": "3599", "expires_on": "1653408922", "access_token": "XYZ",
-                    "expires_in": "3599", "not_before": "1653405022", "token_type": "Bearer",
-                    "resource": "https://api.loganalytics.io"
-                }*/
-
-                Owned<IPropertyTree> tokenResponse = createPTreeFromJSONString(responseStr.c_str());
-                
-                DBGLOG("%s: Azure Log Analytics API access Bearer token generated! Expires in '%s' ", COMPONENT_NAME, nullText(tokenResponse->queryProp("expires_in")));
-                token.set(tokenResponse->queryProp("access_token"));
+                        Owned<IPropertyTree> tokenResponse = createPTreeFromJSONString(std::string(captureBuffer.toByteArray(), captureBuffer.length()).c_str());
+                        DBGLOG("%s: Access token request: RAW response: '%s'", COMPONENT_NAME, std::string(captureBuffer.toByteArray(), captureBuffer.length()).c_str()); 
+                        DBGLOG("%s: Azure Log Analytics API access Bearer token generated! Expires in '%s' ", COMPONENT_NAME, nullText(tokenResponse->queryProp("expires_in")));
+                        token.set(tokenResponse->queryProp("access_token"));
+                    }
+                    catch(const std::exception& e)
+                    {
+                        throw makeStringExceptionV(-1, "%s Could not parse Azure Log Analytics API access token: %s", COMPONENT_NAME, e.what());
+                    }
+                }
+                else
+                {
+                    throw makeStringExceptionV(-1, "%s Access token request: Empty response received! This could indicate a problem with the request or the server", COMPONENT_NAME);
+                }
             }
-            catch(const std::exception& e)
+            else
             {
-                throw makeStringExceptionV(-1, "%s Could not parse Azure Log Analytics API access token: %s", COMPONENT_NAME, e.what());
+                VStringBuffer errorMessage("Unknown error");
+                if (captureBuffer.length() > 0)
+                {
+                    // Try to parse the error response from Azure AD
+                    // This is expected to be in JSON format with an "error" and "error_description" field
+                    //Owned<IPropertyTree> errorResponse = createPTreeFromJSONString(std::string(captureBuffer.toByteArray(), captureBuffer.length()).c_str());
+                    //if (errorResponse)
+                    //{
+                    //    const char * errorCode = errorResponse->queryProp("error");
+                    //    const char * errorDesc = errorResponse->queryProp("error_description");
+                    //    if (!isEmptyString(errorCode))
+                    //        errorMessage.setf("%s: %s", errorCode, nullText(errorDesc));
+                    //    else
+                    //        errorMessage.setf("Unknown Azure AD error: %s", nullText(errorDesc));
+                    //}
+                    //else
+                    //{
+                        // If we cannot parse the response, we will just use the raw response as the error message
+                    //    DBGLOG("%s Access token request: Could not parse error response from Azure AD!", COMPONENT_NAME);
+                    //}
+
+                    /*
+                    expected formatted error response:
+                    {
+                        "error": "invalid_client",
+                        "error_description": "AADSTS7000215: Invalid client secret is provided."
+                    }
+                    */
+                    errorMessage.set(std::string(captureBuffer.toByteArray(), captureBuffer.length()).c_str());
+                    DBGLOG("%s: Access token request: Raw error message: '%s' ", COMPONENT_NAME, errorMessage.str());
+                }
+
+                switch (httpResponseCode)
+                {
+                    case 400L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (400): Bad Request - Request is badly formed and failed (permanently): '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 401L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (401): Unauthorized - Client needs to authenticate first: '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 403L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (403): Forbidden - Client request is denied: '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 404L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (404): NotFound - Request references a non-existing entity. Ensure configured tenantID is valid!: '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 408L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (408): Timeout - Request has timed out: '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 500L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (500): Internal Server Error - Azure AD service found an error while processing the request: '%s'", COMPONENT_NAME, errorMessage.str());
+                    case 502L:
+                    case 503L:
+                    case 504L:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (%ld): Gateway/Service Unavailable/Timeout - Temporary Azure AD or network issues: '%s'", COMPONENT_NAME, httpResponseCode, errorMessage.str());
+                    default:
+                        throw makeStringExceptionV(-1,"%s Access token request: Error (%ld): '%s'", COMPONENT_NAME, httpResponseCode, errorMessage.str());
+                }
             }
         }
         else
         {
-            if (curlResponseCode != CURLE_OK)
-                throw makeStringExceptionV(-1, "%s token request error: libcurl error (%d): %s", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "<unknown>"));
-            else
-                throw makeStringExceptionV(-1, "%s token request error: No content from Azure", COMPONENT_NAME);
+            throw makeStringExceptionV(-1, "%s Access token request: CURL ACTION FAILED! '%s'", COMPONENT_NAME, curl_easy_strerror(curlResponseCode));
         }
     }
 }
@@ -1153,7 +1215,21 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             appendJSONStringValue(debugReport, "TargetALAWorkspaceID", m_logAnalyticsWorkspaceID.str(), true);
             appendJSONStringValue(debugReport, "TargetALATenantID", m_aadTenantID.str(), true);
             appendJSONStringValue(debugReport, "TargetALAClientID", m_aadClientID.str(), true);
-            debugReport.appendf(", \"TargetALASecret\": \"%sempty\"", m_aadClientSecret.length()==0 ? "" : "not ");
+            debugReport.appendf(", \"TargetALASecret\": \"");
+            // Mask the secret for security reasons in the debug report
+            size_t secretLen = m_aadClientSecret.length();
+            if (secretLen == 0)
+                debugReport.append("EMPTY");
+            else
+            {
+                const char* secret = m_aadClientSecret.str();
+                debugReport.append(secret[0]);
+                for (size_t i = 1; i < secretLen - 1; ++i)
+                    debugReport.append('*');
+                debugReport.append(secret[secretLen - 1]);
+            }
+            debugReport.append("\"");
+
             appendJSONValue(debugReport, "TargetsContainerLogV2", targetIsContainerLogV2 ? true : false);
             appendJSONValue(debugReport, "ComponentsJoinedQueryEnabled", m_disableComponentNameJoins ? false : true);
             appendJSONValue(debugReport, "BlobModeEnabled", m_blobMode ? true : false);
