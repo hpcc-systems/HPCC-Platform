@@ -3253,6 +3253,9 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_regex_findset:
         doBuildExprRegexFindSet(ctx, expr, tgt);
         return;
+    case no_regex_extract:
+        doBuildExprRegexExtract(ctx, expr, tgt);
+        return;
     case no_skip:
     case no_assert:
         {
@@ -4832,6 +4835,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
             return;
         }
         break;
+    case no_regex_extract:
     case no_regex_findset:
     case no_id2blob:
         buildExpr(ctx, expr, tgt);

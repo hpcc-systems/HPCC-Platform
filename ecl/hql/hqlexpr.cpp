@@ -1635,6 +1635,7 @@ const char *getOpString(node_operator op)
     case no_realformat: return "REALFORMAT";
     case no_intformat: return "INTFORMAT";
     case no_regex_find: return "REGEXFIND";
+    case no_regex_extract: return "REGEXEXTRACT";
     case no_regex_findset: return "REGEXFINDSET";
     case no_regex_replace: return "REGEXREPLACE";
 
@@ -2024,7 +2025,6 @@ const char *getOpString(node_operator op)
     case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
-    case no_unused80:
     case no_unused102:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -2281,6 +2281,7 @@ int getPrecedence(node_operator op)
     case no_intformat:
     case no_realformat:
     case no_regex_find:
+    case no_regex_extract:
     case no_regex_findset:
     case no_regex_replace:
     case no_fromunicode:
