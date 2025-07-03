@@ -94,7 +94,6 @@ private:
 
         // Returns the storage plane associated with the given node kind.
         const Plane& lookupPlane(__uint64 nodeKind) const;
-        __uint64 pageSize() const;
     };
     friend bool operator < (const File& left, const File& right); // required for set insertion
     friend bool operator < (const File& left, const char* right); // required to search a set by path
@@ -123,7 +122,7 @@ private:
         };
 
         using Hash = std::unordered_set<Key, KeyHash>;
-        using MRU = std::list<const Key*>;
+        using MRU = std::list<Key>;
     public:
         void configure(const IPropertyTree& config);
         inline __uint64 find(__uint64 fileId, __uint64 offset) { return find({fileId, offset}); }

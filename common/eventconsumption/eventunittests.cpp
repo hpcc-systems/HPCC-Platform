@@ -66,7 +66,7 @@ CEventVisitationLinkTester::CEventVisitationLinkTester(IEventIterator& _expect)
 {
 }
 
-static IPropertyTree* createConfiguration(const char* testData)
+IPropertyTree* createTestConfiguration(const char* testData)
 {
     CPPUNIT_ASSERT_MESSAGE("invalid test data", !isEmptyString(testData));
     while (isspace(*testData))
@@ -95,7 +95,7 @@ static IPropertyTree* createConfiguration(const char* testData)
 
 void testEventVisitationLinks(const char* testData)
 {
-    Owned<IPropertyTree> testTree = createConfiguration(testData);
+    Owned<IPropertyTree> testTree = createTestConfiguration(testData);
     IPropertyTree* inputTree = testTree->queryBranch("input");
     CPPUNIT_ASSERT_MESSAGE("missing input section", inputTree != nullptr);
     IPropertyTree* expectTree = testTree->queryBranch("expect");

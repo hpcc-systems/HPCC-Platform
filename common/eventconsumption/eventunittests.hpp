@@ -35,7 +35,7 @@ class CEventVisitationLinkTester : public CInterfaceOf<IEventVisitor>
 {
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override;
-    virtual bool visitEvent(CEvent& qctualEvent) override;
+    virtual bool visitEvent(CEvent& actualEvent) override;
     virtual void departFile(uint32_t bytesRead) override;
 public:
     CEventVisitationLinkTester(interface IEventIterator& expect);
@@ -48,7 +48,7 @@ private:
 // or 'YAML' format.
 extern void testEventVisitationLinks(const char* testData);
 
-// Uses a `CEventVisitationLinkTester` instance to iterate over the `input` events, varifying that
+// Uses a `CEventVisitationLinkTester` instance to iterate over the `input` events, verifying that
 // the events received by the tester match the `expected` events after modification by visitation
 // links configured by the `links` iterator.
 //
@@ -57,5 +57,7 @@ extern void testEventVisitationLinks(const char* testData);
 //
 // At this time, only model links are supported. Filters may be supported by a future update.
 extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links);
+
+extern IPropertyTree* createTestConfiguration(const char* configText);
 
 #endif

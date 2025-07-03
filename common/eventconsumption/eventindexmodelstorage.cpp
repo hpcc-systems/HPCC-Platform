@@ -52,7 +52,7 @@ __uint64 Storage::PageCache::find(const Key& key)
     Hash::iterator hashIt = hash.find(key);
     if (hash.end() == hashIt)
         return 0;
-    MRU::iterator mruIt = std::find(mru.begin(), mru.end(), &(*hashIt));
+    MRU::iterator mruIt = std::find(mru.begin(), mru.end(), *hashIt);
     if (mru.end() == mruIt)
         throw makeStringExceptionV(-1, "page cache MRU unexpectedly missing key %llu, %llu", key.fileId, key.offset);
     mru.splice(mru.begin(), mru, mruIt);
@@ -67,7 +67,7 @@ bool Storage::PageCache::insert(const Key& key)
         return false;
     reserve(DefaultPageSize);
     Hash::iterator hashIt = hash.insert(key).first;
-    mru.push_front(&(*hashIt));
+    mru.push_front(*hashIt);
     used += DefaultPageSize;
     return true;
 }
@@ -83,7 +83,7 @@ void Storage::PageCache::reserve(__uint64 request)
         if (mru.empty())
             throw makeStringException(-1, "page cache MRU unexpectedly empty");
         used -= request;
-        hash.erase(*mru.back());
+        hash.erase(mru.back());
         mru.pop_back();
     }
 }
@@ -229,16 +229,17 @@ const Storage::File& Storage::lookupFile(__uint64 fileId) const
 
 #ifdef _USE_CPPUNIT
 
-#include "unittests.hpp"
+#include "eventunittests.hpp"
 
 class IndexModelStorageTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(IndexModelStorageTest);
-    CPPUNIT_TEST(testPageCache);
+    CPPUNIT_TEST(testSmallPageCache);
+    CPPUNIT_TEST(testLargePageCache);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    void testPageCache()
+    void testSmallPageCache()
     {
         constexpr const char* configText =
 R"!!!(cache-capacity: 16384
@@ -264,6 +265,16 @@ cache-read: 100
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 16384));
     }
 
+    void testLargePageCache()
+    {
+        constexpr const char* configText = "<storage cache-read=\"100\"/>";
+        Owned<IPropertyTree> configTree = createTestConfiguration(configText);
+        Storage::PageCache cache;
+        cache.configure(*configTree);
+        for (size_t idx = 0, offset = 0; idx < 1'000'000; idx++, offset += 8192)
+            CPPUNIT_ASSERT(cache.insert(1, offset));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.find(1, 0));
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(IndexModelStorageTest);
