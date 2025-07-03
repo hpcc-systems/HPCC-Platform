@@ -1347,7 +1347,7 @@ public:
 
         unsigned n = threadwrappers.ordinality();
         unsigned i = n;
-        // walk backwards, removing stopped thread until we reach the new targetpoolsize
+        // walk backwards, removing stopped threads until we reach the new targetpoolsize (or have considered all threadwrappers)
         while (n>newTargetPoolSize)
         {
             --i;
@@ -1358,7 +1358,11 @@ public:
                 --n;
             }
             if (0 == i)
+            {
+                // NB: if n>0, it implies the # of running threads is greater than newTargetPoolSize.
+                // Excess threadwrappers will continue to be considered for removal when completed by notifyStopped.
                 break;
+            }
         }
         targetpoolsize = newTargetPoolSize;
         defaultmax = newPoolSize;
