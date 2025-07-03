@@ -16,9 +16,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="81.35pt" />
+        <colspec colwidth="81.35pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -66,7 +66,7 @@
   find matches. The <emphasis>regex</emphasis> must be a standard Perl regular
   expression<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. </para>
+    </indexterm>.</para>
 
   <para>We use a third-party library -- Perl-compatible Regular Expressions
   (PCRE2) to support this. See <ulink
@@ -102,6 +102,7 @@ REGEXFIND(searchpattern, search, 3); //returns '1998'
 </programlisting>
 
   <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXEXTRACT">REGEXEXTRACT</link>, <link
   linkend="REGEXFINDSET">REGEXFINDSET</link>, <link
   linkend="REGEXREPLACE">REGEXREPLACE</link></para>
 </sect1>
