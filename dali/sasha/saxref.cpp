@@ -192,6 +192,11 @@ struct cFileDesc // no virtuals
         return memcmp(key,name+1,sl)==0;
     }
 
+    bool isHPCCFile() const
+    {
+        return filenameLen > 0;
+    }
+
     bool getName(StringBuffer &buf) const
     {
         // Check mask exists
@@ -345,11 +350,20 @@ struct cDirDesc
         else {  // didn't match mask so use straight name
             //PROGLOG("**unmatched(%d,%d,%d) %s",drv,node,numnodes,name);
             pf = (node+numnodes-drv)%numnodes;
-            nf = numnodes;
+            nf = NotFound;
         }
         return fn;
     }
 
+    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp)
+    {
+        // MORE: Add better check for misplaced in Containerized
+        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
+        if (isContainerized())
+            return false;
+
+        return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
+    }
 
     cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
     {
@@ -359,9 +373,7 @@ struct cDirDesc
         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
-        // TODO: Add better check for misplaced in isContainerized
-        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
-        bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
+        bool misplaced = isMisplaced(pf, nf, ep, grp);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -955,7 +967,7 @@ public:
             rootdir.set(basedir);
             iswin = getPathSepChar(rootdir.get())=='\\';
         }
-        assert(!rootdir.isEmpty());
+        assertex(!rootdir.isEmpty());
         return true;
     }
 
@@ -1084,7 +1096,15 @@ public:
                 nsz += fsz;
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
-                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    try {
+                        pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    }
+                    catch (IException *e) {
+                        StringBuffer tmp(LOGPFX "scanDirectory: Error adding file ");
+                        addPathSepChar(rfn.getRemotePath(tmp)).append(fname);
+                        EXCLOG(e,tmp.str());
+                        e->Release();
+                    }
                 }
             }
             path.setLength(dsz);
@@ -1136,7 +1156,7 @@ public:
                 // A hosted plane will never be striped, so for striped planes, use local host
                 if (parent.isPlaneStriped)
                 {
-                    assert(!parent.storagePlane->hasProp("@hostGroup"));
+                    assertex(!parent.storagePlane->hasProp("@hostGroup"));
                     SocketEndpoint localEP;
                     localEP.setLocalHost(0);
                     addPathSepChar(path).append('d').append(i+1);
@@ -1349,6 +1369,7 @@ public:
             StringBuffer tmp(LOGPFX "listOrphans reading ");
             rfn.getRemotePath(tmp);
             EXCLOG(e,tmp.str());
+            e->Release();
         }
         return false;
     }
@@ -1367,8 +1388,54 @@ public:
             pb = branch->addPropTree("Part",pb);
         }
         pb->setProp(rep?"RNode":"Node",ep.getEndpointHostText(tmp.clear()).str());
-    }   
+    }
 
+    void addExternalFoundFile(cFileDesc *file, const char *currentPath, unsigned int recentCutoffDays)
+    {
+        // Treat external files as a single file because without a partmask there is no way
+        // to determine the number of parts or the part number
+        StringBuffer filePath(currentPath);
+        file->getNameMask(addPathSepChar(filePath));
+
+        // Files that are non-conforming will be marked as misplaced in the directory scan
+        unsigned node = 0;
+        assertex(file->misplaced);
+        node = file->misplaced->nn;
+
+        SocketEndpoint ep = grp->queryNode(node).endpoint();
+        RemoteFilename rfn;
+        rfn.setPath(ep, filePath.str());
+        offset_t sz;
+        CDateTime dt;
+        bool found;
+        {
+            CheckTime ct("checkOrphanPhysicalFile ");
+            found = checkOrphanPhysicalFile(rfn,sz,dt);
+            if (ct.slow())
+                ct.appendMsg(filePath.str());
+        }
+        if (found)
+        {
+            CDateTime now;
+            now.setNow();
+            CDateTime co(dt);
+            co.adjustTime(recentCutoffDays*60*24);
+            if (co.compare(now)>=0) {
+                warn(filePath.str(),"Recent external file ignored");
+                return;
+            }
+
+            StringBuffer tmp;
+            Owned<IPropertyTree> branch;
+            addOrphanPartNode(branch,rfn.queryEndpoint(),0,false);
+            branch->setPropInt64("Size",sz);
+            branch->setProp("Partmask",filePath.str());
+            branch->setProp("Modified",dt.getString(tmp.clear()));
+            branch->setPropInt("Numparts",1);
+            branch->setPropInt("Partsfound",1);
+            foundbranch->addPropTree("File",branch.getClear());
+        }
+    }
 
     void listOrphans(cFileDesc *f,const char *currentPath,const char *currentScope,bool &abort,unsigned int recentCutoffDays)
     {
@@ -1382,6 +1449,12 @@ public:
         f->getNameMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
 #endif
+
+        // Non-conforming files won't have a part mask and should be treated as single files
+        if (!f->isHPCCFile()) {
+            addExternalFoundFile(f,currentPath,recentCutoffDays);
+            return;
+        }
 
         unsigned drv;
         unsigned drvs = isContainerized() ? 1 : 2;
@@ -1399,17 +1472,18 @@ public:
         StringBuffer scopeBuf(currentScope);
         scopeBuf.append("::");
         f->getNameMask(mask);
-        if (f->getName(scopeBuf)) { // orphans are only orphans if there doesn't exist a valid file
-            try {
-                if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
-                    warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
-                    return;
-                }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CNewXRefManager::listOrphans");
+        assertex(f->getName(scopeBuf)); // Should always return true for HPCC files
+        // orphans are only orphans if there doesn't exist a valid file
+        try {
+            if (queryDistributedFileDirectory().exists(scopeBuf.str(),udesc,true,false)) {
+                warn(mask.str(),"Orphans ignored as %s exists",scopeBuf.str());
                 return;
             }
+        }
+        catch (IException *e) {
+            EXCLOG(e,"CNewXRefManager::listOrphans");
+            e->Release();
+            return;
         }
         // treat drive differently for orphans (bit silly but bward compatible
         MemoryAttr buf;
@@ -1640,7 +1714,15 @@ public:
         i = 0;
         cFileDesc *file = d->files.first(i);
         while (file) {
-            listOrphans(file,basedir,scope,abort,recentCutoffDays);
+            try {
+                listOrphans(file,basedir,scope,abort,recentCutoffDays);
+            }
+            catch (IException *e) {
+                StringBuffer tmp(LOGPFX "listOrphans: Error processing file ");
+                file->getNameMask(addPathSepChar(tmp.append(basedir.str())));
+                EXCLOG(e,tmp.str());
+                e->Release();
+            }
             if (abort)
                 return;
             file = d->files.next(i);
@@ -1780,6 +1862,7 @@ public:
                         StringBuffer tmp(LOGPFX "Checking file ");
                         rfn.getRemotePath(tmp);
                         EXCLOG(e, tmp.str());
+                        e->Release();
                         ok = false;
                     }
                     if (!ok)

@@ -504,7 +504,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,temprow);
     EXPAND_CASE(no,activerow);
     EXPAND_CASE(no,catch);
-    EXPAND_CASE(no,unused80);
+    EXPAND_CASE(no,regex_extract);
     EXPAND_CASE(no,reference);
     EXPAND_CASE(no,callback);
     EXPAND_CASE(no,keyedlimit);

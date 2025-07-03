@@ -797,6 +797,130 @@ public:
         getMatchSet(__isAllResult, __resultBytes, __result, _subjectLen, _subject);
     }
 
+    void getExtractTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const char * _subject)
+    {
+        if (deferredException)
+            throw deferredException.getLink();
+
+        SectionTimerBlock sectionTimer(timer);
+        std::string subjectStr;
+        std::vector<std::string> matches;
+        rtlRowBuilder out;
+        size32_t outBytes = 0;
+        PCRE2_SIZE offset = 0;
+        uint32_t matchOptions = 0;
+        PCRE2_SIZE subjectSize = (isUTF8Enabled ? rtlUtf8Size(_subjectLen, _subject) : _subjectLen);
+        PCRE2MatchData8 matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
+        uint32_t captureCount = 0;
+        pcre2_pattern_info_8(compiledRegex.get(), PCRE2_INFO_CAPTURECOUNT, &captureCount);
+
+        int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)_subject, subjectSize, offset, matchOptions, matchData, pcre2MatchContext8);
+
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
+        {
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
+            failWithPCRE2Error(numMatches, "Error in regex extract: ");
+        }
+
+        if (numMatches > 0 && captureCount > 0)
+        {
+            // Multiple match groups can actually overlap, which makes deleting
+            // those characters from the source string a bit tricky; we use the
+            // technique of marking each character that is matched and then,
+            // after all match group characters are marked, rewriting the source
+            // string without marked characters
+            std::vector<bool> bytesToErase(subjectSize, false);
+            bool doSourceRewrite = false;
+
+            // Copy substrings to our match list; these will be listed in the order in which they were found;
+            // we have to collect them before stuffing them into the result because the first thing in the result
+            // is the possibly-rewritten source string, and we don't know what that will be until all matches
+            // are processed
+            matches.reserve(captureCount);
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
+            for (unsigned int x = 1; x <= captureCount; x++)
+            {
+                if (ovector[2 * x] == PCRE2_UNSET || ovector[2 * x + 1] == PCRE2_UNSET)
+                {
+                    // Copy an empty string for a non-matching match group; it is unlikely that
+                    // this will happen without failing the entire match, but we need
+                    // to be prepared for it
+                    matches.emplace_back("", 0);
+                }
+                else
+                {
+                    const char * matchStart = _subject + ovector[2 * x];
+                    unsigned matchSize = ovector[2 * x + 1] - ovector[2 * x]; // code units
+
+                    // Copy match to output buffer
+                    matches.emplace_back(matchStart, matchSize);
+
+                    // Flag source characters that will be removed
+                    for (unsigned y = ovector[2 * x]; y < ovector[2 * x + 1]; y++)
+                    {
+                        bytesToErase[y] = true;
+                    }
+                    doSourceRewrite = true;
+                }
+            }
+
+            // Rebuild source string, skipping the characters that were matched, if needed
+            if (doSourceRewrite)
+            {
+                subjectStr.reserve(subjectSize);
+                for (size32_t x = 0; x < subjectSize; x++)
+                {
+                    if (!bytesToErase[x])
+                    {
+                        subjectStr += _subject[x];
+                    }
+                }
+            }
+            else
+            {
+                // No characters to erase, source string is unchanged
+                subjectStr = std::string(_subject, subjectSize);
+            }
+        }
+        else
+        {
+            // No matches found or no capture groups defined, so source string is unchanged
+            subjectStr = std::string(_subject, subjectSize);
+        }
+
+        // ----- Build the result block
+
+        // source string to return
+        outBytes += (sizeof(size32_t) + subjectStr.size());
+        // matches
+        for (const auto& match : matches)
+            outBytes += sizeof(size32_t) + match.size();
+        
+        out.ensureAvailable(outBytes);
+        byte * destPtr = out.getbytes();
+
+        // Copy source
+        size32_t outStrLen = (isUTF8Enabled ? rtlUtf8Length(subjectStr.size(), subjectStr.data()) : subjectStr.size());
+        *((size32_t*)destPtr) = outStrLen;
+        destPtr += sizeof(size32_t);
+        memcpy_iflen(destPtr, subjectStr.data(), subjectStr.size());
+        destPtr += subjectStr.size();
+
+        // Copy matches
+        for (const auto& match : matches)
+        {
+            outStrLen = (isUTF8Enabled ? rtlUtf8Length(match.size(), match.data()) : match.size());
+            *((size32_t*)destPtr) = outStrLen;
+            destPtr += sizeof(size32_t);
+            memcpy_iflen(destPtr, match.data(), match.size());
+            destPtr += match.size();
+        }
+
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
+    }
+
 };
 
 //---------------------------------------------------------------------------
@@ -1440,6 +1564,129 @@ public:
     {
         SectionTimerBlock sectionTimer(timer);
         getMatchSet(__isAllResult, __resultBytes, __result, _subjectLen, _subject);
+    }
+
+    void getExtractTimed(ISectionTimer * timer, bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const UChar * _subject)
+    {
+        if (deferredException)
+            throw deferredException.getLink();
+
+        SectionTimerBlock sectionTimer(timer);
+        std::basic_string<UChar> subjectStr;
+        std::vector<std::basic_string<UChar>> matches;
+        rtlRowBuilder out;
+        size32_t outBytes = 0;
+        PCRE2_SIZE offset = 0;
+        uint32_t matchOptions = 0;
+        PCRE2MatchData16 matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
+        uint32_t captureCount = 0;
+        pcre2_pattern_info_16(compiledRegex.get(), PCRE2_INFO_CAPTURECOUNT, &captureCount);
+
+        int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)_subject, _subjectLen, offset, matchOptions, matchData, pcre2MatchContext16);
+
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
+        {
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
+            failWithPCRE2Error(numMatches, "Error in regex extract: ");
+        }
+
+        if (numMatches > 0 && captureCount > 0)
+        {
+            // Multiple match groups can actually overlap, which makes deleting
+            // those characters from the source string a bit tricky; we use the
+            // technique of marking each character that is matched and then,
+            // after all match group characters are marked, rewriting the source
+            // string without marked characters
+            std::vector<bool> charsToErase(_subjectLen, false);
+            bool doSourceRewrite = false;
+
+            // Copy substrings to our match list; these will be listed in the order in which they were found;
+            // we have to collect them before stuffing them into the result because the first thing in the result
+            // is the possibly-rewritten source string, and we don't know what that will be until all matches
+            // are processed
+            matches.reserve(captureCount);
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_16(matchData);
+            for (unsigned int x = 1; x <= captureCount; x++)
+            {
+                if (ovector[2 * x] == PCRE2_UNSET || ovector[2 * x + 1] == PCRE2_UNSET)
+                {
+                    // Copy an empty string for a non-matching match group; it is unlikely that
+                    // this will happen without failing the entire match, but we need
+                    // to be prepared for it
+                    matches.emplace_back(std::basic_string<UChar>());
+                }
+                else
+                {
+                    const UChar * matchStart = _subject + ovector[2 * x];
+                    unsigned matchSize = ovector[2 * x + 1] - ovector[2 * x]; // code units
+
+                    // Copy match to output buffer
+                    matches.emplace_back(matchStart, matchSize);
+
+                    // Flag source characters that will be removed
+                    for (unsigned y = ovector[2 * x]; y < ovector[2 * x + 1]; y++)
+                    {
+                        charsToErase[y] = true;
+                    }
+                    doSourceRewrite = true;
+                }
+            }
+
+            // Rebuild source string, skipping the characters that were matched, if needed
+            if (doSourceRewrite)
+            {
+                subjectStr.reserve(_subjectLen);
+                for (size32_t x = 0; x < _subjectLen; x++)
+                {
+                    if (!charsToErase[x])
+                    {
+                        subjectStr += _subject[x];
+                    }
+                }
+            }
+            else
+            {
+                // No characters to erase, source string is unchanged
+                subjectStr = std::basic_string<UChar>(_subject, _subjectLen);
+            }
+        }
+        else
+        {
+            // No matches found or no capture groups defined, so source string is unchanged
+            subjectStr = std::basic_string<UChar>(_subject, _subjectLen);
+        }
+
+        // ----- Build the result block
+
+        // source string to return (size in bytes)
+        outBytes += (sizeof(size32_t) + (subjectStr.size() * sizeof(UChar)));
+        // matches (sizes in bytes)
+        for (const auto& match : matches)
+            outBytes += sizeof(size32_t) + (match.size() * sizeof(UChar));
+        
+        out.ensureAvailable(outBytes);
+        byte * destPtr = out.getbytes();
+
+        // Copy source
+        size32_t subjectSize = subjectStr.size() * sizeof(UChar);
+        *((size32_t*)destPtr) = subjectStr.size();
+        destPtr += sizeof(size32_t);
+        memcpy_iflen(destPtr, subjectStr.data(), subjectSize);
+        destPtr += subjectSize;
+
+        // Copy matches
+        for (const auto& match : matches)
+        {
+            size32_t matchSize = match.size() * sizeof(UChar);
+            *((size32_t*)destPtr) = match.size();
+            destPtr += sizeof(size32_t);
+            memcpy_iflen(destPtr, match.data(), matchSize);
+            destPtr += matchSize;
+        }
+
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
     }
 };
 
