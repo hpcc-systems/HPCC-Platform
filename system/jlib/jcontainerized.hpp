@@ -49,5 +49,6 @@ extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char 
 
 extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application, bool secure, bool errorIfMissing);
 
+extern jlib_decl StringBuffer &addInstanceContextPaths(StringBuffer &dst);
 
 }

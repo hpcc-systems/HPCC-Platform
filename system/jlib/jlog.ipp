@@ -551,6 +551,7 @@ class PostMortemLogMsgHandler : public CInterfaceOf<ILogMsgHandler>
 public:
     PostMortemLogMsgHandler(const char * _filebase, unsigned _maxLinesToKeep, unsigned _messageFields=MSGFIELD_all);
     void copyTo(const char *target, bool clear);
+    static bool copyPIDFiles(const char *filebase, const char *target, bool clear);
 
     virtual ~PostMortemLogMsgHandler();
     virtual void handleMessage(const LogMsg & msg) override;
