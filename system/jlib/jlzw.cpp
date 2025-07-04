@@ -293,7 +293,7 @@ void CLZWCompressor::ensure(size32_t sz)
     outnext = (byte *)outbuf+outNextOffset;
 }
 
-void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize)
+void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
     if (bufalloc)
         free(outbuf);
@@ -305,7 +305,7 @@ void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize)
     initCommon();
 }
 
-void CLZWCompressor::open(void *buf,size32_t max)
+void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize)
 {
 #ifdef STATS
     st_thistime = msTick();
@@ -829,7 +829,7 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         {
             try
             {
-                compressor->open(newData, newSize);
+                compressor->open(newData, newSize, 0);
                 if (compressor->write(src, len)==len)
                 {
                     compressor->close();
@@ -1394,18 +1394,25 @@ public:
             free(outbuf);
     }
 
-    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
+        if (fixedRowSize == 0)
+            throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
+
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
         bufalloc = 0;
+        recsize = fixedRowSize;
         initCommon();
         remaining = outBufMb->capacity()-outlen;
     }
 
-    virtual void open(void *buf,size32_t max) override
+    virtual void open(void *buf,size32_t max, size32_t fixedRowSize) override
     {
+        if (fixedRowSize == 0)
+            throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
+
         originalMax = max;
         if (buf)
         {
@@ -1422,6 +1429,7 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
+        recsize = fixedRowSize;
         if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
             throw makeStringException(0, "CRDiffCompressor: target buffer too small");
         initCommon();
@@ -1684,17 +1692,24 @@ public:
             free(outbuf);
     }
 
-    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
+        if (fixedRowSize == 0)
+            throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
+
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
         bufalloc = 0;
+        recsize = fixedRowSize;
         initCommon();
     }
 
-    virtual void open(void *buf,size32_t _max) override
+    virtual void open(void *buf,size32_t _max, size32_t fixedRowSize) override
     {
+        if (fixedRowSize == 0)
+            throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
+
         max = _max;
         originalMax = max;
         if (buf) {
@@ -1711,6 +1726,7 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
+        recsize = fixedRowSize;
         if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
             throw makeStringException(0, "CRandRDiffCompressor: target buffer too small");
         initCommon();
@@ -2521,7 +2537,7 @@ public:
                         break;
                 }
             }
-            compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
+            compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0);
         }
 
         if (mode == ICFappend)
@@ -2644,7 +2660,7 @@ public:
             trailer.indexPos = p;
             if (trailer.recordSize==0)
             {
-                compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
+                compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0);
             }
             lastFlushPos = trailer.expandedSize;
         }
@@ -2924,16 +2940,16 @@ public:
         outBufMb = NULL;
     }
 
-    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
         outlen = 0;
         outmax = initialSize;
         outbuf = NULL;
         outBufMb = &mb;
-        comp->open(compattr, initialSize);
+        comp->open(compattr, initialSize, fixedRowSize);
     }
 
-    virtual void open(void *blk,size32_t blksize) override
+    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize) override
     {
         outlen = 0;
         outmax = blksize;
@@ -2946,7 +2962,7 @@ public:
         if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
             throw makeStringException(0, "CAESCompressor: target buffer too small");
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
-        comp->open(compattr.reserveTruncate(subsz),subsz);
+        comp->open(compattr.reserveTruncate(subsz), subsz, fixedRowSize);
     }
 
     virtual bool adjustLimit(size32_t newLimit) override

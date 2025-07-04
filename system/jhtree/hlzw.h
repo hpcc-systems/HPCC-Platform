@@ -29,7 +29,7 @@ class KeyCompressor final
 public:
     KeyCompressor() {}
     ~KeyCompressor();
-    void open(void *blk,int blksize, bool isVariable, bool rowcompression);
+    void open(void *blk,int blksize, bool isVariable, bool rowcompression, size32_t fixedRowSize);
     void open(void *blk,int blksize, ICompressHandler * compressionHandler, const char * options, bool _isVariable, size32_t fixedRowSize);
     void open(void *blk,int blksize, ICompressor * compressor, bool _isVariable, size32_t _fixedRowSize);
 

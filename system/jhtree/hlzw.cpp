@@ -43,9 +43,10 @@ KeyCompressor::~KeyCompressor()
     }
 }
 
-void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompression)
+void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompression, size32_t _fixedRowSize)
 {
     isVariable = _isVariable;
+    fixedRowSize = _fixedRowSize;
     isBlob = false;
     curOffset = 0;
     ::Release(comp);
@@ -58,7 +59,7 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
     }
     else
         comp = createLZWCompressor(true);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize,_fixedRowSize);
     method = comp->getCompressionMethod();
 }
 
@@ -69,7 +70,7 @@ void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHa
     curOffset = 0;
     ::Release(comp);
     comp = compressionHandler->getCompressor(options);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize, _fixedRowSize);
     method = comp->getCompressionMethod();
     fixedRowSize = _fixedRowSize;
 }
@@ -81,7 +82,7 @@ void KeyCompressor::open(void *blk,int blksize, ICompressor * compressor, bool _
     curOffset = 0;
     ::Release(comp);
     comp = LINK(compressor);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize, _fixedRowSize);
     method = comp->getCompressionMethod();
     fixedRowSize = _fixedRowSize;
 }
@@ -94,7 +95,7 @@ void KeyCompressor::openBlob(void *blk,int blksize)
     ::Release(comp);
     comp = NULL;
     comp = createLZWCompressor(true);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize,0);
     method = comp->getCompressionMethod();
 }
 

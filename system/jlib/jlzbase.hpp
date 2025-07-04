@@ -52,8 +52,8 @@ inline unsigned sizePacked(size32_t value)
 class CStreamCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 public:
-    virtual void open(void *buf,size32_t max) override;
-    virtual void open(MemoryBuffer &mb, size32_t initialSize) override;
+    virtual void open(void *buf, size32_t max, size32_t fixedRowSize) override;
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override;
     virtual bool adjustLimit(size32_t newLimit) override;
     virtual void close() final override;
 

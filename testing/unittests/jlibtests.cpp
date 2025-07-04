@@ -4307,7 +4307,7 @@ public:
         {
             case RowCompress:
             {
-                compressor->open(compressed, sz);
+                compressor->open(compressed, sz, rowSz);
                 compressor->startblock();
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
@@ -4333,7 +4333,7 @@ public:
             }
             case AllRowCompress:
             {
-                compressor->open(compressed, sz);
+                compressor->open(compressed, sz, rowSz);
                 compressor->startblock();
                 compressor->write(ptr, sz);
                 compressor->commitblock();
@@ -4357,7 +4357,7 @@ public:
                 static constexpr size32_t blocksize = 32768;
                 MemoryAttr buffer(blocksize);
 
-                compressor->open(buffer.bufferBase(), blocksize);
+                compressor->open(buffer.bufferBase(), blocksize, rowSz);
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
@@ -4368,7 +4368,7 @@ public:
                         size32_t size = compressor->buflen();
                         sizes.append(size);
                         compressed.append(size, buffer.bufferBase());
-                        compressor->open(buffer.bufferBase(), blocksize);
+                        compressor->open(buffer.bufferBase(), blocksize, rowSz);
                         size32_t next = compressor->write(ptr+written, rowSz-written);
                         assertex(next == rowSz - written);
                     }
