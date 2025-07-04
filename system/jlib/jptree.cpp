@@ -43,9 +43,8 @@
     *(char *) (name+(length)) = '\0';
 
 #include "jfile.hpp"
-#include "jlog.hpp"
-#include "jstreamhelpers.hpp"
 #include "jptree.ipp"
+#include "jlog.hpp"
 
 #define WARNLEGACYCOMPARE
 #define XMLTAG_CONTENT "<>"
@@ -3046,6 +3045,64 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelf(src);
+
+    StringBuffer eName;
+    size32_t len{0};
+    for (;;)
+    {
+        const char *nextName = queryZeroTerminatedString(src, len);
+        if (nextName == nullptr)
+            throwUnexpectedX("eName could not be found within buffer");
+        if (len == 0)
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        IPropertyTree *child = create(src);
+        eName.set(nextName);
+        addPropTree(eName, child);
+    }
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    size32_t len{0};
+    const char *name = queryZeroTerminatedString(src, len);
+    if (len < 1)
+        throwUnexpectedX("Name could not be found within buffer");
+    src.skip(len + 1); // Skip over null terminator?
+    setName(name);
+
+    read(src, flags);
+
+    size32_t got;
+    for (;;)
+    {
+        const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
+        assertex(got >= 1);
+        if (*attrNamePtr == '\0')
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        auto [attrName, attrValue] = peekKeyValuePair(src, len);
+        setProp(attrName, attrValue);
+        src.skip(len + 1); // +1 to skip over second null terminator.
+    }
+
+    if (value)
+        delete value;
+    size32_t size{0};
+    read(src, size);
+    if (size > 0)
+        value = new CPTValue(src, size);
+    else
+        value = nullptr;
+}
+
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -4457,6 +4514,13 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
     return tree;
 }
 
+IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
+    return tree;
+}
+
 IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags)
 {
     Owned<PTree> tree = (PTree *)createPTree(NULL, flags);
@@ -4689,17 +4753,20 @@ template <typename T>
 class CommonReaderBase : public CInterface
 {
     Linked<ISimpleReadStream> lstream;
-    ISimpleReadStream *stream;
-    bool bufOwned, nullTerm;
-    byte *buf, *bufPtr;
-    size32_t bufSize, bufRemaining;
+    ISimpleReadStream *stream{nullptr};
+    bool bufOwned{false};
+    bool nullTerm{false};
+    byte *buf{nullptr};
+    byte *bufPtr{nullptr};
+    size32_t bufSize{0};
+    size32_t bufRemaining{0};
 protected:
     PTreeReaderOptions readerOptions;
     bool ignoreWhiteSpace, noRoot;
     Linked<IPTreeNotifyEvent> iEvent;
-    offset_t curOffset;
-    unsigned line;
-    char nextChar;
+    offset_t curOffset{0};
+    unsigned line{0};
+    char nextChar{0};
 
 private:
     void init()
@@ -4736,7 +4803,7 @@ public:
         readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
-        stream = NULL;  // not used for direct reads
+        stream = nullptr;  // not used for direct reads
         bufRemaining = bufLength;
         nullTerm = false;
         buf = (byte *)_buf;
@@ -4748,7 +4815,7 @@ public:
         readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
-        stream = NULL;  // not used for direct reads
+        stream = nullptr;  // not used for direct reads
         curOffset = 0;
         bufRemaining = 0;
         nullTerm = true;
@@ -5311,7 +5378,6 @@ protected:
         return lookupRefValue(entity, value);
     }
 };
-
 
 template <class X>
 class CXMLReader : public CXMLReaderBase<X>, implements IPTreeReader
@@ -6117,7 +6183,6 @@ IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, PTreeReaderOpt
     else
         return iMaker->create(NULL);
 }
-
 IPropertyTree *createPTree(IFileIO &ifileio, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFileIOStream stream = createIOStream(&ifileio);

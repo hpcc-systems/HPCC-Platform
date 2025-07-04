@@ -15,27 +15,38 @@
     limitations under the License.
 ############################################################################## */
 
-
-
-#ifndef JSTREAMHELPERS_HPP
-#define JSTREAMHELPERS_HPP
+#pragma once
 
 #include "platform.h"
 #include "jstream.hpp"
 
 // Global helper functions for buffered serial output
-inline void append(IBufferedSerialOutputStream & target, const char * value)
+inline void append(IBufferedSerialOutputStream &target, const char *value)
 {
     if (value)
-        target.put(strlen(value)+1, value);
+        target.put(strlen(value) + 1, value);
     else
         target.put(1, "");
 }
 
 template <class T>
-inline void append(IBufferedSerialOutputStream & target, const T & value)
+inline void append(IBufferedSerialOutputStream &target, const T &value)
 {
     target.put(sizeof(T), &value);
 }
 
-#endif
+// Global helper functions for buffered serial input
+inline void read(IBufferedSerialInputStream &source, void *buffer, size32_t size)
+{
+    size32_t got = source.read(size, buffer);
+    if (got != size)
+        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %u, only read %u bytes", size, got);
+}
+
+template <class T>
+inline void read(IBufferedSerialInputStream &source, T &value)
+{
+    size32_t got = source.read(sizeof(T), &value);
+    if (got != sizeof(T))
+        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %lu, only read %u bytes", sizeof(T), got);
+}
