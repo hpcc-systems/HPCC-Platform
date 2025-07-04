@@ -3054,6 +3054,8 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
     for (;;)
     {
         const char *nextName = queryZeroTerminatedString(src, len);
+        if (nextName == nullptr)
+            throwUnexpectedX("eName could not be found within buffer");
         if (len == 0)
         {
             src.skip(1); // Skip over null terminator.
@@ -3069,24 +3071,30 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 {
     size32_t len{0};
     const char *name = queryZeroTerminatedString(src, len);
+    if (len < 1)
+        throwUnexpectedX("Name could not be found within buffer");
     src.skip(len + 1); // Skip over null terminator?
     setName(name);
 
     read(src, flags);
 
+    size32_t got;
     for (;;)
     {
-        if (peekIsNextNullTerminatedString(src))
+        const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
+        assertex(got >= 1);
+        if (*attrNamePtr == '\0')
         {
             src.skip(1); // Skip over null terminator.
             break;
         }
         auto [attrName, attrValue] = peekKeyValuePair(src, len);
         setProp(attrName, attrValue);
-        src.skip(len+1); // +1 to skip over second null terminator.
+        src.skip(len + 1); // +1 to skip over second null terminator.
     }
 
-    if (value) delete value;
+    if (value)
+        delete value;
     size32_t size{0};
     read(src, size);
     if (size > 0)
@@ -4746,8 +4754,6 @@ class CommonReaderBase : public CInterface
 {
     Linked<ISimpleReadStream> lstream;
     ISimpleReadStream *stream{nullptr};
-    Linked<IBufferedSerialInputStream> lbufStream;
-    IBufferedSerialInputStream *bufStream{nullptr};
     bool bufOwned{false};
     bool nullTerm{false};
     byte *buf{nullptr};
@@ -4772,7 +4778,7 @@ private:
     {
         bufPtr = buf;
         nextChar = 0;
-        if (nullTerm || stream || bufStream)
+        if (nullTerm || stream)
             bufRemaining = 0;
         curOffset = 0;
         line = 0;
@@ -4790,22 +4796,6 @@ public:
         nullTerm = false;
         lstream.set(&_stream);
         stream = &_stream; // for efficiency
-        bufStream= nullptr;
-        init();
-        resetState();
-    }
-    CommonReaderBase(IBufferedSerialInputStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions, size32_t _bufSize=0) :
-        bufSize(_bufSize), readerOptions(_readerOptions), iEvent(&_iEvent)
-    {
-        if (!bufSize) bufSize = 0x20000;
-        buf = new byte[bufSize];
-        bufRemaining = 0;
-        curOffset = 0;
-        bufOwned = true;
-        nullTerm = false;
-        lbufStream.set(&_stream);
-        bufStream= &_stream; // for efficiency
-        stream = nullptr;
         init();
         resetState();
     }
@@ -4814,7 +4804,6 @@ public:
     {
         bufSize = 0; // not used for direct reads
         stream = nullptr;  // not used for direct reads
-        bufStream= nullptr;  // not used for direct reads
         bufRemaining = bufLength;
         nullTerm = false;
         buf = (byte *)_buf;
@@ -4827,7 +4816,6 @@ public:
     {
         bufSize = 0; // not used for direct reads
         stream = nullptr;  // not used for direct reads
-        bufStream= nullptr;  // not used for direct reads
         curOffset = 0;
         bufRemaining = 0;
         nullTerm = true;
@@ -4988,7 +4976,7 @@ template <> inline bool CommonReaderBase<CInstStreamReader>::readNextToken()
     // do own buffering, to have reasonable error context.
     if (0 == bufRemaining)
     {
-        size32_t _bufRemaining = bufStream ? bufStream->read(bufSize, buf) : stream->read(bufSize, buf);
+        size32_t _bufRemaining = stream->read(bufSize, buf);
         if (!_bufRemaining)
             return false;
         bufRemaining = _bufRemaining;
@@ -5054,12 +5042,6 @@ public:
     using PARENT::readerOptions;
 
     CXMLReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _xmlReaderOptions, size32_t _bufSize=0)
-        : CommonReaderBase<X>(_stream, _iEvent, _xmlReaderOptions, _bufSize)
-    {
-        init();
-        resetState();
-    }
-    CXMLReaderBase(IBufferedSerialInputStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _xmlReaderOptions, size32_t _bufSize=0)
         : CommonReaderBase<X>(_stream, _iEvent, _xmlReaderOptions, _bufSize)
     {
         init();
@@ -5397,7 +5379,6 @@ protected:
     }
 };
 
-
 template <class X>
 class CXMLReader : public CXMLReaderBase<X>, implements IPTreeReader
 {
@@ -5442,12 +5423,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CXMLReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
-        : PARENT(stream, iEvent, xmlReaderOptions, bufSize)
-    {
-        init();
-        resetState();
-    }
-    CXMLReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, xmlReaderOptions, bufSize)
     {
         init();
@@ -5755,11 +5730,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CPullXMLReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
-        : CXMLReaderBase<X>(stream, iEvent, xmlReaderOptions, bufSize)
-    {
-        resetState();
-    }
-    CPullXMLReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
         : CXMLReaderBase<X>(stream, iEvent, xmlReaderOptions, bufSize)
     {
         resetState();
@@ -6123,16 +6093,6 @@ IPTreeReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent
     return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
 }
 
-IPTreeReader *createXMLStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize)
-{
-    class CXMLStreamReader : public CXMLReader<CInstStreamReader>
-    {
-    public:
-        CXMLStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0) : CXMLReader<CInstStreamReader>(stream, iEvent, xmlReaderOptions, bufSize) { }
-    };
-    return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
-}
-
 IPTreeReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions)
 {
     class CXMLStringReader : public CXMLReader<CInstStringReader>
@@ -6162,16 +6122,6 @@ IPullPTreeReader *createPullXMLStreamReader(ISimpleReadStream &stream, IPTreeNot
     {
     public:
         CXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0) : CPullXMLReader<CInstStreamReader>(stream, iEvent, xmlReaderOptions, bufSize) { }
-    };
-    return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
-}
-
-IPullPTreeReader *createPullXMLStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize)
-{
-    class CXMLStreamReader : public CPullXMLReader<CInstStreamReader>
-    {
-    public:
-        CXMLStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0) : CPullXMLReader<CInstStreamReader>(stream, iEvent, xmlReaderOptions, bufSize) { }
     };
     return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
 }
@@ -6233,23 +6183,6 @@ IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, PTreeReaderOpt
     else
         return iMaker->create(NULL);
 }
-
-IPropertyTree *createPTree(IBufferedSerialInputStream &stream, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
-{
-    Owned<IPTreeMaker> _iMaker;
-    if (!iMaker)
-    {
-        iMaker = createDefaultPTreeMaker(flags, readFlags);
-        _iMaker.setown(iMaker);
-    }
-    Owned<IPTreeReader> reader = createXMLStreamReader(stream, *iMaker, readFlags);
-    reader->load();
-    if (iMaker->queryRoot())
-        return LINK(iMaker->queryRoot());
-    else
-        return iMaker->create(NULL);
-}
-
 IPropertyTree *createPTree(IFileIO &ifileio, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFileIOStream stream = createIOStream(&ifileio);
@@ -7455,10 +7388,6 @@ public:
       CommonReaderBase<X>(_stream, _iEvent, _readerOptions, _bufSize)
     {
     }
-    CJSONReaderBase(IBufferedSerialInputStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions, size32_t _bufSize=0) :
-      CommonReaderBase<X>(_stream, _iEvent, _readerOptions, _bufSize)
-    {
-    }
     CJSONReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions) :
         CommonReaderBase<X>(_buf, bufLength, _iEvent, _readerOptions)
     {
@@ -7632,10 +7561,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
-        : PARENT(stream, iEvent, readerOptions, bufSize)
-    {
-    }
-    CJSONReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, readerOptions, bufSize)
     {
     }
@@ -7918,11 +7843,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CPullJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
-        : CJSONReaderBase<X>(stream, iEvent, readerOptions, bufSize)
-    {
-        init();
-    }
-    CPullJSONReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
         : CJSONReaderBase<X>(stream, iEvent, readerOptions, bufSize)
     {
         init();
@@ -8277,16 +8197,6 @@ IPTreeReader *createJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEven
     return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
 }
 
-IPTreeReader *createJSONStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize)
-{
-    class CJSONStreamReader : public CJSONReader<CInstStreamReader>
-    {
-    public:
-        CJSONStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0) : CJSONReader<CInstStreamReader>(stream, iEvent, readerOptions, bufSize) { }
-    };
-    return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
-}
-
 IPTreeReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions)
 {
     class CJSONStringReader : public CJSONReader<CInstStringReader>
@@ -8316,16 +8226,6 @@ IPullPTreeReader *createPullJSONStreamReader(ISimpleReadStream &stream, IPTreeNo
     {
     public:
         CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0) : CPullJSONReader<CInstStreamReader>(stream, iEvent, readerOptions, bufSize) { }
-    };
-    return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
-}
-
-IPullPTreeReader *createPullJSONStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize)
-{
-    class CJSONStreamReader : public CPullJSONReader<CInstStreamReader>
-    {
-    public:
-        CJSONStreamReader(IBufferedSerialInputStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0) : CPullJSONReader<CInstStreamReader>(stream, iEvent, readerOptions, bufSize) { }
     };
     return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
 }

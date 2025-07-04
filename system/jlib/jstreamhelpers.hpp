@@ -24,9 +24,9 @@
 inline void append(IBufferedSerialOutputStream &target, const char *value)
 {
     if (value)
-        target.put(strlen(value) + 1, static_cast<const void *>(value));
+        target.put(strlen(value) + 1, value);
     else
-        target.put(1, static_cast<const void *>(""));
+        target.put(1, "");
 }
 
 template <class T>
@@ -49,11 +49,4 @@ inline void read(IBufferedSerialInputStream &source, T &value)
     size32_t got = source.read(sizeof(T), &value);
     if (got != sizeof(T))
         throw makeStringExceptionV(0, "Failed to read the expected number of bytes %lu, only read %u bytes", sizeof(T), got);
-}
-
-inline bool peekIsNextNullTerminatedString(IBufferedSerialInputStream &source)
-{
-    size32_t got{0};
-    const char *start = static_cast<const char *>(source.peek(1, got));
-    return (got >= 1) && (*start == '\0');
 }
