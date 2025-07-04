@@ -5263,6 +5263,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
     unsigned keepStores{0};
     SessionId mySessId{0};
     bool saveBinary{false};
+    bool saveAsync{false};
 
     void clearStoreInfo(const char *base, const char *location, unsigned edition, CStoreInfo *storeInfo=NULL)
     {
@@ -5476,7 +5477,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary)
+    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary, bool _saveAsync) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary), saveAsync(_saveAsync)
     {
         mySessId = daliClientActive()?myProcessSession():0;
         if (!keepStores) keepStores = DEFAULT_KEEP_LASTN_STORES;
@@ -5805,34 +5806,32 @@ public:
             OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, NULL, tmpStoreName);
             OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
 
-            bool saveAsync{true};
-            unsigned xmlCrc{0};
-            unsigned binaryCrc{0};
+            // Execute save operations
+            unsigned xmlCrc = 0;
+            unsigned binaryCrc = 0;
+
             if (saveAsync)
             {
-                // Execute save operations asynchronously
-                Owned<CCompletionTask> completed = new CCompletionTask(queryTaskScheduler());
+                // Execute saves in parallel
+                Owned<CCompletionTask> completed = new CCompletionTask();
 
-                // Always execute XML save first
                 completed->spawn([&]() {
                     xmlCrc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
                 });
 
                 if (saveBinary)
-                {
-                    // Execute binary save in parallel if needed
                     completed->spawn([&]() {
                         binaryCrc = saveStoreToBinaryFile(root);
                     });
-                }
 
                 // Wait for all saves to complete
                 completed->decAndWait();
             }
             else
             {
-                // Execute save operations synchronously
+                // Execute saves synchronously
                 xmlCrc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+
                 if (saveBinary)
                     binaryCrc = saveStoreToBinaryFile(root);
             }
@@ -6021,10 +6020,10 @@ public:
 friend struct CheckDeltaBlock;
 };
 
-IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary)
+IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary, bool saveAsync)
 {
     if (!storeName) storeName = "dalisds";
-    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary);
+    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary, saveAsync);
 }
 
 ///////////////
