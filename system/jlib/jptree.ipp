@@ -215,7 +215,7 @@ public:
                 compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
             MemoryAttr mem(len);
             src.read(len, mem.bufferBase());
-            set(len, mem.detach());
+            setOwn(len, mem.detach());
         }
         else
         {

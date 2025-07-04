@@ -3397,9 +3397,10 @@ CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
 /*
- * PTree serialization tests
+ * PTree serialization / deserialization tests
  *
- *   Test PTree serialization format matches from MemoryBuffer to IBufferedSerialInputStream
+ *   Test PTree serialization / deserialization format matches from MemoryBuffer to IBufferedSerialInputStream
+ *   Generate timings for serialization and deserialization processes
  *
  */
 
@@ -3612,12 +3613,20 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
     return tree.getClear();
 }
 
-class PTreeSerializationTest : public CppUnit::TestFixture
+/*
+ * Combined PTree serialization and deserialization tests
+ *
+ * Tests PTree serialization/deserialization format consistency between MemoryBuffer and IBufferedSerialInputStream
+ * and measures performance of both operations
+ */
+
+class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(PTreeSerializationTest);
-    CPPUNIT_TEST(testSerializeVsSerializeToStreamForRootOnlyPTree);
-    CPPUNIT_TEST(testSerializeVsSerializeToStreamForCompatibilityConfigPropertyTree);
-    CPPUNIT_TEST(testSerializeVsSerializeToStreamForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
+      // Complete round-trip tests - serialization followed by deserialization with validation
+      CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
+      CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
+      CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3637,186 +3646,108 @@ protected:
         "    </Policies>"
         "  </Cache>"
         "</Configuration>"};
-    Owned<IPropertyTree> originalTree;
 
-public:
-    void testSerializeVsSerializeToStreamForRootOnlyPTree()
+    // Complete round-trip test method that performs serialization, deserialization, and validation
+    void performRoundTripTest(const char *testName, IPropertyTree *tree)
     {
-        testSerializeVsSerializeToStream(__func__, createPTree("EmptyRoot"));
-    }
+        Owned<IPropertyTree> originalTree;
+        originalTree.setown(tree);
+        CCycleTimer timer;
 
-    void testSerializeVsSerializeToStreamForCompatibilityConfigPropertyTree()
-    {
-        testSerializeVsSerializeToStream(__func__, createCompatibilityConfigPropertyTree());
-    }
-
-    void testSerializeVsSerializeToStreamForBinaryDataCompressionTestPTree()
-    {
-        testSerializeVsSerializeToStream(__func__, createBinaryDataCompressionTestPTree(testXml));
-    }
-
-protected:
-    void testSerializeVsSerializeToStream(const char *testName, IPropertyTree *_originalTree)
-    {
-        originalTree.setown(_originalTree);
-
-        DBGLOG("Starting timing test for %s", testName);
+        // Serialization
+        MemoryBuffer standardBuffer, streamBuffer;
 
         // Time serialize() method
-        MemoryBuffer memBufOriginalTree;
-        CCycleTimer timer;
-        originalTree->serialize(memBufOriginalTree);
-        __uint64 serializedElapsedNs = timer.elapsedNs();
+        timer.reset();
+        originalTree->serialize(standardBuffer);
+        __uint64 serializeElapsedNs = timer.elapsedNs();
+        size_t standardBufferSize = standardBuffer.length();
 
         // Time serializeToStream() method
-        MemoryBuffer memoryBufferStream;
-        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(memoryBufferStream);
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
         timer.reset();
         originalTree->serializeToStream(*out);
         out->flush();
         __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
+        size_t streamBufferSize = streamBuffer.length();
 
-        // Convert to milliseconds for display
-        double serializeTimeMs = serializedElapsedNs / 1e6;
+        // Validation - serialized data matches
+        CPPUNIT_ASSERT_EQUAL(standardBufferSize, streamBufferSize);
+        CPPUNIT_ASSERT(memcmp(standardBuffer.toByteArray(), streamBuffer.toByteArray(), standardBufferSize) == 0);
+
+        // Time deserialize() method
+        MemoryBuffer deserializeBuffer;
+        deserializeBuffer.append(standardBufferSize, standardBuffer.toByteArray());
+        Owned<IPropertyTree> standardDeserialized = createPTree();
+        timer.reset();
+        standardDeserialized->deserialize(deserializeBuffer);
+        __uint64 deserializeElapsedNs = timer.elapsedNs();
+
+        // Time deserializeFromStream() method
+        MemoryBuffer streamDeserializeBuffer;
+        streamDeserializeBuffer.append(streamBufferSize, streamBuffer.toByteArray());
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamDeserializeBuffer);
+        Owned<IPropertyTree> streamDeserialized = createPTree();
+        timer.reset();
+        streamDeserialized->deserializeFromStream(*in);
+        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
+
+        // Time createPTree() method
+        MemoryBuffer streamPTreeBuffer;
+        streamPTreeBuffer.append(streamBufferSize, streamBuffer.toByteArray());
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamPTreeBuffer);
+        timer.reset();
+        Owned<IPropertyTree> deserializePTreeFromStream = createPTree(*in2);
+        __uint64 deserializePTreeFromStreamElapsedNs = timer.elapsedNs();
+
+        // Validation - verify both deserialized trees are equivalent to the original
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, standardDeserialized));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializePTreeFromStream));
+
+        double serializeTimeMs = serializeElapsedNs / 1e6;
         double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
-
-        DBGLOG("Timing results for %s:", testName);
+        DBGLOG("=== ROUND-TRIP TEST STARTED FOR: %s ===", testName);
+        DBGLOG("=== SERIALIZATION TEST RESULTS:");
         DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
         DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
         DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
+        DBGLOG("  serialize() data size: %lu bytes", standardBufferSize);
+        DBGLOG("  serializeToStream() data size: %lu bytes", streamBufferSize);
 
-        // Compare memoryBufferStream to memBufOriginalTree using memcmp
-        CPPUNIT_ASSERT_EQUAL(memBufOriginalTree.length(), memoryBufferStream.length());
-        CPPUNIT_ASSERT(memcmp(memBufOriginalTree.toByteArray(), memoryBufferStream.toByteArray(), memBufOriginalTree.length()) == 0);
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationTest, "PTreeSerializationTest");
-
-/*
- * PTree deserialization tests
- *
- *   Test PTree deserialization format matches from MemoryBuffer to IBufferedSerialInputStream
- *
- */
-
-class PTreeDeserializationTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(PTreeDeserializationTest);
-      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForRootOnlyPTree);
-      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree);
-      CPPUNIT_TEST(testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree);
-    CPPUNIT_TEST_SUITE_END();
-
-protected:
-    static constexpr const char *testXml{
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<Configuration version=\"1.0\" environment=\"test\">"
-        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
-        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
-        "    <Tables>"
-        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
-        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
-        "    </Tables>"
-        "  </Database>"
-        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
-        "    <Policies>"
-        "      <Policy name=\"default\" expiry=\"300\"/>"
-        "    </Policies>"
-        "  </Cache>"
-        "</Configuration>"};
-    Owned<IPropertyTree> originalTree;
-
-public:
-    void testDeserializeVsDeserializeFromStreamForRootOnlyPTree()
-    {
-        testDeserializeVsDeserializeFromStream(__func__, createPTree("EmptyRoot"));
-    }
-
-    void testDeserializeVsDeserializeFromStreamForCompatibilityConfigPropertyTree()
-    {
-        testDeserializeVsDeserializeFromStream(__func__, createCompatibilityConfigPropertyTree());
-    }
-
-    void testDeserializeVsDeserializeFromStreamForBinaryDataCompressionTestPTree()
-    {
-        testDeserializeVsDeserializeFromStream(__func__, createBinaryDataCompressionTestPTree(testXml));
-    }
-
-protected:
-    void testDeserializeVsDeserializeFromStream(const char *testName, IPropertyTree *_originalTree)
-    {
-        originalTree.setown(_originalTree);
-
-        DBGLOG("Starting deserialization timing test for %s", testName);
-
-        // First serialize the original tree to get data for deserialization
-        MemoryBuffer serializedData;
-        CCycleTimer timer;
-        originalTree->serialize(serializedData);
-        __uint64 serializeElapsedNs = timer.elapsedNs();
-        auto serializeSize = serializedData.length();
-
-        // Create buffer for stream serialization
-        MemoryBuffer streamSerializedData;
-        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamSerializedData);
-        timer.reset();
-        originalTree->serializeToStream(*out);
-        out->flush();
-        __uint64 serializeFromStreamElapsedNs = timer.elapsedNs();
-        auto serializeFromStreamSize = streamSerializedData.length();
-
-        // Ensure serialization matches
-        CPPUNIT_ASSERT_EQUAL(serializedData.length(), streamSerializedData.length());
-        CPPUNIT_ASSERT(memcmp(serializedData.toByteArray(), streamSerializedData.toByteArray(), serializedData.length()) == 0);
-
-        // Test deserialize() method
-        MemoryBuffer deserializeBuffer;
-        deserializeBuffer.append(serializedData.length(), serializedData.toByteArray());
-        Owned<IPropertyTree> deserializedTree = createPTree();
-        timer.reset();
-        deserializedTree->deserialize(deserializeBuffer);
-        __uint64 deserializeElapsedNs = timer.elapsedNs();
-
-        // Test deserializeFromStream() method
-        MemoryBuffer streamBuffer;
-        streamBuffer.append(streamSerializedData.length(), streamSerializedData.toByteArray());
-        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> deserializedFromStreamTree = createPTree();
-        timer.reset();
-        deserializedFromStreamTree->deserializeFromStream(*in);
-        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
-
-        // Verify both deserialized trees are equivalent to the original
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedTree));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedFromStreamTree));
-
-        // Convert to milliseconds for display
-        double serializeTimeMs = serializeElapsedNs / 1e6;
-        double serializeFromStreamTimeMs = serializeFromStreamElapsedNs / 1e6;
         double deserializeTimeMs = deserializeElapsedNs / 1e6;
         double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
-
-        DBGLOG("Serialization size results for %s:", testName);
-        DBGLOG("  serialize() size: %u bytes", serializeSize);
-        DBGLOG("  serializeFromStream() size: %u bytes", serializeFromStreamSize);
-        DBGLOG("  Size ratio (serializeFromStream/serialize): %.6f", (double)serializeFromStreamSize / serializeSize);
-
-        DBGLOG("Serialization timing results for %s:", testName);
-        DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
-        DBGLOG("  serializeFromStream() time: %.6f ms", serializeFromStreamTimeMs);
-        DBGLOG("  Performance ratio (serializeFromStream/serialize): %.6f", serializeFromStreamTimeMs / serializeTimeMs);
-
-        DBGLOG("Deserialization timing results for %s:", testName);
+        double deserializePTreeFromStreamTimeMs = deserializePTreeFromStreamElapsedNs / 1e6;
+        DBGLOG("=== DESERIALIZATION TEST RESULTS:");
         DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
         DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
         DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
+        DBGLOG("  createPTree() from stream time: %.6f ms", deserializePTreeFromStreamTimeMs);
+
+        DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
+    }
+
+public:
+    // Complete round-trip test methods - perform serialization and deserialization in one test
+    void testRoundTripForRootOnlyPTree()
+    {
+        performRoundTripTest(__func__, createPTree("EmptyRoot"));
+    }
+
+    void testRoundTripForCompatibilityConfigPropertyTree()
+    {
+        performRoundTripTest(__func__, createCompatibilityConfigPropertyTree());
+    }
+
+    void testRoundTripForBinaryDataCompressionTestPTree()
+    {
+        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeDeserializationTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeDeserializationTest, "PTreeDeserializationTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
+
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
