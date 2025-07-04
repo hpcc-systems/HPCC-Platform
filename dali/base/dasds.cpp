@@ -25,6 +25,7 @@
 #include "jfile.hpp"
 #include "jregexp.hpp"
 #include "jthread.hpp"
+#include "jtask.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
 #include "jmisc.hpp"
@@ -5263,7 +5264,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
     unsigned keepStores{0};
     SessionId mySessId{0};
     bool saveBinary{false};
-    bool storeBinaryCrc{false};
+    bool saveAsync{false};
 
     void clearStoreInfo(const char *base, const char *location, unsigned edition, CStoreInfo *storeInfo=NULL)
     {
@@ -5482,7 +5483,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary, bool _storeBinaryCrc) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary), storeBinaryCrc(_storeBinaryCrc)
+    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary, bool _saveAsync) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary), saveAsync(_saveAsync)
     {
         mySessId = daliClientActive()?myProcessSession():0;
         if (!keepStores) keepStores = DEFAULT_KEEP_LASTN_STORES;
@@ -5787,31 +5788,46 @@ public:
             constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
             OwnedIFileIO iXmlFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
             OwnedIFile iXmlFileTmpStore = createIFile(tmpStoreName);
-            unsigned xmlCrc{0};
-            try
-            {
-                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), StoreFormat::XML);
-            }
-            catch (IException *e)
-            {
-                StringBuffer errMsg;
-                EXCLOG(e, errMsg.append("Failed to save XML temporary store to : ").append(temporaryXmlFileSaveName).str());
-                e->Release();
-                iXmlFileTmpStore->remove();
-                return;
-            }
 
             // Save store as binary
             OwnedIFile iBinaryFileTmpStore;
+            constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
+            OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
+            iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
+
+            // Execute save operations
+            unsigned xmlCrc{0};
             unsigned binaryCrc{0};
             unsigned *binaryCrcPtr{nullptr};
-            if (saveBinary)
+
+            if (saveAsync)
             {
-                StringBuffer tmpStoreName;
-                constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-                OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
-                iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
-                try
+                // Execute saves in parallel
+                Owned<CCompletionTask> completed = new CCompletionTask();
+
+                completed->spawn([&]() {
+                    xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), StoreFormat::XML);
+                });
+
+                if (saveBinary)
+                    completed->spawn([&]() {
+                        size32_t bufferSize = bufferSize1mb;
+                        StringBuffer planeName;
+                        if (findPlaneFromPath(iXmlFileTmpStore->queryFilename(), planeName))
+                            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+                        binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore.get(), StoreFormat::BINARY, bufferSize);
+                        binaryCrcPtr = &binaryCrc;
+                    });
+
+                // Wait for all saves to complete
+                completed->decAndWait();
+            }
+            else
+            {
+                // Execute saves synchronously
+                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), StoreFormat::XML);
+
+                if (saveBinary)
                 {
                     size32_t bufferSize = bufferSize1mb;
                     StringBuffer planeName;
@@ -5819,15 +5835,6 @@ public:
                         bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
                     binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore.get(), StoreFormat::BINARY, bufferSize);
                     binaryCrcPtr = &binaryCrc;
-                }
-                catch (IException *e)
-                {
-                    StringBuffer errMsg;
-                    EXCLOG(e, errMsg.append("Failed to save binary temporary store to : ").append(temporaryBinaryFileSaveName).str());
-                    e->Release();
-                    iXmlFileTmpStore->remove();
-                    iBinaryFileTmpStore->remove();
-                    return;
                 }
             }
 
@@ -5926,7 +5933,7 @@ public:
 
                     clearStoreInfo(storeFileName, remoteBackupLocation, 0, NULL);
                     writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, binaryCrcPtr, &storeInfo);
-                    PROGLOG("Copy store done");
+                    PROGLOG("Copy done");
                 }
             }
             catch (IException *e)
@@ -6044,10 +6051,10 @@ public:
 friend struct CheckDeltaBlock;
 };
 
-IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary, bool storeBinaryCrc)
+IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary, bool saveAsync)
 {
     if (!storeName) storeName = "dalisds";
-    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary, storeBinaryCrc);
+    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary, saveAsync);
 }
 
 ///////////////
