@@ -281,6 +281,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="saveAsync" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Switch on saving the store asynchronously in XML and Binary formats</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="deltaSaveThresholdSecs" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>

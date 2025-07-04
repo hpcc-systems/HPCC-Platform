@@ -1567,6 +1567,11 @@
           "type": "boolean",
           "default": false,
           "description": "Save the store in binary format after the store was saved in XML format"
+        },
+        "saveAsync": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save the store asynchronously in XML and Binary formats"
         }
       }
     },
