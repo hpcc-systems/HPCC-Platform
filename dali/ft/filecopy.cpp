@@ -676,8 +676,8 @@ int FileSizeThread::run()
 
 //----------------------------------------------------------------------------
 
-FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid)
-  : wuid(_wuid), fileSprayerAbortChecker(*this)
+FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid, IUserDescriptor * _userdesc)
+  : wuid(_wuid), fileSprayerAbortChecker(*this), userdesc(_userdesc)
 {
     totalSize = 0;
     replicate = false;
@@ -3941,7 +3941,7 @@ cost_type FileSprayer::updateSourceProperties()
     // Update file readCost and numReads in file properties and do the same for owning super files
     if (distributedSource)
     {
-        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(nullptr);
+        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(userdesc);
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         cost_type totalCost = 0;
         if (superSrc && superSrc->numSubFiles() > 0)
@@ -4202,9 +4202,9 @@ bool FileSprayer::calcUsePull() const
 }
 
 
-extern DALIFT_API IFileSprayer * createFileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid)
+extern DALIFT_API IFileSprayer * createFileSprayer( IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid, IUserDescriptor * _userdesc)
 {
-    return new FileSprayer(_options, _progress, recoveryConnection, wuid);
+    return new FileSprayer(_options, _progress, recoveryConnection, wuid, _userdesc);
 }
 
 

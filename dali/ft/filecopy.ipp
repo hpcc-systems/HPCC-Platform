@@ -24,6 +24,7 @@
 #include "ftbase.ipp"
 #include "daft.hpp"
 #include "daftformat.ipp"
+#include "dasess.hpp"
 
 
 //----------------------------------------------------------------------------
@@ -187,7 +188,7 @@ class FileSprayer : public IFileSprayer, public CInterface
     friend class AsyncExtractBlobInfo;
     friend class CRemotePartitioner;
 public:
-    FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid);
+    FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid, IUserDescriptor * _userdesc);
     IMPLEMENT_IINTERFACE
 
     virtual void removeSource();
@@ -372,6 +373,7 @@ protected:
     StringAttr              sprayServiceName;
     StringBuffer            sprayServiceHost;
     Owned<IPropertyTree>    sprayServiceConfig;
+    Linked<IUserDescriptor> userdesc;
 };
 
 

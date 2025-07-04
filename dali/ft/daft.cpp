@@ -41,14 +41,14 @@ CDistributedFileSystem::CDistributedFileSystem()
 typedef Owned<IFileSprayer> OwnedIFileSprayer;
 //-- operations on multiple files. --
 
-void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     if (to->queryLogicalName())
         DBGLOG("DFS: copy(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
     else
         DBGLOG("DFS: copy(%s)", from->queryLogicalName());
 
-    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid, userdesc);
 
     sprayer->setOperation(dfu_copy);
     sprayer->setProgress(progress);
@@ -59,12 +59,12 @@ void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to
     sprayer->spray();
 }
 
-void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     StringBuffer temp;
     DBGLOG("DFS: export(%s,%s)", from->queryLogicalName(), to->getTraceName(temp).str());
 
-    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer->setOperation(dfu_export);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
@@ -74,7 +74,7 @@ void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor
     sprayer->spray();
 }
 
-void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     StringBuffer temp;
     if (to->queryLogicalName())
@@ -82,7 +82,7 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
     else
         DBGLOG("DFS: import(%s)", from->getTraceName(temp).str());
 
-    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer->setOperation(dfu_import);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
@@ -92,14 +92,14 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
     sprayer->spray();
 }
 
-void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     if (to->queryLogicalName())
         DBGLOG("DFS: move(%s,%s)", from->queryLogicalName(), to->queryLogicalName());
     else
         DBGLOG("DFS: move(%s)", from->queryLogicalName());
 
-    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer->setOperation(dfu_move);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
@@ -111,11 +111,11 @@ void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to
     from->detach();
 }
 
-void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     DBGLOG("DFS: replicate(%s)", from->queryLogicalName());
 
-    FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
+    FileSprayer sprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer.setOperation(dfu_replicate_distributed);
     sprayer.setProgress(progress);
     sprayer.setAbort(abort);
@@ -126,12 +126,12 @@ void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgrou
     sprayer.spray();
 }
 
-void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     StringBuffer s;
     DBGLOG("DFS: replicate(%s, %x)", fd->getTraceName(s).str(), (unsigned)mode);
 
-    FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
+    FileSprayer sprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer.setOperation(dfu_replicate);
     sprayer.setProgress(progress);
     sprayer.setAbort(abort);
@@ -141,12 +141,12 @@ void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode m
     sprayer.spray();
 }
 
-void CDistributedFileSystem::transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
+void CDistributedFileSystem::transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid, IUserDescriptor * userdesc)
 {
     StringBuffer s1, s2;
     DBGLOG("DFS: transfer(%s,%s)", from->getTraceName(s1).str(), to->getTraceName(s1).str());
 
-    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid, userdesc);
     sprayer->setOperation(dfu_transfer);
     sprayer->setAbort(abort);
     sprayer->setProgress(progress);
@@ -243,12 +243,12 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
     return size;
 }
 
-void CDistributedFileSystem::replicate(IDistributedFilePart * part, INode *node)
+void CDistributedFileSystem::replicate(IDistributedFilePart * part, INode *node, IUserDescriptor * userdesc)
 {
     StringBuffer partname;
     DBGLOG("DFS: replicate part(%s)", part->getPartName(partname).str());
 
-    FileSprayer sprayer(NULL, NULL, NULL, NULL);
+    FileSprayer sprayer(NULL, NULL, NULL, NULL, userdesc);
     sprayer.setReplicate(true);
     sprayer.setSource(part);
     sprayer.setTarget(node);

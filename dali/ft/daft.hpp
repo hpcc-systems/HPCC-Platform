@@ -54,13 +54,13 @@ interface IAbortRequestCallback;
 interface IDistributedFileSystem : public IInterface
 {
 //operations on multiple files.
-    virtual void copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;
-    virtual void exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;
-    virtual void import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;
-    virtual void move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;
-    virtual void replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;        // create new set of copies assumes partname and dir location same as src (only nodes differ) will raise exception if nodes clash
-    virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;  // create new set of copies (between copy 0 to copy 1 depending on the mode) @crc set in options to copy if crc differs @sizedate if size/date differ.
-    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;       // copy between external files, must have 
+    virtual void copy(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;
+    virtual void exportFile(IDistributedFile * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;
+    virtual void import(IFileDescriptor * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;
+    virtual void move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;
+    virtual void replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;        // create new set of copies assumes partname and dir location same as src (only nodes differ) will raise exception if nodes clash
+    virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;  // create new set of copies (between copy 0 to copy 1 depending on the mode) @crc set in options to copy if crc differs @sizedate if size/date differ.
+    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL, IUserDescriptor * userdesc=nullptr) = 0;       // copy between external files, must have 
 
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,
@@ -74,7 +74,7 @@ interface IDistributedFileSystem : public IInterface
     virtual offset_t getSize(IDistributedFilePart * part,
                              bool forceget=false,                               // if true gets physical size (ignores cached attribute)
                              bool dontsetattr=true) = 0;                        // if true doesn't set attribute when physical size got
-    virtual void replicate(IDistributedFilePart * part, INode *node) = 0;       // creates single copy
+    virtual void replicate(IDistributedFilePart * part, INode *node, IUserDescriptor * userdesc=nullptr) = 0;       // creates single copy
     virtual bool compress(IDistributedFilePart * part) = 0;   
     virtual offset_t getCompressedSize(IDistributedFilePart * part) = 0;
 };

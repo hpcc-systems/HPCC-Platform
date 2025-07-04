@@ -1709,7 +1709,7 @@ public:
                                 os = DFD_OSdefault;
                             };
                             Owned<IFileDescriptor> dstpatchf = createFileDescriptor(lname.str(), gname.str(), patchf->numParts());
-                            fsys.transfer(patchf, dstpatchf, NULL, NULL, NULL, opttree, &feedback, &abortnotify, dfuwuid);
+                            fsys.transfer(patchf, dstpatchf, NULL, NULL, NULL, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                             removePartFiles(patchf);
                             Owned<IFileDescriptor> newf = dstFile->getFileDescriptor();
                             doKeyPatch(olddstf,newf,dstpatchf);
@@ -1725,7 +1725,7 @@ public:
                         else if (remotecopy||foreigncopy||auxfdesc)
                         {
                             IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : srcFdesc.get());
-                            fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                            fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
 
                             if (!abortnotify.abortRequested())
                             {
@@ -1737,7 +1737,7 @@ public:
                             }
                         }
                         else if (multiclusterinsert||multiclustermerge) {
-                            fsys.exportFile(srcFile, multifdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                            fsys.exportFile(srcFile, multifdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                             if (!abortnotify.abortRequested()) {
                                 if (needrep)
                                     replicating = true;
@@ -1774,7 +1774,7 @@ public:
                             }
                             if (performCopy)
                             {
-                                fsys.copy(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                                fsys.copy(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                                 if (!abortnotify.abortRequested()) {
                                     if (needrep)
                                         replicating = true;
@@ -1805,7 +1805,7 @@ public:
             case DFUcmd_move:
                 {
                     runningconn.setown(setRunning(runningpath.str()));
-                    fsys.move(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                    fsys.move(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
                         dstFile->attach(dstName.get(),userdesc);
@@ -1863,7 +1863,7 @@ public:
                     }
                     setFileRepeatOptions(*srcFile,repcluster.str(),repeatlast,onlyrepeated);
                     srcFdesc->ensureReplicate();
-                    fsys.replicate(srcFdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                    fsys.replicate(srcFdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
                         Audit("REPLICATE",userdesc,srcFile?srcName.str():NULL,NULL);
@@ -1895,7 +1895,7 @@ public:
                         }
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
-                        fsys.import(fdesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                        fsys.import(fdesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                         if (!abortnotify.abortRequested())
                         {
                             if (needrep && !recovery->getPropBool("@noFileMatch"))
@@ -1914,7 +1914,7 @@ public:
                     Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey);
                     checkPlaneFilePermissions(fdesc,userdesc,true);
                     checkSourceTarget(fdesc);
-                    fsys.exportFile(srcFile, fdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                    fsys.exportFile(srcFile, fdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                     if (!abortnotify.abortRequested()) {
                         Audit("EXPORT",userdesc,srcFile?srcName.str():NULL,NULL);
                     }
@@ -1934,7 +1934,7 @@ public:
                     checkPhysicalFilePermissions(srcdesc,userdesc,true);
                     Owned<IFileDescriptor> dstdesc = destination->getFileDescriptor();
                     checkPhysicalFilePermissions(dstdesc,userdesc,true);
-                    fsys.transfer(srcdesc, dstdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                    fsys.transfer(srcdesc, dstdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                     if (!abortnotify.abortRequested()) {
                         Audit("TRANSFER",userdesc,NULL,NULL);
                     }
@@ -1989,7 +1989,7 @@ public:
                             recovery->setPropBool("@replicating",true);
                             recoveryconn->commit();
                         }
-                        fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                        fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid, userdesc);
                         if (!abortnotify.abortRequested()) {
                             if (multiclusterinsert||multiclustermerge) {
                                 StringBuffer cname;
