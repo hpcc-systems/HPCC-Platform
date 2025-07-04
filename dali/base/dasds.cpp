@@ -25,6 +25,7 @@
 #include "jfile.hpp"
 #include "jregexp.hpp"
 #include "jthread.hpp"
+#include "jtask.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
 #include "jmisc.hpp"
@@ -5803,9 +5804,28 @@ public:
             StringBuffer tmpStoreName;
             OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, NULL, tmpStoreName);
             OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
-            unsigned crc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+
+            // Execute save operations asynchronously
+            Owned<CCompletionTask> completed = new CCompletionTask(queryTaskScheduler());
+
+            unsigned crc;
+            // Always execute XML save first
+            completed->spawn([&]() {
+                crc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+            });
+
+            unsigned binaryCrc = 0;
             if (saveBinary)
-                saveStoreToBinaryFile(root);
+            {
+                // Execute binary save in parallel if needed
+                completed->spawn([&]() {
+                    binaryCrc = saveStoreToBinaryFile(root);
+                });
+            }
+
+            // Wait for all saves to complete
+            completed->decAndWait();
+
             StringBuffer newStoreName;
             constructStoreName(storeName, newEdition, newStoreName);
             StringBuffer newStoreNamePath(location);
