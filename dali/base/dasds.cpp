@@ -5805,26 +5805,37 @@ public:
             OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, NULL, tmpStoreName);
             OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
 
-            // Execute save operations asynchronously
-            Owned<CCompletionTask> completed = new CCompletionTask(queryTaskScheduler());
-
-            unsigned crc;
-            // Always execute XML save first
-            completed->spawn([&]() {
-                crc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
-            });
-
-            unsigned binaryCrc = 0;
-            if (saveBinary)
+            bool saveAsync{true};
+            unsigned xmlCrc{0};
+            unsigned binaryCrc{0};
+            if (saveAsync)
             {
-                // Execute binary save in parallel if needed
-                completed->spawn([&]() {
-                    binaryCrc = saveStoreToBinaryFile(root);
-                });
-            }
+                // Execute save operations asynchronously
+                Owned<CCompletionTask> completed = new CCompletionTask(queryTaskScheduler());
 
-            // Wait for all saves to complete
-            completed->decAndWait();
+                // Always execute XML save first
+                completed->spawn([&]() {
+                    xmlCrc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+                });
+
+                if (saveBinary)
+                {
+                    // Execute binary save in parallel if needed
+                    completed->spawn([&]() {
+                        binaryCrc = saveStoreToBinaryFile(root);
+                    });
+                }
+
+                // Wait for all saves to complete
+                completed->decAndWait();
+            }
+            else
+            {
+                // Execute save operations synchronously
+                xmlCrc = saveStoreToXMLFile(root, iFileIOTmpStore.get(), iFileTmpStore.get());
+                if (saveBinary)
+                    binaryCrc = saveStoreToBinaryFile(root);
+            }
 
             StringBuffer newStoreName;
             constructStoreName(storeName, newEdition, newStoreName);
@@ -5873,12 +5884,12 @@ public:
                     }
                 }
                 clearStoreInfo("store", location, 0, NULL);
-                writeStoreInfo("store", location, newEdition, &crc, &storeInfo);
+                writeStoreInfo("store", location, newEdition, &xmlCrc, &storeInfo);
             }
             else
             {
                 clearStoreInfo("store", location, 0, NULL);
-                writeStoreInfo("store", location, newEdition, &crc, &storeInfo);
+                writeStoreInfo("store", location, newEdition, &xmlCrc, &storeInfo);
             }
 
             try
@@ -5891,7 +5902,7 @@ public:
                     copyFile(rL.str(), newStoreNamePath.str());
 
                     clearStoreInfo("store", remoteBackupLocation, 0, NULL);
-                    writeStoreInfo("store", remoteBackupLocation, newEdition, &crc, &storeInfo);
+                    writeStoreInfo("store", remoteBackupLocation, newEdition, &xmlCrc, &storeInfo);
                     PROGLOG("Copy done");
                 }
             }
