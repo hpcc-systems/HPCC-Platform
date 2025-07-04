@@ -28,6 +28,7 @@
 
 jlib_decl const char* serializeMessageAudience(MessageAudience ma);
 jlib_decl MessageAudience deserializeMessageAudience(const char* text);
+jlib_decl void setBacktraceOnAssert(bool value);
 
 //the following interface to be thrown when a user command explicitly calls for a failure
 

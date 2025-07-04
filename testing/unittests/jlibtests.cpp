@@ -4261,6 +4261,8 @@ protected:
     static constexpr const char *aesKey = "012345678901234567890123";
     enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress };
 public:
+    void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
+
     void initCompressionBuffer(MemoryBuffer & src, size32_t & rowSz)
     {
         src.ensureCapacity(sz);
@@ -4384,32 +4386,41 @@ public:
         }
 
         cycle_t compressCycles = timer.elapsedCycles();
-        Owned<IExpander> expander = handler.getExpander(options);
         MemoryBuffer tgt;
-        timer.reset();
-        if (opt==CompressToBuffer)
+        if (!strieq(handler.queryType(), "randrow"))
         {
-            decompressToBuffer(tgt, compressed, options);
-        }
-        else if (opt == FixedBlockCompress)
-        {
-            const byte * cur = compressed.bytes();
-            ForEachItemIn(i, sizes)
+            Owned<IExpander> expander = handler.getExpander(options);
+            timer.reset();
+            if (opt==CompressToBuffer)
             {
-                size32_t size = sizes.item(i);
-                size32_t required = expander->init(cur);
-                void * target = tgt.reserve(required);
-                expander->expand(target);
-                cur += size;
+                decompressToBuffer(tgt, compressed, options);
+            }
+            else if (opt == FixedBlockCompress)
+            {
+                const byte * cur = compressed.bytes();
+                ForEachItemIn(i, sizes)
+                {
+                    size32_t size = sizes.item(i);
+                    size32_t required = expander->init(cur);
+                    void * target = tgt.reserve(required);
+                    expander->expand(target);
+                    cur += size;
+                }
+            }
+            else
+            {
+                size32_t required = expander->init(compressed.bytes());
+                tgt.reserveTruncate(required);
+                expander->expand(tgt.bufferBase());
+                tgt.setWritePos(required);
             }
         }
         else
         {
-            size32_t required = expander->init(compressed.bytes());
-            tgt.reserveTruncate(required);
-            expander->expand(tgt.bufferBase());
-            tgt.setWritePos(required);
+            tgt.append(sz, src);
+            timer.reset();
         }
+
         cycle_t decompressCycles = timer.elapsedCycles();
 
         float ratio = (float)(srcLen) / compressed.length();
@@ -4450,6 +4461,7 @@ public:
 class JlibCompressionStandardTest : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
@@ -4479,19 +4491,21 @@ public:
                 ICompressHandler &handler = iter->query();
                 const char * type = handler.queryType();
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
-                //Ignore unusual compressors with no expanders...
-                if (strieq(type, "diff"))
-                    continue;
-                if (strieq(type, "randrow"))
-                    continue;
+                bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
+
+                //The stream compressors only currently support fixed size outputs
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
                 }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                if (!onlyFixedSize)
+                {
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+                    //The following can be enabled once commitblock() is removed
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                }
            }
         }
         catch (IException *e)
@@ -4510,12 +4524,12 @@ public:
         size32_t rowSz = 0;
         initCompressionBuffer(src, rowSz);
 
-        const char * compression = "zstds";
+        const char * compression = "diff";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), RowCompress);
     }
 };
 
@@ -4526,6 +4540,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionStandardTest, "JlibCompres
 class JlibCompressionTestsStress : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionTestsStress);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
@@ -4552,10 +4567,9 @@ public:
             {
                 ICompressHandler &handler = iter->query();
                 const char * type = handler.queryType();
-                //Ignore unusual compressors with no expanders...
-                if (strieq(type, "randrow"))
-                    continue;
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
+                bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
+
                 if (streq(type, "LZ4HC"))
                 {
                     testCompressor(handler, "hclevel=3", rowSz, src.length(), src.bytes(), RowCompress);
@@ -4571,7 +4585,10 @@ public:
                     continue;
                 }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+
+                if (!onlyFixedSize)
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+
                 if (streq(type, "LZ4"))
                 {
                     testCompressor(handler, "allrow", rowSz, src.length(), src.bytes(), AllRowCompress); // block doesn't affect the compressor, just tracing

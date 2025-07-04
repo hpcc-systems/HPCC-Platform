@@ -1661,6 +1661,7 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
     size32_t compsize;
     size32_t outBufStart;
     MemoryBuffer *outBufMb;
+    bool finished = false;
 
     void initCommon()
     {
@@ -1671,6 +1672,7 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
         firstrec.clear();
         firstrle.clear();
         rowbuf.clear();
+        finished = false;
     }
 public:
     IMPLEMENT_IINTERFACE;
@@ -1734,6 +1736,9 @@ public:
 
     virtual void close() override
     {
+        if (finished)
+            return;
+        finished = true;
         header->rowofs[0] = (unsigned short)diffbuf.length();
         ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max || max == 0);
         unsigned short hofs = header->hsize();
