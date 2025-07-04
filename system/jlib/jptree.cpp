@@ -1025,7 +1025,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, CompressionMeth
             CompressionMethod compressMethod = (preferredCompressType != COMPRESS_METHOD_DEFAULT) ? preferredCompressType : defaultBinaryCompressionMethod;
             ICompressHandler * handler = queryCompressHandler(compressMethod);
             compressor = handler->getCompressor();
-            compressor->open(((char *)newData) + sizeof(size32_t), newSize);
+            compressor->open(((char *)newData) + sizeof(size32_t), newSize, 0, false);
             if (compressor->write(data, size)==size)
             {
                 compressor->close();
