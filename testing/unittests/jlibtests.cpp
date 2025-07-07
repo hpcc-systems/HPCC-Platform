@@ -4446,7 +4446,7 @@ public:
                 ForEachItemIn(i, sizes)
                 {
                     size32_t size = sizes.item(i);
-                    expander->init(compressed.bytes(), false);
+                    expander->init(cur, false);
                     unsigned numRows = expander->numRows();
                     for (unsigned i = 0; i < numRows; i++)
                     {
@@ -4506,7 +4506,7 @@ class JlibCompressionStandardTest : public JlibCompressionTestBase
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
         CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(testSingle);
-        //CPPUNIT_TEST(test);
+        CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4536,9 +4536,10 @@ public:
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
                 bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
 
-                //The stream compressors only currently support fixed size outputs
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+
+                //The stream compressors only currently support fixed size outputs
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     continue;
@@ -4578,7 +4579,7 @@ public:
         ICompressHandler * handler = queryCompressHandler(compression);
         CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
 //        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
   //      testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
     }

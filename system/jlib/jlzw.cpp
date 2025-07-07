@@ -1648,17 +1648,15 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
     size32_t originalMax = 0;
     void *outbuf;
     RRDheader *header;
-    // assumes a transaction is a record
-    MemoryBuffer rowbuf;
     MemoryBuffer diffbuf;
     MemoryBuffer firstrec;
     MemoryAttr firstrle;
     size32_t maxdiffsize;
     size32_t recsize;
-    size32_t compsize;
     size32_t outBufStart;
     MemoryBuffer *outBufMb;
     bool finished = false;
+    bool allowPartialWrites = true;
 
     void initCommon()
     {
@@ -1668,8 +1666,8 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
         diffbuf.clear();
         firstrec.clear();
         firstrle.clear();
-        rowbuf.clear();
         finished = false;
+        allowPartialWrites = true;
     }
 public:
     IMPLEMENT_IINTERFACE;
@@ -1767,7 +1765,6 @@ public:
     virtual bool adjustLimit(size32_t newLimit) override
     {
         assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
-        assertex(rowbuf.length() == 0);             // not inside a transaction
         assertex(newLimit <= originalMax);
 
         if (newLimit < header->totsize+sizeof(short)+header->firstrlesize)
@@ -1790,54 +1787,67 @@ public:
 
     virtual size32_t write(const void *buf,size32_t buflen) override
     {
-        // assumes a transaction is a row and at least one row fits in
-        unsigned nr = header->numrows;
-        if (nr) {
-            rowbuf.append(buflen,buf);
-            if (rowbuf.length()==recsize)   { // because no incremental diffcomp do here
+        const byte * cur = (const byte *)buf;
+        unsigned originalRows = header->numrows;
+        size32_t originalLength = diffbuf.length();
+        size32_t originalTotalSize = header->totsize;
+        for (size32_t i =0; i < buflen; i += recsize)
+        {
+            if (i+recsize > buflen)
+                throw MakeStringException(-1,"CRandRDiffCompressor used with variable sized row");
+
+            const byte * row = cur+i;
+
+            unsigned nr = header->numrows;
+            if (nr)
+            {
                 size32_t sz = diffbuf.length();
-                compsize = DiffCompress2(rowbuf.toByteArray(),diffbuf.reserve(maxdiffsize),firstrec.toByteArray(),recsize);
-                if (header->totsize+sizeof(short)+compsize+header->firstrlesize>max) {
-                    diffbuf.setLength(sz);
-                    return 0;
+                size32_t compsize = DiffCompress2(row,diffbuf.reserve(maxdiffsize),firstrec.toByteArray(),recsize);
+                if (header->totsize+sizeof(short)+compsize+header->firstrlesize>max)
+                {
+                    if (allowPartialWrites)
+                    {
+                        diffbuf.setLength(sz);
+                        inlen += i;
+                        return i;
+                    }
+                    else
+                    {
+                        diffbuf.setLength(originalLength);
+                        header->numrows = originalRows;
+                        header->totsize = originalTotalSize;
+                        return 0;
+                    }
                 }
                 header->rowofs[nr] = (unsigned short)sz; // will need to adjust later
+                header->numrows = nr + 1;
+                assertex(header->numrows != 0); // Check for overflow
                 diffbuf.setLength(sz+compsize);
+                header->totsize += (unsigned short)compsize+sizeof(unsigned short);
+            }
+            else
+            {
+                firstrec.append(recsize,row);
+                header->numrows = 1;
+                header->totsize = header->hsize(); // don't add in rle size yet
+                header->recsize = (unsigned short)recsize;
+                maxdiffsize = maxcompsize(recsize);
+                size32_t sz = RLECompress(firstrle.allocate(recsize+2),firstrec.toByteArray(),recsize);
+                header->firstrlesize = (unsigned short)sz;
             }
         }
-        else 
-            firstrec.append(buflen,buf);
+        inlen += buflen;
         return buflen;
     }
 
-
-
     virtual void startblock() override
     {
-        rowbuf.clear();
+        allowPartialWrites = false;
     }
 
     virtual void commitblock() override
     {
-        unsigned nr = header->numrows;
-        if (nr) {
-            if (recsize!=rowbuf.length())
-                throw MakeStringException(-1,"CRandDiffCompressor used with variable sized row");
-            rowbuf.clear();
-            header->numrows++;
-            assertex(header->numrows != 0); // Check for overflow
-            header->totsize += (unsigned short)compsize+sizeof(unsigned short);
-        }
-        else {
-            header->numrows = 1;
-            header->totsize = header->hsize(); // don't add in rle size yet
-            recsize = firstrec.length();
-            header->recsize = (unsigned short)recsize;
-            maxdiffsize = maxcompsize(recsize);
-            size32_t sz = RLECompress(firstrle.allocate(recsize+2),firstrec.toByteArray(),recsize);
-            header->firstrlesize = (unsigned short)sz;
-        }
-        inlen += recsize;
+        allowPartialWrites = true;
     }
 
 
