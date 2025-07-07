@@ -53,9 +53,10 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-            bool saveBinary = coalesceProps->getPropBool("@saveBinary", false);
+            bool saveBinary = querySDS().queryProperties().getPropBool("@saveBinary", false);
+            bool storeBinaryCrc = querySDS().queryProperties().getPropBool("@storeBinaryCrc", false);
             bool stopped;
-            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary);
+            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary, storeBinaryCrc);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
             if (minDeltaSize)

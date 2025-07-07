@@ -27,6 +27,7 @@
 #include <io.h>
 #endif
 #include "jlzw.hpp"
+#include "jcrc.hpp"
 
 constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
 constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
@@ -908,7 +909,7 @@ protected:
                 break;
             if ((remaining < blockWriteSize) && !flushLast)
                 break;
-            size32_t writeSize = std::min(remaining, blockWriteSize);
+            size_t writeSize = std::min(remaining, blockWriteSize);
             output->put(writeSize, data(from));
             blockOffset += writeSize;
             from += writeSize;
@@ -933,6 +934,95 @@ IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * o
 {
     assertex(blockWriteSize);
     return new CBlockedSerialOutputStream(output, blockWriteSize);
+}
+
+// Class that implements IBufferedSerialOutputStream with CRC functionality
+class CCrcBlockedSerialOutputStream final : public CInterfaceOf<IBufferedSerialOutputStream>
+{
+public:
+    CCrcBlockedSerialOutputStream(ISerialOutputStream * _output, size32_t _blockWriteSize, CRC32 &_crc)
+    : blockedStream(createBufferedOutputStream(_output, _blockWriteSize)), crc(_crc)
+    {
+    }
+
+    // ISerialOutputStream methods
+    virtual void flush() override
+    {
+        blockedStream->flush();
+    }
+
+    virtual void put(size32_t len, const void * ptr) override
+    {
+        // Update CRC with the data being written
+        crc.tally(len, ptr);
+
+        // Forward to the wrapped stream
+        blockedStream->put(len, ptr);
+    }
+
+    virtual offset_t tell() const override
+    {
+        return blockedStream->tell();
+    }
+
+    // IBufferedSerialOutputStream methods
+    virtual byte * reserve(size32_t wanted, size32_t & got) override
+    {
+        return blockedStream->reserve(wanted, got);
+    }
+
+    virtual void commit(size32_t written) override
+    {
+        // For commit, we need to calculate CRC for the data that was written to the reserved buffer
+        // We need to get the data from the buffer before it's committed
+        if (written > 0)
+        {
+            size32_t got;
+            byte * ptr = blockedStream->reserve(0, got); // Get current buffer position
+            if (ptr && written <= got)
+            {
+                // Calculate CRC for the data that was written before the current position
+                crc.tally(written, ptr - written);
+            }
+        }
+        blockedStream->commit(written);
+    }
+
+    virtual void suspend(size32_t len) override
+    {
+        blockedStream->suspend(len);
+    }
+
+    virtual void resume(size32_t len, const void * ptr) override
+    {
+        // Update CRC with the resumed data
+        if (len > 0 && ptr)
+        {
+            crc.tally(len, ptr);
+        }
+        blockedStream->resume(len, ptr);
+    }
+
+    virtual void replaceOutput(ISerialOutputStream * newOutput) override
+    {
+        blockedStream->replaceOutput(newOutput);
+    }
+
+    // CRC functionality
+    unsigned queryCrc() const
+    {
+        return crc.get();
+    }
+
+protected:
+    Owned<IBufferedSerialOutputStream> blockedStream;
+    CRC32 &crc;
+};
+
+IBufferedSerialOutputStream * createCrcBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, CRC32 &crc)
+{
+    assertex(blockWriteSize);
+    return new CCrcBlockedSerialOutputStream(output, blockWriteSize, crc);
 }
 
 //---------------------------------------------------------------------------
