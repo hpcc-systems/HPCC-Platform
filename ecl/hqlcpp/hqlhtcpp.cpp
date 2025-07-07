@@ -6089,7 +6089,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
         ::Release(outputLibrary);
         outputLibrary = NULL;
         outputLibraryId.setown(createAttribute(graphAtom, getSizetConstant(nextActivityId())));
-        outputLibrary = new HqlCppLibraryImplementation(*this, queryImplementationInterface(query.expr), outputLibraryId, targetClusterType);
+        outputLibrary = new HqlCppLibraryImplementation(*this, queryImplementationInterface(query.expr), outputLibraryId, getTargetClusterType());
 
         if (!isEmbeddedLibrary)
         {
@@ -6112,7 +6112,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
 void HqlCppTranslator::updateClusterType()
 {
     const char * clusterTypeText="?";
-    switch (targetClusterType)
+    switch (getTargetClusterType())
     {
     case ThorLCRCluster:
          clusterTypeText = "thorlcr";
@@ -6388,7 +6388,7 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
         {
             OwnedHqlExpr resourced = getResourcedGraph(expr->queryChild(0), NULL);
             lockTransformMutex();
-            complexity = getComplexity(resourced, targetClusterType);
+            complexity = getComplexity(resourced, getTargetClusterType());
             unlockTransformMutex();
             return complexity;
         }
@@ -9895,11 +9895,11 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (outputLibraryId)
     {
         unsigned numResults = outputLibrary->numResultsUsed();
-        resourced.setown(resourceLibraryGraph(*this, resourced, targetClusterType, numNodes, outputLibraryId, numResults));
+        resourced.setown(resourceLibraryGraph(*this, resourced, getTargetClusterType(), numNodes, outputLibraryId, numResults));
         resourced.setown(appendAttribute(resourced, multiInstanceAtom));  // since can be called from multiple places.
     }
     else
-        resourced.setown(resourceThorGraph(*this, resourced, targetClusterType, numNodes, graphIdExpr));
+        resourced.setown(resourceThorGraph(*this, resourced, getTargetClusterType(), numNodes, graphIdExpr));
 
     if (!resourced)
         return NULL;
@@ -9925,7 +9925,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     //Finally create a couple of special compound activities.
     //e.g., filtered fetch, limited keyed join
     {
-        CompoundActivityTransformer transformer(targetClusterType);
+        CompoundActivityTransformer transformer(getTargetClusterType());
         resourced.setown(transformer.transformRoot(resourced));
         traceExpression("AfterCompoundActivity", resourced);
     }

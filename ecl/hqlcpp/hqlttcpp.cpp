@@ -4301,7 +4301,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
 void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
 {
     {
-        ThorHqlTransformer transformer(*this, targetClusterType, wu(), implicitFunctionId);
+        ThorHqlTransformer transformer(*this, getTargetClusterType(), wu(), implicitFunctionId);
 
         HqlExprArray & exprs = curWorkflow.queryExprs();
         transformer.transformRoot(exprs);

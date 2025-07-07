@@ -11596,6 +11596,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case EVENTEXTRA: msg.append("EVENTEXTRA"); break;
     case EVENTNAME: msg.append("EVENTNAME"); break;
     case EXCEPT: msg.append("EXCEPT"); break;
+    case EXECUTE: msg.append("EXECUTE"); break;
     case EXCLUSIVE: msg.append("EXCLUSIVE"); break;
     case EXISTS: msg.append("EXISTS"); break;
     case EXP: msg.append("expression"); break;
