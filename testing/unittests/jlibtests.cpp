@@ -4372,7 +4372,7 @@ public:
                         compressed.append(size, buffer.bufferBase());
                         compressor->open(buffer.bufferBase(), blocksize, rowSz);
                         size32_t next = compressor->write(ptr+written, rowSz-written);
-                        assertex(next == rowSz - written);
+                        CPPUNIT_ASSERT(next == rowSz - written);
                     }
 
                     ptr += rowSz;
@@ -4393,6 +4393,7 @@ public:
                 {
                     compressor->open(buffer.bufferBase(), blocksize, rowSz);
                     size32_t written = compressor->write(ptr + offset, srcLen - offset);
+                    CPPUNIT_ASSERT(written != 0);
                     compressor->close();
 
                     size32_t size = compressor->buflen();
@@ -4537,13 +4538,15 @@ public:
                 bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
 
                 //The stream compressors only currently support fixed size outputs
+                //They also do not support partial writes - so largeBlockCompress will fail.
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     continue;
                 }
+
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
 
                 //randrow has a limit of 64K rows - so it fails the row compress test
                 if (strieq(type, "randrow"))
