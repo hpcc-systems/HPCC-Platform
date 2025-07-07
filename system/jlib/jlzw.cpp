@@ -912,7 +912,7 @@ void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *optio
 
 
 
-size32_t DiffCompress(const void *src,void *dst,void *buff,size32_t rs)
+size32_t DiffCompress(const void *src,void *dst, const void *buff,size32_t rs)
 {
     const unsigned char *s=(const unsigned char *)src;
     unsigned char *d=(unsigned char *)dst;
@@ -1350,10 +1350,18 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     size32_t outBufStart;
 
     size32_t recsize;       // assumed fixed length rows
-    // assumes a transaction is a record
-    MemoryBuffer transbuf;
     size32_t maxrecsize;  // maximum size diff compress 
-    unsigned char *prev;
+    bool allowPartialWrites{true};
+
+    bool isFirstRow()
+    {
+        return outlen == sizeof(size32_t)*2;
+    }
+
+    const void * prevRow()
+    {
+        return (const byte *)outbuf+sizeof(size32_t)*2;
+    }
 
     void initCommon()
     {
@@ -1361,8 +1369,8 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
         memset(outbuf, 0, sizeof(size32_t)*2);
         outlen = sizeof(size32_t)*2;
         out = (byte *)outbuf+outlen;
-        free(prev);
-        prev = NULL;
+        maxrecsize = maxcompsize(recsize);
+        allowPartialWrites = true;
     }
     inline void ensure(size32_t sz)
     {
@@ -1383,13 +1391,11 @@ public:
         maxrecsize = 0;
         recsize = 0;
         bufalloc = 0;
-        prev = NULL;
         outBufMb = NULL;
     }
 
     ~CRDiffCompressor()
     {
-        free(prev);
         if (bufalloc)
             free(outbuf);
     }
@@ -1438,7 +1444,6 @@ public:
 
     virtual void close() override
     {
-        transbuf.clear();
         memcpy(outbuf,&inlen,sizeof(inlen));        // expanded size
         memcpy((byte *)outbuf+sizeof(inlen),&recsize,sizeof(recsize));
         if (outBufMb)
@@ -1461,7 +1466,6 @@ public:
     virtual bool adjustLimit(size32_t newLimit) override
     {
         assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
-        assertex(transbuf.length() == 0);           // not inside a transaction
         assertex(newLimit <= originalMax);
 
         if (newLimit < outlen + maxrecsize)
@@ -1474,28 +1478,43 @@ public:
 
     virtual size32_t write(const void *buf,size32_t buflen) override
     {
-        // assumes a transaction is a row and at least one row fits in
-        if (prev)
+        const byte * cur = (const byte *)buf;
+        for (size32_t i =0; i < buflen; i += recsize)
         {
-            if (transbuf.length()==0)
+            if (i+recsize > buflen)
+                throw MakeStringException(-1,"CRDiffCompressor used with variable sized row");
+
+            const byte * row = cur+i;
+            if (!isFirstRow())
             {
-                if (remaining<maxrecsize)  // this is a bit odd because no incremental diffcomp
+                if (remaining<maxrecsize)
                 {
-                    if (NULL == outBufMb)
+                    if (!outBufMb)
+                    {
+                        if (allowPartialWrites)
+                            return i;
+                        outlen -= i;
+                        inlen -= i;
                         return 0;
+                    }
+                    ensure(maxrecsize-remaining);
                 }
+                size32_t sz = DiffCompress(row, out,prevRow(),recsize);
+                out += sz;
+                outlen += sz;
+                remaining -= sz;
             }
-            transbuf.append(buflen,buf);
+            else
+            {
+                if (remaining<buflen)
+                    ensure(buflen);
+                memcpy(out,row,buflen);
+                out += buflen;
+                outlen += buflen;
+                remaining -= recsize;
+            }
+            inlen += recsize;
         }
-        else // first row
-        {
-            if (remaining<buflen)
-                ensure(buflen);
-            memcpy(out,buf,buflen);
-            out += buflen;
-            outlen += buflen;
-        }
-        // should inlen be updated here (probably not in transaction mode which is all this supports)
         return buflen;
     }
 
@@ -1503,34 +1522,13 @@ public:
 
     virtual void startblock() override
     {
-        transbuf.clear();
+        allowPartialWrites = false;
     }
 
     virtual void commitblock() override
     {
-        if (prev)
-        {
-            if (recsize!=transbuf.length())
-                throw MakeStringException(-1,"CRDiffCompressor used with variable sized row");
-            if (remaining<maxrecsize)
-                ensure(maxrecsize-remaining);
-            size32_t sz = DiffCompress(transbuf.toByteArray(),out,prev,recsize);
-            transbuf.clear();
-            out += sz;
-            outlen += sz;
-            remaining -= sz;
-        }
-        else
-        {
-            recsize = outlen-sizeof(size32_t)*2;
-            maxrecsize = maxcompsize(recsize);
-            prev = (byte *)malloc(recsize);
-            memcpy(prev,out-recsize,recsize);
-            remaining -= recsize;
-        }
-        inlen += recsize;
+        allowPartialWrites = true;
     }
-
 
     virtual void *bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return outlen;}
