@@ -117,7 +117,7 @@ extern jlib_decl size32_t RLEExpand(void *dst,const void *src,size32_t expsize);
 
 extern jlib_decl size32_t DiffCompressFirst(const void *src,void *dst,void *buff,size32_t rs);  // compress first row (actually make bigger, but in same format as compression)
                                                                                             // buf need not be initialized
-extern jlib_decl size32_t DiffCompress(const void *src,void *dst,const void *buff,size32_t rs); // compress subsequent rows (bufs set by previous DiffFirstCompress or DiffCompress
+extern jlib_decl size32_t DiffCompress(const void *src,void *dst, void *buff,size32_t rs);  // compress subsequent rows (bufs set by previous DiffFirstCompress or DiffCompress
 extern jlib_decl size32_t DiffCompress2(const void *src,void *dst,const void *prev,size32_t rs);// compress row (prev not updated)
 extern jlib_decl size32_t DiffExpand(const void *src,void *dst,const void *prev,size32_t rs);   // expand row, prev must be passed previous expanded row 
 extern jlib_decl size32_t DiffCompressedSize(const void *cmpressedsrc,size32_t rs);             // calculate compressed row size - rs is expanded size

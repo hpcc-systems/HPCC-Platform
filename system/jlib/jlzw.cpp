@@ -912,7 +912,7 @@ void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *optio
 
 
 
-size32_t DiffCompress(const void *src,void *dst, const void *buff,size32_t rs)
+size32_t DiffCompress(const void *src,void *dst, void *buff,size32_t rs)
 {
     const unsigned char *s=(const unsigned char *)src;
     unsigned char *d=(unsigned char *)dst;
@@ -1351,25 +1351,24 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
 
     size32_t recsize;       // assumed fixed length rows
     size32_t maxrecsize;  // maximum size diff compress 
+    MemoryAttr prev;
     bool allowPartialWrites{true};
+
 
     bool isFirstRow()
     {
         return outlen == sizeof(size32_t)*2;
     }
 
-    const void * prevRow()
-    {
-        return (const byte *)outbuf+sizeof(size32_t)*2;
-    }
-
-    void initCommon()
+    void initCommon(size32_t fixedRowSize)
     {
         inlen = 0;
         memset(outbuf, 0, sizeof(size32_t)*2);
         outlen = sizeof(size32_t)*2;
         out = (byte *)outbuf+outlen;
+        recsize = fixedRowSize;
         maxrecsize = maxcompsize(recsize);
+        prev.allocate(fixedRowSize);
         allowPartialWrites = true;
     }
     inline void ensure(size32_t sz)
@@ -1409,8 +1408,7 @@ public:
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
         bufalloc = 0;
-        recsize = fixedRowSize;
-        initCommon();
+        initCommon(fixedRowSize);
         remaining = outBufMb->capacity()-outlen;
     }
 
@@ -1435,10 +1433,9 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        recsize = fixedRowSize;
         if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
             throw makeStringException(0, "CRDiffCompressor: target buffer too small");
-        initCommon();
+        initCommon(fixedRowSize);
         remaining = max-outlen;
     }
 
@@ -1497,21 +1494,23 @@ public:
                         inlen -= i;
                         return 0;
                     }
+
                     ensure(maxrecsize-remaining);
                 }
-                size32_t sz = DiffCompress(row, out,prevRow(),recsize);
+                size32_t sz = DiffCompress(row, out, prev.bufferBase(),recsize);
                 out += sz;
                 outlen += sz;
                 remaining -= sz;
             }
             else
             {
-                if (remaining<buflen)
-                    ensure(buflen);
-                memcpy(out,row,buflen);
-                out += buflen;
-                outlen += buflen;
+                if (remaining<recsize)
+                    ensure(recsize);
+                memcpy(out,row,recsize);
+                out += recsize;
+                outlen += recsize;
                 remaining -= recsize;
+                memcpy(prev.bufferBase(), row, recsize);
             }
             inlen += recsize;
         }
@@ -1826,6 +1825,7 @@ public:
                 throw MakeStringException(-1,"CRandDiffCompressor used with variable sized row");
             rowbuf.clear();
             header->numrows++;
+            assertex(header->numrows != 0); // Check for overflow
             header->totsize += (unsigned short)compsize+sizeof(unsigned short);
         }
         else {

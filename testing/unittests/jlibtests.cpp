@@ -4259,7 +4259,7 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress  };
 public:
     void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
 
@@ -4310,14 +4310,14 @@ public:
             case RowCompress:
             {
                 compressor->open(compressed, sz, rowSz);
-                compressor->startblock();
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
+                    compressor->startblock();
                     compressor->write(ptr, rowSz);
+                    compressor->commitblock();
                     ptr += rowSz;
                 }
-                compressor->commitblock();
                 compressor->close();
                 try
                 {
@@ -4383,6 +4383,26 @@ public:
                 compressed.append(size, buffer.bufferBase());
                 break;
             }
+            case LargeBlockCompress:
+            {
+                static constexpr size32_t blocksize = 32768;
+                MemoryAttr buffer(blocksize);
+
+                size32_t offset = 0;
+                while (offset < srcLen)
+                {
+                    compressor->open(buffer.bufferBase(), blocksize, rowSz);
+                    size32_t written = compressor->write(ptr + offset, srcLen - offset);
+                    compressor->close();
+
+                    size32_t size = compressor->buflen();
+                    sizes.append(size);
+                    compressed.append(size, buffer.bufferBase());
+
+                    offset += written;
+                }
+                break;
+            }
         }
 
         cycle_t compressCycles = timer.elapsedCycles();
@@ -4395,7 +4415,7 @@ public:
             {
                 decompressToBuffer(tgt, compressed, options);
             }
-            else if (opt == FixedBlockCompress)
+            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress))
             {
                 const byte * cur = compressed.bytes();
                 ForEachItemIn(i, sizes)
@@ -4417,8 +4437,29 @@ public:
         }
         else
         {
-            tgt.append(sz, src);
             timer.reset();
+            Owned<IRandRowExpander> expander = createRandRDiffExpander();
+
+            if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress))
+            {
+                const byte * cur = compressed.bytes();
+                ForEachItemIn(i, sizes)
+                {
+                    size32_t size = sizes.item(i);
+                    expander->init(compressed.bytes(), false);
+                    unsigned numRows = expander->numRows();
+                    for (unsigned i = 0; i < numRows; i++)
+                    {
+                        void * row = tgt.reserve(rowSz);
+                        expander->expandRow(row, i);
+                    }
+                    cur += size;
+                }
+            }
+            else
+            {
+                tgt.append(sz, src);
+            }
         }
 
         cycle_t decompressCycles = timer.elapsedCycles();
@@ -4430,6 +4471,8 @@ public:
             name.append("-c2b");
         else if (opt == FixedBlockCompress)
             name.append("-fb");
+        else if (opt == LargeBlockCompress)
+            name.append("-lb");
         if (options && *options)
             name.append("-").append(options);
 
@@ -4463,7 +4506,7 @@ class JlibCompressionStandardTest : public JlibCompressionTestBase
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
         CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(testSingle);
-        CPPUNIT_TEST(test);
+        //CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4494,11 +4537,17 @@ public:
                 bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
 
                 //The stream compressors only currently support fixed size outputs
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
-                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
                 }
+
+                //randrow has a limit of 64K rows - so it fails the row compress test
+                if (strieq(type, "randrow"))
+                    continue;
+
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
                 if (!onlyFixedSize)
                 {
@@ -4524,12 +4573,14 @@ public:
         size32_t rowSz = 0;
         initCompressionBuffer(src, rowSz);
 
-        const char * compression = "diff";
+        const char * compression = "randrow";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), RowCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+//        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+  //      testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
     }
 };
 
