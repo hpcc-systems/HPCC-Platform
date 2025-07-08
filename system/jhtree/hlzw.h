@@ -57,6 +57,7 @@ protected:
     bool isVariable = false;
     bool isBlob = false;
     CompressionMethod method = COMPRESS_METHOD_NONE;
+    MemoryBuffer tempKeyBuffer;
 
     void testwrite(const void *p,size32_t s);
 };

@@ -102,28 +102,26 @@ void KeyCompressor::openBlob(void *blk,int blksize)
 int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
 {
     assert(!isBlob);
-    comp->startblock(); // start transaction
-    // first write out length if variable
-    if (isVariable) {
+    assertex(__BYTE_ORDER == __LITTLE_ENDIAN); // otherwise the following code is wrong.
+
+    //Copy the data into a buffer so all the data is written in a single write()
+    tempKeyBuffer.clear();
+    if (isVariable)
+    {
         KEYRECSIZE_T rs = datalength;
-        _WINREV(rs);
-        if (comp->write(&rs, sizeof(rs))!=sizeof(rs)) {
-            close();
-            return 0;
-        }
+        tempKeyBuffer.appendSwap(sizeof(rs), &rs);
     }
-    // then write out fpos and key
-    _WINREV(fPtr);
-    if (comp->write(&fPtr,sizeof(offset_t))!=sizeof(offset_t)) {
-        close();
-        return 0;
-    }
-    if (comp->write(key,datalength)!=datalength) {
+    tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
+    tempKeyBuffer.append(datalength, key);
+
+    size32_t toWrite = tempKeyBuffer.length();
+    comp->startblock(); // start transaction
+    if (comp->write(tempKeyBuffer.bufferBase(),toWrite)!=toWrite)
+    {
         close();
         return 0;
     }
     comp->commitblock();    // end transaction
-
     return 1;
 }
 
@@ -193,16 +191,16 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
 
 
     unsigned originalOffset = curOffset;
-    comp->startblock(); // start transaction
-    char zero = 0;
-    while (curOffset & 0xf)
+    unsigned zeroPadding = (16 - (curOffset & 0xf)) & 0xf;
+    if (zeroPadding)
     {
-        if (comp->write(&zero,sizeof(zero))!=sizeof(zero)) {
+        char zeros[16] = { 0 };
+        if (comp->write(zeros, zeroPadding) != zeroPadding)
+        {
             close();
-            curOffset = originalOffset;
             return 0;
         }
-        curOffset++;
+        curOffset += zeroPadding;
     }
 
     unsigned rdatalength = datalength;
@@ -232,7 +230,6 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
         data++;
         comp->startblock();
     }
-    comp->commitblock();
     if (written != datalength)
         close();
     return written;
