@@ -39,6 +39,7 @@ protected:
     size32_t inlen = 0;
     size32_t inlenblk = 0;      // set to COMMITTED when so
     bool trailing = false;
+    bool allowPartialWrites{true};
     byte *outbuf = nullptr;
     size32_t outlen = 0;
     size32_t wrmax = 0;
@@ -71,10 +72,11 @@ public:
             free(outbuf);
     }
 
-    virtual void open(void *buf, size32_t max, size32_t fixedRowSize) override
+    virtual void open(void *buf, size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
         wrmax = max;
         originalMax = max;
+        allowPartialWrites = _allowPartialWrites;
         if (buf)
         {
             if (bufalloc)
@@ -103,6 +105,7 @@ public:
         if (!initialSize)
             initialSize = FCMP_BUFFER_SIZE; // 1MB
         wrmax = initialSize;
+        allowPartialWrites = false; // buffer is always expanded to fit
         if (bufalloc)
         {
             free(outbuf);

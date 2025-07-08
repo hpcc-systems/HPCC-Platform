@@ -75,11 +75,12 @@ static unsigned readPacked32(const byte * & cur)
  * When recompressing the other buffer is used as the target, so that the previous
  * compression is preserved in the unusual situation where recompressing makes it larger.
 */
-void CStreamCompressor::open(void *buf, size32_t max, size32_t fixedRowSize)
+void CStreamCompressor::open(void *buf, size32_t max, size32_t fixedRowSize, bool _allowPartialWrites)
 {
     result = (byte *)buf;
     outMax = max;
     originalMax = max;
+    allowPartialWrites = _allowPartialWrites;
     outputs[0].ensureCapacity(max);
     outputs[1].ensureCapacity(max);
 

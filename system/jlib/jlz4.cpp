@@ -361,9 +361,9 @@ public:
         LZ4_freeStreamHC(lz4HCStream);
     }
 
-    virtual void open(void *buf,size32_t max, size32_t fixedRowSize) override
+    virtual void open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
-        CStreamCompressor::open(buf, max, fixedRowSize);
+        CStreamCompressor::open(buf, max, fixedRowSize, _allowPartialWrites);
         if (hc)
             LZ4_resetStreamHC_fast(lz4HCStream, compressionLevel);
         else

@@ -295,6 +295,7 @@ void CLZWCompressor::ensure(size32_t sz)
 
 void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
+    allowPartialWrites = false; // buffer is always expanded to fit
     if (bufalloc)
         free(outbuf);
     bufalloc = 0;
@@ -305,13 +306,14 @@ void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixed
     initCommon();
 }
 
-void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize)
+void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites)
 {
 #ifdef STATS
     st_thistime = msTick();
     st_thiswrites=0;
 #endif
     originalMax = max;
+    allowPartialWrites = _allowPartialWrites;
 
     if (buf)
     {
@@ -829,7 +831,7 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         {
             try
             {
-                compressor->open(newData, newSize, 0);
+                compressor->open(newData, newSize, 0, false);
                 if (compressor->write(src, len)==len)
                 {
                     compressor->close();
@@ -1354,7 +1356,6 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     MemoryAttr prev;
     bool allowPartialWrites{true};
 
-
     bool isFirstRow()
     {
         return outlen == sizeof(size32_t)*2;
@@ -1404,6 +1405,7 @@ public:
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
 
+        allowPartialWrites = false; // buffer is always expanded to fit
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
@@ -1412,12 +1414,13 @@ public:
         remaining = outBufMb->capacity()-outlen;
     }
 
-    virtual void open(void *buf,size32_t max, size32_t fixedRowSize) override
+    virtual void open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
 
         originalMax = max;
+        allowPartialWrites = _allowPartialWrites;
         if (buf)
         {
             if (bufalloc)
@@ -1656,7 +1659,7 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
     size32_t outBufStart;
     MemoryBuffer *outBufMb;
     bool finished = false;
-    bool allowPartialWrites = true;
+    bool allowPartialWrites{true};
 
     void initCommon()
     {
@@ -1694,6 +1697,7 @@ public:
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
 
+        allowPartialWrites = false; // buffer is always expanded to fit
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
@@ -1702,13 +1706,14 @@ public:
         initCommon();
     }
 
-    virtual void open(void *buf,size32_t _max, size32_t fixedRowSize) override
+    virtual void open(void *buf,size32_t _max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
 
         max = _max;
         originalMax = max;
+        allowPartialWrites = _allowPartialWrites;
         if (buf) {
             if (bufalloc) {
                 free(outbuf);
@@ -2550,7 +2555,7 @@ public:
                         break;
                 }
             }
-            compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0);
+            compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0, true);
         }
 
         if (mode == ICFappend)
@@ -2673,7 +2678,7 @@ public:
             trailer.indexPos = p;
             if (trailer.recordSize==0)
             {
-                compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0);
+                compressor->open(getCompressionTargetBuffer(), trailer.blockSize, 0, true);
             }
             lastFlushPos = trailer.expandedSize;
         }
@@ -2962,7 +2967,7 @@ public:
         comp->open(compattr, initialSize, fixedRowSize);
     }
 
-    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize) override
+    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize, bool allowPartialWrites) override
     {
         outlen = 0;
         outmax = blksize;
@@ -2975,7 +2980,7 @@ public:
         if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
             throw makeStringException(0, "CAESCompressor: target buffer too small");
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
-        comp->open(compattr.reserveTruncate(subsz), subsz, fixedRowSize);
+        comp->open(compattr.reserveTruncate(subsz), subsz, fixedRowSize, allowPartialWrites);
     }
 
     virtual bool adjustLimit(size32_t newLimit) override

@@ -4359,7 +4359,7 @@ public:
                 static constexpr size32_t blocksize = 32768;
                 MemoryAttr buffer(blocksize);
 
-                compressor->open(buffer.bufferBase(), blocksize, rowSz);
+                compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
@@ -4370,7 +4370,7 @@ public:
                         size32_t size = compressor->buflen();
                         sizes.append(size);
                         compressed.append(size, buffer.bufferBase());
-                        compressor->open(buffer.bufferBase(), blocksize, rowSz);
+                        compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
                         size32_t next = compressor->write(ptr+written, rowSz-written);
                         CPPUNIT_ASSERT(next == rowSz - written);
                     }
@@ -4391,7 +4391,7 @@ public:
                 size32_t offset = 0;
                 while (offset < srcLen)
                 {
-                    compressor->open(buffer.bufferBase(), blocksize, rowSz);
+                    compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
                     size32_t written = compressor->write(ptr + offset, srcLen - offset);
                     CPPUNIT_ASSERT(written != 0);
                     compressor->close();

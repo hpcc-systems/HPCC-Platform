@@ -46,7 +46,7 @@ public:
     CLZWCompressor(bool _supportbigendian);
     virtual ~CLZWCompressor();
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override;
-    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize) override;
+    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize, bool allowPartialWrites) override;
     virtual void close() override;
     virtual size32_t write(const void *buf,size32_t len) override;
     virtual void * bufptr() override { return outbuf;}
@@ -70,6 +70,7 @@ protected:
     size32_t outlen;
     size32_t maxlen;
     size32_t originalMax = 0;
+    bool allowPartialWrites{true};
     int curcode;
     size32_t bufalloc;
     void          *outbuf;

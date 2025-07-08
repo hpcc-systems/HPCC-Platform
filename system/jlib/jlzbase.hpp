@@ -52,7 +52,7 @@ inline unsigned sizePacked(size32_t value)
 class CStreamCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 public:
-    virtual void open(void *buf, size32_t max, size32_t fixedRowSize) override;
+    virtual void open(void *buf, size32_t max, size32_t fixedRowSize, bool allowPartialWrites) override;
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override;
     virtual bool adjustLimit(size32_t newLimit) override;
     virtual void close() final override;
@@ -110,6 +110,7 @@ protected:
     byte *result = nullptr;
     byte recompressed = 0;  // Number of times we have recompressed the entire buffer
     byte active = 0;        // Which output buffer is active?
+    bool allowPartialWrites{true};
 
     UnsignedArray compressedSizes;
     size32_t outputExtra = 0;
