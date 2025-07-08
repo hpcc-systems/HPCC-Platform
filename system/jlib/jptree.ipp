@@ -64,17 +64,17 @@ protected:
     {
         return streq(((IPropertyTree *)e)->queryName(), (const char *)fp);
     }
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
     inline unsigned count() const { return SuperHashTableOf<IPropertyTree, constcharptr>::count(); }
 
     ChildMap() : SuperHashTableOf<IPropertyTree, constcharptr>(4)
-    { 
+    {
     }
-    ~ChildMap() 
-    { 
+    ~ChildMap()
+    {
         _releaseAll();
     }
     virtual unsigned numChildren() const;
@@ -198,8 +198,8 @@ class jlib_decl CPTValue final : implements IPTArrayValue, private MemoryAttr
 {
 public:
     CPTValue(MemoryBuffer &src)
-    { 
-        deserialize(src); 
+    {
+        deserialize(src);
     }
     explicit CPTValue() = default;   //MORE: Should there be a single shared null instance?
     CPTValue(size32_t size, const void *data) : CPTValue(size, data, false, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT)
@@ -597,6 +597,24 @@ struct AttrValue
 };
 
 
+struct DeserializeContext
+{
+    StringBuffer name;
+    StringBuffer value;
+
+    // For bulk attribute allocation optimization
+    struct AttributePair : public CInterface
+    {
+        AttributePair() = default;
+        AttributePair(const char *_name, const char *_value) {name.set(_name); value.set(_value);}
+        StringBuffer name;
+        StringBuffer value;
+
+        IMPLEMENT_IINTERFACE;
+    };
+    CIArray attrArray;
+};
+
 class jlib_decl PTree : public CInterfaceOf<IPropertyTree>
 {
 friend class SingleIdIterator;
@@ -624,7 +642,7 @@ public:
     inline bool isnocase() const { return IptFlagTst(flags, ipt_caseInsensitive); }
     ipt_flags queryFlags() const { return (ipt_flags) flags; }
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
-    void deserializeSelf(MemoryBuffer &src);
+    void deserializeSelf(MemoryBuffer &src, DeserializeContext &deserializeContext);
     void serializeAttributes(MemoryBuffer &tgt);
 
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
@@ -732,6 +750,7 @@ public:
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
+
 protected:
     aindex_t getChildMatchPos(const char *xpath);
 
@@ -746,6 +765,9 @@ protected:
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
+
+    // Bulk attribute allocation methods for performance optimization
+    virtual void setAttributes(const CIArray &attrArray) = 0;
 
     AttrValue *findAttribute(const char *k) const;
     const char *getAttributeValue(const char *k, const char * dft) const;
@@ -835,6 +857,7 @@ public:
     virtual unsigned queryHash() const override;
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
+    virtual void setAttributes(const CIArray &attrArray) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, CAtomPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
     {
@@ -870,6 +893,7 @@ public:
     }
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
+    virtual void setAttributes(const CIArray &attrArray) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, LocalPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
     {
@@ -992,13 +1016,13 @@ public:
         else
             nodeCreator = new CDefaultNodeCreator(flags);
         if (_root)
-        { 
+        {
             root = LINK(_root);
             rootProvided = true;
         }
         else
         {
-            root = NULL;    
+            root = NULL;
             rootProvided = false;
         }
         reset();
@@ -1051,7 +1075,7 @@ public:
         else
             currentNode->setProp(NULL, (const char *)value);
         unsigned c = ptreeStack.ordinality();
-        if (c==1 && !noRoot && currentNode != root) 
+        if (c==1 && !noRoot && currentNode != root)
             ::Release(currentNode);
         ptreeStack.pop();
         currentNode = (c>1) ? &ptreeStack.tos() : NULL;
