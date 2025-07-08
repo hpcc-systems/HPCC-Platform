@@ -37,7 +37,6 @@ protected:
     byte *inbuf = nullptr;
     size32_t inmax = 0;         // remaining
     size32_t inlen = 0;
-    size32_t inlenblk = 0;      // set to COMMITTED when so
     bool trailing = false;
     bool allowPartialWrites{true};
     byte *outbuf = nullptr;
@@ -55,7 +54,6 @@ protected:
         *(size32_t *)outbuf = 0;
         outlen = sizeof(size32_t);
         inlen = 0;
-        inlenblk = COMMITTED;
         setinmax();
     }
 
@@ -128,11 +126,6 @@ public:
                 throwUnexpectedX("CFCmpCompressor::close() called more than once");
             return;
         }
-        if (inlenblk!=COMMITTED)
-        {
-            inlen = inlenblk; // transaction failed
-            inlenblk = COMMITTED;
-        }
         flushcommitted();
         size32_t totlen = outlen+sizeof(size32_t)+inlen;
         assertex(blksz>=totlen);
@@ -151,6 +144,7 @@ public:
 
     size32_t write(const void *buf,size32_t len) override
     {
+        size32_t savedInlen = inlen;
         // no more than wrmax per write (unless dynamically sizing)
         size32_t lenb = wrmax;
         byte *b = (byte *)buf;
@@ -162,7 +156,14 @@ public:
             if (lenb+inlen>inmax)
             {
                 if (trailing)
+                {
+                    //There is not enough space to write the remaining data - either return amount writen, or unwind the write.
+                    if (allowPartialWrites)
+                        return written;
+
+                    inlen = savedInlen;
                     return written;
+                }
 
                 if (inlen == inmax)
                     flushcommitted();
@@ -215,14 +216,11 @@ public:
 
     virtual void startblock() override
     {
-        inlenblk = inlen;
     }
 
     virtual void commitblock() override
     {
-        inlenblk = COMMITTED;
     }
-
 };
 
 

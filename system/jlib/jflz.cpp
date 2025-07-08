@@ -617,7 +617,6 @@ class CFastLZCompressor final : public CFcmpCompressor
     virtual bool adjustLimit(size32_t newLimit) override
     {
         assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
-        assertex(inlenblk == COMMITTED);            // not inside a transaction
         assertex(newLimit <= originalMax);
 
         //Reject the limit change if it is too small for the data already committed.
@@ -634,7 +633,7 @@ class CFastLZCompressor final : public CFcmpCompressor
         // only does non trailing
         if (trailing)
             return;
-        size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+        size32_t toflush = inlen;
         if (toflush == 0)
             return;
         size32_t outSzRequired = outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush);
@@ -656,13 +655,7 @@ class CFastLZCompressor final : public CFcmpCompressor
         {
             *(size32_t *)outbuf += toflush;
             outlen += *cmpsize+sizeof(size32_t);
-            if (inlenblk==COMMITTED)
-                inlen = 0;
-            else
-            {
-                inlen -= inlenblk;
-                memmove(inbuf,inbuf+toflush,inlen);
-            }
+            inlen = 0;
             setinmax();
             return;
         }
@@ -674,7 +667,7 @@ class CFastLZCompressor final : public CFcmpCompressor
         if (inbuf)
         {
             //calling flushcommitted() would mean everything is serialized as trailing
-            size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+            size32_t toflush = inlen;
             return outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush);
         }
         return outlen;
