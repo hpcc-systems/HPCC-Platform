@@ -115,13 +115,11 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
     tempKeyBuffer.append(datalength, key);
 
     size32_t toWrite = tempKeyBuffer.length();
-    comp->startblock(); // start transaction
     if (comp->write(tempKeyBuffer.bufferBase(),toWrite)!=toWrite)
     {
         close();
         return 0;
     }
-    comp->commitblock();    // end transaction
     return 1;
 }
 
@@ -151,32 +149,10 @@ bool KeyCompressor::compressBlock(size32_t destSize, void * dest, size32_t srcSi
 
 bool KeyCompressor::write(const void * data, size32_t datalength)
 {
-    if (method == COMPRESS_METHOD_RANDROW && fixedRowSize)
+    if (comp->write(data,datalength)!=datalength)
     {
-        //Ugly special casing because the RandR compressor expects single rows to be added.
-        //This code could be migrated to the compressor, but that should be done carefully as a separate change.
-        for (size32_t offset = 0; offset < datalength; offset += fixedRowSize)
-        {
-            dbgassertex(offset + fixedRowSize <= datalength); // Check datalength is a multiple of the fixedRowSize
-            comp->startblock(); // start transaction
-            size32_t size = comp->write((const byte *)data + offset, fixedRowSize);
-            if (size != fixedRowSize)
-            {
-                close();
-                return false;
-            }
-            comp->commitblock();    // end transaction
-        }
-    }
-    else
-    {
-        comp->startblock(); // start transaction
-        if (comp->write(data,datalength)!=datalength)
-        {
-            close();
-            return false;
-        }
-        comp->commitblock();    // end transaction
+        close();
+        return false;
     }
     return true;
 }
@@ -188,7 +164,6 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
     assert(datalength);
     if (!comp)
         return 0;
-
 
     unsigned originalOffset = curOffset;
     unsigned zeroPadding = (16 - (curOffset & 0xf)) & 0xf;
@@ -228,7 +203,6 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
         curOffset++;
         written++;
         data++;
-        comp->startblock();
     }
     if (written != datalength)
         close();

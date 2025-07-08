@@ -51,8 +51,6 @@ public:
     virtual size32_t write(const void *buf,size32_t len) override;
     virtual void * bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return outlen;}
-    virtual void startblock() override;
-    virtual void commitblock() override;
     virtual bool adjustLimit(size32_t newLimit) override;
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_LZW; }
     virtual bool supportsBlockCompression() const override { return false; }
@@ -66,7 +64,6 @@ protected:
     void ensure(size32_t sz);
     virtual void initdict();
     size32_t inlen;
-    size32_t inlenblk;
     size32_t outlen;
     size32_t maxlen;
     size32_t originalMax = 0;

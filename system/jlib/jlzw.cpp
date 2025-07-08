@@ -438,14 +438,6 @@ bool CLZWCompressor::adjustLimit(size32_t newLimit)
     return true;
 }
 
-void CLZWCompressor::startblock()
-{
-}
-
-void CLZWCompressor::commitblock()
-{
-}
-
 void CLZWCompressor::close()
 {
     if (dict.curbits)
@@ -1518,16 +1510,6 @@ public:
         return buflen;
     }
 
-
-
-    virtual void startblock() override
-    {
-    }
-
-    virtual void commitblock() override
-    {
-    }
-
     virtual void *bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return outlen;}
 
@@ -1840,15 +1822,6 @@ public:
         inlen += buflen;
         return buflen;
     }
-
-    virtual void startblock() override
-    {
-    }
-
-    virtual void commitblock() override
-    {
-    }
-
 
     virtual void *bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return header->totsize;}
@@ -3035,16 +3008,6 @@ public:
     {
         assertex(0 == outmax); // i.e. closed
         return outlen;
-    }
-
-    virtual void startblock() override
-    {
-        comp->startblock();
-    }
-
-    virtual void commitblock() override
-    {
-        comp->commitblock();
     }
 
     virtual CompressionMethod getCompressionMethod() const override { return (CompressionMethod)(COMPRESS_METHOD_AES | comp->getCompressionMethod()); }

@@ -213,14 +213,6 @@ public:
         assertex(!inbuf);  // i.e. closed
         return outbuf;
     }
-
-    virtual void startblock() override
-    {
-    }
-
-    virtual void commitblock() override
-    {
-    }
 };
 
 

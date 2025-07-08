@@ -61,15 +61,6 @@ public:
     virtual void * bufptr() final override;
     virtual size32_t buflen() final override;
 
-    virtual void startblock() override
-    {
-        //This class either accepts or rejects each write - i.e. all writes are blocked, larger blocking is not supported
-    }
-
-    virtual void commitblock() override
-    {
-    }
-
     virtual bool supportsBlockCompression() const override { return false; }
     virtual bool supportsIncrementalCompression() const override { return true; }
 

@@ -4313,9 +4313,7 @@ public:
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
-                    compressor->startblock();
                     compressor->write(ptr, rowSz);
-                    compressor->commitblock();
                     ptr += rowSz;
                 }
                 compressor->close();
@@ -4336,9 +4334,7 @@ public:
             case AllRowCompress:
             {
                 compressor->open(compressed, sz, rowSz);
-                compressor->startblock();
                 compressor->write(ptr, sz);
-                compressor->commitblock();
                 compressor->close();
                 break;
             }
