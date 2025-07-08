@@ -257,7 +257,6 @@ void CLZWCompressor::initCommon()
     initdict();
     curcode = -1;
     inlen = 0;
-    inlenblk = COMMITTED;
     memset(outbuf,0,sizeof(size32_t));
     outlen = sizeof(size32_t)+dict.curbits;
     outbytes = (unsigned char *)outbuf+sizeof(size32_t);
@@ -349,6 +348,8 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
         return 0;
     if (!dict.curbits)
         return 0;
+
+    size32_t savedInLen = inlen;
     unsigned char *in=(unsigned char *)buf;
 #ifdef STATS
     st_thiswrites++;
@@ -380,13 +381,16 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
                     else
                     {
                         size32_t ret;
-                        if (inlenblk==COMMITTED)
+                        if (allowPartialWrites)
                         {
                             ret = in-(unsigned char *)buf-1;
                             inlen += in-(unsigned char *)buf-1;
                         }
                         else
+                        {
+                            inlen = savedInLen;
                             ret = 0;
+                        }
                         close();
                         return ret;
                     }
@@ -426,7 +430,6 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
 bool CLZWCompressor::adjustLimit(size32_t newLimit)
 {
     assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
-    assertex(inlenblk == COMMITTED);             // not inside a transaction
     assertex(newLimit <= originalMax);
 
     if (newLimit < SAFETY_MARGIN + outlen)
@@ -437,12 +440,10 @@ bool CLZWCompressor::adjustLimit(size32_t newLimit)
 
 void CLZWCompressor::startblock()
 {
-    inlenblk = inlen;
 }
 
 void CLZWCompressor::commitblock()
 {
-    inlenblk = COMMITTED;
 }
 
 void CLZWCompressor::close()
@@ -452,9 +453,6 @@ void CLZWCompressor::close()
         PUTCODE(curcode);
         flushbuf();
         dict.curbits = 0;
-        if (inlenblk!=COMMITTED)
-            inlen = inlenblk; // transaction failed
-        inlenblk = COMMITTED;
         BE_MEMCPY4(outbuf,&inlen);
 #ifdef STATS
         unsigned t = (msTick()-st_thistime);
@@ -1524,12 +1522,10 @@ public:
 
     virtual void startblock() override
     {
-        allowPartialWrites = false;
     }
 
     virtual void commitblock() override
     {
-        allowPartialWrites = true;
     }
 
     virtual void *bufptr() override { return outbuf;}
@@ -1847,12 +1843,10 @@ public:
 
     virtual void startblock() override
     {
-        allowPartialWrites = false;
     }
 
     virtual void commitblock() override
     {
-        allowPartialWrites = true;
     }
 
 
