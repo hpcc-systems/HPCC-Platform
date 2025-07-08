@@ -1797,7 +1797,7 @@ jlib_decl bool queryMtls()
 #if defined(_USE_OPENSSL)
 # ifdef _CONTAINERIZED
         // check component setting first, but default to global
-        if (getConfigBoolSP()->getPropBool("@mtls", getGlobalConfigSP()->getPropBool("security/@mtls")))
+        if (getComponentConfigSP()->getPropBool("@mtls", getGlobalConfigSP()->getPropBool("security/@mtls")))
             useMtls = ENABLED;
 # else
         if (queryMtlsBareMetalConfig())
