@@ -60,8 +60,9 @@ public class ActivitiesTest {
     private void testForNavigationLinks(List<NavigationWebElement> navWebElements) {
 
         Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
-
+        Common.logDebug(" Number of WEB elements: " + navWebElements.size());
         for (NavigationWebElement element : navWebElements) {
+            Common.logDebug(" EB element: " + element.name());
 
             StringBuilder errorMsg = new StringBuilder("OK");
 
@@ -140,18 +141,27 @@ public class ActivitiesTest {
     }
 
     private List<NavigationWebElement> getNavWebElements() {
+        Common.logDebug("getNavWebElements() started ...");
 
         List<NavigationWebElement> navWebElements = new ArrayList<>();
 
         for (String navName : URLConfig.navNamesArray) {
+            Common.logDebug("  navName: " + navName);
             try {
-                WebElement webElement = Common.driver.findElement(By.name(navName)).findElement(By.tagName("a"));
+                WebElement webElement;
+                try {
+                    webElement = Common.driver.findElement(By.name(navName)); //.findElement(By.tagName("a"));
+                } catch (Exception e) {
+                    Common.logDebug("  Not fund by name, try by title");
+                    webElement = Common.driver.findElement(By.xpath("//*[@title='" + navName + "']")); //.findElement(By.tagName("a"));
+                }
+                Common.logDebug("  webElement:" + webElement );
                 String hrefValue = webElement.getAttribute("href");
                 navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
 
                 urlMap.put(navName, new URLMapping(navName, hrefValue));
             } catch (Exception ex) {
-                Common.logException("Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage(), ex);
+                Common.logException("  Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage(), ex);
             }
         }
 
