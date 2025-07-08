@@ -1777,7 +1777,7 @@ public:
         for (size32_t i =0; i < buflen; i += recsize)
         {
             if (i+recsize > buflen)
-                throw MakeStringException(-1,"CRandRDiffCompressor used with variable sized row");
+                throw makeStringExceptionV(-1,"CRandRDiffCompressor used with variable sized row (%u, %u, %u)", recsize, buflen, buflen - i);
 
             const byte * row = cur+i;
 
