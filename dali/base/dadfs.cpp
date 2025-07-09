@@ -3462,6 +3462,11 @@ public:
         else
             queryAttributes().setPropInt("@expireDays", expireDays);
     }
+
+    virtual IUserDescriptor *queryUser() const override
+    {
+        return udesc;
+    }
 };
 
 class CDistributedFile: public CDistributedFileBase<IDistributedFile>
