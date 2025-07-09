@@ -614,9 +614,6 @@ int main( int argc, const char *argv[]  )
                     }
                 }
             };
-            OwnedPtr<CServerThread> dafsThread;
-            if (globals->getPropBool("@_dafsStorage"))
-                dafsThread.setown(new CServerThread);
 #endif
             installDefaultFileHooks(globals);
             slaveMain(jobListenerStopped, logHandler);

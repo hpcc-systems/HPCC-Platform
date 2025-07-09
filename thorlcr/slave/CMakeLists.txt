@@ -87,9 +87,3 @@ target_link_libraries (  thorslave_lcr
 if (NOT CONTAINERIZED)
     target_link_libraries ( thorslave_lcr environment )
 endif()
-
-if (CONTAINERIZED) # only used when dev. option _dafsStorage is enabled
-target_link_libraries (  thorslave_lcr 
-         dafsserver
-    )
-endif()
