@@ -18,19 +18,19 @@ logs remain meaningful, efficient, and cost-effective without compromising visib
     while (someCondition)
     {
     LOG(PROG, “Detected some condition”);
-    someCondtion = performSomeLogic(); 
+    someCondition = performSomeLogic(); 
     }
     ```
 
     After:
     ```c++
-    Int conditionCounter = 0;
+    int conditionCounter = 0;
     while (someCondition)
     {
     conditionCounter++;
-    someCondtion = performSomeLogic(); 
+    someCondition = performSomeLogic(); 
     }
-    If (conditionCounter > 0)
+    if (conditionCounter > 0)
     LOG(PROG, “Detected some condition”);
     ```
 
@@ -87,7 +87,7 @@ logs remain meaningful, efficient, and cost-effective without compromising visib
     ```
     After:
     ```c++
-    If (doTrace(traceXYZDetails)) // Only log if admin/users interested in feature details
+    if (doTrace(traceXYZDetails)) // Only log if admin/users interested in feature details
     {
         LOG(INFO, “XYZ feature specific information”); //Message reported even if admin/users not interested in XYZ feature specific information
     }
@@ -129,7 +129,7 @@ logs remain meaningful, efficient, and cost-effective without compromising visib
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
     if (dis(gen) < samplingRate)
-    LOG(INFO, “some non-essential information”); //Non-essential information only logged samplingRate 
+        LOG(INFO, “some non-essential information”); //Non-essential information only logged samplingRate 
     ```
 
 - Offload detailed messages to post-mortem or diagnostic features.
