@@ -124,6 +124,27 @@ static constexpr memsize_t defaultExtCacheSizeMB = 10;
 static CFixedSizeAllocator *CServerRemoteTree_Allocator;
 #endif
 
+template <typename F>
+struct FinalAction // Allows an action to be executed when the object goes out of scope.
+{
+    FinalAction(F f) : clean{f} {}
+    ~FinalAction()
+    {
+        if (enabled)
+            clean();
+    }
+    void disable() { enabled = false; };
+
+private:
+    F clean;
+    bool enabled{true};
+};
+template <typename F>
+FinalAction<F> finally(F f)
+{
+    return FinalAction<F>(f);
+}
+
 enum notifications { notify_delete=1 };
 static const char *notificationStr(notifications n)
 {
@@ -412,20 +433,16 @@ public:
 
 enum IncInfo { IINull=0x00, IncData=0x01, IncDetails=0x02, IncConnect=0x04, IncDisconnect=0x08, IncDisconnectDelete=0x24 };
 
-StringBuffer &constructStoreName(const char *storeBase, unsigned e, StringBuffer &res)
+StringBuffer &constructStoreName(const char *storeBase, unsigned e, StringBuffer &res, const char *extension=nullptr)
 {
     res.append(storeBase);
     if (e)
         res.append(e);
-    res.append(".xml");
-    return res;
-}
-StringBuffer &constructBinaryStoreName(const char *storeBase, unsigned e, StringBuffer &res)
-{
-    res.append(storeBase);
-    if (e)
-        res.append(e);
-    res.append(".bin");
+    if (extension)
+        res.append(extension);
+    else
+        res.append(".xml");
+
     return res;
 }
 
@@ -5320,7 +5337,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         }
     }
 
-    void writeStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crc, CStoreInfo *storeInfo=NULL)
+    void writeStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crcXml, unsigned *crcBinary, CStoreInfo *storeInfo=nullptr)
     {
         StringBuffer path, filename;
         filename.append(base).append('.').append(edition);
@@ -5329,17 +5346,22 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 
         OwnedIFile iFile = createIFile(path.str());
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
-        if (crc)
-            iFileIO->write(0, sizeof(unsigned), crc);
+        if (crcXml)
+            iFileIO->write(0, sizeof(unsigned), crcXml);
+        if (crcBinary)
+        {
+            assertex(crcXml);
+            iFileIO->write(0, sizeof(unsigned), crcBinary);
+        }
         if (storeInfo)
             storeInfo->cache.set(filename.str());
         iFileIO->close();
     }
 
-    void updateStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crc, CStoreInfo *storeInfo=NULL)
+    void updateStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crcXml, unsigned *crcBinary, CStoreInfo *storeInfo=NULL)
     {
         clearStoreInfo(base, location, edition, storeInfo);
-        writeStoreInfo(base, location, edition, crc, storeInfo);
+        writeStoreInfo(base, location, edition, crcXml, crcBinary, storeInfo);
     }
 
     void refreshInfo(CStoreInfo &info, const char *base)
@@ -5414,7 +5436,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         wcard.append(base).append(".*");
         Owned<IDirectoryIterator> dIter = createDirectoryIterator(location, wcard.str());
         if (!dIter->first())
-            updateStoreInfo(base, location, 0, NULL, &info);
+            updateStoreInfo(base, location, 0, nullptr, nullptr, &info);
         else if (dIter->next())
             throw MakeStringException(0, "Multiple store.X files - only one corresponding to latest dalisds<X>.xml should exist");
     }
@@ -5707,7 +5729,7 @@ public:
         }
         return res;
     }
-    unsigned saveStoreToXMLFile(IPropertyTree *root, IFileIO *_iFileIOTmpStore)
+    unsigned saveStoreToXMLFile(const IPropertyTree *root, IFileIO *_iFileIOTmpStore)
     {
         LOG(MCdebugProgress, "Saving store to XML");
         assertex(root);
@@ -5715,6 +5737,8 @@ public:
         unsigned crc{0};
 
         OwnedIFileIO iFileIOTmpStore;
+        // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToXMLFile() call,
+        // for error processing and rename etc
         iFileIOTmpStore.set(_iFileIOTmpStore);
         try
         {
@@ -5739,19 +5763,20 @@ public:
         catch (IException *e)
         {
             DISLOG(e, "Exception - Error saving store XML file");
-            iFileIOTmpStore.clear();
             throw;
         }
 
         return crc;
     }
-    unsigned saveStoreToBinaryFile(IPropertyTree *root, IFileIO *_iFileIOTmpStore)
+    unsigned saveStoreToBinaryFile(const IPropertyTree *root, IFileIO *_iFileIOTmpStore)
     {
         LOG(MCdebugProgress, "Saving store to binary");
         assertex(root);
         assertex(_iFileIOTmpStore);
 
         OwnedIFileIO iFileIOTmpStore;
+        // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
+        // for error processing and rename etc
         iFileIOTmpStore.set(_iFileIOTmpStore);
         CRC32 crc;
         try
@@ -5770,7 +5795,6 @@ public:
         catch (IException *e)
         {
             DISLOG(e, "Exception - Error saving binary store file");
-            iFileIOTmpStore.clear();
             throw;
         }
 
@@ -5782,14 +5806,14 @@ public:
 
         refreshStoreInfo();
 
-        // Save store to XML
         unsigned edition = storeInfo.edition;
         unsigned newEdition = nextEditionN(edition);
-        bool xmlSaveCompleted = false;
+        bool savesCompleted = false;
         try
         {
+            // Save store as XML
             StringBuffer tmpStoreName;
-            constexpr const char * temporaryXmlFileSaveName = "dali_store_tmp.xml";
+            constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
             OwnedIFileIO iXmlFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
             OwnedIFile iXmlFileTmpStore = createIFile(tmpStoreName);
             unsigned crcXml{0};
@@ -5805,96 +5829,151 @@ public:
                 iXmlFileTmpStore->remove();
                 return;
             }
-            StringBuffer newStoreName;
-            constructStoreName(storeName, newEdition, newStoreName);
-            StringBuffer newStoreNamePath(location);
-            newStoreNamePath.append(newStoreName);
+
+            // Save store as binary
+            OwnedIFile iBinaryFileTmpStore;
+            unsigned *crcBinary{nullptr};
+            auto delete_crcBinary = finally([&crcBinary]
+                                            { delete crcBinary; crcBinary = nullptr; }); // Release crcBinary when out of scope
+            if (saveBinary)
+            {
+                StringBuffer tmpStoreName;
+                constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
+                OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
+                iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
+                try
+                {
+                    crcBinary = new unsigned(saveStoreToBinaryFile(root, iBinaryFileIOTmpStore.get()));
+                }
+                catch (IException *e)
+                {
+                    StringBuffer errMsg;
+                    EXCLOG(e, errMsg.append("Failed to save binary temporary store to : ").append(temporaryBinaryFileSaveName).str());
+                    e->Release();
+                    iXmlFileTmpStore->remove();
+                    iBinaryFileTmpStore->remove();
+                    return;
+                }
+            }
+
+            // Rename temporary store files to new store files using edition number
+            StringBuffer newXmlStoreName;
+            constructStoreName(storeName, newEdition, newXmlStoreName);
+            StringBuffer newXmlStoreNamePath(location);
+            newXmlStoreNamePath.append(newXmlStoreName);
+            StringBuffer newBinaryStoreName;
+            constructStoreName(storeName, newEdition, newBinaryStoreName, ".bin");
+            StringBuffer newBinaryStoreNamePath(location);
+            newBinaryStoreNamePath.append(newBinaryStoreName);
+
+            // Check that Sasha Coalescer has not updated the edition whilst saving the store
             refreshStoreInfo();
             if (storeInfo.edition != edition)
             {
-                WARNLOG("Another process has updated the edition whilst saving the XML store: %s", newStoreNamePath.str());
+                WARNLOG("Another process has updated the edition whilst saving the store: %s", newXmlStoreNamePath.str());
                 iXmlFileTmpStore->remove();
+                iBinaryFileTmpStore->remove();
                 return;
             }
             try
             {
-                OwnedIFile newStoreIFile = createIFile(newStoreNamePath.str());
+                OwnedIFile newStoreIFile = createIFile(newXmlStoreNamePath.str());
                 newStoreIFile->remove();
-                iXmlFileTmpStore->rename(newStoreName.str());
+                iXmlFileTmpStore->rename(newXmlStoreName.str());
             }
             catch (IException *e)
             {
                 StringBuffer errMsg;
-                EXCLOG(e, errMsg.append("Failed to rename new XML store to : ").append(newStoreNamePath).append(". Has already been created by another process?").str());
+                EXCLOG(e, errMsg.append("Failed to rename new store to : ").append(newXmlStoreNamePath).append(". Has already been created by another process?").str());
                 e->Release();
                 iXmlFileTmpStore->remove();
+                iBinaryFileTmpStore->remove();
+                return;
+            }
+            try
+            {
+                OwnedIFile newStoreIFile = createIFile(newBinaryStoreNamePath.str());
+                newStoreIFile->remove();
+                iBinaryFileTmpStore->rename(newBinaryStoreName.str());
+            }
+            catch (IException *e)
+            {
+                StringBuffer errMsg;
+                EXCLOG(e, errMsg.append("Failed to rename new store to : ").append(newBinaryStoreNamePath).append(". Has already been created by another process?").str());
+                e->Release();
+                iXmlFileTmpStore->remove();
+                iBinaryFileTmpStore->remove();
                 return;
             }
 
-            constexpr const char * xmlStoreFileName = "store";
+            constexpr const char *storeFileName = "store";
             if (0 != (SH_CheckNewDelta & configFlags))
             {
                 CheckDeltaBlock cD(*this);
-                try { renameDelta(edition, newEdition, location); }
+                try
+                {
+                    renameDelta(edition, newEdition, location);
+                }
                 catch (IException *e)
                 {
-                    StringBuffer s("Exception(2) - Error saving XML store file");
+                    StringBuffer s("Exception(1) - Error saving store file");
                     DISLOG(e, s.str());
                     e->Release();
                     return;
                 }
                 if (remoteBackupLocation.length())
                 {
-                    try { renameDelta(edition, newEdition, remoteBackupLocation); }
+                    try
+                    {
+                        renameDelta(edition, newEdition, remoteBackupLocation);
+                    }
                     catch (IException *e)
                     {
-                        OERRLOG(e, "Failure handling XML backup");
+                        OERRLOG(e, "Failure handling backup");
                         e->Release();
                     }
                 }
-                clearStoreInfo(xmlStoreFileName, location, 0, NULL);
-                writeStoreInfo(xmlStoreFileName, location, newEdition, &crcXml, &storeInfo);
             }
-            else
-            {
-                clearStoreInfo(xmlStoreFileName, location, 0, NULL);
-                writeStoreInfo(xmlStoreFileName, location, newEdition, &crcXml, &storeInfo);
-            }
+            clearStoreInfo(storeFileName, location, 0, NULL);
+            writeStoreInfo(storeFileName, location, newEdition, &crcXml, crcBinary, &storeInfo);
 
             try
             {
                 if (remoteBackupLocation.length())
                 {
-                    PROGLOG("Copying XML store to backup location");
-                    StringBuffer rL(remoteBackupLocation);
-                    constructStoreName(storeName, newEdition, rL);
-                    copyFile(rL.str(), newStoreNamePath.str());
+                    PROGLOG("Copying store to backup location");
+                    StringBuffer rLxml(remoteBackupLocation);
+                    constructStoreName(storeName, newEdition, rLxml);
+                    copyFile(rLxml.str(), newXmlStoreNamePath.str());
+                    StringBuffer rLbinary(remoteBackupLocation);
+                    constructStoreName(storeName, newEdition, rLbinary, ".bin");
+                    copyFile(rLbinary.str(), newBinaryStoreNamePath.str());
 
-                    clearStoreInfo(xmlStoreFileName, remoteBackupLocation, 0, NULL);
-                    writeStoreInfo(xmlStoreFileName, remoteBackupLocation, newEdition, &crcXml, &storeInfo);
-                    PROGLOG("Copy XML store done");
+                    clearStoreInfo(storeFileName, remoteBackupLocation, 0, NULL);
+                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &crcXml, crcBinary, &storeInfo);
+                    PROGLOG("Copy store done");
                 }
             }
             catch (IException *e)
             {
                 StringBuffer s;
-                OERRLOG(e, s.append("Failure to backup XML dali to remote location: ").append(remoteBackupLocation));
+                OERRLOG(e, s.append("Failure to backup dali to remote location: ").append(remoteBackupLocation));
                 e->Release();
             }
 
             if (_newEdition)
                 *_newEdition = newEdition;
-            xmlSaveCompleted = true;
+            savesCompleted = true;
 
-            LOG(MCdebugProgress, "Store saved in XML format");
+            LOG(MCdebugProgress, "Store saved");
         }
         catch (IException *e)
         {
-            StringBuffer s("Exception(3) - Error saving XML store file");
+            StringBuffer s("Exception(1) - Error saving store file");
             DISLOG(e, s.str());
             e->Release();
         }
-        if (xmlSaveCompleted)
+        if (savesCompleted)
         {
 #ifndef NODELETE
             unsigned toDeleteEdition = prevEditionN(edition, keepStores);
@@ -5902,134 +5981,7 @@ public:
             constructStoreName(storeName, toDeleteEdition, filename);
             OwnedIFile iFile = createIFile(filename.str());
             if (iFile->exists())
-                PROGLOG("Deleting old XML store: %s", filename.str());
-            removeDaliFile(location, storeName, toDeleteEdition);
-            removeDaliFile(location, DELTANAME, toDeleteEdition);
-            removeDaliFile(location, DELTADETACHED, toDeleteEdition);
-            if (remoteBackupLocation)
-            {
-                removeDaliFile(remoteBackupLocation, storeName, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTANAME, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTADETACHED, toDeleteEdition);
-            }
-#endif
-        }
-
-        if (!saveBinary)
-            return;
-
-        // Save store to binary
-        bool binarySaveCompleted = false;
-        try
-        {
-            StringBuffer tmpStoreName;
-            constexpr const char * temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-            OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
-            OwnedIFile iBinaryFileTmpStore = createIFile(tmpStoreName);
-            unsigned crcBinary{0};
-            try
-            {
-                crcBinary = saveStoreToBinaryFile(root, iBinaryFileIOTmpStore.get());
-            }
-            catch (IException *e)
-            {
-                StringBuffer errMsg;
-                EXCLOG(e, errMsg.append("Failed to save binary temporary store to : ").append(temporaryBinaryFileSaveName).str());
-                e->Release();
-                iBinaryFileTmpStore->remove();
-                return;
-            }
-            StringBuffer newStoreName;
-            constructBinaryStoreName(storeName, newEdition, newStoreName);
-            StringBuffer newStoreNamePath(location);
-            newStoreNamePath.append(newStoreName);
-            try
-            {
-                OwnedIFile newStoreIFile = createIFile(newStoreNamePath.str());
-                newStoreIFile->remove();
-                iBinaryFileTmpStore->rename(newStoreName.str());
-            }
-            catch (IException *e)
-            {
-                StringBuffer errMsg;
-                EXCLOG(e, errMsg.append("Failed to rename new binary store to : ").append(newStoreNamePath).append(". Has already been created by another process?").str());
-                e->Release();
-                iBinaryFileTmpStore->remove();
-                return;
-            }
-
-            constexpr const char * binaryStoreFileName = "storeBinary";
-            if (0 != (SH_CheckNewDelta & configFlags))
-            {
-                CheckDeltaBlock cD(*this);
-                try { renameDelta(edition, newEdition, location); }
-                catch (IException *e)
-                {
-                    StringBuffer s("Exception(2) - Error saving binary store file");
-                    DISLOG(e, s.str());
-                    e->Release();
-                    return;
-                }
-                if (remoteBackupLocation.length())
-                {
-                    try { renameDelta(edition, newEdition, remoteBackupLocation); }
-                    catch (IException *e)
-                    {
-                        OERRLOG(e, "Failure handling binary backup");
-                        e->Release();
-                    }
-                }
-                clearStoreInfo(binaryStoreFileName, location, 0, NULL);
-                writeStoreInfo(binaryStoreFileName, location, newEdition, &crcBinary, &storeInfo);
-            }
-            else
-            {
-                clearStoreInfo(binaryStoreFileName, location, 0, NULL);
-                writeStoreInfo(binaryStoreFileName, location, newEdition, &crcBinary, &storeInfo);
-            }
-
-            try
-            {
-                if (remoteBackupLocation.length())
-                {
-                    PROGLOG("Copying binary store to backup location");
-                    StringBuffer rL(remoteBackupLocation);
-                    constructBinaryStoreName(storeName, newEdition, rL);
-                    copyFile(rL.str(), newStoreNamePath.str());
-
-                    clearStoreInfo(binaryStoreFileName, remoteBackupLocation, 0, NULL);
-                    writeStoreInfo(binaryStoreFileName, remoteBackupLocation, newEdition, &crcBinary, &storeInfo);
-                    PROGLOG("Copy binary store done");
-                }
-            }
-            catch (IException *e)
-            {
-                StringBuffer s;
-                OERRLOG(e, s.append("Failure to backup binary dali to remote location: ").append(remoteBackupLocation));
-                e->Release();
-            }
-
-            if (_newEdition)
-                *_newEdition = newEdition;
-            binarySaveCompleted = true;
-
-            LOG(MCdebugProgress, "Store saved in binary format");
-        }
-        catch (IException *e)
-        {
-            StringBuffer s("Exception(3) - Error saving binary store file");
-            DISLOG(e, s.str());
-            e->Release();
-        }
-        if (binarySaveCompleted && storeBinaryCrc)
-        {
-#ifndef NODELETE
-            unsigned toDeleteEdition = prevEditionN(edition, keepStores);
-            StringBuffer filename(location);
-            constructBinaryStoreName(storeName, toDeleteEdition, filename);
-            OwnedIFile iFile = createIFile(filename.str());
-            if (iFile->exists())
-                PROGLOG("Deleting old binary store: %s", filename.str());
+                PROGLOG("Deleting old store: %s", filename.str());
             removeDaliFile(location, storeName, toDeleteEdition);
             removeDaliFile(location, DELTANAME, toDeleteEdition);
             removeDaliFile(location, DELTADETACHED, toDeleteEdition);

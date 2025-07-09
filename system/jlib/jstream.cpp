@@ -909,7 +909,7 @@ protected:
                 break;
             if ((remaining < blockWriteSize) && !flushLast)
                 break;
-            size_t writeSize = std::min(remaining, blockWriteSize);
+            size32_t writeSize = std::min(remaining, blockWriteSize);
             output->put(writeSize, data(from));
             blockOffset += writeSize;
             from += writeSize;
@@ -937,7 +937,7 @@ IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * o
 }
 
 // Class that implements IBufferedSerialOutputStream with CRC functionality
-class CCrcBlockedSerialOutputStream final : public CInterfaceOf<IBufferedSerialOutputStream>
+class CCrcBlockedSerialOutputStream final : public CSimpleInterfaceOf<IBufferedSerialOutputStream>
 {
 public:
     CCrcBlockedSerialOutputStream(ISerialOutputStream * _output, size32_t _blockWriteSize, CRC32 &_crc)
@@ -953,6 +953,8 @@ public:
 
     virtual void put(size32_t len, const void * ptr) override
     {
+        assertex(ptr);
+
         // Update CRC with the data being written
         crc.tally(len, ptr);
 
@@ -973,18 +975,6 @@ public:
 
     virtual void commit(size32_t written) override
     {
-        // For commit, we need to calculate CRC for the data that was written to the reserved buffer
-        // We need to get the data from the buffer before it's committed
-        if (written > 0)
-        {
-            size32_t got;
-            byte * ptr = blockedStream->reserve(0, got); // Get current buffer position
-            if (ptr && written <= got)
-            {
-                // Calculate CRC for the data that was written before the current position
-                crc.tally(written, ptr - written);
-            }
-        }
         blockedStream->commit(written);
     }
 
@@ -1006,12 +996,6 @@ public:
     virtual void replaceOutput(ISerialOutputStream * newOutput) override
     {
         blockedStream->replaceOutput(newOutput);
-    }
-
-    // CRC functionality
-    unsigned queryCrc() const
-    {
-        return crc.get();
     }
 
 protected:
