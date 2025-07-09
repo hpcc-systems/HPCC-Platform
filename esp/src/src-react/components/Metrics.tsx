@@ -22,6 +22,7 @@ import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
 import { ScopesTable } from "./MetricsScopes";
 import { useMetricsGraphData, MetricsGraph } from "./MetricsGraph";
+import { useUserTheme } from "../hooks/theme";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -58,6 +59,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     if (querySet && queryId) {
         wuid = "";
     }
+    const { isDark } = useUserTheme();
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId);
     const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews();
@@ -177,6 +179,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }
         }
     }, [scopesTable, selectedMetricsSource]);
+
+    React.useEffect(() => {
+        scopesTable.columnFormats()[0]?.paletteID(isDark ? "StdDevsDark" : "StdDevs");
+        scopesTable.render();
+    }, [scopesTable, isDark]);
 
     //  Props Table  ---
     const crossTabTable = useConst(() => new Table()

@@ -6,9 +6,11 @@ import { formatDecimal } from "src/Utility";
 import { formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { IScopeEx } from "../hooks/metrics";
+import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 
-Palette.rainbow("StdDevs", ["white", "white", "#fff0f0", "#ffC0C0", "#ff8080", "#ff0000", "#ff0000"]);
+Palette.rainbow("StdDevs", ["#ffffff", "#ffffff", "#fff3cd", "#ffeaa7", "#fdcb6e", "#e17055", "#e17055"]);
+Palette.rainbow("StdDevsDark", ["#222222", "#222222", "#3d3520", "#4a3c1a", "#5a4a2e", "#6b2323", "#6b2323"]);
 
 export interface MetricsPropertiesTablesProps {
     scopesTableColumns?: string[];
@@ -20,6 +22,8 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     scopes = []
 }) => {
 
+    const { isDark } = useUserTheme();
+
     const sortByColumns = React.useMemo(() => {
         return ["id", "type", "name", ...scopesTableColumns];
     }, [scopesTableColumns]);
@@ -30,7 +34,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         .columnFormats([
             new ColumnFormat()
                 .column(nlsHPCC.Property)
-                .paletteID("StdDevs")
+                .paletteID(isDark ? "StdDevsDark" : "StdDevs")
                 .min(0)
                 .max(6)
                 .valueColumn("StdDevs"),
@@ -40,6 +44,11 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         ])
         .sortable(true)
     );
+
+    React.useEffect(() => {
+        propsTable.columnFormats()[0]?.paletteID(isDark ? "StdDevsDark" : "StdDevs");
+        propsTable.render();
+    }, [propsTable, isDark]);
 
     React.useEffect(() => {
         const props = [];
