@@ -289,7 +289,7 @@
         </xsl:element>
         <xsl:if test="string(@ldapServer) != ''">
           <xsl:element name="ldapSecurity">
-            <xsl:copy-of select="@ldapProtocol | @authMethod | @maxConnections | @workunitsBasedn | @filesDefaultUser | @filesDefaultPassword"/>
+            <xsl:copy-of select="@ldapProtocol | @authMethod | @maxConnections | @workunitsBasedn"/>
             <xsl:variable name="ldapServerName" select="@ldapServer"/>
             <xsl:attribute name="filesBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@filesBasedn"/>
@@ -314,9 +314,6 @@
             </xsl:attribute>
             <xsl:attribute name="useLegacyDefaultFileScopePermissionCache">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@useLegacyDefaultFileScopePermissionCache"/>
-            </xsl:attribute>
-            <xsl:attribute name="useLegacySuperUserStatusCheck">
-              <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@useLegacySuperUserStatusCheck"/>
             </xsl:attribute>
             <xsl:attribute name="disableDefaultUser">
               <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@disableDefaultUser"/>
