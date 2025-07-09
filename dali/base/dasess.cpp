@@ -873,7 +873,7 @@ public:
 
     CClientSessionManager()
     {
-        securitydisabled = false;
+        securitydisabled = (queryDaliServerVersion().compare("1.8") < 0);
     }
     virtual ~CClientSessionManager()
     {
@@ -916,11 +916,7 @@ public:
         if (err)
             *err = 0;
         if (securitydisabled)
-            return SecAccess_Unavailable;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
-            securitydisabled = true;
-            return SecAccess_Unavailable;
-        }
+            return SecAccess_Full;
         if (!udesc)
             return SecAccess_Unknown;
         CMessageBuffer mb;
@@ -947,7 +943,7 @@ public:
             return SecAccess_None;
         }
 
-        SecAccessFlags perms = SecAccess_Unavailable;
+        SecAccessFlags perms = SecAccess_None;  // default to deny access in case permission is not returned
         if (mb.remaining()>=sizeof(perms)) {
             mb.read((int &)perms);
             if (mb.remaining()>=sizeof(int)) {
@@ -959,8 +955,7 @@ public:
                     throw new CDaliLDAP_Exception(e);
             }
         }
-        if (perms == SecAccess_Unavailable)
-            securitydisabled = true;
+
         return perms;
     }
 
@@ -968,10 +963,6 @@ public:
     {
         if (securitydisabled)
             return true;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
-            securitydisabled = true;
-            return true;
-        }
         CMessageBuffer mb;
         mb.append((int)MSR_CLEAR_PERMISSIONS_CACHE);
         udesc->serialize(mb);
@@ -992,12 +983,6 @@ public:
         {
             *err = -1;
             retMsg.append("Security not enabled");
-            return false;
-        }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
-            *err = -1;
-            retMsg.append("Security not enabled");
-            securitydisabled = true;
             return false;
         }
         CMessageBuffer mb;
@@ -1031,12 +1016,6 @@ public:
         {
             *err = -1;
             retMsg.append("Security not enabled");
-            return false;
-        }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
-            *err = -1;
-            retMsg.append("Security not enabled");
-            securitydisabled = true;
             return false;
         }
         CMessageBuffer mb;
