@@ -50,7 +50,7 @@ ECL_PHONENUMBER_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 #undef verify
 #include <phonenumbers/phonenumberutil.h>
 
-enum phoneNumberType : int
+enum phoneNumberType : __int8
 {
     FIXED_LINE,
     MOBILE,
@@ -66,91 +66,64 @@ enum phoneNumberType : int
     UNKNOWN
 };
 
-static void parseNumber(size32_t lenNumber,const char *number, size32_t lenCountryCode, const char *countryCode, i18n::phonenumbers::PhoneNumber &phoneNumber)
+static void throwOnError(i18n::phonenumbers::PhoneNumberUtil::ErrorType err)
 {
-    const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    std::string numberStr(number, lenNumber);
-    std::string countryCodeStr(countryCode, lenCountryCode);
-    phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber);
+    switch (err)
+    {
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::NO_PARSING_ERROR:
+        return;
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::INVALID_COUNTRY_CODE_ERROR:
+        throw MakeStringException(err, "libphonenumber : Invalid country code");
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::NOT_A_NUMBER:
+        throw MakeStringException(err, "libphonenumber : Not a number");
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_SHORT_AFTER_IDD:
+        throw MakeStringException(err, "libphonenumber : Too short after IDD");
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_SHORT_NSN:
+        throw MakeStringException(err, "libphonenumber : Too short NSN");
+    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_LONG_NSN:
+        throw MakeStringException(err, "libphonenumber : Too long NSN");
+    default:
+        throw MakeStringException(err, "libphonenumber : Unknown error");
+    }
 }
 
 namespace phonenumber
 {
+//--------------------------------------------------------------------------------
+//                           ECL SERVICE ENTRYPOINTS
+//--------------------------------------------------------------------------------
 
-ECL_PHONENUMBER_API bool ECL_PHONENUMBER_CALL checkValidity(ICodeContext *_ctx, size32_t lenNumber, const char *number, size32_t lenCountryCode, const char *countryCode)
+ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL parser(ICodeContext *_ctx, size32_t &__lenResult, void *&__result, size32_t lenNumber, const char *number, size32_t lenCountryCode, const char *countryCode)
 {
-    const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+    MemoryBuffer mb;
     i18n::phonenumbers::PhoneNumber phoneNumber;
-    try
-    {
-        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
-        return phoneUtil->IsValidNumber(phoneNumber);
-    }
-    catch (...)
-    {
-        return false;
-    }
-}
-
-ECL_PHONENUMBER_API phoneNumberType ECL_PHONENUMBER_CALL phonenumberType(ICodeContext *_ctx, size32_t lenNumber, const char *number, size32_t lenCountryCode, const char *countryCode)
-{
     const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    i18n::phonenumbers::PhoneNumber phoneNumber;
+    std::string numberStr(number, lenNumber);
+    std::string countryCodeStr(countryCode, lenCountryCode);
+    throwOnError(phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber));
 
-    try
-    {
-        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
-        i18n::phonenumbers::PhoneNumberUtil::PhoneNumberType type = phoneUtil->GetNumberType(phoneNumber);
-        phoneNumberType localType = UNKNOWN;
-        if (type >= i18n::phonenumbers::PhoneNumberUtil::PhoneNumberType::FIXED_LINE &&
-            type <= i18n::phonenumbers::PhoneNumberUtil::PhoneNumberType::UNKNOWN)
-        {
-            localType = static_cast<phoneNumberType>(static_cast<int>(type));
-        }
-        return localType;
-    }
-    catch (...)
-    {
-        return UNKNOWN;
-    }
-}
-
-ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL regionCode(ICodeContext *_ctx, size32_t &lenResult, char *&result, size32_t lenNumber, const char *number, size32_t lenCountryCode, const char *countryCode)
-{
-    const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    i18n::phonenumbers::PhoneNumber phoneNumber;
-    std::string regionCodeStr;
+    // Format the results
+    std::string formattedNumber;
+    phoneUtil->Format(phoneNumber, i18n::phonenumbers::PhoneNumberUtil::PhoneNumberFormat::E164, &formattedNumber);
     
-    try
-    {
-        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
-        phoneUtil->GetRegionCodeForNumber(phoneNumber, &regionCodeStr);
-    }
-    catch (...)
-    {
-        regionCodeStr = "";
-    }
+    bool isValid = phoneUtil->IsValidNumber(phoneNumber);
+    __int8 lineType = static_cast<__int8>(phoneUtil->GetNumberType(phoneNumber));
     
-    lenResult = regionCodeStr.length();
-    result = static_cast<char *>(rtlMalloc(lenResult));
-    if (lenResult > 0) {
-        memcpy(result, regionCodeStr.c_str(), lenResult);
-    }
-}
+    std::string regionCode;
+    phoneUtil->GetRegionCodeForNumber(phoneNumber, &regionCode);
+    __int16 countryCodeInt = phoneNumber.country_code();
 
-ECL_PHONENUMBER_API unsigned ECL_PHONENUMBER_CALL countryCode(ICodeContext *_ctx, size32_t lenNumber, const char *number, size32_t lenCountryCode, const char *countryCode)
-{
-    const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    i18n::phonenumbers::PhoneNumber phoneNumber;
-    try
-    {
-        parseNumber(lenNumber, number, lenCountryCode, countryCode, phoneNumber);
-        return phoneNumber.country_code();
-    }
-    catch (...)
-    {
-        return 0;
-    }
+    size32_t regionCodeLen = regionCode.size();
+    size32_t formattedNumberLen = formattedNumber.size();
+
+    mb.append(formattedNumberLen).append(formattedNumberLen, formattedNumber.c_str());
+    mb.append(isValid);
+    mb.append(lineType);
+    mb.append(regionCodeLen).append(regionCodeLen, regionCode.c_str());
+    mb.append(countryCodeInt);
+
+    __lenResult = mb.length();
+    __result = mb.detach();
 }
 
 } // namespace phonenumber

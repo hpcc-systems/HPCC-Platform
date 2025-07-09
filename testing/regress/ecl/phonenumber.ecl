@@ -44,12 +44,13 @@ testNumbers := DATASET([
 
 
 // Test entire dataset against lib_phonenumber plugin calls
-testResults := PROJECT(testNumbers, TRANSFORM({TestRecord, BOOLEAN isValidNumber, lib_phonenumber.phonenumber_type pType, INTEGER pCountryCode, STRING pRegionCode},
-                                               SELF.isValidNumber := lib_phonenumber.phonenumber.isValidNumber(LEFT.phonenumber, LEFT.countryCode),
-                                               SELF.pType := lib_phonenumber.phonenumber.getType(LEFT.phonenumber, LEFT.countryCode),
-                                               SELF.pCountryCode := lib_phonenumber.phonenumber.getCountryCode(LEFT.phonenumber, LEFT.countryCode),
-                                               SELF.pRegionCode := lib_phonenumber.phonenumber.getRegionCode(LEFT.phonenumber, LEFT.countryCode),
-                                               SELF := LEFT));
+testResults := PROJECT(testNumbers, TRANSFORM({TestRecord, STRING formattedNumber, BOOLEAN isValidNumber, lib_phonenumber.phonenumber_type pType, INTEGER2 pCountryCode, STRING pRegionCode},
+                                                SELF.formattedNumber := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].number,
+                                                SELF.isValidNumber := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].valid,
+                                                SELF.pType := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].lineType,
+                                                SELF.pCountryCode := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].countryCode,
+                                                SELF.pRegionCode := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].regionCode,
+                                                SELF := LEFT));
 
 OUTPUT(testResults, NAMED('fullTestResults'));
 

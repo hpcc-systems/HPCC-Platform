@@ -15,7 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT phonenumber_type := ENUM(INTEGER,
+
+//--------------------------------------------------------------------------------
+//                           ECL LIB_PHONENUMBER TYPES
+//--------------------------------------------------------------------------------
+
+EXPORT phonenumber_type := ENUM(INTEGER1,
     FIXED_LINE=0,
     MOBILE,
     FIXED_LINE_OR_MOBILE,
@@ -30,11 +35,18 @@ EXPORT phonenumber_type := ENUM(INTEGER,
     UNKNOWN
 );
 
+EXPORT phonenumber_data := RECORD
+    STRING number{MAXLENGTH(30)};
+    BOOLEAN valid;
+    phonenumber_type lineType;
+    STRING regionCode{MAXLENGTH(5)};
+    INTEGER2 countryCode;
+END;
 
-// Service definition
+//--------------------------------------------------------------------------------
+//                           ECL SERVICE DEFINITIONS
+//--------------------------------------------------------------------------------
+
 EXPORT phonenumber := SERVICE : plugin('phonenumberplugin'), library('phonenumber'), namespace('phonenumber'), CPP, PURE
-    BOOLEAN isValidNumber(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='checkValidity';
-    INTEGER getType(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='phonenumberType';
-    STRING getRegionCode(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='regionCode';
-    INTEGER getCountryCode(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='countryCode';
+    DATASET(phonenumber_data) parseNumber(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='parser';
 END;
