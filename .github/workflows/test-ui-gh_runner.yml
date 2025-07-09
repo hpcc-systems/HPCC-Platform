@@ -70,7 +70,8 @@ jobs:
             xvfb \
             libxi6 \
             gdb \
-            ${{ inputs.dependencies }}
+            ${{ inputs.dependencies }} \
+            sysstat
 
       - name: Download Package
         if: steps.check.outputs.runtests
@@ -180,10 +181,11 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
+          sar -r 1 > sar-$(date +%Y-%m-%d_%H-%M%S).log 2>&1 &
           export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar:${{ github.workspace }}/commons-io-2.19.0.jar"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
           find . -iname '*.java' -type f -print -exec javac -Xlint:none {} \;
-          java framework.TestRunner -l debug -p /home/runner/HPCCSystems-regression/log/ -q 
+          java framework.TestRunner -l debug -p /home/runner/HPCCSystems-regression/log/ -q 2>&1 | tee run.log
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
           [[ $lines -ne 0 ]] && exit 1
