@@ -237,30 +237,15 @@ static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
     return getWorkUnitFactory(secmgr, secuser);
 }
 
-static bool securityDisabled = false;
-
 static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
 {
-    if (securityDisabled)
-        return true;
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
     SecAccessFlags perm = SecAccess_Full;
     if (scopename && *scopename)
     {
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
-        if (perm<0)
-        {
-            if (perm == SecAccess_Unavailable)
-            {
-                perm = SecAccess_Full;
-                securityDisabled = true;
-            }
-            else 
-                perm = SecAccess_None;
-        }
-        if (!HASREADPERMISSION(perm)) 
+        if (perm<0 || !HASREADPERMISSION(perm))
             return false;
-
     }
     return true;
 }
