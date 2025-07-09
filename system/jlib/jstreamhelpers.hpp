@@ -39,7 +39,7 @@ inline void append(IBufferedSerialOutputStream &target, const T &value)
 inline void read(IBufferedSerialInputStream &source, void *buffer, size32_t size)
 {
     size32_t got = source.read(size, buffer);
-    if (got != size)
+    if (unlikely(got != size))
         throw makeStringExceptionV(0, "Failed to read the expected number of bytes %u, only read %u bytes", size, got);
 }
 
@@ -47,6 +47,13 @@ template <class T>
 inline void read(IBufferedSerialInputStream &source, T &value)
 {
     size32_t got = source.read(sizeof(T), &value);
-    if (got != sizeof(T))
+    if (unlikely(got != sizeof(T)))
         throw makeStringExceptionV(0, "Failed to read the expected number of bytes %lu, only read %u bytes", sizeof(T), got);
+}
+
+inline bool isNextByteZero(IBufferedSerialInputStream &src)
+{
+    size32_t got;
+    const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
+    return got && (*attrNamePtr == '\0');
 }

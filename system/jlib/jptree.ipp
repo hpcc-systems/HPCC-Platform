@@ -220,7 +220,6 @@ public:
         else
         {
             compressType = COMPRESS_METHOD_NONE;
-            clear();
         }
     }
     explicit CPTValue() = default;   //MORE: Should there be a single shared null instance?

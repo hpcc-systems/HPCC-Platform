@@ -3049,21 +3049,15 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
 {
     deserializeSelf(src);
 
-    StringBuffer eName;
-    size32_t len{0};
     for (;;)
     {
-        const char *nextName = queryZeroTerminatedString(src, len);
-        if (nextName == nullptr)
-            throwUnexpectedX("eName could not be found within buffer");
-        if (len == 0)
+        if (isNextByteZero(src))
         {
             src.skip(1); // Skip over null terminator.
             break;
         }
         IPropertyTree *child = create(src);
-        eName.set(nextName);
-        addPropTree(eName, child);
+        addPropTree(child->queryName(), child);
     }
 }
 
@@ -3071,10 +3065,10 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 {
     size32_t len{0};
     const char *name = queryZeroTerminatedString(src, len);
-    if (len < 1)
+    if (len == 0)
         throwUnexpectedX("Name could not be found within buffer");
-    src.skip(len + 1); // Skip over null terminator?
     setName(name);
+    src.skip(len + 1); // Skip over null terminator?
 
     read(src, flags);
 
@@ -3082,13 +3076,16 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
     for (;;)
     {
         const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
-        assertex(got >= 1);
+        if (got < 1)
+            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
         if (*attrNamePtr == '\0')
         {
             src.skip(1); // Skip over null terminator.
             break;
         }
         auto [attrName, attrValue] = peekKeyValuePair(src, len);
+        if (attrValue == nullptr)
+            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
         setProp(attrName, attrValue);
         src.skip(len + 1); // +1 to skip over second null terminator.
     }

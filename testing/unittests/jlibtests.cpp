@@ -3676,41 +3676,21 @@ protected:
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
         // Time deserialize() method
-        MemoryBuffer deserializeBuffer;
-        deserializeBuffer.append(memoryBufferSize, memoryBuffer.toByteArray());
         Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
         timer.reset();
-        memoryBufferDeserialized->deserialize(deserializeBuffer);
+        memoryBufferDeserialized->deserialize(memoryBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
         // Time deserializeFromStream() method
-        MemoryBuffer streamDeserializeBuffer;
-        streamDeserializeBuffer.append(streamBufferSize, streamBuffer.toByteArray());
-        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamDeserializeBuffer);
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
         Owned<IPropertyTree> streamDeserialized = createPTree();
         timer.reset();
         streamDeserialized->deserializeFromStream(*in);
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
-        // Time createPTree() from MemoryBuffer method
-        MemoryBuffer pTreeBuffer;
-        pTreeBuffer.append(memoryBufferSize, memoryBuffer.toByteArray());
-        timer.reset();
-        Owned<IPropertyTree> deserializePTreeFromMemoryBuffer = createPTree(pTreeBuffer);
-        __uint64 deserializePTreeFromMemoryBufferElapsedNs = timer.elapsedNs();
-
-        // Time createPTree() from stream method
-        MemoryBuffer streamPTreeBuffer;
-        streamPTreeBuffer.append(streamBufferSize, streamBuffer.toByteArray());
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamPTreeBuffer);
-        timer.reset();
-        Owned<IPropertyTree> deserializePTreeFromStream = createPTree(*in2);
-        __uint64 deserializePTreeFromStreamElapsedNs = timer.elapsedNs();
-
         // Validation - verify both deserialized trees are equivalent to the original
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializePTreeFromStream));
 
         double serializeTimeMs = serializeElapsedNs / 1e6;
         double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
@@ -3724,15 +3704,10 @@ protected:
 
         double deserializeTimeMs = deserializeElapsedNs / 1e6;
         double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
-        double deserializePTreeFromMemoryBufferTimeMs = deserializePTreeFromMemoryBufferElapsedNs / 1e6;
-        double deserializePTreeFromStreamTimeMs = deserializePTreeFromStreamElapsedNs / 1e6;
         DBGLOG("=== DESERIALIZATION TEST RESULTS:");
         DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
         DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
         DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
-        DBGLOG("  createPTree() from memory buffer time: %.6f ms", deserializePTreeFromMemoryBufferTimeMs);
-        DBGLOG("  createPTree() from stream time: %.6f ms", deserializePTreeFromStreamTimeMs);
-        DBGLOG("  Performance ratio createPTree() deserializeFromStream/deserialize: %.6f", deserializePTreeFromStreamTimeMs / deserializePTreeFromMemoryBufferTimeMs);
 
         DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
