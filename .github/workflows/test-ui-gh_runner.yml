@@ -168,6 +168,8 @@ jobs:
           wget https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar
+          wget https://dlcdn.apache.org/commons/io/binaries/commons-io-2.19.0-bin.zip
+          unzip commons-io-2.19.0-bin.zip commons-io-2.19.0/commons-io-2.19.0.jar
 
           # Install Selenium
           wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.22.0/selenium-java-4.22.0.zip
@@ -178,7 +180,7 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
-          export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar"
+          export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar:${{ github.workspace }}/commons-io-2.19.0.jar"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
           find . -iname '*.java' -type f -print -exec javac -Xlint:none {} \;
           java framework.TestRunner -l debug -p /home/runner/HPCCSystems-regression/log/ -q 
@@ -198,5 +200,6 @@ jobs:
           name: ${{ inputs.asset-name }}-ecl_watch_ui_tests_logs
           path: |
             ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
+            ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.png
             /home/runner/HPCCSystems-regression/log/*.json
           if-no-files-found: error
