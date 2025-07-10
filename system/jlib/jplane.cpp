@@ -43,10 +43,11 @@ struct PlaneAttributeInfo
 };
 static const std::array<PlaneAttributeInfo, PlaneAttributeCount> planeAttributeInfo = {{
     { PlaneAttrType::integer, 1024, false, "blockedFileIOKB" },   // enum PlaneAttributeType::BlockedSequentialIO    {0}
-    { PlaneAttrType::integer, 1024, false, "blockedRandomIOKB" }, // enum PlaneAttributeType::blockedRandomIOKB      {1}
-    { PlaneAttrType::boolean, 0, true, "fileSyncWriteClose" },    // enum PlaneAttributeType::fileSyncWriteClose     {2}
-    { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" },// enum PlaneAttributeType::concurrentWriteSupport {3}
+    { PlaneAttrType::integer, 1024, false, "blockedRandomIOKB" }, // enum PlaneAttributeType::BlockedRandomIOKB      {1}
+    { PlaneAttrType::boolean, 0, true, "fileSyncWriteClose" },    // enum PlaneAttributeType::FileSyncWriteClose     {2}
+    { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" },// enum PlaneAttributeType::ConcurrentWriteSupport {3}
     { PlaneAttrType::integer, 1, false, "writeSyncMarginMs" },    // enum PlaneAttributeType::WriteSyncMarginMs      {4}
+    { PlaneAttrType::boolean, 0, true, "renameSupported" },       // enum PlaneAttributeType::RenameSupported        {5}
 }};
 
 static constexpr unsigned __int64 unsetPlaneAttrValue = 0xFFFFFFFF00000000;
@@ -581,6 +582,65 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
     return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
 }
 
+static std::atomic<int> avoidRename{-1};
+static CriticalSection avoidRenameCS;
+// returns true if configured and should use 'result'
+static bool checkComponentAndGlobalAvoidRename(bool &result)
+{
+    if (-1 == avoidRename) // 1st time
+    {
+        // NB: wouldn't update if config changed, but not sure I care (could add hook if really wanted to)
+        CriticalBlock b(avoidRenameCS);
+        if (-1 == avoidRename)
+        {
+            int v = getConfigInt("expert/@avoidRename", -1);
+            if (-1 != v) // i.e. is there a setting at all
+                avoidRename = v>0;
+            else
+                avoidRename = -2; // suppress further checks
+        }
+    }
+    if (-2 == avoidRename)
+        return false;
+    result = avoidRename > 0;
+    return true;
+}
+
+bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the plane type determine the default
+{
+    if (isUrl(filePath))
+        return false;
+
+    // check plane property first
+    Linked<const CStoragePlane> plane;
+    {
+        CriticalBlock b(storagePlaneMapCrit);
+        plane.set(doFindStoragePlaneFromPath(filePath, false));
+    }
+    if (plane)
+    {
+        // return if configured
+        unsigned __int64 value = plane->getAttribute(RenameSupported);
+        if (unsetPlaneAttrValue != value)
+            return value > 0;
+    }
+
+    // handle legacy component or global expert property
+    bool result;
+    if (checkComponentAndGlobalAvoidRename(result)) // returns true if expert setting configured
+        return result;
+
+    if (plane)
+    {
+        // In the absence of plane configuration (or component/global expert setting)
+        // we assume that any plane backed by a pvc or storageapi does not support rename
+        if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("storageapi"))
+            return false;
+    }
+
+    // if none of the above, we assume rename is supported
+    return true;
+}
 
 //------------------------------------------------------------------------------------------------------------
 
