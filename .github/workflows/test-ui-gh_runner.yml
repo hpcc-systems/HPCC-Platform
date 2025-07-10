@@ -190,7 +190,7 @@ jobs:
           echo "  timestamp: $timestamp"
           echo "Start...." >> sar-$timestamp.log
           sar -r 1 >> sar-$timestamp.log 2>&1 &
-          echo "  pid: $$"
+          echo "  pid: $!"
           echo "  pid: $(pgrep sar)"
           echo "  pid: $(ps aux | egrep '[s]ar')"
 
