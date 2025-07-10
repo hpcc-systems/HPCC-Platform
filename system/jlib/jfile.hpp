@@ -667,7 +667,6 @@ public:
     const bool canSeekWrite;
     const bool hasDirectories;
     const bool preExtendOutput;
-    const offset_t minimumBufferSize;
 };
 
 //Return information about files on a particular filesystem.  Objects returned will always remain valid.
