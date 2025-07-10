@@ -634,7 +634,7 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     {
         // In the absence of plane configuration (or component/global expert setting)
         // we assume that any plane backed by a pvc or storageapi does not support rename
-        if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("@storageapi"))
+        if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("storageapi"))
             return false;
     }
 
