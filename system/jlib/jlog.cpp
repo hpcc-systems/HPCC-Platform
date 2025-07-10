@@ -1257,7 +1257,7 @@ bool getDebugInstanceDir(StringBuffer &dir, const char *componentType, const cha
 bool copyPortMortemPIDFiles(HANDLE pid, const char *target, bool clear)
 {
     StringBuffer pidFilenameBase;
-    getPostMortemPidFilename(pidFilenameBase, pid);
+    getPostMortemPidFilename(pidFilenameBase, (unsigned)pid);
     return PostMortemLogMsgHandler::copyPIDFiles(pidFilenameBase, target, clear);
 }
 
