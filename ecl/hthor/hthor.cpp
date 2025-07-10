@@ -56,6 +56,7 @@
 #include "rtlnewkey.hpp"
 
 #include "thorread.hpp"
+#include "thorwrite.hpp"
 
 #include "ws_dfsclient.hpp"
 #include "hthorerr.hpp"
@@ -360,10 +361,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     else
     {
         dbgassertex(dwHelper); // NB: either iwHelper, or dwHelper must be non-null
-        if (TDWpersist & dwHelper->getFlags())
-            getDefaultPersistPlane(defaultCluster);
-        else
-            getDefaultStoragePlane(defaultCluster);
+        getDefaultWritePlane(defaultCluster, dwHelper->getFlags());
     }
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
@@ -413,21 +411,11 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
-    formatOptions.setown(createPTree()); // options governing the format of the bytes sent to the output stream
-    providerOptions.setown(createPTree()); // options governing the output stream itself (overwrite, append, etc)
     helperFlags = helper.getFlags();
     useGenericReadWrites = ((helperFlags & TDXgeneric) != 0);
     grouped = (helperFlags & TDXgrouped) != 0;
     extend = ((helperFlags & TDWextend) != 0);
     overwrite = ((helperFlags & TDWoverwrite) != 0);
-    if (useGenericReadWrites)
-    {
-        // Initial provider and format options from flags
-        providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
-        providerOptions->setPropBool("@extend", extend);
-        providerOptions->setPropBool("@overwrite", overwrite);
-        formatOptions->setPropBool("@grouped", grouped);
-    }
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -465,7 +453,7 @@ void CHThorDiskWriteActivity::execute()
 void CHThorDiskWriteActivity::stop()
 {
     outSeq->flush();
-    if(blockcompressed)
+    if(compressed)
         uncompressedBytesWritten = outSeq->getPosition();
     close();
     updateWorkUnitResult(numRecords);
@@ -485,20 +473,18 @@ void CHThorDiskWriteActivity::resolve()
     mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helperFlags);
     assertex(mangledHelperFileName.str());
 
-    if (useGenericReadWrites)
-    {
-        // Merge options from helper into providerOptions and formatOptions if required
-        if (helperFlags & TDXdynprovideroptions)
-        {
-            CPropertyTreeWriter providerOptsWriter(providerOptions);
-            helper.getProviderOptions(providerOptsWriter);
-        }
-        if (helperFlags & TDXdynformatoptions)
-        {
-            CPropertyTreeWriter formatOptsWriter(formatOptions);
-            helper.getFormatOptions(formatOptsWriter);
-        }
-    }
+    //Order of precedence for the file access options:
+    // 1. Storage plane
+    // 2. Workunit
+    // 3. ECL options
+    StringBuffer defaultPlane;
+    getDefaultWritePlane(defaultPlane, helperFlags);
+    updatePlaneFromHelper(defaultPlane, helper);
+
+    fileAccessOptions.updateFromStoragePlane(defaultPlane, IFOwrite);
+    if (agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized()))
+        fileAccessOptions.setCompression(true, nullptr);
+    fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str());
 
     if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
     {
@@ -575,20 +561,6 @@ void CHThorDiskWriteActivity::resolve()
             }
 
             clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend));
-            StringBuffer planeName;
-            if (clusterHandler)
-            {
-                StringArray clusterNames;
-                clusterHandler->getClusters(clusterNames);
-                planeName.set(clusterNames.item(0)); // NB: only bother with 1st, if multiple createClusterWriteHandler validates if same
-            }
-            else
-                getDefaultStoragePlane(planeName);
-            bool outputCompressionDefault = agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized());
-            outputPlaneCompressed = outputCompressionDefault;
-            Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, false);
-            if (plane)
-                outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
         }
     }
     else
@@ -605,14 +577,10 @@ void CHThorDiskWriteActivity::open()
     // Open an output file...
     file.setown(createIFile(filename));
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
+    compressed = fileAccessOptions.isCompressed();
 
-    blockcompressed=false;
-    if (0 == (helperFlags & TDWnocompress))
-    {
-        blockcompressed = checkWriteIsCompressed(helperFlags);
-        if (!blockcompressed) // if ECL doesn't specify, default to plane definition
-            blockcompressed = outputPlaneCompressed;
-    }
+    //MORE: Extract this from the fileAccessOptions instead... the whole following code should be extracted to a function in thorwrite
+    //but that can wait for another PR.
     void *ekey;
     size32_t ekeylen;
     helper.getEncryptKey(ekeylen,ekey);
@@ -624,9 +592,9 @@ void CHThorDiskWriteActivity::open()
         memset(ekey,0,ekeylen);
         rtlFree(ekey);
         encrypted = true;
-        blockcompressed = true;
+        compressed = true;
     }
-    if(blockcompressed)
+    if(compressed)
     {
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
@@ -635,7 +603,7 @@ void CHThorDiskWriteActivity::open()
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
     if(!io)
-        throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), filename.get());
+        throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (compressed ? " compressed" : "")), filename.get());
     incomplete = true;
 
     diskout.setown(createBufferedIOStream(io));
@@ -754,7 +722,7 @@ void CHThorDiskWriteActivity::publish()
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
     //properties of the first file part.
-    if(blockcompressed)
+    if(compressed)
     {
         attrs->setPropInt64("@size", uncompressedBytesWritten);
         attrs->setPropInt64("@compressedSize", fileSize);
@@ -776,11 +744,13 @@ void CHThorDiskWriteActivity::publish()
         clusterHandler->setDescriptorParts(desc, base.str(), attrs);
 
     // properties of the logical file
+    // MORE: Many of these should be updated from fileAccessOptions instead of member variables
+    //       and extracted to a function that can be used from thor, hthor and roxie.
     IPropertyTree & properties = desc->queryProperties();
-    properties.setPropInt64("@size", (blockcompressed) ? uncompressedBytesWritten : fileSize);
+    properties.setPropInt64("@size", (compressed) ? uncompressedBytesWritten : fileSize);
     if (encrypted)
         properties.setPropBool("@encrypted", true);
-    if (blockcompressed)
+    if (compressed)
         properties.setPropBool("@blockCompressed", true);
     if (helperFlags & TDWpersist)
         properties.setPropBool("@persistent", true);
@@ -10755,8 +10725,8 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
-    formatOptions.setown(createPTree());
-    providerOptions.setown(createPTree());
+
+    baseFileAccessOptions.updateFromGraphNode(_node);
 
     isCodeSigned = false;
     if (_node)
@@ -10767,17 +10737,8 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
         isCodeSigned = isActivityCodeSigned(*_node);
     }
 
-    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
-    if (helperFlags & TDRoptional)
-        providerOptions->setPropBool("@optional", true);
-
-    formatOptions->setPropBool("@grouped", grouped);
-    if ((helperFlags & TDRcloneappendvirtual) != 0)
-        formatOptions->setPropBool("@cloneAppendVirtuals", true);
-
     if (useGenericReadWrites)
     {
-        outputGrouped = helper.queryOutputMeta()->isGrouped();  // It is possible for input to be incorrectly marked as grouped, and input not or vice-versa
         bool isTemporary = (helperFlags & (TDXtemporary | TDXjobtemp)) != 0;
         if (isTemporary)
         {
@@ -10847,34 +10808,8 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     dfsParts.clear();
     subfiles.kill();
 
-    Owned<const IPropertyTree> curFormatOptions;
-    if (useGenericReadWrites)
-    {
-        Owned clonedFormatOptions(createPTreeFromIPT(formatOptions));
-        CPropertyTreeWriter writer(clonedFormatOptions);
-        helper.getFormatOptions(writer);
-        curFormatOptions.setown(clonedFormatOptions.getClear());
-    }
-    else
-        curFormatOptions.set(formatOptions);
-
-    //Provider options may be modified below
-    Owned<IPropertyTree> curProviderOptions(createPTreeFromIPT(providerOptions));
-    if (useGenericReadWrites)
-    {
-        CPropertyTreeWriter writer(curProviderOptions);
-        helper.getProviderOptions(writer);
-    }
-
-    rtlDataAttr k;
-    size32_t kl;
-    helper.getEncryptKey(kl,k.refdata());
-    if (kl)
-    {
-        curProviderOptions->setPropBin("encryptionKey", kl, k.getdata());
-        curProviderOptions->setPropBool("blockcompressed", true);
-        curProviderOptions->setPropBool("compressed", true);
-    }
+    FileAccessOptions helperFileAccessOptions(baseFileAccessOptions);
+    helperFileAccessOptions.updateFromReadHelper(helper);
 
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helperFlags);
@@ -10885,7 +10820,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
         logicalFileName = tempFileName.str();
         gatherInfo(NULL);
-        subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+        subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
     }
     else
     {
@@ -10912,22 +10847,22 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
                     for (; s<numsubs; s++)
                     {
                         IDistributedFile &subfile = super->querySubFile(s, true);
-                        subfiles.append(*extractFileInformation(&subfile, curFormatOptions, curProviderOptions));
+                        subfiles.append(*extractFileInformation(&subfile, helperFileAccessOptions));
                     }
                     assertex(fdesc);
                     superfile.set(fdesc->querySuperFileDescriptor());
                 }
                 else
-                    subfiles.append(*extractFileInformation(dFile, curFormatOptions, curProviderOptions));
+                    subfiles.append(*extractFileInformation(dFile, helperFileAccessOptions));
 
                 if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ", graph);
             }
             else
-                subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+                subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
         }
         else
-            subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+            subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
 
         if (!ldFile)
         {
@@ -10963,85 +10898,36 @@ void CHThorNewDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     }
 }
 
-static void queryInheritProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile, const FileAccessOptions & helperFileAccessOptions)
 {
-    if (source.hasProp(sourceName) && !target.hasProp(targetName))
-        target.setProp(targetName, source.queryProp(sourceName));
-}
+    FileAccessOptions fileAccessOptions(helperFileAccessOptions);
 
-static void queryInheritSeparatorProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
-{
-    //Legacy - commas are quoted if they occur in a separator list, so need to remove the leading backslashes
-    if (source.hasProp(sourceName) && !target.hasProp(targetName))
-    {
-        StringBuffer unquoted;
-        const char * text = source.queryProp(sourceName);
-        while (*text)
-        {
-            if ((text[0] == '\\') && (text[1] == ','))
-                text++;
-            unquoted.append(*text++);
-        }
-        target.setProp(targetName, unquoted);
-    }
-}
-
-CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile, const IPropertyTree * curFormatOptions, const IPropertyTree * curProviderOptions)
-{
-    Owned<IPropertyTree> fileProviderOptions = createPTreeFromIPT(providerOptions);
-    unsigned actualCrc = helper.getDiskFormatCrc();
-    Linked<IOutputMetaData> actualDiskMeta = expectedDiskMeta;
-    Linked<IPropertyTree> fileFormatOptions = createPTreeFromIPT(curFormatOptions);
-    bool compressed = false;
-    bool blockcompressed = false;
-
-    const char * readFormat = queryReadFormat();
-    //MORE: Later this should use the type of the file if it is a distributed file and the format is not specified
+    fileAccessOptions.actualDiskMeta.set(expectedDiskMeta);
 
     if (distributedFile)
     {
-        const char *kind = queryFileKind(distributedFile);
-
-        //Do not use the field translation if the file was originally csv/xml - unless explicitly set
-        if ((strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == getLayoutTranslationMode())) &&
-//            (strisame(readFormat, "flat") || strisame(kind, readFormat)))
-              (strisame(readFormat, "flat"))) // Not sure about this - only allow fixed source format if reading as flat
-        {
-            //Yuk this will be horrible - it needs to cache it for each distributed file
-            //and also common them up if they are the same.
-            IPropertyTree &props = distributedFile->queryAttributes();
-            Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(props);
-            if (publishedMeta)
-            {
-                actualDiskMeta.setown(publishedMeta.getClear());
-                actualCrc = props.getPropInt("@formatCrc");
-            }
-
-            size32_t dfsSize = props.getPropInt("@recordSize");
-            if (dfsSize != 0)
-                fileFormatOptions->setPropInt("@recordSize", dfsSize);
-        }
-        compressed = distributedFile->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
-
-        //MORE: There should probably be a generic way of storing and extracting format options for a file
-        IPropertyTree & options = distributedFile->queryAttributes();
-        queryInheritProp(*fileFormatOptions, "quote", options, "@csvQuote");
-        queryInheritSeparatorProp(*fileFormatOptions, "separator", options, "@csvSeparate");
-        queryInheritProp(*fileFormatOptions, "terminator", options, "@csvTerminate");
-        queryInheritProp(*fileFormatOptions, "escape", options, "@csvEscape");
+        // Assume that we will read from the first storage plane - may need revisiting
+        StringBuffer storagePlaneName;
+        distributedFile->getClusterName(0, storagePlaneName);
+        fileAccessOptions.updateFromStoragePlane(storagePlaneName, IFOread);
+        fileAccessOptions.updateFromFile(distributedFile);
     }
-
-    fileProviderOptions->setPropBool("@grouped", grouped);
-    fileProviderOptions->setPropBool("@compressed", compressed);
-    fileProviderOptions->setPropBool("@blockCompressed", blockcompressed);
-    fileProviderOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    else
+    {
+        // Extract the provider options from the spill plane - using the plane that the temporary file will have been written to.
+        // HPCC-34586 created to ensure that hthor writes to the correct plane.
+        StringBuffer sourcePlane;
+        getDefaultWritePlane(sourcePlane, helperFlags);
+        fileAccessOptions.updateFromStoragePlane(sourcePlane, IFOread);
+    }
 
     InputFileInfo & target = * new InputFileInfo;
     target.file = distributedFile;
-    target.providerOptions.setown(fileProviderOptions.getClear());
-    target.formatOptions.setown(fileFormatOptions.getClear());
-    target.actualCrc = actualCrc;
-    target.actualMeta.swap(actualDiskMeta);
+    //MORE: Possibly InputFileInfo should contain the FileAccessOptions directly
+    target.providerOptions.setown(fileAccessOptions.providerOptions.getClear());
+    target.formatOptions.setown(fileAccessOptions.formatOptions.getClear());
+    target.actualCrc = fileAccessOptions.formatCrc;
+    target.actualMeta.swap(fileAccessOptions.actualDiskMeta);
     return &target;
 }
 

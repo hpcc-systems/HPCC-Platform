@@ -24,6 +24,7 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "rtldynfield.hpp"
+#include "rtlformat.hpp"
 #include "roxiemem.hpp"
 
 #include "rmtclient.hpp"
@@ -79,8 +80,19 @@ protected:
     Linked<const IPropertyTree> formatOptions;
 };
 
-THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode, const char * format, IOutputMetaData & projected, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, const IPropertyTree * formatOptions)
+IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode, const char * format, IOutputMetaData & projected, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, const IPropertyTree * formatOptions)
 {
     assertex(formatOptions);
     return new DiskWriteMapping(mode, format, projected, expectedCrc, expected, projectedCrc, formatOptions);
+}
+
+void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags)
+{
+    //NB: This can only access TDX flags because it is called from readers and writers
+    if (helperFlags & TDXjobtemp)
+        getDefaultJobTempPlane(plane);
+    else if (helperFlags & TDXtemporary)
+        getDefaultSpillPlane(plane);
+    else
+        getDefaultStoragePlane(plane);
 }

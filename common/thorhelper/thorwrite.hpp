@@ -26,6 +26,7 @@
 
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
+#include "thorread.hpp"
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -52,6 +53,6 @@ public:
 };
 THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode, const char * format, IOutputMetaData & projected, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, const IPropertyTree * formatOptions);
 
-//--------------------------------------------------------------------------------------------------------------------
+THORHELPER_API void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags);
 
 #endif // __THORWRITE_HPP_
