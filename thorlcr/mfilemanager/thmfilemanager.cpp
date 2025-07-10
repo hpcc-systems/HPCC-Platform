@@ -475,23 +475,6 @@ public:
             desc->queryProperties().setProp("@job", jobStr.str());
             desc->queryProperties().setProp("@owner", userStr.str());
 
-#ifndef _CONTAINERIZED
-            // if supporting different OS's in CLUSTER this should be checked where addCluster called
-            DFD_OS os = DFD_OSdefault;
-            EnvMachineOS thisOs = queryOS(groups.item(0).queryNode(0).endpoint());
-            switch (thisOs)
-            {
-                case MachineOsW2K:
-                    os = DFD_OSwindows;
-                    break;
-                case MachineOsLinux:
-                case MachineOsSolaris:
-                    os = DFD_OSunix;
-                    break;
-                default:
-                    break;
-            };
-#endif
             unsigned total;
             if (restrictedWidth)
                 total = restrictedWidth;
@@ -514,21 +497,9 @@ public:
                 // NB: always >= 1 groupNames
                 ForEachItemIn(gn, groupNames)
                 {
-                    StringBuffer thisPlaneDir;
-                    bool thisDirPerPart = false;
-#ifdef _CONTAINERIZED
-                    if (!globals->getPropBool("@_dafsStorage"))
-                    {
-// JCSMORE->GH - I think this needs to change to pass in accessMode to get correct aliased plane
-// and similarly for anywhere else that has placeholder of AccessMode::tbdWrite
-                        Owned<const IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
-                        thisPlaneDir.append(plane->queryPrefix());
-                        thisDirPerPart = plane->queryDirPerPart();
-                    }
-#else
-                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), thisPlaneDir))
-                        getLFNDirectoryUsingDefaultBaseDir(thisPlaneDir, logicalName, os); // legacy
-#endif
+                    Owned<const IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
+                    StringBuffer thisPlaneDir(plane->queryPrefix());
+                    bool thisDirPerPart = plane->queryDirPerPart();
                     if (!planeDir.length()) // 1st output plane
                     {
                         planeDir.swapWith(thisPlaneDir);
