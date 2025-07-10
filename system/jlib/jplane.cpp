@@ -582,6 +582,19 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
     return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
 }
 
+static std::atomic<int> avoidRename{-1};
+static CriticalSection avoidRenameCS;
+static bool isAvoidRenameEnabled()
+{
+    if (-1 == avoidRename)
+    {
+        CriticalBlock b(avoidRenameCS);
+        if (-1 == avoidRename)
+            avoidRename = getConfigBool("expert/@avoidRename");
+    }
+    return avoidRename;
+}
+
 bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the plane type determine the default
 {
     if (isUrl(filePath))

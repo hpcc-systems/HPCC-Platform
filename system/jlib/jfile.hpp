@@ -674,7 +674,6 @@ public:
 extern jlib_decl const FileSystemProperties & queryFileSystemProperties(const char * filename);
 inline bool canSeekWrite(const char * filename) { return queryFileSystemProperties(filename).canSeekWrite; }
 inline bool hasDirectories(const char * filename) { return queryFileSystemProperties(filename).hasDirectories; }
-extern jlib_decl bool isAvoidRenameEnabled();
 
 
 enum class FileWatchEvents

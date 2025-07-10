@@ -7299,19 +7299,6 @@ void FileIOStats::trace()
 static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, false, 0x10000};           // 64K
 static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, 0x400000};        // 4Mb
 
-static std::atomic<int> avoidRename{-1};
-static CriticalSection avoidRenameCS;
-bool isAvoidRenameEnabled()
-{
-    if (-1 == avoidRename)
-    {
-        CriticalBlock b(avoidRenameCS);
-        if (-1 == avoidRename)
-            avoidRename = getConfigBool("expert/@avoidRename");
-    }
-    return avoidRename;
-}
-
 //This implementation should eventually make use of the file hook.
 const FileSystemProperties & queryFileSystemProperties(const char * filename)
 {
