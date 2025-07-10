@@ -7302,7 +7302,7 @@ static constexpr FileSystemProperties linuxFileSystemNoRenameProperties{false, t
 
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
-static bool isAvoidRenameEnabled()
+bool isAvoidRenameEnabled()
 {
     if (-1 == avoidRename)
     {

@@ -587,6 +587,7 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     if (isUrl(filePath))
         return false;
 
+    // check plane property first
     Linked<const CStoragePlane> linkedPlane;
     const CStoragePlane *plane = nullptr;
     {
@@ -600,10 +601,15 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     if (unsetPlaneAttrValue != value)
         return value > 0;
 
+    // handle legacy global expert property
+    if (isAvoidRenameEnabled())
+        return false;
+
     // In the absence of plane configuration, we assume that any plane backed by a pvc or storageapi does not support rename
     if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("@storageapi"))
         return false;
 
+    // if none of the above, we assume rename is supported
     return true;
 }
 
