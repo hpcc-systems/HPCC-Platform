@@ -785,6 +785,7 @@ class EclccCompiler : implements IErrorReporter
             cycle_t startCompile = get_cycles_now();
             if (!pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true))
                 throw makeStringExceptionV(999, "Failed to run eclcc command %s", eclccCmd.str());
+            HANDLE pipeProcessHandle = pipe->getProcessHandle();
             errorReader->start(true);
             abortWaiter.start(true);
             try
@@ -813,6 +814,20 @@ class EclccCompiler : implements IErrorReporter
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
             }
             bool processKilled = (retcode >= 128);
+            if (processKilled && isContainerized())
+            {
+                StringBuffer postMortemFilename;
+
+                if (getDebugInstanceDir(postMortemFilename, "eclccserver", workunit->queryWuid()))
+                {
+                    k8s::addInstanceContextPaths(postMortemFilename);
+                    addPathSepChar(postMortemFilename);
+                    postMortemFilename.append("eclcc.postmortem.log");
+                    copyPortMortemPIDFiles(pipeProcessHandle, postMortemFilename, true);
+                    Owned<IWUQuery> qw = workunit->updateQuery();
+                    qw->addAssociatedFile(FileTypePostMortem, postMortemFilename, "localhost", "eclcc log", 0, 0, 0);
+                }
+            }
             //If the process is killed it is probably because it ran out of memory - so try to compile as a K8s job
             bool timedOut = abortWaiter.stop() || (isContainerized() && processKilled);
             if (!timedOut)
