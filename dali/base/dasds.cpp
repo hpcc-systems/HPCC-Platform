@@ -124,27 +124,6 @@ static constexpr memsize_t defaultExtCacheSizeMB = 10;
 static CFixedSizeAllocator *CServerRemoteTree_Allocator;
 #endif
 
-template <typename F>
-struct FinalAction // Allows an action to be executed when the object goes out of scope.
-{
-    FinalAction(F f) : clean{f} {}
-    ~FinalAction()
-    {
-        if (enabled)
-            clean();
-    }
-    void disable() { enabled = false; };
-
-private:
-    F clean;
-    bool enabled{true};
-};
-template <typename F>
-FinalAction<F> finally(F f)
-{
-    return FinalAction<F>(f);
-}
-
 enum notifications { notify_delete=1 };
 static const char *notificationStr(notifications n)
 {
@@ -5729,48 +5708,17 @@ public:
         }
         return res;
     }
-    unsigned saveStoreToXMLFile(const IPropertyTree *root, IFileIO *_iFileIOTmpStore)
+
+    enum class StoreFormat
     {
-        LOG(MCdebugProgress, "Saving store to XML");
-        assertex(root);
-        assertex(_iFileIOTmpStore);
-        unsigned crc{0};
-
-        OwnedIFileIO iFileIOTmpStore;
-        // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToXMLFile() call,
-        // for error processing and rename etc
-        iFileIOTmpStore.set(_iFileIOTmpStore);
-        try
-        {
-            OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
-            Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
-            Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
-
-#ifdef _DEBUG
-            toXML(root, *ios); // formatted (default)
-#else
-            toXML(root, *ios, 0, 0);
-#endif
-            ios->flush(); // ensure flushed outside of dtor (to ensure any exception thrown)
-            ios.clear();
-            fstream.clear();
-            crcPipeStream->flush(); // ensure flushed outside of dtor. NB: calls wrapped stream flush()
-            crc = crcPipeStream->queryCrc();
-            crcPipeStream.clear();
-            iFileIOTmpStore->close(); // ensure flushed outside of dtor
-            iFileIOTmpStore.clear();
-        }
-        catch (IException *e)
-        {
-            DISLOG(e, "Exception - Error saving store XML file");
-            throw;
-        }
-
-        return crc;
-    }
-    unsigned saveStoreToBinaryFile(const IPropertyTree *root, IFileIO *_iFileIOTmpStore)
+        XML,
+        BINARY
+    };
+    static constexpr size32_t bufferSize1mb = 0x100000;
+    unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *_iFileIOTmpStore, StoreFormat format, size32_t bufferSize = bufferSize1mb)
     {
-        LOG(MCdebugProgress, "Saving store to binary");
+        const bool isBinary = (format == StoreFormat::BINARY);
+        LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
         assertex(_iFileIOTmpStore);
 
@@ -5778,27 +5726,52 @@ public:
         // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
         // for error processing and rename etc
         iFileIOTmpStore.set(_iFileIOTmpStore);
-        CRC32 crc;
+        unsigned crc = 0;
         try
         {
-            Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
-            constexpr size32_t blockSize64k = 64 * 1024;
-            Owned<IBufferedSerialOutputStream> crcOutStream = createCrcBufferedOutputStream(serialStream, blockSize64k, crc);
-            root->serializeToStream(*crcOutStream);
-            crcOutStream->flush();
-            crcOutStream.clear();
-            serialStream->flush();
-            serialStream.clear();
-            iFileIOTmpStore->close(); // ensure flushed outside of dtor
+            if (isBinary)
+            {
+                CRC32 crcCalculator;
+                Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
+                Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialStream);
+                Owned<IBufferedSerialOutputStream> bufOutStream = createBufferedOutputStream(crcSerialStream, bufferSize);
+                root->serializeToStream(*bufOutStream);
+                bufOutStream->flush();
+                bufOutStream.clear();
+                crcSerialStream->flush();
+                crc = crcSerialStream->queryCrc();
+                crcSerialStream.clear();
+                serialStream->flush();
+                serialStream.clear();
+            }
+            else
+            {
+                OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
+                Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+                Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
+
+#ifdef _DEBUG
+                toXML(root, *ios); // formatted (default)
+#else
+                toXML(root, *ios, 0, 0);
+#endif
+                ios->flush();
+                ios.clear();
+                fstream.clear();
+                crcPipeStream->flush();
+                crc = crcPipeStream->queryCrc();
+                crcPipeStream.clear();
+            }
+            iFileIOTmpStore->close();
             iFileIOTmpStore.clear();
         }
         catch (IException *e)
         {
-            DISLOG(e, "Exception - Error saving binary store file");
+            StringBuffer errMsg;
+            EXCLOG(e, errMsg.append("Exception - Error saving ").append(isBinary ? "binary" : "XML").append(" store file").str());
             throw;
         }
-
-        return crc.get();
+        return crc;
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition)
     {
@@ -5816,10 +5789,10 @@ public:
             constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
             OwnedIFileIO iXmlFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
             OwnedIFile iXmlFileTmpStore = createIFile(tmpStoreName);
-            unsigned crcXml{0};
+            unsigned xmlCrc{0};
             try
             {
-                crcXml = saveStoreToXMLFile(root, iXmlFileIOTmpStore.get());
+                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), StoreFormat::XML);
             }
             catch (IException *e)
             {
@@ -5832,9 +5805,8 @@ public:
 
             // Save store as binary
             OwnedIFile iBinaryFileTmpStore;
-            unsigned *crcBinary{nullptr};
-            auto delete_crcBinary = finally([&crcBinary]
-                                            { delete crcBinary; crcBinary = nullptr; }); // Release crcBinary when out of scope
+            unsigned binaryCrc{0};
+            unsigned *binaryCrcPtr{nullptr};
             if (saveBinary)
             {
                 StringBuffer tmpStoreName;
@@ -5843,7 +5815,12 @@ public:
                 iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
                 try
                 {
-                    crcBinary = new unsigned(saveStoreToBinaryFile(root, iBinaryFileIOTmpStore.get()));
+                    size32_t bufferSize = bufferSize1mb;
+                    StringBuffer planeName;
+                    if (findPlaneFromPath(iXmlFileTmpStore->queryFilename(), planeName))
+                        bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+                    binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore.get(), StoreFormat::BINARY, bufferSize);
+                    binaryCrcPtr = &binaryCrc;
                 }
                 catch (IException *e)
                 {
@@ -5935,7 +5912,7 @@ public:
                 }
             }
             clearStoreInfo(storeFileName, location, 0, NULL);
-            writeStoreInfo(storeFileName, location, newEdition, &crcXml, crcBinary, &storeInfo);
+            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, binaryCrcPtr, &storeInfo);
 
             try
             {
@@ -5950,7 +5927,7 @@ public:
                     copyFile(rLbinary.str(), newBinaryStoreNamePath.str());
 
                     clearStoreInfo(storeFileName, remoteBackupLocation, 0, NULL);
-                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &crcXml, crcBinary, &storeInfo);
+                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, binaryCrcPtr, &storeInfo);
                     PROGLOG("Copy store done");
                 }
             }

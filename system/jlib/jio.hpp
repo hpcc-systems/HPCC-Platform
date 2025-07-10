@@ -30,12 +30,12 @@ typedef count_t findex_t;       //row index in a file.
 
 #ifndef IRECORDSIZE_DEFINED     // also in eclhelper.hpp
 #define IRECORDSIZE_DEFINED
-interface IRecordSize: public IInterface
+interface IRecordSize: public IInterface 
 // used to determine record size from record contents
 {
     virtual size32_t getRecordSize(const void *rec) = 0;
        //passing NULL to getRecordSize returns size for fixed records and initial size for variable
-    virtual size32_t getFixedSize() const = 0;
+    virtual size32_t getFixedSize() const = 0;                      
        // returns 0 for variable row size
     virtual size32_t getMinRecordSize() const = 0;
        // The minimum size that a variable (or fixed) size record can be.
@@ -56,12 +56,6 @@ interface IIOStream : public ISimpleReadStream
 {
     virtual void flush() = 0;
     virtual size32_t write(size32_t len, const void * data) = 0;
-};
-
-interface IOStream : public IInterface
-{
-    virtual void flush() = 0;
-    virtual size32_t put(size32_t len, const void * data) = 0;
 };
 
 template<typename T> size32_t readSimpleStream(T &target, ISimpleReadStream &stream, size32_t readChunkSize = 8192);
@@ -111,12 +105,12 @@ interface IFileIOStream;
 
 #ifndef IROWSTREAM_DEFINED
 #define IROWSTREAM_DEFINED
-interface IRowStream : extends IInterface
+interface IRowStream : extends IInterface 
 {
     virtual const void *nextRow()=0;                      // rows returned must be freed
     virtual void stop() = 0;                              // after stop called NULL is returned
 
-    inline const void *ungroupedNextRow()
+    inline const void *ungroupedNextRow() 
     {
         const void *ret = nextRow();
         if (!ret)
