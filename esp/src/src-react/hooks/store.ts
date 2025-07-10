@@ -38,7 +38,7 @@ function fromString<T>(value: string, defaultValue: T): T {
     }
 }
 
-function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor: boolean = false): [value: T, setValue: (value: T) => Promise<void>, reset: () => Promise<void>] {
+function useStore<T>(store: IKeyValStore, key: string, defaultValue: React.RefObject<T>, monitor: boolean = false): [value: T, setValue: (value: T) => Promise<void>, reset: () => Promise<void>] {
 
     const [value, setValue] = React.useState<T>();
 
@@ -46,12 +46,12 @@ function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor:
         if (!store) return;
         store.get(key).then(value => {
             if (value === null) {
-                setValue(defaultValue);
+                setValue(defaultValue.current);
             } else {
-                setValue(fromString<T>(value, defaultValue));
+                setValue(fromString<T>(value, defaultValue.current));
             }
         }).catch(e => {
-            setValue(defaultValue);
+            setValue(defaultValue.current);
         });
     }, [defaultValue, key, store]);
 
@@ -59,21 +59,21 @@ function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor:
         if (!store || !monitor) return;
         const handle = store.monitor((messages) => {
             messages.filter(row => row.key === key).forEach(row => {
-                setValue(fromString<T>(row.value, defaultValue));
+                setValue(fromString<T>(row.value, defaultValue.current));
             });
         });
         return () => handle.release();
     }, [defaultValue, key, monitor, store]);
 
     const extSetValue = React.useCallback((value: T) => {
-        return store.set(key, toString<T>(value, defaultValue), monitor).then(() => {
+        return store.set(key, toString<T>(value, defaultValue.current), monitor).then(() => {
             setValue(value);
         });
     }, [defaultValue, key, monitor, store]);
 
     const reset = React.useCallback(() => {
         return store.delete(key, monitor).then(() => {
-            setValue(defaultValue);
+            setValue(defaultValue.current);
         });
     }, [defaultValue, key, monitor, store]);
 
@@ -82,22 +82,30 @@ function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor:
 
 export function useGlobalStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
     const store = useConst(() => globalKeyValStore());
-    return useStore<T>(store, key, defaultValue, monitor);
+    const defaultValueRef = React.useRef(defaultValue);
+    defaultValueRef.current = defaultValue;
+    return useStore<T>(store, key, defaultValueRef, monitor);
 }
 
 export function useUserStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
     const store = useConst(() => userKeyValStore());
-    return useStore<T>(store, key, defaultValue, monitor);
+    const defaultValueRef = React.useRef(defaultValue);
+    defaultValueRef.current = defaultValue;
+    return useStore<T>(store, key, defaultValueRef, monitor);
 }
 
 export function useLocalStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
     const store = useConst(() => localKeyValStore());
-    return useStore<T>(store, key, defaultValue, monitor);
+    const defaultValueRef = React.useRef(defaultValue);
+    defaultValueRef.current = defaultValue;
+    return useStore<T>(store, key, defaultValueRef, monitor);
 }
 
 export function useSessionStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
     const store = useConst(() => sessionKeyValStore());
-    return useStore<T>(store, key, defaultValue, monitor);
+    const defaultValueRef = React.useRef(defaultValue);
+    defaultValueRef.current = defaultValue;
+    return useStore<T>(store, key, defaultValueRef, monitor);
 }
 
 /*  Ephemeral Store 

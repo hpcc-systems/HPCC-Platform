@@ -764,7 +764,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             }
             bool processKilled = (retcode >= 128);
             //If the process is killed it is probably because it ran out of memory - so try to compile as a K8s job
-            timedOut = abortWaiter.stop() || (isContainerized() && processKilled);
+            timedOut = abortWaiter.stop() || (isContainerized() && !config->getPropBool("@k8sJob") && processKilled);
             if (!timedOut)
             {
                 if (retcode == 0)
@@ -814,7 +814,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 else
                 {
                     if (processKilled && !workunit->aborting())
-                        addExceptionToWorkunit(workunit, SeverityError, "eclccserver", 9999, "eclcc killed - likely to be out of memory - see compile log for details", nullptr, 0, 0, 0);
+                        addExceptionToWorkunit(workunit, SeverityError, "eclccserver", 9999, "eclcc exited - could be because out of memory - see compile log for details", nullptr, 0, 0, 0);
 #ifndef _CONTAINERIZED
                     Owned<IWUQuery> query = workunit->updateQuery();
                     associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);

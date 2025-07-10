@@ -10,6 +10,7 @@ import { resetNavWide, resetTheme, useUserTheme } from "../hooks/theme";
 import { resetFavorites } from "../hooks/favorite";
 import { resetCookieConsent } from "./Frame";
 import { resetWorkunitOptions } from "./Workunits";
+import { resetWorkunitSummarySplitter } from "./WorkunitSummary";
 
 export interface ResetDialogProps {
 }
@@ -20,6 +21,7 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
     const [show, setShow] = React.useState(true);
     const [checkMetricOptions, setCheckMetricOptions] = React.useState(true);
     const [checkWorkunitOptions, setCheckWorkunitOptions] = React.useState(true);
+    const [checkWorkunitSummarySplitter, setCheckWorkunitSummarySplitter] = React.useState(true);
     const [checkHistory, setCheckHistoryCheckbox] = React.useState(true);
     const [checkFavorites, setCheckFavorites] = React.useState(true);
     const [checkEclWatchVersion, setCheckEclWatchVersion] = React.useState(true);
@@ -44,6 +46,9 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
                     }
                     if (checkWorkunitOptions) {
                         await resetWorkunitOptions();
+                    }
+                    if (checkWorkunitSummarySplitter) {
+                        await resetWorkunitSummarySplitter();
                     }
                     if (checkHistory) {
                         await resetHistory();
@@ -80,6 +85,7 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
             <Stack tokens={{ childrenGap: 10 }}>
                 <Checkbox label={nlsHPCC.MetricOptions} checked={checkMetricOptions} onChange={(ev, checked) => setCheckMetricOptions(!!checked)} />
                 <Checkbox label={nlsHPCC.WorkunitOptions} checked={checkWorkunitOptions} onChange={(ev, checked) => setCheckWorkunitOptions(!!checked)} />
+                <Checkbox label={nlsHPCC.WorkunitSummarySplitter} checked={checkWorkunitSummarySplitter} onChange={(ev, checked) => setCheckWorkunitSummarySplitter(!!checked)} />
                 <Checkbox label={nlsHPCC.History} checked={checkHistory} onChange={(ev, checked) => setCheckHistoryCheckbox(!!checked)} />
                 <Checkbox label={nlsHPCC.Favorites} checked={checkFavorites} onChange={(ev, checked) => setCheckFavorites(!!checked)} />
                 <Checkbox label={nlsHPCC.ECLWatchVersion} checked={checkEclWatchVersion} onChange={(ev, checked) => setCheckEclWatchVersion(!!checked)} />
