@@ -782,13 +782,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     partDesc.getFilename(0, rfn);
     StringBuffer primaryName;
     rfn.getPath(primaryName);
-    bool direct = false;
-    if (activity->getOptBool(THOROPT_AVOID_RENAME)) // THOROPT_AVOID_RENAME see HPCC-31559
-        direct = true;
-    else if (!getRenameSupportedFromPath(primaryName))
-        direct = true;
-
-    if (direct)
+    if (!getRenameSupportedFromPath(primaryName))
     {
         twFlags &= ~TW_RenameToPrimary;
         twFlags |= TW_Direct;

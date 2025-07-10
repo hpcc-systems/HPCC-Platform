@@ -121,7 +121,6 @@
 #define THOROPT_SOAP_LOG_SEP_STRING "soapLogSepString"                            // The SOAP request/response separator string for logging (default="")
 #define THOROPT_SORT_ALGORITHM "sortAlgorithm"                                    // The algorithm used to sort records (quicksort/mergesort)
 #define THOROPT_COMPRESS_ALLFILES "v9_4_compressAllOutputs"                       // Compress all output files (default: bare-metal=off, cloud=on)
-#define THOROPT_AVOID_RENAME "avoidRename"                                        // Avoid rename, write directly to target physical filenames (no temp file)
 #define THOROPT_LOOKAHEAD_MAXROWMEMK "readAheadRowMemK"                           // Splitter max memory (K) to use before spilling                                (default = 2MB)
 #define THOROPT_LOOKAHEAD_WRITEAHEADK "readAheadWriteAheadK"                      // Splitter spilling write ahead size (K)                                        (default = 2MB)
 #define THOROPT_LOOKAHEAD_COMPRESSIONTOTALK "readAheadCompressionTotalK"          // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
