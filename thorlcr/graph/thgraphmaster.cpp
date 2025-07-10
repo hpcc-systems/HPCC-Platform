@@ -3218,7 +3218,7 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
     stats.addStatistic(StTimeElapsed, cycle_to_nanosec(getElapsedCycles()));
 }
 
-cost_type CMasterGraph::getDiskAccessCost()
+cost_type CMasterGraph::getDiskAccessCost() const
 {
     cost_type totalDiskAccessCost = 0;
     Owned<IThorGraphIterator> iterChildGraph = getChildGraphIterator();

@@ -117,7 +117,7 @@ private:
                 wu.queryWuid(),
                 graphId,
                 (unsigned)graph.queryGraphId(),
-                (unsigned)cycle_to_millisec(graph.getElapsedCycles()),
+                (unsigned)cycle_to_millisec(graph.getLastElapsedCycles()),
                 success?"SUCCESS":"FAILED",
                 queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
                 queryServerStatus().queryProperties()->queryProp("@queue"));
@@ -129,7 +129,7 @@ private:
         {
             queryServerStatus().queryProperties()->setProp("@graph", graphName);
             queryServerStatus().queryProperties()->setPropInt("@subgraph", graph.queryGraphId());
-            queryServerStatus().queryProperties()->setPropInt("@sg_duration", (cycle_to_millisec(graph.getElapsedCycles())+59999)/60000); // round it up
+            queryServerStatus().queryProperties()->setPropInt("@sg_duration", (cycle_to_millisec(graph.getLastElapsedCycles())+59999)/60000); // round it up
         }
     }
     void checkCostLimit(CGraphBase &graph)
@@ -150,12 +150,10 @@ private:
     }
     void recordWhenStarted(CGraphBase *graph)
     {
-        unsigned wfid = graph->queryJob().getWfid();
-        const char *graphName = graph->queryJob().queryGraphName();
-
-        Owned<IWorkUnit> wu = &(graph->queryJob().queryWorkUnit().lock());
+        const CJobBase &job = graph->queryJob();
+        Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
         StringBuffer graphScope;
-        formatGraphTimerScope(graphScope, wfid, graphName, 0, graph->queryGraphId());
+        formatGraphTimerScope(graphScope, job.getWfid(), job.queryGraphName(), 0, graph->queryGraphId());
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
         reportStatus(*wu, *graph, false, true);
         queryServerStatus().commitProperties();
@@ -194,10 +192,9 @@ private:
         // workflow engine/agent will call it anyway after a graph has finished
         try
         {
-            IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
-            const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
-            unsigned wfid = graph->queryJob().getWfid();
-            updateGraphStats(currentWU, graphName, wfid, *graph);
+            const CJobBase &job = graph->queryJob();
+            IConstWorkUnit &currentWU = job.queryWorkUnit();
+            updateGraphStats(currentWU, job.queryGraphName(), job.getWfid(), *graph);
             reportStatus(currentWU, *graph, finished, success);
             checkCostLimit(*graph);
             queryServerStatus().commitProperties();
