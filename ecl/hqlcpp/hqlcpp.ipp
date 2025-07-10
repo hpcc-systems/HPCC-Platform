@@ -1073,10 +1073,10 @@ public:
     unsigned getSourceAggregateOptimizeFlags() const;
     void addGlobalOnWarning(IHqlExpression * setMetaExpr);
 
-    ClusterType getTargetClusterType() const { return targetClusterType; }
-    inline bool targetRoxie() const { return targetClusterType == RoxieCluster; }
-    inline bool targetHThor() const { return targetClusterType == HThorCluster; }
-    inline bool targetThor() const { return isThorCluster(targetClusterType); }
+    ClusterType getTargetClusterType() const { return targetClusterTypes.back(); }
+    inline bool targetRoxie() const { return targetClusterTypes.back() == RoxieCluster; }
+    inline bool targetHThor() const { return targetClusterTypes.back() == HThorCluster; }
+    inline bool targetThor() const { return isThorCluster(targetClusterTypes.back()); }
     inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
     inline ErrorSeverityMapper & queryLocalOnWarningMapper() { return *localOnWarnings; }
 
@@ -2104,7 +2104,7 @@ protected:
     unsigned            curCppFile;
     unsigned            maxWfid = 0;
     Linked<ICodegenContextCallback> ctxCallback;
-    ClusterType         targetClusterType;
+    std::vector<ClusterType> targetClusterTypes;
     bool contextAvailable;
     unsigned maxSequence;
     unsigned librarySequence = LibraryBaseSequence;

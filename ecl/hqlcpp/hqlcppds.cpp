@@ -1853,7 +1853,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     checkNormalized(ctx, resourced);
 
     unsigned csfFlags = CSFindex|options.optimizeDiskFlag;
-    switch (targetClusterType)
+    switch (getTargetClusterType())
     {
     case HThorCluster:
         csfFlags |= CSFcompoundSpill;
@@ -1885,10 +1885,10 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
     {
-        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, isInsideChildQuery, unlimitedResources));
+        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, getTargetClusterType(), graphIdExpr, numResults, isInsideChildQuery, unlimitedResources));
     }
     else
-        resourced.setown(resourceNewChildGraph(ctx, *this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
+        resourced.setown(resourceNewChildGraph(ctx, *this, activeRows, resourced, getTargetClusterType(), graphIdExpr, numResults));
 
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcingChild", resourced);
