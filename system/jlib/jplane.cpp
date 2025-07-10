@@ -585,7 +585,7 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
 // returns true if configured and should use 'result'
-static bool checkCompomentAndGlobalAvoidRename(bool &result)
+static bool checkComponentAndGlobalAvoidRename(bool &result)
 {
     if (-1 == avoidRename) // 1st time
     {
@@ -627,7 +627,7 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
 
     // handle legacy component or global expert property
     bool result;
-    if (checkCompomentAndGlobalAvoidRename(result)) // returns true if expert setting configured
+    if (checkComponentAndGlobalAvoidRename(result)) // returns true if expert setting configured
         return result;
 
     if (plane)

@@ -52,7 +52,7 @@ extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffe
 extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
-extern jlib_decl bool getRenameSupportedFromPath(const char *planeName);
+extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 //---------------------------------------------------------------------------------------------
 
