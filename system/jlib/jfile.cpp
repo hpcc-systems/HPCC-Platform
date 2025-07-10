@@ -7296,8 +7296,8 @@ void FileIOStats::trace()
 
 //--------------------------------------------------------------------------------------------------------------------
 
-static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, false};
-static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false};
+static constexpr FileSystemProperties linuxFileSystemProperties     {true, false};
+static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false};
 
 //This implementation should eventually make use of the file hook.
 const FileSystemProperties & queryFileSystemProperties(const char * filename)
