@@ -1141,52 +1141,49 @@ public:
         // Test: Multiple put() calls with multiple put() methods using MemoryBuffer
         {
             MemoryBuffer buffer;
-            CRC32 crc;
             {
                 Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
 
                 Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
-                Owned<IBufferedSerialOutputStream> crcOut = createCrcBufferedOutputStream(serialOut, 0x1000, crc);
+                Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
                 // Write using put() only (avoid reserve/commit due to implementation issues)
                 crcOut->put(len1, testData1);
                 crcOut->put(len3, testData3);
                 crcOut->flush();
+
+                // Calculate expected CRC manually
+                CRC32 expectedCrc;
+                expectedCrc.tally(len1, testData1);
+                expectedCrc.tally(len3, testData3);
+
+                CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crcOut->queryCrc());
+                DBGLOG("Multiple put() test using MemoryBuffer passed - CRC: 0x%08X", crcOut->queryCrc());
             }
-
-            // Calculate expected CRC manually
-            CRC32 expectedCrc;
-            expectedCrc.tally(len1, testData1);
-            expectedCrc.tally(len3, testData3);
-
-            CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crc.get());
-            DBGLOG("Multiple put() test using MemoryBuffer passed - CRC: 0x%08X", crc.get());
         }
 
         // Test: CRC calculation with suspend/resume pattern
         {
             StringBuffer buffer;
-            CRC32 crc;
             {
                 Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
 
                 Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
-                Owned<IBufferedSerialOutputStream> crcOut = createCrcBufferedOutputStream(serialOut, 0x1000, crc);
+                Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
-                // Write using suspend/resume
-                crcOut->suspend(len2);
-                crcOut->resume(len2, testData2);
+                // Write using put() only - suspend/resume not supported by ISerialOutputStream
+                crcOut->put(len2, testData2);
                 crcOut->put(len1, testData1);
                 crcOut->flush();
+
+                // Calculate expected CRC manually
+                CRC32 expectedCrc;
+                expectedCrc.tally(len2, testData2);
+                expectedCrc.tally(len1, testData1);
+
+                CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crcOut->queryCrc());
+                DBGLOG("Sequential put() test passed - CRC: 0x%08X", crcOut->queryCrc());
             }
-
-            // Calculate expected CRC manually
-            CRC32 expectedCrc;
-            expectedCrc.tally(len2, testData2);
-            expectedCrc.tally(len1, testData1);
-
-            CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crc.get());
-            DBGLOG("Suspend/resume test passed - CRC: 0x%08X", crc.get());
         }
 
         // Test: CRC calculation with IPropertyTree serialization (similar to dasds.cpp pattern)
@@ -1324,20 +1321,22 @@ public:
                 Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
 
                 Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
-                constexpr size32_t blockSize64k = 64 * 1024;
-                Owned<IBufferedSerialOutputStream> crcOutStream = createCrcBufferedOutputStream(serialOut, blockSize64k, crc);
+                Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialOut);
+                constexpr size32_t blockSize1mb = 1 * 1024 * 1024;
+                Owned<IBufferedSerialOutputStream> crcOutStream = createBufferedOutputStream(crcSerialStream, blockSize1mb);
 
                 // Serialize the property tree to the CRC stream
                 testTree->serializeToStream(*crcOutStream);
                 crcOutStream->flush();
+                crcSerialStream->flush();
+
+                // Calculate expected CRC by manually processing the buffer contents
+                CRC32 expectedCrc;
+                expectedCrc.tally(buffer.length(), buffer.toByteArray());
+
+                CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crcSerialStream->queryCrc());
+                DBGLOG("IPropertyTree serialization test passed - CRC: 0x%08X", crcSerialStream->queryCrc());
             }
-
-            // Calculate expected CRC by manually processing the buffer contents
-            CRC32 expectedCrc;
-            expectedCrc.tally(buffer.length(), buffer.toByteArray());
-
-            CPPUNIT_ASSERT_EQUAL(expectedCrc.get(), crc.get());
-            DBGLOG("IPropertyTree serialization test passed - CRC: 0x%08X", crc.get());
         }
     }
 

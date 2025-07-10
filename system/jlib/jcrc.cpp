@@ -20,6 +20,7 @@
 #include "jcrc.hpp"
 #include "jlib.hpp"
 #include "jfile.hpp"
+#include "jstream.hpp"
 
 const static unsigned short crc_16_tab[256] = { // x^16+x^15+x^2+1
       0x0000,0xc0c1,0xc181,0x0140,0xc301,0x03c0,0x0280,0xc241,
@@ -776,29 +777,35 @@ ICrcIOStream *createCrcPipeStream(IIOStream *stream)
     return new CCrcPipeStream(stream);
 }
 
+//---------------------------------------------------------------------------
 
-class CCrcFileSerialOutputStream : implements ICrcOStream, public CInterface
+class CCrcOutputStream : implements ICrcSerialOutputStream, public CInterface
 {
     CRC32 crc;
-    Linked<ISerialOutputStream> out;
+    Linked<ISerialOutputStream> output;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCrcFileSerialOutputStream(ISerialOutputStream *_out) : out(_out) { }
+    CCrcOutputStream(ISerialOutputStream *_output)
+        : output(_output) { }
 
-    virtual unsigned queryCrc() override { return crc.get(); }
+    virtual unsigned queryCrc() { return crc.get(); }
 
-    virtual void flush() override { out->flush(); }
-    virtual size32_t put(size32_t len, const void * data) override { out->put(len, data); crc.tally(len, data); return len; }
+    virtual void flush() { output->flush(); }
+    virtual void put(size32_t len, const void * data) {
+        output->put(len, data);
+        crc.tally(len, data);
+    }
+    virtual offset_t tell() const { return output->tell(); }
 };
 
-ICrcOStream *createCrcFileSerialOutputStream(ISerialOutputStream *stream)
+ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStream * output)
 {
-    return new CCrcFileSerialOutputStream(stream);
+    return new CCrcOutputStream(output);
 }
 
-
-
+//---------------------------------------------------------------------------
 #if 0
 
 //Test conditions and examples of how the classes might be used...

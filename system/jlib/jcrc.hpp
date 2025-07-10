@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-// If anyone wants to try and understand crcs especially combining them, try reading
+// If anyone wants to try and understand crcs especially combining them, try reading 
 // http://www.repairfaq.org/filipg/LINK/F_LINK_IN.html if you want to stand any chance!
 
 #ifndef __JCRC__
@@ -64,12 +64,6 @@ interface ICrcIOStream : extends IIOStream
 };
 jlib_decl ICrcIOStream *createCrcPipeStream(IIOStream *stream);
 
-interface ICrcOStream : extends IOStream
-{
-    virtual unsigned queryCrc() = 0;
-};
-jlib_decl ICrcOStream *createCrcPipeStream(IOStream *stream);
-
 jlib_decl unsigned getFileCRC(const char * name);       // correctly uses ~0 for seed and ~ on result.
 
 //Legacy...
@@ -86,7 +80,7 @@ inline unsigned short chksum16(const void *ptr,size32_t sz)
         sum += *p++;
         sz -= 2;
     }
-    if (sz)
+    if (sz) 
         sum += *(const byte *)p;
     sum = (sum >> 16) + (sum & 0xffff);       // add in carrys
     sum += (sum >> 16);                       // and again
