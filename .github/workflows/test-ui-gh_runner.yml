@@ -181,7 +181,9 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
+          echo "Start sar to capture memory usage."
           sar -r 1 > sar-$(date +%Y-%m-%d_%H-%M%S).log 2>&1 &
+          echo "Start ECL Watch UI test"
           export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar:${{ github.workspace }}/commons-io-2.19.0.jar"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
           find . -iname '*.java' -type f -print -exec javac -Xlint:none {} \;
@@ -193,6 +195,7 @@ jobs:
           then 
               echo "uploadArtifact=true" >> $GITHUB_ENV
           fi
+          pkill sar
           popd
 
       - name: Upload ECL Watch UI Test Logs To Artifact
