@@ -172,7 +172,7 @@ class ArchiveFileIO : implements IFileIO, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ArchiveFileIO(const char *_fullName) : fullName(_fullName)
+    ArchiveFileIO(IFile * _file, const char *_fullName) : file(_file), fullName(_fullName)
     {
         // Sadly it seems we can't use a saved entry to read data from an archive. We have to open a new archive
         // object and scan through until we find the matching file, in order to extract it.
@@ -288,7 +288,12 @@ public:
     {
         return 0;
     }
+    virtual IFile * queryFile() const override
+    {
+        return file;
+    }
 protected:
+    Linked<IFile> file;
     struct archive *archive = nullptr;
     offset_t fileSize = 0;
 #if ARCHIVE_VERSION_NUMBER < 3000000
@@ -358,7 +363,7 @@ public:
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
     {
         assertex(mode==IFOread && entry != NULL);
-        return new ArchiveFileIO(fullName.str());
+        return new ArchiveFileIO(this, fullName.str());
     }
     virtual IFileAsyncIO * openAsync(IFOmode mode)
     {
@@ -367,7 +372,7 @@ public:
     virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone)
     {
         assertex(mode==IFOread && entry != NULL);
-        return new ArchiveFileIO(fullName.str());
+        return new ArchiveFileIO(this, fullName.str());
     }
     virtual const char * queryFilename()
     {

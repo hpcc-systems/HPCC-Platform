@@ -26,6 +26,7 @@
 #include "jflz.hpp"
 #include "jlz4.hpp"
 #include "jzstd.hpp"
+#include "jplane.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -2051,14 +2052,36 @@ class CCompressedFileBase : implements ICompressedFileIO, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompressedFileBase(IFileIO *_fileio, CompressedFileTrailer &_trailer, unsigned _bufferSize)
+    CCompressedFileBase(IFileIO *_fileio, CompressedFileTrailer &_trailer, unsigned bufferSize)
     : fileio(_fileio), trailer(_trailer)
     {
         //Allow the disk read and write to send multiple blocks in a single operation - to reduce cloud io costs.
         assertex(trailer.blockSize);
         numBlocksToBuffer = 1;
-        if (_bufferSize && (_bufferSize != (size32_t)-1))
-            numBlocksToBuffer = _bufferSize / trailer.blockSize;
+        if (fileio && bufferSize == (size32_t)-1)
+        {
+            IFile * file = fileio->queryFile();
+            if (file)
+            {
+                const char * filename = file->queryFilename();
+                if (filename)
+                {
+                    Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
+                    if (plane)
+                    {
+                        bufferSize = plane->getAttribute(BlockedSequentialIO);
+                    }
+                    else
+                    {
+                        if (isContainerized())
+                            bufferSize = 0x400000; // Default to 4MB if containerized and no plane - so that dafilesrv default to large reads
+                    }
+
+                }
+            }
+        }
+        if (bufferSize && (bufferSize != (size32_t)-1))
+            numBlocksToBuffer = bufferSize / trailer.blockSize;
         if (numBlocksToBuffer < 1)
             numBlocksToBuffer = 1;
         sizeIoBuffer = trailer.blockSize*numBlocksToBuffer;
@@ -2083,6 +2106,12 @@ public:
     virtual unsigned method() override
     {
         return trailer.method();
+    }
+    virtual IFile * queryFile() const override
+    {
+        if (fileio)
+            return fileio->queryFile();
+        return nullptr;
     }
 
 protected:
@@ -2288,8 +2317,8 @@ class CCompressedFileReader final : public CCompressedFileBase
     }
 
 public:
-    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned compMethod, unsigned _bufferSize)
-        : CCompressedFileBase(_fileio, _trailer, _bufferSize), mmfile(_mmfile)
+    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned compMethod, unsigned bufferSize)
+        : CCompressedFileBase(_fileio, _trailer, bufferSize), mmfile(_mmfile)
     {
         expander.set(_expander);
 
@@ -2480,8 +2509,8 @@ class CCompressedFileWriter : public CCompressedFileBase
         return (byte *)iobuffer.bufferBase() + compblockoffset;
     }
 public:
-    CCompressedFileWriter(IFileIO *_fileio,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor, unsigned compMethod, unsigned _bufferSize)
-        : CCompressedFileBase(_fileio, _trailer, _bufferSize), mode(_mode), setcrc(_setcrc), compressor(_compressor)
+    CCompressedFileWriter(IFileIO *_fileio,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor, unsigned compMethod, unsigned bufferSize)
+        : CCompressedFileBase(_fileio, _trailer, bufferSize), mode(_mode), setcrc(_setcrc), compressor(_compressor)
     {
         curblocknum = (unsigned)-1; // relies on wrap
 

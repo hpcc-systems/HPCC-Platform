@@ -1929,7 +1929,7 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
             std::vector<std::string> capturedFiles;
             if (isContainerized())
             {
-                addInstanceContextPaths(instanceDir);
+                k8s::addInstanceContextPaths(instanceDir);
                 if (hasMask(captureFlags, JobInfoCaptureType::logs))
                 {
                     StringBuffer logFilename(instanceDir);
@@ -2149,6 +2149,7 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
 
     CFileCache &cache;
     Owned<IActivityReplicatedFile> repFile;
+    Owned<IFile> iFile;
     Linked<IExpander> expander;
     bool compressed;
     CRuntimeStatisticCollection fileStats;
@@ -2165,6 +2166,7 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
     IFileIO *getClearFileIO()
     {
         CriticalBlock b(crit);
+        iFile.clear();
         return iFileIO.getClear();
     }
 public:
@@ -2235,6 +2237,11 @@ public:
     {
         throwUnexpectedX("CDelayedFileWrapper::flush() called for a cached IFileIO object");
     }
+    virtual IFile * queryFile() const override
+    {
+        return iFile;
+    }
+
 };
 
 class CFileCache : public CSimpleInterfaceOf<IThorFileCache>
@@ -2353,7 +2360,7 @@ IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
     if (!iFileIO)
     {
         cache.opening(*this);
-        Owned<IFile> iFile = repFile->open(activity);
+        iFile.setown(repFile->open(activity));
         if (NULL != expander.get() || compressed)
             iFileIO.setown(createCompressedFileReader(iFile, expander, useDefaultIoBufferSize, false, IFEnone));
         else

@@ -153,6 +153,8 @@ private:
 
 //------------------------------------------------------------------------------------------------------------
 
+//Unlikely to be contended - so have a single shared static
+static CriticalSection isLocalCrit;
 class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
@@ -231,6 +233,39 @@ public:
         return hosts;
     }
 
+    virtual bool isAnyDeviceLocal() const override
+    {
+        CriticalBlock b(isLocalCrit);
+        if (cachedLocalPlane)
+            return isLocal;
+
+        isLocal = false;
+        if (hosts.size()== 0)
+        {
+            isLocal = true;
+        }
+        else
+        {
+            const char * myHostName = GetCachedHostName();
+            for (auto &host: hosts)
+            {
+                if (strsame(host.c_str(), ".") || strsame(host.c_str(), "localhost"))
+                {
+                    isLocal = true;
+                    break;
+                }
+
+                if (strisame(myHostName, host.c_str()))
+                {
+                    isLocal = true;
+                    break;
+                }
+            }
+        }
+        cachedLocalPlane = true;
+        return isLocal;
+    }
+
     virtual unsigned numDefaultSprayParts() const override { return config->getPropInt("@defaultSprayParts", 1); }
 
     virtual bool queryDirPerPart() const override { return config->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
@@ -277,17 +312,17 @@ public:
         return ::isAccessible(config);
     }
 
+    virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const override
+    {
+        assertex(attr < PlaneAttributeCount);
+        return attributeValues[attr];
+    }
+
     const char * queryName() const { return name.c_str(); }
 
     const IPropertyTree * queryConfig() const { return config; }
 
     const char * queryCategory() const { return category.c_str(); }
-
-    unsigned __int64 getAttribute(PlaneAttributeType attr) const
-    {
-        assertex(attr < PlaneAttributeCount);
-        return attributeValues[attr];
-    }
 
 private:
     std::string name;
@@ -298,6 +333,8 @@ private:
     Linked<const IPropertyTree> config;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
     std::vector<std::string> hosts;
+    mutable bool cachedLocalPlane{false};
+    mutable bool isLocal{false};
 };
 
 // {prefix, {key1: value1, key2: value2, ...}}
@@ -352,15 +389,48 @@ static bool isPathInPrefix(const char * prefix, const char *path)
     return false;
 }
 
-//The following static functions must be called with the storagePlaneMapCrit held
+// The following static functions must be called with the storagePlaneMapCrit held
+
+// Find the storage plane that best matches the path - it is possible on some pathological configurations
+// that a drop zone is configured with a prefix of '/'.  To avoid this, check all paths and return the
+// longest match.
 static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool required)
 {
+    size_t bestLength = 0;
+    const CStoragePlane *bestMatch = nullptr;
     for (auto &e: storagePlaneMap)
     {
-        const char *prefix = e.second->queryPrefix();
+        CStoragePlane *plane = e.second;
+        const char *prefix = plane->queryPrefix();
         if (isPathInPrefix(prefix, path))
-            return e.second;
+        {
+            //Both bare metal and containerized systems can have planes with host names.
+            auto & hosts = plane->queryHosts();
+            if (hosts.size() != 0)
+            {
+                bool hasMatchingHost = plane->isAnyDeviceLocal();
+                if (!hasMatchingHost)
+                {
+                    // MORE: Check if the filename is //<host>/path
+                    // HPCC-34519
+                }
+
+                if (!hasMatchingHost)
+                    continue;
+            }
+
+            //Some pathological configurations have '/' and '/x/y' as mount paths - pick the most restrictive
+            size_t len = strlen(prefix);
+            if (!bestMatch || len > bestLength)
+            {
+                bestMatch = plane;
+                bestLength = len;
+            }
+        }
     }
+
+    if (bestMatch)
+        return bestMatch;
 
     if (required)
         throw makeStringExceptionV(99, "Could not map filename to storage plane %s", path);

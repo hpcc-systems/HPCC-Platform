@@ -83,6 +83,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
     virtual void close() { }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
+    virtual IFile * queryFile() const override { return nullptr; }
 } failure;
 
 class CRoxieLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
@@ -423,6 +424,11 @@ public:
         unsigned __int64 v = fileStats.getStatisticValue(kind);
         CriticalBlock b(crit); // don't bother with linking current and performing getStatistic outside of crit, because getStatistic is very quick
         return v + current->getStatistic(kind);
+    }
+
+    virtual IFile * queryFile() const override
+    {
+        return logical;
     }
 
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { throwUnexpected(); }

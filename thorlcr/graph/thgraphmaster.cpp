@@ -1877,32 +1877,11 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
     PROGLOG("Capturing job info: flags=%s", flagsStrArr.getString(flagsStr, ",").str());
 
     StringBuffer dir;
-    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), dir))
-    {
-        if (!isContainerized())
-        {
-            appendCurrentDirectory(dir, false);
-            addPathSepChar(dir);
-            dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
-        }
-        else
-        {
-            IWARNLOG("Failed to get debug directory");
-            return;
-        }
-    }
-    addPathSepChar(dir);
-    dir.append(queryWuid());
-    addPathSepChar(dir);
-    CDateTime now;
-    timestamp_type nowTime = getTimeStampNowValue();
-    now.setTimeStamp(nowTime);
-    unsigned year, month, day, hour, minute, second, nano;
-    now.getDate(year, month, day);
-    now.getTime(hour, minute, second, nano);
-    unsigned hundredths = ((unsigned __int64)nano) * 100 / 1000000000;
-    VStringBuffer dateStr("%04u%02u%02u-%02u%02u%02u.%02u", year, month, day, hour, minute, second, hundredths);
-    dir.append(dateStr);
+    if (!getDebugInstanceDir(dir, "thor", queryWuid()))
+        return;
+    // debug instance directory always has datestamp as tail of directory name
+    StringBuffer tailDateStamp;
+    splitFilename(dir, nullptr, nullptr, &tailDateStamp, &tailDateStamp);
 
     auto managerCaptureFunc = [this, &dir, &flags]()
     {
@@ -1910,7 +1889,7 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
         std::vector<std::string> capturedFiles;
         if (isContainerized())
         {
-            addInstanceContextPaths(instanceDir);
+            k8s::addInstanceContextPaths(instanceDir);
             if (hasMask(flags, JobInfoCaptureType::logs))
             {
                 StringBuffer logFilename(instanceDir);
@@ -1966,10 +1945,10 @@ void CJobMaster::captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags)
     std::vector<std::string> managerResults = managerResultsFuture.get();
     capturedFiles.insert(capturedFiles.end(), managerResults.begin(), managerResults.end());
 
-    VStringBuffer description("debuginfo-%s", dateStr.str());
+    VStringBuffer description("debuginfo-%s", tailDateStamp.str());
     if (isContainerized())
     {
-        VStringBuffer archiveFilename("debuginfo-%s.tar.gz", dateStr.str());
+        VStringBuffer archiveFilename("debuginfo-%s.tar.gz", tailDateStamp.str());
         VStringBuffer tarCmd("cd %s && tar -czf %s --exclude=%s --remove-files *", dir.str(), archiveFilename.str(), archiveFilename.str());
         if (0 != system(tarCmd))
         {

@@ -2916,6 +2916,7 @@ NULL
         virtual void setSize(offset_t size) { UNIMPLEMENTED; }
         virtual void flush() { }
         virtual void close() { }
+        virtual IFile * queryFile() const override { return nullptr; }
     };
 
     const char *newFileName = "xpathTests.out";

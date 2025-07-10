@@ -134,7 +134,8 @@ public:
     {
         //Could implement if we use the async version of the putObject call.
     }
-    unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const override;
 
 protected:
     size_t extractDataFromResult(size_t offset, size_t length, void * target);
@@ -171,6 +172,7 @@ public:
     virtual void flush() override;
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const override;
 
 protected:
     Linked<S3File> file;
@@ -376,6 +378,11 @@ unsigned __int64 S3FileReadIO::getStatistic(StatisticKind kind)
     return stats.getStatistic(kind);
 }
 
+IFile * S3FileReadIO::queryFile() const
+{
+    return file;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 S3FileWriteIO::S3FileWriteIO(S3File * _file)
@@ -435,6 +442,11 @@ void S3FileWriteIO::flush()
 unsigned __int64 S3FileWriteIO::getStatistic(StatisticKind kind)
 {
     return stats.getStatistic(kind);
+}
+
+IFile * S3FileWriteIO::queryFile() const
+{
+    return file.get();
 }
 
 //---------------------------------------------------------------------------------------------------------------------

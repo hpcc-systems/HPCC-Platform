@@ -1794,17 +1794,3 @@ std::vector<std::string> captureDebugInfo(const char *_dir, const char *prefix, 
     }
     return { stacksFName.str() }; // JCSMORE capture/return other files
 }
-
-// NB: this mirrors the directory structure formed in collect_postmortem.sh
-StringBuffer &addInstanceContextPaths(StringBuffer &dst)
-{
-    addPathSepChar(dst);
-    dst.append(k8s::queryMyPodName());
-    addPathSepChar(dst);
-    dst.append(k8s::queryMyContainerName());
-    addPathSepChar(dst);
-    RemoteFilename rfn;
-    rfn.setLocalPath(queryCurrentProcessPath());
-    rfn.getTail(dst);
-    return dst;
-}

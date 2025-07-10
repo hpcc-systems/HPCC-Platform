@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyles, MessageBar, MessageBarType, registerIcons, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyles, MessageBar, MessageBarType, registerIcons, ScrollablePane, ScrollbarVisibility } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -7,9 +7,10 @@ import { formatCost } from "src/Session";
 import { isNumeric } from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
+import { useLocalStore } from "../hooks/store";
 import { pushUrl, replaceUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { PublishQueryForm } from "./forms/PublishQuery";
@@ -17,8 +18,16 @@ import { SlaveLogs } from "./forms/SlaveLogs";
 import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
+import { localKeyValStore } from "src/KeyValStore";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
+
+const WU_SUMMARY_SPLITTER = "workunit_summary_splitter";
+
+export function resetWorkunitSummarySplitter() {
+    const store = localKeyValStore();
+    return store?.delete(WU_SUMMARY_SPLITTER);
+}
 
 registerIcons({
     icons: {
@@ -77,6 +86,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [showPublishForm, setShowPublishForm] = React.useState(false);
     const [showZapForm, setShowZapForm] = React.useState(false);
     const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
+    const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
+    const [layout, setLayout] = useLocalStore<[number, number]>(WU_SUMMARY_SPLITTER, [0.67, 0.33], false);
 
     const [messageBarContent, setMessageBarContent] = React.useState<MessageBarContent | undefined>();
     const dismissMessageBar = React.useCallback(() => setMessageBarContent(undefined), []);
@@ -220,6 +231,28 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
     ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, otTraceParent, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
+    React.useEffect(() => {
+        if (dockpanel && layout) {
+            //  Should only happen once on startup  ---
+            const dpLayout: any = dockpanel.getLayout();
+            if (Array.isArray(dpLayout?.main?.sizes) && dpLayout.main.sizes.length === 2) {
+                dpLayout.main.sizes = layout;
+                dockpanel.layout(dpLayout).lazyRender();
+            }
+        }
+    }, [dockpanel, layout]);
+
+    React.useEffect(() => {
+        return () => {
+            if (dockpanel) {
+                const dpLayout: any = dockpanel.getLayout();
+                if (Array.isArray(dpLayout?.main?.sizes) && dpLayout.main.sizes.length === 2) {
+                    setLayout(dpLayout.main.sizes);
+                }
+            }
+        };
+    }, [dockpanel, setLayout]);
+
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
     }, [workunit?.ServiceNames?.Item]);
@@ -240,20 +273,20 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     }, [exceptions]);
 
     return <HolyGrail
+        header={<>
+            <CommandBar items={buttons} />
+            {messageBarContent &&
+                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
+                    {messageBarContent.message}
+                </MessageBar>
+            }
+        </>}
         main={<>
-            <ReflexContainer orientation="horizontal">
-                <ReflexElement>
-                    <div className="pane-content">
-                        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
-                            <Sticky stickyPosition={StickyPositionType.Header}>
-                                <CommandBar items={buttons} />
-                                {messageBarContent &&
-                                    <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
-                                        {messageBarContent.message}
-                                    </MessageBar>
-                                }
-                            </Sticky>
-                            <div style={{ position: "sticky", zIndex: 2, top: 44, display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+            <DockPanel hideSingleTabs onCreate={setDockpanel}>
+                <DockPanelItem key="summary" title="Summary">
+                    <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
+                        <div className="pane-content">
+                            <div style={{ zIndex: 2, display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
                                 <WorkunitPersona wuid={wuid} />
                                 <WUStatus wuid={wuid}></WUStatus>
                             </div>
@@ -291,14 +324,13 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                         logger.debug(`${id}:  ${value}`);
                                 }
                             }} />
-                        </ScrollablePane>
-                    </div>
-                </ReflexElement>
-                <ReflexSplitter />
-                <ReflexElement>
+                        </div>
+                    </ScrollablePane>
+                </DockPanelItem>
+                <DockPanelItem key="errWarn" title="ErrWarn" padding={4} location="split-bottom" relativeTo="helpersTable">
                     <InfoGrid wuid={wuid}></InfoGrid>
-                </ReflexElement>
-            </ReflexContainer>
+                </DockPanelItem>
+            </DockPanel>
             <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
             <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
             <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
