@@ -612,27 +612,31 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
         return false;
 
     // check plane property first
-    Linked<const CStoragePlane> linkedPlane;
-    const CStoragePlane *plane = nullptr;
+    Linked<const CStoragePlane> plane;
     {
         CriticalBlock b(storagePlaneMapCrit);
-        plane = doFindStoragePlaneFromPath(filePath, false);
-        if (!plane)
-            return true;
-        linkedPlane.set(plane);
+        plane.set(doFindStoragePlaneFromPath(filePath, false));
     }
-    unsigned __int64 value = plane->getAttribute(RenameSupported);
-    if (unsetPlaneAttrValue != value)
-        return value > 0;
+    if (plane)
+    {
+        // return if configured
+        unsigned __int64 value = plane->getAttribute(RenameSupported);
+        if (unsetPlaneAttrValue != value)
+            return value > 0;
+    }
 
     // handle legacy component or global expert property
     bool result;
     if (checkCompomentAndGlobalAvoidRename(result)) // returns true if expert setting configured
         return result;
 
-    // In the absence of plane configuration (or component/global expert setting), we assume that any plane backed by a pvc or storageapi does not support rename
-    if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("@storageapi"))
-        return false;
+    if (plane)
+    {
+        // In the absence of plane configuration (or component/global expert setting)
+        // we assume that any plane backed by a pvc or storageapi does not support rename
+        if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("@storageapi"))
+            return false;
+    }
 
     // if none of the above, we assume rename is supported
     return true;
