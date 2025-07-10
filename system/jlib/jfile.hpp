@@ -664,7 +664,6 @@ public:
 struct FileSystemProperties
 {
 public:
-    const bool canRename;
     const bool canSeekWrite;
     const bool hasDirectories;
     const bool preExtendOutput;
@@ -673,7 +672,6 @@ public:
 
 //Return information about files on a particular filesystem.  Objects returned will always remain valid.
 extern jlib_decl const FileSystemProperties & queryFileSystemProperties(const char * filename);
-inline bool canRename(const char * filename) { return queryFileSystemProperties(filename).canRename; }
 inline bool canSeekWrite(const char * filename) { return queryFileSystemProperties(filename).canSeekWrite; }
 inline bool hasDirectories(const char * filename) { return queryFileSystemProperties(filename).hasDirectories; }
 extern jlib_decl bool isAvoidRenameEnabled();

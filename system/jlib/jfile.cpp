@@ -7296,9 +7296,8 @@ void FileIOStats::trace()
 
 //--------------------------------------------------------------------------------------------------------------------
 
-static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, true, false, 0x10000};             // 64K
-static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, false, 0x400000};        // 4Mb
-static constexpr FileSystemProperties linuxFileSystemNoRenameProperties{false, true, true, false, 0x10000};         // 64K
+static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, false, 0x10000};           // 64K
+static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, 0x400000};        // 4Mb
 
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
@@ -7308,10 +7307,7 @@ bool isAvoidRenameEnabled()
     {
         CriticalBlock b(avoidRenameCS);
         if (-1 == avoidRename)
-        {
             avoidRename = getConfigBool("expert/@avoidRename");
-            DBGLOG("FileSystemProperties.canRename = %s", boolToStr(!avoidRename)); // NB: canRename if !avoidRename
-        }
     }
     return avoidRename;
 }
@@ -7321,8 +7317,6 @@ const FileSystemProperties & queryFileSystemProperties(const char * filename)
 {
     if (isUrl(filename))
         return defaultUrlFileSystemProperties;
-    else if (isAvoidRenameEnabled())
-        return linuxFileSystemNoRenameProperties;
     else
         return linuxFileSystemProperties;
 }

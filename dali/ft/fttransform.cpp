@@ -1144,9 +1144,10 @@ processedProgress:
             }
 
             const RemoteFilename & outputFilename = curPartition.outputName;
-            const auto & fsProperties = outputFilename.queryFileSystemProperties();
+            StringBuffer filePath;
+            outputFilename.getPath(filePath);
             RemoteFilename localTempFilename;
-            if (!fsProperties.canRename)
+            if (!getRenameSupportedFromPath(filePath))
                 localTempFilename.set(outputFilename);
             else
                 getDfuTempName(localTempFilename, outputFilename);
@@ -1172,6 +1173,7 @@ processedProgress:
             }
 
             //Find the last partition entry that refers to the same file.
+            const auto & fsProperties = outputFilename.queryFileSystemProperties();
             if (!compressOutput && fsProperties.preExtendOutput)
             {
                 PartitionPoint & lastChunk = partition.item(queryLastOutput(curOutput));
@@ -1222,12 +1224,13 @@ processedProgress:
             PartitionPoint & curPartition = partition.item(i);
             OutputProgress & curProgress = progress.item(i);
             const RemoteFilename & outputFilename = curPartition.outputName;
-            const auto & fsProperties = outputFilename.queryFileSystemProperties();
             if (curPartition.whichOutput != prevOutput)
             {
                 if (curProgress.status != OutputProgress::StatusRenamed)
                 {
-                    if (fsProperties.canRename)
+                    StringBuffer filePath;
+                    curPartition.outputName.getPath(filePath);
+                    if (getRenameSupportedFromPath(filePath))
                         renameDfuTempToFinal(curPartition.outputName);
 
                     OwnedIFile output = createIFile(curPartition.outputName);
