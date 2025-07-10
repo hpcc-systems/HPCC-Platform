@@ -913,6 +913,8 @@ extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 extern jlib_decl ILogMsgHandler * queryPostMortemLogMsgHandler();
 extern jlib_decl bool copyPostMortemLogging(const char *target, bool clear);
+extern jlib_decl bool copyPortMortemPIDFiles(HANDLE pid, const char *target, bool clear);
+extern jlib_decl bool getDebugInstanceDir(StringBuffer &dir, const char *componentType, const char *instance);
 extern jlib_decl void setupContainerizedLogMsgHandler();
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)

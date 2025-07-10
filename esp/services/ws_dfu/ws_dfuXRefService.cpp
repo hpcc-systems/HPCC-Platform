@@ -641,7 +641,7 @@ void addUsedFilesFromPackageMaps(MapStringTo<bool> &usedFileMap, const char *pro
     ForEach(*targets)
     {
         SCMStringBuffer target;
-        VStringBuffer xpath("PackageMap[@querySet='%s']", targets->str(target).str());
+        VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", targets->str(target).str());
         Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements(xpath);
         //Add files referenced in all active maps, for all targets configured for this process cluster
         ForEach(*activeMaps)

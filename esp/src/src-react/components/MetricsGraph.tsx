@@ -254,13 +254,16 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     const spinnerLabel: string = React.useMemo((): string => {
         if (status === FetchStatus.STARTED) {
             return nlsHPCC.FetchingData;
+        } else if (status === FetchStatus.COMPLETE && selectedMetrics.length === 0) {
+            // fetch completed but an error occurred or no data available?
+            return "";
         } else if (!isLayoutComplete) {
             return `${nlsHPCC.PerformingLayout}`;
         } else if (!isRenderComplete) {
             return nlsHPCC.RenderSVG;
         }
         return "";
-    }, [status, isLayoutComplete, isRenderComplete]);
+    }, [status, isLayoutComplete, isRenderComplete, selectedMetrics.length]);
 
     const breadcrumbs = React.useMemo<BreadcrumbInfo[]>(() => {
         return lineage.map(item => {

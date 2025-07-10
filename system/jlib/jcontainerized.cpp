@@ -525,6 +525,20 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
     return { "", 0 };
 }
 
+// NB: this mirrors the directory structure formed in collect_postmortem.sh
+StringBuffer &addInstanceContextPaths(StringBuffer &dst)
+{
+    addPathSepChar(dst);
+    dst.append(queryMyPodName());
+    addPathSepChar(dst);
+    dst.append(queryMyContainerName());
+    addPathSepChar(dst);
+    RemoteFilename rfn;
+    rfn.setLocalPath(queryCurrentProcessPath());
+    rfn.getTail(dst);
+    return dst;
+}
+
 static unsigned podInfoInitCBId = 0;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

@@ -1929,7 +1929,7 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
             std::vector<std::string> capturedFiles;
             if (isContainerized())
             {
-                addInstanceContextPaths(instanceDir);
+                k8s::addInstanceContextPaths(instanceDir);
                 if (hasMask(captureFlags, JobInfoCaptureType::logs))
                 {
                     StringBuffer logFilename(instanceDir);

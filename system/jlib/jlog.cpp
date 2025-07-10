@@ -1170,12 +1170,95 @@ void PostMortemLogMsgHandler::copyTo(const char *target, bool clear)
         openFile();
 }
 
+bool PostMortemLogMsgHandler::copyPIDFiles(const char *filebase, const char *target, bool clear)
+{
+    try
+    {
+        recursiveCreateDirectoryForFile(target);
+        StringBuffer path, tail;
+        splitFilename(filebase, nullptr, &path, &tail, &tail);
+        tail.append("*");
+        Owned<IDirectoryIterator> dirIter = createDirectoryIterator(path, tail);
+        StringBuffer fileName;
+        Owned<IFile> targetIFile = createIFile(target);
+        Owned<IFileIO> targetIO = targetIFile->open(IFOcreate);
+        // there should be at most two files to copy (postmortem has current and 1 previous max)
+        ForEach(*dirIter)
+        {
+            dirIter->getName(fileName.clear());
+            if (!targetIO)
+                throwStringExceptionV(-1, "postmortem copyPIDFiles - Failed to open target file %s", target);
+            Owned<IFile> currentIFile = createIFile(fileName);
+            targetIO->appendFile(currentIFile, 0, currentIFile->size());
+            if (clear)
+                remove(fileName);
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+        return false;
+    }
+    return true;
+}
+
 bool copyPostMortemLogging(const char *target, bool clear)
 {
     if (!thePostMortemHandler)
         return false;
     thePostMortemHandler->copyTo(target, clear);
     return true;
+}
+
+StringBuffer &getPostMortemPidFilename(StringBuffer &out, unsigned pid)
+{
+    if (0 == pid)
+        pid = GetCurrentProcessId();
+    out.appendf("/tmp/postmortem.%u.log", pid);
+    return out;
+}
+
+bool getDebugInstanceDir(StringBuffer &dir, const char *componentType, const char *instance)
+{
+    Owned<IPropertyTree> config = getComponentConfig();
+    if (!getConfigurationDirectory(config->queryPropTree("Directories"), "debug", componentType, config->queryProp("@name"), dir))
+    {
+        if (!isContainerized())
+        {
+            appendCurrentDirectory(dir, false);
+            addPathSepChar(dir);
+            dir.append("debuginfo"); // use ./debuginfo in non-containerized mode
+        }
+        else
+        {
+            IWARNLOG("Failed to get debug directory");
+            return false;
+        }
+    }
+    addPathSepChar(dir);
+    if (!isEmptyString(instance))
+    {
+        dir.append(instance);
+        addPathSepChar(dir);
+    }
+    CDateTime now;
+    timestamp_type nowTime = getTimeStampNowValue();
+    now.setTimeStamp(nowTime);
+    unsigned year, month, day, hour, minute, second, nano;
+    now.getDate(year, month, day);
+    now.getTime(hour, minute, second, nano);
+    unsigned hundredths = ((unsigned __int64)nano) * 100 / 1000000000;
+    VStringBuffer dateStr("%04u%02u%02u-%02u%02u%02u.%02u", year, month, day, hour, minute, second, hundredths);
+    dir.append(dateStr);
+    return true;
+}
+
+bool copyPortMortemPIDFiles(HANDLE pid, const char *target, bool clear)
+{
+    StringBuffer pidFilenameBase;
+    getPostMortemPidFilename(pidFilenameBase, pid);
+    return PostMortemLogMsgHandler::copyPIDFiles(pidFilenameBase, target, clear);
 }
 
 
@@ -2512,8 +2595,8 @@ void setupContainerizedLogMsgHandler()
         {
             // augment postmortem files with <pid> to avoid clashes where multiple processes are running within
             // same process space, e.g. hthor processes running in same k8s container
-            unsigned pid = GetCurrentProcessId();
-            VStringBuffer portMortemFileBase("/tmp/postmortem.%u.log", pid);
+            StringBuffer portMortemFileBase;
+            getPostMortemPidFilename(portMortemFileBase, 0);
 
             thePostMortemHandler = new PostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
             queryLogMsgManager()->addMonitor(thePostMortemHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
