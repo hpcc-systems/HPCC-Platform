@@ -584,15 +584,26 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
 
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
-static bool isAvoidRenameEnabled()
+// returns true if configured and should use 'result'
+static bool checkCompomentAndGlobalAvoidRename(bool &result)
 {
-    if (-1 == avoidRename)
+    if (-1 == avoidRename) // 1st time
     {
+        // NB: wouldn't update if config changed, but not sure I care (could add hook if really wanted to)
         CriticalBlock b(avoidRenameCS);
         if (-1 == avoidRename)
-            avoidRename = getConfigBool("expert/@avoidRename");
+        {
+            int v = getConfigInt("expert/@avoidRename", -1);
+            if (-1 != v) // i.e. is there a setting at all
+                avoidRename = v>0;
+            else
+                avoidRename = -2; // suppress further checks
+        }
     }
-    return avoidRename;
+    if (-2 == avoidRename)
+        return false;
+    result = avoidRename > 0;
+    return true;
 }
 
 bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the plane type determine the default
@@ -614,11 +625,12 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     if (unsetPlaneAttrValue != value)
         return value > 0;
 
-    // handle legacy global expert property
-    if (isAvoidRenameEnabled())
-        return false;
+    // handle legacy component or global expert property
+    bool result;
+    if (checkCompomentAndGlobalAvoidRename(result)) // returns true if expert setting configured
+        return result;
 
-    // In the absence of plane configuration, we assume that any plane backed by a pvc or storageapi does not support rename
+    // In the absence of plane configuration (or component/global expert setting), we assume that any plane backed by a pvc or storageapi does not support rename
     if (plane->queryConfig()->hasProp("@pvc") || plane->queryConfig()->hasProp("@storageapi"))
         return false;
 
