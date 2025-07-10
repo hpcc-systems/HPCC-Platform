@@ -88,10 +88,6 @@ public:
     {
         throwUnexpectedX("Writing to read only file");
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
-    {
-        throwUnexpectedX("Appending to read only file");
-    }
     virtual void setSize(offset_t size) override
     {
         throwUnexpectedX("Setting size of read only azure file");
@@ -123,7 +119,6 @@ public:
     AzureFileAppendBlobWriteIO(AzureFile * _file);
 
     virtual void close() override;
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override;
     virtual offset_t size() override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
 };
@@ -134,7 +129,6 @@ public:
     AzureFileBlockBlobWriteIO(AzureFile * _file);
 
     virtual void close() override;
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
 };
 
@@ -368,11 +362,6 @@ void AzureFileAppendBlobWriteIO::close()
 {
 }
 
-offset_t AzureFileAppendBlobWriteIO::appendFile(IFile *file, offset_t pos, offset_t len)
-{
-    UNIMPLEMENTED_X("AzureFileAppendBlobWriteIO::appendFile");
-}
-
 offset_t AzureFileAppendBlobWriteIO::size()
 {
 #ifdef TRACE_AZURE
@@ -411,12 +400,6 @@ AzureFileBlockBlobWriteIO::AzureFileBlockBlobWriteIO(AzureFile * _file) : AzureF
 void AzureFileBlockBlobWriteIO::close()
 {
 
-}
-
-offset_t AzureFileBlockBlobWriteIO::appendFile(IFile *file, offset_t pos, offset_t len)
-{
-    UNIMPLEMENTED_X("AzureFileBlockBlobWriteIO::appendFile");
-    return 0;
 }
 
 size32_t AzureFileBlockBlobWriteIO::write(offset_t pos, size32_t len, const void * data)

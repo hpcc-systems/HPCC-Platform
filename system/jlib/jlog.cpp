@@ -1154,7 +1154,7 @@ void PostMortemLogMsgHandler::copyTo(const char *target, bool clear)
             if (!targetIO)
                 throwStringExceptionV(-1, "postmortem copyTo - Failed to open target file %s", target);
             Owned<IFile> currentIFile = createIFile(filename);
-            targetIO->appendFile(currentIFile, 0, currentIFile->size());
+            appendFile(targetIO, currentIFile, 0, currentIFile->size());
             if (clear)
                 remove(filename);
         }
@@ -1189,7 +1189,7 @@ bool PostMortemLogMsgHandler::copyPIDFiles(const char *filebase, const char *tar
             if (!targetIO)
                 throwStringExceptionV(-1, "postmortem copyPIDFiles - Failed to open target file %s", target);
             Owned<IFile> currentIFile = createIFile(fileName);
-            targetIO->appendFile(currentIFile, 0, currentIFile->size());
+            appendFile(targetIO, currentIFile, 0, currentIFile->size());
             if (clear)
                 remove(fileName);
         }

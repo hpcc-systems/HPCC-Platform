@@ -4245,7 +4245,7 @@ public:
         checkFileIOHandle(reply, handle, fileio);
 
         Owned<IFile> file = createIFile(srcname.get());
-        __int64 written = fileio->appendFile(file,pos,len);
+        __int64 written = appendFile(fileio, file,pos,len);
         stats.addWrite(written);
         if (TF_TRACE)
             PROGLOG("append file, handle = %d, file=%s, pos = %" I64F "d len = %" I64F "d written = %" I64F "d",handle,srcname.get(),pos,len,written);
@@ -6253,7 +6253,7 @@ protected:
         CPPUNIT_ASSERT(iFile->getCRC() == crc.get());
 
         // check appendFile functionality. NB after this "file1copy" should be 2*testLen
-        CPPUNIT_ASSERT(testLen == iFileIO->appendFile(iFile));
+        CPPUNIT_ASSERT(testLen == appendFile(iFileIO, iFile));
         iFileIO.clear();
 
         // validate new size
