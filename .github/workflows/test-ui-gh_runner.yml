@@ -70,8 +70,8 @@ jobs:
             xvfb \
             libxi6 \
             gdb \
-            ${{ inputs.dependencies }} \
-            sysstat
+            sysstat \
+            ${{ inputs.dependencies }}
 
       - name: Download Package
         if: steps.check.outputs.runtests
@@ -183,7 +183,9 @@ jobs:
         run: |
           df -h .
           free -h
+          echo "Cores: $(nproc)"
           echo "Start sar to capture memory usage."
+          type "sar"
           sar -r 1 > sar-$(date +%Y-%m-%d_%H-%M%S).log 2>&1 &
           echo "  pid: $(pgrep sar)"
 
