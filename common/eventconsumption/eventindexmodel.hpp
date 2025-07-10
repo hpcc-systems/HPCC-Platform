@@ -18,10 +18,10 @@
 #pragma once
 
 #include "eventmodeling.h"
+#include <memory>
 #include <set>
 #include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
 
 // The index event model configuration conforms to this structure:
 //   kind: index-event
@@ -108,35 +108,52 @@ private:
         public:
             __uint64 fileId{0};
             __uint64 offset{0};
+            Key(__uint64 _fileId, __uint64 _offset) : fileId(_fileId), offset(_offset) {}
             bool operator == (const Key& other) const { return fileId == other.fileId && offset == other.offset; }
         };
-
-        struct KeyHash
+        class KeyEqual
         {
-            std::size_t operator()(const Key& key) const
+        public:
+            bool operator () (const Key* left, const Key* right) const
             {
-                std::size_t h1 = std::hash<__uint64>()(key.fileId);
-                std::size_t h2 = std::hash<__uint64>()(key.offset);
+                return ((left == right) || (left->fileId == right->fileId && left->offset == right->offset));
+            }
+        };
+        class KeyHash
+        {
+        public:
+            std::size_t operator()(const Key* key) const
+            {
+                std::size_t h1 = std::hash<__uint64>()(key->fileId);
+                std::size_t h2 = std::hash<__uint64>()(key->offset);
                 return h1 ^ h2;
             }
         };
-
-        using Hash = std::unordered_set<Key, KeyHash>;
-        using MRU = std::list<Key>;
+        class Used : public Key
+        {
+        public:
+            std::shared_ptr<struct Used> prev{0};
+            std::shared_ptr<struct Used> next{0};
+            Used(__uint64 _fileId, __uint64 _offset, std::shared_ptr<struct Used>& _next)
+                : Key(_fileId, _offset), next(_next) {}
+        };
+        using Hash = std::unordered_map<const Key*, std::shared_ptr<Used>, KeyHash, KeyEqual>;
     public:
         void configure(const IPropertyTree& config);
-        inline __uint64 find(__uint64 fileId, __uint64 offset) { return find({fileId, offset}); }
-        __uint64 find(const Key& key);
+        inline __uint64 getReadTimeIfExists(__uint64 fileId, __uint64 offset) { return getReadTimeIfExists({fileId, offset}); }
+        __uint64 getReadTimeIfExists(const Key& key);
         inline bool insert(__uint64 fileId, __uint64 offset) { return insert({fileId, offset}); }
         bool insert(const Key& key);
     private:
+        void erase(Used& used);
         void reserve(__uint64 size);
     public:
         __uint64 used{0};
         __uint64 capacity{0};
         __uint64 readTime{0};
         Hash hash;
-        MRU mru;
+        std::shared_ptr<Used> mru{0};
+        std::shared_ptr<Used> lru{0};
     };
 
     // An ordered set of storage planes, with key transparency enabled.
@@ -160,9 +177,10 @@ public:
     // file specification, is not supported.
     void observeFile(__uint64 fileId, const char* path);
 
-    // Fill in the page data with storage information known about the file and offset. A file ID
-    // not previously obseved will use information from the default file specification.
-    void describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const;
+    // Fill in the page data with storage information known about the file and offset. An enabled
+    // page cache will be updated when the page was not the most recently used. A file ID not
+    // previously obseved will use information from the default file specification.
+    void useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page);
 
 private:
     void configurePlanes(const IPropertyTree& config);
@@ -172,7 +190,7 @@ private:
     const File& lookupFile(__uint64 fileId) const;
 
 private:
-    mutable PageCache cache;
+    PageCache cache;
     Planes planes;
     const Plane* defaultPlane{nullptr};
     Files configuredFiles;

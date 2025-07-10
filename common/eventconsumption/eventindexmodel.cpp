@@ -61,7 +61,7 @@ protected:
     bool onIndexLoad(CEvent& event)
     {
         ModeledPage page;
-        storage.describePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+        storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
         event.setValue(EvAttrReadTime, page.readTime);
         return true;
     }
@@ -317,6 +317,5 @@ expect:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(IndexEventModelTests);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IndexEventModelTests, "indexeventmodel");
-
 
 #endif
