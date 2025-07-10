@@ -2299,9 +2299,15 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         // small index), the last leaf node in an index or the payload is not compressible - e.g. mapping to a unique
         // id.
 
-        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst) + packed (zero-length) uncompressed trailing
-        size32_t maxSizePayloadLength = sizePacked(maxBytes);
-        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0) + (ctx.options.recompress ? 1 : 0);
+        // Minimum size used = Non-Payload size + compression-version byte + optional length + packed (zero-length) uncompressed trailing
+        size32_t maxUsedSpace = getDataSize(false) + 1 + (ctx.options.recompress ? 1 : 0);
+        size32_t maxRemaining = maxBytes - maxUsedSpace;
+
+        // How much space would be used by the compression length (if the data is compressed)
+        size32_t maxSizePayloadLength = sizePacked(maxRemaining ? maxRemaining - 1 : 0);
+        if (useCompressedPayload || isVariable)
+            maxUsedSpace += maxSizePayloadLength;
+
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
         if (maxBytes < maxUsedSpace)
             hasSpace = false;
@@ -2325,7 +2331,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         {
             // payload already appended to uncompressed.
         }
-        else if (uncompressed.length())
+        else if (uncompressed.length() && (maxPayloadSize != 0))
         {
             unsigned uncompressedSize = uncompressed.length();
             if (!useCompressedPayload)
@@ -2333,6 +2339,15 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
                 //Reached the threshold where uncompressed data does not fit.
                 //Either need to finish the node or switch to using a compressed payload.
                 size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
+
+                //If the data was not previously compressed we need to adjust the maximum size to include the packed size of the compressed payload
+                if (!useCompressedPayload && !isVariable)
+                {
+                    if (maxPayloadSize > maxSizePayloadLength)
+                        maxPayloadSize -= maxSizePayloadLength;
+                    else
+                        maxPayloadSize = 0;
+                }
 
                 bool success = false;
                 if (ctx.options.recompress)
@@ -2366,7 +2381,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
                             gatherUncompressed = false;
                     }
                 }
-                // else compressed does not fit either - better to remain uncompressed.
+                // else compressed does not fit either - better to leave previous data uncompressed.
             }
             else
             {
@@ -2400,6 +2415,9 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         positionInfo = savedPositionInfo;
         unsigned nowSize = getDataSize(true);
         assertex(oldSize == nowSize);
+        if (nowSize > maxBytes)
+            throw makeStringExceptionV(0, "Internal error: Leaf grew too large after ignoring row @%llu:%u (%u > %u)", getFpos(), hdr.numKeys, hdr.keyBytes, maxBytes);
+
 #ifdef TRACE_BUILDING
         DBGLOG("---- leaf ----");
         builder.trace();
@@ -2488,6 +2506,8 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
     }
 
     hdr.keyBytes = getDataSize(true);
+    if (hdr.keyBytes > maxBytes)
+        throw makeStringExceptionV(0, "Internal error: Inplace leaf node @%llu is too large (%u > %u)", getFpos(), hdr.keyBytes, maxBytes);
 
     MemoryBuffer data;
     data.setBuffer(maxBytes, keyPtr, false);

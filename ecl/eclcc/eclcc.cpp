@@ -2137,6 +2137,9 @@ void EclCC::generateOutput(EclCompileInstance & instance)
 
 void EclCC::processReference(EclCompileInstance & instance, const char * queryAttributePath, const char * queryAttributePackage)
 {
+    if (isEmptyString(queryAttributePath))
+        throw makeStringException(0, "Blank main attribute supplied - no query to compile");
+
     instance.wu.setown(createLocalWorkUnit());
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
