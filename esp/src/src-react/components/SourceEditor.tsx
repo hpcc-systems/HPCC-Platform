@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import { Editor, ECLEditor, XMLEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
+import { Editor, CSSEditor, ECLEditor, XMLEditor, HTMLEditor, JSEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -15,7 +15,7 @@ import "eclwatch/css/cmDarcula.css";
 
 const logger = scopedLogger("src-react/components/SourceEditor.tsx");
 
-export type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml" | "js" | "css" | "html";
+export type ModeT = "css" | "ecl" | "html" | "js" | "json" | "sql" | "text" | "xml" | "yaml";
 
 class SQLEditorEx extends SQLEditor {
 
@@ -42,14 +42,20 @@ class SQLEditorEx extends SQLEditor {
 
 function newEditor(mode: ModeT) {
     switch (mode) {
+        case "css":
+            return new CSSEditor();
         case "ecl":
             return new ECLEditor();
-        case "xml":
-            return new XMLEditor();
+        case "html":
+            return new HTMLEditor();
+        case "js":
+            return new JSEditor();
         case "json":
             return new JSONEditor();
         case "sql":
             return new SQLEditorEx();
+        case "xml":
+            return new XMLEditor();
         case "yaml":
             return new YAMLEditor();
         case "text":
@@ -91,7 +97,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ];
 
-    const editor = useConst(() => newEditor(mode));
+    const editor = React.useMemo(() => newEditor(mode), [mode]);
 
     React.useEffect(() => {
         editor
