@@ -158,14 +158,12 @@ static CriticalSection isLocalCrit;
 class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
-    CStoragePlane(const IPropertyTree & plane)
+    CStoragePlane(const IPropertyTree & plane, const IPropertyTree & _defaults) : config(&plane), defaults(&_defaults)
     {
-        config.set(&plane);
-
         name = plane.queryProp("@name");
         prefix = plane.queryProp("@prefix", "");
         category = plane.queryProp("@category", "");
-        devices = config->getPropInt("@numDevices", 1);
+        devices = plane.getPropInt("@numDevices", 1);
 
         for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
         {
@@ -179,6 +177,9 @@ public:
                 case PlaneAttrType::integer:
                 {
                     unsigned __int64 value = plane.getPropInt64(prop.c_str(), unsetPlaneAttrValue);
+                    if (unsetPlaneAttrValue == value)
+                        value = defaults->getPropInt64(prop.c_str(), unsetPlaneAttrValue);
+
                     if (unsetPlaneAttrValue != value)
                     {
                         if (attrInfo.scale)
@@ -195,6 +196,8 @@ public:
                     unsigned __int64 value;
                     if (plane.hasProp(prop.c_str()))
                         value = plane.getPropBool(prop.c_str()) ? 1 : 0;
+                    else if (defaults->hasProp(prop.c_str()))
+                        value = defaults->getPropBool(prop.c_str()) ? 1 : 0;
                     else if (FileSyncWriteClose == propNum) // temporary (if FileSyncWriteClose and unset, check legacy fileSyncMaxRetrySecs), purely for short term backward compatibility (see HPCC-32757)
                     {
                         unsigned __int64 v = plane.getPropInt64("expert/@fileSyncMaxRetrySecs", unsetPlaneAttrValue);
@@ -331,6 +334,7 @@ private:
     unsigned devices{1};
     std::array<unsigned __int64, PlaneAttributeCount> attributeValues;
     Linked<const IPropertyTree> config;
+    Linked<const IPropertyTree> defaults;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
     std::vector<std::string> hosts;
     mutable bool cachedLocalPlane{false};
@@ -347,12 +351,17 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         CriticalBlock b(storagePlaneMapCrit);
         storagePlaneMap.clear();
 
-        Owned<IPropertyTreeIterator> planesIter = getGlobalConfigSP()->getElements("storage/planes");
+        Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
+        assertex(storage);
+        Owned<IPropertyTree> defaults = storage->getPropTree("defaults");
+        if (!defaults)
+            defaults.setown(createPTree("defaults"));
+        Owned<IPropertyTreeIterator> planesIter = storage->getElements("planes");
         ForEach(*planesIter)
         {
             const IPropertyTree &plane = planesIter->query();
             const char * name = plane.queryProp("@name");
-            storagePlaneMap[name].setown(new CStoragePlane(plane));
+            storagePlaneMap[name].setown(new CStoragePlane(plane, *defaults));
         }
     };
 
@@ -776,7 +785,10 @@ const IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
 
 IStoragePlane * createStoragePlane(IPropertyTree *meta)
 {
-    return new CStoragePlane(*meta);
+    Owned<IPropertyTree> defaults = getGlobalConfigSP()->getPropTree("storage/defaults");
+    if (!defaults)
+        defaults.setown(createPTree("defaults"));
+    return new CStoragePlane(*meta, *defaults);
 }
 
 
