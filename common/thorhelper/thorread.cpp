@@ -24,6 +24,7 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "rtldynfield.hpp"
+#include "rtlformat.hpp"
 #include "roxiemem.hpp"
 
 #include "rmtclient.hpp"
@@ -46,7 +47,7 @@ constexpr size32_t defaultReadBufferSize = 0x100000;
 static IBufferedSerialInputStream * createInputStream(IFileIO * inputfileio, const IPropertyTree * providerOptions)
 {
     assertex(providerOptions);
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
+    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
 
     //MORE: Add support for passing these values to the function
     offset_t startOffset = 0;
@@ -279,6 +280,65 @@ static IRowReadFormatMapping * createUnprojectedMapping(IRowReadFormatMapping * 
 
 //---------------------------------------------------------------------------------------------------------------------
 
+void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane)
+{
+    Owned<IPropertyTree> formatOptions(createPTree());
+    Owned<IPropertyTree> providerOptions(createPTree());
+
+    unsigned helperFlags = helper.getFlags();
+    bool isGeneric = (helperFlags & TDXgeneric) != 0;
+
+    if (isGeneric)
+        options.format.set(helper.queryFormat());
+    else
+        options.format.set("flat");
+
+    if (storagePlane)
+    {
+        //MORE: Get the default compression when that is implemented
+        providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+    }
+
+    if (node)
+    {
+        const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
+        if (recordTranslationModeHintText)
+            options.recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
+    }
+
+    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    if (helperFlags & TDRoptional)
+        providerOptions->setPropBool("@optional", true);
+
+    formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
+    if ((helperFlags & TDRcloneappendvirtual) != 0)
+        formatOptions->setPropBool("@cloneAppendVirtuals", true);
+
+    if (isGeneric)
+    {
+        CPropertyTreeWriter formatWriter(formatOptions);
+        helper.getFormatOptions(formatWriter);
+
+        CPropertyTreeWriter providerWriter(providerOptions);
+        helper.getProviderOptions(providerWriter);
+    }
+
+    rtlDataAttr k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k.refdata());
+    if (kl)
+    {
+        providerOptions->setPropBin("encryptionKey", kl, k.getdata());
+        providerOptions->setPropBool("@blockcompressed", true);
+        providerOptions->setPropBool("@compressed", true);
+    }
+
+    options.formatOptions.setown(formatOptions.getClear());
+    options.providerOptions.setown(providerOptions.getClear());
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
  * The base class for reading rows from an external file.  Each activity will have an instance of a disk reader for
  * each actual file format.
@@ -453,7 +513,7 @@ bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFi
     filePart = _partNumber;
     fileBaseOffset = _baseOffset;
 
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
+    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
     MemoryBuffer encryptionKey;
     if (providerOptions->hasProp("encryptionKey"))
         providerOptions->getPropBin("encryptionKey", encryptionKey);
@@ -1871,7 +1931,7 @@ bool RemoteDiskRowReader::setInputFile(const RemoteFilename & rfilename, const c
     }
 
     //MORE: Allow a previously created input stream to be reused to avoid reallocating the buffer
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
+    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
     inputStream.setown(createFileSerialStream(inputfileio, 0, (offset_t)-1, readBufferSize));
 
     inputBuffer.setStream(inputStream);

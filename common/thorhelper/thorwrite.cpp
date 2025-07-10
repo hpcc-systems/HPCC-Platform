@@ -24,6 +24,7 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "rtldynfield.hpp"
+#include "rtlformat.hpp"
 #include "roxiemem.hpp"
 
 #include "rmtclient.hpp"
@@ -83,4 +84,63 @@ THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTransl
 {
     assertex(formatOptions);
     return new DiskWriteMapping(mode, format, projected, expectedCrc, expected, projectedCrc, formatOptions);
+}
+
+
+void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDiskWriteArg & helper, IPropertyTree * node, const char * defaultStoragePlaneName)
+{
+    Owned<IPropertyTree> formatOptions(createPTree());
+    Owned<IPropertyTree> providerOptions(createPTree());
+
+    unsigned helperFlags = helper.getFlags();
+    bool isGeneric = (helperFlags & TDXgeneric) != 0;
+
+    if (isGeneric)
+        options.format.set(helper.queryFormat());
+    else
+        options.format.set("flat");
+
+    roxiemem::OwnedRoxieString helperCluster(helper.getCluster(0));
+    const char * targetPlaneName = helperCluster.get();
+    if (!targetPlaneName)
+        targetPlaneName = defaultStoragePlaneName;
+
+    Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(targetPlaneName, false);
+    if (storagePlane)
+    {
+        //MORE: Get the default compression when that is implemented
+        providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+    }
+
+    if (node)
+    {
+        const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
+        if (recordTranslationModeHintText)
+            options.recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
+    }
+
+    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
+
+    if (isGeneric)
+    {
+        CPropertyTreeWriter formatWriter(formatOptions);
+        helper.getFormatOptions(formatWriter);
+
+        CPropertyTreeWriter providerWriter(providerOptions);
+        helper.getProviderOptions(providerWriter);
+    }
+
+    rtlDataAttr k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k.refdata());
+    if (kl)
+    {
+        providerOptions->setPropBin("encryptionKey", kl, k.getdata());
+        providerOptions->setPropBool("@blockcompressed", true);
+        providerOptions->setPropBool("@compressed", true);
+    }
+
+    options.formatOptions.setown(formatOptions.getClear());
+    options.providerOptions.setown(providerOptions.getClear());
 }

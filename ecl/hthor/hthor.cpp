@@ -10777,7 +10777,6 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
 
     if (useGenericReadWrites)
     {
-        outputGrouped = helper.queryOutputMeta()->isGrouped();  // It is possible for input to be incorrectly marked as grouped, and input not or vice-versa
         bool isTemporary = (helperFlags & (TDXtemporary | TDXjobtemp)) != 0;
         if (isTemporary)
         {

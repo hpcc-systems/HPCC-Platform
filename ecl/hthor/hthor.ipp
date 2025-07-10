@@ -2988,7 +2988,6 @@ protected:
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     bool useRawStream = false; // Constant for the lifetime of the activity
     bool grouped = false;
-    bool outputGrouped = false;
     bool opened = false;
     bool finishedParts = false;
     bool isCodeSigned = false;

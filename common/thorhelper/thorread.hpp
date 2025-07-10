@@ -62,6 +62,28 @@ public:
 
 THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
 
+// Format options are mapped from the ecl to the property tree without turning them into attributes.
+// So CSV(header(1))  would have getPropInt64("header") == 1
+//
+// Any other format properties that correspond to user options are passed similarly.
+//
+// Internal format options (e.g. whether the rows are grouped) are passed as attributes.
+//
+// User defined provider options (when implemented will be passed as key value pairs - not attributes
+//
+// Internal provider options (e.g. readBufferSize) are passed as attributes, except for binary valuues (e.g. encryptionKeys)
+
+class FileAccessOptions
+{
+public:
+    StringAttr format;
+    RecordTranslationMode recordTranslationMode = RecordTranslationMode::Unspecified;
+    Owned<IPropertyTree> formatOptions;
+    Owned<IPropertyTree> providerOptions;
+};
+
+extern THORHELPER_API void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane);
+
 //--------------------------------------------------------------------------------------------------------------------
 
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
