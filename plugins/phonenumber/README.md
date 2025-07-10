@@ -65,6 +65,18 @@ phonenumber_type := ENUM(INTEGER1,
     UNKNOWN                 // Type cannot be determined
 );
 ```
+#### phonenumber_error Enum
+
+```ecl
+phonenumber_error := ENUM(INTEGER1,
+    NO_PARSING_ERROR=0,
+    INVALID_COUNTRY_CODE_ERROR,
+    NOT_A_NUMBER,
+    TOO_SHORT_AFTER_IDD,
+    TOO_SHORT_NSN,
+    TOO_LONG_NSN
+);
+```
 
 #### phonenumber_data Record
 

@@ -35,8 +35,18 @@ EXPORT phonenumber_type := ENUM(INTEGER1,
     UNKNOWN
 );
 
+EXPORT phonenumber_error := ENUM(INTEGER1,
+    NO_PARSING_ERROR=0,
+    INVALID_COUNTRY_CODE_ERROR,
+    NOT_A_NUMBER,
+    TOO_SHORT_AFTER_IDD,
+    TOO_SHORT_NSN,
+    TOO_LONG_NSN
+);
+
 EXPORT phonenumber_data := RECORD
     STRING number{MAXLENGTH(30)};
+    phonenumber_error error;
     BOOLEAN valid;
     phonenumber_type lineType;
     STRING regionCode{MAXLENGTH(5)};

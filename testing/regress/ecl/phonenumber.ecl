@@ -19,7 +19,7 @@ import lib_phonenumber;
 
 TestRecord := RECORD
   STRING phonenumber;
-  STRING countryCode;
+  STRING country_code;
   BOOLEAN valid;
   STRING description;
 END;
@@ -44,20 +44,48 @@ testNumbers := DATASET([
 
 
 // Test entire dataset against lib_phonenumber plugin calls
-testResults := PROJECT(testNumbers, TRANSFORM({TestRecord, STRING formattedNumber, BOOLEAN isValidNumber, lib_phonenumber.phonenumber_type pType, INTEGER2 pCountryCode, STRING pRegionCode},
-                                                SELF.formattedNumber := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].number,
-                                                SELF.isValidNumber := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].valid,
-                                                SELF.pType := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].lineType,
-                                                SELF.pCountryCode := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].countryCode,
-                                                SELF.pRegionCode := lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.countryCode)[1].regionCode,
-                                                SELF := LEFT));
+testResults := NORMALIZE(testNumbers, 
+    lib_phonenumber.phonenumber.parseNumber(LEFT.phonenumber, LEFT.country_code),
+    TRANSFORM({TestRecord, lib_phonenumber.phonenumber_data},
+        SELF := LEFT,   // Copy original test record fields
+        SELF := RIGHT   // Copy parsed phone number data
+    )
+);
 
 OUTPUT(testResults, NAMED('fullTestResults'));
 
-// Show only Valid Numbers
-validNumbers := testResults(isValidNumber = true);
+// Show only Valid Numbers (using the 'valid' field from phonenumber_data)
+validNumbers := testResults(valid = true);
 OUTPUT(validNumbers, NAMED('validNumbers'));
 
 // Show only Invalid Numbers
-invalidNumbers := testResults(isValidNumber = false);
+invalidNumbers := testResults(valid = false);
 OUTPUT(invalidNumbers, NAMED('invalidNumbers'));
+
+// Show phone number type analysis
+typeAnalysis := PROJECT(validNumbers, TRANSFORM({
+    TestRecord,
+    lib_phonenumber.phonenumber_data,
+    STRING typeDescription
+},
+    SELF.typeDescription := CASE(LEFT.lineType,
+        lib_phonenumber.phonenumber_type.MOBILE => 'Mobile Phone',
+        lib_phonenumber.phonenumber_type.FIXED_LINE => 'Landline',
+        lib_phonenumber.phonenumber_type.TOLL_FREE => 'Toll-Free',
+        lib_phonenumber.phonenumber_type.VOIP => 'VoIP Service',
+        lib_phonenumber.phonenumber_type.PREMIUM_RATE => 'Premium Rate',
+        'Other/Unknown'
+    );
+    SELF := LEFT;
+));
+
+OUTPUT(typeAnalysis, NAMED('phoneTypeAnalysis'));
+
+// Show country code distribution
+countryStats := TABLE(validNumbers, {
+    countryCode,
+    regionCode,
+    numberCount := COUNT(GROUP)
+}, countryCode, regionCode);
+
+OUTPUT(countryStats, NAMED('countryDistribution'));

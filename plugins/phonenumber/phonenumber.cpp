@@ -66,26 +66,15 @@ enum phoneNumberType : __int8
     UNKNOWN
 };
 
-static void throwOnError(i18n::phonenumbers::PhoneNumberUtil::ErrorType err)
+enum errorType : __int8
 {
-    switch (err)
-    {
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::NO_PARSING_ERROR:
-        return;
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::INVALID_COUNTRY_CODE_ERROR:
-        throw MakeStringException(err, "libphonenumber : Invalid country code");
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::NOT_A_NUMBER:
-        throw MakeStringException(err, "libphonenumber : Not a number");
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_SHORT_AFTER_IDD:
-        throw MakeStringException(err, "libphonenumber : Too short after IDD");
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_SHORT_NSN:
-        throw MakeStringException(err, "libphonenumber : Too short NSN");
-    case i18n::phonenumbers::PhoneNumberUtil::ErrorType::TOO_LONG_NSN:
-        throw MakeStringException(err, "libphonenumber : Too long NSN");
-    default:
-        throw MakeStringException(err, "libphonenumber : Unknown error");
-    }
-}
+    NO_PARSING_ERROR,
+    INVALID_COUNTRY_CODE_ERROR,
+    NOT_A_NUMBER,
+    TOO_SHORT_AFTER_IDD,
+    TOO_SHORT_NSN,
+    TOO_LONG_NSN
+};
 
 namespace phonenumber
 {
@@ -100,7 +89,8 @@ ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL parser(ICodeContext *_ctx, size32_
     const i18n::phonenumbers::PhoneNumberUtil* phoneUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
     std::string numberStr(number, lenNumber);
     std::string countryCodeStr(countryCode, lenCountryCode);
-    throwOnError(phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber));
+
+    errorType err = static_cast<errorType>(phoneUtil->Parse(numberStr, countryCodeStr, &phoneNumber));
 
     // Format the results
     std::string formattedNumber;
@@ -117,6 +107,7 @@ ECL_PHONENUMBER_API void ECL_PHONENUMBER_CALL parser(ICodeContext *_ctx, size32_
     size32_t formattedNumberLen = formattedNumber.size();
 
     mb.append(formattedNumberLen).append(formattedNumberLen, formattedNumber.c_str());
+    mb.append(err);
     mb.append(isValid);
     mb.append(lineType);
     mb.append(regionCodeLen).append(regionCodeLen, regionCode.c_str());
