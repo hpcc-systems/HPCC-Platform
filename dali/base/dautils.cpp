@@ -3832,7 +3832,7 @@ class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesU
     }
 
 public:
-    FileReadPropertiesUpdater(IUserDescriptor * udesc) : udesc(udesc) {}
+    FileReadPropertiesUpdater(IUserDescriptor * _udesc) : udesc(_udesc) {}
 
     // Track and accumulate the readCost and numDiskReads to stats tracking map (to be written to properties later)
     // - if curReadCost is 0, it will be calculated using calcFileAccessCost
