@@ -43,9 +43,10 @@ KeyCompressor::~KeyCompressor()
     }
 }
 
-void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompression)
+void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompression, size32_t _fixedRowSize)
 {
     isVariable = _isVariable;
+    fixedRowSize = _fixedRowSize;
     isBlob = false;
     curOffset = 0;
     ::Release(comp);
@@ -58,7 +59,7 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
     }
     else
         comp = createLZWCompressor(true);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize,_fixedRowSize, false );
     method = comp->getCompressionMethod();
 }
 
@@ -69,7 +70,7 @@ void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHa
     curOffset = 0;
     ::Release(comp);
     comp = compressionHandler->getCompressor(options);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize, _fixedRowSize, false);
     method = comp->getCompressionMethod();
     fixedRowSize = _fixedRowSize;
 }
@@ -81,7 +82,7 @@ void KeyCompressor::open(void *blk,int blksize, ICompressor * compressor, bool _
     curOffset = 0;
     ::Release(comp);
     comp = LINK(compressor);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize, _fixedRowSize, false);
     method = comp->getCompressionMethod();
     fixedRowSize = _fixedRowSize;
 }
@@ -94,35 +95,31 @@ void KeyCompressor::openBlob(void *blk,int blksize)
     ::Release(comp);
     comp = NULL;
     comp = createLZWCompressor(true);
-    comp->open(blk,blksize);
+    comp->open(blk,blksize,0, true);
     method = comp->getCompressionMethod();
 }
 
 int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
 {
     assert(!isBlob);
-    comp->startblock(); // start transaction
-    // first write out length if variable
-    if (isVariable) {
-        KEYRECSIZE_T rs = datalength;
-        _WINREV(rs);
-        if (comp->write(&rs, sizeof(rs))!=sizeof(rs)) {
-            close();
-            return 0;
-        }
-    }
-    // then write out fpos and key
-    _WINREV(fPtr);
-    if (comp->write(&fPtr,sizeof(offset_t))!=sizeof(offset_t)) {
-        close();
-        return 0;
-    }
-    if (comp->write(key,datalength)!=datalength) {
-        close();
-        return 0;
-    }
-    comp->commitblock();    // end transaction
+    assertex(__BYTE_ORDER == __LITTLE_ENDIAN); // otherwise the following code is wrong.
 
+    //Copy the data into a buffer so all the data is written in a single write()
+    tempKeyBuffer.clear();
+    if (isVariable)
+    {
+        KEYRECSIZE_T rs = datalength;
+        tempKeyBuffer.appendSwap(sizeof(rs), &rs);
+    }
+    tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
+    tempKeyBuffer.append(datalength, key);
+
+    size32_t toWrite = tempKeyBuffer.length();
+    if (comp->write(tempKeyBuffer.bufferBase(),toWrite)!=toWrite)
+    {
+        close();
+        return 0;
+    }
     return 1;
 }
 
@@ -152,32 +149,10 @@ bool KeyCompressor::compressBlock(size32_t destSize, void * dest, size32_t srcSi
 
 bool KeyCompressor::write(const void * data, size32_t datalength)
 {
-    if (method == COMPRESS_METHOD_RANDROW && fixedRowSize)
+    if (comp->write(data,datalength)!=datalength)
     {
-        //Ugly special casing because the RandR compressor expects single rows to be added.
-        //This code could be migrated to the compressor, but that should be done carefully as a separate change.
-        for (size32_t offset = 0; offset < datalength; offset += fixedRowSize)
-        {
-            dbgassertex(offset + fixedRowSize <= datalength); // Check datalength is a multiple of the fixedRowSize
-            comp->startblock(); // start transaction
-            size32_t size = comp->write((const byte *)data + offset, fixedRowSize);
-            if (size != fixedRowSize)
-            {
-                close();
-                return false;
-            }
-            comp->commitblock();    // end transaction
-        }
-    }
-    else
-    {
-        comp->startblock(); // start transaction
-        if (comp->write(data,datalength)!=datalength)
-        {
-            close();
-            return false;
-        }
-        comp->commitblock();    // end transaction
+        close();
+        return false;
     }
     return true;
 }
@@ -190,18 +165,17 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
     if (!comp)
         return 0;
 
-
     unsigned originalOffset = curOffset;
-    comp->startblock(); // start transaction
-    char zero = 0;
-    while (curOffset & 0xf)
+    unsigned zeroPadding = (16 - (curOffset & 0xf)) & 0xf;
+    if (zeroPadding)
     {
-        if (comp->write(&zero,sizeof(zero))!=sizeof(zero)) {
+        char zeros[16] = { 0 };
+        if (comp->write(zeros, zeroPadding) != zeroPadding)
+        {
             close();
-            curOffset = originalOffset;
             return 0;
         }
-        curOffset++;
+        curOffset += zeroPadding;
     }
 
     unsigned rdatalength = datalength;
@@ -229,9 +203,7 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
         curOffset++;
         written++;
         data++;
-        comp->startblock();
     }
-    comp->commitblock();
     if (written != datalength)
         close();
     return written;

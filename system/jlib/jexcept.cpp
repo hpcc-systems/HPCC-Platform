@@ -824,6 +824,12 @@ void jlib_decl throwUnimplementedException(const char * what, const char *what2,
     throw makeStringExceptionV(-1, "UNIMPLEMENTED feature [%s %s] in function %s() at %s(%d)", what, what2, function, sanitizeSourceFile(file), line);
 }
 
+static bool backtraceOnAssert = true;
+void setBacktraceOnAssert(bool value)
+{
+    backtraceOnAssert = value;
+}
+
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
 {
     StringBuffer s;
@@ -836,7 +842,8 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
 
     if (queryLogMsgManager())
     {
-        printStackReport();
+        if (backtraceOnAssert)
+            printStackReport();
         IERRLOG("%s",s.str());       // make sure doesn't get lost!
         queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _DEBUG

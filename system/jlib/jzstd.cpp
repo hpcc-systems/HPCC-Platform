@@ -55,9 +55,9 @@ public:
             ZSTD_freeCStream(zstdStream);
     }
 
-    virtual void open(void *buf, size32_t max) override
+    virtual void open(void *buf, size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
-        CStreamCompressor::open(buf, max);
+        CStreamCompressor::open(buf, max, fixedRowSize, _allowPartialWrites);
         size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
         if (ZSTD_isError(result))
             throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));

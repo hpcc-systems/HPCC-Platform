@@ -743,7 +743,7 @@ private:
             if (compmode==COMPRESS_METHOD_LZW) {
                 byte *compbuff = (byte *)ma.allocate(streambuffsize);
                 Owned<ICompressor> compressor = createLZWCompressor(false);
-                compressor->open(compbuff, newsize);
+                compressor->open(compbuff, newsize, 0, false);
                 if (compressor->write(wrbuff, outsize)==outsize) {
                     compressor->close();
                     wrsize = compressor->buflen();

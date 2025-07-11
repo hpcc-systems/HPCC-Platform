@@ -23,8 +23,9 @@ size32_t ThorCompress(const void * src, size32_t srcSz, void * dest, size32_t de
 {
     assertex(destSz>=srcSz+sizeof(size32_t));
     if (srcSz>=threshold) {
+        //GH->JCS.  Should this be using LZ4 or ZStd compression instead?
         Owned<ICompressor> compressor = createLZWCompressor(false);
-        compressor->open((byte *)dest + sizeof(size32_t), srcSz * 4 / 5);
+        compressor->open((byte *)dest + sizeof(size32_t), srcSz * 4 / 5, 0, false);
         if(compressor->write(src, srcSz)==srcSz)
         {
             compressor->close();
