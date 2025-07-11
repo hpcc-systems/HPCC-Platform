@@ -4259,7 +4259,7 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress  };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress };
 public:
     void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
 

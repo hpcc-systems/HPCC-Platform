@@ -1346,7 +1346,7 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     MemoryAttr prev;
     bool allowPartialWrites{true};
 
-    bool isFirstRow()
+    bool isFirstRow() const
     {
         return outlen == sizeof(size32_t)*2;
     }
@@ -1774,7 +1774,7 @@ public:
         unsigned originalRows = header->numrows;
         size32_t originalLength = diffbuf.length();
         size32_t originalTotalSize = header->totsize;
-        for (size32_t i =0; i < buflen; i += recsize)
+        for (size32_t i=0; i < buflen; i += recsize)
         {
             if (i+recsize > buflen)
                 throw makeStringExceptionV(-1,"CRandRDiffCompressor used with variable sized row (%u, %u, %u)", recsize, buflen, buflen - i);
