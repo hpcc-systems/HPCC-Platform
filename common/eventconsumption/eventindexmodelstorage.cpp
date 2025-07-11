@@ -38,8 +38,88 @@ const Storage::Plane& Storage::File::lookupPlane(__uint64 nodeKind) const
     return *planes[nodeKind];
 }
 
+void Storage::PageCache::configure(const IPropertyTree& config)
+{
+    readTime = __uint64(config.getPropInt64("@cache-read", readTime));
+    if (readTime)
+        capacity = __uint64(config.getPropInt64("@cache-capacity", capacity));
+}
+
+__uint64 Storage::PageCache::getReadTimeIfExists(const Key& key)
+{
+    if (!readTime)
+        return 0;
+    Hash::iterator hashIt = hash.find(&key);
+    if (hash.end() == hashIt)
+        return 0;
+    if (!hashIt->second->prev.get()) // already mru
+        return readTime;
+    erase(*hashIt->second);
+    if (mru.get())
+        mru->prev = hashIt->second;
+    hashIt->second->next = mru;
+    mru = hashIt->second;
+    return readTime;
+}
+
+bool Storage::PageCache::insert(const Key& key)
+{
+    if (!readTime)
+        return false;
+    if (getReadTimeIfExists(key))
+        return false;
+    reserve(DefaultPageSize);
+    mru = std::make_shared<Used>(key.fileId, key.offset, mru);
+    if (mru->next.get())
+        mru->next->prev = mru;
+    else
+        lru = mru;
+    hash[mru.get()] = mru;
+    used += DefaultPageSize;
+    return true;
+}
+
+void Storage::PageCache::erase(Used& used)
+{
+    if (used.prev.get() && used.next.get()) // middle of list
+    {
+        used.prev->next = used.next;
+        used.next->prev = used.prev;
+        used.prev = used.next = nullptr;
+    }
+    else if (used.prev.get()) // least recently used
+    {
+        lru = used.prev;
+        lru->next = nullptr;
+        used.prev = nullptr;
+    }
+    else if (used.next.get()) // most recently used
+    {
+        mru = used.next;
+        mru->prev = nullptr;
+        used.next = nullptr;
+    }
+}
+
+void Storage::PageCache::reserve(__uint64 request)
+{
+    if (!capacity)
+        return;
+    if (capacity < request)
+        throw makeStringExceptionV(-1, "page cache capacity %llu less than reserved page request %llu", capacity, request);
+    while ((capacity - used) < request)
+    {
+        if (!lru.get())
+            throw makeStringException(-1, "page cache MRU unexpectedly empty");
+        hash.erase(lru.get());
+        erase(*lru);
+        used -= request;
+    }
+}
+
 void Storage::configure(const IPropertyTree& config)
 {
+    cache.configure(config);
     configurePlanes(config);
     configureFiles(config);
 }
@@ -57,14 +137,21 @@ void Storage::observeFile(__uint64 fileId, const char* path)
         assertex(&mappedFile == observation);
 }
 
-void Storage::describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const
+void Storage::useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page)
 {
-    const File& file = lookupFile(fileId); // doesn't return nullptr
-    const Plane& plane = file.lookupPlane(nodeKind); // doesn't return nullptr
+    const File& file = lookupFile(fileId);
     page.fileId = fileId;
     page.offset = offset;
     page.nodeKind = nodeKind;
-    page.readTime = plane.readTime;
+    page.readTime = cache.getReadTimeIfExists(fileId, offset);
+    if (!page.readTime)
+    {
+        const Plane& plane = file.lookupPlane(nodeKind);
+        page.readTime = plane.readTime;
+        // MORE: if multiple pages should be loaded, add all to the cache, with the requested page
+        // added last.
+        (void)cache.insert(fileId, offset);
+    }
 }
 
 void Storage::configurePlanes(const IPropertyTree& config)
@@ -168,3 +255,118 @@ const Storage::File& Storage::lookupFile(__uint64 fileId) const
     assertex(configuredIt != configuredFiles.end());
     return *configuredIt;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "eventunittests.hpp"
+
+class IndexModelStorageTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(IndexModelStorageTest);
+    CPPUNIT_TEST(testSmallPageCache);
+    CPPUNIT_TEST(testUnboundedPageCache);
+    CPPUNIT_TEST(testLargePageCache);
+#ifdef _DEBUG
+    // Tests only run in debug builds for reasons...
+
+    // Creates 10's of mullions of page cache entries in setup. Slowly. Uses the cache in test.
+    // The separation helps distinguish between the cache creation and usage times.
+    CPPUNIT_TEST(setupHugePageCache);
+    CPPUNIT_TEST(testHugePageCache);
+#endif
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testSmallPageCache()
+    {
+        START_TEST
+        constexpr const char* configText =
+R"!!!(cache-capacity: 16384
+cache-read: 100
+)!!!";
+        Storage::PageCache cache;
+        Owned<IPropertyTree> configTree = createPTreeFromYAMLString(configText);
+        cache.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.readTime);
+        CPPUNIT_ASSERT_EQUAL(16384ULL, cache.capacity);
+        CPPUNIT_ASSERT(!cache.getReadTimeIfExists(1, 0));
+        CPPUNIT_ASSERT(cache.insert(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
+        CPPUNIT_ASSERT(!cache.insert(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
+        CPPUNIT_ASSERT(cache.insert(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(0ULL, cache.getReadTimeIfExists(1, 16384));
+        CPPUNIT_ASSERT(cache.insert(1, 16384));
+        CPPUNIT_ASSERT_EQUAL(0ULL, cache.getReadTimeIfExists(1, 0));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 8192));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 16384));
+        END_TEST
+    }
+
+    void testUnboundedPageCache()
+    {
+        START_TEST
+        constexpr const char* configText = "<storage cache-read=\"100\"/>";
+        Owned<IPropertyTree> configTree = createTestConfiguration(configText);
+        Storage::PageCache cache;
+        cache.configure(*configTree);
+        for (size_t idx = 0, offset = 0; idx < 1'000'000; idx++, offset += 8192)
+            CPPUNIT_ASSERT(cache.insert(1, offset));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, cache.lru->offset));
+        END_TEST
+    }
+
+    void testLargePageCache()
+    {
+        START_TEST
+        constexpr const char* configText = "<storage cache-read=\"100\" cache-capacity=\"4096000000\"/>";
+        Owned<IPropertyTree> configTree = createTestConfiguration(configText);
+        Storage::PageCache cache;
+        cache.configure(*configTree);
+        for (size_t idx = 0, offset = 0; idx < 1'000'000; idx++, offset += 8192)
+            CPPUNIT_ASSERT(cache.insert(1, offset));
+        CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, cache.lru->offset));
+        END_TEST
+    }
+
+#ifdef _DEBUG
+    // When timed, this test took more than 45 seconds to run.
+    void setupHugePageCache()
+    {
+        START_TEST
+        constexpr const char* configText = "<storage cache-read=\"100\" cache-capacity=\"327680000000\"/>";
+        Owned<IPropertyTree> configTree = createTestConfiguration(configText);
+        hugeCache.reset(new Storage::PageCache);
+        hugeCache->configure(*configTree);
+        for (size_t idx = 0, offset = 0; idx < 40'000'001; idx++, offset += 8192)
+            CPPUNIT_ASSERT(hugeCache->insert(1, offset));
+        CPPUNIT_ASSERT_EQUAL(8'192ULL, hugeCache->lru->offset);
+        END_TEST
+    }
+
+    // When timed, each lookup took less than 4 microseconds.
+    void testHugePageCache()
+    {
+        START_TEST
+        CPPUNIT_ASSERT(hugeCache.get());
+        CPPUNIT_ASSERT_EQUAL(100ULL, hugeCache->getReadTimeIfExists(1, hugeCache->lru->offset));
+        CPPUNIT_ASSERT_EQUAL(100ULL, hugeCache->getReadTimeIfExists(1, 30'000'000ULL * 8192));
+        CPPUNIT_ASSERT_EQUAL(100ULL, hugeCache->getReadTimeIfExists(1, hugeCache->mru->offset));
+        END_TEST
+    }
+
+    // Static because non-static does not persist between test cases.
+    static std::unique_ptr<Storage::PageCache> hugeCache;
+#endif
+};
+
+#ifdef _DEBUG
+std::unique_ptr<Storage::PageCache> IndexModelStorageTest::hugeCache;
+#endif
+
+CPPUNIT_TEST_SUITE_REGISTRATION(IndexModelStorageTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IndexModelStorageTest, "indexmodelstorage");
+
+#endif // _USE_CPPUNIT
