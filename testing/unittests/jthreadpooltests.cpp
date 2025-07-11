@@ -254,6 +254,7 @@ public:
         auto duration = measureThreadStartDuration(beforeStart, 2);
         CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
+        CPPUNIT_ASSERT_EQUAL(0U, threadCompletedCount.load());
 
         // The Thread3 should not start after waiting on it's start specified timeout as the other
         // two threads are still running when the timeout expires
@@ -281,6 +282,7 @@ public:
         pool->start(&params, params.name);
         duration = measureThreadStartDuration(beforeStart, 1);
         CPPUNIT_ASSERT(duration.count() < 100);
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 2);
         CPPUNIT_ASSERT(pool->runningCount() >= 2);
 
         // Thread6 should start up to the Thread Pool default start delay of 1 second
@@ -290,6 +292,7 @@ public:
         duration = measureThreadStartDuration(beforeStart, 1);
         CPPUNIT_ASSERT(duration.count() >= 749 && duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 2);
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
 
         // Test: Use infinite thread start delay
@@ -306,6 +309,7 @@ public:
         duration = measureThreadStartDuration(beforeStart, 2);
         CPPUNIT_ASSERT(duration.count() < 1000);
         CPPUNIT_ASSERT_EQUAL(7U, threadStartedCount.load());
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 4);
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
 
         // Thread9 should start after one of the above completes
@@ -318,7 +322,7 @@ public:
         duration = measureThreadStartDuration(beforeStart, 1);
         CPPUNIT_ASSERT(duration.count() > 990);
         CPPUNIT_ASSERT_EQUAL(8U, threadStartedCount.load());
-        CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 6);
         CPPUNIT_ASSERT(pool->runningCount() >= 1);
 
         // Test multiple threads with INFINITE timeout waiting
@@ -340,7 +344,7 @@ public:
         duration = measureThreadStartDuration(beforeStart, 2);
         CPPUNIT_ASSERT(duration.count() > 990);
         CPPUNIT_ASSERT_EQUAL(10U, threadStartedCount.load());
-        CPPUNIT_ASSERT_EQUAL(8U, threadCompletedCount.load());
+        CPPUNIT_ASSERT(threadCompletedCount.load() >= 8);
 
         // All threads should complete
         pool->joinAll(true);
