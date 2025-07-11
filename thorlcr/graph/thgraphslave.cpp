@@ -2225,10 +2225,6 @@ public:
     {
         throwUnexpectedX("CDelayedFileWrapper::write() called for a cached IFileIO object");
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
-    {
-        throwUnexpectedX("CDelayedFileWrapper::appendFile() called for a cached IFileIO object");
-    }
     virtual void setSize(offset_t size) override
     {
         throwUnexpectedX("CDelayedFileWrapper::setSize() called for a cached IFileIO object");

@@ -1763,28 +1763,6 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             return nullptr;
         }
 
-        offset_t appendFile(IFile *file,offset_t pos,offset_t len)
-        {
-            if (!file)
-                return 0;
-            const size32_t buffsize = DEFAULT_STREAM_BUFFER_SIZE;
-            void * buffer = mb.reserve(buffsize);
-            Owned<IFileIO> fileio = file->open(IFOread);
-            offset_t ret=0;
-            while (len) {
-                size32_t toread = (len>=buffsize)?buffsize:(size32_t)len;
-                size32_t read = fileio->read(pos,toread,buffer);
-                if (read<buffsize) 
-                    mb.setLength(mb.length()+read-buffsize);
-                if (read==0)
-                    break;
-                pos += read;
-                len -= read;
-                ret += read;
-            }
-            return ret;
-        }
-
     };
 
     return new CMemoryBufferIO(buffer, sz, readOnly);
@@ -1793,21 +1771,6 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
 IFileIO * createIFileI(unsigned len, const void * buffer)
 {
     return _createIFileIO((void *)buffer, len, true);
-}
-
-IFileIO * createIFileIO(unsigned len, void * buffer)
-{
-    return _createIFileIO(buffer, len, false);
-}
-
-IFileIO * createIFileIO(StringBuffer & buffer)
-{
-    return _createIFileIO((void *)buffer.str(), buffer.length(), true);
-}
-
-IFileIO * createIFileIO(MemoryBuffer & buffer)
-{
-    return _createIFileIO(buffer.toByteArray(), buffer.length(), false);
 }
 
 //---------------------------------------------------------------------------
@@ -1913,23 +1876,23 @@ extern jlib_decl IFileIO *createIFileIO(IFile * creator,HANDLE handle,IFOmode op
     return new CFileIO(creator, handle,openmode,IFSHfull,extraFlags);
 }
 
-offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
+offset_t appendFile(IFileIO * target, IFile *file,offset_t pos,offset_t len)
 {
     if (!file)
         return 0;
-    CriticalBlock procedure(cs);
     MemoryAttr mb;
     const size32_t buffsize = DEFAULT_STREAM_BUFFER_SIZE;
     void * buffer = mb.allocate(buffsize);
     Owned<IFileIO> fileio = file->open(IFOread);
     offset_t ret=0;
-    offset_t outp = size();
-    while (len) {
+    offset_t outp = target->size();
+    while (len)
+    {
         size32_t toread = (len>=buffsize) ? buffsize : (size32_t)len;
         size32_t read = fileio->read(pos,toread,buffer);
         if (read==0)
             break;
-        size32_t wr = write(outp,read,buffer);
+        size32_t wr = target->write(outp,read,buffer);
         pos += read;
         outp += wr;
         len -= read;
@@ -1939,6 +1902,7 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
     }
     return ret;
 }
+
 
 unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 {
@@ -2359,11 +2323,6 @@ void CCheckingFileIO::setSize(offset_t size)
     io->setSize(size);
 }
 
-offset_t CCheckingFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
-{
-    return io->appendFile(file, pos, len);
-}
-
 void CCheckingFileIO::flush()
 {
     io->flush();
@@ -2418,12 +2377,6 @@ void CFileAsyncIO::flush()
         size32_t dummy;
         results.item(i).getResult(dummy,true);
     }
-}
-
-offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
-{
-    // will implemented if needed
-    UNIMPLEMENTED; 
 }
 
 unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
@@ -6969,12 +6922,6 @@ public:
     {
         return inFile;
     }
-    offset_t appendFile(IFile *file,offset_t pos,offset_t len)
-    {
-        CriticalBlock block(sect);
-        Owned<IFileIO> io = open();
-        return io->appendFile(file,pos,len);
-    }
     void setSize(offset_t size) 
     {
         CriticalBlock block(sect);
@@ -7626,7 +7573,6 @@ public:
     }
     virtual offset_t size() override { return io->size(); }
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
-    virtual offset_t appendFile(IFile *file, offset_t pos=0, offset_t len=(offset_t)-1) override { throwUnexpected(); }
     virtual void setSize(offset_t size) override { throwUnexpected(); }
     virtual void flush() override { throwUnexpected(); }
     virtual void close() override { io->close(); }

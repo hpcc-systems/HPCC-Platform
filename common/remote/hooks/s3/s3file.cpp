@@ -121,11 +121,6 @@ public:
         throwUnexpected();
         return 0;
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
-    {
-        throwUnexpected();
-        return 0;
-    }
     virtual void setSize(offset_t size) override
     {
         throwUnexpected();
@@ -166,7 +161,6 @@ public:
     }
 
     virtual void close() override;
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
     virtual void setSize(offset_t size) override;
     virtual void flush() override;
@@ -406,12 +400,6 @@ void S3FileWriteIO::close()
     CriticalBlock block(cs);
     if (!blobWritten)
         file->writeBlob(0, nullptr, stats);
-}
-
-offset_t S3FileWriteIO::appendFile(IFile *file, offset_t pos, offset_t len)
-{
-    throwUnexpected();
-    return 0;
 }
 
 size32_t S3FileWriteIO::write(offset_t pos, size32_t len, const void * data)

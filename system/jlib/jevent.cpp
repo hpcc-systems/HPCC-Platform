@@ -1472,7 +1472,21 @@ private:
             return event.setValue(attr, bool(value));
         // normalize event timestamp as a combination of header timestamp and event offset
         if (EvAttrEventTimestamp == attr)
+        {
+            // The Windows 2022 (at least) compiler is unable to recognize that a Boolean value can
+            // never reach this point (see prior check for bool followed by a return statement).
+            // Splitting this method into three (this calling either a Boolean or numeric version)
+            // might satisfy the compiler, but disabling the warning for the offending line is
+            // less overhead.
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4804)
+#endif
             value += baseTimestamp;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+        }
         return event.setValue(attr, __uint64(value));
     }
 

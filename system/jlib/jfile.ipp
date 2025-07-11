@@ -98,7 +98,6 @@ public:
     virtual offset_t size() override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
     virtual void setSize(offset_t size) override;
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override;
     virtual void flush() override;
     virtual void close() override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
@@ -138,7 +137,6 @@ public:
     virtual offset_t size();
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
     virtual void flush() { io->flush(); }
     virtual void close() { io->close(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
@@ -162,7 +160,6 @@ public:
     virtual offset_t size() override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
     virtual void setSize(offset_t size) override;
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override;
     virtual void flush() override;
     virtual void close() override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
@@ -193,7 +190,6 @@ public:
     virtual size32_t read(offset_t pos, size32_t len, void * data);
     virtual offset_t size();
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
     virtual void flush();
     virtual void close();
     virtual unsigned __int64 getStatistic(StatisticKind kind);
