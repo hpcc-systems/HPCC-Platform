@@ -48,12 +48,14 @@ inline void read(IBufferedSerialInputStream &source, T &value)
 {
     size32_t got = source.read(sizeof(T), &value);
     if (unlikely(got != sizeof(T)))
-        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %lu, only read %u bytes", sizeof(T), got);
+        throw makeStringExceptionV(0, "Failed to read the expected number of bytes %zu, only read %u bytes", sizeof(T), got);
 }
 
-inline bool isNextByteZero(IBufferedSerialInputStream &src)
+inline bool isNextByteZero(IBufferedSerialInputStream &src, bool throwOnEOF = false)
 {
     size32_t got;
     const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
+    if (throwOnEOF && got == 0)
+        throwUnexpectedX("PTree deserialization error: Unexpected end of stream");
     return got && (*attrNamePtr == '\0');
 }

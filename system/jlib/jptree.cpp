@@ -3068,17 +3068,14 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
     if (len == 0)
         throwUnexpectedX("Name could not be found within buffer");
     setName(name);
-    src.skip(len + 1); // Skip over null terminator?
+    src.skip(len + 1); // Skip over name and null terminator
 
     read(src, flags);
 
-    size32_t got;
+    constexpr bool throwOnEof = true;
     for (;;)
     {
-        const char *attrNamePtr = static_cast<const char *>(src.peek(1, got));
-        if (got < 1)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
-        if (*attrNamePtr == '\0')
+        if (isNextByteZero(src, throwOnEof))
         {
             src.skip(1); // Skip over null terminator.
             break;
@@ -4750,20 +4747,17 @@ template <typename T>
 class CommonReaderBase : public CInterface
 {
     Linked<ISimpleReadStream> lstream;
-    ISimpleReadStream *stream{nullptr};
-    bool bufOwned{false};
-    bool nullTerm{false};
-    byte *buf{nullptr};
-    byte *bufPtr{nullptr};
-    size32_t bufSize{0};
-    size32_t bufRemaining{0};
+    ISimpleReadStream *stream;
+    bool bufOwned, nullTerm;
+    byte *buf, *bufPtr;
+    size32_t bufSize, bufRemaining;
 protected:
     PTreeReaderOptions readerOptions;
     bool ignoreWhiteSpace, noRoot;
     Linked<IPTreeNotifyEvent> iEvent;
-    offset_t curOffset{0};
-    unsigned line{0};
-    char nextChar{0};
+    offset_t curOffset;
+    unsigned line;
+    char nextChar;
 
 private:
     void init()
@@ -4800,7 +4794,7 @@ public:
         readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
-        stream = nullptr;  // not used for direct reads
+        stream = NULL;  // not used for direct reads
         bufRemaining = bufLength;
         nullTerm = false;
         buf = (byte *)_buf;
@@ -4812,7 +4806,7 @@ public:
         readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
-        stream = nullptr;  // not used for direct reads
+        stream = NULL;  // not used for direct reads
         curOffset = 0;
         bufRemaining = 0;
         nullTerm = true;
@@ -5375,6 +5369,7 @@ protected:
         return lookupRefValue(entity, value);
     }
 };
+
 
 template <class X>
 class CXMLReader : public CXMLReaderBase<X>, implements IPTreeReader
@@ -6180,6 +6175,7 @@ IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, PTreeReaderOpt
     else
         return iMaker->create(NULL);
 }
+
 IPropertyTree *createPTree(IFileIO &ifileio, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFileIOStream stream = createIOStream(&ifileio);

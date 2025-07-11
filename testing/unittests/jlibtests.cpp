@@ -3577,6 +3577,9 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
 
 IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
 {
+    // Validate the testXml parameter
+    CPPUNIT_ASSERT(testXml && *testXml);
+
     // Create a tree with various binary data sizes to test compression thresholds
     Owned<IPropertyTree> tree = createPTree(testXml);
 
