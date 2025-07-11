@@ -5522,6 +5522,7 @@ void HIDLcompiler::write_esp_ex_ipp()
     outf("#ifndef %s_EX_ESPGEN_INCLUDED\n", packagename);
     outf("#define %s_EX_ESPGEN_INCLUDED\n\n", packagename);
     outs("#ifdef _MSC_VER\n");
+    outs("#pragma warning(push)\n");
     outs("#pragma warning( disable : 4786)\n");
     outs("#else\n");
     outs("#pragma GCC diagnostic push\n");
@@ -5572,7 +5573,7 @@ void HIDLcompiler::write_esp_ex_ipp()
     outf("using namespace %s;\n\n", packagename);
 
     outs("#ifdef _MSC_VER\n");
-    outs("#pragma pop\n");
+    outs("#pragma warning(pop)\n");
     outs("#else\n");
     outs("#pragma GCC diagnostic pop\n");
     outs("#endif\n");
