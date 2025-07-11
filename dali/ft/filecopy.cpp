@@ -3941,7 +3941,7 @@ cost_type FileSprayer::updateSourceProperties()
     // Update file readCost and numReads in file properties and do the same for owning super files
     if (distributedSource)
     {
-        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(nullptr);
+        Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(distributedSource->queryUser());
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
         cost_type totalCost = 0;
         if (superSrc && superSrc->numSubFiles() > 0)

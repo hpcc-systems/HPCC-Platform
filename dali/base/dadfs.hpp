@@ -447,6 +447,8 @@ interface IDistributedFile: extends IInterface
     virtual bool getNumWrites(stat_type &numWrites) const = 0;
     virtual bool getReadCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
     virtual bool getWriteCost(cost_type &cost, bool calculateIfMissing=false) const = 0;
+
+    virtual IUserDescriptor *queryUser() const = 0;
 };
 
 
