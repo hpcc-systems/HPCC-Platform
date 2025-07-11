@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { TreeItemValue } from "@fluentui/react-components";
+import { scopedLogger } from "@hpcc-js/util";
 import * as ESPRequest from "src/ESPRequest";
 import nlsHPCC from "src/nlsHPCC";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
@@ -9,7 +10,10 @@ import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPan
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { FlatItem, HelpersTree } from "./HelpersTree";
-import { FetchEditor } from "./SourceEditor";
+import { SourceEditor } from "./SourceEditor";
+import { IFrame } from "./IFrame";
+
+const logger = scopedLogger("src-react/components/Helpers.tsx");
 
 function getURL(wuid: string, item: HelperRow, option?: number) {
     let params = "";
@@ -90,7 +94,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [helpers, refreshData] = useWorkunitHelpers(wuid);
-    const [noDataMsg, setNoDataMsg] = React.useState("");
+    const [helperContents, setHelperContents] = React.useState("");
+    const [exceptionUrl, setExceptionUrl] = React.useState("");
     const [checkedRows, setCheckedRows] = React.useState([]);
     const [checkedItems, setCheckedItems] = React.useState([]);
     const [selection, setSelection] = React.useState<HelperRow>();
@@ -112,9 +117,30 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 
     React.useEffect(() => {
         if (helpers.length && selection !== undefined) {
-            setNoDataMsg(selection?.Type === "dll" ? nlsHPCC.CannotDisplayBinaryData : "");
+            setHelperContents(selection?.Type === "dll" ? nlsHPCC.CannotDisplayBinaryData : "");
         }
     }, [helpers, selection]);
+
+    React.useEffect(() => {
+        if (selection?.Orig?.url) {
+            const controller = new AbortController();
+
+            fetch(selection?.Orig?.url, { signal: controller.signal }).then(response => {
+                const contentType = response.headers.get("Content-Type") || "";
+                return response.text().then(content => ({ contentType, content }));
+            }).then(({ contentType, content }) => {
+                if (contentType.includes("text/html") && (content.includes("<html>") || content.includes("<!DOCTYPE html>")) && content.includes("Exception")) {
+                    setHelperContents("");
+                    setExceptionUrl(selection?.Orig?.url);
+                } else {
+                    setHelperContents(selection?.Type === "dll" ? nlsHPCC.CannotDisplayBinaryData : content);
+                    setExceptionUrl("");
+                }
+            }).catch(err => {
+                logger.error(err);
+            });
+        }
+    }, [selection?.Orig?.url, selection?.Type]);
 
     React.useEffect(() => {
         const rows = [];
@@ -264,7 +290,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                     }
                 </DockPanelItem>
                 <DockPanelItem key="helperEditor" title="Helper" padding={4} location="split-right" relativeTo="helpersTable">
-                    <FetchEditor url={helpers && selection?.Type && selection?.Type !== "dll" ? url : null} mode={mode} noDataMsg={noDataMsg}></FetchEditor>
+                    {exceptionUrl ?
+                        <IFrame src={exceptionUrl} /> :
+                        <SourceEditor text={helperContents} mode={mode}></SourceEditor>
+                    }
                 </DockPanelItem>
             </DockPanel>
         }
