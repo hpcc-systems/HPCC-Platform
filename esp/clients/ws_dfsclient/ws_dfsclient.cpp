@@ -589,7 +589,7 @@ public:
     }
     virtual IUserDescriptor *queryUserDescriptor() const override
     {
-        return userDesc.getLink();
+        return userDesc;
     }
     virtual unsigned queryTimeoutSecs() const override
     {
