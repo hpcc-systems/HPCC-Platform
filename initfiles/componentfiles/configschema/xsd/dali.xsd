@@ -113,13 +113,6 @@
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:requiredIf=".[@authMethod=('secmgrPlugin')]"
                                   hpcc:tooltip="Security Manager plugin name (when authentication method is secmgrPlugin)"/>
-                    <xs:attribute name="filesDefaultUser" type="xs:string" hpcc:displayName="Files Default User"
-                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                                  hpcc:tooltip="The default username for Files access (ActiveDirectory)"/>
-                    <xs:attribute name="filesDefaultPassword" type="xs:string" hpcc:modifiers="password"
-                                  hpcc:displayName="Files Default Password"
-                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
-                                  hpcc:tooltip="The default password for filesDefaultUser"/>
                     <xs:attribute name="reqSignatureExpiry" type="xs:string"
                                   hpcc:displayName="Signature Expiration (minutes)" hpcc:presetValue="10"
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"

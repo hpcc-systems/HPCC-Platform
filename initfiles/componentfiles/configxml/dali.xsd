@@ -395,21 +395,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="filesDefaultUser" use="optional" type="xs:string">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>The default username for Files access (ActiveDirectory).</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="filesDefaultPassword" use="optional" type="xs:string">
-      <xs:annotation>
-        <xs:appinfo>
-          <viewType>password</viewType>
-          <tooltip>The default password for filesDefaultUser.</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="checkScopeScans" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
