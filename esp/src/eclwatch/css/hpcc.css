@@ -1918,20 +1918,32 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     cursor: pointer;
 }
 
-.flat .fui-FluentProvider .ui-icon-triangle-1-e {
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-left: 4px solid black;
-    margin-top: 7px;
-    margin-right: 6px;
-}
-
-.flat .fui-FluentProvider .ui-icon-triangle-1-se {
-    margin-top: 9px;
-    margin-right: 5px;
+.flat .fui-FluentProvider .dgrid-sort-arrow {
+    width: 0;
+    height: 0;
+    background-image: none;
+    cursor: pointer;
+    display: block;
+    float: right;
+    margin: 4px 4px 0 5px;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 4px solid black;
+    border-top: 4px solid var(--themePrimary);
+    border-bottom: none;
+}
+
+.flat .fui-FluentProvider .dgrid-sort-up .dgrid-sort-arrow {
+    border-top: none;
+    border-bottom: 4px solid var(--themePrimary);
+}
+
+.flat-dark .fui-FluentProvider .dgrid-sort-arrow {
+    border-top: 4px solid var(--dark-themePrimary);
+}
+
+.flat-dark .fui-FluentProvider .dgrid-sort-up .dgrid-sort-arrow {
+    border-top: none;
+    border-bottom: 4px solid var(--dark-themePrimary);
 }
 
 .flat-dark .fui-FluentProvider .ui-icon-triangle-1-e {
