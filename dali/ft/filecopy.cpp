@@ -1643,7 +1643,9 @@ IAPICopyClient * FileSprayer::getAPICopyClient()
 
 bool FileSprayer::canRenameOutput() const
 {
-    return targets.item(0).filename.queryFileSystemProperties().canRename;
+    StringBuffer filePath;
+    targets.item(0).filename.getPath(filePath);
+    return getRenameSupportedFromPath(filePath);
 }
 
 void FileSprayer::checkSprayOptions()
