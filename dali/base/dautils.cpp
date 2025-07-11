@@ -3838,13 +3838,16 @@ public:
     // - if curReadCost is 0, it will be calculated using calcFileAccessCost
     virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) override
     {
+        const char * logicalFileName = file->queryLogicalName();
+        if (strsame(logicalFileName, "")) // Skip files without logical names (typically spill files)
+            return 0;
         if (!numDiskReads)
             return 0;
 
         if (!curReadCost)
             curReadCost = calcFileAccessCost(file, 0, numDiskReads);
         // Add the readCost and numDiskReads to stats tracking map
-        FileStatItem & curStatItem = stats[file->queryLogicalName()];
+        FileStatItem & curStatItem = stats[logicalFileName];
         curStatItem.numDiskReads += numDiskReads;
         curStatItem.readCost += curReadCost;
         return curReadCost;
@@ -3862,7 +3865,8 @@ public:
             curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
             if (!curStatItem.file) // File may have been deleted
             {
-                OERRLOG("FileReadPropertiesUpdater: File not found: %s", logicalName.c_str());
+                if (curStatItem.readCost)
+                    OERRLOG("FileReadPropertiesUpdater: file has read cost but file not found: %s", logicalName.c_str());
                 continue;
             }
             updateOwnersStats(ownerStats, curStatItem);
@@ -3873,7 +3877,7 @@ public:
             if (curStatItem.file)
                 updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
         }
-        // Update the owner file propertiers owners stats
+        // Update the owning file properties stats
         for (auto & [logicalName, curStatItem] : ownerStats)
         {
             updateCostAndNumReads(curStatItem.file, curStatItem.numDiskReads, curStatItem.readCost);
