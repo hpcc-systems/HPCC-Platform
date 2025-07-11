@@ -78,6 +78,8 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
             "employeeID": { label: nlsHPCC.EmployeeID, type: "string", value: currentUser?.employeeID, readonly: true },
             "firstname": { label: nlsHPCC.FirstName, type: "string", value: currentUser?.firstName, readonly: true },
             "lastname": { label: nlsHPCC.LastName, type: "string", value: currentUser?.lastName, readonly: true },
+            "groups": { label: nlsHPCC.Groups, type: "string", value: (currentUser?.Groups?.Group ?? []).join(", "), readonly: true },
+            "accountType": { label: nlsHPCC.AccountType, type: "string", value: currentUser?.accountType, readonly: true },
             "oldPassword": { label: nlsHPCC.OldPassword, type: "password", value: oldPassword, disabled: () => !currentUser?.CanUpdatePassword },
             "newPassword1": { label: nlsHPCC.NewPassword, type: "password", value: newPassword1, disabled: () => !currentUser?.CanUpdatePassword },
             "newPassword2": { label: nlsHPCC.ConfirmPassword, type: "password", value: newPassword2, errorMessage: passwordMismatch, disabled: () => !currentUser?.CanUpdatePassword },

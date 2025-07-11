@@ -1,0 +1,163 @@
+eck-stack:
+  eck-elasticsearch:
+    enabled: true
+    # Name of the Elasticsearch instance.
+    #
+    fullnameOverride: elasticsearch
+    nodeSets:
+    - name: default
+      count: 1
+      # Comment out when setting the vm.max_map_count via initContainer, as these are mutually exclusive.
+      # For production workloads, it is strongly recommended to increase the kernel setting vm.max_map_count to 262144
+      # and leave node.store.allow_mmap unset.
+      # ref: https://www.elastic.co/guide/en/cloud-on-k8s/master/k8s-virtual-memory.html
+      #
+      config:
+        node.store.allow_mmap: false
+  eck-apm-server:
+    ssl.verification_mode: none
+    enabled: true
+    # Count of APM Server replicas to create.
+    #
+    count: 1
+    # Reference to ECK-managed Elasticsearch resource.
+    #
+    elasticsearchRef:
+      name: elasticsearch
+    kibanaRef:
+      name: kibana
+    spec:
+      config:
+        output:
+          elasticsearch:
+            username: "elastic"
+            protocol: "https"
+            ssl.verification_mode: "none"
+    http:
+      service:
+        spec:
+          ports:
+          - name: http
+            port: 8200
+            targetPort: 8200
+  eck-kibana:
+    enabled: true
+    # Name of the Kibana instance.
+    #
+    fullnameOverride: kibana
+    spec:
+      config:
+        xpack.fleet.packages:
+        - name: apm
+          version: latest
+    http:
+      service:
+        spec:
+          type: LoadBalancer # default is ClusterIP
+    ingress:
+      annotations: {}
+      enabled: true
+      hosts:
+      - host: localhost
+        path: /
+      labels: {}
+      pathType: Prefix
+      tls:
+        enabled: false
+
+opentelemetry-collector:
+  mode: daemonset
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 400Mi
+  image:
+    repository: otel/opentelemetry-collector-k8s
+    tag: "0.123.0"
+  extraEnvs:
+    - name: ELASTIC_APM_SECRET_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: eck-apm-eck-apm-server-apm-token
+          key: secret-token
+  extraVolumes:
+  - name: apm-certs
+    secret:
+      defaultMode: 420
+      optional: false
+      secretName: eck-apm-eck-apm-server-apm-http-certs-public 
+  extraVolumeMounts:
+  - name: apm-certs
+    mountPath: /etc/ca-certificates/tls.crt
+    subPath: tls.crt
+    readOnly: true
+# Enable Kubernetes attributes enrichment
+  presets:
+    kubernetesAttributes:
+      enabled: true
+
+# Collector configuration
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins:
+                - http://*
+                - https://*
+
+    processors:
+      batch:
+        send_batch_size: 8192
+        timeout: 5s
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 800
+        spike_limit_mib: 150
+      k8sattributes: # Processor to enrich spans with Kubernetes attributes
+        passthrough: false # If set to true, the processor will not enrich the spans with Kubernetes attributes.
+        extract:
+          metadata:
+          - k8s.pod.name
+          #- k8s.namespace.name
+          #- k8s.node.name
+          #- k8s.pod.uid
+          #- k8s.pod.start_time
+          #- k8s.deployment.name
+          #- k8s.statefulset.name
+          #- k8s.daemonset.name
+          #- k8s.cronjob.name
+          #- k8s.job.name
+          #- k8s.container.name
+          #- k8s.cluster.name
+
+    exporters:
+      #Full otlphttp config options documented here: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlphttpexporter/config.go
+      otlphttp:
+        endpoint: https://eck-apm-eck-apm-server-apm-http.default.svc:8200
+        headers:
+          Authorization: "Bearer ${env:ELASTIC_APM_SECRET_TOKEN}"
+        tls:
+          ca_file: "/etc/ca-certificates/tls.crt"
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch, k8sattributes]
+          exporters: [otlphttp]
+  service:
+  # Enable the creation of a Service.
+  # By default, it's enabled on mode != daemonset.
+  # However, to enable it on mode = daemonset, its creation must be explicitly enabled
+    enabled: true
+
+    type: LoadBalancer
+    # trafficDistribution: PreferClose

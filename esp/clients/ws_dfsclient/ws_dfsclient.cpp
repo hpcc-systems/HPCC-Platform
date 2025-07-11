@@ -330,6 +330,10 @@ public:
     {
         UNIMPLEMENTED_X("CServiceDistributedFileBase::enqueueReplicate");
     }
+    virtual IUserDescriptor *queryUser() const override
+    {
+        return dfsFile->queryUserDescriptor();
+    }
 };
 
 class CServiceDistributedFile : public CServiceDistributedFileBase<IDistributedFile>
