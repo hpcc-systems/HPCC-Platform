@@ -1,0 +1,3 @@
+{{- if ne .Release.Name "eck-apm" }}
+{{ fail "[ERROR]eck4hpccobservability release name must be: 'eck-apm'" }}
+{{- end }}
