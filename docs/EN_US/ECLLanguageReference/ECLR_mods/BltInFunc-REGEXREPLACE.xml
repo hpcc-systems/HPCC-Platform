@@ -15,9 +15,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.60pt" />
+        <colspec colwidth="80.60pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -64,7 +64,7 @@
   string. The <emphasis>regex</emphasis> must be a standard Perl regular
   expression<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. </para>
+    </indexterm>.</para>
 
   <para>We use a third-party library -- Perl-compatible Regular Expressions
   (PCRE2) to support this. See <ulink
@@ -104,5 +104,6 @@ Shells  Shellf   fhellf Vier  Vi\xc3\xabr  Vi\xc3\xabr */
 </programlisting>
 
   <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXEXTRACT">REGEXEXTRACT</link>, <link
   linkend="REGEXFIND">REGEXFIND</link></para>
 </sect1>
