@@ -697,10 +697,11 @@ esp:
     #labels:
     #  mylabel: "3"
     ## Links specify the web links for a service. The web links may be shown on ECLWatch.
-    #links:
-    #- name: linkname
-    #  description: "some description"
-    #  url: "http://abc.com/def?g=1"
+    links:
+      - name: Traces on ECK stack
+      description: "View Traces on ECK stack"
+      url: "https://localhost:5601/app/apm/traces/explorer/waterfall?comparisonEnabled=false&detailTab=timeline&environment=ENVIRONMENT_ALL&kuery=&query=&rangeFrom=now-15m&rangeTo=now&showCriticalPath=false&traceId={trace_id}&waterfallItemId="
+      linkedResource: "traces"
     ## CIDRS allowed to access this service.
     #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
     ## route traffic to local VM only. Also preserves source IPs
