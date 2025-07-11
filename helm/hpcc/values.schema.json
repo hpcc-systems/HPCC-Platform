@@ -345,19 +345,23 @@
             },
             "perCpu": {
                 "description": "The cost associated with a single CPU",
-              "type": "number"
+              "type": "number",
+              "minimum": 0
             },
             "storageAtRest": {
               "description": "Cost for storing data at rest, measured in GiB per month",
-              "type": "number"
+              "type": "number",
+              "minimum": 0
             },
             "storageReads": {
               "description": "Cost for every 10,000 storage read operations",
-              "type": "number"
+              "type": "number",
+              "minimum": 0
             },
             "storageWrites": {
               "description": "Cost for every 10,000 storage write operations",
-              "type": "number"
+              "type": "number",
+              "minimum": 0
             },
             "limit": {
               "description": "Maximum allowed cost for a job. This value can be overridden by the job's own cost settings.",
@@ -727,7 +731,18 @@
           "properties": {
             "storageAtRest" : {
               "description": "Storage cost per GiB per month for data stored on this plane",
-              "type": "number"
+              "type": "number",
+              "minimum": 0
+            },
+            "storageReads": {
+              "description": "cost per 10,000 read operations",
+              "type": "number",
+              "minimum": 0
+            },
+            "storageWrites": {
+              "description": "cost per 10,000 write operations",
+              "type": "number",
+              "minimum": 0
             }
           }
         },
@@ -884,7 +899,8 @@
       "properties": {
         "perCpu": {
           "description": "The cost associated with a single CPU",
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         }
       }
     },
