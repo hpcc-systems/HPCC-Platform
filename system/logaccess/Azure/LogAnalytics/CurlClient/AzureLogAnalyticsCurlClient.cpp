@@ -50,7 +50,6 @@ static constexpr const char * logMapKeyColAtt = "@keyColumn";
 static constexpr const char * logMapDisableJoinsAtt = "@disableJoins";
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
-static constexpr unsigned int  SECRET_UNMASK_THRESHOLD = 10;
 
 static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb, void* userp)
 {
@@ -134,10 +133,6 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         if (captureBuffer.length() > 0)
         {
             tokenReqResponse.append(captureBuffer.length(), (const char *)captureBuffer.toByteArray());
-        }
-        else
-        {
-            DBGLOG("%s: Access token request: No response received!", COMPONENT_NAME);
         }
 
         if (curlResponseCode == CURLE_OK) // this is not the same as http success
@@ -1209,28 +1204,11 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             appendJSONStringValue(debugReport, "TargetALATenantID", m_aadTenantID.str(), true);
             appendJSONStringValue(debugReport, "TargetALAClientID", m_aadClientID.str(), true);
             debugReport.appendf(", \"TargetALASecret\": \"");
-            // Mask the secret for security reasons in the debug report
-            size_t secretLen = m_aadClientSecret.length();
-            if (secretLen == 0)
+            if (m_aadClientSecret.isEmpty())
                 debugReport.append("<EMPTY>");
             else
-            {
-                const char* secret = m_aadClientSecret.str();
-                if (secretLen > 1)
-                {
-                    debugReport.append(secret[0]); //unmask first character
-                    for (size_t i = 1; i < secretLen - 1; ++i)
-                        debugReport.append('*');
+                maskSecret(debugReport, m_aadClientSecret, 80, false);
 
-                    if (secretLen > SECRET_UNMASK_THRESHOLD) //unmask last character if more than 10 characters
-                        debugReport.append(secret[secretLen - 1]);
-                    else //otherwise mask last character
-                        debugReport.append("*");
-                }
-                else
-                    debugReport.append("*");
-
-            }
             debugReport.append("\"");
 
             appendJSONValue(debugReport, "TargetsContainerLogV2", targetIsContainerLogV2 ? true : false);

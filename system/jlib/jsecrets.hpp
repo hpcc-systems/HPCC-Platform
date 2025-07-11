@@ -65,6 +65,12 @@ extern jlib_decl void stopSecretUpdateThread();
 
 extern jlib_decl bool queryMtls();
 
+constexpr static unsigned MIN_MASK_PERCENTAGE = 70;
+constexpr static char defaultMaskChar = '*';
+constexpr static unsigned defaultMaskingPercentage = 90;
+//creates a masked version of a secret
+extern jlib_decl void maskSecret(StringBuffer & maskedSecret, const char * originalSecret, unsigned maskPercentage = defaultMaskingPercentage, bool maskRightSide = true, char maskChar = defaultMaskChar);
+
 #ifdef _USE_CPPUNIT
 extern jlib_decl std::string testBuildSecretKey(const char * category, const char * name, const char * optVaultId, const char * optVersion);
 extern jlib_decl void testExpandSecretKey(std::string & category, std::string & name, std::string & optVaultId, std::string & optVersion, const char * key);
