@@ -556,7 +556,7 @@ bool CppCompiler::compile()
             Owned <IFile> srcfile = createIFile(logFiles.item(i2));
             if (srcfile->exists())
             {
-                dstIO->appendFile(srcfile);
+                appendFile(dstIO, srcfile);
                 srcfile->remove();
             }
         }

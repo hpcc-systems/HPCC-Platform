@@ -1580,23 +1580,6 @@ public:
         return ret;
     }
 
-    offset_t appendFile(IFile *file,offset_t pos,offset_t len)
-    {
-        MemoryBuffer sendBuffer;
-        initSendBuffer(sendBuffer);
-        MemoryBuffer replyBuffer;
-        const char * fname = file->queryFilename();
-        sendBuffer.append((RemoteFileCommandType)RFCappend).append(handle).append(fname).append(pos).append(len);
-        parent->sendRemoteCommand(sendBuffer, replyBuffer, false, true); // retry not safe
-
-        offset_t ret;
-        replyBuffer.read(ret);
-
-        if ((ret==(offset_t)-1) || ((len != ((offset_t)-1)) && (ret < len)))
-            throw createDafsException(DISK_FULL_EXCEPTION_CODE,"append failed, disk full?");    // though could be file missing TBD
-        return ret;
-    }
-
 
     void setSize(offset_t size)
     {
@@ -2344,7 +2327,6 @@ public:
     }
     virtual offset_t size() override { return -1; }
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override { throwUnexpected(); }
     virtual void setSize(offset_t size) override { throwUnexpected(); }
     virtual void flush() override { throwUnexpected(); }
     virtual void close() override

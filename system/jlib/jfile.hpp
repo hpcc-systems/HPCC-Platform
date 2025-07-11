@@ -178,7 +178,6 @@ interface IFileIO : public IInterface
     virtual size32_t read(offset_t pos, size32_t len, void * data) = 0;
     virtual offset_t size() = 0;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) = 0;
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) =0;
     virtual void setSize(offset_t size) = 0;
     virtual void flush() = 0;
     virtual void close() = 0;       // no other access is allowed after this call
@@ -186,6 +185,7 @@ interface IFileIO : public IInterface
     virtual IFile * queryFile() const = 0;
 };
 
+jlib_decl offset_t appendFile(IFileIO * target, IFile *file,offset_t pos=0,offset_t len=(offset_t)-1);
 interface IFileIOCache : extends IInterface
 {
     virtual IFileIO *addFile( RemoteFilename &filename, IFOmode mode ) = 0;
@@ -291,9 +291,6 @@ extern jlib_decl IFileIOStream * createProgressIFileIOStream(IFileIOStream *iFil
 
 // Useful for commoning up file and string based processing
 extern jlib_decl IFileIO * createIFileI(unsigned len, const void * buffer);     // input only...
-extern jlib_decl IFileIO * createIFileIO(unsigned len, void * buffer);
-extern jlib_decl IFileIO * createIFileIO(StringBuffer & buffer);
-extern jlib_decl IFileIO * createIFileIO(MemoryBuffer & buffer);
 
 //-- Creation of routines to implement other interfaces on the interfaces above.
 

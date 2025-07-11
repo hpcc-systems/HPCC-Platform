@@ -211,10 +211,6 @@ public:
     {
         throwUnexpected();
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
-    {
-        throwUnexpected();
-    }
     virtual void setSize(offset_t size)
     {
         throwUnexpected();

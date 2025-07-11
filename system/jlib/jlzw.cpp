@@ -2087,7 +2087,6 @@ public:
         sizeIoBuffer = trailer.blockSize*numBlocksToBuffer;
     }
 
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override { UNIMPLEMENTED; }
     virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
     virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
