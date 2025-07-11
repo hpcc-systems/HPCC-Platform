@@ -59,6 +59,7 @@ export default async () => {
                         { text: 'Roxie', link: '/devdoc/roxie' },
                         { text: 'Memory Manager', link: '/devdoc/MemoryManager' },
                         { text: 'Metrics', link: '/devdoc/Metrics' },
+                        { text: 'Development Testing With LDAP', link: '/devdoc/DevTestWithLDAP' },
                     ]
                 }
 

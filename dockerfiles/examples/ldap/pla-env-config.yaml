@@ -1,0 +1,10 @@
+PHPLDAPADMIN_LDAP_HOSTS:
+  - 389ds:
+    - server:
+      - tls: false
+      - port: 3389
+      - base:
+        - dc=example
+        - dc=com
+    - login:
+      - bind_id: cn=Directory Manager

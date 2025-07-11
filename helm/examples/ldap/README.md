@@ -4,6 +4,8 @@ These examples demonstrate how to externalize HPCC LDAP Active Directory Securit
 
 Note that the LDAP Administrator account performs AD directory searches and modifications, and is the only HPCC user that must have Active Directory administrator rights.  This account should exist in the configured "systemBasedn" branch of the Active Directory, typically set to cn=Users.
 
+See "HPCC-Platform/devdoc/DevTestWithLDAP.md" for step-by-step instructions on configuring a deployment with LDAP for development and testing purposes. The "hpcc-values.yaml" file here is for use with those instructions.
+
 --------------------------------------------------------------------------------------------------------
 ## Configure LDAP to use externalized Kubernetes (k8s) secrets
 
