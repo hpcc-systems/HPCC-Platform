@@ -1151,10 +1151,6 @@
         "disableDefaultUser": {
           "type": "boolean",
           "description": "Disable deprecated files default user"
-        },
-        "useLegacyDefaultFileScopePermissionCache": {
-          "type": "boolean",
-          "description": "Use legacy default filescope permissions that cached value for first user"
         }
       }
     },

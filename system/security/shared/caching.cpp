@@ -661,13 +661,6 @@ void CPermissionsCache::managedFileScopesCacheFillThread()
             try
             {
                 fillManagedFileScopesCache(false);
-
-                // m_useLegacyDefaultFileScopePermissionCache to be deprecated (security hole)
-                if (m_useLegacyDefaultFileScopePermissionCache)
-                {
-                    m_defaultPermission = SecAccess_Unknown; // THIS IS A SECURITY HOLE - NEEDS TO BE REMOVED
-                }
-                else
                 {
                     CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
                     m_userDefaultFileScopePermissions.clear();
@@ -732,18 +725,6 @@ void CPermissionsCache::replaceManagedFileScopesCache(const IArrayOf<ISecResourc
 
 SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 {
-    // TO BE DEPRECATED - SECURITY HOLE
-    if (m_useLegacyDefaultFileScopePermissionCache)
-    {
-        if (m_defaultPermission == SecAccess_Unknown)
-        {
-            m_defaultPermission = m_secMgr->queryDefaultPermission(user);
-            DBGLOG("Legacy default file scope permission set to %s(%d) for all users, based on User '%s'", getSecAccessFlagName(m_defaultPermission),
-                   m_defaultPermission, user.getName());
-        }
-        return m_defaultPermission;
-    }
-
     SecAccessFlags defaultPermission = SecAccess_None;
     const std::string username(user.getName());
     bool addedToCache = false;
@@ -791,12 +772,6 @@ void CPermissionsCache::flush()
     clearPermissionsCache();
     clearUsersCache();
 
-    // TO BE DEPRECATED - SECURITY HOLE
-    if (m_useLegacyDefaultFileScopePermissionCache)
-    {
-        m_defaultPermission = SecAccess_Unknown;
-    }
-    else
     {
         CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
         m_userDefaultFileScopePermissions.clear();
