@@ -43,9 +43,8 @@
     *(char *) (name+(length)) = '\0';
 
 #include "jfile.hpp"
-#include "jlog.hpp"
-#include "jstreamhelpers.hpp"
 #include "jptree.ipp"
+#include "jlog.hpp"
 
 #define WARNLEGACYCOMPARE
 #define XMLTAG_CONTENT "<>"
@@ -3046,6 +3045,58 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+{
+    deserializeSelf(src);
+
+    for (;;)
+    {
+        if (isNextByteZero(src))
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        IPropertyTree *child = create(src);
+        addPropTree(child->queryName(), child);
+    }
+}
+
+void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+{
+    size32_t len{0};
+    const char *name = queryZeroTerminatedString(src, len);
+    if (len == 0)
+        throwUnexpectedX("Name could not be found within buffer");
+    setName(name);
+    src.skip(len + 1); // Skip over name and null terminator
+
+    read(src, flags);
+
+    constexpr bool throwOnEof = true;
+    for (;;)
+    {
+        if (isNextByteZero(src, throwOnEof))
+        {
+            src.skip(1); // Skip over null terminator.
+            break;
+        }
+        auto [attrName, attrValue] = peekKeyValuePair(src, len);
+        if (attrValue == nullptr)
+            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+        setProp(attrName, attrValue);
+        src.skip(len + 1); // +1 to skip over second null terminator.
+    }
+
+    if (value)
+        delete value;
+    size32_t size{0};
+    read(src, size);
+    if (size > 0)
+        value = new CPTValue(src, size);
+    else
+        value = nullptr;
+}
+
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -4454,6 +4505,13 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
     IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
+    return tree;
+}
+
+IPropertyTree *createPTree(IBufferedSerialInputStream &src, byte flags)
+{
+    IPropertyTree *tree = createPTree(nullptr, flags);
+    tree->deserializeFromStream(src);
     return tree;
 }
 
