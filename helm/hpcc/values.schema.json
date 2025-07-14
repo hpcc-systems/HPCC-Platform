@@ -1496,6 +1496,16 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "saveBinary": {
+          "type": "boolean",
+          "default": false,
+          "description": "Save the store in binary format"
+        },
+        "storeBinaryCrc": {
+          "type": "boolean",
+          "default": false,
+          "description": "Store binary CRC for data integrity verification"
         }
       }
     },
