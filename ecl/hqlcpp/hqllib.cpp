@@ -507,7 +507,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
 
 ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx, IHqlExpression * expr)
 {
-    Owned<HqlCppLibraryInstance> libraryInstance = new HqlCppLibraryInstance(*this, expr, targetClusterType);
+    Owned<HqlCppLibraryInstance> libraryInstance = new HqlCppLibraryInstance(*this, expr, getTargetClusterType());
 
     CIArray boundInputs;
 

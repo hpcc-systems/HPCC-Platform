@@ -511,6 +511,7 @@ static const char * eclReserved15[] = { //Actions and statements
     "event",
     "eventextra",
     "eventname",
+    "execute",
     "export",
     "from",
     "import",

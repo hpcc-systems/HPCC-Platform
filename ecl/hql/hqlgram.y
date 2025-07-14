@@ -210,6 +210,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   EVENTNAME
   EXCEPT
   EXCLUSIVE
+  EXECUTE
   EXISTS
   EXP
   EXPIRE
@@ -2880,6 +2881,21 @@ actionStmt
                         {
                             parser->reportError(ERR_EXPECTED, $3, "OUTPUT cannot be applied to an action");
                             $$.inherit($3);
+                        }
+    | EXECUTE '(' NOTHOR ',' actionStmt ')'
+                        {
+                            $$.setExpr(createValue(no_nothor, makeVoidType(), $5.getExpr()), $1);
+                        }
+    | EXECUTE '(' expression ',' actionStmt ')'
+                        {
+                            // Syntactic sugar for:
+                            //      actionStmt : INDEPENDENT(expression)
+                            parser->normalizeExpression($3, type_string, true);
+                            IHqlExpression * clusterName = $3.getExpr();
+                            IHqlExpression * action = $5.getExpr();
+                            Linked<ITypeInfo> type = action->queryType();
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), clusterName);
+                            $$.setExpr(createValue(no_colon, type.getClear(), { action, indep }, true), $1);
                         }
     ;
 
@@ -8429,6 +8445,21 @@ dataSet
                             IHqlExpression * ds = $1.getExpr();
                             IHqlExpression * from = $3.getExpr();
                             $$.setExpr(createDataset(no_choosen, ds, createComma(createConstant(CHOOSEN_ALL_LIMIT), from)));
+                        }
+    | EXECUTE '(' NOTHOR ',' dataSet ')'
+                        {
+                            $$.setExpr(createDataset(no_nothor, $5.getExpr()), $1);
+                        }
+    | EXECUTE '(' expression ',' dataSet ')'
+                        {
+                            // Syntactic sugar for:
+                            //      dataSet : INDEPENDENT(expression)
+                            parser->normalizeExpression($3, type_string, true);
+                            IHqlExpression * clusterName = $3.getExpr();
+                            IHqlExpression * ds = $5.getExpr();
+                            Linked<ITypeInfo> type = ds->queryType();
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), clusterName);
+                            $$.setExpr(createDataset(no_colon, { ds, indep }), $1);
                         }
     ;
 

@@ -1486,7 +1486,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
 
     //Ensure that any errors reported within the code generator automatically abort compiling immediately
     errorProcessor.setown(createAbortingErrorReceiver(*localOnWarnings));
-    targetClusterType = _targetClusterType;
+    targetClusterTypes.emplace_back(_targetClusterType);
     {
         CriticalBlock block(*systemCS);
         if (!cppSystemScope)
@@ -1556,7 +1556,7 @@ HqlCppTranslator::~HqlCppTranslator()
 
 void HqlCppTranslator::setTargetClusterType(ClusterType clusterType)
 {
-    targetClusterType = clusterType;
+    targetClusterTypes.front() = clusterType;
 }
 
 void HqlCppTranslator::ensureDiskAccessAllowed(IHqlExpression * expr)
@@ -2059,7 +2059,7 @@ void HqlCppTranslator::postProcessOptions()
 unsigned HqlCppTranslator::getOptimizeFlags(bool insideChildQuery) const
 {
     unsigned optFlags = HOOfold;
-    switch (targetClusterType)
+    switch (getTargetClusterType())
     {
     case RoxieCluster:
         optFlags |= HOOnoclonelimit|HOOalwayslocal;
