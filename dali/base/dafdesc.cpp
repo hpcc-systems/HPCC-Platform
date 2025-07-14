@@ -4093,6 +4093,13 @@ public:
     }
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
+    virtual unsigned queryNumStripes() const override
+    {
+        if (xml->hasProp("@hostGroup"))
+            return 1;
+
+        return xml->getPropInt("@numDevices", 1);
+    }
 
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
     {
