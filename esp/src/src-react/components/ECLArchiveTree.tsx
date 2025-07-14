@@ -107,8 +107,8 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
                             iconBefore={
                                 flatTreeItem.itemType === "branch" ?
                                     (treeProps.openItems.has(flatTreeItem.value) ?
-                                        selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <FolderOpen20Filled /> : <FolderOpen20Regular /> :
-                                        selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <Folder20Filled /> : <Folder20Regular />) :
+                                        selectedAttrIDs.some(attrId => typeof attrId === "string" && attrId.startsWith(content)) ? <FolderOpen20Filled /> : <FolderOpen20Regular /> :
+                                        selectedAttrIDs.some(attrId => typeof attrId === "string" && attrId.startsWith(content)) ? <Folder20Filled /> : <Folder20Regular />) :
                                     selectedAttrIDs.some(attrId => attrId === flatTreeItem.value) ?
                                         <Document20Filled /> :
                                         <Document20Regular />
