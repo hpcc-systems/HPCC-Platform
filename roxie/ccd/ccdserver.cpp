@@ -12192,8 +12192,7 @@ public:
         blockcompressed = false;
         if (0 == (helper.getFlags() & TDWnocompress))
         {
-            size32_t fixedSize = diskmeta->getFixedSize();
-            blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && ((0 == fixedSize) || (fixedSize >= MIN_ROWCOMPRESS_RECSIZE)))); //always use new compression
+            blockcompressed = ((helper.getFlags() & TDWnewcompress) != 0) || ((helper.getFlags() & TDXcompress) != 0);
         }
         encrypted = false; // set later
         uncompressedBytesWritten = 0;
@@ -12235,7 +12234,7 @@ public:
         {
             size32_t compBlockSize = 0; // i.e. default
             size32_t blockedIoSize = -1; // i.e. default
-            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+            io.setown(createCompressedFileWriter(writer->queryFile(), extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
         }
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));

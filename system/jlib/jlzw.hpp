@@ -149,8 +149,8 @@ extern jlib_decl bool isCompressedFile(const char *filename);
 extern jlib_decl bool isCompressedFile(IFile *file);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, size32_t ioBufferSize, bool memorymapped, IFEflags extraFlags);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander, size32_t ioBufferSize);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL, unsigned compMethod=COMPRESS_METHOD_LZ4, size32_t compressorBlockSize=0, size32_t bufferSize=(size32_t)-1);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool setcrc,ICompressor *compressor, unsigned compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool setcrc=true, ICompressor *compressor=NULL, unsigned compMethod=COMPRESS_METHOD_LZ4, size32_t compressorBlockSize=0, size32_t bufferSize=(size32_t)-1);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file, bool append, bool setcrc, ICompressor *compressor, unsigned compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags);
 
 #define COMPRESSEDFILECRC (~0U)
 

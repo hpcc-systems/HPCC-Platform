@@ -334,18 +334,6 @@ void CDiskWriteSlaveActivityBase::open()
     if (extend)
         ActPrintLog("Extending file %s", fName.get());
 
-    /* Fixed length record size is used when outputting compressed stream to determine run-length compression vs default LZW compression.
-     * NB: only for FLAT files, not CSV or XML
-     */
-    size32_t diskRowMinSz = 0;
-    IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-    if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
-    {
-        diskRowMinSz = diskRowMeta->getMinRecordSize();
-        if (grouped)
-            diskRowMinSz += 1;
-    }
-
     bool external = dlfn.isExternal();
     bool query = dlfn.isQuery();
     if (query && compress)
@@ -361,7 +349,7 @@ void CDiskWriteSlaveActivityBase::open()
     if (diskHelperBase->getFlags() & TDXtemporary)
         twFlags |= TW_Temporary;
 
-    Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     {
         CriticalBlock block(statsCs);

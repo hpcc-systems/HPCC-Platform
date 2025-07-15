@@ -204,7 +204,7 @@ public:
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
         unsigned twFlags = isUrl(partFname) ? TW_Direct : TW_RenameToPrimary;
-        OwnedIFileIO builderIFileIO = createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon);
+        OwnedIFileIO builderIFileIO = createMultipleWrite(this, partDesc, twFlags, compress, NULL, this, &abortSoon);
         Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));

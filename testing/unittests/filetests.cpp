@@ -56,7 +56,7 @@ public:
     void createCompressed()
     {
         Owned<IFile> file(createIFile(testFilename));
-        Owned<IFileIO> io(createCompressedFileWriter(file, 0, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+        Owned<IFileIO> io(createCompressedFileWriter(file, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
 
         constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
@@ -88,7 +88,7 @@ public:
         for (unsigned i = 0; i < cnt; i++)
         {
             bool append = (i != 0);
-            Owned<IFileIO> io(createCompressedFileWriter(file, 0, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+            Owned<IFileIO> io(createCompressedFileWriter(file, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
 
             byte temp[size];
 

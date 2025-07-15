@@ -2584,7 +2584,6 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
     unsigned compressionFormat = COMPRESS_METHOD_NONE;
     bool eogPending = false;
     bool someInGroup = false;
-    size32_t recordSize = 0;
     Owned<IFileIOStream> iFileIOStream;
     bool append = false;
 
@@ -2606,7 +2605,7 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
         {
             size32_t compBlockSize = 0; // i.e. default
             size32_t blockedIoSize = -1; // i.e. default
-            iFileIO.setown(createCompressedFileWriter(iFile, recordSize, append, true, nullptr, compressionFormat, compBlockSize, blockedIoSize, IFEnone));
+            iFileIO.setown(createCompressedFileWriter(iFile, append, true, nullptr, compressionFormat, compBlockSize, blockedIoSize, IFEnone));
         }
         else
         {

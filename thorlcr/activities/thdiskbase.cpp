@@ -307,27 +307,17 @@ void CWriteMasterBase::publish()
         if (!temporary && (queryJob().querySlaves() < fileDesc->numParts()))
         {
             // create empty parts for a fileDesc being published that is larger than this clusters
-            size32_t recordSize = 0;
-            IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-            if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
-            {
-                recordSize = diskRowMeta->getMinRecordSize();
-                if (0 != (diskHelperBase->getFlags() & TDXgrouped))
-                    recordSize += 1;
-            }
             unsigned compMethod = COMPRESS_METHOD_LZ4;
-            // rowdiff used if recordSize > 0, else fallback to compMethod
+
             if (getOptBool(THOROPT_COMP_FORCELZW, false))
-            {
-                recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces compMethod.
                 compMethod = COMPRESS_METHOD_LZW;
-            }
             else if (getOptBool(THOROPT_COMP_FORCEFLZ, false))
                 compMethod = COMPRESS_METHOD_FASTLZ;
             else if (getOptBool(THOROPT_COMP_FORCELZ4, false))
                 compMethod = COMPRESS_METHOD_LZ4;
             else if (getOptBool(THOROPT_COMP_FORCELZ4HC, false))
                 compMethod = COMPRESS_METHOD_LZ4HC;
+
             bool blockCompressed;
             bool compressed = fileDesc->isCompressed(&blockCompressed);
 
@@ -361,7 +351,7 @@ void CWriteMasterBase::publish()
                             {
                                 size32_t compBlockSize = 0; // i.e. default
                                 size32_t blockedIoSize = -1; // i.e. default
-                                iFileIO.setown(createCompressedFileWriter(iFile, recordSize, false, true, NULL, compMethod, compBlockSize, blockedIoSize, IFEnone));
+                                iFileIO.setown(createCompressedFileWriter(iFile, false, true, NULL, compMethod, compBlockSize, blockedIoSize, IFEnone));
                             }
                             else
                                 iFileIO.setown(iFile->open(IFOcreate));

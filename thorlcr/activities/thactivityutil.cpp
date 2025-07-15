@@ -772,7 +772,7 @@ public:
 // GH->JCS. It would be better if this wrapped the base IFileIO, rather than the compressed IFileIO - otherwise each write goes through
 //          an extra layer of virtual calls.
 
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName)
+IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName)
 {
     StringBuffer outLocationNameI;
     StringBuffer &outLocationName = _outLocationName?*_outLocationName:outLocationNameI;
@@ -833,10 +833,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
             }
             // force
             if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
-            {
-                recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces compMethod.
                 compMethod = COMPRESS_METHOD_LZW;
-            }
             else if (activity->getOptBool(THOROPT_COMP_FORCEFLZ, false))
                 compMethod = COMPRESS_METHOD_FASTLZ;
             else if (activity->getOptBool(THOROPT_COMP_FORCELZ4, false))
@@ -845,7 +842,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
                 compMethod = COMPRESS_METHOD_LZ4HC;
         }
         size32_t compressBlockSize = 0; // i.e. default.
-        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod, compressBlockSize, blockedIoSize, fileIOExtaFlags));
+        fileio.setown(createCompressedFileWriter(file, 0 != (twFlags & TW_Extend), true, ecomp, compMethod, compressBlockSize, blockedIoSize, fileIOExtaFlags));
         if (!fileio)
         {
             compress = false;
