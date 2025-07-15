@@ -779,28 +779,27 @@ ICrcIOStream *createCrcPipeStream(IIOStream *stream)
 
 //---------------------------------------------------------------------------
 
-class CCrcOutputStream : implements ICrcSerialOutputStream, public CInterface
+class CCrcOutputStream : public CSimpleInterfaceOf<ICrcSerialOutputStream>
 {
     CRC32 crc;
     Linked<ISerialOutputStream> output;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CCrcOutputStream(ISerialOutputStream *_output)
-        : output(_output) { }
+        : output(_output) {}
 
-    virtual unsigned queryCrc() { return crc.get(); }
+    virtual unsigned queryCrc() const override { return crc.get(); }
 
-    virtual void flush() { output->flush(); }
-    virtual void put(size32_t len, const void * data) {
+    virtual void flush() override { output->flush(); }
+    virtual void put(size32_t len, const void *data) override
+    {
         output->put(len, data);
         crc.tally(len, data);
     }
-    virtual offset_t tell() const { return output->tell(); }
+    virtual offset_t tell() const override { return output->tell(); }
 };
 
-ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStream * output)
+ICrcSerialOutputStream *createCrcOutputStream(ISerialOutputStream *output)
 {
     return new CCrcOutputStream(output);
 }

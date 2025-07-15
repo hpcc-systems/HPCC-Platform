@@ -281,13 +281,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="storeBinaryCrc" type="xs:boolean" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Switch on saving the CRC for the binary store</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="deltaSaveThresholdSecs" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>

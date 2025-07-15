@@ -69,14 +69,6 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
 //Return pointers to a list of strings - terminated by a null string
 extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len);
 
-
-interface ISerialOutputStream : extends IInterface
-{
-    virtual void put(size32_t len, const void * ptr) = 0;       // throws an error if cannot write the full size.
-    virtual void flush() = 0;
-    virtual offset_t tell() const = 0;                          // used to implement beginNested
-};
-
 interface IBufferedSerialOutputStream : extends ISerialOutputStream
 {
     virtual byte * reserve(size32_t wanted, size32_t & got) = 0;    // get a pointer to a contiguous block of memory to write to.
@@ -84,11 +76,6 @@ interface IBufferedSerialOutputStream : extends ISerialOutputStream
     virtual void suspend(size32_t wanted) = 0;   // Reserve some bytes and prevent data being flushed to the next stage until endNested is called.  May nest.
     virtual void resume(size32_t len, const void * ptr) = 0;  // update the data allocated by suspend and allow flushing.
     virtual void replaceOutput(ISerialOutputStream * newOutput) = 0;
-};
-
-interface ICrcSerialOutputStream : extends ISerialOutputStream
-{
-    virtual unsigned queryCrc() = 0;
 };
 
 interface ICompressor;
@@ -102,8 +89,6 @@ extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
-extern jlib_decl IBufferedSerialOutputStream * createCrcBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, CRC32 & crc);
-extern jlib_decl ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStream * output);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);
 extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output);
 

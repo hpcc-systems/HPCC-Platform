@@ -1114,37 +1114,147 @@ public:
         }
     }
 
+    IPropertyTree *createCompatibilityConfigPropertyTree()
+    {
+        // Creates a complex nested property tree with multiple compatibility elements for serialization testing
+        Owned<IPropertyTree> root = createPTree("__array__");
+
+        // Helper lambda to add property elements with name/value attributes
+        auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
+        {
+            IPropertyTree *prop = parent->addPropTree("property");
+            prop->setProp("@name", name);
+            if (value)
+                prop->setProp("@value", value);
+        };
+
+        // Helper lambda to add operation/accepts/uses elements
+        auto addNamedElement = [](IPropertyTree *parent, const char *elementName, const char *name, const char *presence)
+        {
+            IPropertyTree *elem = parent->addPropTree(elementName);
+            elem->setProp("@name", name);
+            elem->setProp("@presence", presence);
+        };
+
+        // Helper lambda to add valueType elements with maskStyle children
+        auto addValueType = [](IPropertyTree *parent, const char *name, const char *presence, bool addMaskStyle = false, const char *setName = nullptr)
+        {
+            IPropertyTree *valueType = parent->addPropTree("valueType");
+            valueType->setProp("@name", name);
+            valueType->setProp("@presence", presence);
+
+            if (addMaskStyle)
+            {
+                IPropertyTree *maskStyle1 = valueType->addPropTree("maskStyle");
+                maskStyle1->setProp("@name", "keep-last-4-numbers");
+                maskStyle1->setProp("@presence", "r");
+
+                IPropertyTree *maskStyle2 = valueType->addPropTree("maskStyle");
+                maskStyle2->setProp("@name", "mask-last-4-numbers");
+                maskStyle2->setProp("@presence", "o");
+            }
+
+            if (setName)
+            {
+                IPropertyTree *set = valueType->addPropTree("Set");
+                set->setProp("@name", setName);
+                set->setProp("@presence", "r");
+            }
+        };
+
+        // Helper lambda to add rule elements
+        auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
+        {
+            IPropertyTree *rule = parent->addPropTree("rule");
+            rule->setProp("@contentType", contentType);
+            rule->setProp("@presence", presence);
+        };
+
+        // First compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            // Context
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set", "*");
+            addProperty(context, "rule-set", "*");
+
+            // Operations
+            addNamedElement(compat, "operation", "maskValue", "r");
+            addNamedElement(compat, "operation", "maskContent", "r");
+            addNamedElement(compat, "operation", "maskMarkupValue", "o");
+
+            // Accepts
+            addNamedElement(compat, "accepts", "valuetype-set", "r");
+            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-a", "r");
+            addNamedElement(compat, "accepts", "valuetype-set:value-type-set-b", "r");
+            addNamedElement(compat, "accepts", "rule-set", "r");
+            addNamedElement(compat, "accepts", "rule-set:rule-set-2", "r");
+            addNamedElement(compat, "accepts", "required-acceptance", "r");
+            addNamedElement(compat, "accepts", "optional-acceptance", "o");
+
+            // Uses
+            addNamedElement(compat, "uses", "valuetype-set", "r");
+            addNamedElement(compat, "uses", "valuetype-set:value-type-set-a", "r");
+            addNamedElement(compat, "uses", "valuetype-set:value-type-set-b", "r");
+            addNamedElement(compat, "uses", "rule-set", "r");
+            addNamedElement(compat, "uses", "rule-set:rule-set-2", "r");
+            addNamedElement(compat, "uses", "required-acceptance", "p");
+            addNamedElement(compat, "uses", "optional-acceptance", "p");
+
+            // ValueTypes
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
+            addValueType(compat, "*", "r");
+
+            // Rules
+            addRule(compat, "", "r");
+            addRule(compat, "xml", "r");
+        }
+
+        // Second compatibility element
+        {
+            IPropertyTree *compatibility = root->addPropTree("__item__");
+            IPropertyTree *compat = compatibility->addPropTree("compatibility");
+
+            IPropertyTree *context = compat->addPropTree("context");
+            context->setProp("@domain", "urn:hpcc:unittest");
+            context->setProp("@version", "0");
+            addProperty(context, "valuetype-set", "value-type-set-a");
+            addProperty(context, "rule-set", "");
+
+            addValueType(compat, "secret", "r");
+            addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
+            addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
+
+            addRule(compat, "", "r");
+            addRule(compat, "xml", "r");
+        }
+
+        return root.getClear();
+    };
+
     void testCrcBufferedOutputStream()
     {
         DBGLOG("Testing CRC buffered output stream");
 
-        // Helper class to wrap buffered output stream as serial output stream
-        class SerialOutputWrapper : public CSimpleInterfaceOf<ISerialOutputStream>
-        {
-        public:
-            SerialOutputWrapper(IBufferedSerialOutputStream * _stream) : stream(_stream) {}
-            virtual void put(size32_t len, const void * ptr) override { stream->put(len, ptr); }
-            virtual void flush() override { stream->flush(); }
-            virtual offset_t tell() const override { return stream->tell(); }
-        protected:
-            Linked<IBufferedSerialOutputStream> stream;
-        };
-
         // Test data with known CRC values
-        constexpr const char* testData1 = "Hello, World!";
+        constexpr const char *testData1 = "Hello, World!";
         constexpr size32_t len1 = strlen(testData1);
-        constexpr const char* testData2 = "This is test data for CRC calculation.";
+        constexpr const char *testData2 = "This is test data for CRC calculation.";
         constexpr size32_t len2 = strlen(testData2);
-        constexpr const char* testData3 = "0123456789ABCDEF";
+        constexpr const char *testData3 = "0123456789ABCDEF";
         constexpr size32_t len3 = strlen(testData3);
 
         // Test: Multiple put() calls with multiple put() methods using MemoryBuffer
         {
             MemoryBuffer buffer;
             {
-                Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
-
-                Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
+                Owned<IBufferedSerialOutputStream> serialOut = createBufferedSerialOutputStream(buffer);
                 Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
                 // Write using put() only (avoid reserve/commit due to implementation issues)
@@ -1166,9 +1276,7 @@ public:
         {
             StringBuffer buffer;
             {
-                Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
-
-                Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
+                Owned<IBufferedSerialOutputStream> serialOut = createBufferedSerialOutputStream(buffer);
                 Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
                 // Write using put() only - suspend/resume not supported by ISerialOutputStream
@@ -1192,135 +1300,9 @@ public:
             CRC32 crc;
             {
                 // Create a complex property tree for testing
-                auto createCompatibilityConfigPropertyTree = []() -> IPropertyTree*
-                {
-                    // Creates a complex nested property tree with multiple compatibility elements for serialization testing
-                    Owned<IPropertyTree> root = createPTree("__array__");
-
-                    // Helper lambda to add property elements with name/value attributes
-                    auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
-                    {
-                        IPropertyTree *prop = parent->addPropTree("property");
-                        prop->setProp("@name", name);
-                        if (value)
-                            prop->setProp("@value", value);
-                    };
-
-                    // Helper lambda to add operation/accepts/uses elements
-                    auto addNamedElement = [](IPropertyTree *parent, const char *elementName, const char *name, const char *presence)
-                    {
-                        IPropertyTree *elem = parent->addPropTree(elementName);
-                        elem->setProp("@name", name);
-                        elem->setProp("@presence", presence);
-                    };
-
-                    // Helper lambda to add valueType elements with maskStyle children
-                    auto addValueType = [](IPropertyTree *parent, const char *name, const char *presence, bool addMaskStyle = false, const char *setName = nullptr)
-                    {
-                        IPropertyTree *valueType = parent->addPropTree("valueType");
-                        valueType->setProp("@name", name);
-                        valueType->setProp("@presence", presence);
-
-                        if (addMaskStyle)
-                        {
-                            IPropertyTree *maskStyle1 = valueType->addPropTree("maskStyle");
-                            maskStyle1->setProp("@name", "keep-last-4-numbers");
-                            maskStyle1->setProp("@presence", "r");
-
-                            IPropertyTree *maskStyle2 = valueType->addPropTree("maskStyle");
-                            maskStyle2->setProp("@name", "mask-last-4-numbers");
-                            maskStyle2->setProp("@presence", "o");
-                        }
-
-                        if (setName)
-                        {
-                            IPropertyTree *set = valueType->addPropTree("Set");
-                            set->setProp("@name", setName);
-                            set->setProp("@presence", "r");
-                        }
-                    };
-
-                    // Helper lambda to add rule elements
-                    auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
-                    {
-                        IPropertyTree *rule = parent->addPropTree("rule");
-                        rule->setProp("@contentType", contentType);
-                        rule->setProp("@presence", presence);
-                    };
-
-                    // First compatibility element
-                    {
-                        IPropertyTree *compatibility = root->addPropTree("__item__");
-                        IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-                        // Context
-                        IPropertyTree *context = compat->addPropTree("context");
-                        context->setProp("@domain", "urn:hpcc:unittest");
-                        context->setProp("@version", "0");
-                        addProperty(context, "valuetype-set", "*");
-                        addProperty(context, "rule-set", "*");
-
-                        // Operations
-                        addNamedElement(compat, "operation", "maskValue", "r");
-                        addNamedElement(compat, "operation", "maskContent", "r");
-                        addNamedElement(compat, "operation", "maskMarkupValue", "o");
-
-                        // Accepts
-                        addNamedElement(compat, "accepts", "valuetype-set", "r");
-                        addNamedElement(compat, "accepts", "valuetype-set:value-type-set-a", "r");
-                        addNamedElement(compat, "accepts", "valuetype-set:value-type-set-b", "r");
-                        addNamedElement(compat, "accepts", "rule-set", "r");
-                        addNamedElement(compat, "accepts", "rule-set:rule-set-2", "r");
-                        addNamedElement(compat, "accepts", "required-acceptance", "r");
-                        addNamedElement(compat, "accepts", "optional-acceptance", "o");
-
-                        // Uses
-                        addNamedElement(compat, "uses", "valuetype-set", "r");
-                        addNamedElement(compat, "uses", "valuetype-set:value-type-set-a", "r");
-                        addNamedElement(compat, "uses", "valuetype-set:value-type-set-b", "r");
-                        addNamedElement(compat, "uses", "rule-set", "r");
-                        addNamedElement(compat, "uses", "rule-set:rule-set-2", "r");
-                        addNamedElement(compat, "uses", "required-acceptance", "p");
-                        addNamedElement(compat, "uses", "optional-acceptance", "p");
-
-                        // ValueTypes
-                        addValueType(compat, "secret", "r");
-                        addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
-                        addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
-                        addValueType(compat, "*", "r");
-
-                        // Rules
-                        addRule(compat, "", "r");
-                        addRule(compat, "xml", "r");
-                    }
-
-                    // Second compatibility element
-                    {
-                        IPropertyTree *compatibility = root->addPropTree("__item__");
-                        IPropertyTree *compat = compatibility->addPropTree("compatibility");
-
-                        IPropertyTree *context = compat->addPropTree("context");
-                        context->setProp("@domain", "urn:hpcc:unittest");
-                        context->setProp("@version", "0");
-                        addProperty(context, "valuetype-set", "value-type-set-a");
-                        addProperty(context, "rule-set", "");
-
-                        addValueType(compat, "secret", "r");
-                        addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
-                        addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
-
-                        addRule(compat, "", "r");
-                        addRule(compat, "xml", "r");
-                    }
-
-                    return root.getClear();
-                };
-
                 Owned<IPropertyTree> testTree = createCompatibilityConfigPropertyTree();
 
-                Owned<IBufferedSerialOutputStream> baseStream = createBufferedSerialOutputStream(buffer);
-
-                Owned<ISerialOutputStream> serialOut = new SerialOutputWrapper(baseStream);
+                Owned<IBufferedSerialOutputStream> serialOut = createBufferedSerialOutputStream(buffer);
                 Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialOut);
                 constexpr size32_t blockSize1mb = 1 * 1024 * 1024;
                 Owned<IBufferedSerialOutputStream> crcOutStream = createBufferedOutputStream(crcSerialStream, blockSize1mb);
