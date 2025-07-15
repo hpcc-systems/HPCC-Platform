@@ -280,18 +280,107 @@ static IRowReadFormatMapping * createUnprojectedMapping(IRowReadFormatMapping * 
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane)
+static void queryInheritProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
 {
-    Owned<IPropertyTree> formatOptions(createPTree());
-    Owned<IPropertyTree> providerOptions(createPTree());
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+        target.setProp(targetName, source.queryProp(sourceName));
+}
 
+static void queryInheritSeparatorProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+{
+    //Legacy - commas are quoted if they occur in a separator list, so need to remove the leading backslashes
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+    {
+        StringBuffer unquoted;
+        const char * text = source.queryProp(sourceName);
+        while (*text)
+        {
+            if ((text[0] == '\\') && (text[1] == ','))
+                text++;
+            unquoted.append(*text++);
+        }
+        target.setProp(targetName, unquoted);
+    }
+}
+
+
+FileAccessOptions::FileAccessOptions(const char * explicitFormat)
+: format(explicitFormat), formatOptions(createPTree()), providerOptions(createPTree())
+{
+}
+
+FileAccessOptions::FileAccessOptions(const FileAccessOptions & original)
+    : format(original.format), recordTranslationMode(original.recordTranslationMode),
+      formatOptions(createPTreeFromIPT(original.formatOptions)), providerOptions(createPTreeFromIPT(original.providerOptions)),
+      actualDiskMeta(original.actualDiskMeta.getLink()), formatCrc(original.formatCrc)
+{
+}
+
+//This should be called after updateFromReadhelper, and should only set values not explicitly set in the ECL code.
+void FileAccessOptions::updateFromFile(IDistributedFile * distributedFile)
+{
+    const char *kind = queryFileKind(distributedFile);
+    IPropertyTree & attributes = distributedFile->queryAttributes();
+
+    //Future feature - allow the format to be omitted from the ecl code, and infer it from the file meta.
+    if (!format)
+        format.set(kind);
+
+    //Check for field translation - only supported when reading as a flat file
+    if (strsame(format, "flat"))
+    {
+        //The source must also be a flat file
+        if (strsame(kind, "flat"))
+        {
+            Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(attributes);
+            if (publishedMeta)
+            {
+                actualDiskMeta.setown(publishedMeta.getClear());
+                formatCrc = attributes.getPropInt("@formatCrc");
+            }
+
+            size32_t dfsSize = attributes.getPropInt("@recordSize");
+            if (dfsSize != 0)
+                formatOptions->setPropInt("@recordSize", dfsSize);
+        }
+    }
+
+    bool fileIsGrouped = attributes.getPropBool("@grouped");
+    bool expectedGrouped = formatOptions->getPropBool("@grouped", false);
+    if (fileIsGrouped != expectedGrouped )
+    {
+        formatOptions->setPropBool("@grouped", fileIsGrouped);
+        StringBuffer msg;
+        throw makeStringExceptionV(9999, "DFS and code generated group info. differs: DFS(%s) ECL(%s)", boolToStr(fileIsGrouped), boolToStr(expectedGrouped));
+    }
+
+    bool blockcompressed = false;
+    bool compressed = distributedFile->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
+
+    if (compressed)
+    {
+        providerOptions->setPropBool("@compressed", compressed);
+        providerOptions->setPropBool("@blockCompressed", blockcompressed);
+    }
+
+    //MORE: There should probably be a generic way of storing and extracting format options for a file
+    queryInheritProp(*formatOptions, "quote", attributes, "@csvQuote");
+    queryInheritSeparatorProp(*formatOptions, "separator", attributes, "@csvSeparate");
+    queryInheritProp(*formatOptions, "terminator", attributes, "@csvTerminate");
+    queryInheritProp(*formatOptions, "escape", attributes, "@csvEscape");
+
+}
+
+void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane)
+{
     unsigned helperFlags = helper.getFlags();
     bool isGeneric = (helperFlags & TDXgeneric) != 0;
 
-    if (isGeneric)
-        options.format.set(helper.queryFormat());
-    else
-        options.format.set("flat");
+    const char * eclFormat = isGeneric ? helper.queryFormat() : nullptr;
+    if (eclFormat)
+        format.set(eclFormat);
+    else if (!format)
+        format.set("flat");
 
     if (storagePlane)
     {
@@ -303,7 +392,7 @@ void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDi
     {
         const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
         if (recordTranslationModeHintText)
-            options.recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
+            recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
     }
 
     providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
@@ -332,9 +421,6 @@ void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDi
         providerOptions->setPropBool("@blockcompressed", true);
         providerOptions->setPropBool("@compressed", true);
     }
-
-    options.formatOptions.setown(formatOptions.getClear());
-    options.providerOptions.setown(providerOptions.getClear());
 }
 
 //---------------------------------------------------------------------------------------------------------------------

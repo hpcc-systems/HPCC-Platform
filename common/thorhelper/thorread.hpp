@@ -76,13 +76,20 @@ THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslat
 class FileAccessOptions
 {
 public:
+    FileAccessOptions(const char * explicitFormat);
+    explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
+
+    void updateFromFile(IDistributedFile * file);
+    void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane);
+
+public:
     StringAttr format;
     RecordTranslationMode recordTranslationMode = RecordTranslationMode::Unspecified;
     Owned<IPropertyTree> formatOptions;
     Owned<IPropertyTree> providerOptions;
+    Owned<IOutputMetaData> actualDiskMeta;
+    unsigned formatCrc = 0;
 };
-
-extern THORHELPER_API void createGenericOptionsFromHelper(FileAccessOptions & options, IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane);
 
 //--------------------------------------------------------------------------------------------------------------------
 
