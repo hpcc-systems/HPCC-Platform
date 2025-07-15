@@ -360,6 +360,7 @@ enum StatisticKind
     StTimeQueryConsume,
     StCycleQueryConsumeCycles,
     StNumSuccesses,
+    StCostSavingPotential,
     StMax,
 
     //For any quantity there is potentially the following variants.

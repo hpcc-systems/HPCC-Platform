@@ -200,6 +200,7 @@ public:
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
     stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
+    cost_type getTotalCostPenalty() const;
 protected:
     CIArrayOf<CActivityRule> activityRules;
     CIArrayOf<CSubgraphRule> subgraphRules;
@@ -1506,7 +1507,13 @@ void WorkunitRuleAnalyser::update(IWorkUnit *wu)
         issues.item(i).createException(wu);
 }
 
-
+cost_type WorkunitRuleAnalyser::getTotalCostPenalty() const
+{
+    cost_type totalCost = 0;
+    ForEachItemIn(i, issues)
+        totalCost += issues.item(i).getCostPenalty();
+    return totalCost;
+}
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -2235,7 +2242,10 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
             addExceptionToWorkunit(wu, SeverityWarning, CostOptimizerName, error->errorCode(), msg.str(), nullptr, 0, 0, 0);
         }
         if (analyser.hasIssues())
+        {
             analyser.update(wu);
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, CostOptimizerName, StCostSavingPotential, "Aggregate cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeSum);
+        }
     }
 }
 
@@ -2270,6 +2280,8 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions(CostOptimizerName);
         analyser.update(lockedwu);
+        if (analyser.hasIssues())
+            lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, CostOptimizerName, StCostSavingPotential, "Aggregate cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeReplace);
         timingInfo.append(" update ");
         formatStatistic(timingInfo, cycle_to_nanosec(updateTimer.elapsedCycles()), SMeasureTimeNs);
     }
