@@ -1499,6 +1499,7 @@ enum WUSortField
     WUSFcostexecute = 17,
     WUSFcostcompile = 18,
     WUSFcostfileaccess = 19,
+    WUSFcostsavingpotential = 20,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,

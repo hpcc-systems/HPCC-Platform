@@ -5027,6 +5027,7 @@ EnumMapping workunitSortFields[] =
    { WUSFcostexecute, "@costExecute" },
    { WUSFcostcompile, "@costCompile" },
    { WUSFcostfileaccess, "@costFileAccess" },
+   { WUSFcostsavingpotential, "@costSavingPotential" },
    { WUSFterm, NULL }
 };
 
@@ -6380,7 +6381,7 @@ public:
                     else
                         query.append("[@protected!=\"1\"]"); //The @protected is set to '0' or not set.
                 }
-                else if (subfmt==WUSFcostcompile || subfmt==WUSFcostexecute || subfmt==WUSFcostfileaccess )
+                else if (subfmt==WUSFcostcompile || subfmt==WUSFcostexecute || subfmt==WUSFcostfileaccess || subfmt==WUSFcostsavingpotential )
                 {
                     appendMinCostToQueryString(query, (WUSortField)subfmt, fv);
                 }

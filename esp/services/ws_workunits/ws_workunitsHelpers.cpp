@@ -1369,6 +1369,8 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
         info.setFileAccessCost(cost_type2money(cw->getFileAccessCost()));
     if (version>=1.87)
         info.setCompileCost(cost_type2money(cw->getCompileCost()));
+    if (version>=2.03)
+        info.setCostSavingPotential(cost_type2money(cw->getCostSavingPotential()));
 }
 
 void WsWuInfo::setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS)
@@ -1430,6 +1432,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
         info.setFileAccessCost(cost_type2money(cw->getFileAccessCost()));
     if (version>=1.87)
         info.setCompileCost(cost_type2money(cw->getCompileCost()));
+    if (version>=2.03)
+        info.setCostSavingPotential(cost_type2money(cw->getCostSavingPotential()));
     getClusterInfo(info, flags);
     getExceptions(info, flags);
     getHelpers(info, flags);

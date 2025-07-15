@@ -372,6 +372,7 @@ ESPStruct [nil_remove] ECLWorkunitLW
     unsigned TotalClusterTime;
     ESParray<ESPstruct ApplicationValue> ApplicationValues;
     [min_ver("1.91")] bool NoAccess(false);
+    [min_ver("2.03")] double CostSavingPotential;
 };
 
 ESPStruct [nil_remove] ECLWorkunit
@@ -456,6 +457,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.87")] double CompileCost;
     [min_ver("1.91")] bool NoAccess(false);
     [min_ver("1.98")] ESParray<ESPstruct ECLWUProcess> ECLWUProcessList;
+    [min_ver("2.03")] double CostSavingPotential;
 };
 
 ESPStruct [nil_remove] WUECLAttribute
