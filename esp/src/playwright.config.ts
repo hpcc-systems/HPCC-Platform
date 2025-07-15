@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { baseURL, setBaseURL } from "./tests/global";
 
 const isCI = !!process.env.CI;
+const isFull = !!process.env.FULL;
 if (isCI) {
     setBaseURL("http://127.0.0.1:8010");
 } else {
@@ -47,7 +48,7 @@ export default defineConfig({
             use: { ...devices["Desktop Chrome"] },
             dependencies: ["setup"]
         },
-        ...(isCI ? [] : [
+        ...(isFull ? [
             {
                 name: "firefox",
                 use: { ...devices["Desktop Firefox"] },
@@ -58,15 +59,7 @@ export default defineConfig({
                 use: { ...devices["Desktop Safari"] },
                 dependencies: ["setup"],
             }
-        ])
+        ] : [])
     ],
 
-    /* Run your local dev server before starting the tests */
-    webServer: !isCI ? {
-        command: "npm run start",
-        url: baseURL,
-        reuseExistingServer: !isCI,
-        ignoreHTTPSErrors: true,
-        stdout: "pipe"
-    } : undefined,
 });

@@ -198,18 +198,9 @@ jobs:
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
           if-no-files-found: error
 
-      - name: Upload UI Test Files
-        if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.asset-name }}-ui_test-files
-          path: |
-            ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui/**/*
-          if-no-files-found: error
-
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-logs
+          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-docker-logs
           path: ${{ github.workspace }}/build/**/*.log
