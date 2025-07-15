@@ -51,7 +51,7 @@
     "@hpcc-js/chart": "3.3.3",
     "@hpcc-js/codemirror": "3.3.3",
     "@hpcc-js/common": "3.3.3",
-    "@hpcc-js/comms": "3.7.0",
+    "@hpcc-js/comms": "3.7.6",
     "@hpcc-js/dataflow": "3.0.1",
     "@hpcc-js/eclwatch": "3.2.12",
     "@hpcc-js/graph": "3.3.6",
