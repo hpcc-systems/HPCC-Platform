@@ -8,6 +8,7 @@ import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
+import { useMyAccount } from "../hooks/user";
 import { ShortVerticalDivider } from "./Common";
 import { MultiColumnTableGroup, TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
@@ -34,7 +35,8 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
     tab = "summary"
 }) => {
 
-    const { file, isProtected, refreshData } = useFile(cluster, logicalFile);
+    const { file, isProtected, protectedBy, refreshData } = useFile(cluster, logicalFile);
+    const { currentUser } = useMyAccount();
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
@@ -88,6 +90,14 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
         );
     }, [_protected, description, file, isProtected, restricted]);
 
+    const protectedByCurrentUser = React.useMemo(() => {
+        if (currentUser.username) {
+            return protectedBy.filter(p => p.Owner === currentUser.username).length > 0;
+        } else {
+            return _protected;
+        }
+    }, [currentUser, _protected, protectedBy]);
+
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
@@ -103,9 +113,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
             onClick: () => {
                 file?.update({
                     UpdateDescription: true,
-                    FileDesc: description,
-                    Protect: _protected ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
-                    Restrict: restricted ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
+                    FileDesc: description
                 }).catch(err => logger.error(err));
             }
         },
@@ -114,6 +122,29 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
             onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "protect", text: nlsHPCC.Protect, iconProps: { iconName: "Lock" }, disabled: protectedByCurrentUser,
+            onClick: () => {
+                file?.update({ Protect: WsDfu.DFUChangeProtection.Protect })
+                    .then(() => {
+                        setProtected(true);
+                        refreshData();
+                    })
+                    .catch(err => logger.error(err));
+            }
+        },
+        {
+            key: "unprotect", text: nlsHPCC.Unprotect, iconProps: { iconName: "Unlock" }, disabled: !protectedByCurrentUser,
+            onClick: () => {
+                file?.update({ Protect: WsDfu.DFUChangeProtection.Unprotect })
+                    .then(() => {
+                        setProtected(false);
+                        refreshData();
+                    })
+                    .catch(err => logger.error(err));
+            }
+        },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "copyFile", text: nlsHPCC.Copy, disabled: !file,
             onClick: () => setShowCopyFile(true)
@@ -126,12 +157,12 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
             key: "despray", text: nlsHPCC.Despray, disabled: !file,
             onClick: () => setShowDesprayFile(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
         },
-    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refreshData, replicateFlag, restricted, setShowDeleteConfirm]);
+    ], [canReplicateFlag, canSave, description, file, logicalFile, protectedByCurrentUser, refreshData, replicateFlag, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));
@@ -161,7 +192,6 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
                 "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
                 "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
-                "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
@@ -192,6 +222,8 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                         setProtected(value);
                         file?.update({
                             Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                        }).then(() => {
+                            refreshData();
                         }).catch(err => logger.error(err));
                         break;
                     case "isRestricted":
