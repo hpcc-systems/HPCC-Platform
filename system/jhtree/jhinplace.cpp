@@ -39,6 +39,36 @@
 //#define TRACE_BUILDING_STATS
 #endif
 
+// A setting that can be scaled from 0 to 100 to track how the extra in memory saving from inplace indexes affects the performance
+// of roxie.  Memory allocated = newSize + (oldSize - newSize) * inplaceSizeFactor/100;
+static unsigned inplaceSizeFactor = 0;
+
+// Some settings that can be used to scale the time taken to expand nodes using the new inplace indexes.
+//
+// EstimatedTime = (TimeTakenToExpand / newPayloadSize) * oldSize * XXXSpeedFactor /100
+//
+// i.e. Estimate the time it would have taken to expand the original payload, assuming lzw compression
+// takes speedFactor/100 times longer than the new compression.
+//
+// This should also be used in the upcoming hybrid compression (e.g. hybrid:zstd) which uses the key compression for branches,
+// but the legacy compression format for leaves.
+//
+// A factor < 100 may still add time if there is a noticeable reduction in the payload data size.
+
+static unsigned lz4SpeedFactor = 0;
+static unsigned zStdSpeedFactor = 0;
+static bool adjustExpansionTime = false;
+
+void setIndexScaling(unsigned _inplaceSizeFactor, unsigned _lz4SpeedFactor, unsigned _zStdSpeedFactor)
+{
+    inplaceSizeFactor = _inplaceSizeFactor;
+    lz4SpeedFactor = _lz4SpeedFactor;
+    zStdSpeedFactor = _zStdSpeedFactor;
+    adjustExpansionTime = (lz4SpeedFactor != 0) || (zStdSpeedFactor != 0);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 static constexpr size32_t minRepeatCount = 2;       // minimum number of times a 0x00 or 0x20 is repeated to generate a special opcode
 static constexpr size32_t minRepeatXCount = 3;      // minimum number of times a byte is repeated to generate a special opcode
 static constexpr size32_t maxQuotedCount = 31 + 256; // maximum number of characters that can be quoted in a row
@@ -1665,6 +1695,8 @@ int CJHInplaceTreeNode::locateGT(const char * search, unsigned minIndex) const
 }
 
 
+constexpr static bool traceInplaceLoadStats = false;
+
 void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHSearchNode::load(_keyHdr, rawData, _fpos, needCopy);
@@ -1675,20 +1707,29 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
 
     const byte * nullRow = nullptr; //MORE: This should be implemented
     unsigned numKeys = hdr.numKeys;
+    unsigned originalKeyedSize = keyCompareLen * numKeys;
     if (numKeys)
     {
+         // only time the follow code if we are going to try and match the old timing.
+        CCycleTimer expansionTimer(traceInplaceLoadStats || (adjustExpansionTime && isLeaf()));
+
         size32_t len = hdr.keyBytes;
         size32_t copyLen = len;
         const byte * originalData = ((const byte *)rawData) + sizeof(hdr);
         const byte * originalPayload = nullptr;
         bool keepCompressedPayload = true;
+        size32_t actualKeyedSize = len;
+
+        //For branches payloadCompression will always be COMPRESS_METHOD_NONE
+        CompressionMethod payloadCompression = COMPRESS_METHOD_NONE;
         if (isLeaf())
         {
             //Always calculate payload location so we can perform a consistency check later on.
             originalPayload = queryPayload(originalData);
             if (originalPayload)
             {
-                CompressionMethod payloadCompression = (CompressionMethod)*originalPayload;
+                actualKeyedSize = originalPayload - originalData;
+                payloadCompression = (CompressionMethod)*originalPayload;
                 switch (payloadCompression)
                 {
                 case COMPRESS_METHOD_NONE:
@@ -1699,19 +1740,27 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     expandPayloadOnDemand = dynamicPayloadExpansion;
                     keepCompressedPayload = expandPayloadOnDemand;
                     if (!expandPayloadOnDemand)
-                        copyLen = (originalPayload - originalData);
+                        copyLen = actualKeyedSize;
                     break;
                 }
             }
             else
+            {
+                //if no payload then actualKeySize is already set....
                 expandPayloadOnDemand = false;
+            }
         }
 
-        const size32_t padding = 8 - 1; // Ensure that unsigned8 values can be read "legally"
+        size32_t padding = 8 - 1; // Ensure that unsigned8 values can be read "legally"
+
+        //Allow the memory used by the inplace indexes to be adjusted to explore the trend of the benefits
+        if (inplaceSizeFactor && (actualKeyedSize < originalKeyedSize))
+            padding += (originalKeyedSize - actualKeyedSize) * inplaceSizeFactor / 100;
+
         keyBuf = (char *) allocMem(copyLen + padding);
         memcpy(keyBuf, originalData, copyLen);
         memset(keyBuf+copyLen, 0, padding);
-        expandedSize = copyLen;
+        expandedSize = copyLen+padding;
 
         /**** If any of the following code changes queryPayload() must also be changed. ******/
 
@@ -1814,6 +1863,53 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
             assertex((data - (const byte *)keyBuf) == len);
         else
             assertex((data - originalData) == len);
+
+        //Branch nodes do not use LZW compression - so this will not attempt to adjust them.
+        if ((adjustExpansionTime || traceInplaceLoadStats) && (payloadCompression != COMPRESS_METHOD_NONE) && !expandPayloadOnDemand)
+        {
+            __uint64 timeTakenNs = expansionTimer.elapsedNs();
+            unsigned scaling = 0;
+            switch (payloadCompression)
+            {
+            case COMPRESS_METHOD_LZW:
+            case COMPRESS_METHOD_LZW_LITTLE_ENDIAN:
+                scaling = 100; // only adjustment will be due to not expanding the keyed portion.
+                break;
+            case COMPRESS_METHOD_LZ4:
+            case COMPRESS_METHOD_LZ4HC:
+            case COMPRESS_METHOD_LZ4S:
+            case COMPRESS_METHOD_LZ4SHC:
+            case COMPRESS_METHOD_LZ4HC3:
+                scaling = lz4SpeedFactor;
+                break;
+            case COMPRESS_METHOD_ZSTDS:
+                scaling = zStdSpeedFactor;
+                break;
+            }
+
+            if (scaling)
+            {
+                size32_t actualSizeExpanded = expandedSize - padding - actualKeyedSize;     // How much data was expanded in the payload
+                size32_t originalSizeExpanded = actualSizeExpanded + originalKeyedSize;     // How much data would there have been if the whole node was compressed?
+
+                if (actualSizeExpanded)
+                {
+                    //This scaling will not work sensibly if keys are not expanded on demand.
+                    // expected = (TimeTakenToExpand / newPayloadSize) * oldSize * XXXSpeedFactor /100;
+                    // rearrange so the divisions happen last
+                    __uint64 expectedTime = (timeTakenNs * originalSizeExpanded * scaling) / actualSizeExpanded / 100;
+
+                    //Sanity check to avoid pathological times caused by context switches etc.
+                    if (expectedTime > 500'000)
+                        expectedTime = 500'000;
+
+                    if (traceInplaceLoadStats)
+                        DBGLOG("InplaceLoad: %s originalSize(%u) actualSize(%u), expectedTime(%llu), actualTime(%llu)", translateFromCompMethod(payloadCompression), originalSizeExpanded, actualSizeExpanded, expectedTime, timeTakenNs);
+                    else if (expectedTime > timeTakenNs)
+                        NanoSleep(expectedTime- timeTakenNs);
+                }
+            }
+        }
     }
 }
 
