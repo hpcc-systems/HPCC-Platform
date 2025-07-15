@@ -1028,6 +1028,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(QueryConsume) },
     { NUMSTAT(Successes), "The number of times something was successful" },
     { NUMSTAT(SoapcallRetries), "The number of times a soapcall request retries" },
+    { COSTSTAT(SavingPotential), "The potential cost savings from optimizations" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
