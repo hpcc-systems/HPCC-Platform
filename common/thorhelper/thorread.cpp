@@ -381,7 +381,7 @@ void FileAccessOptions::updateFromGraphNode(IPropertyTree * node)
     }
 }
 
-void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlane)
+void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode)
 {
     if (storagePlane)
     {
@@ -390,10 +390,10 @@ void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlan
     }
 }
 
-void FileAccessOptions::updateFromStoragePlane(const char * storagePlaneName)
+void FileAccessOptions::updateFromStoragePlane(const char * storagePlaneName, IFOmode mode)
 {
     Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(storagePlaneName, false);
-    updateFromStoragePlane(storagePlane);
+    updateFromStoragePlane(storagePlane, mode);
 }
 
 void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper)
@@ -416,6 +416,46 @@ void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & help
     formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
     if ((helperFlags & TDRcloneappendvirtual) != 0)
         formatOptions->setPropBool("@cloneAppendVirtuals", true);
+
+    if (isGeneric)
+    {
+        CPropertyTreeWriter formatWriter(formatOptions);
+        helper.getFormatOptions(formatWriter);
+
+        CPropertyTreeWriter providerWriter(providerOptions);
+        helper.getProviderOptions(providerWriter);
+    }
+
+    rtlDataAttr k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k.refdata());
+    if (kl)
+    {
+        providerOptions->setPropBin("encryptionKey", kl, k.getdata());
+        providerOptions->setPropBool("@blockcompressed", true);
+        providerOptions->setPropBool("@compressed", true);
+    }
+}
+
+void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName)
+{
+    unsigned helperFlags = helper.getFlags();
+    bool isGeneric = (helperFlags & TDXgeneric) != 0;
+
+    if (isGeneric)
+        format.set(helper.queryFormat());
+    else
+        format.set("flat");
+
+    roxiemem::OwnedRoxieString helperCluster(helper.getCluster(0));
+    const char * targetPlaneName = helperCluster.get();
+    if (!targetPlaneName)
+        targetPlaneName = defaultStoragePlaneName;
+
+    updateFromStoragePlane(targetPlaneName, IFOwrite);
+
+    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
 
     if (isGeneric)
     {

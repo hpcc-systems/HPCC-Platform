@@ -10939,7 +10939,7 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
         //Asume that we will read from the first storage plane - may need revisiting
         StringBuffer storagePlaneName;
         distributedFile->getClusterName(0, storagePlaneName);
-        fileAccessOptions.updateFromStoragePlane(storagePlaneName);
+        fileAccessOptions.updateFromStoragePlane(storagePlaneName, IFOread);
         fileAccessOptions.updateFromFile(distributedFile);
     }
 

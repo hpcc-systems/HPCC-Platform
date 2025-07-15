@@ -82,8 +82,10 @@ public:
     void updateFromFile(IDistributedFile * file);
     void updateFromGraphNode(IPropertyTree * node);
     void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper);
-    void updateFromStoragePlane(const IStoragePlane * storagePlane);
-    void updateFromStoragePlane(const char * storagePlaneName);
+    void updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode);
+    void updateFromStoragePlane(const char * storagePlaneName, IFOmode mode);
+
+    void updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName);
 
 public:
     StringAttr format;
