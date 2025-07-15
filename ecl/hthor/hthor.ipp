@@ -2981,8 +2981,7 @@ protected:
     IOutputMetaData *expectedDiskMeta = nullptr;
     IOutputMetaData *projectedDiskMeta = nullptr;
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
-    Owned<IPropertyTree> formatOptions;
-    Owned<IPropertyTree> providerOptions;
+    FileAccessOptions baseFileAccessOptions;
     unsigned partNum = 0;
     unsigned helperFlags;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
@@ -3050,7 +3049,7 @@ public:
 protected:
     bool openFirstPart();
     void initStream(IDiskRowReader * reader, const char * filename);
-    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const IPropertyTree * curFormatOptions, const IPropertyTree * curProviderOptions);
+    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const FileAccessOptions & baseFileAccessOptions);
     bool openFilePart(const char * filename);
     bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
     void setEmptyStream();

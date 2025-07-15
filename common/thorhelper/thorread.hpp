@@ -76,11 +76,14 @@ THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslat
 class FileAccessOptions
 {
 public:
-    FileAccessOptions(const char * explicitFormat);
+    FileAccessOptions();
     explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
 
     void updateFromFile(IDistributedFile * file);
-    void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane);
+    void updateFromGraphNode(IPropertyTree * node);
+    void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper);
+    void updateFromStoragePlane(const IStoragePlane * storagePlane);
+    void updateFromStoragePlane(const char * storagePlaneName);
 
 public:
     StringAttr format;

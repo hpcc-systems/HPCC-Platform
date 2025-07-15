@@ -10755,8 +10755,8 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
-    formatOptions.setown(createPTree());
-    providerOptions.setown(createPTree());
+
+    baseFileAccessOptions.updateFromGraphNode(_node);
 
     isCodeSigned = false;
     if (_node)
@@ -10766,14 +10766,6 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
         isCodeSigned = isActivityCodeSigned(*_node);
     }
-
-    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
-    if (helperFlags & TDRoptional)
-        providerOptions->setPropBool("@optional", true);
-
-    formatOptions->setPropBool("@grouped", grouped);
-    if ((helperFlags & TDRcloneappendvirtual) != 0)
-        formatOptions->setPropBool("@cloneAppendVirtuals", true);
 
     if (useGenericReadWrites)
     {
@@ -10846,34 +10838,8 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     dfsParts.clear();
     subfiles.kill();
 
-    Owned<const IPropertyTree> curFormatOptions;
-    if (useGenericReadWrites)
-    {
-        Owned clonedFormatOptions(createPTreeFromIPT(formatOptions));
-        CPropertyTreeWriter writer(clonedFormatOptions);
-        helper.getFormatOptions(writer);
-        curFormatOptions.setown(clonedFormatOptions.getClear());
-    }
-    else
-        curFormatOptions.set(formatOptions);
-
-    //Provider options may be modified below
-    Owned<IPropertyTree> curProviderOptions(createPTreeFromIPT(providerOptions));
-    if (useGenericReadWrites)
-    {
-        CPropertyTreeWriter writer(curProviderOptions);
-        helper.getProviderOptions(writer);
-    }
-
-    rtlDataAttr k;
-    size32_t kl;
-    helper.getEncryptKey(kl,k.refdata());
-    if (kl)
-    {
-        curProviderOptions->setPropBin("encryptionKey", kl, k.getdata());
-        curProviderOptions->setPropBool("blockcompressed", true);
-        curProviderOptions->setPropBool("compressed", true);
-    }
+    FileAccessOptions helperFileAccessOptions(baseFileAccessOptions);
+    helperFileAccessOptions.updateFromReadHelper(helper);
 
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helperFlags);
@@ -10884,7 +10850,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
         logicalFileName = tempFileName.str();
         gatherInfo(NULL);
-        subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+        subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
     }
     else
     {
@@ -10911,22 +10877,22 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
                     for (; s<numsubs; s++)
                     {
                         IDistributedFile &subfile = super->querySubFile(s, true);
-                        subfiles.append(*extractFileInformation(&subfile, curFormatOptions, curProviderOptions));
+                        subfiles.append(*extractFileInformation(&subfile, helperFileAccessOptions));
                     }
                     assertex(fdesc);
                     superfile.set(fdesc->querySuperFileDescriptor());
                 }
                 else
-                    subfiles.append(*extractFileInformation(dFile, curFormatOptions, curProviderOptions));
+                    subfiles.append(*extractFileInformation(dFile, helperFileAccessOptions));
 
                 if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ", graph);
             }
             else
-                subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+                subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
         }
         else
-            subfiles.append(*extractFileInformation(nullptr, curFormatOptions, curProviderOptions));
+            subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));
 
         if (!ldFile)
         {
@@ -10962,85 +10928,27 @@ void CHThorNewDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     }
 }
 
-static void queryInheritProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile, const FileAccessOptions & helperFileAccessOptions)
 {
-    if (source.hasProp(sourceName) && !target.hasProp(targetName))
-        target.setProp(targetName, source.queryProp(sourceName));
-}
+    FileAccessOptions fileAccessOptions(helperFileAccessOptions);
 
-static void queryInheritSeparatorProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
-{
-    //Legacy - commas are quoted if they occur in a separator list, so need to remove the leading backslashes
-    if (source.hasProp(sourceName) && !target.hasProp(targetName))
-    {
-        StringBuffer unquoted;
-        const char * text = source.queryProp(sourceName);
-        while (*text)
-        {
-            if ((text[0] == '\\') && (text[1] == ','))
-                text++;
-            unquoted.append(*text++);
-        }
-        target.setProp(targetName, unquoted);
-    }
-}
-
-CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile, const IPropertyTree * curFormatOptions, const IPropertyTree * curProviderOptions)
-{
-    Owned<IPropertyTree> fileProviderOptions = createPTreeFromIPT(providerOptions);
-    unsigned actualCrc = helper.getDiskFormatCrc();
-    Linked<IOutputMetaData> actualDiskMeta = expectedDiskMeta;
-    Linked<IPropertyTree> fileFormatOptions = createPTreeFromIPT(curFormatOptions);
-    bool compressed = false;
-    bool blockcompressed = false;
-
-    const char * readFormat = queryReadFormat();
-    //MORE: Later this should use the type of the file if it is a distributed file and the format is not specified
+    fileAccessOptions.actualDiskMeta.set(expectedDiskMeta);
 
     if (distributedFile)
     {
-        const char *kind = queryFileKind(distributedFile);
-
-        //Do not use the field translation if the file was originally csv/xml - unless explicitly set
-        if ((strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == getLayoutTranslationMode())) &&
-//            (strisame(readFormat, "flat") || strisame(kind, readFormat)))
-              (strisame(readFormat, "flat"))) // Not sure about this - only allow fixed source format if reading as flat
-        {
-            //Yuk this will be horrible - it needs to cache it for each distributed file
-            //and also common them up if they are the same.
-            IPropertyTree &props = distributedFile->queryAttributes();
-            Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(props);
-            if (publishedMeta)
-            {
-                actualDiskMeta.setown(publishedMeta.getClear());
-                actualCrc = props.getPropInt("@formatCrc");
-            }
-
-            size32_t dfsSize = props.getPropInt("@recordSize");
-            if (dfsSize != 0)
-                fileFormatOptions->setPropInt("@recordSize", dfsSize);
-        }
-        compressed = distributedFile->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
-
-        //MORE: There should probably be a generic way of storing and extracting format options for a file
-        IPropertyTree & options = distributedFile->queryAttributes();
-        queryInheritProp(*fileFormatOptions, "quote", options, "@csvQuote");
-        queryInheritSeparatorProp(*fileFormatOptions, "separator", options, "@csvSeparate");
-        queryInheritProp(*fileFormatOptions, "terminator", options, "@csvTerminate");
-        queryInheritProp(*fileFormatOptions, "escape", options, "@csvEscape");
+        //Asume that we will read from the first storage plane - may need revisiting
+        StringBuffer storagePlaneName;
+        distributedFile->getClusterName(0, storagePlaneName);
+        fileAccessOptions.updateFromStoragePlane(storagePlaneName);
+        fileAccessOptions.updateFromFile(distributedFile);
     }
-
-    fileProviderOptions->setPropBool("@grouped", grouped);
-    fileProviderOptions->setPropBool("@compressed", compressed);
-    fileProviderOptions->setPropBool("@blockCompressed", blockcompressed);
-    fileProviderOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
 
     InputFileInfo & target = * new InputFileInfo;
     target.file = distributedFile;
-    target.providerOptions.setown(fileProviderOptions.getClear());
-    target.formatOptions.setown(fileFormatOptions.getClear());
-    target.actualCrc = actualCrc;
-    target.actualMeta.swap(actualDiskMeta);
+    target.providerOptions.setown(fileAccessOptions.providerOptions.getClear());
+    target.formatOptions.setown(fileAccessOptions.formatOptions.getClear());
+    target.actualCrc = fileAccessOptions.formatCrc;
+    target.actualMeta.swap(fileAccessOptions.actualDiskMeta);
     return &target;
 }
 

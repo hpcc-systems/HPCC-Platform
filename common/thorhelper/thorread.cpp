@@ -304,8 +304,8 @@ static void queryInheritSeparatorProp(IPropertyTree & target, const char * targe
 }
 
 
-FileAccessOptions::FileAccessOptions(const char * explicitFormat)
-: format(explicitFormat), formatOptions(createPTree()), providerOptions(createPTree())
+FileAccessOptions::FileAccessOptions()
+: formatOptions(createPTree()), providerOptions(createPTree())
 {
 }
 
@@ -371,7 +371,32 @@ void FileAccessOptions::updateFromFile(IDistributedFile * distributedFile)
 
 }
 
-void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper, IPropertyTree * node, IStoragePlane * storagePlane)
+void FileAccessOptions::updateFromGraphNode(IPropertyTree * node)
+{
+    if (node)
+    {
+        const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
+        if (recordTranslationModeHintText)
+            recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
+    }
+}
+
+void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlane)
+{
+    if (storagePlane)
+    {
+        //MORE: Get the default compression when that is implemented
+        providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+    }
+}
+
+void FileAccessOptions::updateFromStoragePlane(const char * storagePlaneName)
+{
+    Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(storagePlaneName, false);
+    updateFromStoragePlane(storagePlane);
+}
+
+void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper)
 {
     unsigned helperFlags = helper.getFlags();
     bool isGeneric = (helperFlags & TDXgeneric) != 0;
@@ -382,18 +407,7 @@ void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & help
     else if (!format)
         format.set("flat");
 
-    if (storagePlane)
-    {
-        //MORE: Get the default compression when that is implemented
-        providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
-    }
-
-    if (node)
-    {
-        const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
-        if (recordTranslationModeHintText)
-            recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
-    }
+    formatCrc = helper.getDiskFormatCrc();
 
     providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
     if (helperFlags & TDRoptional)
