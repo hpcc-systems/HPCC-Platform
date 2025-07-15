@@ -21,7 +21,7 @@ import { Queries } from "./Queries";
 import { Resources } from "./Resources";
 import { Result } from "./Result";
 import { Results } from "./Results";
-import { FetchEditor, WUXMLSourceEditor } from "./SourceEditor";
+import { WUXMLSourceEditor } from "./SourceEditor";
 import { SourceFiles } from "./SourceFiles";
 import { Variables } from "./Variables";
 import { Workflows } from "./Workflows";
@@ -241,13 +241,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <Queries filter={{ WUID: wuid }} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "resources"} size={size}>
-                    {state?.resources ?
-                        <FetchEditor mode={queryParams.resources?.mode as any} url={queryParams.resources?.url as string} /> :
-                        <Resources wuid={wuid} preview={queryParams.resources?.preview as any} />
-                    }
+                    <Resources wuid={wuid} parentUrl={`${parentUrl}/${wuid}/resources`} selectedResource={state?.resources} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "helpers"} size={size}>
-                    <Helpers wuid={wuid} mode={queryParams.helpers?.mode as any} url={queryParams.helpers?.src as string} />
+                    <Helpers wuid={wuid} parentUrl={`${parentUrl}/${wuid}/helpers`} selectedTreeValue={state?.helpers} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "logs"} size={size}>
                     <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
