@@ -383,10 +383,16 @@ void FileAccessOptions::updateFromGraphNode(IPropertyTree * node)
 
 void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode)
 {
-    if (storagePlane)
+    if (!storagePlane)
+        return;
+
+    providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+
+    if (mode == IFOwrite)
     {
-        //MORE: Get the default compression when that is implemented
-        providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+        const IPropertyTree & planeOptions = storagePlane->queryPlaneConfig();
+        bool isCompressed = planeOptions.getPropBool("@compressLogicalFiles", providerOptions->getPropBool("@compressed"));
+        providerOptions->setPropBool("@compressed", isCompressed);
     }
 }
 
@@ -454,8 +460,17 @@ void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper
 
     updateFromStoragePlane(targetPlaneName, IFOwrite);
 
-    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
     formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
+
+    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    providerOptions->setPropBool("@extend", (helperFlags & TDWextend) != 0);
+    providerOptions->setPropBool("@overwrite", (helperFlags & TDWoverwrite) != 0);
+//    providerOptions->setPropBool("@renameAfterWrite", false);
+//    providerOptions->setPropBool("@writeDirect", false);
+    if (helperFlags & TDXjobtemp)
+        providerOptions->setPropBool("@jobTemp", true);
+    else if (helperFlags & TDXtemporary)
+        providerOptions->setPropBool("@temporary", true);
 
     if (isGeneric)
     {
@@ -476,6 +491,32 @@ void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper
         providerOptions->setPropBool("@compressed", true);
     }
 }
+
+void FileAccessOptions::setCompression(bool enable, const char * method)
+{
+    providerOptions->setPropBool("@compressed", enable);
+    providerOptions->setProp("@compressionMethod", method);
+}
+
+/*
+    unsigned twFlags = external ? TW_External : 0;
+    if (query || (external && !firstNode()))
+        twFlags |= TW_Direct;
+    if (!external || (!query && lastNode()))
+        twFlags |= TW_RenameToPrimary;
+    if (extend||(external&&!query))
+        twFlags |= TW_Extend;
+    if (diskHelperBase->getFlags() & TDXtemporary)
+        twFlags |= TW_Temporary;
+
+    if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
+    {
+        diskRowMinSz = diskRowMeta->getMinRecordSize();
+        if (grouped)
+            diskRowMinSz += 1;
+    }
+
+*/
 
 //---------------------------------------------------------------------------------------------------------------------
 

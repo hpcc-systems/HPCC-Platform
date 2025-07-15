@@ -79,6 +79,8 @@ public:
     FileAccessOptions();
     explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
 
+    void setCompression(bool enable, const char * method);
+
     void updateFromFile(IDistributedFile * file);
     void updateFromGraphNode(IPropertyTree * node);
     void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper);

@@ -56,6 +56,7 @@
 #include "rtlnewkey.hpp"
 
 #include "thorread.hpp"
+#include "thorwrite.hpp"
 
 #include "ws_dfsclient.hpp"
 #include "hthorerr.hpp"
@@ -10942,9 +10943,18 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
         fileAccessOptions.updateFromStoragePlane(storagePlaneName, IFOread);
         fileAccessOptions.updateFromFile(distributedFile);
     }
+    else
+    {
+        // Extract the provider options from the spill plane
+        // HPCC-34586 created to ensure that hthor writes to the correct plane.
+        StringBuffer sourcePlane;
+        getDefaultTemporaryPlane(sourcePlane, helperFlags);
+        fileAccessOptions.updateFromStoragePlane(sourcePlane, IFOread);
+    }
 
     InputFileInfo & target = * new InputFileInfo;
     target.file = distributedFile;
+    //MORE: Possibly InputFileInfo should contain the FileAccessOptions directly
     target.providerOptions.setown(fileAccessOptions.providerOptions.getClear());
     target.formatOptions.setown(fileAccessOptions.formatOptions.getClear());
     target.actualCrc = fileAccessOptions.formatCrc;

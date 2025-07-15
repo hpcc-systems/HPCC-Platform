@@ -111,6 +111,7 @@ interface IStoragePlane: extends IInterface
     virtual bool isAccessible() const = 0;
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const = 0;
     virtual bool isAnyDeviceLocal() const = 0;
+    virtual const IPropertyTree & queryPlaneConfig() const = 0; // eventually there should be specialised member functions
 };
 
 extern jlib_decl const IStoragePlane * getStoragePlaneByName(const char * name, bool required);

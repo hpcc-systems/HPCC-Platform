@@ -330,6 +330,11 @@ public:
         return attributeValues[attr];
     }
 
+    virtual const IPropertyTree & queryPlaneConfig() const override
+    {
+        return *config;
+    }
+
     const char * queryName() const { return name.c_str(); }
 
     const IPropertyTree * queryConfig() const { return config; }
@@ -461,12 +466,15 @@ static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool 
 
 static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool required)
 {
-    auto it = storagePlaneMap.find(name);
-    if (it != storagePlaneMap.end())
-        return it->second;
+    if (!isEmptyString(name))
+    {
+        auto it = storagePlaneMap.find(name);
+        if (it != storagePlaneMap.end())
+            return it->second;
+    }
 
     if (required)
-        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+        throw makeStringExceptionV(99, "Unknown storage plane '%s'", name);
 
     return nullptr;
 }
