@@ -290,9 +290,8 @@ protected:
     unsigned helperFlags;
     bool incomplete;
     bool grouped;
-    bool blockcompressed;
+    bool compressed;
     bool encrypted;
-    bool outputPlaneCompressed = false;
     bool useGenericReadWrites = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
@@ -305,8 +304,7 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
-    Owned<IPropertyTree> formatOptions; // used by generic I/O
-    Owned<IPropertyTree> providerOptions; // used by generic I/O
+    FileAccessOptions fileAccessOptions;
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);

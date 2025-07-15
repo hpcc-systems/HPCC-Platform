@@ -86,8 +86,9 @@ IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode,
     return new DiskWriteMapping(mode, format, projected, expectedCrc, expected, projectedCrc, formatOptions);
 }
 
-void getDefaultTemporaryPlane(StringBuffer & plane, unsigned helperFlags)
+void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags)
 {
+    //NB: This can only access TDX flags because it is called from readers and writers
     if (helperFlags & TDXjobtemp)
         getDefaultJobTempPlane(plane);
     else if (helperFlags & TDXtemporary)

@@ -73,12 +73,13 @@ THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslat
 //
 // Internal provider options (e.g. readBufferSize) are passed as attributes, except for binary valuues (e.g. encryptionKeys)
 
-class FileAccessOptions
+class THORHELPER_API FileAccessOptions
 {
 public:
     FileAccessOptions();
     explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
 
+    bool isCompressed() const { return providerOptions->getPropBool("@compressed"); }
     void setCompression(bool enable, const char * method);
 
     void updateFromFile(IDistributedFile * file);
@@ -89,6 +90,8 @@ public:
 
     void updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName);
 
+//MORE: These members should probably be made private, and accessor methods added for extracting values from the format/provider options.
+//      or (better) the logic for setting properties for publishing in dali should become a member function.
 public:
     StringAttr format;
     RecordTranslationMode recordTranslationMode = RecordTranslationMode::Unspecified;
@@ -97,6 +100,8 @@ public:
     Owned<IOutputMetaData> actualDiskMeta;
     unsigned formatCrc = 0;
 };
+
+THORHELPER_API void updatePlaneFromHelper(StringBuffer & plane, IHThorDiskWriteArg & helper);
 
 //--------------------------------------------------------------------------------------------------------------------
 

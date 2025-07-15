@@ -361,10 +361,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     else
     {
         dbgassertex(dwHelper); // NB: either iwHelper, or dwHelper must be non-null
-        if (TDWpersist & dwHelper->getFlags())
-            getDefaultPersistPlane(defaultCluster);
-        else
-            getDefaultStoragePlane(defaultCluster);
+        getDefaultWritePlane(defaultCluster, dwHelper->getFlags());
     }
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
@@ -414,21 +411,11 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
-    formatOptions.setown(createPTree()); // options governing the format of the bytes sent to the output stream
-    providerOptions.setown(createPTree()); // options governing the output stream itself (overwrite, append, etc)
     helperFlags = helper.getFlags();
     useGenericReadWrites = ((helperFlags & TDXgeneric) != 0);
     grouped = (helperFlags & TDXgrouped) != 0;
     extend = ((helperFlags & TDWextend) != 0);
     overwrite = ((helperFlags & TDWoverwrite) != 0);
-    if (useGenericReadWrites)
-    {
-        // Initial provider and format options from flags
-        providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
-        providerOptions->setPropBool("@extend", extend);
-        providerOptions->setPropBool("@overwrite", overwrite);
-        formatOptions->setPropBool("@grouped", grouped);
-    }
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -466,7 +453,7 @@ void CHThorDiskWriteActivity::execute()
 void CHThorDiskWriteActivity::stop()
 {
     outSeq->flush();
-    if(blockcompressed)
+    if(compressed)
         uncompressedBytesWritten = outSeq->getPosition();
     close();
     updateWorkUnitResult(numRecords);
@@ -486,20 +473,18 @@ void CHThorDiskWriteActivity::resolve()
     mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helperFlags);
     assertex(mangledHelperFileName.str());
 
-    if (useGenericReadWrites)
-    {
-        // Merge options from helper into providerOptions and formatOptions if required
-        if (helperFlags & TDXdynprovideroptions)
-        {
-            CPropertyTreeWriter providerOptsWriter(providerOptions);
-            helper.getProviderOptions(providerOptsWriter);
-        }
-        if (helperFlags & TDXdynformatoptions)
-        {
-            CPropertyTreeWriter formatOptsWriter(formatOptions);
-            helper.getFormatOptions(formatOptsWriter);
-        }
-    }
+    //Order of precedence for the file access options:
+    // 1. Storage plane
+    // 2. Workunit
+    // 3. ECL options
+    StringBuffer defaultPlane;
+    getDefaultWritePlane(defaultPlane, helperFlags);
+    updatePlaneFromHelper(defaultPlane, helper);
+
+    fileAccessOptions.updateFromStoragePlane(defaultPlane, IFOwrite);
+    if (agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized()))
+        fileAccessOptions.setCompression(true, nullptr);
+    fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str());
 
     if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
     {
@@ -576,20 +561,6 @@ void CHThorDiskWriteActivity::resolve()
             }
 
             clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend));
-            StringBuffer planeName;
-            if (clusterHandler)
-            {
-                StringArray clusterNames;
-                clusterHandler->getClusters(clusterNames);
-                planeName.set(clusterNames.item(0)); // NB: only bother with 1st, if multiple createClusterWriteHandler validates if same
-            }
-            else
-                getDefaultStoragePlane(planeName);
-            bool outputCompressionDefault = agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized());
-            outputPlaneCompressed = outputCompressionDefault;
-            Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, false);
-            if (plane)
-                outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
         }
     }
     else
@@ -606,14 +577,10 @@ void CHThorDiskWriteActivity::open()
     // Open an output file...
     file.setown(createIFile(filename));
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
+    compressed = fileAccessOptions.isCompressed();
 
-    blockcompressed=false;
-    if (0 == (helperFlags & TDWnocompress))
-    {
-        blockcompressed = checkWriteIsCompressed(helperFlags);
-        if (!blockcompressed) // if ECL doesn't specify, default to plane definition
-            blockcompressed = outputPlaneCompressed;
-    }
+    //MORE: Extract this from the fileAccessOptions instead... the whole following code should be extracted to a function in thorwrite
+    //but that can wait for another PR.
     void *ekey;
     size32_t ekeylen;
     helper.getEncryptKey(ekeylen,ekey);
@@ -625,9 +592,9 @@ void CHThorDiskWriteActivity::open()
         memset(ekey,0,ekeylen);
         rtlFree(ekey);
         encrypted = true;
-        blockcompressed = true;
+        compressed = true;
     }
-    if(blockcompressed)
+    if(compressed)
     {
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
@@ -636,7 +603,7 @@ void CHThorDiskWriteActivity::open()
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
     if(!io)
-        throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), filename.get());
+        throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (compressed ? " compressed" : "")), filename.get());
     incomplete = true;
 
     diskout.setown(createBufferedIOStream(io));
@@ -755,7 +722,7 @@ void CHThorDiskWriteActivity::publish()
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
     //properties of the first file part.
-    if(blockcompressed)
+    if(compressed)
     {
         attrs->setPropInt64("@size", uncompressedBytesWritten);
         attrs->setPropInt64("@compressedSize", fileSize);
@@ -777,11 +744,13 @@ void CHThorDiskWriteActivity::publish()
         clusterHandler->setDescriptorParts(desc, base.str(), attrs);
 
     // properties of the logical file
+    // MORE: Many of these should be updated from fileAccessOptions instead of member variables
+    //       and extracted to a function that can be used from thor, hthor and roxie.
     IPropertyTree & properties = desc->queryProperties();
-    properties.setPropInt64("@size", (blockcompressed) ? uncompressedBytesWritten : fileSize);
+    properties.setPropInt64("@size", (compressed) ? uncompressedBytesWritten : fileSize);
     if (encrypted)
         properties.setPropBool("@encrypted", true);
-    if (blockcompressed)
+    if (compressed)
         properties.setPropBool("@blockCompressed", true);
     if (helperFlags & TDWpersist)
         properties.setPropBool("@persistent", true);
@@ -10945,10 +10914,10 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
     }
     else
     {
-        // Extract the provider options from the spill plane
+        // Extract the provider options from the spill plane - using the plane that the temporary file will have been written to.
         // HPCC-34586 created to ensure that hthor writes to the correct plane.
         StringBuffer sourcePlane;
-        getDefaultTemporaryPlane(sourcePlane, helperFlags);
+        getDefaultWritePlane(sourcePlane, helperFlags);
         fileAccessOptions.updateFromStoragePlane(sourcePlane, IFOread);
     }
 
