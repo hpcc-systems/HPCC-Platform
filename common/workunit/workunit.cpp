@@ -3748,6 +3748,7 @@ public:
         costExecute = p.getPropInt64("@costExecute");
         costFileAccess = p.getPropInt64("@costFileAccess");
         costCompile = p.getPropInt64("@costCompile");
+        costSavingPotential = p.getPropInt64("@costSavingPotential");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3765,6 +3766,7 @@ public:
     virtual cost_type getExecuteCost() const { return costExecute; }
     virtual cost_type getFileAccessCost() const { return costFileAccess; }
     virtual cost_type getCompileCost() const { return costCompile; }
+    virtual cost_type getCostSavingPotential() const { return costSavingPotential; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3786,6 +3788,7 @@ protected:
     unsigned __int64 costExecute;
     unsigned __int64 costFileAccess;
     unsigned __int64 costCompile;
+    unsigned __int64 costSavingPotential;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -4447,6 +4450,8 @@ public:
             { return c->getFileAccessCost(); }
     virtual cost_type getCompileCost() const
             { return c->getCompileCost(); }
+    virtual cost_type getCostSavingPotential() const
+            { return c->getCostSavingPotential(); }
     virtual bool getSummary(SummaryType type, SummaryMap &map) const override
             { return c->getSummary(type, map); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
@@ -5022,6 +5027,7 @@ EnumMapping workunitSortFields[] =
    { WUSFcostexecute, "@costExecute" },
    { WUSFcostcompile, "@costCompile" },
    { WUSFcostfileaccess, "@costFileAccess" },
+   { WUSFcostsavingpotential, "@costSavingPotential" },
    { WUSFterm, NULL }
 };
 
@@ -6375,7 +6381,7 @@ public:
                     else
                         query.append("[@protected!=\"1\"]"); //The @protected is set to '0' or not set.
                 }
-                else if (subfmt==WUSFcostcompile || subfmt==WUSFcostexecute || subfmt==WUSFcostfileaccess )
+                else if (subfmt==WUSFcostcompile || subfmt==WUSFcostexecute || subfmt==WUSFcostfileaccess || subfmt==WUSFcostsavingpotential )
                 {
                     appendMinCostToQueryString(query, (WUSortField)subfmt, fv);
                 }
@@ -8582,6 +8588,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@hash", fromP->queryProp("@hash"));
     p->setProp("@costExecute", fromP->queryProp("@costExecute"));
     p->setProp("@costFileAccess", fromP->queryProp("@costFileAccess"));
+    p->setProp("@costSavingPotential", fromP->queryProp("@costSavingPotential"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
@@ -9183,10 +9190,18 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
     }
     if (scopeType == SSTglobal)
     {
-        if (kind == StCostExecute)
+        switch(kind)
+        {
+        case StCostExecute:
             p->setPropInt64("@costExecute", value);
-        else if (kind == StCostFileAccess)
+            break;
+        case StCostFileAccess:
             p->setPropInt64("@costFileAccess", value);
+            break;
+        case StCostSavingPotential:
+            p->setPropInt64("@costSavingPotential", value);
+            break;
+        }
     }
     if (kind == StCostCompile)
         p->setPropInt64("@costCompile", value);
@@ -12949,6 +12964,12 @@ cost_type CLocalWorkUnit::getCompileCost() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("@costCompile");
+}
+
+cost_type CLocalWorkUnit::getCostSavingPotential() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("@costSavingPotential");
 }
 
 #if 0

@@ -1931,6 +1931,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumCompileCost(), WUSFcostcompile);
     addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumExecuteCost(), WUSFcostexecute);
     addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumFileAccessCost(), WUSFcostfileaccess);
+    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumCostSavingPotential(), WUSFcostsavingpotential);
     CWUProtectFilter protectedFilter = req.getProtected();
     if (protectedFilter != CWUProtectFilter_All)
         addWUQueryFilter(filters, filterCount, filterbuf, (protectedFilter == CWUProtectFilter_Protected) ? "1" : "0", WUSFprotected);
@@ -2040,6 +2041,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             info->setFileAccessCost(cost_type2money(cw.getFileAccessCost()));
         if (version>=1.87)
             info->setCompileCost(cost_type2money(cw.getCompileCost()));
+        if (version>=2.03)
+            info->setCostSavingPotential(cost_type2money(cw.getCostSavingPotential()));
         results.append(*info.getClear());
     }
 
@@ -2231,6 +2234,8 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
 
         }
         info->setApplicationValues(av);
+        if (version>=2.03)
+            info->setCostSavingPotential(cost_type2money(cw.getCostSavingPotential()));
         results.append(*info.getClear());
     }
 
@@ -2659,6 +2664,10 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
             addDoubleToQueryString(basicQuery, "MinimumCompileCost", req.getMinimumCompileCost());
             addDoubleToQueryString(basicQuery, "MinimumExecuteCost", req.getMinimumExecuteCost());
             addDoubleToQueryString(basicQuery, "MinimumFileAccessCost", req.getMinimumFileAccessCost());
+        }
+        if (version >= 2.03)
+        {
+            addDoubleToQueryString(basicQuery, "MinimumCostSavingPotential", req.getMinimumCostSavingPotential());
         }
         resp.setFilters(basicQuery.str());
 
