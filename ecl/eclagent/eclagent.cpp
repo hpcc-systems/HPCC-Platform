@@ -1968,9 +1968,13 @@ void EclAgent::doProcess()
         const __int64 elapsedNs = elapsedTimer.elapsedNs();
         updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedNs);
 
-        const cost_type cost = aggregateCost(w, nullptr, false);
+        const cost_type cost = aggregateCost(w, nullptr, StCostExecute, 3, false);
         if (cost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+        cost_type costSavingPotential = aggregateCost(w, nullptr, StCostSavingPotential, 2);
+        if (costSavingPotential)
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostSavingPotential, nullptr, costSavingPotential, 1, 0, StatsMergeSum);
+
         addTimings(w);
 
         switch (w->getState())
@@ -2093,11 +2097,6 @@ void EclAgent::doProcess()
         e->Release();
     }
     DBGLOG("Workunit written complete");
-
-    if (getClusterType(clusterType)==ThorLCRCluster)
-    {
-        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCostPerHour(getNodes()));
-    }
 }
 
 void EclAgent::runProcess(IEclProcess *process)
@@ -2492,7 +2491,7 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
 
     // Note: costs are aggregated when the timings are recording
-    const cost_type cost = money2cost_type(calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs))) + aggregateCost(wu, scope, true);
+    const cost_type cost = money2cost_type(calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs))) + aggregateCost(wu, scope, StCostExecute, 3, true);
     if (cost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 }
@@ -3362,7 +3361,7 @@ void EclAgent::abortMonitor()
         {
             if (checkCostInterval<=waittime)
             {
-                cost_type totalCost = aggregateCost(queryWorkUnit());
+                cost_type totalCost = aggregateCost(queryWorkUnit(), nullptr, StCostExecute, 3);
                 if (totalCost > abortmonitor->guillotineCost)
                 {
                     errorText.appendf("Workunit cost limit exceeded");

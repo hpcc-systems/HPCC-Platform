@@ -2040,6 +2040,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             info->setFileAccessCost(cost_type2money(cw.getFileAccessCost()));
         if (version>=1.87)
             info->setCompileCost(cost_type2money(cw.getCompileCost()));
+        if (version>=2.03)
+            info->setCostSavingPotential(cost_type2money(cw.getCostSavingPotential()));
         results.append(*info.getClear());
     }
 

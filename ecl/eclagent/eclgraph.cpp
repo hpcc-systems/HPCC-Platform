@@ -1634,14 +1634,17 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     {
         if (isStandAloneExe)
             throw MakeStringException(0, "Cannot execute Thor Graph in standalone mode");
+        Owned<IConstWUGraph> graph = wuRead->getGraph(graphName);
+        unsigned wfid = graph ? graph->getWfid() : 0;
+        graph.clear();
         try
         {
             executeThorGraph(graphName, *wuRead, *agentTopology);
-            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), wfid, graphName, true, calculateThorCostPerHour(getNodes()));
         }
         catch (...)
         {
-            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), graphName, true, calculateThorCostPerHour(getNodes()));
+            runWorkunitAnalyser(*wuRead, getComponentConfigSP(), wfid, graphName, true, calculateThorCostPerHour(getNodes()));
             throw;
         }
     }
