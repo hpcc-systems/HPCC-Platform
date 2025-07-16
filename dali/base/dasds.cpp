@@ -1811,8 +1811,9 @@ typedef MapBetween<__int64, __int64, CServerRemoteTreePtr, CServerRemoteTreePtr>
 
 struct CStoreInfo
 {
-    unsigned edition;
-    unsigned crc;
+    unsigned edition{0};
+    unsigned xmlCrc{0};
+    unsigned binaryCrc{0};
     StringAttr cache;
 };
 
@@ -5397,9 +5398,18 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         const char *editionBegin = name+strlen(base)+1;
         info.edition = atoi(editionBegin);
         if (iFileIO->size())
-            iFileIO->read(0, sizeof(unsigned), &info.crc);
+        {
+            iFileIO->read(0, sizeof(unsigned), &info.xmlCrc);
+            if (iFileIO->size())
+                iFileIO->read(sizeof(unsigned), sizeof(unsigned), &info.binaryCrc);
+            else
+                info.binaryCrc = 0;
+        }
         else
-            info.crc = 0;
+        {
+            info.xmlCrc = 0;
+            info.binaryCrc = 0;
+        }
     }
 
     void refreshStoreInfo() { refreshInfo(storeInfo, "store"); }
@@ -5710,23 +5720,26 @@ public:
         XML,
         BINARY
     };
-    static constexpr size32_t bufferSize1mb = 0x100000;
-    unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, const char *fileName, StoreFormat format)
+    unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, StoreFormat format)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
         LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
         assertex(iFileIOTmpStore);
-        assertex(fileName);
 
         // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
         // for error processing and rename etc
-        unsigned crc = 0;
-        size32_t bufferSize = bufferSize1mb;
+        IFile *iFile = iFileIOTmpStore->queryFile();
+        dbgassertex(iFile);
+        const char *fileName = iFile->queryFilename();
+        dbgassertex(fileName);
         StringBuffer planeName;
+        static constexpr size32_t bufferSize1mb = 0x100000;
+        size32_t bufferSize = bufferSize1mb;
         if (findPlaneFromPath(fileName, planeName))
             bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
 
+        unsigned crc = 0;
         if (isBinary)
         {
             Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
@@ -5781,7 +5794,7 @@ public:
             unsigned xmlCrc{0};
             try
             {
-                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), iXmlFileTmpStore->queryFilename(), StoreFormat::XML);
+                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore.get(), StoreFormat::XML);
             }
             catch (IException *e)
             {
@@ -5804,20 +5817,19 @@ public:
                 iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
                 try
                 {
-                    binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore.get(), iBinaryFileTmpStore->queryFilename(), StoreFormat::BINARY);
+                    binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore.get(), StoreFormat::BINARY);
                     binaryCrcPtr = &binaryCrc;
                 }
                 catch (IException *e)
                 {
-                    binaryCrcPtr = nullptr;
                     StringBuffer errMsg;
                     EXCLOG(e, errMsg.append("Failed to save binary temporary store to : ").append(temporaryBinaryFileSaveName).str());
                     e->Release();
                     iBinaryFileTmpStore->remove();
                 }
             }
-            // Binary CRC pointer will be set if the binary store was saved and not deleted because of an exception
-            auto binaryStoreSaved = [binaryCrcPtr]() { return !(binaryCrcPtr == nullptr);};
+            // Binary CRC pointer will be set only if the binary store was saved
+            bool binaryStoreSaved = binaryCrcPtr != nullptr;
 
             // Rename temporary store files to new store files using edition number
             StringBuffer newXmlStoreName;
@@ -5853,7 +5865,7 @@ public:
                 iBinaryFileTmpStore->remove();
                 return;
             }
-            if (binaryStoreSaved())
+            if (binaryStoreSaved)
             {
                 try
                 {
@@ -5909,7 +5921,7 @@ public:
                     StringBuffer rLxml(remoteBackupLocation);
                     constructStoreName(storeName, newEdition, rLxml, ".xml");
                     copyFile(rLxml.str(), newXmlStoreNamePath.str());
-                    if (binaryStoreSaved())
+                    if (binaryStoreSaved)
                     {
                         StringBuffer rLbinary(remoteBackupLocation);
                         constructStoreName(storeName, newEdition, rLbinary, ".bin");
@@ -5982,20 +5994,24 @@ public:
         refreshStoreInfo();
         return storeInfo.edition;
     }
-    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *crc=NULL)
+    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *crc=nullptr, unsigned *binaryCrc=nullptr)
     {
         refreshStoreInfo();
         constructStoreName(storeName, storeInfo.edition, res, ".xml");
         if (crc)
-            * crc = storeInfo.crc;
+            *crc = storeInfo.xmlCrc;
+        if (binaryCrc)
+            *binaryCrc = storeInfo.binaryCrc;
         return res;
     }
-    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res, unsigned *crc=NULL)
+    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr)
     {
         refreshDeltaInfo();
         constructStoreName(DELTANAME, deltaInfo.edition, res, ".xml");
-        if (crc)
-            * crc = deltaInfo.crc; // TBD, combine into store.<edition>.<store_crc>.<delta_crc>
+        if (xmlCrc)
+            *xmlCrc = deltaInfo.xmlCrc;
+        if (binaryCrc)
+            *binaryCrc = deltaInfo.binaryCrc;
         return res;
     }
     virtual StringBuffer &getCurrentStoreInfoFilename(StringBuffer &res)
@@ -6363,11 +6379,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         if (!storeName)
             storeName = storeBase;
 
-        unsigned crc = 0;
+        unsigned xmlCrc = 0;
+        unsigned binaryCrc = 0;
         StringBuffer storeFilename(dataPath);
-        iStoreHelper->getCurrentStoreFilename(storeFilename, &crc);
+        iStoreHelper->getCurrentStoreFilename(storeFilename, &xmlCrc, &binaryCrc);
 
-        root = (CServerRemoteTree *)::loadStore(storeFilename.str(), iStoreHelper->queryCurrentEdition(), &treeMaker, crc, false, abort);
+        root = (CServerRemoteTree *)::loadStore(storeFilename.str(), iStoreHelper->queryCurrentEdition(), &treeMaker, xmlCrc, false, abort);
         if (!root)
         {
             StringBuffer s(storeName);
