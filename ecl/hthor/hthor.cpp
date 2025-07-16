@@ -10974,8 +10974,6 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
         queryInheritSeparatorProp(*fileFormatOptions, "separator", options, "@csvSeparate");
         queryInheritProp(*fileFormatOptions, "terminator", options, "@csvTerminate");
         queryInheritProp(*fileFormatOptions, "escape", options, "@csvEscape");
-        dbglogXML(fileFormatOptions);
-        dbglogXML(fileFormatOptions);
     }
 
     meta->setPropBool("@grouped", grouped);
