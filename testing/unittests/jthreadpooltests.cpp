@@ -515,6 +515,7 @@ public:
             {
                 threadName.appendf("Thread%u", threadId);
                 params = {lifespan1000milliseconds, threadName.str()};
+                attemptThreadStartCaller(StartFunctionToUse::StartFunction, &params, milliseconds100, ExpectExceptions::ExceptionsIgnored, exceptionCount);
                 attemptThreadStartWithTimeout(&params, milliseconds100, exceptionCount,
                                               false, nullptr, nullptr, 0, true); // Allow both success and timeout
             }
@@ -689,6 +690,14 @@ private:
     enum class ExpectExceptions {ExceptionsExpected, ExceptionsIgnored, ExceptionsExpectedButIgnored};
     struct AttemptThreadStartParameters
     {
+        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned &_exceptionCount) :
+            startFunctionToUse(_startFunctionToUse),
+            threadParams(_threadParams),
+            timeoutMs(_timeoutMs),
+            exceptionsExpected(_exceptionsExpected),
+            exceptionCount(_exceptionCount)
+        {
+        }
         ThreadParams *threadParams{nullptr};
         StartFunctionToUse startFunctionToUse{StartFunctionToUse::StartFunction};
         unsigned timeoutMs{0};
@@ -696,11 +705,20 @@ private:
         unsigned &exceptionCount;
         const char *failureMessage{nullptr};
         std::chrono::milliseconds *outDuration{nullptr};
-        unsigned minExpectedDuration{0};
-    };
+        const unsigned minExpectedDuration{0};
+    } attemptThreadStartParameters;
+    bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned &_exceptionCount)
+    {
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.timeoutMs = _timeoutMs;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
+        attemptThreadStartParameters.exceptionCount = _exceptionCount;
+        return attemptThreadStart(attemptThreadStartParameters);
+    }
 
     // Helper method to attempt starting a thread with timeout and count exceptions
-    bool attemptThreadStart(const AttemptThreadStartParameters attemptThreadStartParameters)
+    bool attemptThreadStart(const AttemptThreadStartParameters &attemptThreadStartParameters)
     {
         auto startTime = std::chrono::high_resolution_clock::now();
         try
