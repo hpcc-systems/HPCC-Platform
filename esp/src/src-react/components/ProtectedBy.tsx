@@ -36,16 +36,7 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
     }, []);
 
     React.useEffect(() => {
-        const results = file?.ProtectList?.DFUFileProtect;
-
-        if (results) {
-            setData(file?.ProtectList?.DFUFileProtect?.map(row => {
-                return {
-                    Owner: row.Owner,
-                    Modified: row.Modified
-                };
-            }));
-        }
+        setData(file?.ProtectList?.DFUFileProtect ?? []);
     }, [file?.ProtectList?.DFUFileProtect]);
 
     //  Command Bar  ---

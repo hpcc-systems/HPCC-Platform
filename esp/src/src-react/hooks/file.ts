@@ -35,6 +35,7 @@ export function useFile(cluster: string, name: string): useFileResponse {
                     setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
                     setLastUpdate(Date.now());
                     handle = file.watch(() => {
+                        setProtectedBy(response?.ProtectList?.DFUFileProtect || []);
                         setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
                         setLastUpdate(Date.now());
                     });
