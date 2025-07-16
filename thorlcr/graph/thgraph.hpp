@@ -944,7 +944,6 @@ public:
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
-    void getMemorySettings(const char *context, unsigned &queryMemSizeMB, unsigned &totalMemSizeMB, bool & gmemAllowHugePages, bool & gmemAllowTransparentHugePages, bool & gmemRetainMemory, bool & gmemLockMemory);
     IPropertyTree * getMemorySettings(const char *context);
     void applyMemorySettings(const char *context);
 

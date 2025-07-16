@@ -104,23 +104,6 @@ interface IAnalyserOptions
     virtual stat_type queryOption(WutOptionType opt) const = 0;
 };
 
-enum WutEnvironInfoType
-{
-    envWorkerHeapLockMemory,
-    envWorkerHeapRetainMemory,
-    envWorkerHeapUseHugePages,
-    envWorkerHeapUseTransparentHugePages,
-    envWorkerQueryMemoryMB,
-    envWorkerTotalMemoryMB,
-    // Following must always be last item
-    envInfoMax
-};
-
-interface IEnvironmentInfo
-{
-    virtual int64_t operator[](WutEnvironInfoType infoType) const = 0;
-};
-
 extern int compareIssuesCostOrder(CInterface * const * _l, CInterface * const * _r);
 
 #endif

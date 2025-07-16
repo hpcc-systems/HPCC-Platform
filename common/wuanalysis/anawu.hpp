@@ -26,7 +26,7 @@
 
 #include "anacommon.hpp"
 
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour, IPropertyTree *environinfoPT);
+void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, const IPropertyTree *options, double costPerHour, const IPropertyTree *environinfoPT);
 void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu);
 // runWorkunitAnalyser arguments:
 //    workunit                = the workunit to be analysed
@@ -39,7 +39,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
 //    costPerHour             = the approximate cost per hour for the entire cluster.
 //    environInfoPT(optional) = this contains various environmental information (such as memory settings).  At present, only Thor memory settings are
 //                              supported and for this reason, only Thor is required to provide environInfoPT.
-void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour, IPropertyTree *environInfoPT);
+void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, const IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour, const IPropertyTree *environInfoPT);
 //---------------------------------------------------------------------------------------------------------------------
 
 class WuScope;
