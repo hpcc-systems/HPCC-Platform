@@ -25,6 +25,16 @@ import re
 import argparse
 import datetime
 
+def parse_time_string(time_str, context="time"):
+    try:
+        return datetime.datetime.strptime(time_str, '%H:%M:%S.%f').time()
+    except ValueError:
+        try:
+            return datetime.datetime.strptime(time_str, '%H:%M:%S').time()
+        except ValueError:
+            print(f"Error: Invalid {context} format. Use 'HH:MM:SS.fff' or 'HH:MM:SS'")
+            sys.exit(1)
+
 def calculateDerivedStats(curRow):
 
     timeElapsed = float(curRow.get("elapsed", 0.0))
@@ -192,6 +202,7 @@ def calculateSummaryStats(curRow, numCpus, numRows):
         curRow["CpuLoad@10q/s"] = 10 / perCpuTransactionsPerSecond
 
 def calculateAverageStats(avgRow, totalRow, numRows):
+    avgRow['time'] = numRows
     for statName in allStats:
         if statName in totalRow and type(totalRow[statName]) != str:
             avgRow[statName] = float(totalRow[statName]) / numRows if numRows else 0
@@ -210,7 +221,7 @@ def printRow(curRow):
 
 
 if __name__ == "__main__":
-    allStats = dict(time=1, elapsed=1)
+    seenStats = dict(time=1, elapsed=1)
     allServices = dict()
 
     minTimeStamp = ''
@@ -234,6 +245,9 @@ if __name__ == "__main__":
     parser.add_argument("--nosummary", "-n", help="Avoid including a summary", action='store_true')
     parser.add_argument("--summaryonly", "-s", help="Only generate a summary", action='store_true')
     parser.add_argument("--avgonly", "-v", help="Only generate average summary", action='store_true')
+    parser.add_argument("--starttime", help="Start time for filtering within a day (HH:MM:SS or HH:MM:SS.fff)")
+    parser.add_argument("--endtime", help="End time for filtering within a day (HH:MM:SS or HH:MM:SS.fff)")
+    parser.add_argument("--elapsed", type=float, help="Elapsed time in seconds (used with --starttime to calculate endtime)")
     args = parser.parse_args()
     combineServices = args.all
     averageOnly = args.avgonly
@@ -241,6 +255,31 @@ if __name__ == "__main__":
     reportSummary = not args.nosummary or args.summaryonly or args.avgonly
     ignoreQueryCase = args.ignorecase
     cpus = args.cpu
+
+    # Process time filtering arguments (time within a day)
+    startTimeFilter = None
+    endTimeFilter = None
+
+    if args.starttime:
+        startTimeFilter = parse_time_string(args.starttime, "starttime")
+
+    if args.endtime:
+        endTimeFilter = parse_time_string(args.endtime, "endtime")
+
+    # If starttime and elapsed are specified, calculate endtime
+    if args.starttime and args.elapsed and not args.endtime:
+        if startTimeFilter:
+            # Convert time to datetime, add elapsed seconds, then back to time
+            base_datetime = datetime.datetime.combine(datetime.date.today(), startTimeFilter)
+            end_datetime = base_datetime + datetime.timedelta(seconds=args.elapsed)
+            endTimeFilter = end_datetime.time()
+
+    # Validate that endtime is after starttime (handling day wraparound)
+    if startTimeFilter and endTimeFilter:
+        # For simplicity, we'll assume no day wraparound for validation
+        # In practice, if endtime < starttime, it could mean next day
+        if endTimeFilter <= startTimeFilter:
+            print("Warning: endtime is before or equal to starttime - this may indicate day wraparound")
 
     csv.field_size_limit(0x100000)
     with open(args.filename, encoding='latin1') as csv_file:
@@ -276,13 +315,39 @@ if __name__ == "__main__":
                 elapsed = int(elapsedMatch.group(1)) if elapsedMatch else 0
                 curRow["elapsed"] = elapsed
 
-                #MORE: Unimplemented - allow timestamp filtering
                 timestamp = ''
+                thisTime = ''
                 for i in range(len(row)):
                     if yearMonthDayPattern.match(row[i]):
                         timestamp = row[i] + ' ' + row[i+1]
-                        curRow["time"] = row[i+1]
+                        thisTime = row[i+1]
+                        curRow["time"] = thisTime
                         break
+
+                # Apply time filtering if specified
+                if startTimeFilter or endTimeFilter:
+                    if thisTime:
+                        try:
+                            rowTime = parse_time_string(thisTime, "row time")
+                        except SystemExit:
+                            # Skip rows with unparseable times
+                            continue
+
+                        # Skip row if time is before starttime
+                        if startTimeFilter and rowTime < startTimeFilter:
+                            continue
+
+                        # Skip row if time is after endtime
+                        # Handle potential day wraparound: if endtime < starttime, assume endtime is next day
+                        if endTimeFilter:
+                            if startTimeFilter and endTimeFilter < startTimeFilter:
+                                # Day wraparound case: accept times >= starttime OR <= endtime
+                                if not (rowTime >= startTimeFilter or rowTime <= endTimeFilter):
+                                    continue
+                            else:
+                                # Normal case: accept times <= endtime
+                                if rowTime > endTimeFilter:
+                                    continue
 
                 if minTimeStamp == '' or timestamp < minTimeStamp:
                     minTimeStamp = timestamp
@@ -313,7 +378,7 @@ if __name__ == "__main__":
                         else:
                             if suppress > 0:
                                 continue
-                            allStats[name] = 1
+                            seenStats[name] = 1
                             castValue = -1
                             #Remove any trailing comma that should not be present
                             if value[-1] == ',':
@@ -368,6 +433,49 @@ if __name__ == "__main__":
                     allServices[serviceName] = list()
                 allServices[serviceName].append(curRow)
                 line_count += 1
+
+    # Sort all the statistics that were found in the file into alphabetical order, and insert them into allStats
+    # The dictionary initializer fixes any columns that should be at the start
+    # First general important stats, network related stats, index stats, the rest
+    allStats = dict(time=1, elapsed=1,
+                    TimeSoapcall=1, TimeLocalExecute=1,
+                    Net=1,
+                    duplicatePackets=1,
+                    resentPackets=1,
+                    NumAckRetries=1,
+                    NumAgentRequests=1,
+                    SizeAgentRequests=1,
+                    SizeAgentReply=1,
+                    SizeContinuationData=1,
+                    Ag=1,
+                    TimeAgentWait=1,
+                    TimeAgentQueue=1,
+                    TimeAgentProcess=1,
+                    TimeIBYTIDelay=1,
+                    Key=1,
+                    NumNodeCacheHits=1,
+                    NumNodeCacheAdds=1,
+                    TimeNodeLoad=1,
+                    TimeNodeRead=1,
+                    NumNodeDiskFetches=1,
+                    TimeNodeFetch=1,
+                    NumLeafCacheHits=1,
+                    NumLeafCacheAdds=1,
+                    TimeLeafLoad=1,
+                    TimeLeafRead=1,
+                    NumLeafDiskFetches=1,
+                    TimeLeafFetch=1,
+                    )
+
+    #Add all non-function stats
+    for statName in sorted(list(seenStats.keys())):
+        if statName[0] != 'f':
+            allStats[statName] = 1
+
+    #Add all function stats (e.g. regex)
+    for statName in sorted(list(seenStats.keys())):
+        if statName[0] == 'f':
+            allStats[statName] = 1
 
     allStats[' '] = 1
     allStats["%BranchMiss"]=1
