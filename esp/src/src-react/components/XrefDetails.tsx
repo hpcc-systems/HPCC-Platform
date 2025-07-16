@@ -35,10 +35,16 @@ export const XrefDetails: React.FunctionComponent<XrefDetailsProps> = ({
             .then(({ DFUXRefListResponse }) => {
                 const xrefNodes = DFUXRefListResponse?.DFUXRefListResult?.XRefNode;
                 if (xrefNodes) {
-                    xrefNodes.filter(node => node.Name === name).forEach(n => {
-                        setLastRun(n.Modified);
-                        setStatus(n.Status);
-                    });
+                    // Bare-metal systems contain multiple clusters to XRef, but containerized systems usually only have a single plane (equivalent to cluster in BM).
+                    if (Array.isArray(xrefNodes)) {
+                        xrefNodes.filter(node => node.Name === name).forEach(n => {
+                            setLastRun(n.Modified);
+                            setStatus(n.Status);
+                        });
+                    } else {
+                        setLastRun(xrefNodes.Modified);
+                        setStatus(xrefNodes.Status);
+                    }
                 }
             })
             .catch(err => logger.error(err))
