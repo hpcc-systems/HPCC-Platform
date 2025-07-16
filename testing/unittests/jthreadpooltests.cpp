@@ -685,6 +685,98 @@ private:
         return std::chrono::duration_cast<std::chrono::milliseconds>(afterStart - beforeStart);
     }
 
+    enum class StartFunctionToUse {StartFunction, StartNoBlockFunction};
+    enum class ExpectExceptions {ExceptionsExpected, ExceptionsIgnored, ExceptionsExpectedButIgnored};
+    struct AttemptThreadStartParameters
+    {
+        ThreadParams *threadParams{nullptr};
+        StartFunctionToUse startFunctionToUse{StartFunctionToUse::StartFunction};
+        unsigned timeoutMs{0};
+        ExpectExceptions exceptionsExpected{ExpectExceptions::ExceptionsIgnored};
+        unsigned &exceptionCount;
+        const char *failureMessage{nullptr};
+        std::chrono::milliseconds *outDuration{nullptr};
+        unsigned minExpectedDuration{0};
+    };
+
+    // Helper method to attempt starting a thread with timeout and count exceptions
+    bool attemptThreadStart(const AttemptThreadStartParameters attemptThreadStartParameters)
+    {
+        auto startTime = std::chrono::high_resolution_clock::now();
+        try
+        {
+            // Attempt to start thread with specified timeout
+            if (attemptThreadStartParameters.timeoutMs == 0) // Use zero to indicate no timeout parameter
+            {
+                switch (attemptThreadStartParameters.startFunctionToUse)
+                {
+                    case StartFunctionToUse::StartFunction:
+                        pool->start(attemptThreadStartParameters.threadParams, attemptThreadStartParameters.threadParams->name);
+                        break;
+                    default:
+                        pool->startNoBlock(attemptThreadStartParameters.threadParams);
+                        break;
+                }
+            }
+            else
+            {
+                switch (attemptThreadStartParameters.startFunctionToUse)
+                {
+                    case StartFunctionToUse::StartFunction:
+                        pool->start(attemptThreadStartParameters.threadParams, attemptThreadStartParameters.threadParams->name, attemptThreadStartParameters.timeoutMs);
+                        break;
+                    default:
+                        pool->startNoBlock(attemptThreadStartParameters.threadParams);
+                        break;
+                }
+
+            }
+
+            // If we expected an exception but didn't get one, fail the test
+            if (attemptThreadStartParameters.exceptionsExpected == ExpectExceptions::ExceptionsExpected)
+            {
+                const char *msg = attemptThreadStartParameters.failureMessage ? attemptThreadStartParameters.failureMessage : "Expected exception was not thrown";
+                CPPUNIT_FAIL(msg);
+            }
+
+            return true;
+        }
+        catch (IException *e)
+        {
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
+
+            // Store duration if requested
+            if (attemptThreadStartParameters.outDuration)
+                *attemptThreadStartParameters.outDuration = duration;
+
+            // Check minimum duration if specified
+            if (attemptThreadStartParameters.minExpectedDuration > 0)
+                CPPUNIT_ASSERT(duration.count() >= attemptThreadStartParameters.minExpectedDuration);
+
+            if (attemptThreadStartParameters.exceptionsExpected == ExpectExceptions::ExceptionsExpected)
+            {
+                // Expected behavior: requests should timeout when pool is full
+                ++attemptThreadStartParameters.exceptionCount; // We are expecting an exception, so increment the exception count before the ASSERT.
+                // jthread should return sensible error exception code numbers, that can be validation properly.
+                // In their absence, we can will simply validate the error message.
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT(String(msg).startsWith("No threads available"));
+            }
+            else
+            {
+                // Unexpected exception - fail the test with the exception message
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_FAIL(msg.str());
+            }
+
+            return false;
+        }
+    }
+
     // Helper method to test startNoBlock behavior
     void testStartNoBlock(ThreadParams *threadParams, bool expectException, std::chrono::milliseconds &outDuration)
     {
