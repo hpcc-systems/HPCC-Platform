@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-// If anyone wants to try and understand crcs especially combining them, try reading
+// If anyone wants to try and understand crcs especially combining them, try reading 
 // http://www.repairfaq.org/filipg/LINK/F_LINK_IN.html if you want to stand any chance!
 
 #ifndef __JCRC__
@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "jiface.hpp"
 #include "jio.hpp"
+
 
 jlib_decl unsigned crc32(const char *buf, unsigned len, unsigned crc);
 jlib_decl unsigned cxc32(unsigned * buf, unsigned numWords, unsigned cxc32);
@@ -69,20 +70,6 @@ jlib_decl unsigned getFileCRC(const char * name);       // correctly uses ~0 for
 jlib_decl unsigned crc_file(const char * name);     // NB: Does not correctly use 0xffffffff
 
 
-interface ISerialOutputStream : extends IInterface
-{
-    virtual void put(size32_t len, const void * ptr) = 0;       // throws an error if cannot write the full size.
-    virtual void flush() = 0;
-    virtual offset_t tell() const = 0;                          // used to implement beginNested
-};
-
-interface ICrcSerialOutputStream : extends ISerialOutputStream
-{
-    virtual unsigned queryCrc() const = 0;
-};
-jlib_decl ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStream * output);
-
-
 // Fast inline 16 bit sumcheck
 inline unsigned short chksum16(const void *ptr,size32_t sz)
 {
@@ -93,7 +80,7 @@ inline unsigned short chksum16(const void *ptr,size32_t sz)
         sum += *p++;
         sz -= 2;
     }
-    if (sz)
+    if (sz) 
         sum += *(const byte *)p;
     sum = (sum >> 16) + (sum & 0xffff);       // add in carrys
     sum += (sum >> 16);                       // and again
