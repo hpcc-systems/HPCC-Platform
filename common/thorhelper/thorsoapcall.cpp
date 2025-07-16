@@ -2835,6 +2835,7 @@ public:
                     break;
                 }
                 numRetries++;
+                master->logctx.noteStatistic(StNumSoapcallRetries, 1);
                 master->logctx.CTXLOG("Retrying: attempt %d of %d", numRetries, master->maxRetries);
                 master->activitySpanScope->recordException(e, false, false);
                 e->Release();
