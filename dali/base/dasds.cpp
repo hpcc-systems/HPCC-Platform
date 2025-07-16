@@ -4942,10 +4942,10 @@ inline unsigned prevEditionN(unsigned e, unsigned i=1)
     return e-i;
 }
 
-void removeDaliFile(const char *path, const char *base, unsigned e)
+void removeDaliFile(const char *path, const char *base, const char *extension, unsigned e)
 {
     StringBuffer filename(path);
-    constructStoreName(base, e, filename, ".xml");
+    constructStoreName(base, e, filename, extension);
     OwnedIFile iFile = createIFile(filename.str());
     try
     {
@@ -5962,29 +5962,29 @@ public:
             OwnedIFile iFile = createIFile(filename.str());
             if (iFile->exists())
                 PROGLOG("Deleting old xml store: %s", filename.str());
-            removeDaliFile(location, storeName, toDeleteEdition);
-            removeDaliFile(location, DELTANAME, toDeleteEdition);
-            removeDaliFile(location, DELTADETACHED, toDeleteEdition);
+            removeDaliFile(location, storeName, ".xml", toDeleteEdition);
+            removeDaliFile(location, DELTANAME, ".xml", toDeleteEdition);
+            removeDaliFile(location, DELTADETACHED, ".xml", toDeleteEdition);
             if (remoteBackupLocation)
             {
-                removeDaliFile(remoteBackupLocation, storeName, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTANAME, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTADETACHED, toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, storeName, ".xml", toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, DELTANAME, ".xml", toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, DELTADETACHED, ".xml", toDeleteEdition);
             }
             // Delete previous binary store
             filename.set(location);
             constructStoreName(storeName, toDeleteEdition, filename, ".bin");
             iFile.setown(createIFile(filename.str()));
             if (iFile->exists())
-                PROGLOG("Deleting old xml store: %s", filename.str());
-            removeDaliFile(location, storeName, toDeleteEdition);
-            removeDaliFile(location, DELTANAME, toDeleteEdition);
-            removeDaliFile(location, DELTADETACHED, toDeleteEdition);
+                PROGLOG("Deleting old binary store: %s", filename.str());
+            removeDaliFile(location, storeName, ".bin", toDeleteEdition);
+            removeDaliFile(location, DELTANAME, ".bin", toDeleteEdition);
+            removeDaliFile(location, DELTADETACHED, ".bin", toDeleteEdition);
             if (remoteBackupLocation)
             {
-                removeDaliFile(remoteBackupLocation, storeName, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTANAME, toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTADETACHED, toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, storeName, ".bin", toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, DELTANAME, ".bin", toDeleteEdition);
+                removeDaliFile(remoteBackupLocation, DELTADETACHED, ".bin", toDeleteEdition);
             }
 #endif
         }
