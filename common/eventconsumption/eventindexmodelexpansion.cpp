@@ -20,12 +20,23 @@
 
 void Expansion::configure(const IPropertyTree& config)
 {
+    const char* modeStr = config.queryProp("@mode");
+    if (isEmptyString(modeStr) || strieq(modeStr, "ll"))
+        mode = ExpansionMode::OnLoad;
+    else if (strieq(modeStr, "ld"))
+        mode = ExpansionMode::Transform;
+    else if (strieq(modeStr, "dd"))
+        mode = ExpansionMode::OnDemand;
+    else
+        throw makeStringExceptionV(-1, "invalid index model expansion mode '%s'", modeStr);
     switch (config.getCount("node"))
     {
     case 0:
         estimating = false;
         break;
     case NumKinds:
+        // MORE: Consider support for custom compressed size "estimates" if more precise values are
+        // available. If configured per node element, expansion factors must become optional.
         for (unsigned idx = 0; idx < NumKinds; ++idx)
         {
             const IPropertyTree* node = config.queryPropTree(VStringBuffer("node[@kind=%u]", idx));
@@ -34,8 +45,8 @@ void Expansion::configure(const IPropertyTree& config)
             double sizeToTimeFactor = node->getPropReal("@sizeToTimeFactor");
             assertex(sizeFactor > 0.0);
             assertex(sizeToTimeFactor > 0.0);
-            estimates[idx].size = 8'192 * sizeFactor;
-            estimates[idx].time = estimates[idx].size * sizeToTimeFactor;
+            estimates[idx].expanded = estimates[idx].compressed * sizeFactor;
+            estimates[idx].time = estimates[idx].expanded * sizeToTimeFactor;
         }
         estimating = true;
         break;
@@ -44,34 +55,167 @@ void Expansion::configure(const IPropertyTree& config)
     }
 }
 
-void Expansion::describePage(const CEvent& event, ModeledPage& page) const
+bool Expansion::observePage(const CEvent& event)
 {
-    // Expansion description is only relevant to events using the expanded size attribute.
-    if (event.hasAttribute(EvAttrInMemorySize))
-    {
-        __uint64 eventSize = event.queryNumericValue(EvAttrInMemorySize);
-        // The expansion time attribute is not used by all events.
-        __uint64 eventTime = (event.hasAttribute(EvAttrExpandTime) ? event.queryNumericValue(EvAttrExpandTime) : 0);
+    // Absent index cache modeling, which doesn't exist yet and may be optional when it does,
+    // historical caching is only required when transforming events from on-load to on-demand.
+    // And then, only when estimation is not configured.
+    //
+    // With index cache modeling available and enabled, historical caching is required when
+    // estimation is not configured. Estimated values are always available based on node kind.
+    //
+    // More: As seen in IndexEventModelTests, bypassing the cache when not structly necessary
+    // allows events to propagate from the model that would be suppressed by the cache. Identify
+    // for which configurations this discrepancy is acceptable.
 
-        if (estimating)
-        {
-            // IndexPayload events do not include NodeKind, which is assumed to be 1 (leaf node)
-            __uint64 nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
-            page.expandedSize = estimates[nodeKind].size;
-            page.expansionTime = estimates[nodeKind].time;
-        }
-        else
-        {
-            page.expandedSize = eventSize;
-            page.expansionTime = eventTime;
-        }
-        page.expansionIsEstimated = estimating;
+    if (!usingHistory())
+        return false;
+
+    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    bool hit = event.queryBooleanValue(EvAttrInCache);
+    if (estimating)
+    {
+        // Estimated values are pre-calculated. Track the key reference only.
+        return estimatedHistory.insert(key).second;
     }
     else
     {
-        page.expandedSize = 0;
-        page.expansionTime = 0;
-        page.expansionIsEstimated = false;
+        // Ensure a cache entry exists for the looked up page.
+        auto [it, inserted] = actualHistory.insert(std::make_pair(key, ActualValue()));
+        if (hit)
+        {
+            if (inserted)
+            {
+                // Populate the new cache entry with existing event data.
+                it->second.size = event.queryNumericValue(EvAttrInMemorySize);
+                it->second.time = event.queryNumericValue(EvAttrExpandTime);
+            }
+            else
+            {
+                // Update the existing cache entry if needed based on informative event values.
+                // This is unlikely to be needed, but handles fringe cases where recording missed events while paused.
+                refreshPage(it, event);
+            }
+        }
+        return inserted;
+    }
+}
+
+bool Expansion::checkObservedPage(const CEvent& event) const
+{
+    if (!usingHistory())
+        return true;
+    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    if (estimating)
+        return estimatedHistory.count(key) != 0;
+    return actualHistory.count(key) != 0;
+}
+
+bool Expansion::refreshObservedPage(const CEvent& event)
+{
+    if (!usingHistory())
+        return true;
+    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    if (estimating)
+        return estimatedHistory.count(key) != 0;
+    ActualHistory::iterator it = actualHistory.find(key);
+    if (actualHistory.end() == it)
+        return false;
+    refreshPage(it, event);
+    return true;
+}
+
+void Expansion::refreshPage(ActualHistory::iterator& it, const CEvent& event)
+{
+    if (!it->second.size)
+        it->second.size = event.queryNumericValue(EvAttrInMemorySize);
+    // Always refresh the cached time to reduce the chance of keeping outlier values.
+    if (event.hasAttribute(EvAttrExpandTime))
+    {
+        __uint64 expandTime = event.queryNumericValue(EvAttrExpandTime);
+        if (expandTime)
+            it->second.time = expandTime;
+    }
+}
+
+void Expansion::describePage(const CEvent& event, ModeledPage& page) const
+{
+    // Only describe pages for index file events
+    if (!(event.hasAttribute(EvAttrFileId) && event.hasAttribute(EvAttrFileOffset)))
+        return;
+    page.expansionMode = mode;
+
+    __uint64 nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
+    assertex(nodeKind < NumKinds);
+    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    if (estimating)
+    {
+        if (!usingHistory() || estimatedHistory.count(key))
+        {
+            page.compressed = {estimates[nodeKind].compressed, true};
+            page.expanded = {estimates[nodeKind].expanded, true};
+            page.expansionTime = estimates[nodeKind].time;
+        }
+    }
+    else if (usingHistory())
+    {
+        ActualHistory::const_iterator it = actualHistory.find(key);
+        if (it != actualHistory.end())
+        {
+            if (event.queryType() == EventIndexPayload)
+            {
+                switch (mode)
+                {
+                case ExpansionMode::OnLoad:
+                    page.compressed = {estimates[nodeKind].compressed, true};
+                    page.expanded = {it->second.size, false};
+                    page.expansionTime = it->second.time;
+                    break;
+                case ExpansionMode::Transform:
+                    page.compressed = {estimates[nodeKind].compressed, true};
+                    page.expanded = {it->second.size, false};
+                    page.expansionTime = it->second.time;
+                    break;
+                case ExpansionMode::OnDemand:
+                    page.compressed = {it->second.size, false};
+                    page.expanded = {event.queryNumericValue(EvAttrInMemorySize), false};
+                    page.expansionTime = event.queryNumericValue(EvAttrExpandTime);
+                    break;
+                default:
+                    break;
+                }
+            }
+            else
+            {
+                switch (mode)
+                {
+                case ExpansionMode::OnLoad:
+                    page.compressed = {estimates[nodeKind].compressed, true};
+                    page.expanded = {it->second.size, false};
+                    page.expansionTime = it->second.time;
+                    break;
+                case ExpansionMode::Transform:
+                    page.compressed = {estimates[nodeKind].compressed, true};
+                    page.expanded = {UINT32_MAX, true}; // No estimate available for the expanded
+                    page.expansionTime = 0;
+                    break;
+                case ExpansionMode::OnDemand:
+                    page.compressed = {it->second.size, false};
+                    page.expanded = {UINT32_MAX, true}; // No estimate available for the expanded
+                    page.expansionTime = it->second.time;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
+    else // if (!usingHistory())
+    {
+        page.compressed = {estimates[nodeKind].compressed, true};
+        page.expanded = {event.queryNumericValue(EvAttrInMemorySize), false};
+        if (event.hasAttribute(EvAttrExpandTime))
+            page.expansionTime = event.queryNumericValue(EvAttrExpandTime);
     }
 }
 
@@ -86,10 +230,12 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testEnabledEstimation);
     CPPUNIT_TEST(testDescribeEstimation);
     CPPUNIT_TEST(testDescribeActual);
+    CPPUNIT_TEST(testOnLoadConfiguration);
+    CPPUNIT_TEST(testTransformConfiguration);
+    CPPUNIT_TEST(testOnDemandConfiguration);
     CPPUNIT_TEST_SUITE_END();
 
-
-    public:
+public:
     void testDisabledEstimation()
     {
         START_TEST
@@ -111,9 +257,11 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
             </expansion>)!!!");
         expansion.configure(*configTree);
         CPPUNIT_ASSERT(expansion.estimating);
-        CPPUNIT_ASSERT(expansion.estimates[0].size == 8'192);
+        CPPUNIT_ASSERT(expansion.estimates[0].compressed == 8'192);
+        CPPUNIT_ASSERT(expansion.estimates[0].expanded == 8'192);
         CPPUNIT_ASSERT(expansion.estimates[0].time == 8'192);
-        CPPUNIT_ASSERT(expansion.estimates[1].size == 14'336);
+        CPPUNIT_ASSERT(expansion.estimates[1].compressed == 8'192);
+        CPPUNIT_ASSERT(expansion.estimates[1].expanded == 14'336);
         CPPUNIT_ASSERT(expansion.estimates[1].time == 10'752);
         END_TEST
     }
@@ -133,29 +281,39 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CPPUNIT_ASSERT(expansion.estimating);
         CEvent event;
         event.reset(EventIndexLoad);
+        event.setValue(EvAttrFileId, 1ULL);
+        event.setValue(EvAttrFileOffset, 0ULL);
         event.setValue(EvAttrNodeKind, 0ULL);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[0].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[0].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[0].time, page.expansionTime);
         event.setValue(EvAttrNodeKind, 1ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].time, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 0ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].time, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].time, page.expansionTime);
         END_TEST
     }
 
@@ -167,29 +325,83 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CPPUNIT_ASSERT(!expansion.estimating);
         CEvent event;
         event.reset(EventIndexLoad);
+        event.setValue(EvAttrFileId, 1ULL);
+        event.setValue(EvAttrFileOffset, 0ULL);
         event.setValue(EvAttrNodeKind, 0ULL);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[0].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expansionTime);
         event.setValue(EvAttrNodeKind, 1ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 0ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 0ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(0ULL, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         expansion.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionTime, 0ULL);
-        CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
+        CPPUNIT_ASSERT_EQUAL(expansion.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
+        CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
+        CPPUNIT_ASSERT_EQUAL(0ULL, page.expansionTime);
+        END_TEST
+    }
+
+    void testOnLoadConfiguration()
+    {
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion/>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.mode);
+        END_TEST
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion mode="ll"/>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.mode);
+        END_TEST
+    }
+
+    void testTransformConfiguration()
+    {
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion mode="ld"/>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::Transform, expansion.mode);
+        END_TEST
+    }
+
+    void testOnDemandConfiguration()
+    {
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion mode="dd"/>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, expansion.mode);
         END_TEST
     }
 };
