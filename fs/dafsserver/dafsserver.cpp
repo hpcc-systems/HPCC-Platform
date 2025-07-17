@@ -925,7 +925,7 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
             if (compressor)
             {
                 size32_t initialSz = replyLimit >= 0x10000 ? 0x10000 : replyLimit;
-                compressor->open(compressMb, initialSz);
+                compressor->open(compressMb, initialSz, 0);
             }
 
             outBuilder.setBuffer(responseMb); // write direct to responseMb buffer for efficiency
