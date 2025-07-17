@@ -125,3 +125,8 @@ Controls error behaviour of jfile stat() calls.
 1 = ignore EACCES - suppre exception, returns false.
 2 = ignore all other errors - suppress exception, return false. This was the legacy behaviour.
 Default: 0
+
+## renameSupported (boolean)
+
+Plane supports physical file part renaming.
+Default: based on plane configuration. Planes based with 'pvc' and/or storageapi default to false. All others to true.
