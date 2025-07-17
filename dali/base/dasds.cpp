@@ -1300,15 +1300,16 @@ public:
     {
         stop();
     }
-    void init(const IPropertyTree &config, IStoreHelper *_iStoreHelper)
+    void init(IStoreHelper *_iStoreHelper)
     {
         iStoreHelper = _iStoreHelper;
         iStoreHelper->getPrimaryLocation(dataPath);
         iStoreHelper->getBackupLocation(backupPath);
 
-        saveThresholdSecs = config.getPropInt("@deltaSaveThresholdSecs", defaultSaveThresholdSecs);
-        transactionQueueLimit = config.getPropInt("@deltaTransactionQueueLimit", defaultDeltaTransactionQueueLimit);
-        unsigned deltaTransactionMaxMemMB = config.getPropInt("@deltaTransactionMaxMemMB", defaultDeltaMemMaxMB);
+        Owned<const IPropertyTree> config = getComponentConfig();
+        saveThresholdSecs = config->getPropInt("sds/@deltaSaveThresholdSecs", defaultSaveThresholdSecs);
+        transactionQueueLimit = config->getPropInt("sds/@deltaTransactionQueueLimit", defaultDeltaTransactionQueueLimit);
+        unsigned deltaTransactionMaxMemMB = config->getPropInt("sds/@deltaTransactionMaxMemMB", defaultDeltaMemMaxMB);
         transactionMaxMem = (memsize_t)deltaTransactionMaxMemMB * 0x100000;
         if (saveThresholdSecs)
         {
@@ -1947,7 +1948,7 @@ class CCovenSDSManager : public CSDSManagerBase, implements ISDSManagerServer, i
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCovenSDSManager(ICoven &_coven, IPropertyTree &config, const char *dataPath, const char *daliName);
+    CCovenSDSManager(ICoven &_coven, const char *dataPath, const char *daliName);
     ~CCovenSDSManager();
 
     void start();
@@ -2084,10 +2085,10 @@ private:
 
     CSubscriberTable subscribers;
     CSDSTransactionServer server;
+    StringAttr storeBase;
     ICoven &coven;
     CServerRemoteTree *root;
     CFitArray allNodes;
-    IPropertyTree &config;
     MemoryBuffer incrementBuffer;
     Owned<ICoalesce> coalesce;
     unsigned __int64 nextExternal;
@@ -5045,7 +5046,6 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
     unsigned lastSaveWriteTransactions = 0;
     unsigned lastWarning = 0;
     unsigned idlePeriodSecs, minimumSecsBetweenSaves, idleRate;
-    Linked<IPropertyTree> config;
     Owned<IJlibDateTime> quietStartTime, quietEndTime;
     CheckedCriticalSection crit;
     IStoreHelper *iStoreHelper;
@@ -5060,12 +5060,12 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
     } threaded;
 public:
     IMPLEMENT_IINTERFACE;
-    CLightCoalesceThread(IPropertyTree &_config, IStoreHelper *_iStoreHelper) : config(&_config), iStoreHelper(_iStoreHelper)
+    CLightCoalesceThread(const IPropertyTree &config, IStoreHelper *_iStoreHelper) : iStoreHelper(_iStoreHelper)
     {
-        idlePeriodSecs = config->getPropInt("@lCIdlePeriod", DEFAULT_LCIDLE_PERIOD);
-        minimumSecsBetweenSaves = config->getPropInt("@lCMinTime", DEFAULT_LCMIN_TIME);
-        idleRate = config->getPropInt("@lCIdleRate", DEFAULT_LCIDLE_RATE);
-        char const *quietStartTimeStr = config->queryProp("@lCQuietStartTime");
+        idlePeriodSecs = config.getPropInt("@lCIdlePeriod", DEFAULT_LCIDLE_PERIOD);
+        minimumSecsBetweenSaves = config.getPropInt("@lCMinTime", DEFAULT_LCMIN_TIME);
+        idleRate = config.getPropInt("@lCIdleRate", DEFAULT_LCIDLE_RATE);
+        char const *quietStartTimeStr = config.queryProp("@lCQuietStartTime");
         if (quietStartTimeStr)
         {
             if (*quietStartTimeStr)
@@ -5077,7 +5077,7 @@ public:
             else
                 quietStartTimeStr = NULL;
         }
-        char const *quietEndTimeStr = config->queryProp("@lCQuietEndTime");
+        char const *quietEndTimeStr = config.queryProp("@lCQuietEndTime");
         if (quietStartTimeStr && !quietEndTimeStr)
         {
             OWARNLOG("Start time for quiet period specified without end time, ignoring times");
@@ -5955,19 +5955,23 @@ static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnviron
 #pragma warning (disable : 4355)  // 'this' : used in base member initializer list
 #endif
 
-CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath, const char *_daliName)
-    : dataPath(_dataPath), daliName(_daliName), server(*this), coven(_coven), config(_config)
+CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const char *_daliName)
+    : dataPath(_dataPath), daliName(_daliName), server(*this), coven(_coven)
 {
-    config.Link();
-    restartOnError = config.getPropBool("@restartOnUnhandled");
+    Owned<const IPropertyTree> config = getComponentConfig()->getPropTree("sds");
+    if (!config)
+        config.setown(createPTree("sds"));
+
+    restartOnError = config->getPropBool("@restartOnUnhandled");
     root = NULL;
     writeTransactions=0;
     externalEnvironment = false;
     ignoreExternals=false;
     unsigned initNodeTableSize = queryCoven().getInitSDSNodes();
     allNodes.ensure(initNodeTableSize?initNodeTableSize:INIT_NODETABLE_SIZE);
-    externalSizeThreshold = config.getPropInt("@externalSizeThreshold", defaultExternalSizeThreshold);
-    remoteBackupLocation.set(config.queryProp("@remoteBackupLocation"));
+    externalSizeThreshold = config->getPropInt("@externalSizeThreshold", defaultExternalSizeThreshold);
+    remoteBackupLocation.set(config->queryProp("@remoteBackupLocation"));
+    PROGLOG("externalSizeThreshold = %u", externalSizeThreshold);
     nextExternal = 1;
     if (0 == coven.getServerRank())
     {
@@ -6019,7 +6023,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     externalHandlers.replace(* new CExternalHandlerMapping(EF_BinaryValue, *binaryExternalHandler));
 
     properties.setown(createPTree("Properties"));
-    IPropertyTree *clientProps = properties->setPropTree("Client", config.hasProp("Client") ? config.getPropTree("Client") : createPTree());
+    IPropertyTree *clientProps = properties->setPropTree("Client", config->hasProp("Client") ? config->getPropTree("Client") : createPTree());
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
@@ -6039,7 +6043,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
         }
         rfn.setLocalPath(cwd);
     }
-    unsigned keepLastN = config.getPropInt("@keepStores", DEFAULT_KEEP_LASTN_STORES);
+    unsigned keepLastN = config->getPropInt("@keepStores", DEFAULT_KEEP_LASTN_STORES);
     StringBuffer path;
     rfn.getRemotePath(path);
     properties->setProp("@dataPathUrl", path.str());
@@ -6047,15 +6051,16 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     if (remoteBackupLocation.length())
         properties->setProp("@backupPathUrl", remoteBackupLocation.get());
 
-    const char *storeName = config.queryProp("@store");
-    if (!storeName) storeName = "dalisds";
+    storeBase.set(config->queryProp("@store"));
+    if (0 == storeBase.length())
+        storeBase.set("dalisds");
 #if 1 // legacy
-    StringBuffer tail, ext;
-    splitFilename(storeName, NULL, NULL, &tail, &ext);
-    if (0 == stricmp(".xml", ext.str()))
+    else
     {
-        config.setProp("@store", tail.str());
-        storeName = tail.str();
+        StringBuffer tail, ext;
+        splitFilename(storeBase, NULL, NULL, &tail, &ext);
+        if (0 == stricmp(".xml", ext.str()))
+            storeBase.set(tail);
     }
 #endif
     StringBuffer tmp(dataPath);
@@ -6064,18 +6069,18 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     OwnedIFile detachIPIFile = createIFile(tmp.append(DETACHINPROGRESS).str());
     detachIPIFile->remove();
 
-    unsigned configFlags = config.getPropBool("@recoverFromIncErrors", true) ? SH_RecoverFromIncErrors : 0;
-    configFlags |= config.getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-    iStoreHelper = createStoreHelper(storeName, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped());
+    unsigned configFlags = config->getPropBool("@recoverFromIncErrors", true) ? SH_RecoverFromIncErrors : 0;
+    configFlags |= config->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
+    iStoreHelper = createStoreHelper(storeBase, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped());
     doTimeComparison = false;
-    if (config.getPropBool("@lightweightCoalesce", true))
-        coalesce.setown(new CLightCoalesceThread(config, iStoreHelper));
+    if (config->getPropBool("@lightweightCoalesce", true))
+        coalesce.setown(new CLightCoalesceThread(*config, iStoreHelper));
 
     // if enabled (default), ensure the ext cache size is bigger than the pending delta writer cache
     // to ensure that when the ext cache is full, there are transaction items to flush that aren't still
     // pending on write.
-    unsigned extCacheSizeMB = config.getPropInt("@extCacheSizeMB", defaultExtCacheSizeMB);
-    unsigned deltaTransactionMaxMemMB = config.getPropInt("@deltaTransactionMaxMemMB", defaultDeltaMemMaxMB);
+    unsigned extCacheSizeMB = config->getPropInt("@extCacheSizeMB", defaultExtCacheSizeMB);
+    unsigned deltaTransactionMaxMemMB = config->getPropInt("@deltaTransactionMaxMemMB", defaultDeltaMemMaxMB);
     if (extCacheSizeMB && deltaTransactionMaxMemMB && (extCacheSizeMB <= deltaTransactionMaxMemMB))
         extCacheSizeMB = deltaTransactionMaxMemMB + 1;
     size32_t extCacheSize = extCacheSizeMB * 0x100000;
@@ -6095,11 +6100,10 @@ CCovenSDSManager::~CCovenSDSManager()
     notifyPool.clear();
     connections.kill();
     ::Release(iStoreHelper);
-    if (!config.getPropBool("@leakStore", true)) // intentional default leak of time consuming deconstruction of tree
+    if (!getComponentConfigSP()->getPropBool("sds/@leakStore", true)) // intentional default leak of time consuming deconstruction of tree
         ::Release(root);
     else
         enableMemLeakChecking(false);
-    config.Release();
 }
 
 void CCovenSDSManager::closedown()
@@ -6227,7 +6231,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     {
         bool saveNeeded = false;
         if (!storeName)
-            storeName = config.queryProp("@store");
+            storeName = storeBase;
 
         unsigned crc = 0;
         StringBuffer storeFilename(dataPath);
@@ -6244,14 +6248,14 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         Owned<IException> deltaE;
         try { iStoreHelper->loadDeltas(root, &errors); }
         catch (IException *e) { deltaE.setown(e); errors = true; }
-        if (errors && config.getPropBool("@backupErrorFiles", true))
+        if (errors && getComponentConfigSP()->getPropBool("sds/@backupErrorFiles", true))
         {
             iStoreHelper->backup(storeFilename.str());
             if (deltaE.get())
                 throw LINK(deltaE);
         }
         LOG(MCdebugInfo, "store and deltas loaded");
-        const char *environment = config.queryProp("@environment");
+        const char *environment = getComponentConfigSP()->queryProp("sds/@environment");
 
         if (environment && *environment)
         {
@@ -6571,7 +6575,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         throw;
     }
 
-    deltaWriter.init(config, iStoreHelper);
+    deltaWriter.init(iStoreHelper);
 
     if (!root)
     {
@@ -9020,7 +9024,7 @@ class CDaliSDSServer: implements IDaliServer, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDaliSDSServer(IPropertyTree *_config) : config(_config)
+    CDaliSDSServer()
     {
         manager = NULL;
         cancelLoad = false;
@@ -9037,11 +9041,7 @@ public:
         CriticalBlock b(crit);
         ICoven  &coven=queryCoven();
         assertex(coven.inCoven()); // must be member of coven
-        if (config)
-            sdsConfig.setown(config->getPropTree("SDS"));
-        if (!sdsConfig)
-            sdsConfig.setown(createPTree());
-        manager = new CCovenSDSManager(coven, *sdsConfig, config?config->queryProp("@dataPath"):NULL, config?config->queryProp("@name"):NULL);
+        manager = new CCovenSDSManager(coven, getComponentConfigSP()->queryProp("@dataPath"), getComponentConfigSP()->queryProp("@name"));
         SDSManager = manager;
         addThreadExceptionHandler(manager);
         try { manager->loadStore(NULL, &cancelLoad); }
@@ -9113,8 +9113,6 @@ public:
 
 private:
     CCovenSDSManager *manager;
-    Linked<IPropertyTree> config;
-    Owned<IPropertyTree> sdsConfig;
     bool cancelLoad, storeLoaded;
     CriticalSection crit;
 };
@@ -9143,9 +9141,9 @@ ISDSException *MakeSDSException(int errorCode, const char *errorMsg, ...)
     return ret;
 }
 
-IDaliServer *createDaliSDSServer(IPropertyTree *config)
+IDaliServer *createDaliSDSServer()
 {
-    return new CDaliSDSServer(config);
+    return new CDaliSDSServer();
 }
 
 //////////////////////
