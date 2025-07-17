@@ -334,46 +334,57 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
     return true;
 }
 
-bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
+bool CXRefFilesNode::AttachPhysical(const char *Partmask, IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
 {
     IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch)
     {
-        OERRLOG("%s node not found",Partmask);
-        errstr.appendf("ERROR: %s node not found",Partmask);
+        OERRLOG("%s node not found", Partmask);
+        errstr.appendf("ERROR: %s node not found", Partmask);
         return false;
     }
-    if (!checkPartsInCluster(Partmask,clustername,subBranch,errstr,false))
+    if (!checkPartsInCluster(Partmask, clustername, subBranch, errstr, false))
         return false;
 
     StringBuffer logicalName;
-    if (!LogicalNameFromMask(Partmask,logicalName))
+    if (!LogicalNameFromMask(Partmask, logicalName))
     {
-        OERRLOG("%s - could not attach",Partmask);
-        errstr.appendf("ERROR: %s - could not attach",Partmask);
+        OERRLOG("%s - could not attach", Partmask);
+        errstr.appendf("ERROR: %s - could not attach", Partmask);
         return false;
     }
 
-    if (queryDistributedFileDirectory().exists(logicalName.str(),udesc))
+    if (queryDistributedFileDirectory().exists(logicalName.str(), udesc))
     {
-        OERRLOG("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
-        errstr.appendf("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
+        OERRLOG("Logical File %s already Exists. Can not reattach to Dali", logicalName.str());
+        errstr.appendf("Logical File %s already Exists. Can not reattach to Dali", logicalName.str());
         return false;
     }
-    StringBuffer drive,path,tail,ext;
-    splitFilename(Partmask, &drive, &path, &tail, &ext);
-    //set directory info
-    StringBuffer dir;
-    dir.append(drive.str());
-    dir.append(path.str());
+
+    StringBuffer prefix;
+    Owned<const IStoragePlane> storagePlane = getDataStoragePlane(clustername, true);
+    addPathSepChar(prefix.append(storagePlane->queryPrefix()));
+    if (!startsWith(Partmask, prefix))
+    {
+        OERRLOG("File path %s does not start with plane prefix %s. Can not reattach to Dali", Partmask, prefix.str());
+        errstr.appendf("ERROR: File path %s does not start with plane prefix %s. Can not reattach to Dali", Partmask, prefix.str());
+        return false;
+    }
+
+    unsigned lfnHash = getFilenameHash(logicalName.str());
+    unsigned prefixLen = prefix.length();
+    unsigned numStripedDevices = storagePlane->queryNumStripes();
+    bool isDirPerPart = storagePlane->queryDirPerPart();
+
+    StringBuffer scope, mask, defaultDir;
+    splitFilename(Partmask+prefixLen, nullptr, &scope, &mask, &mask);
+    defaultDir.append(prefix).append(scope);
 
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
-    fileDesc->setDefaultDir(dir.str());
+    fileDesc->setDefaultDir(defaultDir.str());
+
     //use the logical name as the title....
     fileDesc->setTraceName(logicalName.str());
-
-    IPropertyTree & attr = fileDesc->queryProperties();
-    //attr.setProp("@size",subBranch->queryProp("Size"));  we don't know size (this value isn't right!)
 
     unsigned numparts = subBranch->getPropInt("Numparts");
 
@@ -381,34 +392,28 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     bool first = true;
     offset_t totalSize = 0;
     Owned<IPropertyTreeIterator> partItr =  subBranch->getElements("Part");
+    StringBuffer filePath;
     for (partItr->first(); partItr->isValid(); partItr->next())
     {
         IPropertyTree& part = partItr->query();
 
-            //get the full file path 
-        StringBuffer remoteFilePath;
-        expandMask(remoteFilePath, Partmask, part.getPropInt("Num")-1, numparts);
-
-        StringBuffer _drive,_path,_tail,_ext,_filename;
-        splitFilename(remoteFilePath.str(), &_drive, &_path, &_tail, &_ext);
-        _filename.append(_tail.str());
-        _filename.append(_ext.str());
+        unsigned partNo = part.getPropInt("Num")-1;
+        makePhysicalPartName(logicalName.str(), partNo+1, numparts, filePath.clear(), 0, DFD_OSdefault, prefix.str(), isDirPerPart, calcStripeNumber(partNo, lfnHash, numStripedDevices));
+        const char *filename = strrchr(filePath.str(), PATHSEPCHAR) + 1;
 
         const char* _node = part.queryProp("Node[1]");
         if (!_node||!*_node)
             _node = part.queryProp("RNode[1]");
         if (!_node||!*_node) {
-            OERRLOG("%s - could not attach (missing part info)",Partmask);
-            errstr.appendf("ERROR: %s - could not attach (missing part info)",Partmask);
+            OERRLOG("%s - could not attach (missing part info)", Partmask);
+            errstr.appendf("ERROR: %s - could not attach (missing part info)", Partmask);
             return false;
         }
         Owned<INode> node = createINode(_node);
-        DBGLOG("Setting number %d for Node %s and name %s",part.getPropInt("Num")-1,_node,_filename.str());
-        //Num is 0 based...
-        unsigned partNo = part.getPropInt("Num")-1;
+        DBGLOG("Setting number %d for Node %s and name %s", partNo, _node, filename);
 
         RemoteFilename rfn;
-        rfn.setPath(node->endpoint(), remoteFilePath);
+        rfn.setPath(node->endpoint(), filePath);
         Owned<IFile> iFile = createIFile(rfn);
         offset_t physicalSize = iFile->size();
         bool partCompressed = isCompressedFile(iFile);
@@ -431,7 +436,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
             partProps->setPropInt64("@size", physicalSize);
         totalSize += physicalSize;
 
-        fileDesc->setPart(partNo, node,_filename.str(), partProps);
+        fileDesc->setPart(partNo, node, filename, partProps);
     }
     IPropertyTree &props = fileDesc->queryProperties();
     if (isCompressed)
@@ -442,12 +447,22 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     else
         props.setPropInt64("@size", totalSize);
 
-    Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
-    dFile->attach(logicalName.str(),udesc);
+    if (isDirPerPart)
+        props.setPropInt("@flags", static_cast<int>(FileDescriptorFlags::dirperpart));
 
-    if (!RemoveTreeNode(Partmask)) {                   
-        OERRLOG("Removing XRef Branch %s",Partmask);
-        errstr.appendf("ERROR: Removing XRef Branch %s",Partmask);
+    if (numStripedDevices>1)
+        fileDesc->queryPartDiskMapping(0).numStripedDevices = numStripedDevices;
+
+    // Set group so that the file can be associated with correct cluster
+    fileDesc->setClusterGroup(0, queryNamedGroupStore().lookup(clustername));
+    fileDesc->setClusterGroupName(0, clustername);
+
+    Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
+    dFile->attach(logicalName.str(), udesc);
+
+    if (!RemoveTreeNode(Partmask)) {
+        OERRLOG("Removing XRef Branch %s", Partmask);
+        errstr.appendf("ERROR: Removing XRef Branch %s", Partmask);
         return false;
     }
     m_bChanged = true;
