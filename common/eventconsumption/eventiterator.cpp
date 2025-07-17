@@ -61,9 +61,34 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
     return false;
 }
 
-CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& events)
-    : eventsIt(events.getElements("event"))
+const char* CPropertyTreeEvents::queryFilename() const
+{
+    return events->queryProp("@filename");
+}
+
+uint32_t CPropertyTreeEvents::queryVersion() const
+{
+    return uint32_t(events->getPropInt64("@version"));
+}
+
+uint32_t CPropertyTreeEvents::queryBytesRead() const
+{
+    return uint32_t(events->getPropInt64("@bytesRead"));
+}
+
+CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events)
+    : events(&_events)
+    , eventsIt(_events.getElements("event"))
 {
     // enable the "next" event to populate from the first matching node
     (void)eventsIt->first();
+}
+
+void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
+{
+    CEvent event;
+    visitor.visitFile(iter.queryFilename(), iter.queryVersion());
+    while (iter.nextEvent(event))
+        visitor.visitEvent(event);
+    visitor.departFile(iter.queryBytesRead());
 }
