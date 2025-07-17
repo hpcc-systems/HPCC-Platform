@@ -832,7 +832,10 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
                 compMethod = getCompMethod(compType);
             }
             // force
-            if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
+            StringBuffer compressionType;
+            if (activity->getOpt(THOROPT_COMPRESS_FORMAT, compressionType))
+                compMethod = getCompMethod(compressionType);
+            else if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
                 compMethod = COMPRESS_METHOD_LZW;
             else if (activity->getOptBool(THOROPT_COMP_FORCEFLZ, false))
                 compMethod = COMPRESS_METHOD_FASTLZ;
@@ -840,6 +843,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
                 compMethod = COMPRESS_METHOD_LZ4;
             else if (activity->getOptBool(THOROPT_COMP_FORCELZ4HC, false))
                 compMethod = COMPRESS_METHOD_LZ4HC;
+
         }
         size32_t compressBlockSize = 0; // i.e. default.
         fileio.setown(createCompressedFileWriter(file, 0 != (twFlags & TW_Extend), true, ecomp, compMethod, compressBlockSize, blockedIoSize, fileIOExtaFlags));
