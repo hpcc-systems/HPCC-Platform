@@ -34,6 +34,7 @@
 #include "jfile.hpp"
 #include "jevent.hpp"
 #include "eventdump.h"
+#include "jthread.hpp"
 #include "unittests.hpp"
 
 
@@ -704,5 +705,191 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(BufferedSerialOutputStreamTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(BufferedSerialOutputStreamTest, "BufferedSerialOutputStreamTest");
+
+class ThreadPoolSizeTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(ThreadPoolSizeTest);
+      CPPUNIT_TEST(testThreadPoolResizing);
+    CPPUNIT_TEST_SUITE_END();
+
+    class TestWorkerThread : public CSimpleInterfaceOf<IPooledThread>
+    {
+    private:
+        Semaphore *startSem = nullptr;
+        Semaphore *stopSem = nullptr;
+        std::atomic<unsigned> *startCount = nullptr;
+        std::atomic<unsigned> *stopCount = nullptr;
+
+    public:
+        virtual void init(void *param) override
+        {
+            // param is an array: [startSem, stopSem, startCount, stopCount]
+            void **params = static_cast<void**>(param);
+            startSem = static_cast<Semaphore*>(params[0]);
+            stopSem = static_cast<Semaphore*>(params[1]);
+            startCount = static_cast<std::atomic<unsigned>*>(params[2]);
+            stopCount = static_cast<std::atomic<unsigned>*>(params[3]);
+        }
+        virtual void threadmain() override
+        {
+            (*startCount)++;
+            startSem->signal(); // Signal that a thread has started
+
+            stopSem->wait(); // Wait for stop signal
+
+            (*stopCount)++;
+        }
+        virtual bool stop() override
+        {
+            stopSem->signal();
+            return true;
+        }
+        virtual bool canReuse() const override { return true; }
+    };
+
+public:
+    void testThreadPoolResizing()
+    {
+        try
+        {
+            // Create thread pool with small initial size
+            const unsigned initialPoolSize = 4;
+            const unsigned delay = 100; // 100ms delay to create burst conditions
+            constexpr unsigned timingToleranceMs = 50; // Timing tolerance for all assertions
+
+            class TestThreadFactory : public CInterfaceOf<IThreadFactory>
+            {
+            public:
+                IPooledThread *createNew() override
+                {
+                    return new TestWorkerThread();
+                }
+            };
+
+            Owned<IThreadFactory> factory = new TestThreadFactory();
+            Owned<IThreadPool> pool = createThreadPool(
+                "TestPool",
+                factory,
+                false,              // inheritThreadContext
+                nullptr,            // exceptionHandler
+                initialPoolSize,    // defaultmax
+                delay               // delay - important for burst behavior
+            );
+
+            // Test: Resize when pool is idle
+            pool->setPoolSize(8, 0);  // 0 means targetpoolsize defaults to newPoolSize
+            pool->setPoolSize(2, 0);  // Set pool size to 2 to create burst conditions
+
+            // Set up shared semaphores and counters
+            Semaphore startSem, stopSem;
+            std::atomic<unsigned> startCount{0};
+            std::atomic<unsigned> stopCount{0};
+            void *params[] = {&startSem, &stopSem, &startCount, &stopCount};
+
+            // Test: Start threads up to pool size (should start immediately)
+            CCycleTimer timer;
+            std::vector<PooledThreadHandle> handles;
+            handles.push_back(pool->start(params, "Thread1"));
+            handles.push_back(pool->start(params, "Thread2"));
+
+            for (unsigned i = 0; i < 2; i++)
+                startSem.wait();
+
+            unsigned elapsedMs = timer.elapsedMs();
+            CPPUNIT_ASSERT_EQUAL(2U, startCount.load());
+            CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
+
+            // Verify that threads within pool size started quickly (no delay)
+            CPPUNIT_ASSERT(elapsedMs < timingToleranceMs); // Should start within tolerance
+
+            // Test: Start threads that will become burst threads (exceed pool size limit)
+            // Each thread beyond capacity is delayed by the full delay time
+            // 4 threads × 100ms delay = ~400ms total
+            CCycleTimer burstTimer;
+            for (unsigned i = 0; i < 4; i++)
+                handles.push_back(pool->start(params, "BurstThread"));
+
+            // Wait for all burst threads to start (after cumulative delays)
+            for (unsigned i = 0; i < 4; i++)
+                startSem.wait();
+
+            unsigned burstElapsedMs = burstTimer.elapsedMs();
+            CPPUNIT_ASSERT_EQUAL(6U, startCount.load());
+            CPPUNIT_ASSERT_EQUAL(6U, pool->runningCount());
+
+            // Verify burst threads were properly throttled
+            const unsigned expectedMinDelay = 4 * delay; // 4 burst threads × delay
+            CPPUNIT_ASSERT(burstElapsedMs >= expectedMinDelay);
+            CPPUNIT_ASSERT(burstElapsedMs < (expectedMinDelay + timingToleranceMs));
+
+            // Test: Resize pool up while burst threads are running
+            pool->setPoolSize(10, 0);
+            CPPUNIT_ASSERT_EQUAL(6U, pool->runningCount());
+
+            // Test: Start more threads after resize - should start immediately now
+            CCycleTimer postResizeTimer;
+            handles.push_back(pool->start(params, "PostResize"));
+            startSem.wait();
+            unsigned postResizeMs = postResizeTimer.elapsedMs();
+
+            CPPUNIT_ASSERT_EQUAL(7U, startCount.load());
+            CPPUNIT_ASSERT_EQUAL(7U, pool->runningCount());
+
+            // Verify post-resize thread started quickly (no throttling with larger pool)
+            CPPUNIT_ASSERT(postResizeMs < timingToleranceMs);
+
+            // Test 6: Resize pool down while many threads are running
+            pool->setPoolSize(5, 0);
+            CPPUNIT_ASSERT_EQUAL(7U, pool->runningCount());
+
+            // Test: Stop some threads and verify counts
+            for (unsigned i = 0; i < 3; i++)
+                stopSem.signal();
+
+            for (unsigned i = 0; i < 3; i++)
+                pool->join(handles[i], 1000);
+
+            CPPUNIT_ASSERT_EQUAL(3U, stopCount.load());
+            CPPUNIT_ASSERT_EQUAL(4U, pool->runningCount());
+
+            // Test: Start new threads with reduced pool size
+            // Pool size is now 5, but 4 threads are running, so 1 slot available
+            // First new thread should start quickly, second should be delayed
+            CCycleTimer newThreadTimer;
+            for (unsigned i = 0; i < 2; i++)
+                handles.push_back(pool->start(params, "NewThread"));
+
+            for (unsigned i = 0; i < 2; i++)
+                startSem.wait();
+            unsigned newThreadMs = newThreadTimer.elapsedMs();
+
+            CPPUNIT_ASSERT_EQUAL(9U, startCount.load());
+            CPPUNIT_ASSERT_EQUAL(6U, pool->runningCount());
+
+            // Verify throttling: 1 thread immediate + 1 thread delayed by 100ms
+            CPPUNIT_ASSERT(newThreadMs >= delay); // Cannot be faster than 1×delay for the delayed thread
+            CPPUNIT_ASSERT(newThreadMs < delay + timingToleranceMs);  // But allow tolerance
+
+            // Test: Clean shutdown - stop all remaining threads
+            unsigned remainingThreads = pool->runningCount();
+            for (unsigned i = 0; i < remainingThreads; i++)
+                stopSem.signal();
+            pool->setPoolSize(1, 0); // reducing targetpoolsize, should free all but 1 active thread
+
+            pool->joinAll(true, 2000);
+            CPPUNIT_ASSERT_EQUAL(0U, pool->runningCount());
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(ThreadPoolSizeTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ThreadPoolSizeTest, "ThreadPoolSizeTest");
 
 #endif // _USE_CPPUNIT
