@@ -58,7 +58,7 @@ interface IEventIterator : extends IInterface
 //   a number of nanoseconds.
 // - filename, version, and bytesRead are optional values that will be used to satisfy the query*
 //   methods. Default values of nullptr, 0, and 0 are used when omitted.
-class CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
+class event_decl CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
 {
 public:
     virtual bool nextEvent(CEvent& event) override;
