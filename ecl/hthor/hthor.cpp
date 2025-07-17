@@ -104,14 +104,14 @@ void * checked_calloc(size_t size, size_t num, char const * label)
     return ret;
 }
 
-inline bool checkWriteIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
+inline bool checkWriteIsCompressed(unsigned int flags)
 {
-    return ((flags & TDWnewcompress) || ((flags & TDXcompress) && ((0 == fixedSize) || (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE))));
+    return ((flags & TDWnewcompress) || (flags & TDXcompress));
 }
 
-inline bool checkReadIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
+inline bool checkReadIsCompressed(unsigned int flags)
 {
-    return ((flags & TDXcompress) && ((0 == fixedSize) || (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE)));
+    return (flags & TDXcompress);
 }
 
 //=====================================================================================================
@@ -606,13 +606,10 @@ void CHThorDiskWriteActivity::open()
     file.setown(createIFile(filename));
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
 
-    Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
-    if (grouped)
-        groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
     blockcompressed=false;
     if (0 == (helperFlags & TDWnocompress))
     {
-        blockcompressed = checkWriteIsCompressed(helperFlags, serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+        blockcompressed = checkWriteIsCompressed(helperFlags);
         if (!blockcompressed) // if ECL doesn't specify, default to plane definition
             blockcompressed = outputPlaneCompressed;
     }
@@ -633,7 +630,7 @@ void CHThorDiskWriteActivity::open()
     {
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
-        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+        io.setown(createCompressedFileWriter(file, extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
     }
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
@@ -8450,7 +8447,7 @@ void CHThorDiskReadBaseActivity::resolve()
             fdesc.setown(ldFile->getFileDescriptor());
             gatherInfo(fdesc);
             if (ldFile->isExternalFile())
-                compressed = checkWriteIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
+                compressed = checkWriteIsCompressed(helper.getFlags());
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
@@ -8517,20 +8514,10 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     if (fileDesc)
     {
         compressed = fileDesc->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
-        if (fixedDiskRecordSize)
-        {
-            if (!compressed && (((helper.getFlags() & TDXcompress) != 0) && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE)))
-            {
-                StringBuffer msg;
-                msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
-                agent.addWuExceptionEx(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, MSGAUD_user, "hthor");
-                compressed = true;
-            }
-        }
     }
     else
     {
-        compressed = checkReadIsCompressed(helper.getFlags(), fixedDiskRecordSize, false); //grouped=FALSE because fixedDiskRecordSize already includes grouped
+        compressed = checkReadIsCompressed(helper.getFlags());
     }
     void *k;
     size32_t kl;

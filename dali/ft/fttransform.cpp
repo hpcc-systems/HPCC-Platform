@@ -1168,7 +1168,7 @@ processedProgress:
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZ4));
+                outio.setown(createCompressedFileWriter(outio, false, true, compressor, COMPRESS_METHOD_LZ4));
             }
 
             //Find the last partition entry that refers to the same file.
@@ -1302,7 +1302,7 @@ bool TransferServer::push()
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZ4));
+                outio.setown(createCompressedFileWriter(outio, false, true, compressor, COMPRESS_METHOD_LZ4));
             }
 
             out.setown(createIOStream(outio));

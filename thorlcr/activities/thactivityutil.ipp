@@ -106,7 +106,7 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 #define TW_RenameToPrimary 0x08
 #define TW_Temporary 0x10
 interface IPartDescriptor;
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
+IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
 
 class CAsyncCall : implements IThreaded
 {

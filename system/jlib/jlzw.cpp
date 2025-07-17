@@ -2436,12 +2436,9 @@ class CCompressedFileWriter : public CCompressedFileBase
 {
     unsigned curblocknum;
     MemoryBuffer iobuffer;          // buffer used for writing to file
-    size32_t compblklen;
     size32_t compblockoffset;       // What offset within the io buffer is the current compression block
     MemoryBuffer indexbuf;          // non-empty once index read (when appending)
     ICFmode mode;
-    MemoryBuffer overflow;          // where partial row written
-    MemoryAttr prevrowbuf;
     bool setcrc;
     bool writeException = false;
     Linked<ICompressor> compressor;
@@ -2456,62 +2453,11 @@ class CCompressedFileWriter : public CCompressedFileBase
             trailer.crc = crc32((const char *)data,len,trailer.crc);
     }
 
-    bool compressrow(const void *src,size32_t rs)
+    size32_t compress(const void *expbuf,size32_t len)
     {
-        bool ret = true;
-        if (compblklen==0) {
-            memcpy(prevrowbuf.bufferBase(),src,rs);
-            memcpy(getCompressionTargetBuffer(),src,rs);
-            compblklen = rs;
-        }
-        else {
-            size32_t len = DiffCompress(src,getCompressionTargetBuffer()+compblklen,prevrowbuf.bufferBase(),rs);
-            if (compblklen+len>trailer.blockSize)
-                ret = false;
-            else
-                compblklen += len;
-        }
-        return ret;
+        return compressor->write(expbuf, len);
     }
 
-    size32_t compress(const void *expbuf,size32_t len)  // iff return!=len then overflowed
-    {
-        const byte *src = (const byte *)expbuf;
-        size32_t rs = trailer.recordSize;
-        if (rs) { // diff compress
-            if (overflow.length()) {
-                assertex(overflow.length()<=rs);
-                size32_t left = rs-overflow.length();
-                if (left>len)
-                    left = len;
-                overflow.append(left,expbuf);
-                len -= left;
-                if (overflow.length()==rs) {
-                    if (!compressrow(overflow.toByteArray(),rs)) {  // this is nasty case
-                        overflow.setLength(rs-left);
-                        return (size32_t)(src-(const byte *)expbuf);
-                    }
-                    overflow.clear();
-                }
-                src += left;
-            }
-            while (len>=rs) {
-                if (!compressrow(src,rs))
-                    return (size32_t)(src-(const byte *)expbuf);
-                len -= rs;
-                src += rs;
-            }
-            if (len) {
-                overflow.append(len,src);
-                src += len;
-            }
-        }
-        else // lzw or fastlz or lz4
-        {
-            src += compressor->write(src, len);
-        }
-        return (size32_t)(src-(const byte *)expbuf);
-    }
     byte * getCompressionTargetBuffer()
     {
         return (byte *)iobuffer.bufferBase() + compblockoffset;
@@ -2522,32 +2468,22 @@ public:
     {
         curblocknum = (unsigned)-1; // relies on wrap
 
-        if (trailer.recordSize)
-        {
-            if ((trailer.recordSize>trailer.blockSize/4) || // just too big
-                (trailer.recordSize<10))                    // or too small
-                trailer.recordSize = 0;
-            else
-                prevrowbuf.allocate(trailer.recordSize);
-        }
+        assertex(trailer.recordSize == 0);
 
         //Allocate a single io buffer that can be used for reading or writing.
-        iobuffer.ensureCapacity(sizeIoBuffer+trailer.recordSize*2+16); // over estimate!
+        iobuffer.ensureCapacity(sizeIoBuffer); // over estimate!
 
-        compblklen = 0;
         compblockoffset = 0;
-        if (trailer.recordSize==0)
+        if (!compressor)
         {
-            if (!compressor)
-            {
-                ICompressHandler * compressorFactory = queryCompressHandler((CompressionMethod)compMethod);
-                if (!compressorFactory)
-                    throw makeStringExceptionV(-1, "Cannot compressed a file with compression type %u", compMethod);
+            ICompressHandler * compressorFactory = queryCompressHandler((CompressionMethod)compMethod);
+            if (!compressorFactory)
+                throw makeStringExceptionV(-1, "Unsupported compression method %u", compMethod);
 
-                compressor.setown(compressorFactory->getCompressor(nullptr));
-            }
-            compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
+            compressor.setown(compressorFactory->getCompressor(nullptr));
         }
+
+        compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
 
         if (mode == ICFappend)
         {
@@ -2625,13 +2561,12 @@ public:
                 return;
             }
             curblocknum++;
-            indexbuf.append((unsigned __int64) trailer.expandedSize-overflow.length());
-            offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
-            if (trailer.recordSize==0) {
-                compressor->close();
-                compblklen = compressor->buflen();
-            }
+            indexbuf.append((unsigned __int64) trailer.expandedSize);
 
+            offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
+            compressor->close();
+
+            size32_t compblklen = compressor->buflen();
             assertex(compblklen != 0);
 
             //If adding a block and the previous block was not a full block, fill the gap with 0xff
@@ -2667,10 +2602,7 @@ public:
             compblklen = 0;
 
             trailer.indexPos = p;
-            if (trailer.recordSize==0)
-            {
-                compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
-            }
+            compressor->open(getCompressionTargetBuffer(), trailer.blockSize);
             lastFlushPos = trailer.expandedSize;
         }
         catch (IException *e)
@@ -2686,11 +2618,6 @@ public:
         if (mode!=ICFread) {
             //Ensure that a subsequent close() does not re-enter this code if an exception is thrown
             mode = ICFread;
-            if (overflow.length()) {
-                unsigned ol = overflow.length();
-                overflow.clear();
-                throw MakeStringException(-1,"Partial row written at end of file %d of %d",ol,trailer.recordSize);
-            }
 
             //Avoid writing out a header/footer if the file is empty
             if ((trailer.expandedSize != 0) || !allowZeroSizeCompressedFiles())
@@ -2849,7 +2776,7 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, s
 
 
 
-ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size32_t recordsize,bool _setcrc,ICompressor *compressor, unsigned _compMethod, size32_t compressorBlockSize, size32_t bufferSize)
+ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool _setcrc,ICompressor *compressor, unsigned compMethod, size32_t compressorBlockSize, size32_t bufferSize)
 {
     CompressedFileTrailer trailer;
     offset_t fsize = append ? fileio->size() : 0;
@@ -2862,16 +2789,11 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size
                 WinCompressedFileTrailer wintrailer;
                 if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                     wintrailer.translate(trailer);
-                    CompressionMethod compMethod = getCompressedMethod(trailer.compressedType);
+                    if (trailer.recordSize!=0)
+                        throw makeStringException(-1, "Appending to a row compressed file is not supported");
+                    compMethod = getCompressedMethod(trailer.compressedType);
                     if (compMethod)
-                    {
-                        // check trailer.compressedType against _compMethod
-                        if (_compMethod != compMethod)
-                            throw MakeStringException(-1,"Appending to file with different compression method");
-                        if ((recordsize==trailer.recordSize)||!trailer.recordSize)
-                            break;
-                        throw MakeStringException(-1,"Appending to file with different record size (%d,%d)",recordsize,trailer.recordSize);
-                    }
+                        break;
                 }
             }
             throw MakeStringException(-1,"Appending to file that is not compressed");
@@ -2881,48 +2803,38 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size
     {
         memset(&trailer,0,sizeof(trailer));
         trailer.crc = ~0U;
-        if (_compMethod == COMPRESS_METHOD_FASTLZ)
+        if (compMethod == COMPRESS_METHOD_FASTLZ)
         {
             trailer.compressedType = FASTCOMPRESSEDFILEFLAG;
             trailer.blockSize = FASTCOMPRESSEDFILEBLOCKSIZE;
-            trailer.recordSize = 0;
         }
-        else if ((_compMethod == COMPRESS_METHOD_LZ4) || (_compMethod == COMPRESS_METHOD_LZ4HC) || (_compMethod == COMPRESS_METHOD_LZ4HC3))
+        else if ((compMethod == COMPRESS_METHOD_LZ4) || (compMethod == COMPRESS_METHOD_LZ4HC) || (compMethod == COMPRESS_METHOD_LZ4HC3))
         {
             trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
             trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
-            trailer.recordSize = 0;
         }
-        else if (recordsize)
+        else
         {
-            trailer.compressedType = COMPRESSEDFILEFLAG;
-            trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
-            trailer.recordSize = recordsize;
+            compMethod = COMPRESS_METHOD_LZ4;
+            trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
+            trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
         }
-        else // fallback
-        {
-            _compMethod = COMPRESS_METHOD_LZW;
-            trailer.compressedType = COMPRESSEDFILEFLAG;
-            trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
-            trailer.recordSize = 0;
-        }
+        trailer.recordSize = 0;
         if (compressorBlockSize)
             trailer.blockSize = compressorBlockSize;
     }
-    // MCK - may present compatibility issue if passing in compressor and wanting row comp
-    if (compressor)
-        trailer.recordSize = 0; // force not row compressed if compressor specified
-    return new CCompressedFileWriter(fileio,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,_compMethod,bufferSize);
+
+    return new CCompressedFileWriter(fileio,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,compMethod,bufferSize);
 }
 
-ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor, unsigned _compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags)
+ICompressedFileIO *createCompressedFileWriter(IFile *file,bool append,bool _setcrc,ICompressor *compressor, unsigned _compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags)
 {
     if (file) {
         if (append&&!file->exists())
             append = false;
         Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate, extraFlags);
         if (fileio)
-            return createCompressedFileWriter(fileio,append,recordsize,_setcrc,compressor,_compMethod,compressorBlockSize,bufferSize);
+            return createCompressedFileWriter(fileio,append,_setcrc,compressor,_compMethod,compressorBlockSize,bufferSize);
     }
     return NULL;
 }
