@@ -1815,6 +1815,32 @@ struct CStoreInfo
     unsigned xmlCrc{0};
     unsigned binaryCrc{0};
     StringAttr cache;
+
+    void serialize(IFileIO *fileIO, unsigned *crcXml, unsigned *crcBinary)
+    {
+        assertex(fileIO);
+
+        // Only serialize xmlCrc and binaryCrc
+        if (crcXml)
+            xmlCrc = *crcXml;
+        fileIO->write(0, sizeof(unsigned), &xmlCrc);
+        if (crcBinary)
+            binaryCrc = *crcBinary;
+        fileIO->write(sizeof(unsigned), sizeof(unsigned), &binaryCrc);
+    }
+
+    void deserialize(IFileIO *fileIO)
+    {
+        assertex(fileIO);
+
+        // Only deserialize xmlCrc and binaryCrc
+        fileIO->read(0, sizeof(unsigned), &xmlCrc);
+        constexpr unsigned minFileSizeIncludingBinaryCrc = sizeof(unsigned) * 2;
+        if (fileIO->size() >= minFileSizeIncludingBinaryCrc)
+            fileIO->read(sizeof(unsigned), sizeof(unsigned), &binaryCrc);
+        else
+            binaryCrc = 0;
+    }
 };
 
 interface ICoalesce : extends IInterface
@@ -5315,6 +5341,8 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 
     void writeStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crcXml, unsigned *crcBinary, CStoreInfo *storeInfo = nullptr)
     {
+        assertex(storeInfo);
+
         StringBuffer path, filename;
         filename.append(base).append('.').append(edition);
         if (location)
@@ -5323,19 +5351,15 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 
         OwnedIFile iFile = createIFile(path.str());
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
-        if (crcXml)
-        {
-            iFileIO->write(0, sizeof(unsigned), crcXml);
-            if (crcBinary)
-                iFileIO->write(sizeof(unsigned), sizeof(unsigned), crcBinary);
-        }
-        if (storeInfo)
-            storeInfo->cache.set(filename.str());
+        storeInfo->serialize(iFileIO, crcXml, crcBinary);
+
+        storeInfo->cache.set(filename.str());
         iFileIO->close();
     }
 
     void updateStoreInfo(const char *base, const char *location, unsigned edition, unsigned *crcXml, unsigned *crcBinary, CStoreInfo *storeInfo=NULL)
     {
+        assertex(storeInfo);
         clearStoreInfo(base, location, edition, storeInfo);
         writeStoreInfo(base, location, edition, crcXml, crcBinary, storeInfo);
     }
@@ -5397,19 +5421,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         const char *name = fname.str();
         const char *editionBegin = name+strlen(base)+1;
         info.edition = atoi(editionBegin);
-        if (iFileIO->size())
-        {
-            iFileIO->read(0, sizeof(unsigned), &info.xmlCrc);
-            if (iFileIO->size())
-                iFileIO->read(sizeof(unsigned), sizeof(unsigned), &info.binaryCrc);
-            else
-                info.binaryCrc = 0;
-        }
-        else
-        {
-            info.xmlCrc = 0;
-            info.binaryCrc = 0;
-        }
+        info.deserialize(iFileIO);
     }
 
     void refreshStoreInfo() { refreshInfo(storeInfo, "store"); }
@@ -5734,7 +5746,7 @@ public:
         const char *fileName = iFile->queryFilename();
         dbgassertex(fileName);
         StringBuffer planeName;
-        static constexpr size32_t bufferSize1mb = 0x100000;
+        constexpr size32_t bufferSize1mb = 0x100000;
         size32_t bufferSize = bufferSize1mb;
         if (findPlaneFromPath(fileName, planeName))
             bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
@@ -5978,14 +5990,8 @@ public:
             if (iFile->exists())
                 PROGLOG("Deleting old binary store: %s", filename.str());
             removeDaliFile(location, storeName, ".bin", toDeleteEdition);
-            removeDaliFile(location, DELTANAME, ".bin", toDeleteEdition);
-            removeDaliFile(location, DELTADETACHED, ".bin", toDeleteEdition);
             if (remoteBackupLocation)
-            {
                 removeDaliFile(remoteBackupLocation, storeName, ".bin", toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTANAME, ".bin", toDeleteEdition);
-                removeDaliFile(remoteBackupLocation, DELTADETACHED, ".bin", toDeleteEdition);
-            }
 #endif
         }
     }
@@ -6004,14 +6010,10 @@ public:
             *binaryCrc = storeInfo.binaryCrc;
         return res;
     }
-    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr)
+    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res)
     {
         refreshDeltaInfo();
         constructStoreName(DELTANAME, deltaInfo.edition, res, ".xml");
-        if (xmlCrc)
-            *xmlCrc = deltaInfo.xmlCrc;
-        if (binaryCrc)
-            *binaryCrc = deltaInfo.binaryCrc;
         return res;
     }
     virtual StringBuffer &getCurrentStoreInfoFilename(StringBuffer &res)
@@ -6171,7 +6173,12 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-    clientProps->setPropBool("@saveBinary", config->getPropBool("@saveBinary", false));
+#ifdef _DEBUG
+    bool saveBinary = config->getPropBool("@saveBinary", true);
+#else
+    bool saveBinary = config->getPropBool("@saveBinary", false);
+#endif
+    clientProps->setPropBool("@saveBinary",saveBinary);
     IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
     throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
     throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
@@ -6216,7 +6223,6 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
 
     unsigned configFlags = config->getPropBool("@recoverFromIncErrors", true) ? SH_RecoverFromIncErrors : 0;
     configFlags |= config->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-    bool saveBinary = config->getPropBool("@saveBinary", false);
     iStoreHelper = createStoreHelper(storeBase, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped(), saveBinary);
     doTimeComparison = false;
     if (config->getPropBool("@lightweightCoalesce", true))

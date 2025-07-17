@@ -1257,7 +1257,7 @@ public:
                 Owned<IBufferedSerialOutputStream> serialOut = createBufferedSerialOutputStream(buffer);
                 Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
-                // Write using put() only (avoid reserve/commit due to implementation issues)
+                // Write test data with flush to ensure CRC is calculated
                 crcOut->put(len1, testData1);
                 crcOut->put(len3, testData3);
                 crcOut->flush();
@@ -1272,14 +1272,14 @@ public:
             }
         }
 
-        // Test: CRC calculation with suspend/resume pattern
+        // Test: CRC calculation using buffered Serial output stream
         {
             StringBuffer buffer;
             {
                 Owned<IBufferedSerialOutputStream> serialOut = createBufferedSerialOutputStream(buffer);
                 Owned<ICrcSerialOutputStream> crcOut = createCrcOutputStream(serialOut);
 
-                // Write using put() only - suspend/resume not supported by ISerialOutputStream
+                // Write test data with flush to ensure CRC is calculated
                 crcOut->put(len2, testData2);
                 crcOut->put(len1, testData1);
                 crcOut->flush();
@@ -1307,7 +1307,7 @@ public:
                 constexpr size32_t blockSize1mb = 1 * 1024 * 1024;
                 Owned<IBufferedSerialOutputStream> crcOutStream = createBufferedOutputStream(crcSerialStream, blockSize1mb);
 
-                // Serialize the property tree to the CRC stream
+                // Serialize the property tree to the CRC stream with flush to ensure CRC is calculated
                 testTree->serializeToStream(*crcOutStream);
                 crcOutStream->flush();
                 crcSerialStream->flush();

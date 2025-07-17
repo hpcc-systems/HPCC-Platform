@@ -257,7 +257,7 @@ interface IStoreHelper : extends IInterface
     virtual void saveStore(IPropertyTree *root, unsigned *newEdition=NULL) = 0;
     virtual unsigned queryCurrentEdition() = 0;
     virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr) = 0;
-    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr) = 0;
+    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res) = 0;
     virtual StringBuffer &getCurrentStoreInfoFilename(StringBuffer &res) = 0;
     virtual void backup(const char *filename) = 0;
     virtual StringBuffer &getPrimaryLocation(StringBuffer &location) = 0;
