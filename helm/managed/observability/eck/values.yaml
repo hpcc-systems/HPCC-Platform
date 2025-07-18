@@ -64,7 +64,91 @@ eck-stack:
       pathType: Prefix
       tls:
         enabled: false
-
+  eck-beats:
+    enabled: true
+    metadata:
+      name: filebeat
+    spec:
+      type: filebeat
+      elasticsearchRef:
+        name: elasticsearch
+      kibanaRef:
+        name: kibana
+      config:
+        filebeat.inputs:
+        - type: filestream
+          paths:
+          #Edit this list of paths to match your HPCC cluster component names
+          - /var/log/containers/esdl-sandbox-*.log
+          - /var/log/containers/eclwatch-*.log
+          - /var/log/containers/mydali-*.log
+          - /var/log/containers/eclqueries-*.log
+          - /var/log/containers/sql2ecl-*.log
+          - /var/log/containers/eclservices-*.log
+          - /var/log/containers/dfuserver-*.log
+          - /var/log/containers/eclscheduler-*.log
+          - /var/log/containers/hthor-*.log
+          - /var/log/containers/myeclccserver-*.log
+          - /var/log/containers/roxie-*.log
+          - /var/log/containers/sasha-*.log
+          - /var/log/containers/thor-*.log
+          - /var/log/containers/spray-service-*.log
+          - /var/log/containers/dfs-*.log
+          prospector:
+            scanner:
+              fingerprint.enabled: true
+              symlinks: true
+          file_identity.fingerprint: ~
+          multiline.type: pattern
+          multiline.pattern: '^([A-Z-0-9]{8})\s+'
+          multiline.negate: true
+          multiline.match: after
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+#        - add_host_metadata: {}
+#        - add_cloud_metadata: {}
+    daemonSet:
+      podTemplate:
+        spec:
+          serviceAccount: elastic-beat-filebeat
+          automountServiceAccountToken: true
+          terminationGracePeriodSeconds: 30
+          dnsPolicy: ClusterFirstWithHostNet
+          hostNetwork: true # Allows to provide richer host metadata
+          containers:
+          - name: filebeat
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              capabilities:
+                add:
+                  - SYS_ADMIN
+            volumeMounts:
+            - name: varlogcontainers
+              mountPath: /var/log/containers
+            - name: varlogpods
+              mountPath: /var/log/pods
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumes:
+          - name: varlogcontainers
+            hostPath:
+              path: /var/log/containers
+          - name: varlogpods
+            hostPath:
+              path: /var/log/pods
+          - name: varlibdockercontainers
+            hostPath:
+              path: /var/lib/docker/containers
 opentelemetry-collector:
   mode: daemonset
   resources:
@@ -161,3 +245,4 @@ opentelemetry-collector:
 
     type: LoadBalancer
     # trafficDistribution: PreferClose
+
