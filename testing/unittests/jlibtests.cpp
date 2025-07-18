@@ -4259,7 +4259,7 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress, FixedIndexCompress };
 public:
     void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
 
@@ -4351,27 +4351,29 @@ public:
                 break;
             }
             case FixedBlockCompress:
+            case FixedIndexCompress:
             {
                 static constexpr size32_t blocksize = 32768;
+                bool allowPartialWrites = (opt == FixedBlockCompress);
                 MemoryAttr buffer(blocksize);
 
-                compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
-                const byte *ptrEnd = ptr + srcLen;
-                while (ptr != ptrEnd)
+                compressor->open(buffer.bufferBase(), blocksize, rowSz, allowPartialWrites);
+                for (size_t offset = 0; offset < srcLen; offset += rowSz)
                 {
+                    const byte * ptr = src + offset;
                     size32_t written = compressor->write(ptr, rowSz);
                     if (written != rowSz)
                     {
                         compressor->close();
+                        if (opt == FixedIndexCompress)
+                            CPPUNIT_ASSERT(written == 0);
                         size32_t size = compressor->buflen();
                         sizes.append(size);
                         compressed.append(size, buffer.bufferBase());
-                        compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
+                        compressor->open(buffer.bufferBase(), blocksize, rowSz, allowPartialWrites);
                         size32_t next = compressor->write(ptr+written, rowSz-written);
                         CPPUNIT_ASSERT(next == rowSz - written);
                     }
-
-                    ptr += rowSz;
                 }
                 compressor->close();
                 size32_t size = compressor->buflen();
@@ -4412,7 +4414,7 @@ public:
             {
                 decompressToBuffer(tgt, compressed, options);
             }
-            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress))
+            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress) || (opt == FixedIndexCompress))
             {
                 const byte * cur = compressed.bytes();
                 ForEachItemIn(i, sizes)
@@ -4468,6 +4470,8 @@ public:
             name.append("-c2b");
         else if (opt == FixedBlockCompress)
             name.append("-fb");
+        else if (opt == FixedIndexCompress)
+            name.append("-fi");
         else if (opt == LargeBlockCompress)
             name.append("-lb");
         if (options && *options)
@@ -4534,6 +4538,7 @@ public:
                 bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedIndexCompress);
 
                 //The stream compressors only currently support fixed size outputs
                 //They also do not support partial writes - so largeBlockCompress will fail.
@@ -4573,13 +4578,14 @@ public:
         size32_t rowSz = 0;
         initCompressionBuffer(src, rowSz);
 
-        const char * compression = "randrow";
+        const char * compression = "lz4";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
-//        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+//        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedIndexCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
   //      testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
     }
 };
