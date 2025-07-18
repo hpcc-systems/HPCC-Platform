@@ -3,6 +3,7 @@ import { useConst, useId } from "@fluentui/react-hooks";
 import { useToastController, ToastIntent } from "@fluentui/react-components";
 import { isExceptions } from "@hpcc-js/comms";
 import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
+import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { CustomToaster } from "../components/controls/CustomToaster";
 
@@ -90,7 +91,16 @@ export class ECLWatchLogger implements Writer {
             });
         } else {
             if (_msg instanceof Error) {
-                _msg = _msg.message;
+                let errorMessage = _msg.message;
+                // include cause if present
+                if (_msg.cause) {
+                    if (_msg.cause instanceof Error) {
+                        errorMessage += `\n\t${nlsHPCC.CausedBy}: "${_msg.cause.message}"`;
+                    } else {
+                        errorMessage += `\n\t${nlsHPCC.CausedBy}: "${String(_msg.cause)}"`;
+                    }
+                }
+                _msg = errorMessage;
             } else if (typeof _msg !== "string") {
                 _msg = JSON.stringify(_msg, undefined, 2);
             }
