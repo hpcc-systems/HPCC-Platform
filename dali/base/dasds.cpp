@@ -1812,34 +1812,44 @@ typedef MapBetween<__int64, __int64, CServerRemoteTreePtr, CServerRemoteTreePtr>
 struct CStoreInfo
 {
     unsigned edition{0};
-    unsigned xmlCrc{0};
-    unsigned binaryCrc{0};
+    struct CrcInfo
+    {
+        unsigned xmlCrc{0};
+        unsigned binaryCrc{0};
+    } crcInfo;
     StringAttr cache;
 
-    void serialize(IFileIO *fileIO, unsigned *crcXml, unsigned *crcBinary)
+
+    static void save(IFileIO *fileIO, unsigned *crcXml, unsigned *crcBinary)
     {
         assertex(fileIO);
 
-        // Only serialize xmlCrc and binaryCrc
+        // Only save xmlCrc and binaryCrc
+        CrcInfo crcInfo;
         if (crcXml)
-            xmlCrc = *crcXml;
-        fileIO->write(0, sizeof(unsigned), &xmlCrc);
+            crcInfo.xmlCrc = *crcXml;
         if (crcBinary)
-            binaryCrc = *crcBinary;
-        fileIO->write(sizeof(unsigned), sizeof(unsigned), &binaryCrc);
+            crcInfo.binaryCrc = *crcBinary;
+        fileIO->write(0, sizeof(CrcInfo), &crcInfo);
     }
 
-    void deserialize(IFileIO *fileIO)
+    void restore(IFileIO *fileIO)
     {
         assertex(fileIO);
 
-        // Only deserialize xmlCrc and binaryCrc
-        fileIO->read(0, sizeof(unsigned), &xmlCrc);
-        constexpr unsigned minFileSizeIncludingBinaryCrc = sizeof(unsigned) * 2;
-        if (fileIO->size() >= minFileSizeIncludingBinaryCrc)
-            fileIO->read(sizeof(unsigned), sizeof(unsigned), &binaryCrc);
-        else
-            binaryCrc = 0;
+        // Only restore xmlCrc and binaryCrc
+        size32_t sz = fileIO->read(0, (size_t)fileIO->size(), &crcInfo);
+        switch(sz)
+        {
+            case sizeof(CrcInfo):
+                break;
+            case sizeof(unsigned):
+                crcInfo.binaryCrc = 0;
+                break;
+            default:
+                crcInfo = {};
+                break;
+        }
     }
 };
 
@@ -5351,7 +5361,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 
         OwnedIFile iFile = createIFile(path.str());
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
-        storeInfo->serialize(iFileIO, crcXml, crcBinary);
+        storeInfo->save(iFileIO, crcXml, crcBinary);
 
         storeInfo->cache.set(filename.str());
         iFileIO->close();
@@ -5421,7 +5431,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         const char *name = fname.str();
         const char *editionBegin = name+strlen(base)+1;
         info.edition = atoi(editionBegin);
-        info.deserialize(iFileIO);
+        info.restore(iFileIO);
     }
 
     void refreshStoreInfo() { refreshInfo(storeInfo, "store"); }
@@ -6005,9 +6015,9 @@ public:
         refreshStoreInfo();
         constructStoreName(storeName, storeInfo.edition, res, ".xml");
         if (crc)
-            *crc = storeInfo.xmlCrc;
+            *crc = storeInfo.crcInfo.xmlCrc;
         if (binaryCrc)
-            *binaryCrc = storeInfo.binaryCrc;
+            *binaryCrc = storeInfo.crcInfo.binaryCrc;
         return res;
     }
     virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res)
@@ -6173,12 +6183,8 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-#ifdef _DEBUG
-    bool saveBinary = config->getPropBool("@saveBinary", true);
-#else
-    bool saveBinary = config->getPropBool("@saveBinary", false);
-#endif
-    clientProps->setPropBool("@saveBinary",saveBinary);
+    bool saveBinary = config->getPropBool("@saveBinary", isDebugBuild());
+    clientProps->setPropBool("@saveBinary", saveBinary);
     IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
     throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
     throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
