@@ -24,7 +24,7 @@ public class Activities {
         Capabilities caps = ((RemoteWebDriver) driver).getCapabilities();
 
         String browserName = caps.getBrowserName();
-        String browserVersion = caps.getVersion();
+        //String browserVersion = caps.getVersion();
         // System.out.println(browserName+" "+browserVersion);
 
         driver.get(args[0]);
