@@ -546,13 +546,6 @@ int init_main(int argc, const char* argv[])
         else
             throw MakeStringException(-1, "Failed to load config file %s", cfgfile);
 
-        StringBuffer cfgBuf;
-        toXML(envpt, cfgBuf);
-        DBGLOG("=====Loaded ESP configuration:\n%s", cfgBuf.str());
-        cfgBuf.clear();
-        toXML(getComponentConfigSP(), cfgBuf);
-        DBGLOG("=====Loaded ESP component configuration:\n%s", cfgBuf.str());
-
 #ifdef _CONTAINERIZED
         // TBD: Some esp services read daliServers from it's legacy config file
         procpt->setProp("@daliServers", getComponentConfigSP()->queryProp("@daliServers"));
@@ -600,8 +593,6 @@ int init_main(int argc, const char* argv[])
             startEspEventRecording(recordEventOptions, optRecordEventFilename);
         }
 
-        DBGLOG("Here is a change to the source rubberducky");
-        DBGLOG("About to setup the CCfgStore");
         CCfgStore cfgStore;
         cfgStore.init();
         if (isContainerized())
@@ -611,7 +602,6 @@ int init_main(int argc, const char* argv[])
         // Only ask the ESP to store the global config to avoid overwriting for
         // each configured component.
         cfgStore.storeComponentConfig("global", getGlobalConfigSP());
-        DBGLOG("Stored ESP component configuration for %s", processName);  
 
     }
     catch(IException* e)
