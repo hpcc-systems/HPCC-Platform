@@ -23,7 +23,7 @@
 
 constexpr static byte defaultGranularityBits = 0; // 1 page per bucket
 
-class CIndexHotspotOp : public CEventConsumingOp
+class event_decl CIndexHotspotOp : public CEventConsumingOp
 {
 public:
     virtual bool ready() const override;
