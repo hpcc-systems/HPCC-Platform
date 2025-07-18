@@ -78,7 +78,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                     rows.push({
                         file: results.Error.File,
                         text: results.Error.Text,
-                        status: nlsHPCC.Warning
+                        status: nlsHPCC.Error
                     });
                 }
                 if (rows.length > 0) {
