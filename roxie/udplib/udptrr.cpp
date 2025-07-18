@@ -380,6 +380,8 @@ static unsigned lastFlowPermitsSent = 0;
 static unsigned lastFlowRequestsReceived = 0;
 static unsigned lastDataPacketsReceived = 0;
 
+RelaxedAtomic<unsigned> duplicateCompletedMsgCount = {0};
+
 // The code that redirects flow messages from data socket to flow socket relies on the assumption tested here
 static_assert(sizeof(UdpRequestToSendMsg) < sizeof(UdpPacketHeader), "Expected UDP rts size to be less than packet header");
 
@@ -978,7 +980,9 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             case ReceiveState::granted:
                 break;
             case ReceiveState::idle:
-                DBGLOG("Duplicate completed message received: msg %s flowSeq %" SEQF "u sendSeq %" SEQF "u. Ignoring", flowType::name(msg.cmd), msg.flowSeq, msg.sendSeq);
+                if (udpTraceFlow)
+                    DBGLOG("Duplicate completed message received: msg %s flowSeq %" SEQF "u sendSeq %" SEQF "u. Ignoring", flowType::name(msg.cmd), msg.flowSeq, msg.sendSeq);
+                duplicateCompletedMsgCount++;
                 break;
             default:
                 // Unexpected state, should never happen! Ignore.
@@ -1223,6 +1227,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         #else
             adjustPriority(1);
         #endif
+            unsigned lastDupReport = msTick();
             UdpRequestToSendMsg msg;
             unsigned timeout = 5000;
             unsigned lastReport = 0;
@@ -1276,6 +1281,20 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         DBGLOG("UdpReceiver: receive_receive_flow::run unknown exception (%u failure(s) noted)", suppressed+1);
                         lastReport = now;
                         suppressed = 0;
+                    }
+                }
+                if (udpStatsReportInterval)
+                {
+                    unsigned now = msTick();
+                    if (now-lastDupReport > udpStatsReportInterval)
+                    {
+                        unsigned dupCount = duplicateCompletedMsgCount.load();
+                        if (dupCount > 0)
+                        {
+                            DBGLOG("%u Duplicate completed messages received in last %u seconds", dupCount, (now-lastDupReport)/1000);
+                            duplicateCompletedMsgCount.store(0);
+                        }
+                        lastDupReport = now;
                     }
                 }
             }

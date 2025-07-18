@@ -899,7 +899,7 @@ class CSendManager : implements ISendManager, public CInterface
                     // MORE - some of these should really be tracked per destination
                     if (okToSendTimeouts > lastOkToSendTimeouts)
                     {
-                        EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %u more times waiting for ok_to_send msg in last %u seconds",
+                        EXCLOG(MCoperatorWarning,"WARNING: UdpSender: timed out %u more times waiting for ok_to_send msg in last %u seconds",
                             okToSendTimeouts - lastOkToSendTimeouts, (now-lastResentReport)/1000);
                         lastOkToSendTimeouts = okToSendTimeouts;
                     }
