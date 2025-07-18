@@ -5869,7 +5869,8 @@ public:
             {
                 WARNLOG("Another process has updated the edition whilst saving the store: %s", newXmlStoreNamePath.str());
                 iXmlFileTmpStore->remove();
-                iBinaryFileTmpStore->remove();
+                if (iBinaryFileTmpStore.get())
+                    iBinaryFileTmpStore->remove();
                 return;
             }
             try
@@ -5884,7 +5885,8 @@ public:
                 EXCLOG(e, errMsg.append("Failed to rename new xml store to : ").append(newXmlStoreNamePath).append(". Has already been created by another process?").str());
                 e->Release();
                 iXmlFileTmpStore->remove();
-                iBinaryFileTmpStore->remove();
+                if (iBinaryFileTmpStore.get())
+                    iBinaryFileTmpStore->remove();
                 return;
             }
             if (binaryStoreSaved)
