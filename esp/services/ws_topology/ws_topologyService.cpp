@@ -34,6 +34,7 @@
 #endif
 #include "exception_util.hpp"
 #include "jwrapper.hpp"
+#include "daliKVStore.hpp"
 
 #define SDS_LOCK_TIMEOUT 30000
 
@@ -1993,3 +1994,108 @@ bool CWsTopologyEx::onTpListLogFiles(IEspContext &context, IEspTpListLogFilesReq
     }
     return false;
 }
+
+bool CWsTopologyEx::onTpConfiguredComponents(IEspContext &context, IEspTpConfiguredComponentsRequest &req, IEspTpConfiguredComponentsResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::onTpConfiguredComponents: Permission denied.");
+
+        resp.getConfiguredComponents().append("global");
+
+        if (isContainerized())
+        {
+            Owned<IPropertyTree> globalConfig = getGlobalConfig();
+            Owned<IPropertyTreeIterator> services = globalConfig->getElements("services/service[@name]");
+
+            ForEach(*services)
+            {
+                IPropertyTree &service = services->query();
+                resp.getConfiguredComponents().append(service.queryProp("@name"));
+            }
+        }
+        else
+        {
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+            Owned<IConstEnvironment> constEnv = factory->openEnvironment();
+            IPropertyTree &pTree = constEnv->getPTree();
+
+            Owned<IPropertyTreeIterator> processes = pTree.getElements("Software/EspProcess[@name]");
+            ForEach(*processes)
+            {
+                IPropertyTree &process = processes->query();
+                resp.getConfiguredComponents().append(process.queryProp("@name"));
+            }
+
+            // Thor configs not added to store yet uncomment when complete
+            // Owned<IPropertyTreeIterator> thorClusters = pTree.getElements("Software/ThorCluster[@name]");
+            // ForEach(*thorClusters)
+            // {
+            //     IPropertyTree &thorCluster = thorClusters->query();
+            //     resp.getConfiguredComponents().append(thorCluster.queryProp("@name"));
+            // }
+
+            Owned<IPropertyTreeIterator> eclccServers = pTree.getElements("Software/EclCCServerProcess[@name]");
+            ForEach(*eclccServers)
+            {
+                IPropertyTree &eclcc = eclccServers->query();
+                resp.getConfiguredComponents().append(eclcc.queryProp("@name"));
+            }
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsTopologyEx::onTpComponentConfiguration(IEspContext &context, IEspTpComponentConfigurationRequest &req, IEspTpComponentConfigurationResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::onTpComponentConfiguration: Permission denied.");
+        const StringArray &componentNames = req.getComponentNames();
+
+        if (componentNames.empty())
+            throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "No Component name provided."); 
+
+
+        CCfgStore cfgStore;
+        IArrayOf<IEspTpConfigResult> componentConfigs;
+
+        for (unsigned i = 0; i < componentNames.length(); i++)
+        {
+            const char *componentName = componentNames.item(i);
+            if (!componentName || !*componentName)
+                continue;
+
+            StringBuffer config;
+            bool found = cfgStore.getComponentConfig(componentName, config);
+
+            if (!found)
+                throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "Invalid Component name provided: '%s' no configuration found.", componentName);
+
+            if (config.isEmpty())
+                throw makeStringExceptionV(ECLWATCH_COMPONENT_CONFIG_EMPTY, "Config for component: '%s' is empty.", componentName);
+
+            Owned<IEspTpConfigResult> configuration = createTpConfigResult();
+            configuration->setComponentName(componentName);
+            configuration->setConfiguration(config.str());
+            componentConfigs.append(*configuration.getClear());
+        }
+
+        if (isContainerized())
+            resp.setConfigFormat("JSON");
+        else
+            resp.setConfigFormat("XML");
+
+        resp.setResults(componentConfigs);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}
+

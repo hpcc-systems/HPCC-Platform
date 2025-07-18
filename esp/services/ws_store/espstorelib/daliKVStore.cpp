@@ -17,6 +17,20 @@
 
 #include "daliKVStore.hpp"
 
+#define SDS_LOCK_TIMEOUT_KVSTORE (30*1000)
+
+static const char* DALI_KVSTORE_GLOBAL="GLOBAL";
+static const char* DALI_KVSTORE_NAME_ATT="@name";
+static const char* DALI_KVSTORE_DESCRIPTION_ATT="@description";
+static const char* DALI_KVSTORE_CREATEDBY_ATT="@createUser";
+static const char* DALI_KVSTORE_TYPE_ATT="@type";
+static const char* DALI_KVSTORE_CREATEDTIME_ATT="@createTime";
+static const char* DALI_KVSTORE_EDITEDBY_ATT="@editBy";
+static const char* DALI_KVSTORE_EDITEDTIME_ATT="@editTime";
+static const char* DALI_KVSTORE_MAXVALSIZE_ATT="@maxValSize";
+
+static unsigned int DALI_KVSTORE_MAXVALSIZE_DEFAULT=1024;
+
 void getEncodedLowerCaseUserName(StringBuffer & out, ISecUser * username)
 {
     StringBuffer userlowercased;
@@ -121,9 +135,9 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
 
     Owned<IPropertyTree> storetree = conn->getRoot();
 
-    int maxval = storetree->getPropInt(DALI_KVSTORE_MAXVALSIZE_ATT, 0);
+    size_t maxval = storetree->getPropInt(DALI_KVSTORE_MAXVALSIZE_ATT, 0);
     if (maxval > 0 && strlen(value) > maxval)
-        throw MakeStringException(-1, "DALI Keystore set(): Size of the value exceeds maximum size allowed (%i)", maxval);
+        throw MakeStringException(-1, "DALI Keystore set(): Size of the value exceeds maximum size allowed (%lu)", maxval);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);

@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <string>
 #include "codesigner.hpp"
+#include "daliKVStore.hpp"
 
 static const char * * globalArgv = nullptr;
 
@@ -1583,6 +1584,9 @@ int main(int argc, const char *argv[])
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
         openLogFile();
+        CCfgStore cfgStore;
+        cfgStore.init();
+        cfgStore.storeComponentConfig(processName, getComponentConfigSP());
         configGitLock();
         if (globals->getPropBool("@k8sJob", false))
         {

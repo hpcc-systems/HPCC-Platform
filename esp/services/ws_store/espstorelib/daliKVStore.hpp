@@ -31,20 +31,7 @@
 #include "SecureUser.hpp"
 #include "espStoreShare.hpp"
 
-#define SDS_LOCK_TIMEOUT_KVSTORE (30*1000)
-
 static const char* DALI_KVSTORE_PATH="/KVStore";
-static const char* DALI_KVSTORE_GLOBAL="GLOBAL";
-static const char* DALI_KVSTORE_NAME_ATT="@name";
-static const char* DALI_KVSTORE_DESCRIPTION_ATT="@description";
-static const char* DALI_KVSTORE_CREATEDBY_ATT="@createUser";
-static const char* DALI_KVSTORE_TYPE_ATT="@type";
-static const char* DALI_KVSTORE_CREATEDTIME_ATT="@createTime";
-static const char* DALI_KVSTORE_EDITEDBY_ATT="@editBy";
-static const char* DALI_KVSTORE_EDITEDTIME_ATT="@editTime";
-static const char* DALI_KVSTORE_MAXVALSIZE_ATT="@maxValSize";
-
-static unsigned int DALI_KVSTORE_MAXVALSIZE_DEFAULT=1024;
 
 class DALIKVSTORE_API CDALIKVStore : public CInterface, implements IEspStore
 {
@@ -92,6 +79,53 @@ public:
 
 private:
     bool m_isDetachedFromDali = false;
+};
+
+
+
+class CCfgStore : public CInterface
+{
+private:
+
+    static constexpr const char* DALI_KVSTORE_CFG_STORE_NAME = "__ConfigStore__";
+    static constexpr const char* DALI_KVSTORE_CFG_NAMESPACE = "ConfigStore";
+    static constexpr const char* DALI_KVSTORE_CFG_DESCRIPTION = "Component Config Store for ECL Watch Display"; 
+    static constexpr unsigned int DALI_KVSTORE_CFG_MAXVALSIZE = 20480; // 20KB - a bit larger than the largest known config, eclwatch
+
+    CDALIKVStore m_store;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CCfgStore() {}
+
+    ~CCfgStore() {}
+
+    void init()
+    {
+        m_store.init("unused", nullptr, nullptr);
+        Owned<IPropertyTree> existingStore = m_store.getStores(DALI_KVSTORE_CFG_STORE_NAME, nullptr, nullptr, nullptr);
+        VStringBuffer xpath("Store[@name='%s']", DALI_KVSTORE_CFG_STORE_NAME);
+        unsigned int count = existingStore->getCount(xpath);
+
+        if (count == 0)
+            m_store.createStore(nullptr, DALI_KVSTORE_CFG_STORE_NAME, DALI_KVSTORE_CFG_DESCRIPTION, nullptr, DALI_KVSTORE_CFG_MAXVALSIZE);
+    }
+
+    void storeComponentConfig(const char *key, IPropertyTree *value)
+    {
+        StringBuffer serializedValue;
+        if (isContainerized())
+            toYAML(value, serializedValue, 2, 0);
+        else
+            toXML(value, serializedValue);
+        m_store.set(DALI_KVSTORE_CFG_STORE_NAME, DALI_KVSTORE_CFG_NAMESPACE, key, serializedValue.str(), nullptr, true);
+    }
+
+    bool getComponentConfig(const char *key, StringBuffer &value)
+    {
+        return m_store.fetch(DALI_KVSTORE_CFG_STORE_NAME, DALI_KVSTORE_CFG_NAMESPACE, key, value, nullptr, true);
+    }
 };
 
 #endif /* DALIKVSTORE_HPP_ */

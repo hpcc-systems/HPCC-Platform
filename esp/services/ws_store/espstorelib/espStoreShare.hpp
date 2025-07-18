@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#pragma warning (disable : 4786)
+// TODO: investigate why this is now causing a warning, claims unknown pragma
+// #pragma warning (disable : 4786)
 
 #ifndef _ESPSTORESHARE_HPP__
 #define _ESPSTORESHARE_HPP__

@@ -47,6 +47,8 @@ include_directories (
          ./../../fs/dafsclient
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/esp/services/ws_store/espstorelib
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -DESPCFG_EXPORTS)
@@ -63,6 +65,7 @@ target_link_libraries ( esp
          remote 
          dalibase 
          workunit
+         dalistorelib
     ) 
 
 if (NOT CONTAINERIZED)

@@ -44,7 +44,9 @@ include_directories (
          ./../../system/jlib
          ./../../system/security/shared
          ${HPCC_SOURCE_DIR}/system/codesigner
-    )
+         ${HPCC_SOURCE_DIR}/esp/services/ws_store/espstorelib
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib       
+)
 
 HPCC_ADD_EXECUTABLE ( eclccserver ${SRCS} ${INCLUDES} )
 install ( TARGETS eclccserver RUNTIME DESTINATION ${EXEC_DIR} )
@@ -52,6 +54,7 @@ install ( TARGETS eclccserver RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclccserver 
          jlib
          workunit
+         dalistorelib
     )
 
 HPCC_ADD_SUBDIRECTORY (vchooks "PLATFORM")
