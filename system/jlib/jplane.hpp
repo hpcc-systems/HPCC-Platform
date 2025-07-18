@@ -105,6 +105,7 @@ interface IStoragePlane: extends IInterface
     virtual const std::vector<std::string> &queryHosts() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
+    virtual unsigned queryNumStripes() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;

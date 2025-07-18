@@ -271,6 +271,14 @@ public:
 
     virtual bool queryDirPerPart() const override { return config->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
 
+    virtual unsigned queryNumStripes() const override
+    {
+        if (config->hasProp("@hostGroup"))
+            return 1;
+
+        return config->getPropInt("@numDevices", 1);
+    }
+
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
     {
         if (AccessMode::none == desiredModes)

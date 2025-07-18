@@ -194,14 +194,21 @@ static IPropertyTree *getCostPropTree(const char *cluster)
 {
     Owned<const IPropertyTree> plane = getStoragePlaneConfig(cluster, false);
 
-    if (plane && plane->hasProp("cost/@storageAtRest"))
+    if (plane)
     {
-        return plane->getPropTree("cost");
+        IPropertyTree *cost = plane->queryPropTree("cost");
+        if (cost)
+            return LINK(cost);
+
+        // Ensure spill plane doesn't use global config
+        // (This is to make sure spill planes are only costed if they are
+        // specifically configured with cost config.)
+        if (strsame(plane->queryProp("@category"), "spill"))
+            return nullptr;
+
+        // drop-through to use global cost config
     }
-    else
-    {
-        return getGlobalConfigSP()->getPropTree("cost");
-    }
+    return getGlobalConfigSP()->getPropTree("cost");
 }
 
 extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays)
