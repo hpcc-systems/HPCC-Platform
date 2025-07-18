@@ -5935,13 +5935,13 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 static CConfigUpdateHook configUpdateHook;
 static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnvironment always null in containerized
 {
-    bool forceGroupUpdate = getComponentConfigSP()->getPropBool("DFS/@forceGroupUpdate");
+    bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
     initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
     if (isContainerized())
     {
         auto updateFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
         {
-            bool forceGroupUpdate = getComponentConfigSP()->getPropBool("DFS/@forceGroupUpdate");
+            bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
             initClusterAndStoragePlaneGroups(forceGroupUpdate, nullptr);
         };
         configUpdateHook.installOnce(updateFunc, false);
