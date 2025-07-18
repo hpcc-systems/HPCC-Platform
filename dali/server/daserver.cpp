@@ -472,10 +472,10 @@ int main(int argc, const char* argv[])
 
             serverConfig->getProp("@dataPath", dataPath);
             /* NB: mirror settings are unlikely to be used in a container setup
-            If detected, set in to legacy location under SDS/ for backward compatibility */
+            If detected, set in to legacy location under sds/ for backward compatibility */
             serverConfig->getProp("@remoteBackupLocation", mirrorPath);
             if (mirrorPath.length())
-                serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
+                serverConfig->setProp("sds/@remoteBackupLocation", mirrorPath);
         }
         else
         {
@@ -523,7 +523,7 @@ int main(int argc, const char* argv[])
             }
             // JCSMORE remoteBackupLocation should not be a property of SDS section really.
             if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
-                serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
+                serverConfig->getProp("sds/@remoteBackupLocation",mirrorPath);
         }
         PROGLOG("Build %s", hpccBuildInfo.buildTag);
 
@@ -544,7 +544,7 @@ int main(int argc, const char* argv[])
                     StringBuffer backupURL;
                     if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
                     { // local machine path, convert to url
-                        const char *backupnode = serverConfig->queryProp("SDS/@backupComputer");
+                        const char *backupnode = serverConfig->queryProp("sds/@backupComputer");
                         RemoteFilename rfn;
                         if (backupnode&&*backupnode) {
                             SocketEndpoint ep(backupnode);
@@ -561,13 +561,13 @@ int main(int argc, const char* argv[])
                         backupURL.append(mirrorPath);
                     recursiveCreateDirectory(backupURL.str());
                     addPathSepChar(backupURL);
-                    serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
+                    serverConfig->setProp("sds/@remoteBackupLocation", backupURL.str());
                     PROGLOG("Backup URL = %s", backupURL.str());
                 }
                 catch (IException *e)
                 {
                     EXCLOG(e, "Failed to create remote backup directory, disabling backups", MSGCLS_warning);
-                    serverConfig->removeProp("SDS/@remoteBackupLocation");
+                    serverConfig->removeProp("sds/@remoteBackupLocation");
                     mirrorPath.clear();
                     e->Release();
                 }
@@ -603,7 +603,7 @@ int main(int argc, const char* argv[])
                                 return 0;
                             }
                             else
-                                serverConfig->setProp("SDS/@remoteBackupLocation", mountPoint.str());
+                                serverConfig->setProp("sds/@remoteBackupLocation", mountPoint.str());
                             mirrorPath.clear().append(mountPoint);
                         }
                     }
@@ -652,7 +652,7 @@ int main(int argc, const char* argv[])
             {
                 StringBuffer s("Failure whilst preparing dali backup location: ");
                 LOG(MCoperatorError, e, s.append(mirrorPath).append(". Backup disabled").str());
-                serverConfig->removeProp("SDS/@remoteBackupLocation");
+                serverConfig->removeProp("sds/@remoteBackupLocation");
                 e->Release();
             }
         }
@@ -718,8 +718,8 @@ int main(int argc, const char* argv[])
         }
 
 // SNMP logging
-        bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");
-        if (serverConfig->getPropBool("SDS/@enableSysLog",true))
+        bool enableSNMP = serverConfig->getPropBool("sds/@enableSNMP");
+        if (serverConfig->getPropBool("sds/@enableSysLog",true))
             UseSysLogForOperatorMessages();
         AddServers(auditDir.str());
         addAbortHandler(actionOnAbort);
