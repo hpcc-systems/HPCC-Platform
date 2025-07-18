@@ -59,7 +59,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                             status: nlsHPCC.Warning
                         });
                     });
-                } else {
+                } else if (results.Warning) {
                     rows.push({
                         file: results.Warning.File,
                         text: results.Warning.Text,
@@ -74,11 +74,11 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                             status: nlsHPCC.Error
                         });
                     });
-                } else {
+                } else if (results.Error) {
                     rows.push({
                         file: results.Error.File,
                         text: results.Error.Text,
-                        status: nlsHPCC.Warning
+                        status: nlsHPCC.Error
                     });
                 }
                 if (rows.length > 0) {
