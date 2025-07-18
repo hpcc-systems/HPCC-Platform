@@ -1,7 +1,11 @@
 import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { AccessService, AccountService, WsAccount } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore } from "src/KeyValStore";
+import nlsHPCC from "src/nlsHPCC";
+
+const logger = scopedLogger("src-react/hooks/user.ts");
 
 declare const dojoConfig;
 
@@ -129,6 +133,9 @@ export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAd
                             setIsAdmin(account.accountType === "Administrator");
                             dojoConfig.isAdmin = account.accountType === "Administrator";
                         }
+                    }).catch(err => {
+                        const newErr = new Error(`${nlsHPCC.UnableToRetrieveGroups},`, { cause: err });
+                        logger.error(newErr);
                     });
                 }
                 setCurrentUser(account);
