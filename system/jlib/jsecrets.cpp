@@ -1851,3 +1851,53 @@ void testExpandSecretKey(std::string & category, std::string & name, std::string
     expandSecretKey(category, name, optVaultId, optVersion, key);
 }
 #endif
+
+/**
+ * Masks a secret string by replacing a percentage of its characters with a mask character.
+ *
+ * @param maskedSecret      [out] StringBuffer to receive the masked secret.
+ * @param originalSecret    [in]  The original secret string to be masked.
+ * @param maskPercentage    [in]  Percentage of the string to mask (70-100). If below minimum, defaults to 70%.
+ * @param maskRightSide     [in]  If true, mask the right side of the string; if false, mask the left side.
+ * @param maskChar          [in]  Character to use for masking.
+ *
+ * If originalSecret is empty or nullptr, maskedSecret will be unchanged.
+ * If originalSecret is length 1, the result will be a single maskChar.
+ * If maskPercentage is out of bounds, it will be clamped to [MIN_MASK_PERCENTAGE, 100].
+ */
+void maskSecret(StringBuffer & maskedSecret, const char * originalSecret, unsigned maskPercentage, bool maskRightSide, char maskChar)
+{
+    if (isEmptyString(originalSecret))
+        return;
+
+    auto secretLen = strlen(originalSecret);
+    if (secretLen == 1)
+    {
+        maskedSecret.append(maskChar);
+        return;
+    }
+
+    if (maskPercentage < MIN_MASK_PERCENTAGE)
+        maskPercentage = MIN_MASK_PERCENTAGE;
+
+    if (maskPercentage > 100)
+        maskPercentage = 100;
+
+    size_t unmaskedCharsCount = static_cast<size_t>(((100 - maskPercentage) / 100.0) * secretLen);
+    if (maskRightSide)
+    {
+        for (size_t i = 0; i < unmaskedCharsCount; ++i)
+            maskedSecret.append(originalSecret[i]);
+
+        for (size_t i = 0; i < secretLen - unmaskedCharsCount; ++i)
+            maskedSecret.append(maskChar);
+    }
+    else
+    {
+        for (size_t i = 0; i < secretLen - unmaskedCharsCount; ++i)
+            maskedSecret.append(maskChar);
+
+        for (size_t i = secretLen - unmaskedCharsCount; i < secretLen; ++i)
+            maskedSecret.append(originalSecret[i]);
+    }
+}

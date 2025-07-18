@@ -4930,6 +4930,14 @@ public:
         CPPUNIT_TEST(testUpdate2);
         CPPUNIT_TEST(testBackgroundUpdate);
         CPPUNIT_TEST(testKeyEncoding);
+
+        CPPUNIT_TEST(testDefaultMasking);
+        CPPUNIT_TEST(testLeftMasking);
+        CPPUNIT_TEST(testCustomMaskChar);
+        CPPUNIT_TEST(testShortSecret);
+        CPPUNIT_TEST(testZeroPercent);
+        CPPUNIT_TEST(testHundredPercent);
+        CPPUNIT_TEST(testNullSecret);
     CPPUNIT_TEST_SUITE_END();
 
     //Each test creates a different instance of the class(!) so member values cannot be used to pass items
@@ -4937,6 +4945,59 @@ public:
     StringBuffer secretRoot;
 
 protected:
+void testDefaultMasking()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "SuperSecret123");
+        // By default, mask right side, 90% (defaultMaskingPercentage), '*' (defaultMaskChar)
+        // For "SuperSecret123" (14 chars), 90% = 1.26 -> 1 chars unmasked on right
+        CPPUNIT_ASSERT_EQUAL_STR("S*************", masked.str());
+    }
+
+    void testLeftMasking()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "SuperSecret123567890", 50, false); // mask left side, 50%
+        // 20 chars, provided % is below minimum. Default min is 70% = 6 chars unmasked on left
+        CPPUNIT_ASSERT_EQUAL_STR("**************567890", masked.str());
+    }
+
+    void testCustomMaskChar()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "Secret", 75, true, '#');
+        // 6 chars, 75% = 1.5 -> 1 unmasked on right
+        CPPUNIT_ASSERT_EQUAL_STR("S#####", masked.str());
+    }
+
+    void testShortSecret()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "12", 70);
+        CPPUNIT_ASSERT_EQUAL_STR("**", masked.str());
+    }
+
+    void testZeroPercent()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "NoMask7890", 0); //min percentage is 70
+        CPPUNIT_ASSERT_EQUAL_STR("NoM*******", masked.str());
+    }
+
+    void testHundredPercent()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "AllMask", 100);
+        CPPUNIT_ASSERT_EQUAL_STR("*******", masked.str());
+    }
+
+    void testNullSecret()
+    {
+        StringBuffer masked;
+        maskSecret(masked, nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("", masked.str());
+    }
+
     void checkSecret(const IPropertyTree * match, const char * key, const char * expectedValue)
     {
         if (match)
