@@ -75,6 +75,7 @@
 #define THOROPT_COMP_FORCEFLZ "v9_4_forceFLZ"                                     // Forces file compression to use FLZ                                            (default = false)
 #define THOROPT_COMP_FORCELZ4 "v9_4_forceLZ4"                                     // Forces file compression to use LZ4                                            (default = false)
 #define THOROPT_COMP_FORCELZ4HC "v9_4_forceLZ4HC"                                 // Forces file compression to use LZ4HC                                          (default = false)
+#define THOROPT_COMPRESS_FORMAT "compression"                                     // Compression format to use (default = "")
 #define THOROPT_TRACE_ENABLED "traceEnabled"                                      // Output from TRACE activity enabled                                            (default = false)
 #define THOROPT_TRACE_LIMIT "traceLimit"                                          // Number of rows from TRACE activity                                            (default = 10)
 #define THOROPT_READ_CRC "crcReadEnabled"                                         // Enabled CRC validation on disk reads if file CRC are available                (default = true)
