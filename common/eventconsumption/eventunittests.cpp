@@ -36,17 +36,18 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
         CPPUNIT_ASSERT_EQUAL(expectAttr.queryState(), actualAttr.queryState());
         if (!expectAttr.isAssigned())
             continue;
+        VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));;
         switch (expectAttr.queryTypeClass())
         {
         case EATCtext:
-            CPPUNIT_ASSERT_EQUAL(expectAttr.queryTextValue(), actualAttr.queryTextValue());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryTextValue(), actualAttr.queryTextValue());
             break;
         case EATCnumeric:
         case EATCtimestamp:
-            CPPUNIT_ASSERT_EQUAL(expectAttr.queryNumericValue(), actualAttr.queryNumericValue());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryNumericValue(), actualAttr.queryNumericValue());
             break;
         case EATCboolean:
-            CPPUNIT_ASSERT_EQUAL(expectAttr.queryBooleanValue(), actualAttr.queryBooleanValue());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryBooleanValue(), actualAttr.queryBooleanValue());
             break;
         default:
             CPPUNIT_FAIL("unhandled attribute type class");
@@ -95,6 +96,7 @@ IPropertyTree* createTestConfiguration(const char* testData)
 
 void testEventVisitationLinks(const char* testData)
 {
+    START_TEST
     Owned<IPropertyTree> testTree = createTestConfiguration(testData);
     IPropertyTree* inputTree = testTree->queryBranch("input");
     CPPUNIT_ASSERT_MESSAGE("missing input section", inputTree != nullptr);
@@ -103,10 +105,12 @@ void testEventVisitationLinks(const char* testData)
     Owned<IPropertyTreeIterator> links = testTree->getElements("link");
     CPPUNIT_ASSERT_MESSAGE("missing visitation link section", links->first());
     testEventVisitationLinks(*inputTree, *expectTree, *links);
+    END_TEST
 }
 
 void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks)
 {
+    START_TEST
     CPPUNIT_ASSERT_MESSAGE("missing visitation links", visitationLinks.first());
     Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree);
     Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree);
@@ -124,6 +128,7 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         visitor.setown(link.getClear());
     }
     visitIterableEvents(*input, *visitor);
+    END_TEST
 }
 
 #endif
