@@ -64,14 +64,12 @@ public:
     virtual void threadmain() override
     {
         threadStartedCount++;
-        DBGLOG("Thread '%s' started, runtime %u ms", threadName.c_str(), threadRuntimeMs);
 
         // Signal after the count is incremented to ensure proper ordering
         startSemaphore.signal();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(threadRuntimeMs));
 
-        DBGLOG("Thread '%s' completed", threadName.c_str());
         threadCompletedCount++;
     }
 
@@ -146,14 +144,13 @@ public:
         factory.clear();
     }
 
-    void checkDuration(unsigned actualMs, unsigned minExpectedMs)
+    bool checkDuration(unsigned actualMs, unsigned minExpectedMs)
     {
         constexpr unsigned threadCompleteMarginMs{200};
         unsigned maxExpectedMs = minExpectedMs + threadCompleteMarginMs;
         DBGLOG("checkDuration actualMs: %u minMs: %u maxMs: %u", actualMs, minExpectedMs, maxExpectedMs);
 
-        CPPUNIT_ASSERT(actualMs >= minExpectedMs);
-        CPPUNIT_ASSERT(actualMs <= maxExpectedMs);
+        return actualMs >= minExpectedMs && actualMs <= maxExpectedMs;
     }
 
     void testTightlyBoundThreadPool()
@@ -169,7 +166,7 @@ public:
         pool->start(&params, params.name);
         // Wait for both threads to signal that they've started
         auto duration = measureThreadStartDuration(beforeStart, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
 
         // Test Thread Pool start delay
@@ -180,7 +177,7 @@ public:
         params = {lifespan200milliseconds, "Thread3"};
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT(threadStartedCount.load() >= 2);
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
 
@@ -195,7 +192,7 @@ public:
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name);
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, threadCompletedCount.load());
 
@@ -209,7 +206,7 @@ public:
             CPPUNIT_FAIL("An exception should have been thrown when starting Thread5");
         }
         duration = measureThreadStartDuration(beforeStart, 0);
-        checkDuration(duration.count(), 100);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 100));
         CPPUNIT_ASSERT_EQUAL(1U, thread5ExceptionCount);
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, threadCompletedCount.load());
@@ -225,7 +222,7 @@ public:
             CPPUNIT_FAIL("An exception should not have been thrown when starting Thread6");
         }
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 3);
 
@@ -235,13 +232,13 @@ public:
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name);
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(6U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
         // Pool is at capacity, startNoBlock should throw exception immediately
         params = {lifespan200milliseconds, "Thread8"};
         attemptThreadStartCaller(StartFunctionToUse::StartNoBlockFunction, &params, ExpectExceptions::ExceptionsExpected, &duration);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(6U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
         // Wait for the running count to be less than 2
@@ -250,7 +247,7 @@ public:
         // Thread8 should start immediately as the pool has capacity
         params = {lifespan200milliseconds, "Thread9"};
         attemptThreadStartCaller(StartFunctionToUse::StartNoBlockFunction, &params, ExpectExceptions::ExceptionsIgnored, &duration);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         // Test Thread Pool joinAll
         //
@@ -277,7 +274,7 @@ public:
 
         // Wait for both threads to signal that they've started
         auto duration = measureThreadStartDuration(beforeStart, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(0U, threadCompletedCount.load());
 
@@ -297,7 +294,7 @@ public:
         if (!attemptThreadStartCaller(StartFunctionToUse::StartFunction, &params, milliseconds1000, ExpectExceptions::ExceptionsIgnored))
             CPPUNIT_FAIL("An exception should not have been thrown when starting Thread4");
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 200);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 200));
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 1);
         CPPUNIT_ASSERT(pool->runningCount() >= 1);
@@ -308,7 +305,7 @@ public:
         params = {lifespan1000milliseconds, "Thread5"};
         pool->start(&params, params.name);
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 2);
         CPPUNIT_ASSERT(pool->runningCount() >= 2);
 
@@ -317,7 +314,7 @@ public:
         beforeStart = std::chrono::high_resolution_clock::now();
         pool->start(&params, params.name); // no exception should be thrown as no timeout is specified on the start
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 700);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 700));
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 2);
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
@@ -334,7 +331,7 @@ public:
         params = {lifespan1000milliseconds, "Thread8"};
         pool->start(&params, params.name, INFINITE);
         duration = measureThreadStartDuration(beforeStart, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(7U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 4);
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
@@ -347,7 +344,7 @@ public:
                                    this->pool->start(&asyncParams, asyncParams.name, INFINITE); });
         asyncStart.detach();
         duration = measureThreadStartDuration(beforeStart, 1);
-        checkDuration(duration.count(), 990);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 990));
         CPPUNIT_ASSERT_EQUAL(8U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 6);
         CPPUNIT_ASSERT(pool->runningCount() >= 1);
@@ -369,7 +366,7 @@ public:
 
         // Wait for Thread4 and Thread5 to start (they should wait for slots to become available)
         duration = measureThreadStartDuration(beforeStart, 2);
-        checkDuration(duration.count(), 990);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 990));
         CPPUNIT_ASSERT_EQUAL(10U, threadStartedCount.load());
         CPPUNIT_ASSERT(threadCompletedCount.load() >= 8);
 
@@ -397,21 +394,21 @@ public:
 
         // The 3 threads should start immediately without throttling
         auto duration = measureThreadStartDuration(startTime, 3);
-        checkDuration(duration.count(), 00);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(3U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
 
         // When pool is at capacity, startNoBlock should throw exception immediately
         params = {lifespan1000milliseconds, "Thread4"};
         attemptThreadStartCaller(StartFunctionToUse::StartNoBlockFunction, &params, ExpectExceptions::ExceptionsExpected, &duration);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         // This should block for a start delay of 100ms then throw exception
         params = {lifespan1000milliseconds, "Thread5"};
         unsigned thread5ExceptionCount = 0;
         if (attemptThreadStartCaller(StartFunctionToUse::StartFunction, &params, milliseconds100, ExpectExceptions::ExceptionsExpected, &thread5ExceptionCount, noSlotsAvailableMessage, &duration, 100))
             CPPUNIT_FAIL("An exception should have been thrown when starting Thread5");
-        checkDuration(duration.count(), 100);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 100));
         CPPUNIT_ASSERT_EQUAL(1U, thread5ExceptionCount);
 
         // This should block for up to 500ms delay then not throw an exception as no timeout is specified on the thread start
@@ -421,7 +418,7 @@ public:
             CPPUNIT_FAIL("An exception should not have been thrown when starting Thread6");
 
         duration = measureThreadStartDuration(startTime, 1);
-        checkDuration(duration.count(), 90);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 90));
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
 
@@ -439,7 +436,7 @@ public:
 
         // Should start immediately without throttling
         duration = measureThreadStartDuration(startTime, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         // Test: Pool was above, fell below, and is now at defaultmax again
         CPPUNIT_ASSERT_EQUAL(3U, pool->runningCount());
@@ -467,10 +464,10 @@ public:
             unsigned threadId{0};
             StringBuffer threadName;
             auto startTime = std::chrono::high_resolution_clock::now();
-            for (unsigned threadId = 1; threadId <= 200; threadId++)
+            for (unsigned threadId = 0; threadId < 200; threadId++)
             {
                 threadName.appendf("Thread%u", threadId);
-                if (threadId < 101)
+                if (threadId < 100)
                     params = {lifespan500milliseconds, threadName.str()};
                 else
                     params = {lifespan1000milliseconds, threadName.str()};
@@ -478,14 +475,10 @@ public:
             }
 
             auto duration = measureThreadStartDuration(startTime, 200);
-            checkDuration(duration.count(), 0);
+            CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
             CPPUNIT_ASSERT_EQUAL(200U, pool->runningCount());
             CPPUNIT_ASSERT_EQUAL(200U, threadStartedCount.load());
             CPPUNIT_ASSERT_EQUAL(0U, threadCompletedCount.load());
-
-            // Wait for 100 threads to complete, leaving the pool at capacity
-            while (pool->runningCount() > 100)
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
             // Test: Pool is at capacity, should throttle new thread starts
             //
@@ -495,7 +488,7 @@ public:
             // to start with no delay. Whilst 100 threads will wait up to 100ms before
             // timing out.
             startTime = std::chrono::high_resolution_clock::now();
-            for (threadId = 201; threadId <= 400; threadId++)
+            for (threadId = 200; threadId < 400; threadId++)
             {
                 threadName.appendf("Thread%u", threadId);
                 params = {lifespan1000milliseconds, threadName.str()};
@@ -527,12 +520,11 @@ public:
 
         auto startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(pool->waitAvailable(100));
-        CPPUNIT_ASSERT(pool->waitAvailable(100));
         CPPUNIT_ASSERT(pool->waitAvailable(0));
 
         // waitAvailable should return true immediately as there are an infinite number of slots available
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         pool.clear();
 
@@ -546,7 +538,7 @@ public:
 
         // waitAvailable should return true immediately as there are two slots available
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         startTime = std::chrono::high_resolution_clock::now();
         ThreadParams params = {lifespan1000milliseconds, "Thread1"};
@@ -556,7 +548,7 @@ public:
 
         // Two slots were available, so the threads should start immediately
         duration = measureThreadStartDuration(startTime, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(2U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(0U, threadCompletedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
@@ -565,7 +557,7 @@ public:
         startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(!pool->waitAvailable(200));
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        checkDuration(duration.count(), 200);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 200));
 
         // Test: waitAvailable should return true immediately when slot becomes available
         //
@@ -579,7 +571,7 @@ public:
         startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(pool->waitAvailable(1000));
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         // Test: Pool capacity was at defaultMax and then fell below it,
         // start two threads so that pool capacity is at defaultMax
@@ -591,7 +583,7 @@ public:
 
         // Wait for the first 2 threads to start immediately
         duration = measureThreadStartDuration(startTime, 2);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
         CPPUNIT_ASSERT_EQUAL(4U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, threadCompletedCount.load());
         CPPUNIT_ASSERT_EQUAL(2U, pool->runningCount());
@@ -603,7 +595,7 @@ public:
 
         // Wait for Thread5 to start (it should be delayed due to throttling)
         duration = measureThreadStartDuration(startTime, 1);
-        checkDuration(duration.count(), 990);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 990));
         CPPUNIT_ASSERT_EQUAL(5U, threadStartedCount.load());
         CPPUNIT_ASSERT_EQUAL(4U, threadCompletedCount.load());
 
@@ -628,7 +620,7 @@ public:
         startTime = std::chrono::high_resolution_clock::now();
         CPPUNIT_ASSERT(!pool->waitAvailable(0));
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        checkDuration(duration.count(), 0);
+        CPPUNIT_ASSERT(checkDuration(duration.count(), 0));
 
         // All threads should complete
         pool->joinAll(true);
@@ -674,53 +666,8 @@ private:
     };
     struct AttemptThreadStartParameters
     {
-        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected) : startFunctionToUse(_startFunctionToUse),
-                                                                                                                                                                       threadParams(_threadParams),
-                                                                                                                                                                       timeoutMs(_timeoutMs),
-                                                                                                                                                                       exceptionsExpected(_exceptionsExpected)
-        {
-            assertex(threadParams);
-        }
-        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount) : startFunctionToUse(_startFunctionToUse),
-                                                                                                                                                                                                  threadParams(_threadParams),
-                                                                                                                                                                                                  timeoutMs(_timeoutMs),
-                                                                                                                                                                                                  exceptionsExpected(_exceptionsExpected),
-                                                                                                                                                                                                  exceptionCount(_exceptionCount)
-        {
-            assertex(threadParams);
-            assertex(exceptionCount);
-        }
-        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount, const char *_failureMessage) : startFunctionToUse(_startFunctionToUse),
-                                                                                                                                                                                                                               threadParams(_threadParams),
-                                                                                                                                                                                                                               timeoutMs(_timeoutMs),
-                                                                                                                                                                                                                               exceptionsExpected(_exceptionsExpected),
-                                                                                                                                                                                                                               exceptionCount(_exceptionCount),
-                                                                                                                                                                                                                               failureMessage(_failureMessage)
-        {
-            assertex(threadParams);
-            assertex(exceptionCount);
-            assertex(failureMessage);
-        }
-        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount, const char *_failureMessage, std::chrono::milliseconds *_outDuration, const unsigned _minExpectedDuration) : startFunctionToUse(_startFunctionToUse),
-                                                                                                                                                                                                                                                                                                             threadParams(_threadParams),
-                                                                                                                                                                                                                                                                                                             timeoutMs(_timeoutMs),
-                                                                                                                                                                                                                                                                                                             exceptionsExpected(_exceptionsExpected),
-                                                                                                                                                                                                                                                                                                             exceptionCount(_exceptionCount),
-                                                                                                                                                                                                                                                                                                             failureMessage(_failureMessage), outDuration(_outDuration), minExpectedDuration(_minExpectedDuration)
-        {
-            assertex(threadParams);
-            assertex(exceptionCount);
-            assertex(failureMessage);
-            assertex(outDuration);
-        }
-        AttemptThreadStartParameters(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, ExpectExceptions _exceptionsExpected, std::chrono::milliseconds *_outDuration) : startFunctionToUse(_startFunctionToUse),
-                                                                                                                                                                                           threadParams(_threadParams),
-                                                                                                                                                                                           exceptionsExpected(_exceptionsExpected),
-                                                                                                                                                                                           outDuration(_outDuration)
-        {
-            assertex(threadParams);
-            assertex(outDuration);
-        }
+        AttemptThreadStartParameters() = default;
+
         ThreadParams *threadParams{nullptr};
         StartFunctionToUse startFunctionToUse{StartFunctionToUse::StartFunction};
         unsigned timeoutMs{0};
@@ -728,31 +675,75 @@ private:
         unsigned *exceptionCount{nullptr};
         const char *failureMessage{nullptr};
         std::chrono::milliseconds *outDuration{nullptr};
-        const unsigned minExpectedDuration{0};
+        unsigned minExpectedDuration{0};
     };
     bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected)
     {
-        AttemptThreadStartParameters attemptThreadStartParameters(_startFunctionToUse, _threadParams, _timeoutMs, _exceptionsExpected);
+        assertex(_threadParams);
+
+        AttemptThreadStartParameters attemptThreadStartParameters;
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.timeoutMs = _timeoutMs;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
         return attemptThreadStart(attemptThreadStartParameters);
     }
     bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount)
     {
-        AttemptThreadStartParameters attemptThreadStartParameters(_startFunctionToUse, _threadParams, _timeoutMs, _exceptionsExpected, _exceptionCount);
+        assertex(_threadParams);
+        assertex(_exceptionCount);
+
+        AttemptThreadStartParameters attemptThreadStartParameters;
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.timeoutMs = _timeoutMs;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
+        attemptThreadStartParameters.exceptionCount = _exceptionCount;
         return attemptThreadStart(attemptThreadStartParameters);
     }
     bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount, const char *_failureMessage)
     {
-        AttemptThreadStartParameters attemptThreadStartParameters(_startFunctionToUse, _threadParams, _timeoutMs, _exceptionsExpected, _exceptionCount, _failureMessage);
+        assertex(_threadParams);
+        assertex(_exceptionCount);
+        assertex(_failureMessage);
+
+        AttemptThreadStartParameters attemptThreadStartParameters;
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.timeoutMs = _timeoutMs;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
+        attemptThreadStartParameters.exceptionCount = _exceptionCount;
+        attemptThreadStartParameters.failureMessage = _failureMessage;
         return attemptThreadStart(attemptThreadStartParameters);
     }
     bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, unsigned _timeoutMs, ExpectExceptions _exceptionsExpected, unsigned *_exceptionCount, const char *_failureMessage, std::chrono::milliseconds *_outDuration, const unsigned _minExpectedDuration)
     {
-        AttemptThreadStartParameters attemptThreadStartParameters(_startFunctionToUse, _threadParams, _timeoutMs, _exceptionsExpected, _exceptionCount, _failureMessage, _outDuration, _minExpectedDuration);
+        assertex(_threadParams);
+        assertex(_exceptionCount);
+        assertex(_failureMessage);
+        assertex(_outDuration);
+
+        AttemptThreadStartParameters attemptThreadStartParameters;
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.timeoutMs = _timeoutMs;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
+        attemptThreadStartParameters.exceptionCount = _exceptionCount;
+        attemptThreadStartParameters.failureMessage = _failureMessage;
+        attemptThreadStartParameters.outDuration = _outDuration;
+        attemptThreadStartParameters.minExpectedDuration = _minExpectedDuration;
         return attemptThreadStart(attemptThreadStartParameters);
     }
     bool attemptThreadStartCaller(StartFunctionToUse _startFunctionToUse, ThreadParams *_threadParams, ExpectExceptions _exceptionsExpected, std::chrono::milliseconds *_outDuration)
     {
-        AttemptThreadStartParameters attemptThreadStartParameters(_startFunctionToUse, _threadParams, _exceptionsExpected, _outDuration);
+        assertex(_threadParams);
+        assertex(_outDuration);
+
+        AttemptThreadStartParameters attemptThreadStartParameters;
+        attemptThreadStartParameters.startFunctionToUse = _startFunctionToUse;
+        attemptThreadStartParameters.threadParams = _threadParams;
+        attemptThreadStartParameters.exceptionsExpected = _exceptionsExpected;
+        attemptThreadStartParameters.outDuration = _outDuration;
         return attemptThreadStart(attemptThreadStartParameters);
     }
 
@@ -762,7 +753,6 @@ private:
         auto startTime = std::chrono::high_resolution_clock::now();
         try
         {
-            // Attempt to start thread with specified timeout
             if (attemptThreadStartParameters.timeoutMs == 0) // Use zero to indicate no timeout parameter
             {
                 switch (attemptThreadStartParameters.startFunctionToUse)
@@ -780,6 +770,7 @@ private:
                 switch (attemptThreadStartParameters.startFunctionToUse)
                 {
                 case StartFunctionToUse::StartFunction:
+                    // Attempt to start thread with specified timeout
                     pool->start(attemptThreadStartParameters.threadParams, attemptThreadStartParameters.threadParams->name, attemptThreadStartParameters.timeoutMs);
                     break;
                 default:
@@ -788,7 +779,7 @@ private:
                 }
             }
 
-            // If we expected an exception but didn't get one, fail the test
+            // If we expected an exception on start but didn't get one, fail the test
             if (attemptThreadStartParameters.exceptionsExpected == ExpectExceptions::ExceptionsExpected)
             {
                 const char *msg = attemptThreadStartParameters.failureMessage ? attemptThreadStartParameters.failureMessage : "Expected exception was not thrown";
