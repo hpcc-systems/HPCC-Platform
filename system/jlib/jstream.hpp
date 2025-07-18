@@ -76,6 +76,11 @@ interface ISerialOutputStream : extends IInterface
     virtual offset_t tell() const = 0;                          // used to implement beginNested
 };
 
+interface ICrcSerialOutputStream : extends ISerialOutputStream // Implemented here to prevent circular reference with jcrc.hpp
+{
+    virtual unsigned queryCrc() const = 0;
+};
+
 interface IBufferedSerialOutputStream : extends ISerialOutputStream
 {
     virtual byte * reserve(size32_t wanted, size32_t & got) = 0;    // get a pointer to a contiguous block of memory to write to.
@@ -94,6 +99,7 @@ extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialI
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length);
+extern jlib_decl ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStream * output);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);

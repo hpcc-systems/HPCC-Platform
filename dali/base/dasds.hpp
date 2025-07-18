@@ -256,8 +256,8 @@ interface IStoreHelper : extends IInterface
     virtual bool detachCurrentDelta() = 0;
     virtual void saveStore(IPropertyTree *root, unsigned *newEdition=NULL) = 0;
     virtual unsigned queryCurrentEdition() = 0;
-    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *crc=NULL) = 0;
-    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res, unsigned *crc=NULL) = 0;
+    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr) = 0;
+    virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res) = 0;
     virtual StringBuffer &getCurrentStoreInfoFilename(StringBuffer &res) = 0;
     virtual void backup(const char *filename) = 0;
     virtual StringBuffer &getPrimaryLocation(StringBuffer &location) = 0;
@@ -271,7 +271,7 @@ enum
     SH_BackupErrorFiles     = 0x0004,
     SH_CheckNewDelta        = 0x0008,
 };
-extern da_decl IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores=0, unsigned delay=5000, const bool *abort=NULL);
+extern da_decl IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores=0, unsigned delay=5000, const bool *abort=nullptr, bool saveBinary=false);
 extern da_decl bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError=false);
 extern da_decl bool traceAllTransactions(); // server only
 extern da_decl bool traceSlowTransactions(unsigned thresholdMs); // server only
