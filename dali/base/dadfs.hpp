@@ -869,7 +869,7 @@ extern da_decl IDFPartFilter *createPartFilter(const char *filter);
 
 // for server use
 interface IDaliServer;
-extern da_decl IDaliServer *createDaliDFSServer(IPropertyTree *config); // called for coven members
+extern da_decl IDaliServer *createDaliDFSServer(); // called for coven members
 
 // to initialize clustergroups after clusters change in the environment
 extern da_decl void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);

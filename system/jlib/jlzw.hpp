@@ -51,8 +51,8 @@ enum CompressionMethod
 
 interface jlib_decl ICompressor : public IInterface
 {
-    virtual void   open(MemoryBuffer &mb, size32_t initialSize=0)=0; // variable internally sized buffer
-    virtual void   open(void *blk, size32_t blksize)=0;              // fixed size output
+    virtual void   open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) = 0; // variable internally sized buffer
+    virtual void   open(void *blk, size32_t blksize, size32_t fixedRowSize, bool allowPartialWrites) = 0;              // fixed size output
     virtual void   close()=0;
     virtual size32_t write(const void *buf,size32_t len)=0;
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) = 0;
@@ -61,8 +61,6 @@ interface jlib_decl ICompressor : public IInterface
                                                                             
     virtual void * bufptr()=0;
     virtual size32_t buflen()=0;
-    virtual void   startblock()=0;                      // row based must call startblock/commitblock
-    virtual void   commitblock()=0;
 
     virtual bool adjustLimit(size32_t newLimit) = 0;    // adjust the maximum size of a fixed size output buffer
     virtual CompressionMethod getCompressionMethod() const = 0;
@@ -117,7 +115,7 @@ extern jlib_decl size32_t RLEExpand(void *dst,const void *src,size32_t expsize);
 
 extern jlib_decl size32_t DiffCompressFirst(const void *src,void *dst,void *buff,size32_t rs);  // compress first row (actually make bigger, but in same format as compression)
                                                                                             // buf need not be initialized
-extern jlib_decl size32_t DiffCompress(const void *src,void *dst,void *buff,size32_t rs);       // compress subsequent rows (bufs set by previous DiffFirstCompress or DiffCompress
+extern jlib_decl size32_t DiffCompress(const void *src,void *dst, void *buff,size32_t rs);  // compress subsequent rows (bufs set by previous DiffFirstCompress or DiffCompress
 extern jlib_decl size32_t DiffCompress2(const void *src,void *dst,const void *prev,size32_t rs);// compress row (prev not updated)
 extern jlib_decl size32_t DiffExpand(const void *src,void *dst,const void *prev,size32_t rs);   // expand row, prev must be passed previous expanded row 
 extern jlib_decl size32_t DiffCompressedSize(const void *cmpressedsrc,size32_t rs);             // calculate compressed row size - rs is expanded size
@@ -149,8 +147,8 @@ extern jlib_decl bool isCompressedFile(const char *filename);
 extern jlib_decl bool isCompressedFile(IFile *file);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, size32_t ioBufferSize, bool memorymapped, IFEflags extraFlags);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander, size32_t ioBufferSize);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL, unsigned compMethod=COMPRESS_METHOD_LZ4, size32_t compressorBlockSize=0, size32_t bufferSize=(size32_t)-1);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool setcrc,ICompressor *compressor, unsigned compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool setcrc=true, ICompressor *compressor=NULL, unsigned compMethod=COMPRESS_METHOD_LZ4, size32_t compressorBlockSize=0, size32_t bufferSize=(size32_t)-1);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file, bool append, bool setcrc, ICompressor *compressor, unsigned compMethod, size32_t compressorBlockSize, size32_t bufferSize, IFEflags extraFlags);
 
 #define COMPRESSEDFILECRC (~0U)
 

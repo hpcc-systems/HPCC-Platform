@@ -1602,23 +1602,14 @@ public:
 unsigned CRowStreamWriter::wrnum=0;
 #endif
 
-inline size32_t getFixedSizeWithGroupByte(IRowInterfaces *rowIf, unsigned flags)
-{
-    size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
-    if (fixedSize && TestRwFlag(flags, rw_grouped))
-        ++fixedSize; // row writer will include a grouping byte
-    return fixedSize;
-}
-
 ILogicalRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
     {
         flags &= ~rw_buffered; // if compressed, do not want buffered stream as well
-        size32_t fixedSize = getFixedSizeWithGroupByte(rowIf, flags);
         size32_t bufferSize = (size32_t)-1; // MORE: Should be cleanly passed through
-        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize, IFEnone));
+        iFileIO.setown(createCompressedFileWriter(iFile, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize, IFEnone));
     }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
@@ -1633,9 +1624,8 @@ ILogicalRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsi
     Owned<IFileIO> compressedFileIO;
     if (TestRwFlag(flags, rw_compress))
     {
-        size32_t fixedSize = getFixedSizeWithGroupByte(rowIf, flags);
         size32_t bufferSize = (size32_t)-1; // MORE: Should be cleanly passed through
-        compressedFileIO.setown(createCompressedFileWriter(iFileIO, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize));
+        compressedFileIO.setown(createCompressedFileWriter(iFileIO, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags), compressorBlkSz, bufferSize));
         iFileIO = compressedFileIO.get();
     }
     Owned<IFileIOStream> stream;

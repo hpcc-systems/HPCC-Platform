@@ -18,12 +18,17 @@
 #pragma once
 
 #include "eventmodeling.h"
+#include "jqueue.hpp"
+#include <memory>
 #include <set>
+#include <type_traits>
 #include <unordered_map>
 
 // The index event model configuration conforms to this structure:
 //   kind: index-event
 //   storage:
+//     cache-read: nanosecond time to read one page
+//     cache-capacity: maximum bytes to use for the cache
 //     plane:
 //     - name: unique, non-empty, identifier
 //       readTime: nanosecond time to read one page
@@ -34,6 +39,8 @@
 //       leafPlane: name of place in which index leaves reside, if different from the default
 //
 // - `kind` is optional; as the first model the value is implied.
+// - `cache-read` is optional; if zero, empty, or omitted, the cache is disabled.
+// - `cache-capacity` is optional; if zero, empty, or omitted, the cache is unlimited.
 // - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
 //   an alternate choice.
 // - `file` is optional; omission implies all files exist in the default plane.
@@ -60,6 +67,8 @@ struct ModeledPage
 class Storage
 {
 private:
+    friend class IndexModelStorageTest;
+
     // Encapsulation of modeled information describing a named storage plane.
     struct Plane
     {
@@ -91,6 +100,60 @@ private:
     friend bool operator < (const File& left, const char* right); // required to search a set by path
     friend bool operator < (const char* left, const File& right); // required to search a set by path
 
+    class PageCache
+    {
+    public:
+        static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
+        class Key
+        {
+        public:
+            __uint64 fileId{0};
+            __uint64 offset{0};
+            Key(__uint64 _fileId, __uint64 _offset) : fileId(_fileId), offset(_offset) {}
+            bool operator == (const Key& other) const { return fileId == other.fileId && offset == other.offset; }
+        };
+        class KeyEqual
+        {
+        public:
+            bool operator () (const Key& left, const Key& right) const
+            {
+                return ((left == right) || (left.fileId == right.fileId && left.offset == right.offset));
+            }
+        };
+        class KeyHash
+        {
+        public:
+            std::size_t operator()(const Key& key) const
+            {
+                struct { __uint64 f; __uint64 s; } buf{key.fileId, key.offset};
+                return hashc_fnv1a((byte*)&buf, sizeof(buf), fnvInitialHash32);
+            }
+        };
+        class Value
+        {
+        public:
+            const Key     key; // enables mapping from MRU to hash table on MRU removals
+            struct Value* prev{nullptr};
+            struct Value* next{nullptr};
+            Value(const Key& _key) : key(_key) {}
+        };
+        using Hash = std::unordered_map<const Key, std::unique_ptr<Value>, KeyHash, KeyEqual>;
+    public:
+        void configure(const IPropertyTree& config);
+        inline __uint64 getReadTimeIfExists(__uint64 fileId, __uint64 offset) { return getReadTimeIfExists({fileId, offset}); }
+        __uint64 getReadTimeIfExists(const Key& key);
+        inline bool insert(__uint64 fileId, __uint64 offset) { return insert({fileId, offset}); }
+        bool insert(const Key& key);
+    private:
+        void reserve(__uint64 size);
+    public:
+        __uint64 used{0};
+        __uint64 capacity{0};
+        __uint64 readTime{0};
+        Hash hash;
+        DListOf<Value> mru;
+    };
+
     // An ordered set of storage planes, with key transparency enabled.
     using Planes = std::set<Plane, std::less<>>;
     // An ordered set of file specifications, with key transparency enabled.
@@ -112,9 +175,10 @@ public:
     // file specification, is not supported.
     void observeFile(__uint64 fileId, const char* path);
 
-    // Fill in the page data with storage information known about the file and offset. A file ID
-    // not previously obseved will use information from the default file specification.
-    void describePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page) const;
+    // Fill in the page data with storage information known about the file and offset. An enabled
+    // page cache will be updated when the page was not the most recently used. A file ID not
+    // previously obseved will use information from the default file specification.
+    void useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page);
 
 private:
     void configurePlanes(const IPropertyTree& config);
@@ -124,6 +188,7 @@ private:
     const File& lookupFile(__uint64 fileId) const;
 
 private:
+    PageCache cache;
     Planes planes;
     const Plane* defaultPlane{nullptr};
     Files configuredFiles;

@@ -19,6 +19,7 @@ project(eventconsumption)
 include_directories (
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/include
+    ${HPCC_SOURCE_DIR}/testing/unittests
 )
 
 set (
@@ -35,10 +36,11 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventiterator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventmodeling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventunittests.cpp
 )
 
 ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
 
 HPCC_ADD_LIBRARY(eventconsumption SHARED ${SRCS})
 install ( TARGETS eventconsumption RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( eventconsumption jlib )
+target_link_libraries ( eventconsumption jlib ${CppUnit_LIBRARIES})

@@ -194,14 +194,21 @@ static IPropertyTree *getCostPropTree(const char *cluster)
 {
     Owned<const IPropertyTree> plane = getStoragePlaneConfig(cluster, false);
 
-    if (plane && plane->hasProp("cost/@storageAtRest"))
+    if (plane)
     {
-        return plane->getPropTree("cost");
+        IPropertyTree *cost = plane->queryPropTree("cost");
+        if (cost)
+            return LINK(cost);
+
+        // Ensure spill plane doesn't use global config
+        // (This is to make sure spill planes are only costed if they are
+        // specifically configured with cost config.)
+        if (strsame(plane->queryProp("@category"), "spill"))
+            return nullptr;
+
+        // drop-through to use global cost config
     }
-    else
-    {
-        return getGlobalConfigSP()->getPropTree("cost");
-    }
+    return getGlobalConfigSP()->getPropTree("cost");
 }
 
 extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays)
@@ -11483,12 +11490,11 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(Thread);
 
-    CDaliDFSServer(IPropertyTree *config)
-        : Thread("CDaliDFSServer"), CTransactionLogTracker(MDFS_MAX)
+    CDaliDFSServer() : Thread("CDaliDFSServer"), CTransactionLogTracker(MDFS_MAX)
     {
         stopped = true;
         defaultTimeout = INFINITE; // server uses default
-        numThreads = getComponentConfigSP()->getPropInt("expert/@daliDfsPoolLimit", config->getPropInt("DFS/@numThreads", DEFAULT_NUM_DFS_THREADS));
+        numThreads = getComponentConfigSP()->getPropInt("expert/@daliDfsPoolLimit", getComponentConfigSP()->getPropInt("dfs/@numThreads", DEFAULT_NUM_DFS_THREADS));
         PROGLOG("DFS Server: numThreads=%d", numThreads);
     }
 
@@ -12667,11 +12673,10 @@ void CDistributedFileDirectory::setDefaultPreferredClusters(const char *clusters
     defprefclusters.set(clusters);
 }
 
-IDaliServer *createDaliDFSServer(IPropertyTree *config)
+IDaliServer *createDaliDFSServer()
 {
     assertex(!daliDFSServer); // initialization problem
-    daliDFSServer = new CDaliDFSServer(config);
-    return daliDFSServer;
+    return new CDaliDFSServer();
 }
 
 IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user, ICodeContext *ctx)

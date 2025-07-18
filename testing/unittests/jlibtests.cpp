@@ -4259,8 +4259,10 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress };
 public:
+    void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
+
     void initCompressionBuffer(MemoryBuffer & src, size32_t & rowSz)
     {
         src.ensureCapacity(sz);
@@ -4307,15 +4309,13 @@ public:
         {
             case RowCompress:
             {
-                compressor->open(compressed, sz);
-                compressor->startblock();
+                compressor->open(compressed, sz, rowSz);
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
                     compressor->write(ptr, rowSz);
                     ptr += rowSz;
                 }
-                compressor->commitblock();
                 compressor->close();
                 try
                 {
@@ -4333,10 +4333,8 @@ public:
             }
             case AllRowCompress:
             {
-                compressor->open(compressed, sz);
-                compressor->startblock();
+                compressor->open(compressed, sz, rowSz);
                 compressor->write(ptr, sz);
-                compressor->commitblock();
                 compressor->close();
                 break;
             }
@@ -4357,7 +4355,7 @@ public:
                 static constexpr size32_t blocksize = 32768;
                 MemoryAttr buffer(blocksize);
 
-                compressor->open(buffer.bufferBase(), blocksize);
+                compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
                 const byte *ptrEnd = ptr + srcLen;
                 while (ptr != ptrEnd)
                 {
@@ -4368,9 +4366,9 @@ public:
                         size32_t size = compressor->buflen();
                         sizes.append(size);
                         compressed.append(size, buffer.bufferBase());
-                        compressor->open(buffer.bufferBase(), blocksize);
+                        compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
                         size32_t next = compressor->write(ptr+written, rowSz-written);
-                        assertex(next == rowSz - written);
+                        CPPUNIT_ASSERT(next == rowSz - written);
                     }
 
                     ptr += rowSz;
@@ -4381,35 +4379,86 @@ public:
                 compressed.append(size, buffer.bufferBase());
                 break;
             }
+            case LargeBlockCompress:
+            {
+                static constexpr size32_t blocksize = 32768;
+                MemoryAttr buffer(blocksize);
+
+                size32_t offset = 0;
+                while (offset < srcLen)
+                {
+                    compressor->open(buffer.bufferBase(), blocksize, rowSz, true);
+                    size32_t written = compressor->write(ptr + offset, srcLen - offset);
+                    CPPUNIT_ASSERT(written != 0);
+                    compressor->close();
+
+                    size32_t size = compressor->buflen();
+                    sizes.append(size);
+                    compressed.append(size, buffer.bufferBase());
+
+                    offset += written;
+                }
+                break;
+            }
         }
 
         cycle_t compressCycles = timer.elapsedCycles();
-        Owned<IExpander> expander = handler.getExpander(options);
         MemoryBuffer tgt;
-        timer.reset();
-        if (opt==CompressToBuffer)
+        if (!strieq(handler.queryType(), "randrow"))
         {
-            decompressToBuffer(tgt, compressed, options);
-        }
-        else if (opt == FixedBlockCompress)
-        {
-            const byte * cur = compressed.bytes();
-            ForEachItemIn(i, sizes)
+            Owned<IExpander> expander = handler.getExpander(options);
+            timer.reset();
+            if (opt==CompressToBuffer)
             {
-                size32_t size = sizes.item(i);
-                size32_t required = expander->init(cur);
-                void * target = tgt.reserve(required);
-                expander->expand(target);
-                cur += size;
+                decompressToBuffer(tgt, compressed, options);
+            }
+            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress))
+            {
+                const byte * cur = compressed.bytes();
+                ForEachItemIn(i, sizes)
+                {
+                    size32_t size = sizes.item(i);
+                    size32_t required = expander->init(cur);
+                    void * target = tgt.reserve(required);
+                    expander->expand(target);
+                    cur += size;
+                }
+            }
+            else
+            {
+                size32_t required = expander->init(compressed.bytes());
+                tgt.reserveTruncate(required);
+                expander->expand(tgt.bufferBase());
+                tgt.setWritePos(required);
             }
         }
         else
         {
-            size32_t required = expander->init(compressed.bytes());
-            tgt.reserveTruncate(required);
-            expander->expand(tgt.bufferBase());
-            tgt.setWritePos(required);
+            timer.reset();
+            Owned<IRandRowExpander> expander = createRandRDiffExpander();
+
+            if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress))
+            {
+                const byte * cur = compressed.bytes();
+                ForEachItemIn(i, sizes)
+                {
+                    size32_t size = sizes.item(i);
+                    expander->init(cur, false);
+                    unsigned numRows = expander->numRows();
+                    for (unsigned i = 0; i < numRows; i++)
+                    {
+                        void * row = tgt.reserve(rowSz);
+                        expander->expandRow(row, i);
+                    }
+                    cur += size;
+                }
+            }
+            else
+            {
+                tgt.append(sz, src);
+            }
         }
+
         cycle_t decompressCycles = timer.elapsedCycles();
 
         float ratio = (float)(srcLen) / compressed.length();
@@ -4419,6 +4468,8 @@ public:
             name.append("-c2b");
         else if (opt == FixedBlockCompress)
             name.append("-fb");
+        else if (opt == LargeBlockCompress)
+            name.append("-lb");
         if (options && *options)
             name.append("-").append(options);
 
@@ -4450,6 +4501,7 @@ public:
 class JlibCompressionStandardTest : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
@@ -4479,19 +4531,30 @@ public:
                 ICompressHandler &handler = iter->query();
                 const char * type = handler.queryType();
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
-                //Ignore unusual compressors with no expanders...
-                if (strieq(type, "diff"))
-                    continue;
-                if (strieq(type, "randrow"))
-                    continue;
+                bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
+
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+
+                //The stream compressors only currently support fixed size outputs
+                //They also do not support partial writes - so largeBlockCompress will fail.
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
-                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
                 }
+
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+
+                //randrow has a limit of 64K rows - so it fails the row compress test
+                if (strieq(type, "randrow"))
+                    continue;
+
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                if (!onlyFixedSize)
+                {
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+                    //The following can be enabled once commitblock() is removed
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+                }
            }
         }
         catch (IException *e)
@@ -4510,12 +4573,14 @@ public:
         size32_t rowSz = 0;
         initCompressionBuffer(src, rowSz);
 
-        const char * compression = "zstds";
+        const char * compression = "randrow";
         const char * options = nullptr;
         ICompressHandler * handler = queryCompressHandler(compression);
         CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+//        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+  //      testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
     }
 };
 
@@ -4526,6 +4591,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionStandardTest, "JlibCompres
 class JlibCompressionTestsStress : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionTestsStress);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
@@ -4552,10 +4618,9 @@ public:
             {
                 ICompressHandler &handler = iter->query();
                 const char * type = handler.queryType();
-                //Ignore unusual compressors with no expanders...
-                if (strieq(type, "randrow"))
-                    continue;
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
+                bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
+
                 if (streq(type, "LZ4HC"))
                 {
                     testCompressor(handler, "hclevel=3", rowSz, src.length(), src.bytes(), RowCompress);
@@ -4571,7 +4636,10 @@ public:
                     continue;
                 }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
-                testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+
+                if (!onlyFixedSize)
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
+
                 if (streq(type, "LZ4"))
                 {
                     testCompressor(handler, "allrow", rowSz, src.length(), src.bytes(), AllRowCompress); // block doesn't affect the compressor, just tracing
@@ -5226,6 +5294,14 @@ public:
         CPPUNIT_TEST(testUpdate2);
         CPPUNIT_TEST(testBackgroundUpdate);
         CPPUNIT_TEST(testKeyEncoding);
+
+        CPPUNIT_TEST(testDefaultMasking);
+        CPPUNIT_TEST(testLeftMasking);
+        CPPUNIT_TEST(testCustomMaskChar);
+        CPPUNIT_TEST(testShortSecret);
+        CPPUNIT_TEST(testZeroPercent);
+        CPPUNIT_TEST(testHundredPercent);
+        CPPUNIT_TEST(testNullSecret);
     CPPUNIT_TEST_SUITE_END();
 
     //Each test creates a different instance of the class(!) so member values cannot be used to pass items
@@ -5233,6 +5309,59 @@ public:
     StringBuffer secretRoot;
 
 protected:
+void testDefaultMasking()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "SuperSecret123");
+        // By default, mask right side, 90% (defaultMaskingPercentage), '*' (defaultMaskChar)
+        // For "SuperSecret123" (14 chars), 90% = 1.26 -> 1 chars unmasked on right
+        CPPUNIT_ASSERT_EQUAL_STR("S*************", masked.str());
+    }
+
+    void testLeftMasking()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "SuperSecret123567890", 50, false); // mask left side, 50%
+        // 20 chars, provided % is below minimum. Default min is 70% = 6 chars unmasked on left
+        CPPUNIT_ASSERT_EQUAL_STR("**************567890", masked.str());
+    }
+
+    void testCustomMaskChar()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "Secret", 75, true, '#');
+        // 6 chars, 75% = 1.5 -> 1 unmasked on right
+        CPPUNIT_ASSERT_EQUAL_STR("S#####", masked.str());
+    }
+
+    void testShortSecret()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "12", 70);
+        CPPUNIT_ASSERT_EQUAL_STR("**", masked.str());
+    }
+
+    void testZeroPercent()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "NoMask7890", 0); //min percentage is 70
+        CPPUNIT_ASSERT_EQUAL_STR("NoM*******", masked.str());
+    }
+
+    void testHundredPercent()
+    {
+        StringBuffer masked;
+        maskSecret(masked, "AllMask", 100);
+        CPPUNIT_ASSERT_EQUAL_STR("*******", masked.str());
+    }
+
+    void testNullSecret()
+    {
+        StringBuffer masked;
+        maskSecret(masked, nullptr);
+        CPPUNIT_ASSERT_EQUAL_STR("", masked.str());
+    }
+
     void checkSecret(const IPropertyTree * match, const char * key, const char * expectedValue)
     {
         if (match)

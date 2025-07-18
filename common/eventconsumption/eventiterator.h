@@ -25,15 +25,24 @@
 // production by calling nextEvent() as needed.
 //
 // The interface is more simplistic than other iterators. A binary event file reader is considered
-// to be a potential event source
+// to be a potential event source.
+//
+// The query* methods are used to identify a source of events. The queried values coincide with
+// `IEventVisitor::visitFile` and `IEventVisitor::departFile` parameters.
 interface IEventIterator : extends IInterface
 {
     virtual bool nextEvent(CEvent& event) = 0;
+    virtual const char* queryFilename() const = 0;
+    virtual uint32_t queryVersion() const = 0;
+    virtual uint32_t queryBytesRead() const = 0;
 };
 
 // Implementation of IEventIterator that extracts event data from a property tree whose contents
 // conform to this format (shown here as YAML):
 //
+// filename: <filename>
+// version: <version>
+// bytesRead: <bytes read>
 // event:
 // - type: <event name>
 //   <event attribute name>: <value>
@@ -47,12 +56,21 @@ interface IEventIterator : extends IInterface
 //   the text must be directly convertible to the attribute's underlying data type. The only
 //   exception is that a timestamp value may be a human readable date/time string instead of a
 //   a number of nanoseconds.
-class CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
+// - filename, version, and bytesRead are optional values that will be used to satisfy the query*
+//   methods. Default values of nullptr, 0, and 0 are used when omitted.
+class event_decl CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
 {
 public:
     virtual bool nextEvent(CEvent& event) override;
+    virtual const char* queryFilename() const override;
+    virtual uint32_t queryVersion() const override;
+    virtual uint32_t queryBytesRead() const override;
 public:
     CPropertyTreeEvents(const IPropertyTree& events);
 protected:
+    Linked<const IPropertyTree> events;
     Owned<IPropertyTreeIterator> eventsIt;
 };
+
+// Dispatch the contents of an event iterator to an event visitor.
+extern event_decl void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor);

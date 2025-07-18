@@ -34,13 +34,14 @@ extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
 extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
 
 //MORE: Should use enum class to avoid potential symbol clashes
-enum PlaneAttributeType // remember to update planeAttributeInfo in jfile.cpp
+enum PlaneAttributeType // remember to update planeAttributeInfo in jplane.cpp
 {
     BlockedSequentialIO,
     BlockedRandomIO,
     FileSyncWriteClose,
     ConcurrentWriteSupport,
     WriteSyncMarginMs,
+    RenameSupported,
     PlaneAttributeCount
 };
 
@@ -51,6 +52,7 @@ extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffe
 extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
+extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 //---------------------------------------------------------------------------------------------
 
@@ -103,6 +105,7 @@ interface IStoragePlane: extends IInterface
     virtual const std::vector<std::string> &queryHosts() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
+    virtual unsigned queryNumStripes() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;

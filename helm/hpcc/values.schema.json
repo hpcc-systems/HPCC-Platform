@@ -111,7 +111,7 @@
       "additionalProperties": false
     },
     "vaults": {
-      "description": "configuration for vaults accessed by the components",
+      "description": "Configuration for vaults accessed by the components",
       "type": "object",
       "properties": {
         "timeout": {
@@ -279,15 +279,15 @@
       "type": "object",
       "properties": {
         "omitResources": {
-          "description": "if set, no resource definitions are generated from the helm charts",
+          "description": "If set, no resource definitions are generated from the helm charts",
           "type": "boolean"
         },
         "resourceCpusWithLimits": {
-          "description": "if set, cpu resources are provided as limits rather than requests.  Not recommended because this can lead to painful throttling on roxie and thor",
+          "description": "If set, cpu resources are provided as limits rather than requests.  Not recommended because this can lead to painful throttling on roxie and thor",
           "type": "boolean"
         },
         "resourceWholeCpusWithLimits": {
-          "description": "if set, whole cpu resource are provided as limits rather than requests.  On K8s systems where cpuManagerPolicy=static this allows binding using affinities.",
+          "description": "If set, whole cpu resource are provided as limits rather than requests.  On K8s systems where cpuManagerPolicy=static this allows binding using affinities.",
           "type": "boolean"
         },
         "privileged": {
@@ -324,7 +324,7 @@
           "type": "string"
         },
         "busybox": {
-          "description": "image for busybox containers",
+          "description": "The image for busybox containers",
           "type": "string",
           "default": "busybox:stable"
         },
@@ -335,29 +335,41 @@
           "type": "string"
         },
         "cost": {
-          "description": "default resource cost",
+          "description": "The default resource cost",
           "type": "object",
           "properties": {
             "currencyCode": {
-                "description": "currency code (ISO 4217)",
+                "description": "The ISO 4217 currency code (e.g., USD, EUR, GBP) that defines the currency in which all cost values are displayed and reported.",
                 "type": "string",
                 "maxLength": 3
             },
             "perCpu": {
-              "description": "cost of a single cpu",
-              "type": "number"
+                "description": "The cost associated with a single CPU",
+              "type": "number",
+              "minimum": 0
             },
             "storageAtRest": {
-                "description": "storage cost (GiB per month)",
-                "type": "number"
+              "description": "Cost for storing data at rest, measured in GiB per month",
+              "type": "number",
+              "minimum": 0
             },
             "storageReads": {
-                "description": "cost per 10,000 read operations",
-                "type": "number"
+              "description": "Cost for every 10,000 storage read operations",
+              "type": "number",
+              "minimum": 0
             },
             "storageWrites": {
-                "description": "cost per 10,000 write operations",
-                "type": "number"
+              "description": "Cost for every 10,000 storage write operations",
+              "type": "number",
+              "minimum": 0
+            },
+            "limit": {
+              "description": "Maximum allowed cost for a job. This value can be overridden by the job's own cost settings.",
+              "type": "number"
+            },
+            "hardlimit": {
+              "description": "Maximum allowed cost for a job. This value is used if other limits are higher.",
+              "type": "number"
             }
           }
         },
@@ -486,7 +498,7 @@
       "type": "object",
       "properties": {
         "mtls": {
-          "description": "enable global mtls between clients (except roxie which has own setting). NB: requires certificates.enabled=true",
+          "description": "Enable global mtls between clients (except roxie which has own setting). NB: requires certificates.enabled=true",
           "type": "boolean",
           "default": true
         },
@@ -555,40 +567,40 @@
       "additionalProperties": false
     },
     "storagePlanes": {
-      "description": "storage plane definitions",
+      "description": "Storage plane definitions",
       "type": "array",
       "items": { "$ref": "#/definitions/storagePlane" }
     },
     "storagePlane": {
-      "description": "information about an individual storage plane",
+      "description": "Information about an individual storage plane",
       "type": "object",
       "allOf": [
         { "$ref": "#/definitions/storagePlaneCommon" },
         {
           "properties": {
             "name": {
-              "description": "the name of the storage plane",
+              "description": "The name of the storage plane",
               "type": "string"
             },
             "disabled": {
-              "description": "disable this plane definition",
+              "description": "Disable this plane definition",
               "type": "boolean"
             },
             "numDevices": {
-              "description": "optional number of devices in the storage plane (default 1)",
+              "description": "Number of devices in the storage plane (optional, default 1)",
               "type": "integer"
             },
             "includeDeviceInPath": {
-              "description": "is a directory based on the part number appended to the path.  May not be needed",
+              "description": "Is a directory based on the part number appended to the path.  May not be needed",
               "type": "boolean"
             },
             "replication": {
-              "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
+              "description": "Which planes (if any) the data is replicated onto (primarily bare metal)",
               "type": "array",
               "items": { "type": "string" }
             },
             "category": {
-              "description": "the category this plane is used for, e.g. lz, data",
+              "description": "The category this plane is used for, e.g. lz, data",
               "type": "string",
               "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote", "debug" ]
             },
@@ -677,63 +689,74 @@
       "$comment": "The following properties make sense either on a storage plane or an an alias.  For that reason they do not include properties that are used to create implement pvcs e.g. storageClass.  All new entries must be added as null entries in storagePlane and storagePlaneAlias",
       "properties": {
         "prefix": {
-          "description": "either the path for a local mount, or the url prefix",
+          "description": "The base path for a local mount or URL prefix for remote storage access",
           "type": "string"
         },
         "subPath": {
-          "description": "optional subdirectory within the mount directory",
+          "description": "Optional subdirectory within the mount directory to use as the storage root",
           "type": "string"
         },
         "secret": {
-          "description": "optional name of any secret required to access this storage plane",
+          "description": "Optional name of the secret required to access this storage plane",
           "type": "string"
         },
         "hostPath": {
-          "description": "optional, this will create a hostPath volume (mutually exclusive with using pvc)",
+          "description": "Optional host directory path to create a hostPath volume (mutually exclusive with pvc)",
           "type": "string"
         },
         "pvc": {
-          "description": "optional name of the persistent volume claim for this plane",
+          "description": "Optional name of the persistent volume claim to use for this storage plane",
           "type": "string"
         },
         "hostGroup": {
-          "description": "optional name of the host group (for bare metal storage)",
+          "description": "Optional name of the host group (for bare metal storage)",
           "type": "string"
         },
         "hosts": {
-          "description": "a list of host names",
+          "description": "List of host names for direct host-based storage access",
           "type": "array",
           "items": { "type": "string" }
         },
         "umask" : {
-          "description": "file creation mask (used by despray)",
+          "description": "File creation mask applied during despray operations",
           "type" : "string"
         },
         "numMounts": {
-          "description": "the number of mounts for this pvc - defaults to numDevices",
+          "description": "Number of mount points for this PVC (defaults to numDevices if not specified)",
           "type": "integer"
         },
         "cost" : {
-          "description": "Costs associated with the storage and use of the plane",
+          "description": "Cost configuration for storage operations and data retention on this plane",
           "type" : "object",
           "properties": {
             "storageAtRest" : {
-              "description": "Storage cost (GiB/month)",
-              "type": "number"
+              "description": "Storage cost per GiB per month for data stored on this plane",
+              "type": "number",
+              "minimum": 0
+            },
+            "storageReads": {
+              "description": "cost per 10,000 read operations",
+              "type": "number",
+              "minimum": 0
+            },
+            "storageWrites": {
+              "description": "cost per 10,000 write operations",
+              "type": "number",
+              "minimum": 0
             }
           }
         },
         "storageapi": {
-          "description": "Optional information for storage api",
+          "description": "Configuration for cloud storage API integration (Azure Blob Storage, Azure Files, etc.)",
           "type": "object",
           "properties": {
             "type": {
-              "description": "Type of storage api",
+              "description": "Type of cloud storage API to use",
               "type": "string",
               "enum": ["azurefile", "azureblob"]
             },
             "account": {
-              "description": "Account name",
+              "description": "Cloud storage account name",
               "type": "string"
             },
             "secret": {
@@ -744,19 +767,19 @@
               "type": "array",
               "description": "List of containers",
               "items": {
-                "description": "storage container/file share (one item for each device)",
+                "description": "Storage container or file share configuration for a single device",
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "Name of storage container/file share",
+                    "description": "Name of the storage container or file share",
                     "type" : "string"
                   },
                   "account" : {
-                    "description" : "Acccount Name (optional - will default to parent object if not specified)",
+                    "description" : "Storage account name (optional - inherits from parent if not specified)",
                     "type" : "string"
                   },
                   "secret" : {
-                    "description" : "Secret id (optional - will default to parent object if not specified)",
+                    "description" : "Secret name for credentials (optional - inherits from parent if not specified)",
                     "type" : "string"
                   }
                 },
@@ -768,7 +791,7 @@
           "required": [ "type", "containers" ]
         },
         "components": {
-          "description": "If specified, only mount the storage plane in the specified components",
+          "description": "Restrict storage plane mounting to only the specified components",
           "type": "array",
           "items": { "type": "string" }
         }
@@ -781,7 +804,7 @@
         {
           "properties": {
             "name": {
-              "description": "the name of the alias",
+              "description": "The name of the alias",
               "type": "string"
             },
             "mode": {
@@ -810,28 +833,28 @@
       ]
     },
     "remoteStorage": {
-      "description": "remote storage definitions",
+      "description": "Remote storage definitions",
       "type": "array",
       "items": { "$ref": "#/definitions/remoteStorageEntry" }
     },
     "remoteStorageEntry": {
-      "description": "information about an individual remote storage definition",
+      "description": "Information about an individual remote storage definition",
       "type": "object",
       "properties": {
         "name": {
-          "description": "the name of the remote storage definition",
+          "description": "The name of the remote storage definition",
           "type": "string"
         },
         "service": {
-          "description": "the remote DFS service",
+          "description": "The remote DFS service",
           "type": "string"
         },
         "secret": {
-          "description": "the name of the secret containing the certificates to connect to the service",
+          "description": "The name of the secret containing the certificates to connect to the service",
           "type": "string"
         },
         "planes": {
-          "description": "mapping of remote planes to local planes",
+          "description": "Mapping of remote planes to local planes",
           "type": "array",
           "items": {
             "type": "object",
@@ -871,12 +894,13 @@
       "type": "object"
     },
     "componentCost": {
-      "description": "component level costs",
+      "description": "Component-level cost configuration settings",
       "type": "object",
       "properties": {
         "perCpu": {
-          "description": "cost of a single cpu",
-          "type": "number"
+          "description": "The cost associated with a single CPU",
+          "type": "number",
+          "minimum": 0
         }
       }
     },
@@ -885,7 +909,7 @@
       "properties": {
         "query": {
           "type": "string",
-          "description": "The amount of overall resourced memory to dedicate to the query"
+          "description": "The amount of overall resource memory to dedicate to query execution"
         },
         "thirdParty": {
           "type": "string",
@@ -910,7 +934,7 @@
       ]
     },
     "vaultCategory": {
-      "description": "set of vaults under a given category",
+      "description": "Set of vaults under a given category",
       "oneOf": [
         {
             "type": "array",
@@ -922,15 +946,15 @@
       ]
     },
     "vault": {
-      "description": "information about an individual vault",
+      "description": "Information about an individual vault",
       "type": "object",
       "properties": {
         "name": {
-          "description": "the name of the vault",
+          "description": "The name of the vault",
           "type": "string"
         },
         "url": {
-          "description": "the url used to access the vault",
+          "description": "The URL used to access the vault",
           "type": "string"
         },
         "kind": {
@@ -954,31 +978,31 @@
           "type": "string"
         },
         "verify_server": {
-          "description": "optional relax server verification for trouble shooting",
+          "description": "Optional relax server verification for troubleshooting",
           "type": "boolean"
         },
         "retries": {
-          "description": "optional number of times to retry vault request in case of connect / socker error",
+          "description": "Optional number of times to retry vault request in case of connection or socket error",
           "type": "number"
         },
         "retryWait": {
-          "description": "optional wait time (in ms) between socket retries",
+          "description": "Optional wait time (in ms) between socket retries",
           "type": "number"
         },
         "connectTimeout": {
-          "description": "optional timeout (in ms) for socket connect to vault",
+          "description": "Optional timeout (in ms) for socket connect to vault",
           "type": "number"
         },
         "readTimeout": {
-          "description": "optional timeout (in ms) for socket reading from vault",
+          "description": "Optional timeout (in ms) for socket reading from vault",
           "type": "number"
         },
         "writeTimeout": {
-          "description": "optional timeout (in ms) for socket writing to vault",
+          "description": "Optional timeout (in ms) for socket writing to vault",
           "type": "number"
         },
         "backoffTimeout": {
-          "description": "optional time (in ms) to back-off connecting to a vault that cannot be reached, or fails to authenticate",
+          "description": "Optional time (in ms) to back-off connecting to a vault that cannot be reached, or fails to authenticate",
           "type": "number"
         }
       },
@@ -1013,7 +1037,7 @@
           "description": "The name of the host group process"
         },
         "hosts": {
-          "description": "a list of host names",
+          "description": "A list of host names",
           "type": "array",
           "items": { "type": "string" }
         },
@@ -1496,6 +1520,14 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "sds": {
+          "description": "Dali SDS settings",
+          "type": "object"
+        },
+        "dfs": {
+          "description": "Dali DFS settings",
+          "type": "object"
         }
       }
     },
@@ -2678,12 +2710,12 @@
         },
         "maxJobs": {
           "type": "integer",
-          "description": "The maximum number of jobs that can be run concurrenly",
+          "description": "The maximum number of jobs that can be run concurrently",
           "minimum": 1
         },
         "maxGraphs": {
           "type": "integer",
-          "description": "The maximum number of Thor graphs that be run concurrently",
+          "description": "The maximum number of Thor graphs that can be run concurrently",
           "minimum": 1
         },
         "eclAgentUseChildProcesses": {

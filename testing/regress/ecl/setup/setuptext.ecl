@@ -540,7 +540,13 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
     doCreateSearchDocument() := FUNCTION
         projected := TABLE(inputStream, { kind, word, doc, segment, wpos });
         resorted := SORT(projected, kind, word, doc, segment, wpos, LOCAL); // Ensure the ordering is consistent
-        RETURN OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, UNCOMPRESSED); // Do not compress the output, otherwise it skews the timings for stresstext.ecl
+        RETURN PARALLEL(
+            OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, UNCOMPRESSED); // Do not compress the output, otherwise it skews the timings for stresstext.ecl
+            OUTPUT(projected,, Files.NameSearchSource+'_lzw', THOR, OVERWRITE, COMPRESSED, HINT(compression('LZW')));
+            OUTPUT(projected,, Files.NameSearchSource+'_flz', THOR, OVERWRITE, COMPRESSED, HINT(compression('FLZ')));
+            OUTPUT(projected,, Files.NameSearchSource+'_lz4', THOR, OVERWRITE, COMPRESSED, HINT(compression('LZ4')));
+            OUTPUT(projected,, Files.NameSearchSource+'_lz4hc', THOR, OVERWRITE, COMPRESSED, HINT(compression('LZ4HC')));
+        );
     END;
 
     exports := MODULE

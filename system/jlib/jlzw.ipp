@@ -45,14 +45,12 @@ public:
 
     CLZWCompressor(bool _supportbigendian);
     virtual ~CLZWCompressor();
-    virtual void open(MemoryBuffer &mb, size32_t initialSize) override;
-    virtual void open(void *blk,size32_t blksize) override;
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override;
+    virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize, bool allowPartialWrites) override;
     virtual void close() override;
     virtual size32_t write(const void *buf,size32_t len) override;
     virtual void * bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return outlen;}
-    virtual void startblock() override;
-    virtual void commitblock() override;
     virtual bool adjustLimit(size32_t newLimit) override;
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_LZW; }
     virtual bool supportsBlockCompression() const override { return false; }
@@ -66,10 +64,10 @@ protected:
     void ensure(size32_t sz);
     virtual void initdict();
     size32_t inlen;
-    size32_t inlenblk;
     size32_t outlen;
     size32_t maxlen;
     size32_t originalMax = 0;
+    bool allowPartialWrites{true};
     int curcode;
     size32_t bufalloc;
     void          *outbuf;
