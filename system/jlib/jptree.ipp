@@ -29,6 +29,7 @@
 #include "jptree.hpp"
 #include "jbuff.hpp"
 #include "jlog.hpp"
+#include "jstreamhelpers.hpp"
 
 #define ANE_APPEND -1
 #define ANE_SET -2
@@ -204,6 +205,22 @@ public:
     CPTValue(MemoryBuffer &src)
     {
         deserialize(src);
+    }
+    CPTValue(IBufferedSerialInputStream &src, size32_t len)
+    {
+        if (len)
+        {
+            read(src, compressType);
+            if (compressType == COMPRESS_METHOD_LZWLEGACY)
+                compressType = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+            MemoryAttr mem(len);
+            src.read(len, mem.bufferBase());
+            setOwn(len, mem.detach());
+        }
+        else
+        {
+            compressType = COMPRESS_METHOD_NONE;
+        }
     }
     explicit CPTValue() = default;   //MORE: Should there be a single shared null instance?
     CPTValue(size32_t size, const void *data) : CPTValue(size, data, false, COMPRESS_METHOD_NONE, COMPRESS_METHOD_DEFAULT)
@@ -632,6 +649,7 @@ public:
     void serializeAttributes(MemoryBuffer &tgt);
 
     void serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff=-1, int depth=0) const;
+    void deserializeSelf(IBufferedSerialInputStream &src);
     void serializeAttributes(IBufferedSerialOutputStream &tgt) const;
 
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
@@ -737,6 +755,7 @@ public:
     virtual unsigned getAttributeCount() const override;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -752,6 +771,7 @@ protected:
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
@@ -855,6 +875,12 @@ public:
         tree->deserialize(mb);
         return tree;
     }
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    {
+        IPropertyTree *tree = new CAtomPTree();
+        tree->deserializeFromStream(in);
+        return tree;
+    }
 };
 
 
@@ -890,6 +916,13 @@ public:
         tree->deserialize(mb);
         return tree;
     }
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    {
+        IPropertyTree *tree = new LocalPTree();
+        tree->deserializeFromStream(in);
+        return tree;
+    }
+
 };
 
 class SingleIdIterator : public CInterfaceOf<IPropertyTreeIterator>
