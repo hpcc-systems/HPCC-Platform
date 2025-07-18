@@ -111,8 +111,8 @@ protected:
             if (thisWidth > 1)
             {
                 thisHasTLK = isPartTLK(lastPart->queryAttributes());
-                if (!thisHasTLK)
-                    verifyex(localKey); // only very old distributed local keys have no TLK
+                if (!thisHasTLK && !localKey)
+                    throw MakeActivityException(this, 0, "Unsupported: non-local key '%s' has missing TLK flag on last part.", f->queryLogicalName());
             }
             if (first)
             {
