@@ -51,6 +51,7 @@
 #include "workunit.hpp"
 #include "esptrace.h"
 #include "jevent.hpp"
+#include "daliKVStore.hpp"
 
 using namespace hpccMetrics;
 
@@ -591,6 +592,16 @@ int init_main(int argc, const char* argv[])
             const char * optRecordEventFilename = procpt->queryProp("expert/@recordEventFilename");
             startEspEventRecording(recordEventOptions, optRecordEventFilename);
         }
+
+        CCfgStore cfgStore;
+        cfgStore.init();
+        if (isContainerized())
+            cfgStore.storeComponentConfig(processName, getComponentConfigSP());
+        else
+            cfgStore.storeComponentConfig(processName, procpt);
+        // Only ask the ESP to store the global config to avoid overwriting for
+        // each configured component.
+        cfgStore.storeComponentConfig("global", getGlobalConfigSP());
 
     }
     catch(IException* e)
