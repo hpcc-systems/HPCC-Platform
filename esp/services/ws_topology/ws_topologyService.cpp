@@ -2003,8 +2003,7 @@ bool CWsTopologyEx::onTpConfiguredComponents(IEspContext &context, IEspTpConfigu
 
         resp.getConfiguredComponents().append("global");
 
-        if (isContainerized())
-        {
+#ifdef _CONTAINERIZED
             Owned<IPropertyTree> globalConfig = getGlobalConfig();
             Owned<IPropertyTreeIterator> services = globalConfig->getElements("services/service[@name]");
 
@@ -2013,9 +2012,7 @@ bool CWsTopologyEx::onTpConfiguredComponents(IEspContext &context, IEspTpConfigu
                 IPropertyTree &service = services->query();
                 resp.getConfiguredComponents().append(service.queryProp("@name"));
             }
-        }
-        else
-        {
+#else
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> constEnv = factory->openEnvironment();
             IPropertyTree &pTree = constEnv->getPTree();
@@ -2041,7 +2038,7 @@ bool CWsTopologyEx::onTpConfiguredComponents(IEspContext &context, IEspTpConfigu
                 IPropertyTree &eclcc = eclccServers->query();
                 resp.getConfiguredComponents().append(eclcc.queryProp("@name"));
             }
-        }
+#endif
     }
     catch(IException* e)
     {
