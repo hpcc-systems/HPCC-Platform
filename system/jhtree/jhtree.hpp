@@ -76,6 +76,8 @@ interface jhtree_decl IKeyIndexBase : public IInterface
     virtual bool IsShared() const = 0;
 };
 
+interface INodeLoader;
+interface IKeyIndexPrewarmer;
 interface jhtree_decl IKeyIndex : public IKeyIndexBase
 {
     virtual IKeyCursor *getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks) = 0;
@@ -102,10 +104,15 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual const IFileIO *queryFileIO() const = 0;
     virtual bool hasSpecialFileposition() const = 0;
     virtual bool needsRowBuffer() const = 0;
-    virtual bool prewarmPage(offset_t offset, NodeType type) = 0;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
     virtual offset_t queryFirstBranchOffset() = 0;
     virtual const BloomFilter * queryBloom(unsigned i) const = 0;
+    virtual IKeyIndexPrewarmer * createPrewarmer() = 0;
+};
+
+interface IKeyIndexPrewarmer : extends IInterface
+{
+    virtual bool prewarmPage(offset_t offset, NodeType type) = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -328,5 +335,19 @@ constexpr bool isIndexReadActivity(ThorActivityKind actKind)
 
 extern jhtree_decl void setDynamicPayloadExpansion(bool value);
 extern jhtree_decl const char * queryIndexNodeTypeText(NodeType type);
+
+//No jhtree_decl because it is not used outside of jhtree
+class CKeyIdAndPos
+{
+public:
+    unsigned keyId;
+    unsigned padding{0};
+    offset_t pos;
+
+    CKeyIdAndPos(unsigned _keyId, offset_t _pos) { keyId = _keyId; pos = _pos; }
+
+    bool operator==(const CKeyIdAndPos &other) { return keyId == other.keyId && pos == other.pos; }
+};
+
 
 #endif

@@ -22,6 +22,7 @@
 
 #include "jmutex.hpp"
 #include "jhutil.hpp"
+#include "jhcache.hpp"
 #include "jqueue.tpp"
 #include "ctfile.hpp"
 
@@ -71,16 +72,14 @@ public:
 class CNodeCache;
 enum request { LTE, GTE };
 
-// INodeLoader impl.
 interface INodeLoader
 {
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const = 0;
-    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const = 0;
-    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
     virtual const char *queryFileName() const = 0;
 };
 
-class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
+class CCachedIndexRead;
+class jhtree_decl CKeyIndex : implements IKeyIndex, public CInterface
 {
     friend class CKeyStore;
     friend class CKeyCursor;
@@ -107,9 +106,8 @@ protected:
 
     CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
-    const CJHSearchNode *getIndexNode(offset_t offset, NodeType type, IContextLogger *ctx) const;
-    const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader *nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
-    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
+    const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
+    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CCachedIndexRead & readCache);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
@@ -149,24 +147,44 @@ public:
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
 
-    unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
-    bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
-
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
     virtual bool needsRowBuffer() const;
-    virtual bool prewarmPage(offset_t page, NodeType type);
+    virtual bool prewarmPage(INodeLoader & nodeLoader, offset_t page, NodeType type);
     virtual offset_t queryFirstBranchOffset() override;
     virtual const BloomFilter * queryBloom(unsigned i) const override;
-
- // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override = 0;  // Must be implemented in derived classes
-    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const override;
-    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override;
-
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
+    virtual IKeyIndexPrewarmer * createPrewarmer() override;
 
+    // KeyIndex implementation virtuals...
     virtual const char *queryFileName() const = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const = 0;  // Must be implemented in derived classes
+
+    unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
+    bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
+
+    const CJHSearchNode *locateFirstLeafNode(INodeLoader & nodeLoader, IContextLogger *ctx) const;
+    const CJHSearchNode *locateLastLeafNode(INodeLoader & nodeLoader, IContextLogger *ctx) const;
+};
+
+//This class maps a INodeLoader to a CKeyIndex - it can only be called from a single thread
+class DefaultNodeLoader : public INodeLoader
+{
+public:
+    DefaultNodeLoader(const CKeyIndex & _key) : key(_key) {}
+
+    virtual const CJHTreeNode * loadNode(cycle_t * fetchCycles, offset_t offset) const override
+    {
+        return key.loadNode(fetchCycles, offset, readCache);
+    }
+    virtual const char *queryFileName() const override
+    {
+        return key.queryFileName();
+    }
+
+protected:
+    const CKeyIndex & key;
+    mutable CCachedIndexRead readCache;
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -179,7 +197,7 @@ public:
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -187,7 +205,6 @@ class jhtree_decl CDiskKeyIndex : public CKeyIndex
 {
 private:
     Linked<IFileIO> io;
-    void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
     
 public:
     CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, size32_t _blockedIOSize);
@@ -195,7 +212,7 @@ public:
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
@@ -216,7 +233,7 @@ protected:
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
-    Owned<IFileIO> myIO;  // This should be a blockedIO based on key.IO if blocking is enabled, else nullptr
+    mutable CCachedIndexRead readCache;
 public:
     CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, unsigned _blockedIOSize);
     ~CKeyCursor();
@@ -244,21 +261,13 @@ public:
     virtual const byte *queryKeyedBuffer() const override;
 
  // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override
     {
-        return key.loadNode(fetchCycles, offset, myIO);
-    }
-    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const override
-    {
-        return key.locateFirstLeafNode(ctx);
-    }
-    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override
-    {
-        return key.locateLastLeafNode(ctx);
+        return key.loadNode(fetchCycles, offset, readCache);
     }
     const CJHSearchNode *getCursorNode(offset_t offset, NodeType type, IContextLogger *ctx) const
     {
-        return key.getIndexNodeUsingLoader(this, offset, type, ctx);
+        return key.getIndexNodeUsingLoader(*this, offset, type, ctx);
     }
 
 protected:

@@ -821,6 +821,7 @@ class IndexCacheWarmer : implements ICacheWarmer
     IRoxieFileCache *cache = nullptr;
     Owned<ILazyFileIO> localFile;
     Owned<IKeyIndex> keyIndex;
+    Owned<IKeyIndexPrewarmer> prewarmer;
     bool keyFailed = false;
     unsigned fileIdx = (unsigned) -1;
     unsigned filesProcessed = 0;
@@ -847,7 +848,9 @@ public:
         {
             //Pass false for isTLK - it will be initialised from the index header
             keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, 0));
-            if (!keyIndex)
+            if (keyIndex)
+                prewarmer.setown(keyIndex->createPrewarmer());
+            else
                 keyFailed = true;
         }
         if (nodeType != NodeNone && keyIndex)
@@ -859,7 +862,7 @@ public:
             {
                 if (doTrace(traceRoxiePrewarm))
                     DBGLOG("prewarming index page %u %s %" I64F "x-%" I64F "x", (int) nodeType, filename, startOffset, endOffset);
-                bool loaded = keyIndex->prewarmPage(startOffset, nodeType);
+                bool loaded = prewarmer->prewarmPage(startOffset, nodeType);
                 if (!loaded)
                     break;
                 pagesPreloaded++;

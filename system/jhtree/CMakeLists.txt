@@ -28,8 +28,9 @@ project( jhtree )
 set (    SRCS 
          hlzw.cpp 
          ctfile.cpp 
-         jhtree.cpp 
+         jhcache.cpp
          jhinplace.cpp
+         jhtree.cpp 
          jhutil.cpp 
          bloom.cpp
          keybuild.cpp 
@@ -40,8 +41,9 @@ set (    SRCS
 set (    INCLUDES
          ctfile.hpp
          hlzw.h
-         jhtree.hpp
+         jhcache.hpp
          jhinplace.hpp
+         jhtree.hpp
          jhutil.hpp
          bloom.hpp
          keybuild.hpp
