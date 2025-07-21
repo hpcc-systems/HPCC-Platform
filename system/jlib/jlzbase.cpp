@@ -77,6 +77,7 @@ static unsigned readPacked32(const byte * & cur)
 */
 void CStreamCompressor::open(void *buf, size32_t max, size32_t fixedRowSize, bool _allowPartialWrites)
 {
+    assertex(buf);
     result = (byte *)buf;
     outMax = max;
     originalMax = max;

@@ -69,7 +69,6 @@ protected:
     size32_t originalMax = 0;
     bool allowPartialWrites{true};
     int curcode;
-    size32_t bufalloc;
     void          *outbuf;
     unsigned char *outbytes;  // byte output
     unsigned char *outbits;   // for trailing bits
