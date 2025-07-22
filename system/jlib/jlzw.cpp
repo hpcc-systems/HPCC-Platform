@@ -1763,7 +1763,9 @@ public:
             }
         }
         inlen += buflen;
-        //Check to see if any of the short fields have wrapped.
+        // This compression should only be used on relatively small blocks of data because
+        // header->totsize or header->numrows are only unsigned shorts.
+        // Check they have not wrapped - because that will lead to corrupt output.
         assertex(header->totsize >= originalTotalSize);
         assertex(header->numrows >= originalRows);
         return buflen;
@@ -2271,7 +2273,7 @@ class CCompressedFileReader final : public CCompressedFileBase
     }
 
 public:
-    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, unsigned compMethod, unsigned bufferSize)
+    CCompressedFileReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, CompressedFileTrailer &_trailer, IExpander *_expander, CompressionMethod compMethod, unsigned bufferSize)
         : CCompressedFileBase(_fileio, _trailer, bufferSize), mmfile(_mmfile)
     {
         expander.set(_expander);
@@ -2301,15 +2303,10 @@ public:
         {
             if (!expander)
             {
-                if (compMethod == COMPRESS_METHOD_FASTLZ)
-                    expander.setown(createFastLZExpander());
-                else if (compMethod == COMPRESS_METHOD_LZ4)
-                    expander.setown(createLZ4Expander());
-                else // fallback
-                {
-                    compMethod = COMPRESS_METHOD_LZW;
-                    expander.setown(createLZWExpander(true));
-                }
+                ICompressHandler *handler = queryCompressHandler(compMethod);
+                if (unlikely(!handler))
+                    throw makeStringExceptionV(-1, "Unsupported compression method %u", compMethod);
+                expander.setown(handler->getExpander(nullptr));
             }
         }
     }
@@ -2749,6 +2746,10 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
     {
         memset(&trailer,0,sizeof(trailer));
         trailer.crc = ~0U;
+        if (compMethod == COMPRESS_METHOD_NONE)
+            compMethod = COMPRESS_METHOD_LZ4;
+
+        //Preserve the legacy compressedType values for backward compatibility
         if (compMethod == COMPRESS_METHOD_FASTLZ)
         {
             trailer.compressedType = FASTCOMPRESSEDFILEFLAG;
@@ -2766,10 +2767,10 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
         }
         else
         {
-            compMethod = COMPRESS_METHOD_LZ4;
-            trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
-            trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
+            trailer.compressedType = NEWCOMPRESSEDFILEFLAG+compMethod;
+            trailer.blockSize = 0x100000;
         }
+
         trailer.recordSize = 0;
         if (compressorBlockSize)
             trailer.blockSize = compressorBlockSize;
@@ -3123,74 +3124,82 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     class CFLZCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "FLZ"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_FASTLZ; }
-        virtual ICompressor *getCompressor(const char *options) { return createFastLZCompressor(); }
-        virtual IExpander *getExpander(const char *options) { return createFastLZExpander(); }
+        virtual const char *queryType() const override { return "FLZ"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_FASTLZ; }
+        virtual ICompressor *getCompressor(const char *options) override { return createFastLZCompressor(); }
+        virtual IExpander *getExpander(const char *options) override { return createFastLZExpander(); }
     };
     class CLZ4CompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZ4"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, false); }
-        virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
+        virtual const char *queryType() const override { return "LZ4"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZ4; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZ4Compressor(options, false); }
+        virtual IExpander *getExpander(const char *options) override { return createLZ4Expander(); }
     };
     class CLZ4HCCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZ4HC"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4HC; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, true); }
-        virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
+        virtual const char *queryType() const override { return "LZ4HC"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZ4HC; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZ4Compressor(options, true); }
+        virtual IExpander *getExpander(const char *options) override { return createLZ4Expander(); }
     };
     class CLZ4HC3CompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZ4HC3"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4HC3; }
-        virtual ICompressor *getCompressor(const char *options) {
+        virtual const char *queryType() const override { return "LZ4HC3"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZ4HC3; }
+        virtual ICompressor *getCompressor(const char *options) override {
             StringBuffer opts(options);
             opts.append(',').append("hclevel=3"); // note extra leading comma will be ignored
             return createLZ4Compressor(opts, true);
         }
-        virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
+        virtual IExpander *getExpander(const char *options) override { return createLZ4Expander(); }
     };
     class CLZ4SCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZ4S"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4S; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, false); }
-        virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
+        virtual const char *queryType() const override { return "LZ4S"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZ4S; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZ4StreamCompressor(options, false); }
+        virtual IExpander *getExpander(const char *options) override { return createLZ4StreamExpander(); }
     };
     class CLZ4SHCCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZ4SHC"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4SHC; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4StreamCompressor(options, true); }
-        virtual IExpander *getExpander(const char *options) { return createLZ4StreamExpander(); }
+        virtual const char *queryType() const override { return "LZ4SHC"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZ4SHC; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZ4StreamCompressor(options, true); }
+        virtual IExpander *getExpander(const char *options) override { return createLZ4StreamExpander(); }
     };
     class CZStdSCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "ZSTDS"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ZSTDS; }
-        virtual ICompressor *getCompressor(const char *options) { return createZStdStreamCompressor(options); }
-        virtual IExpander *getExpander(const char *options)     { return createZStdStreamExpander(); }
+        virtual const char *queryType() const override { return "ZSTDS"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_ZSTDS; }
+        virtual ICompressor *getCompressor(const char *options) override { return createZStdStreamCompressor(options); }
+        virtual IExpander *getExpander(const char *options) override { return createZStdStreamExpander(); }
+    };
+    class CZStdCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const override { return "ZSTD"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_ZSTD; }
+        virtual ICompressor *getCompressor(const char *options) override { return createZStdCompressor(options); }
+        virtual IExpander *getExpander(const char *options) override { return createZStdExpander(); }
     };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "AES"; }
-        virtual CompressionMethod queryMethod() const { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZW); }
-        virtual ICompressor *getCompressor(const char *options)
+        virtual const char *queryType() const override { return "AES"; }
+        virtual CompressionMethod queryMethod() const override { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZW); }
+        virtual ICompressor *getCompressor(const char *options) override
         {
             assertex(options);
             return createAESCompressor(options, strlen(options));
         }
-        virtual IExpander *getExpander(const char *options)
+        virtual IExpander *getExpander(const char *options) override
         {
             assertex(options);
             return createAESExpander(options, strlen(options));
@@ -3199,42 +3208,42 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     class CDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "DIFF"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ROWDIF; }
-        virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
-        virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
+        virtual const char *queryType() const override { return "DIFF"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_ROWDIF; }
+        virtual ICompressor *getCompressor(const char *options) override { return createRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) override { return createRDiffExpander(); }
     };
     class CRDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "RDIFF"; }  // Synonym for DIFF
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ROWDIF; }
-        virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
-        virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
+        virtual const char *queryType() const override { return "RDIFF"; }  // Synonym for DIFF
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_ROWDIF; }
+        virtual ICompressor *getCompressor(const char *options) override { return createRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) override { return createRDiffExpander(); }
     };
     class CRandRDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "RANDROW"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_RANDROW; }
-        virtual ICompressor *getCompressor(const char *options) { return createRandRDiffCompressor(); }
-        virtual IExpander *getExpander(const char *options) { UNIMPLEMENTED; } // Expander has a different interface
+        virtual const char *queryType() const override { return "RANDROW"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_RANDROW; }
+        virtual ICompressor *getCompressor(const char *options) override { return createRandRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) override { UNIMPLEMENTED; } // Expander has a different interface
     };
     class CLZWCompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZW"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZW; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(true); }
-        virtual IExpander *getExpander(const char *options) { return createLZWExpander(true); }
+        virtual const char *queryType() const override { return "LZW"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZW; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZWCompressor(true); }
+        virtual IExpander *getExpander(const char *options) override { return createLZWExpander(true); }
     };
     class CLZWLECompressHandler : public CCompressHandlerBase
     {
     public:
-        virtual const char *queryType() const { return "LZWLE"; }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZW_LITTLE_ENDIAN; }
-        virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(false); }
-        virtual IExpander *getExpander(const char *options) { return createLZWExpander(false); }
+        virtual const char *queryType() const override { return "LZWLE"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_LZW_LITTLE_ENDIAN; }
+        virtual ICompressor *getCompressor(const char *options) override { return createLZWCompressor(false); }
+        virtual IExpander *getExpander(const char *options) override { return createLZWExpander(false); }
     };
     addCompressorHandler(new CLZWLECompressHandler());
     addCompressorHandler(new CLZWCompressHandler());
@@ -3251,6 +3260,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CLZ4SCompressHandler());
     addCompressorHandler(new CLZ4SHCCompressHandler());
     addCompressorHandler(new CZStdSCompressHandler());
+    addCompressorHandler(new CZStdCompressHandler());
     return true;
 }
 
@@ -3322,6 +3332,8 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZ4S;
         else if (strieq("ZSTDS", compStr))
             compMethod = COMPRESS_METHOD_ZSTDS;
+        else if (strieq("ZSTD", compStr))
+            compMethod = COMPRESS_METHOD_ZSTD;
         //else // default is LZ4
     }
     return compMethod;
@@ -3353,6 +3365,8 @@ const char *translateFromCompMethod(unsigned compMethod)
             return "LZMA";
         case COMPRESS_METHOD_ZSTDS:
             return "ZSTDS";
+        case COMPRESS_METHOD_ZSTD:
+            return "ZSTD";
         default:
             return ""; // none
     }

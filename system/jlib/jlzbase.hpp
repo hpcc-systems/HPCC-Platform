@@ -19,6 +19,7 @@
 #define JLZBASE_INCL
 
 #include "jlzw.hpp"
+#include "jfcmp.hpp"
 
 // Base classes for the LZ4 and ZStd compression
 // They are private to jlib, so they do not have a jlib_decl
@@ -33,6 +34,98 @@ inline unsigned sizePacked(size32_t value)
     }
     return size;
 }
+
+/*
+
+This compression works as follows:
+- The compressor has a fixed size block that matches the output block size.
+- Data is appended to tbe block until it can no longer fit in the the buffer
+-   Try and compress the data.
+-   If it fits
+-     good.
+-   else if allow partial compression, and smaller than uncompressed
+-     keep as much as possible
+-   else
+-     unwind the last write.
+*/
+
+class CBlockCompressor : public CSimpleInterfaceOf<ICompressor>
+{
+
+public:
+    virtual void open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override;
+    virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override;
+    virtual void close() override;
+    virtual size32_t write(const void *buf,size32_t len) override;
+    virtual void * bufptr() override
+    {
+        assertex(!inbuf);  // i.e. closed
+        return outbuf;
+    }
+
+    virtual size32_t buflen() override
+    {
+        assertex(!inbuf);
+        return outlen;
+    }
+    virtual bool adjustLimit(size32_t newLimit) override;
+
+    virtual bool supportsBlockCompression() const override { return true; }
+    virtual bool supportsIncrementalCompression() const override { return false; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override;
+
+// Used for boundary case when appending to a fixed size and need to undo the last compression
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) = 0;
+
+protected:
+    CBlockCompressor(bool _supportsPartialCompression) : supportsPartialCompression(_supportsPartialCompression) {}
+
+    void initCommon(size32_t initialSize);
+    bool processOption(const char * option, const char * textValue);
+
+    //Try and compress inlen + extra bytes of data - inlen is guaranteed to fit uncompressed.
+    //if the data is successfully compressed then inlen is updated
+    size32_t flushCompress(size32_t extra);
+
+protected:
+//options
+    bool supportsPartialCompression;
+//output
+    size32_t originalMax = 0;   // Used to ensure the limit never exceeds the original buffer size
+    size32_t maxOutputSize = 0; // Current maximum length of the output buffer
+    MemoryBuffer *outBufMb = nullptr; // used when dynamic output buffer (when open() used)
+    byte * outbuf = nullptr;    // pointer to the output buffer
+    size32_t outBufStart = 0;   // What offset in the target buffer are we starting to write at (when appending to a MemoryBuffer) - used to update the final length
+    size32_t outlen = 0;
+    size32_t totalWritten = 0;  // How many bytes written in all blocks
+    bool full = false;          // No room for any other data...
+
+//input
+    MemoryBuffer inma;          // the buffer that is used to hold the input data
+    byte *inbuf = nullptr;      // == inma.buffer()
+    size32_t maxInputSize = 0;  // Maximum length of the input buffer
+    size32_t inlen = 0;
+
+//open options
+    bool allowPartialWrites{true};
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CBlockExpander : public CFcmpExpander
+{
+public:
+    virtual void expand(void *buf) override;
+    virtual size32_t expandFirst(MemoryBuffer & target, const void * src) override;
+    virtual size32_t expandNext(MemoryBuffer & target) override;
+    virtual bool supportsBlockDecompression() const override { return true; }
+
+protected:
+    size32_t totalExpanded = 0;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 
 /*
  * The serialized stream compressed data has the following format:

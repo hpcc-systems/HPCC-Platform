@@ -546,6 +546,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
             OUTPUT(projected,, Files.NameSearchSource+'_flz', THOR, OVERWRITE, COMPRESSED, HINT(compression('FLZ')));
             OUTPUT(projected,, Files.NameSearchSource+'_lz4', THOR, OVERWRITE, COMPRESSED, HINT(compression('LZ4')));
             OUTPUT(projected,, Files.NameSearchSource+'_lz4hc', THOR, OVERWRITE, COMPRESSED, HINT(compression('LZ4HC')));
+            OUTPUT(projected,, Files.NameSearchSource+'_zstd', THOR, OVERWRITE, COMPRESSED, HINT(compression('ZSTD')));
         );
     END;
 

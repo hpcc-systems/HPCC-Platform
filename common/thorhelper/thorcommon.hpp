@@ -97,13 +97,15 @@ enum RowReaderWriterFlags
     rw_lzw            = 0x100, // if rw_compress
     rw_lz4            = 0x200, // if rw_compress
     rw_sparse         = 0x400, // NB: mutually exclusive with rw_grouped
-    rw_lz4hc          = 0x800  // if rw_compress
+    rw_lz4hc          = 0x800,  // if rw_compress
+    rw_zstd           = 0x1000, // if rw_compress
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
 
-#define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lzw|rw_lz4|rw_lz4hc)
-#define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4|rw_lz4hc)
+#define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4|rw_lz4hc|rw_zstd)
+#define COMP_MASK (rw_compress|rw_compressblkcrc|COMP_TYPE_MASK)
+
 inline void setCompFlag(const char *compStr, unsigned &flags)
 {
     flags &= ~COMP_TYPE_MASK;
@@ -115,6 +117,8 @@ inline void setCompFlag(const char *compStr, unsigned &flags)
             flags |= rw_lzw;
         else if (0 == stricmp("LZ4HC", compStr))
             flags |= rw_lz4hc;
+        else if (0 == stricmp("ZSTD", compStr))
+            flags |= rw_zstd;
         else // not specifically FLZ, LZW, or FL4HC so set to default LZ4
             flags |= rw_lz4;
     }
@@ -131,10 +135,13 @@ inline unsigned getCompMethod(unsigned flags)
         compMethod = COMPRESS_METHOD_FASTLZ;
     else if (TestRwFlag(flags, rw_lz4hc))
         compMethod = COMPRESS_METHOD_LZ4HC;
+    else if (TestRwFlag(flags, rw_zstd))
+        compMethod = COMPRESS_METHOD_ZSTD;
 
     return compMethod;
 }
 
+//MORE: This should be passed as an option ptree instead - see future PRs
 inline unsigned getCompMethod(const char *compStr)
 {
     //Could change to return translateToCompMethod(compStr);
@@ -148,6 +155,8 @@ inline unsigned getCompMethod(const char *compStr)
             compMethod = COMPRESS_METHOD_LZW;
         else if (0 == stricmp("LZ4HC", compStr))
             compMethod = COMPRESS_METHOD_LZ4HC;
+        else if (0 == stricmp("ZSTD", compStr))
+            compMethod = COMPRESS_METHOD_ZSTD;
     }
     return compMethod;
 }
