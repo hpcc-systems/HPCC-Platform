@@ -532,23 +532,32 @@ public:
         if(adminGrp.isEmpty())
         {
             if (m_isAzureAD)
+            {
                 adminGrp.clear().appendf("cn=%s,ou=%s", AAD_ADMINISTRATORS_GROUP, AAD_USERS_GROUPS_OU);
+                OWARNLOG("LDAP Config: adminGroupName - not specified, using AzureAD default '%s', recommend adding fully qualified adminGroupName to configuration", adminGrp.str());
+            }
             else
+            {
                 adminGrp.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
+                OWARNLOG("LDAP Config: adminGroupName - not specified, using default '%s', recommend adding fully qualified adminGroupName to configuration", adminGrp.str());
+            }
         }
         else if (0 == stricmp("Administrators", adminGrp.str()))
         {
             adminGrp.set("cn=Administrators,cn=Builtin");//Active Directory
+            OWARNLOG("LDAP Config: adminGroupName - converting 'Administrators' to Active Directory default '%s', recommend adding fully qualified adminGroupName to configuration", adminGrp.str());
         }
         else if (0 == stricmp("Directory Administrators", adminGrp.str()))
         {
             adminGrp.set("cn=Directory Administrators");//389 DirectoryServer
+            OWARNLOG("LDAP Config: adminGroupName - converting 'Directory Administrators' to 389 DirectoryServer default '%s', recommend adding fully qualified adminGroupName to configuration", adminGrp.str());
         }
         else if (nullptr == strstr(adminGrp.str(), "CN=") && nullptr == strstr(adminGrp.str(), "cn="))
         {
             //Group name only. Add group OU
             StringBuffer sb;
             sb.appendf("cn=%s,%s", adminGrp.str(), group_basedn.str());
+            OWARNLOG("LDAP Config: adminGroupName - converting relative '%s' to '%s' (under groupsBasedn), recommend adding fully qualified adminGroupName to configuration", adminGrp.str(), sb.str());
             adminGrp.set(sb);
         }
         //If fully qualified group OU name entered, no changes necessary
