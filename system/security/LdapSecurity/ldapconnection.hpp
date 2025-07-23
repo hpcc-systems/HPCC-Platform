@@ -201,6 +201,7 @@ interface ILdapConfig : extends IInterface
     virtual const char* getAuthMethod() = 0;
     virtual const char* getUserBasedn() = 0;
     virtual const char* getGroupBasedn() = 0;
+    virtual bool getEnableCreateAdminGroup() const = 0;
     virtual const char* getResourceBasedn(SecResourceType rtype) = 0;
     virtual const char* getTemplateName() = 0;
     virtual const char* getSysUser() = 0;
