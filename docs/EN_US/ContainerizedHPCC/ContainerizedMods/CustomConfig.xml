@@ -1037,16 +1037,27 @@ thor: []
           calculations. These file access costs for a workunit are recorded
           with the workunit and displayed in the summary page and in the
           workunit’s metrics.</para>
+        </sect4>
 
-          <sect5 id="FileCostAtRest">
-            <title>File Cost at Rest</title>
+        <sect4 id="FileCostAtRest">
+          <title>File Cost at Rest</title>
 
-            <para>The File Cost at Rest field is shown in the Logical File
-            summary page. It is the cost of storing the file without accessing
-            the data. Only the storage costs associated with housing the file
-            in the cloud. This value has been added to better differentiate
-            between file storage costs.</para>
-          </sect5>
+          <para>The File Cost at Rest field is shown in the Logical File
+          summary page. It is the cost of storing the file without accessing
+          the data. This includes only the storage costs associated with
+          housing the file in the cloud. This value has been added to better
+          differentiate between file storage costs.</para>
+        </sect4>
+
+        <sect4 id="SpillFileCost">
+          <title>Spill Files</title>
+
+          <para>Spill planes typically do not incur costs, as they are
+          generally located on local storage. Starting with version 9.12,
+          spill planes no longer inherit the global cost configuration. If a
+          spill plane does not have its own storage cost configuration, any
+          files stored on that spill plane will have their costs calculated as
+          zero.</para>
         </sect4>
       </sect3>
     </sect2>
