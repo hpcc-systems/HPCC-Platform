@@ -4,18 +4,35 @@ Welcome to the End User Documentation. This guide provides a comprehensive colle
 
 ## Dali
 
-## Sasha 
+## Sasha
 
 ## DFU
+
 ## DFUPlus
+
 ## ECL Watch
+
 ## ECLCC
-## ECL Agent / hThor
+
+## Embedded Languages
+
+### Java
+
+[Options for Embedded Java in HPCC](../plugins/javaembed/javaembedOptions.md)
+This article describes configuration options for the embedded Java plugin in HPCC Platform, which allows ECL code to execute Java functionality.
+
 ## EVTool
+
 ## FTSlave
+
 ## ESDL
+
 ## Security
+
 ### LDAP
+
 ### Secrets
+
 ## Roxie
+
 ## Thor
