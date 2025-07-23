@@ -26,6 +26,10 @@
 
 //===========================================================================
 
+void addLocationAttribute(IPropertyTree & tgt, IHqlExpression * location);
+
+//===========================================================================
+
 class HQLCPP_API ThorBoundActivity : public ABoundActivity
 {
 public:

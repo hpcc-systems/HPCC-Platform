@@ -70,9 +70,13 @@ protected:
     bool isWorkflowExpanded(IHqlExpression * expr) const;
 
     void addAttribute(const char * name, const char * value);
+    void addAttribute(WuAttr kind, const char * value);
     void addAttribute(const char * name, IAtom * value);
+    void addAttribute(WuAttr kind, IAtom * value);
     void addAttributeInt(const char * name, __int64 value);
+    void addAttributeInt(WuAttr kind, __int64 value);
     void addAttributeBool(const char * name, bool value);
+    void addAttributeBool(WuAttr kind, bool value);
 
     void saveSubGraphs();
     void restoreSubGraphs();
@@ -90,6 +94,7 @@ protected:
     PropertyTreeArray subGraphs;
     UnsignedArray savedLevels;
     UnsignedArray savedGraphId;
+    LocationArray locations;
     unsigned seq;
     unsigned rootGraphId;
     unsigned subGraphId;
@@ -106,8 +111,11 @@ protected:
 
 IPropertyTree * addGraphAttribute(IPropertyTree * node, const char * name);
 void addGraphAttribute(IPropertyTree * node, const char * name, const char * value);
+void addGraphAttribute(IPropertyTree * node, WuAttr kind, const char * value);
 void addGraphAttributeInt(IPropertyTree * node, const char * name, __int64 value);
+void addGraphAttributeInt(IPropertyTree * node, WuAttr kind, __int64 value);
 void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value, bool alwaysAdd=false);
+void addGraphAttributeBool(IPropertyTree * node, WuAttr kind, bool value, bool alwaysAdd=false);
 IPropertyTree * addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay);
 IPropertyTree * addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label);
 void removeGraphAttribute(IPropertyTree * node, const char * name);

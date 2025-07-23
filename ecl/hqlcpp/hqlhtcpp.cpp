@@ -103,6 +103,28 @@ MODULE_EXIT()
 
 //===========================================================================
 
+void addLocationAttribute(IPropertyTree & tgt, IHqlExpression * location)
+{
+    if (location)
+    {
+        unsigned line = location->getStartLine();
+        if (line == 0)
+            return;
+
+        ISourcePath * sourcePath = location->querySourcePath();
+        unsigned column = location->getStartColumn();
+        StringBuffer s;
+
+        s.append(str(sourcePath)).append("(").append(line);
+        if (column)
+            s.append(",").append(column);
+        s.append(")");
+        setAttributeValue(tgt, WaDefinition, s.str());
+    }
+}
+
+//---------------------------------------------------------------------------
+
 static const char * TF[2] = {"false","true"};
 const char * boolToText(bool value) { return TF[value]; }           // is this strictly legal?
 
@@ -1965,21 +1987,10 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
     if (!translator.queryOptions().reportLocations || translator.queryOptions().obfuscateOutput)
         return;
 
-    unsigned line = location->getStartLine();
-    if (line == 0)
-        return;
-
     if (!locations.queryNewLocation(location))
         return;
 
-    ISourcePath * sourcePath = location->querySourcePath();
-    unsigned column = location->getStartColumn();
-    StringBuffer s;
-    s.append(str(sourcePath)).append("(").append(line);
-    if (column)
-        s.append(",").append(column);
-    s.append(")");
-    addAttribute(WaDefinition, s.str());
+    ::addLocationAttribute(*graphNode, location);
 }
 
 

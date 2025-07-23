@@ -41,6 +41,8 @@
 #include "hqlgraph.ipp"
 #include "thorcommon.hpp"
 
+#include "wuattr.hpp"
+
 //---------------------------------------------------------------------------
 
 IPropertyTree * addGraphAttribute(IPropertyTree * node, const char * name)
@@ -55,15 +57,31 @@ void addGraphAttribute(IPropertyTree * node, const char * name, const char * val
     addGraphAttribute(node, name)->setProp("@value", value);
 }
 
+void addGraphAttribute(IPropertyTree * node, WuAttr kind, const char * value)
+{
+    setAttributeValue(*node, kind, value);
+}
+
 void addGraphAttributeInt(IPropertyTree * node, const char * name, __int64 value)
 {
     addGraphAttribute(node, name)->setPropInt64("@value", value);
+}
+
+void addGraphAttributeInt(IPropertyTree * node, WuAttr kind, __int64 value)
+{
+    setAttributeValueInt(*node, kind, value);
 }
 
 void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value, bool alwaysAdd)
 {
     if (value || alwaysAdd)
         addGraphAttribute(node, name)->setPropBool("@value", value);
+}
+
+void addGraphAttributeBool(IPropertyTree * node, WuAttr kind, bool value, bool alwaysAdd)
+{
+    if (value || alwaysAdd)
+        setAttributeValueBool(*node, kind, value);
 }
 
 IPropertyTree * addIntraGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex)
@@ -173,10 +191,22 @@ void LogicalGraphCreator::addAttribute(const char * name, const char * value)
         addGraphAttribute(activityNode, name, value);
 }
 
+void LogicalGraphCreator::addAttribute(WuAttr kind, const char * value)
+{
+    if (value)
+        addGraphAttribute(activityNode, kind, value);
+}
+
 void LogicalGraphCreator::addAttribute(const char * name, IAtom * value)
 {
     if (value)
         addGraphAttribute(activityNode, name, str(value));
+}
+
+void LogicalGraphCreator::addAttribute(WuAttr kind, IAtom * value)
+{
+    if (value)
+        addGraphAttribute(activityNode, kind, str(value));
 }
 
 void LogicalGraphCreator::addAttributeInt(const char * name, __int64 value)
@@ -184,9 +214,19 @@ void LogicalGraphCreator::addAttributeInt(const char * name, __int64 value)
     addGraphAttributeInt(activityNode, name, value);
 }
 
+void LogicalGraphCreator::addAttributeInt(WuAttr kind, __int64 value)
+{
+    addGraphAttributeInt(activityNode, kind, value);
+}
+
 void LogicalGraphCreator::addAttributeBool(const char * name, bool value)
 {
     addGraphAttributeBool(activityNode, name, value);
+}
+
+void LogicalGraphCreator::addAttributeBool(WuAttr kind, bool value)
+{
+    addGraphAttributeBool(activityNode, kind, value);
 }
 
 void LogicalGraphCreator::beginActivity(const char * label, unique_id_t id)
@@ -373,16 +413,32 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
     beginActivity(getActivityText(expr, tempText), id);
     StringBuffer eclText;
     toECL(expr->queryBody(), eclText, false, true);
-    addAttribute("ecl", eclText.str());
-    addAttributeBool("grouped", isGrouped);
-    addAttributeBool("local", isLocal);
+    addAttribute(WaEclText, eclText.str());
+    addAttributeBool(WaIsGrouped, isGrouped);
+    addAttributeBool(WaIsLocal, isLocal);
+    
     IHqlExpression * symbol = queryNamedSymbol(expr);
     if (symbol)
     {
-        addAttribute("name", str(symbol->queryId()));
-        addAttribute("module", str(symbol->queryFullContainerId()));
-        addAttributeInt("line", symbol->getStartLine());
-        addAttributeInt("column", symbol->getStartColumn());
+        addAttribute(WaEclName, str(symbol->queryId()));
+        if (locations.queryNewLocation(symbol))
+            addLocationAttribute(*activityNode, symbol);
+    }
+    else
+    {
+        switch (expr->getAnnotationKind())
+        {
+            case annotate_location:
+                if (locations.queryNewLocation(expr))
+                    addLocationAttribute(*activityNode, expr);
+                break;
+            /*
+            case annotate_symbol:
+                //don't clear onWarnings when we hit a symbol because the warnings within a compound activity aren't generated at the correct point
+                instance->addNameAttribute(expr);
+                break;
+            */
+        }
     }
 
     endActivity();
