@@ -3399,6 +3399,39 @@
         },
         "port": {
           "type": "integer"
+        },
+        "connTimeoutMs": {
+          "type": "integer",
+          "description": "Connection timeout in milliseconds"
+        },
+        "httpReqTimeoutMs": {
+          "type": "integer",
+          "description": "HTTP request timeout in milliseconds"
+        },
+        "ssl": {
+          "type": "object",
+          "properties": {
+            "certFilePath": {
+              "type": "string",
+              "description": "Path to the SSL certificate file."
+            },
+            "keyFilePath": {
+              "type": "string",
+              "description": "Path to the SSL certificate key file."
+            },
+            "caInfoPath": {
+              "type": "string",
+              "description": "Path to the CA bundle if custom CA is used"
+            },
+            "verifyHost": {
+              "type": "boolean",
+              "description": "Verify the certificate's name against host"
+            },
+            "verifyPeer": {
+              "type": "boolean",
+              "description": "Verify the peer's SSL certificate"
+            }
+          }
         }
       }
     },

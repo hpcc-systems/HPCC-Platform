@@ -75,6 +75,14 @@ private:
 
     elasticlient::Client m_esClient;
     StringBuffer m_esConnectionStr;
+    StringBuffer m_shttpReqTimeOutMs;
+    int m_connTimeOutMs;
+    int m_reqTimeOutMs;
+    StringBuffer m_sCertFile;
+    StringBuffer m_skeyFile;
+    StringBuffer m_caInfo;
+    bool m_bVerifyHost = true;
+    bool m_bVerifyPeer = true;
 
     // Elastic Stack specific
     cpr::Response performESQuery(const LogAccessConditions & options);
