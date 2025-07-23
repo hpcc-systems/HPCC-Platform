@@ -368,6 +368,9 @@ public:
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const override;
 
+protected:
+    //The following are used for faking payload events
+    mutable std::weak_ptr<byte[]> expandedPayload;
 };
 
 class CJHVarTreeNode : public CJHLegacySearchNode 
