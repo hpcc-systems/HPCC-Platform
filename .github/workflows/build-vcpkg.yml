@@ -209,6 +209,15 @@ jobs:
       os: centos-7
     secrets: inherit
 
+  build-docker-wasm32-emscripten:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: wasm32-emscripten
+      cmake-configuration-ex: '-DEMSCRIPTEN=ON'
+      build-type: 'MinSizeRel'
+    secrets: inherit
+
   build-gh_runner-ubuntu-22_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml

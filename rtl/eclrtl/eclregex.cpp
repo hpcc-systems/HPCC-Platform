@@ -36,6 +36,33 @@
 
 #include <memory>
 
+#ifdef EMSCRIPTEN
+namespace std {
+    template<>
+    struct char_traits<UChar> : char_traits<char16_t> {
+        using char_type = UChar;
+        static_assert(sizeof(char_type) == sizeof(char16_t), "UChar must be the same size as char16_t");
+        static_assert(alignof(char_type) == alignof(char16_t), "UChar must be the same alignment as char16_t");
+
+        static void assign(char_type& c1, const char_type& c2) noexcept {
+            char_traits<char16_t>::assign(reinterpret_cast<char16_t&>(c1), reinterpret_cast<const char16_t&>(c2));
+        }
+        
+        static char_type* assign(char_type* p, size_t count, char_type a) noexcept {
+            return reinterpret_cast<char_type*>(
+                char_traits<char16_t>::assign(reinterpret_cast<char16_t*>(p), count, static_cast<char16_t>(a))
+            );
+        }
+        
+        static char_type* copy(char_type* dest, const char_type* src, size_t count) noexcept {
+            return reinterpret_cast<char_type*>(
+                char_traits<char16_t>::copy(reinterpret_cast<char16_t*>(dest), reinterpret_cast<const char16_t*>(src), count)
+            );
+        }
+    };
+}
+#endif
+
 //---------------------------------------------------------------------------
 
 // PCRE2 8-bit context module variables, used for STRING and UTF-8 support
