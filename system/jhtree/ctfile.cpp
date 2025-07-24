@@ -398,6 +398,8 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     }
     if (isLeaf() && (keyType & HTREE_COMPRESSED_KEY))
     {
+        // For HTREE_COMPRESSED_KEY hdr.keyBytes is only updated on the first row (above),
+        // and then in the finalize() call after the compressor has been closed.
         if (0 == hdr.numKeys)
         {
             bool isVariable = keyHdr->isVariable();
@@ -407,11 +409,7 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
             lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, isVariable, rowCompressed, fixedKeySize);
         }
         if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize))
-        {
-            lzwcomp.close();
             return false;
-        }
-        hdr.keyBytes = lzwcomp.buflen() + sizeof(unsigned __int64); // rsequence added above
     }
     else
     {
@@ -456,11 +454,14 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
     return true;
 }
 
-void CLegacyWriteNode::write(IFileIOStream *out, CRC32 *crc)
+void CLegacyWriteNode::finalize()
 {
     if (isLeaf() && (keyHdr->getKeyType() & HTREE_COMPRESSED_KEY))
+    {
         lzwcomp.close();
-    CWriteNode::write(out, crc);
+        if (hdr.numKeys)
+            hdr.keyBytes = lzwcomp.buflen() + sizeof(unsigned __int64); // rsequence
+    }
 }
 
 size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, char *result)

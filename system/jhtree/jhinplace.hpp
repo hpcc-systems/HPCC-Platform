@@ -260,6 +260,7 @@ public:
     CInplaceBranchWriteNode(offset_t fpos, CKeyHdr *keyHdr, InplaceKeyBuildContext & _ctx);
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
+    virtual void finalize() override { }
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     virtual size32_t getMemorySize() const override { return nodeSize; }
 
@@ -289,6 +290,7 @@ public:
     CInplaceLeafWriteNode(offset_t fpos, CKeyHdr *keyHdr, InplaceKeyBuildContext & _ctx);
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
+    virtual void finalize() override;
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     virtual size32_t getMemorySize() const override { return leafMemorySize; }
 
