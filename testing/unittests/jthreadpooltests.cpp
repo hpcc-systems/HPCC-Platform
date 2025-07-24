@@ -76,7 +76,7 @@ public:
     }
 
     virtual bool stop() override { return true; }
-    virtual bool canReuse() const override { return true; }
+    virtual bool canReuse() const override { return false; } // Disable thread reuse to avoid double-counting
 
 private:
     std::atomic<unsigned> &threadStartedCount;
@@ -108,10 +108,13 @@ private:
 class ThreadPoolTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ThreadPoolTest);
+    CPPUNIT_TEST(testTableDrivenScenarios);
+/*
     CPPUNIT_TEST(testTightlyBoundThreadPool);
     CPPUNIT_TEST(testThrottledThreadPoolWithDefaultDelay);
     CPPUNIT_TEST(testThrottledThreadPoolWithFastThreadCompletion);
     CPPUNIT_TEST(testWaitAvailable);
+*/
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -598,7 +601,368 @@ public:
         CPPUNIT_ASSERT(pool->running());
     }
 
+    void testTableDrivenScenarios()
+    {
+        // Define test scenarios using the table-driven framework
+        std::vector<PoolTestScenario> scenarios = {
+            // Wait for slot availability - not true throttling
+            {
+                "WaitForSlotAvailability",
+                2,              // maxThreads
+                1000,           // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectStartException, useStartNoBlock
+                    {"Thread1", 300, 0, INFINITE, false, false},      // Fill pool slot 1
+                    {"Thread2", 300, 0, INFINITE, false, false},      // Fill pool slot 2
+                    {"Thread3", 200, 300, INFINITE, false, false},    // Wait ~300ms for Thread1/2 to complete
+                    {"Thread4", 200, 0, INFINITE, false, false},      // Start immediately (slot available after Thread3 blocks)
+                },
+                50,             // durationWiggleMs
+                true            // validateFinalCounts
+            },
+
+            // True throttling behavior - threads start after throttle delay expires
+            {
+                "TrueThrottlingBehavior",
+                2,              // maxThreads
+                400,            // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectStartException, useStartNoBlock
+                    {"LongThread1", 1000, 0, INFINITE, false, false}, // Long-running, won't complete during test
+                    {"LongThread2", 1000, 0, INFINITE, false, false}, // Long-running, won't complete during test
+                    {"ThrottledThread", 200, 400, INFINITE, false, false}, // Wait full 400ms throttle, then start anyway
+                },
+                50,             // durationWiggleMs
+                true            // validateFinalCounts
+            },
+
+            // Timeout before throttling completes - demonstrates true throttling timeout
+            {
+                "TimeoutBeforeThrottle",
+                2,              // maxThreads
+                600,            // throttleDelayMs - threads wait this long when pool is full
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectStartException, useStartNoBlock
+                    {"Blocker1", 1200, 0, INFINITE, false, false},    // Long-running blocker (1200ms)
+                    {"Blocker2", 1200, 0, INFINITE, false, false},    // Long-running blocker (1200ms)
+                    {"ThrottledThread", 200, 600, INFINITE, false, false}, // Wait full 600ms throttle, then start
+                    {"TimeoutThread", 200, 0, 300, true, false},       // Timeout after 300ms (< 600ms throttle), never starts
+                    {"StartNoBlockFail", 200, 0, INFINITE, true, true}, // startNoBlock should fail immediately
+                },
+                50,             // durationWiggleMs
+                false           // validateFinalCounts (timeout doesn't start thread)
+            },
+
+            // Mixed: slot availability + throttling + timeouts
+            {
+                "MixedBehaviors",
+                2,              // maxThreads
+                300,            // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectStartException, useStartNoBlock
+                    {"Quick1", 100, 0, INFINITE, false, false},       // Fill pool, complete quickly
+                    {"Quick2", 100, 0, INFINITE, false, false},       // Fill pool, complete quickly
+                    {"WaitForSlot", 200, 100, INFINITE, false, false}, // Wait ~100ms for Quick1/2 to complete
+                    {"LongRunner", 1000, 0, INFINITE, false, false},   // Start immediately, run long
+                    {"Throttled", 200, 200, INFINITE, false, false},   // Pool full, wait full 300ms throttle
+                    {"FastTimeout", 200, 0, 50, true, false},          // Timeout before throttle expires
+                },
+                30,             // durationWiggleMs
+                false           // validateFinalCounts (has timeout)
+            },
+
+            // Concurrent starts - test true concurrent blocking behavior
+            {
+                "ConcurrentThrottling",
+                2,              // maxThreads
+                500,            // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectStartException, useStartNoBlock
+                    {"Blocker1", 2000, 0, INFINITE, false, false},    // Long-running, holds slot
+                    {"Blocker2", 2000, 0, INFINITE, false, false},    // Long-running, holds slot
+                    // These will be started concurrently to test true concurrent blocking/throttling
+                    {"Concurrent1", 200, 500, INFINITE, false, false}, // Should wait 500ms throttle
+                    {"Concurrent2", 200, 500, INFINITE, false, false}, // Should wait 500ms throttle
+                    {"Concurrent3", 200, 500, INFINITE, false, false}, // Should wait 500ms throttle
+                },
+                50,             // durationWiggleMs
+                true,           // validateFinalCounts
+                true            // concurrentThrottling
+            }
+        };
+
+        for (const auto& scenario : scenarios)
+        {
+            runTableDrivenScenario(scenario);
+        }
+    }
+
+    struct ThreadSpec
+    {
+        const char* name;
+        unsigned runtimeMs;
+        unsigned expectedStartDelayMs;  // Expected delay before thread starts when pool is at capacity (0 = immediate)
+        unsigned startTimeoutMs;        // Timeout for starting thread (INFINITE = no timeout)
+        bool expectStartException;      // Whether starting this thread should throw exception
+        bool useStartNoBlock;          // Whether to use startNoBlock instead of start
+    };
+
+    struct PoolTestScenario
+    {
+        const char* testName{nullptr};    // Used as both test name and pool name
+        unsigned maxThreads{0};           // Pool capacity (0 = unlimited)
+        unsigned throttleDelayMs{0};      // Throttling delay when pool is at capacity (INFINITE = infinite)
+        std::vector<ThreadSpec> threads;
+
+        // Validation settings
+        unsigned durationWiggleMs{50};    // Allowed timing variance in milliseconds
+        bool validateFinalCounts{true};   // Whether to validate final started/completed counts
+        bool concurrentThrottling{false}; // Whether to use concurrent thread starting for this scenario
+    };
+
+    // Helper method to create custom test scenarios easily
+    static PoolTestScenario createScenario(const char* testName, unsigned maxThreads,
+                                          unsigned throttleDelayMs = 1000, unsigned wiggleMs = 50,
+                                          bool validateCounts = true, bool concurrentThrottling = false)
+    {
+        return {testName, maxThreads, throttleDelayMs, {}, wiggleMs, validateCounts, concurrentThrottling};
+    }
+
+    // Helper method to add thread specifications to a scenario
+    static void addThread(PoolTestScenario& scenario, const char* name, unsigned runtimeMs,
+                         unsigned expectedStartDelayMs = 0, unsigned startTimeoutMs = INFINITE,
+                         bool expectException = false, bool useStartNoBlock = false)
+    {
+        scenario.threads.push_back({name, runtimeMs, expectedStartDelayMs, startTimeoutMs, expectException, useStartNoBlock});
+    }
+
 private:
+    void runTableDrivenScenario(const PoolTestScenario& scenario)
+    {
+        DBGLOG("Running scenario: %s", scenario.testName);
+
+        // Ensure clean state - tearDown any previous test state first
+        tearDown();
+
+        // Reset state
+        setUp();
+
+        // Create pool with specified parameters
+        pool.setown(createThreadPool(scenario.testName, factory, true, nullptr, scenario.maxThreads, scenario.throttleDelayMs));
+
+        unsigned expectedStartedCount = 0;
+        unsigned exceptionCount = 0;
+
+        // Special handling for concurrent start scenarios
+        if (scenario.concurrentThrottling)
+        {
+            runConcurrentThrottlingScenario(scenario, expectedStartedCount, exceptionCount);
+        }
+        else
+        {
+            // Execute each thread specification sequentially
+            for (const auto& threadSpec : scenario.threads)
+            {
+                runSingleThreadSpec(threadSpec, scenario, expectedStartedCount, exceptionCount);
+            }
+        }
+
+        // Final validations
+        if (scenario.validateFinalCounts)
+        {
+            // Wait for all threads to complete
+            pool->joinAll(true);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(
+                StringBuffer().appendf("Scenario \"%s\": started count mismatch", scenario.testName).str(),
+                expectedStartedCount, threadStartedCount.load());
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(
+                StringBuffer().appendf("Scenario \"%s\": completed count mismatch", scenario.testName).str(),
+                expectedStartedCount, threadCompletedCount.load());
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(
+                StringBuffer().appendf("Scenario \"%s\": running count should be 0", scenario.testName).str(),
+                0U, pool->runningCount());
+        }
+
+        DBGLOG("Scenario %s completed successfully", scenario.testName);
+    }
+
+    void runConcurrentThrottlingScenario(const PoolTestScenario& scenario, unsigned& expectedStartedCount, unsigned& exceptionCount)
+    {
+        // This method tests true concurrent thread starting behavior.
+        // Unlike the sequential approach, all "concurrent" threads attempt to start
+        // at nearly the same time, providing a more realistic test of how throttling
+        // behaves when multiple threads compete for pool slots simultaneously.
+
+        // Start first two threads to fill the pool
+        for (unsigned i = 0; i < 2; i++)
+        {
+            runSingleThreadSpec(scenario.threads[i], scenario, expectedStartedCount, exceptionCount);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Small delay to ensure they start and fill the pool
+        }
+
+        // Start remaining threads concurrently (within a very short window)
+        std::vector<std::thread> startThreads;
+        std::vector<std::chrono::milliseconds> durations(scenario.threads.size());
+        std::vector<bool> startSuccessful(scenario.threads.size() - 2);
+
+        auto concurrentStartTime = std::chrono::high_resolution_clock::now();
+
+        for (unsigned i = 2; i < scenario.threads.size(); i++)
+        {
+            unsigned idx = i - 2;
+            startThreads.emplace_back([this, &scenario, i, idx, &durations, &startSuccessful, concurrentStartTime]() {
+                const auto& threadSpec = scenario.threads[i];
+                ThreadParams params = {threadSpec.runtimeMs, threadSpec.name};
+
+                try
+                {
+                    pool->start(&params, params.name);
+                    startSuccessful[idx] = !threadSpec.expectStartException;
+
+                    auto endTime = std::chrono::high_resolution_clock::now();
+                    durations[idx] = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - concurrentStartTime);
+                }
+                catch (IException* e)
+                {
+                    startSuccessful[idx] = threadSpec.expectStartException;
+                    e->Release();
+
+                    auto endTime = std::chrono::high_resolution_clock::now();
+                    durations[idx] = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - concurrentStartTime);
+                }
+            });
+        }
+
+        // Wait for all concurrent starts to complete
+        for (auto& t : startThreads)
+            t.join();
+
+        // Validate timing for concurrent threads
+        for (unsigned i = 2; i < scenario.threads.size(); i++)
+        {
+            unsigned idx = i - 2;
+            const auto& threadSpec = scenario.threads[i];
+
+            if (startSuccessful[idx])
+            {
+                validateThreadStartTiming(scenario.testName, threadSpec, durations[idx], scenario.durationWiggleMs);
+                expectedStartedCount++;
+            }
+        }
+    }
+
+    void runSingleThreadSpec(const ThreadSpec& threadSpec, const PoolTestScenario& scenario,
+                            unsigned& expectedStartedCount, unsigned& exceptionCount)
+    {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        ThreadParams params = {threadSpec.runtimeMs, threadSpec.name};
+
+        bool startSuccessful = false;
+        try
+        {
+            if (threadSpec.useStartNoBlock)
+            {
+                pool->startNoBlock(&params);
+                startSuccessful = !threadSpec.expectStartException;
+            }
+            else
+            {
+                if (threadSpec.startTimeoutMs == INFINITE)
+                    pool->start(&params, params.name);
+                else
+                    pool->start(&params, params.name, threadSpec.startTimeoutMs);
+                startSuccessful = !threadSpec.expectStartException;
+            }
+
+            if (threadSpec.expectStartException)
+            {
+                StringBuffer msg;
+                msg.appendf("Thread %s should have thrown exception but didn't", threadSpec.name);
+                CPPUNIT_FAIL(msg.str());
+            }
+        }
+        catch (IException* e)
+        {
+            if (!threadSpec.expectStartException)
+            {
+                StringBuffer msg;
+                msg.appendf("Thread %s threw unexpected exception: ", threadSpec.name);
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_FAIL(msg.str());
+            }
+            else
+            {
+                // Expected exception - validate message contains pool name
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                StringBuffer expectedMsg;
+                expectedMsg.appendf("No threads available in pool %s", scenario.testName);
+                CPPUNIT_ASSERT_EQUAL_STR(expectedMsg.str(), msg.str());
+                exceptionCount++;
+            }
+        }
+
+        // Measure actual start duration if thread started successfully
+        if (startSuccessful)
+        {
+            auto duration = measureThreadStartDuration(startTime, 1);
+            validateThreadStartTiming(scenario.testName, threadSpec, duration, scenario.durationWiggleMs);
+            expectedStartedCount++;
+        }
+        else
+        {
+            // For failed starts, just measure the duration of the failure
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - startTime);
+
+            // If we expected the start to fail due to timeout, validate the timeout duration
+            if (threadSpec.expectStartException && threadSpec.startTimeoutMs != INFINITE)
+            {
+                unsigned expectedTimeout = threadSpec.startTimeoutMs;
+                CPPUNIT_ASSERT_MESSAGE(
+                    StringBuffer().appendf("Thread %s timeout duration %u should be >= %u",
+                                         threadSpec.name, (unsigned)duration.count(), expectedTimeout).str(),
+                    duration.count() >= (expectedTimeout - scenario.durationWiggleMs));
+            }
+        }
+    }
+
+    void validateThreadStartTiming(const char *testName, const ThreadSpec& threadSpec, std::chrono::milliseconds actualDuration, unsigned wiggleMs)
+    {
+        unsigned actualMs = (unsigned)actualDuration.count();
+        unsigned expectedMs = threadSpec.expectedStartDelayMs;
+
+        if (expectedMs == 0)
+        {
+            // Should start immediately - allow some wiggle room for scheduling
+            CPPUNIT_ASSERT_MESSAGE(
+                StringBuffer().appendf("Scenario \"%s\" Thread \"%s\" should start immediately but took %ums",
+                                     testName, threadSpec.name, actualMs).str(),
+                actualMs <= wiggleMs);
+        }
+        else
+        {
+            // Should be delayed by approximately expectedMs due to throttling when pool at capacity
+            unsigned minExpected = (expectedMs > wiggleMs) ? expectedMs - wiggleMs : 0;
+            unsigned maxExpected = expectedMs + wiggleMs;
+#ifdef _DEBUG
+            if( !( actualMs >= minExpected && actualMs <= maxExpected) )
+                DBGLOG("Scenario \"%s\" Thread \"%s\" expected throttling delay %ums but actual was %ums (range: %u-%u)",
+                                     testName, threadSpec.name, expectedMs, actualMs, minExpected, maxExpected);
+#endif
+            CPPUNIT_ASSERT_MESSAGE(
+                StringBuffer().appendf("Scenario \"%s\" Thread \"%s\" expected throttling delay %ums but actual was %ums (range: %u-%u)",
+                                     testName, threadSpec.name, expectedMs, actualMs, minExpected, maxExpected).str(),
+                actualMs >= minExpected && actualMs <= maxExpected);
+        }
+    }
+
     // Helper method to wait for a specific number of threads to start
     void waitForThreadsToStart(unsigned expectedCount)
     {
