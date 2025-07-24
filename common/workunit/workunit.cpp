@@ -3785,10 +3785,10 @@ protected:
     WUPriorityClass priority;
     int priorityLevel;
     bool _isProtected;
-    unsigned __int64 costExecute;
-    unsigned __int64 costFileAccess;
-    unsigned __int64 costCompile;
-    unsigned __int64 costSavingPotential;
+    unsigned __int64 costExecute = 0;
+    unsigned __int64 costFileAccess = 0;
+    unsigned __int64 costCompile = 0;
+    unsigned __int64 costSavingPotential = 0;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
