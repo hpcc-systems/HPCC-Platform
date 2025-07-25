@@ -27,6 +27,7 @@
 #include <io.h>
 #endif
 #include "jlzw.hpp"
+#include "jcrc.hpp"
 
 constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
 constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
@@ -637,6 +638,35 @@ ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffs
     return new CFileSerialInputStream(input, startOffset, length);
 }
 
+
+//---------------------------------------------------------------------------
+
+class CCrcOutputStream : public CSimpleInterfaceOf<ICrcSerialOutputStream>
+{
+    CRC32 crc;
+    Linked<ISerialOutputStream> output;
+
+public:
+    CCrcOutputStream(ISerialOutputStream *_output)
+        : output(_output) {}
+
+    virtual unsigned queryCrc() const override { return crc.get(); }
+
+    virtual void flush() override { output->flush(); }
+    virtual void put(size32_t len, const void *data) override
+    {
+        output->put(len, data);
+        crc.tally(len, data);
+    }
+    virtual offset_t tell() const override { return output->tell(); }
+};
+
+ICrcSerialOutputStream *createCrcOutputStream(ISerialOutputStream *output)
+{
+    return new CCrcOutputStream(output);
+}
+
+//---------------------------------------------------------------------------
 
 
 //===========================================================================
