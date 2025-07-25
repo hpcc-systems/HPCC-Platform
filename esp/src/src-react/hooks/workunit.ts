@@ -399,6 +399,61 @@ export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
     return [helpers, incCounter];
 }
 
+export interface HelperTreeRow extends HelperRow {
+    parentId: string | undefined;
+}
+
+export function useWorkunitHelpersTree(wuid: string): [HelperTreeRow[], () => void] {
+    const [treeHelpers, setTreeHelpers] = React.useState<HelperTreeRow[]>([]);
+    const [helpers, refresh] = useWorkunitHelpers(wuid);
+
+    React.useEffect(() => {
+        const treeHelpers: HelperTreeRow[] = [];
+        const folderSet = new Set<string>();
+
+        helpers.forEach(helper => {
+            let parentFolder: string | undefined;
+
+            if (helper.Path) {
+                // Strip leading slashes to avoid empty folder names
+                const helperPath = helper.Path.replace(/^\/+/, "");
+                const pathDirs = helperPath.split("/");
+                let currentPath = "";
+
+                // Create folder hierarchy
+                for (const dirName of pathDirs) {
+                    const folderName = currentPath ? `${currentPath}/${dirName}` : dirName;
+                    if (!folderSet.has(folderName)) {
+                        folderSet.add(folderName);
+                        treeHelpers.push({
+                            ...helper,
+                            Type: "folder",
+                            Description: dirName,
+                            id: folderName,
+                            parentId: currentPath || undefined,
+                        });
+                    }
+                    currentPath = folderName;
+                }
+                parentFolder = currentPath;
+            }
+            treeHelpers.push({
+                ...helper,
+                parentId: parentFolder
+            });
+        });
+
+        setTreeHelpers(treeHelpers.sort((a, b) => {
+            if (!a.parentId && !b.parentId) return 0;
+            if (!a.parentId) return -1;
+            if (!b.parentId) return 1;
+            return a.parentId.localeCompare(b.parentId, undefined, { ignorePunctuation: false });
+        }));
+    }, [helpers]);
+
+    return [treeHelpers, refresh];
+}
+
 export function useGlobalWorkunitNotes(): [WsWorkunits.Note[]] {
 
     const [notes, setNotes] = React.useState<WsWorkunits.Note[]>([]);

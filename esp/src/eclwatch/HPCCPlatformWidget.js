@@ -362,6 +362,20 @@ define([
                         username: user
                     }
                 }).then(function (response) {
+                    if (response?.Exceptions) {
+                        const err = response.Exceptions.Exception[0];
+                        const errMessage = `${context.i18n.UnableToRetrieveGroups},\n\t${context.i18n.CausedBy}: "${err.Message}"`;
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: "ws_access.UserEdit",
+                            Exceptions: [{
+                                Source: context.i18n.Error,
+                                Message: errMessage,
+                                duration: -1
+                            }]
+                        });
+                        return false;
+                    }
                     if (lang.exists("UserEditResponse.isLDAPAdmin", response)) {
                         if (response.UserEditResponse.isLDAPAdmin === true) {
                             dojoConfig.isAdmin = true;

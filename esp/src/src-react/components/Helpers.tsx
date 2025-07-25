@@ -2,13 +2,14 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { TreeItemValue } from "@fluentui/react-components";
 import * as ESPRequest from "src/ESPRequest";
+import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
+import { HelperRow, useWorkunitHelpersTree } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { FlatItem, HelpersTree } from "./HelpersTree";
+import { FlatTreeItem, FlatTreeEx } from "./controls/FlatTreeEx";
 import { FetchEditor } from "./SourceEditor";
 
 function getURL(wuid: string, item: HelperRow, option?: number) {
@@ -73,113 +74,69 @@ function getURL(wuid: string, item: HelperRow, option?: number) {
     return ESPRequest.getBaseURL() + params + (option ? `&Option=${encodeURIComponent(option)}` : "&Option=1");
 }
 
+interface FlatTreeItemEx extends FlatTreeItem {
+    type: string;
+    url: string;
+}
+
 interface HelpersProps {
     wuid: string;
-    mode?: "ecl" | "xml" | "text" | "yaml";
-    url?: string;
     parentUrl?: string;
+    selectedTreeValue?: string;
 }
 
 export const Helpers: React.FunctionComponent<HelpersProps> = ({
     wuid,
-    mode,
-    url,
-    parentUrl = `/workunits/${wuid}/helpers`
+    parentUrl = `/workunits/${wuid}/helpers`,
+    selectedTreeValue
 }) => {
+    selectedTreeValue = selectedTreeValue?.split("::").join("/");
 
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
-    const [helpers, refreshData] = useWorkunitHelpers(wuid);
-    const [noDataMsg, setNoDataMsg] = React.useState("");
+    const [helpers, refreshData] = useWorkunitHelpersTree(wuid);
     const [checkedRows, setCheckedRows] = React.useState([]);
-    const [checkedItems, setCheckedItems] = React.useState([]);
-    const [selection, setSelection] = React.useState<HelperRow>();
-    const [treeItems, setTreeItems] = React.useState<FlatItem[]>([]);
+    const [checkedItems, setCheckedItems] = React.useState<TreeItemValue[]>([]);
+    const [treeItems, setTreeItems] = React.useState<FlatTreeItemEx[]>([]);
     const [openItems, setOpenItems] = React.useState<Iterable<TreeItemValue>>([]);
+    const [selectedTreeItem, setSelectedTreeItem] = React.useState<FlatTreeItemEx>();
+
+    const setSelectedItem = React.useCallback((treeItemValue: string | number) => {
+        pushUrl(`${parentUrl}/${("" + treeItemValue).split("/").join("::")}`);
+    }, [parentUrl]);
 
     React.useEffect(() => {
-        helpers.forEach(helper => {
-            helper.Orig = {
-                url: getURL(wuid, helper),
-                ...helper.Orig
-            };
-        });
-    }, [helpers, wuid]);
-
-    React.useEffect(() => {
-        setSelection(helpers.filter(item => url === getURL(wuid, item))[0]);
-    }, [helpers, url, wuid]);
-
-    React.useEffect(() => {
-        if (helpers.length && selection !== undefined) {
-            setNoDataMsg(selection?.Type === "dll" ? nlsHPCC.CannotDisplayBinaryData : "");
-        }
-    }, [helpers, selection]);
+        const item = treeItems.find(i => i.value === selectedTreeValue);
+        setSelectedTreeItem(item);
+    }, [selectedTreeValue, treeItems]);
 
     React.useEffect(() => {
         const rows = [];
         checkedItems.forEach(value => {
-            const filtered = helpers.filter(row => row.id === value || row?.Name?.indexOf(value) > -1)[0];
-            if (treeItems.filter(item => item.value === value)[0].url && filtered) {
-                rows.push(filtered);
+            const found = helpers.find(row => row.id === value || row?.Name?.indexOf("" + value) > -1);
+            if (found && treeItems.find(item => item.value === value)?.url) {
+                rows.push(found);
             }
         });
         setCheckedRows(rows);
     }, [checkedItems, helpers, treeItems]);
 
     React.useEffect(() => {
-        const flatTreeItems: FlatItem[] = [];
+        const flatTreeItems: FlatTreeItemEx[] = [];
         helpers.forEach(helper => {
-            let parentValue;
-            const fileName = helper.Name?.split("/").pop();
-            if (helper.Path) {
-                // strip leading slashes from path to avoid having a folder with no label when
-                // creating an array of directory names by splitting on the directory separator
-                const helperPath = helper.Path.replace(/^\/+/, "");
-                const pathDirs = helperPath.split("/");
-                let parentFolder;
-                let folderName;
-                for (let i = 0; i < pathDirs.length; i++) {
-                    folderName = parentFolder ? parentFolder + "/" + pathDirs[i] : pathDirs[i];
-                    if (flatTreeItems.filter(item => item.value === folderName).length === 0) {
-                        flatTreeItems.push({
-                            value: folderName,
-                            content: pathDirs[i],
-                            parentValue: parentFolder,
-                            url: ""
-                        });
-                    }
-                    if (!parentFolder) {
-                        parentFolder = pathDirs[i];
-                    } else {
-                        parentFolder += "/" + pathDirs[i];
-                    }
-                }
-                flatTreeItems.push({
-                    value: `${helperPath}/${fileName}`,
-                    content: fileName,
-                    fileSize: helper.FileSize,
-                    parentValue: parentFolder,
-                    url: helper.Orig.url
-                });
-            } else {
-                flatTreeItems.push({
-                    value: helper.id,
-                    parentValue: parentValue ?? undefined,
-                    content: helper.Description ?? helper.Name ?? helper.Type,
-                    fileSize: helper.FileSize,
-                    url: helper.Orig.url
-                });
-            }
+            flatTreeItems.push({
+                ...helper,
+                value: helper.id,
+                parentValue: helper.parentId,
+                content: helper.Description ?? helper.Name ?? helper.Type,
+                content_parens: (helper.Type !== "folder" && helper.FileSize) ? convertedSize(helper.FileSize) : "",
+                type: helper.Type,
+                url: helper.Type === "folder" ? "" : getURL(wuid, helper)
+            });
         });
-        setTreeItems(flatTreeItems.sort((a, b) => {
-            if (a.parentValue === undefined && b.parentValue === undefined) return 0;
-            if (a.parentValue === undefined) return -1;
-            if (b.parentValue === undefined) return 1;
-            return a.parentValue?.toString().localeCompare(b.parentValue?.toString(), undefined, { ignorePunctuation: false });
-        }));
+        setTreeItems(flatTreeItems);
         setOpenItems(flatTreeItems.map(item => item.value));
-    }, [helpers]);
+    }, [helpers, wuid]);
 
     const treeItemLeafNodes = React.useMemo(() => {
         return treeItems.filter(item => item.url !== "");
@@ -191,7 +148,6 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
                 refreshData();
-                pushUrl(`${parentUrl}`);
             }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -229,7 +185,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 });
             }
         }
-    ], [wuid, checkedItems.length, checkedRows, parentUrl, refreshData, treeItemLeafNodes]);
+    ], [checkedItems.length, checkedRows, refreshData, treeItemLeafNodes, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -237,10 +193,6 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             onClick: () => setFullscreen(!fullscreen)
         }
     ], [fullscreen]);
-
-    const setSelectedItem = React.useCallback((selId: string) => {
-        pushUrl(`${parentUrl}/${selId}`);
-    }, [parentUrl]);
 
     React.useEffect(() => {
         if (dockpanel) {
@@ -258,13 +210,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         main={
             <DockPanel hideSingleTabs onCreate={setDockpanel}>
                 <DockPanelItem key="helpersTable" title="Helpers">
-                    {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
-                        helpers?.length &&
-                        <HelpersTree treeItems={treeItems} openItems={openItems} setOpenItems={setOpenItems} checkedItems={checkedItems} setCheckedItems={setCheckedItems} setSelectedItem={setSelectedItem} selectedUrl={url} />
-                    }
+                    <FlatTreeEx treeItems={treeItems} openTreeValues={openItems} setOpenTreeValues={setOpenItems} checkedTreeValues={checkedItems} setCheckedTreeValues={setCheckedItems} setSelectedTreeValue={setSelectedItem} selectedTreeValue={selectedTreeValue} />
                 </DockPanelItem>
                 <DockPanelItem key="helperEditor" title="Helper" padding={4} location="split-right" relativeTo="helpersTable">
-                    <FetchEditor url={helpers && selection?.Type && selection?.Type !== "dll" ? url : null} mode={mode} noDataMsg={noDataMsg}></FetchEditor>
+                    <FetchEditor url={selectedTreeItem?.type === "dll" ? "" : selectedTreeItem?.url} noDataMsg={selectedTreeItem?.type === "dll" ? nlsHPCC.CannotDisplayBinaryData : ""}></FetchEditor>
                 </DockPanelItem>
             </DockPanel>
         }
