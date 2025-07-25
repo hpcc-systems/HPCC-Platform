@@ -52,16 +52,13 @@ static void ignoreSigPipe()
 class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
 {
     Owned<ISecManager>      ldapsecurity;
-    StringAttr              filesdefaultuser;
-    StringAttr              filesdefaultpassword;
-    bool                    disableFilesDefaultUser;
     unsigned                ldapflags;
     IDigitalSignatureManager * pDSM = nullptr;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDaliLdapConnection(IPropertyTree *ldapprops) : disableFilesDefaultUser(false)
+    CDaliLdapConnection(IPropertyTree *ldapprops)
     {
         ldapflags = 0;
         if (ldapprops) {
@@ -81,10 +78,6 @@ public:
             }
             else
             {
-                filesdefaultuser.set(ldapprops->queryProp("@filesDefaultUser"));
-                filesdefaultpassword.set(ldapprops->queryProp("@filesDefaultPassword"));
-                disableFilesDefaultUser = ldapprops->getPropBool("@disableDefaultUser", false);
-
                 try {
                     ignoreSigPipe(); // LDAP can generate
                     ldapprops->Link();
@@ -116,14 +109,17 @@ public:
         if (!filescope && !wuscope)
             return SecAccess_Full;
 
-
         Owned<ISecUser> user;
         StringBuffer username;
-        StringBuffer password;
         if (udesc)
         {
             udesc->getUserName(username);
-            udesc->getPassword(password);
+            if (username.isEmpty())
+            {
+                OWARNLOG("Missing username in user descriptor for permission request, access denied for request key=%s object=%s", key, nullText(obj));
+                return SecAccess_None; // no access if no default user or disabled
+            }
+
             user.setown(ldapsecurity->createUser(username));
             user->setAuthenticateStatus(AS_AUTHENTICATED);  // treat caller passing user as trusted
         }
@@ -131,20 +127,8 @@ public:
         {
             DBGLOG("NULL UserDescriptor in daldap.cpp getPermissions('%s')", key);
             logNullUser(nullptr);
-
-            // If no user was provided, try to use the default user
-            if (disableFilesDefaultUser || filesdefaultuser.isEmpty())
-            {
-                OWARNLOG("Default user missing or disabled, access denied for request %s %s", key, nullText(obj));
-                return SecAccess_None; // no access if no default user or disabled
-            }
-
-            username.append(filesdefaultuser);
-            decrypt(password, filesdefaultpassword);
-            OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser (%s) for request %s %s", filesdefaultuser.str(), key,
-                     nullText(obj));
-            user.setown(ldapsecurity->createUser(username));
-            user->credentials().setPassword(password);  // Force authentication of default user when used
+            OWARNLOG("NULL user for permission request, access denied for request key=%s object=%s", key, nullText(obj));
+            return SecAccess_None; // no access if no default user or disabled
         }
 
         SecAccessFlags perm = SecAccess_None;
