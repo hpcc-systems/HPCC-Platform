@@ -113,6 +113,8 @@ interface IHpccProtocolListener : extends IInterface
     virtual void disconnectQueue() = 0;
 
     virtual void runOnce(const char *query) = 0;
+
+    virtual bool isRunning() = 0;
 };
 
 interface IHpccProtocolPluginContext : extends IInterface
