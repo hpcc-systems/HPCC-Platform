@@ -798,6 +798,10 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXEXTRACT.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXFIND.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
