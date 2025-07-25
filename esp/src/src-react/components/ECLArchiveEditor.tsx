@@ -52,14 +52,14 @@ export const ECLArchiveEditor: React.FunctionComponent<ECLArchiveProps> = ({
                 window.clearTimeout(t);
             }, 100);
         }
-    }, [ecl, editor, isDark, readonly, lineNum]);
+    }, [ecl, editor, isDark, readonly, lineNum, styles.eclarchiveHighlightLine]);
 
     React.useEffect(() => {
         // Remove previous highlight if it exists
         if (prevSelLine >= 0 && lineNum !== prevSelLine) {
             editor.removeLineClass({ lineNum: prevSelLine - 1, cssClass: styles.eclarchiveHighlightLine });
         }
-    }, [editor, lineNum, prevSelLine]);
+    }, [editor, lineNum, prevSelLine, styles.eclarchiveHighlightLine]);
 
     React.useEffect(() => {
         const fontFamily = "Verdana";

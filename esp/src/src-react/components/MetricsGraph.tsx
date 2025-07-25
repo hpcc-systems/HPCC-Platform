@@ -5,16 +5,13 @@ import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular } from "@fluentui/react-icons";
 import { IScope } from "@hpcc-js/comms";
-import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { FetchStatus, MetricsView } from "../hooks/metrics";
+import { FetchStatus, MetricsView, useMetricsGraphLayout } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
+import { isLayoutComplete, LayoutStatus, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
 import { ShortVerticalDivider } from "./Common";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
-
-const logger = scopedLogger("src-react/components/MetricsGraph.tsx");
 
 const LineageIcon = bundleIcon(Folder20Filled, Folder20Regular);
 const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
@@ -25,54 +22,48 @@ export interface MetricGraphData {
     lineage: IScope[];
     dot: string;
     svg: string;
-    isLayoutComplete: boolean;
+    layoutStatus: LayoutStatus;
 }
 
 export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineageSelection?: string, selection?: string[]): MetricGraphData {
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [dot, setDot] = React.useState<string>("");
-    const [svg, setSvg] = React.useState<string>("");
+    const { svg, layoutStatus } = useMetricsGraphLayout(dot);
     const [lineage, setLineage] = React.useState<IScope[]>([]);
-    const [isLayoutComplete, setIsLayoutComplete] = React.useState<boolean>(false);
 
     const metricGraph = useConst(() => new MetricGraph());
 
     const updateSelectedMetrics = React.useCallback(() => {
-        setSelectedMetrics(metrics.filter(item => selection?.indexOf(item.id) >= 0));
+        if (!selection?.length) {
+            setSelectedMetrics([]);
+            return;
+        }
+
+        const selectionSet = new Set(selection);
+        setSelectedMetrics(metrics.filter(item => selectionSet.has(item.id)));
     }, [metrics, selection]);
 
     const updateSvg = React.useCallback((lineageSelection?: string) => {
-        let cancelled = false;
         const dot = metricGraph.graphTpl(lineageSelection ? [lineageSelection] : [], view);
         setDot(dot);
-        if (dot) {
-            setIsLayoutComplete(layoutCache.status(dot) === LayoutStatus.COMPLETED);
-            layoutCache.calcSVG(dot).then(response => {
-                if (!cancelled && isGraphvizWorkerResponse(response)) {
-                    setSvg(response.svg);
-                }
-            }).catch(err => {
-                logger.error(err);
-            }).finally(() => {
-                setIsLayoutComplete(true);
-            });
-        }
-        return () => {
-            cancelled = true;
-        };
     }, [metricGraph, view]);
 
     const updateLineage = React.useCallback((selection?: IScope[]) => {
         const newLineage: IScope[] = [];
 
+        if (!selection?.length) {
+            setLineage(newLineage);
+            return;
+        }
+
         let minLen = Number.MAX_SAFE_INTEGER;
-        const lineages = selection?.map(item => {
+        const lineages = selection.map(item => {
             const retVal = metricGraph.lineage(item);
             minLen = Math.min(minLen, retVal.length);
             return retVal;
         });
 
-        if (lineages.length) {
+        if (lineages.length && minLen > 0) {
             for (let i = 0; i < minLen; ++i) {
                 const item = lineages[0][i];
                 if (lineages.every(lineage => lineage[i] === item)) {
@@ -103,10 +94,12 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
     React.useEffect(() => {
         if (metrics?.length > 0) {
             updateSvg(lineageSelection);
+        } else {
+            setDot("");
         }
     }, [updateSvg, metrics, lineageSelection]);
 
-    return { metricGraph, selectedMetrics, lineage, dot, svg, isLayoutComplete };
+    return { metricGraph, selectedMetrics, lineage, dot, svg, layoutStatus };
 }
 
 export interface MetricsGraphProps {
@@ -120,7 +113,7 @@ export interface MetricsGraphProps {
 }
 
 export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
-    metricGraphData: { metricGraph, selectedMetrics, lineage, svg, isLayoutComplete },
+    metricGraphData: { metricGraph, selectedMetrics, lineage, svg, layoutStatus },
     lineageSelection,
     selection,
     selectedMetricsSource,
@@ -135,10 +128,10 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     // Data ---
     React.useEffect(() => {
-        if (isLayoutComplete && lineage.find(item => item.name === lineageSelection) === undefined) {
+        if (isLayoutComplete(layoutStatus) && lineage.find(item => item.name === lineageSelection) === undefined) {
             onLineageSelectionChange(lineage[lineage.length - 1]?.name);
         }
-    }, [isLayoutComplete, lineage, lineageSelection, onLineageSelectionChange]);
+    }, [layoutStatus, lineage, lineageSelection, onLineageSelectionChange]);
 
     // Widget  ---
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
@@ -257,25 +250,33 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
         } else if (status === FetchStatus.COMPLETE && selectedMetrics.length === 0) {
             // fetch completed but an error occurred or no data available?
             return "";
-        } else if (!isLayoutComplete) {
-            return `${nlsHPCC.PerformingLayout}`;
+        } else if (!isLayoutComplete(layoutStatus)) {
+            switch (layoutStatus) {
+                case LayoutStatus.LONG_RUNNING:
+                    return nlsHPCC.PerformingLayoutLongRunning;
+                case LayoutStatus.STARTED:
+                default:
+                    return nlsHPCC.PerformingLayout;
+            }
+        } else if (layoutStatus === LayoutStatus.FAILED) {
+            return nlsHPCC.PerformingLayoutFailed;
         } else if (!isRenderComplete) {
             return nlsHPCC.RenderSVG;
         }
         return "";
-    }, [status, isLayoutComplete, isRenderComplete, selectedMetrics.length]);
+    }, [status, selectedMetrics.length, layoutStatus, isRenderComplete]);
 
     const breadcrumbs = React.useMemo<BreadcrumbInfo[]>(() => {
         return lineage.map(item => {
             return {
                 id: item.name,
-                label: item.id,
+                label: `${item.id} (${metricGraph.childCount(item.name)})`,
                 props: {
                     icon: lineageSelection === item.name ? <SelectedLineageIcon /> : <LineageIcon />
                 }
             };
         });
-    }, [lineage, lineageSelection]);
+    }, [lineage, lineageSelection, metricGraph]);
 
     return <HolyGrail
         header={<>
@@ -284,7 +285,11 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
         </>}
         main={<>
             <AutosizeComponent hidden={!spinnerLabel}>
-                <Spinner size="extra-large" label={spinnerLabel} labelPosition="below" ></Spinner>
+                {
+                    layoutStatus === LayoutStatus.FAILED ?
+                        <Label style={{ ...typographyStyles.subtitle2 }}>{spinnerLabel}</Label> :
+                        <Spinner size="extra-large" label={spinnerLabel} labelPosition="below"></Spinner>
+                }
             </AutosizeComponent>
             <AutosizeComponent hidden={!!spinnerLabel || selection?.length > 0}>
                 <Label style={{ ...typographyStyles.subtitle2 }}>{nlsHPCC.NoContentPleaseSelectItem}</Label>

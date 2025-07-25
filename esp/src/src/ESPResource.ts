@@ -15,7 +15,7 @@ const DebugBase = declare(null, {
     showDebugRow(node, key, value) {
         const domNode = dom.byId(node);
         domConstruct.create("li", {
-            innerHTML: "<b>" + Utility.xmlEncode(key) + "</b>:  " + Utility.xmlEncode(value)
+            innerHTML: "<b>" + Utility.encodeXML(key) + "</b>:  " + Utility.encodeXML(value)
         }, domNode);
     },
 

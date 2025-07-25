@@ -15,11 +15,11 @@ define([
     "dijit/registry",
 
     "dojox/xml/parser",
+    "dojox/html/entities",
 
     "hpcc/_Widget",
     "src/ESPUtil",
     "src/GraphStore",
-    "src/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -40,8 +40,8 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, nlsHPCCMod, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Observable, Evented,
     registry,
-    parser,
-    _Widget, ESPUtil, GraphStore, Utility,
+    parser, entities,
+    _Widget, ESPUtil, GraphStore,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -654,8 +654,8 @@ define([
                             continue;
                         ensureHeader();
                         tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("td", { innerHTML: Utility.xmlEncode(key) }, tr);
-                        domConstruct.create("td", { innerHTML: Utility.xmlEncode(props[key]) }, tr);
+                        domConstruct.create("td", { innerHTML: entities.encode("" + key) }, tr);
+                        domConstruct.create("td", { innerHTML: entities.encode("" + props[key]) }, tr);
                     }
                     if (wu && wu.helpers) {
                         arrayUtil.filter(wu.helpers, function (d) {
