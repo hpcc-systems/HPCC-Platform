@@ -65,7 +65,6 @@ export class ScopesTable extends Table {
             .columnFormats([
                 new ColumnFormatEx()
                     .column("StdDevs")
-                    .paletteID("StdDevs")
                     .min(0)
                     .max(6),
                 new ColumnFormat()

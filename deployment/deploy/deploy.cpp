@@ -115,7 +115,17 @@ public:
         int i;
         for (i = 0; i < count; i++)
         {
-            if (!checkFileExists(m_tempFiles.item(i))) continue;
+            bool fExists = false;
+            try
+            {
+                fExists = checkFileExists(m_tempFiles.item(i));
+            }
+            catch (IException* e)
+            {
+                e->Release();
+            }
+            if (!fExists)
+                continue;
             if (!DeleteFile(m_tempFiles.item(i)))
                 WARNLOG("Couldn't delete file %s", m_tempFiles.item(i));
         }

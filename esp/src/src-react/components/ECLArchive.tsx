@@ -34,12 +34,14 @@ interface ECLArchiveProps {
     wuid: string;
     parentUrl?: string;
     selection?: string;
+    lineNum?: number;
 }
 
 export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     wuid,
     parentUrl = `/workunits/${wuid}/eclsummary`,
-    selection
+    selection,
+    lineNum
 }) => {
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -134,16 +136,16 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
                             </Stack>}
                             main={<AutosizeComponent>
-                                <ECLArchiveTree archive={archive} filter={treeFilter} matchCase={matchCase} selectedAttrIDs={[selection]} setSelectedItem={setSelectedItem} />
+                                <ECLArchiveTree archive={archive} filter={treeFilter} matchCase={matchCase} selectedAttrIDs={selection ? [selection] : []} setSelectedItem={setSelectedItem} />
                             </AutosizeComponent>}
                         />
                     }
                 </DockPanelItem>
                 <DockPanelItem key="eclEditor" title="ECL" padding={4} location="split-right" relativeTo="scopesTable">
-                    <ECLArchiveEditor ecl={selectionText} markers={markers}></ECLArchiveEditor>
+                    <ECLArchiveEditor ecl={selectionText} markers={markers} lineNum={lineNum}></ECLArchiveEditor>
                 </DockPanelItem>
                 <DockPanelItem key="properties" title="Properties" location="split-bottom" relativeTo="scopesTable" >
-                    <MetricsPropertiesTables scopes={selectedMetrics}></MetricsPropertiesTables>
+                    <MetricsPropertiesTables wuid={wuid} scopes={selectedMetrics}></MetricsPropertiesTables>
                 </DockPanelItem>
             </DockPanel>
         }

@@ -1932,6 +1932,22 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     border-bottom: none;
 }
 
+.flat .fui-FluentProvider .ui-icon-triangle-1-e {
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 4px solid black;
+    margin-top: 7px;
+    margin-right: 6px;
+}
+
+.flat .fui-FluentProvider .ui-icon-triangle-1-se {
+    margin-top: 9px;
+    margin-right: 5px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid black;
+}
+
 .flat .fui-FluentProvider .dgrid-sort-up .dgrid-sort-arrow {
     border-top: none;
     border-bottom: 4px solid var(--themePrimary);

@@ -70,8 +70,9 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunits.WUQuery, Workunit> {
                 total: response.NumWUs
             };
         }).catch(e => {
-            if (e.Exception && e.Exception[0] && e.Exception[0].Message === nlsHPCC.GridAbortMessage) {
-                logger.debug(e.Exception[0].Message);
+            const message = e?.Message ?? e?.message ?? e?.Exception?.[0]?.Message;
+            if (message === nlsHPCC.GridAbortMessage) {
+                logger.debug(message);
             } else {
                 logger.error(e);
             }
