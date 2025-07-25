@@ -563,6 +563,7 @@ export = {
         Mappings: "Mappings",
         Mask: "Mask",
         MatchCase: "Match Case",
+        MatchWholeWord: "Match Whole Word",
         Max: "Max",
         MaxConnections: "Max Connections",
         MaxNode: "Max Node",
