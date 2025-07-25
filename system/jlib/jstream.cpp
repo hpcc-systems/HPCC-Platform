@@ -27,9 +27,16 @@
 #include <io.h>
 #endif
 #include "jlzw.hpp"
+#include "jcrc.hpp"
 
 constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
 constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
+
+#ifdef _DEBUG
+constexpr bool fillInvalidMemory = true;
+#else
+constexpr bool fillInvalidMemory = false;
+#endif
 
 //================================================================================
 void CStringBufferOutputStream::writeByte(byte b)
@@ -132,6 +139,8 @@ public:
         {
             size32_t toCopy = std::min(len, available());
             memcpy(target, data(bufferOffset), toCopy);
+            if (fillInvalidMemory)
+                memset(data(bufferOffset), 0xcc, toCopy);
             bufferOffset += toCopy;
             if (likely(toCopy == len))
                 return toCopy;
@@ -160,6 +169,8 @@ public:
 
             size32_t toCopy = std::min(len-sizeRead, available());
             memcpy(target + sizeRead, data(bufferOffset), toCopy);
+            if (fillInvalidMemory)
+                memset(data(bufferOffset), 0xcc, toCopy);
             bufferOffset += toCopy;
             sizeRead += toCopy;
         }
@@ -212,10 +223,14 @@ public:
         size32_t remaining = available();
         if (likely(sz <= remaining))
         {
+            if (fillInvalidMemory)
+                memset(data(bufferOffset), 0xcc, sz);
             bufferOffset += sz;
         }
         else
         {
+            if (fillInvalidMemory)
+                memset(data(bufferOffset), 0xcc, remaining);
             bufferOffset = dataLength;
             skipInput(sz - remaining);
         }
@@ -238,17 +253,6 @@ public:
 protected:
     inline byte * data(size32_t offset) { return (byte *)buffer.get() + offset; }
     inline size32_t available() const { return dataLength - bufferOffset; }
-
-    size32_t readBuffer(size32_t len, void * ptr)
-    {
-        if ((len == 0) || (bufferOffset == dataLength))
-            return 0;
-
-        size32_t toCopy = std::min(len, available());
-        memcpy(ptr, data(bufferOffset), toCopy);
-        bufferOffset += toCopy;
-        return toCopy;
-    }
 
     const void * peekBuffer(size32_t &got)
     {
@@ -634,6 +638,35 @@ ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffs
     return new CFileSerialInputStream(input, startOffset, length);
 }
 
+
+//---------------------------------------------------------------------------
+
+class CCrcOutputStream : public CSimpleInterfaceOf<ICrcSerialOutputStream>
+{
+    CRC32 crc;
+    Linked<ISerialOutputStream> output;
+
+public:
+    CCrcOutputStream(ISerialOutputStream *_output)
+        : output(_output) {}
+
+    virtual unsigned queryCrc() const override { return crc.get(); }
+
+    virtual void flush() override { output->flush(); }
+    virtual void put(size32_t len, const void *data) override
+    {
+        output->put(len, data);
+        crc.tally(len, data);
+    }
+    virtual offset_t tell() const override { return output->tell(); }
+};
+
+ICrcSerialOutputStream *createCrcOutputStream(ISerialOutputStream *output)
+{
+    return new CCrcOutputStream(output);
+}
+
+//---------------------------------------------------------------------------
 
 
 //===========================================================================
@@ -1295,13 +1328,22 @@ public:
     {
         size32_t available = source.remaining();
         size32_t toCopy = std::min(len, available);
-        source.read(toCopy, ptr);
+        if (fillInvalidMemory)
+        {
+            const byte * data = source.readDirect(toCopy);
+            memcpy(ptr, data, toCopy);
+            memset(const_cast<byte *>(data), 0xcc, toCopy);
+        }
+        else
+            source.read(toCopy, ptr);
         return toCopy;
     }
 
     virtual void skip(size32_t len) override
     {
         assertex(len <= source.remaining());
+        if (fillInvalidMemory)
+            memset(const_cast<byte *>(source.readDirect(0)), 0xcc, len);
         source.skip(len);
     }
 

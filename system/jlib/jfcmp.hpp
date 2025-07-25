@@ -30,7 +30,6 @@ class jlib_decl CFcmpCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 protected:
     size32_t blksz = 0;
-    size32_t bufalloc = 0;
     MemoryBuffer inma;      // equals blksize len
     MemoryBuffer *outBufMb = nullptr; // used when dynamic output buffer (when open() used)
     size32_t outBufStart = 0;
@@ -64,33 +63,15 @@ public:
         wrmax = 0;          // set at open
     }
 
-    virtual ~CFcmpCompressor()
-    {
-        if (bufalloc)
-            free(outbuf);
-    }
-
     virtual void open(void *buf, size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
+        assertex(buf);
+
         wrmax = max;
         originalMax = max;
         allowPartialWrites = _allowPartialWrites;
-        if (buf)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = 0;
-            outbuf = (byte *)buf;
-        }
-        else if (max>bufalloc)
-        {
-            if (bufalloc)
-                free(outbuf);
-            outbuf = (byte *)malloc(max);
-            if (!outbuf)
-                throw MakeStringException(-1,"CFcmpCompressor::open - out of memory, requesting %d bytes", max);
-            bufalloc = max;
-        }
+        outbuf = (byte *)buf;
+
         outBufMb = NULL;
         outBufStart = 0;
         dynamicOutSz = 0;
@@ -104,11 +85,6 @@ public:
             initialSize = FCMP_BUFFER_SIZE; // 1MB
         wrmax = initialSize;
         allowPartialWrites = false; // buffer is always expanded to fit
-        if (bufalloc)
-        {
-            free(outbuf);
-            bufalloc = 0;
-        }
         inbuf = (byte *)inma.ensureCapacity(initialSize);
         outBufMb = &mb;
         outBufStart = mb.length();

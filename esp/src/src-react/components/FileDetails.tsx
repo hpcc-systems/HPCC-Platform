@@ -99,9 +99,12 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             count: file?.Blooms?.DFUFileBloom?.length ?? 0
         }, {
             id: "protectby",
-            label: nlsHPCC.ProtectBy
+            label: nlsHPCC.ProtectBy,
+            count: file?.ProtectList?.DFUFileProtect?.length ?? 0
         }];
-    }, [file]);
+        // eslint complains that the ...DFUFileProctect.length dep is unnecessary,
+        // but if excluded the count for "protectby" does not update correctly
+    }, [file, file?.ProtectList?.DFUFileProtect?.length]); //eslint-disable-line react-hooks/exhaustive-deps
 
     return <FullscreenFrame fullscreen={fullscreen}>
         <SizeMe>{({ size }) =>

@@ -126,7 +126,6 @@ CLZWCompressor::CLZWCompressor(bool _supportbigendian)
     outbuf = NULL;
     outlen = 0;
     maxlen = 0;
-    bufalloc = 0;
     inuseflag=0xff;
     supportbigendian = _supportbigendian;
     outBufStart = 0;
@@ -135,8 +134,6 @@ CLZWCompressor::CLZWCompressor(bool _supportbigendian)
 
 CLZWCompressor::~CLZWCompressor()
 {
-    if (bufalloc)
-        free(outbuf);
 #ifdef STATS
     printf("HLZW STATS:\n");
     printf(" st_tottimems = %d\n",st_tottimems);
@@ -296,9 +293,6 @@ void CLZWCompressor::ensure(size32_t sz)
 void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
     allowPartialWrites = false; // buffer is always expanded to fit
-    if (bufalloc)
-        free(outbuf);
-    bufalloc = 0;
     outBufMb = &mb;
     outBufStart = mb.length();
     outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
@@ -308,6 +302,7 @@ void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixed
 
 void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites)
 {
+    assertex(buf);
 #ifdef STATS
     st_thistime = msTick();
     st_thiswrites=0;
@@ -315,20 +310,7 @@ void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool _a
     originalMax = max;
     allowPartialWrites = _allowPartialWrites;
 
-    if (buf)
-    {
-        if (bufalloc)
-            free(outbuf);
-        bufalloc = 0;
-        outbuf = buf;
-    }
-    else if (max>bufalloc)
-    {
-        if (bufalloc)
-            free(outbuf);
-        bufalloc = max;
-        outbuf = malloc(bufalloc);
-    }
+    outbuf = buf;
     outBufMb = NULL;
     if (max<=SAFETY_MARGIN+sizeof(size32_t)) // minimum required
         throw makeStringException(0, "CLZWCompressor: target buffer too small");
@@ -430,7 +412,7 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
 
 bool CLZWCompressor::adjustLimit(size32_t newLimit)
 {
-    assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+    assertex(!outBufMb);       // Only supported when a fixed size buffer is provided
     assertex(newLimit <= originalMax);
 
     if (newLimit < SAFETY_MARGIN + outlen)
@@ -1334,7 +1316,6 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
 {
     size32_t inlen;
     size32_t outlen;
-    size32_t bufalloc;
     size32_t remaining;
     size32_t originalMax = 0;
     void *outbuf;
@@ -1381,14 +1362,7 @@ public:
         outlen = 0;
         maxrecsize = 0;
         recsize = 0;
-        bufalloc = 0;
         outBufMb = NULL;
-    }
-
-    ~CRDiffCompressor()
-    {
-        if (bufalloc)
-            free(outbuf);
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
@@ -1400,32 +1374,19 @@ public:
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
-        bufalloc = 0;
         initCommon(fixedRowSize);
         remaining = outBufMb->capacity()-outlen;
     }
 
     virtual void open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
+        assertex(buf);
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
 
         originalMax = max;
         allowPartialWrites = _allowPartialWrites;
-        if (buf)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = 0;
-            outbuf = buf;
-        }
-        else if (max>bufalloc)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = max;
-            outbuf = malloc(bufalloc);
-        }
+        outbuf = buf;
         outBufMb = NULL;
         if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
             throw makeStringException(0, "CRDiffCompressor: target buffer too small");
@@ -1456,7 +1417,7 @@ public:
 
     virtual bool adjustLimit(size32_t newLimit) override
     {
-        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(!outBufMb);       // Only supported when a fixed size buffer is provided
         assertex(newLimit <= originalMax);
 
         if (newLimit < outlen + maxrecsize)
@@ -1626,7 +1587,6 @@ struct RRDheader
 class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
 {
     size32_t inlen;
-    size32_t bufalloc;
     size32_t max;
     size32_t originalMax = 0;
     void *outbuf;
@@ -1658,7 +1618,6 @@ public:
     {
         outbuf = NULL;
         header = NULL;
-        bufalloc = 0;
         max = 0;
         maxdiffsize = 0;
         recsize = 0;
@@ -1666,12 +1625,6 @@ public:
         outBufMb = NULL;
     }
         
-    ~CRandRDiffCompressor()
-    {
-        if (bufalloc)
-            free(outbuf);
-    }
-
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
         if (fixedRowSize == 0)
@@ -1681,32 +1634,20 @@ public:
         outBufMb = &mb;
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
-        bufalloc = 0;
         recsize = fixedRowSize;
         initCommon();
     }
 
     virtual void open(void *buf,size32_t _max, size32_t fixedRowSize, bool _allowPartialWrites) override
     {
+        assertex(buf);
         if (fixedRowSize == 0)
             throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
 
         max = _max;
         originalMax = max;
         allowPartialWrites = _allowPartialWrites;
-        if (buf) {
-            if (bufalloc) {
-                free(outbuf);
-            }
-            bufalloc = 0;
-            outbuf = buf;
-        }
-        else if (max>bufalloc) {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = max;
-            outbuf = malloc(bufalloc);
-        }
+        outbuf = buf;
         outBufMb = NULL;
         recsize = fixedRowSize;
         if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
@@ -1749,7 +1690,7 @@ public:
 
     virtual bool adjustLimit(size32_t newLimit) override
     {
-        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(!outBufMb);       // Only supported when a fixed size buffer is provided
         assertex(newLimit <= originalMax);
 
         if (newLimit < header->totsize+sizeof(short)+header->firstrlesize)
@@ -1994,7 +1935,7 @@ struct CompressedFileTrailer
                 return (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG);
             throw makeStringExceptionV(-1, "File has compression type %u, which is not supported by this version", (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG));
         }
-        return 0;
+        return COMPRESS_METHOD_NONE;
     }
 
     void setDetails(IPropertyTree &tree)
@@ -2815,6 +2756,11 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
             trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
             trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
         }
+        else if (compMethod == COMPRESS_METHOD_LZW)
+        {
+            trailer.compressedType = COMPRESSEDFILEFLAG;
+            trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
+        }
         else
         {
             compMethod = COMPRESS_METHOD_LZ4;
@@ -2853,7 +2799,6 @@ class CAESCompressor : implements ICompressor, public CInterface
 {
     Owned<ICompressor> comp;    // base compressor
     MemoryBuffer compattr;      // compressed buffer
-    MemoryAttr outattr;         // compressed and encrypted (if outblk NULL)
     void *outbuf;               // dest
     size32_t outlen;
     size32_t outmax;
@@ -2883,13 +2828,11 @@ public:
 
     virtual void open(void *blk, size32_t blksize, size32_t fixedRowSize, bool allowPartialWrites) override
     {
+        assertex(blk);
         outlen = 0;
         outmax = blksize;
         originalMax = blksize;
-        if (blk)
-            outbuf = blk;
-        else
-            outbuf = outattr.allocate(blksize);
+        outbuf = blk;
         outBufMb = NULL;
         if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
             throw makeStringException(0, "CAESCompressor: target buffer too small");

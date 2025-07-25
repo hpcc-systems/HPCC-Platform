@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGEXEXTRACT">
+  <title>REGEXEXTRACT</title>
+
+  <para><emphasis role="bold">REGEXEXTRACT<indexterm>
+      <primary>REGEXEXTRACT</primary>
+    </indexterm><indexterm>
+      <primary>REGEXEXTRACT function</primary>
+    </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
+  role="bold">[, NOCASE<indexterm>
+      <primary>NOCASE</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="81.35pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>regex</emphasis></entry>
+
+            <entry>A standard Perl regular expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>The text from which to extract.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+
+            <entry>Optional. Specifies a case insensitive search.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGEXEXTRACT returns a SET of STRING, UNICODE, or UTF8
+            values (depending on the data type of the
+            <emphasis>text</emphasis>).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">REGEXEXTRACT </emphasis>function allows you
+  to extract match groups (those wrapped in parenthesis) from a STRING, a
+  UTF-8 string, or a UNICODE string based upon a regular expression you
+  provide. Parts of a pattern outside match groups are used as part of the
+  overall match process but are not extracted. The first element in the
+  returned SET is always the text that was searched, with found matched groups
+  deleted. Subsequent elements contains the contents of a match group match.
+  The match groups are processed in order, so the first match group result is
+  in position 2, the second result is in position 3, etc. Essentially, it
+  filters the text, returning the portions that match the provided pattern and
+  the deleted portions separately.</para>
+
+  <para>The <emphasis>regex</emphasis> <indexterm>
+      <primary>regex</primary>
+    </indexterm>must be a standard Perl regular expression<indexterm>
+      <primary>Perl regular expression</primary>
+    </indexterm>.</para>
+
+  <para>We use a third-party library -- Perl-compatible Regular Expressions
+  (PCRE2) to support this. See <ulink
+  url="https://www.pcre.org/current/doc/html/pcre2syntax.html">https://www.pcre.org/current/doc/html/pcre2syntax.html</ulink>
+  for details on the PCRE2 pattern syntax.</para>
+
+  <para>Example:</para>
+
+  <programlisting lang="ECL_Runnable">// ----- STRING example --------------------------------------------
+PersonRecStr := RECORD
+    STRING name;
+    STRING age;
+    STRING title;
+    STRING other;
+END;
+
+s1 := 'id=1001; name="Dan Camp"; supervisor="Gavin"; title="Architect"' : STORED('x');
+
+r1 := REGEXEXTRACT('(name="(.*?)";?)', s1, NOCASE);
+// ['id=1001; supervisor="Gavin"; title="Architect"', 'name="Dan Camp";', 'Dan Camp']
+//   ^ rewritten result                                ^ captured group    ^ capture group 2
+OUTPUT(r1, NAMED('r1')); 
+
+r2 := REGEXEXTRACT('(age=(\\d+);?)', r1[1], NOCASE);
+// ['id=1001; supervisor="Gavin"; title="Architect"']
+//   ^ rewritten result -- unchanged and no capture groups because no matches
+OUTPUT(r2, NAMED('r2'));
+
+r3 := REGEXEXTRACT('(title="(.*?)";?)', r2[1], NOCASE);
+// ['id=1001; supervisor="Gavin"; ', 'title="Architect"', 'Architect']
+//   ^ rewritten result               ^ captured group     ^ capture group 2
+OUTPUT(r3, NAMED('r3'));
+
+foundName1 := r1[3];
+foundAge1 := r2[3];
+foundTitle1 := r3[3];
+other1 := TRIM(r3[1], LEFT, RIGHT);
+
+result1 := DATASET
+    (
+        [{foundName1, foundAge1, foundTitle1, other1}],
+        PersonRecStr
+    );
+
+OUTPUT(result1, NAMED('result_1'));
+// ----- UTF8 example --------------------------------------------
+PersonRecU8Str := RECORD
+    UTF8 name;
+    UTF8 age;
+    UTF8 title;
+    UTF8 other;
+END;
+
+s2 := u8'id=1001; name="Renée Åström"; supervisor="Dan"; title="Développeur"' : STORED('y');
+
+r2_1 := REGEXEXTRACT(u8'(name="(.*?)";?)', s2, NOCASE);
+OUTPUT(r2_1, NAMED('r2_1'));
+r2_2 := REGEXEXTRACT(u8'(age=(\\d+);?)', r2_1[1], NOCASE);
+OUTPUT(r2_2, NAMED('r2_2'));
+r2_3 := REGEXEXTRACT(u8'(title="(.*?)";?)', r2_2[1], NOCASE);
+OUTPUT(r2_3, NAMED('r2_3'));
+
+
+
+foundName2 := r2_1[3];
+foundAge2 := r2_2[3];
+foundTitle2 := r2_3[3];
+other2 := TRIM(r2_3[1], LEFT, RIGHT);
+
+result2 := DATASET
+    (
+        [{foundName2, foundAge2, foundTitle2, other2}],
+        PersonRecU8Str
+    );
+
+OUTPUT(result2, NAMED('result_2'));
+
+// ----- UNICODE example --------------------------------------------
+
+PersonRecUStr := RECORD
+    UNICODE name;
+    UNICODE age;
+    UNICODE title;
+    UNICODE other;
+END;
+
+s3 := u'id=1001; name="李小龙"; supervisor="Gavin"; title="武术教练"' : STORED('z');
+
+r3_1 := REGEXEXTRACT(u'(name="(.*?)";?)', s3, NOCASE);
+OUTPUT(r3_1, NAMED('r3_1'));
+r3_2 := REGEXEXTRACT(u'(age=(\\d+);?)', r3_1[1], NOCASE);
+OUTPUT(r3_2, NAMED('r3_2'));
+r3_3 := REGEXEXTRACT(u'(title="(.*?)";?)', r3_2[1], NOCASE);
+OUTPUT(r3_3, NAMED('r3_3'));
+
+foundName3 := r3_1[3];
+foundAge3 := r3_2[3];
+foundTitle3 := r3_3[3];
+other3 := TRIM(r3_3[1], LEFT, RIGHT);
+
+result3 := DATASET
+    (
+        [{foundName3, foundAge3, foundTitle3, other3}],
+        PersonRecUStr
+    );
+
+OUTPUT(result3, NAMED('result_3')); </programlisting>
+
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXFIND">REGEXFIND</link>, <link
+  linkend="REGEXFINDSET">REGEXFINDSET</link>, <link
+  linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+</sect1>

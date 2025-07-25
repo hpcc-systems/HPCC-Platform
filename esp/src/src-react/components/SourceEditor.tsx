@@ -1,7 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { Toolbar, ToolbarButton, ToolbarDivider, ToolbarProps, ToolbarToggleButton } from "@fluentui/react-components";
+import { CopyRegular, EyeRegular } from "@fluentui/react-icons";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import { Editor, ECLEditor, XMLEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
+import { Editor, CSSEditor, ECLEditor, XMLEditor, HTMLEditor, JSEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -9,13 +10,13 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { useUserTheme } from "../hooks/theme";
 import { useWorkunitXML } from "../hooks/workunit";
-import { ShortVerticalDivider } from "./Common";
+import { IFrame } from "./IFrame";
 
 import "eclwatch/css/cmDarcula.css";
 
 const logger = scopedLogger("src-react/components/SourceEditor.tsx");
 
-export type ModeT = "ecl" | "xml" | "json" | "text" | "sql" | "yaml" | "js" | "css" | "html";
+export type ModeT = "css" | "ecl" | "html" | "js" | "json" | "sql" | "text" | "xml" | "yaml";
 
 class SQLEditorEx extends SQLEditor {
 
@@ -42,14 +43,20 @@ class SQLEditorEx extends SQLEditor {
 
 function newEditor(mode: ModeT) {
     switch (mode) {
+        case "css":
+            return new CSSEditor();
         case "ecl":
             return new ECLEditor();
-        case "xml":
-            return new XMLEditor();
+        case "html":
+            return new HTMLEditor();
+        case "js":
+            return new JSEditor();
         case "json":
             return new JSONEditor();
         case "sql":
             return new SQLEditorEx();
+        case "xml":
+            return new XMLEditor();
         case "yaml":
             return new YAMLEditor();
         case "text":
@@ -61,6 +68,7 @@ function newEditor(mode: ModeT) {
 interface SourceEditorProps {
     mode?: ModeT;
     text?: string;
+    previewUrl?: string;
     readonly?: boolean;
     toolbar?: boolean;
     onTextChange?: (text: string) => void;
@@ -71,6 +79,7 @@ interface SourceEditorProps {
 export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     mode = "text",
     text = "",
+    previewUrl = "",
     readonly = false,
     toolbar = true,
     onTextChange = (text: string) => { },
@@ -78,20 +87,13 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     onSubmit
 }) => {
 
+    const [checkedValues, setCheckedValues] = React.useState<Record<string, string[]>>({ displayOptions: ["preview"], });
+    const onChange: ToolbarProps["onCheckedValueChange"] = (e, { name, checkedItems }) => {
+        setCheckedValues((s) => s ? { ...s, [name]: checkedItems } : { [name]: checkedItems });
+    };
     const { isDark } = useUserTheme();
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.Copy, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                navigator?.clipboard?.writeText(text);
-            }
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ];
-
-    const editor = useConst(() => newEditor(mode));
+    const editor = React.useMemo(() => newEditor(mode), [mode]);
 
     React.useEffect(() => {
         editor
@@ -142,9 +144,21 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     }, [editor, text, readonly, isDark]);
 
     return <HolyGrail
-        header={toolbar && <CommandBar items={buttons} />}
+        header={toolbar && (
+            <Toolbar size="small" checkedValues={checkedValues} onCheckedValueChange={onChange}>
+                <ToolbarButton icon={<CopyRegular />} onClick={() => navigator?.clipboard?.writeText(text)}>
+                    {nlsHPCC.Copy}
+                </ToolbarButton>
+                <ToolbarDivider />
+                <ToolbarToggleButton name="displayOptions" value="preview" icon={<EyeRegular />} disabled={mode !== "html"} appearance="transparent">
+                    {nlsHPCC.Preview}
+                </ToolbarToggleButton>
+            </Toolbar>
+        )}
         main={
-            <AutosizeHpccJSComponent widget={editor} padding={4} />
+            checkedValues?.displayOptions?.includes("preview") && mode === "html" ?
+                <IFrame src={previewUrl} padding={"4px 0"} /> :
+                <AutosizeHpccJSComponent widget={editor} padding={4} />
         }
     />;
 };
@@ -296,6 +310,7 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
 }) => {
 
     const [text, setText] = React.useState("");
+    const [exceptionUrl, setExceptionUrl] = React.useState("");
 
     React.useEffect(() => {
         setText(loadingMsg);
@@ -313,13 +328,21 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
                 }
             });
         } else if (url) {
-            fetch(url).then(response => {
+            const controller = new AbortController();
+            fetch(url, { signal: controller.signal }).then(response => {
                 if (!cancelled) {
-                    return response.text();
+                    const contentType = response.headers.get("Content-Type") || "";
+                    return response.text().then(content => ({ contentType, content }));
                 }
-            }).then(content => {
+            }).then(({ contentType, content }) => {
                 if (!cancelled) {
-                    setText(content);
+                    if (contentType.includes("text/html") && (content.includes("<html>") || content.includes("<!DOCTYPE html>")) && content.includes("Exception")) {
+                        setText("");
+                        setExceptionUrl(url);
+                    } else {
+                        setText(content);
+                        setExceptionUrl("");
+                    }
                 }
             }).catch(e => {
                 logger.error(e);
@@ -335,7 +358,9 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
         };
     }, [loadingMsg, noDataMsg, url, wuid]);
 
-    return <SourceEditor text={text} toolbar={toolbar} readonly={readonly} mode={mode}></SourceEditor>;
+    return exceptionUrl ?
+        <IFrame src={exceptionUrl} padding={"4px 0"} /> :
+        <SourceEditor text={text} previewUrl={url} toolbar={toolbar} readonly={readonly} mode={mode}></SourceEditor>;
 };
 
 interface SQLSourceEditorProps {

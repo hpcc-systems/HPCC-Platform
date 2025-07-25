@@ -54,7 +54,7 @@ protected:
 
     virtual bool adjustLimit(size32_t newLimit) override
     {
-        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(!outBufMb);       // Only supported when a fixed size buffer is provided
         assertex(newLimit <= originalMax);
 
         //Reject the limit change if it is too small for the data already committed.

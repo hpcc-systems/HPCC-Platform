@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
+import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, MessageBar, MessageBarType, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -216,6 +216,11 @@ function doDownload(opts: doDownloadOpts) {
     }
 }
 
+interface MessageBarContent {
+    type: MessageBarType;
+    message: string;
+}
+
 interface ResultProps {
     wuid?: string;
     resultName?: string;
@@ -248,7 +253,11 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     const [result, setResult] = React.useState<CommsResult>(resultTable.calcResult());
     const [FilterFields, setFilterFields] = React.useState<Fields>({});
     const [loading, setLoading] = React.useState(true);
+    const [espReturnedError, setEspReturnedError] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
+
+    const [messageBarContent, setMessageBarContent] = React.useState<MessageBarContent | undefined>();
+    const dismissMessageBar = React.useCallback(() => setMessageBarContent(undefined), []);
 
     React.useEffect(() => {
         resultTable
@@ -278,8 +287,12 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             });
             setFilterFields(filterFields);
             setLoading(false);
+            setEspReturnedError(false);
         }).catch(err => {
             logger.error(err);
+            setEspReturnedError(true);
+            setMessageBarContent({ type: MessageBarType.error, message: `${nlsHPCC.Error} ${nlsHPCC.fetchingresults}` });
+            setLoading(false);
             if (err.message.indexOf("Cannot open the workunit result") > -1) {
                 replaceUrl(`/workunits/${wuid}/outputs/`);
             }
@@ -369,12 +382,21 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     ];
 
     return <HolyGrail
-        header={<CommandBar items={buttons} farItems={rightButtons} />}
+        header={<>
+            <CommandBar items={buttons} farItems={rightButtons} />
+            {messageBarContent &&
+                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
+                    {messageBarContent.message}
+                </MessageBar>
+            }
+        </>}
         main={
             <>
                 {loading ?
                     <Spinner label={nlsHPCC.Loading} /> :
-                    <AutosizeHpccJSComponent widget={resultTable} />
+                    espReturnedError ?
+                        <></> :
+                        <AutosizeHpccJSComponent widget={resultTable} />
                 }
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <ViewHTMLConfirm />

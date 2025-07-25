@@ -1019,7 +1019,7 @@ void initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const
             if (t&&*t)
                 s = t;
         }
-        const char *backupPath = config->queryProp("SDS/@remoteBackupLocation");
+        const char *backupPath = config->queryProp("sds/@remoteBackupLocation");
         StringBuffer b;
         if (backupPath&&*backupPath) {
             b.append(backupPath);
