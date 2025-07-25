@@ -1935,7 +1935,7 @@ struct CompressedFileTrailer
                 return (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG);
             throw makeStringExceptionV(-1, "File has compression type %u, which is not supported by this version", (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG));
         }
-        return 0;
+        return COMPRESS_METHOD_NONE;
     }
 
     void setDetails(IPropertyTree &tree)
@@ -2755,6 +2755,11 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
         {
             trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
             trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
+        }
+        else if (compMethod == COMPRESS_METHOD_LZW)
+        {
+            trailer.compressedType = COMPRESSEDFILEFLAG;
+            trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
         }
         else
         {
