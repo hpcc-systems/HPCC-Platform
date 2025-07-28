@@ -25,6 +25,7 @@
 
 #include "jmisc.hpp"
 #include "hlzw.h"
+#include "jevent.hpp"
 
 #include "ctfile.hpp"
 #include "jstats.h"
@@ -1018,24 +1019,50 @@ int CJHLegacySearchNode::compareValueAt(const char *src, unsigned int index) con
     return memcmp(src, keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
+//This critical section will be shared by all legacy nodes, but it is only used when recording events, so the potential contention is not a problem.
+static CriticalSection payloadExpandCs;
+
 bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {
     if (index >= hdr.numKeys) return false;
-    if (dst)
+    if (!dst) return true;
+
+    bool recording = recordingEvents();
+    if (recording)
     {
-        const char * p = keyBuf + index*keyRecLen;
-        if (keyHdr->hasSpecialFileposition())
+        std::shared_ptr<byte []> sharedPayload;
+
         {
-            //It would make sense to have the fileposition at the start of the row from the perspective of the
-            //internal representation, but that would complicate everything else which assumes the keyed
-            //fields start at the beginning of the row.
-            memcpy(dst+keyCompareLen, p+keyCompareLen+sizeof(offset_t), keyLen-keyCompareLen);
-            memcpy(dst+keyLen, p, sizeof(offset_t));
+            CriticalBlock block(payloadExpandCs);
+
+            sharedPayload = expandedPayload.lock();
+            if (!sharedPayload)
+            {
+                //Allocate a dummy payload so we can track whether it is hit or not
+                sharedPayload = std::shared_ptr<byte []>(new byte[1]);
+                expandedPayload = sharedPayload;
+            }
         }
-        else
-        {
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-        }
+
+        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, getMemSize());
+
+        //Ensure the payload stays alive for the duration of this call, and is likely preserved until
+        //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.
+        activePayload.data = std::move(sharedPayload);
+    }
+
+    const char * p = keyBuf + index*keyRecLen;
+    if (keyHdr->hasSpecialFileposition())
+    {
+        //It would make sense to have the fileposition at the start of the row from the perspective of the
+        //internal representation, but that would complicate everything else which assumes the keyed
+        //fields start at the beginning of the row.
+        memcpy(dst+keyCompareLen, p+keyCompareLen+sizeof(offset_t), keyLen-keyCompareLen);
+        memcpy(dst+keyLen, p, sizeof(offset_t));
+    }
+    else
+    {
+        memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
     }
     return true;
 }
