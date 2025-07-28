@@ -1661,9 +1661,9 @@ public:
             return;
         finished = true;
         header->rowofs[0] = (unsigned short)diffbuf.length();
-        ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max || max == 0);
+        assertex((size32_t)(header->totsize+header->firstrlesize)<=max || max == 0);
         unsigned short hofs = header->hsize();
-        ASSERT(header->totsize==hofs+diffbuf.length());
+        assertex(header->totsize==hofs+diffbuf.length());
         if (outBufMb)
         {
             outbuf = (byte *)outBufMb->ensureCapacity(header->totsize+header->firstrlesize);
@@ -1763,6 +1763,9 @@ public:
             }
         }
         inlen += buflen;
+        //Check to see if any of the short fields have wrapped.
+        assertex(header->totsize >= originalTotalSize);
+        assertex(header->numrows >= originalRows);
         return buflen;
     }
 
