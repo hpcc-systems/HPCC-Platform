@@ -46,6 +46,7 @@ interface IIndexFilterList : public IInterface, public IIndexReadContext
     virtual unsigned getFieldOffset(unsigned idx) const = 0;
     virtual bool canMatch() const = 0;
     virtual bool isUnfiltered() const = 0;
+    virtual void updateIndexFormat(const RtlRecord & actualRecInfo) = 0;
 };
 
 BITMASK_ENUM(TransitionMask);
